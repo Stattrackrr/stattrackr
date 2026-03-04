@@ -535,6 +535,7 @@ export default function AFLPage() {
     const url = new URL(window.location.href);
     const playerParam = url.searchParams.get('player')?.trim();
     if (!playerParam) return;
+    const teamParam = url.searchParams.get('team')?.trim();
     setLoadingPlayerFromUrl(true);
     setSelectedPlayer(null);
     setSelectedPlayerGameLogs([]);
@@ -542,7 +543,9 @@ export default function AFLPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/afl/players?query=${encodeURIComponent(playerParam)}&limit=30`);
+        const params = new URLSearchParams({ query: playerParam, limit: '30', exact: '1' });
+        if (teamParam) params.set('team', teamParam);
+        const res = await fetch(`/api/afl/players?${params.toString()}`);
         const data = await res.json();
         if (cancelled || !res.ok) {
           if (!cancelled) setLoadingPlayerFromUrl(false);
@@ -570,11 +573,13 @@ export default function AFLPage() {
         setSearchQuery('');
         setLoadingPlayerFromUrl(false);
         url.searchParams.delete('player');
+        url.searchParams.delete('team');
         window.history.replaceState({}, '', url.toString());
       } catch {
         if (!cancelled) {
           setLoadingPlayerFromUrl(false);
           url.searchParams.delete('player');
+          url.searchParams.delete('team');
           window.history.replaceState({}, '', url.toString());
         }
       }

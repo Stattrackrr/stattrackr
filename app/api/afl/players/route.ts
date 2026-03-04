@@ -34,6 +34,11 @@ function nameMatchesQuery(name: string, normalizedQuery: string): boolean {
   return parts.every((p) => normalizedName.includes(p));
 }
 
+/** Exact normalized match for fast single-player lookup (e.g. from ?player= URL). */
+function exactNameMatch(name: string, normalizedQuery: string): boolean {
+  return normalizeName(name) === normalizedQuery;
+}
+
 /** Read from league player stats (FootyWire). Prefer this so search uses same data as warm script; no API call. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
 function readCachedLeaguePlayerList(): Array<PlayerListEntry> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
@@ -180,12 +185,39 @@ export async function GET(request: NextRequest) {
   const teamParam = request.nextUrl.searchParams.get('team')?.trim();
   const limitRaw = parseInt(request.nextUrl.searchParams.get('limit') ?? '20', 10);
   const limit = Math.max(1, Math.min(100, Number.isNaN(limitRaw) ? 20 : limitRaw));
+  const exactParam = request.nextUrl.searchParams.get('exact');
+  const exactLookup = exactParam === '1' || exactParam === 'true';
   const filterByOfficialTeam =
     teamParam && teamParam !== 'All' && teamParam.length > 0 ? teamParam : null;
 
   try {
     const q = normalizeName(query);
     const effectiveLimit = q && !q.includes(' ') ? Math.min(100, Math.max(limit, 60)) : limit;
+
+    // Fast path: when resolving a single player by exact name (e.g. from ?player= link), use sync file reads only — avoids slow props-cache round-trip.
+    if (exactLookup && query) {
+      const leagueList = readCachedLeaguePlayerList();
+      const roster = leagueList && leagueList.length > 0 ? leagueList : readCachedRoster();
+      const pool = roster ?? [];
+      const match = pool.find((p) => {
+        if (!exactNameMatch(p.name, q)) return false;
+        if (filterByOfficialTeam && resolveToOfficialTeam(p.team) !== filterByOfficialTeam) return false;
+        return true;
+      });
+      if (match) {
+        const players = [{
+          name: match.name,
+          team: match.team,
+          ...(match.number != null ? { number: match.number } : {}),
+        }];
+        return NextResponse.json({
+          source: leagueList && leagueList.length > 0 ? 'footywire.com' : 'afltables.com',
+          query,
+          count: 1,
+          players,
+        });
+      }
+    }
 
     // Prefer players from the same props cache as the props page so dashboard search matches all players with props (all games).
     const propsList = await playersFromPropsCache();
