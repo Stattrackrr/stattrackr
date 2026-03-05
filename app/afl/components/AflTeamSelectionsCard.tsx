@@ -1,0 +1,407 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+const TEAM_SELECTIONS_URL = 'https://www.footywire.com/afl/footy/afl_team_selections';
+
+/** Portrait field: order from top (FB) down to bottom (Fol). Fol is in side panel only. */
+const FIELD_ORDER = ['FB', 'FF', 'HB', 'HF', 'C', 'Fol'];
+
+/** 5 rows on the oval: one position per row, 3 players per team (same position both sides). Order top to bottom. */
+const OVAL_POSITION_ORDER = ['FB', 'HB', 'C', 'HF', 'FF'] as const;
+
+type PlayerEntry = { name: string; number?: string };
+
+type TeamSelectionsData = {
+  url: string;
+  title: string | null;
+  round_label: string | null;
+  match: string | null;
+  home_team: string | null;
+  away_team: string | null;
+  positions: Array<{ position: string; home_players: (string | PlayerEntry)[]; away_players: (string | PlayerEntry)[] }>;
+  interchange: { home: string[]; away: string[] };
+  emergencies: { home: string[]; away: string[] };
+  average_attributes: {
+    home: { height?: string; age?: string; games?: string };
+    away: { height?: string; age?: string; games?: string };
+  } | null;
+  total_players_by_games: Array<{ category: string; home: string; away: string }> | null;
+  error?: string;
+};
+
+type MatchEntry = TeamSelectionsData & { match: string; home_team: string; away_team: string };
+
+/** Normalise team for matching (e.g. "Geelong Cats" vs "Geelong"). */
+function normaliseTeam(t: string): string {
+  return (t || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function matchIncludesTeam(m: { home_team?: string | null; away_team?: string | null }, team: string): boolean {
+  if (!team || !m.home_team || !m.away_team) return false;
+  const t = normaliseTeam(team);
+  const h = normaliseTeam(m.home_team);
+  const a = normaliseTeam(m.away_team);
+  return t === h || t === a || h.includes(t) || t.includes(h) || a.includes(t) || t.includes(a);
+}
+
+/** Normalise API player (string or { name, number? }) to PlayerEntry. */
+function toPlayerEntry(p: string | PlayerEntry): PlayerEntry {
+  return typeof p === 'string' ? { name: p } : { name: p.name, number: p.number };
+}
+
+/** Opposite end of ground: defending team's FB = attacking team's FF, etc. Used for 2nd line label. */
+function oppositePositionLabel(pos: string): string {
+  if (pos === 'FB') return 'FF';
+  if (pos === 'FF') return 'FB';
+  if (pos === 'HB') return 'HF';
+  if (pos === 'HF') return 'HB';
+  return pos; // C stays C
+}
+
+/** Single player chip: jumper number (or initial) in badge + name. uniformWidth = same width as largest for symmetry on oval. */
+function PlayerChip({
+  name,
+  number,
+  isHome,
+  isDark,
+  uniformWidth,
+}: {
+  name: string;
+  number?: string | null;
+  isHome: boolean;
+  isDark: boolean;
+  uniformWidth?: boolean;
+}) {
+  const initial = name.trim() ? name.trim().split(/\s+/).pop()?.[0] ?? '?' : '–';
+  const badgeLabel = number != null && number !== '' ? number : initial;
+  const numBg = isHome ? 'bg-red-500 text-white' : 'bg-slate-500 text-white';
+  const boxCls = isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200';
+  return (
+    <div className={`flex items-center rounded-md border py-1 min-w-0 ${uniformWidth ? 'w-[7.25rem] min-w-[7.25rem] max-w-[7.25rem] gap-1 px-1.5' : 'gap-2 px-2'} ${boxCls}`}>
+      <span className={`flex-shrink-0 rounded font-bold flex items-center justify-center ${numBg} ${uniformWidth ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>
+        {badgeLabel}
+      </span>
+      <span className={`truncate font-medium ${uniformWidth ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+        {name}
+      </span>
+    </div>
+  );
+}
+
+export function AflTeamSelectionsCard({
+  isDark,
+  playerTeam,
+}: {
+  isDark: boolean;
+  /** Selected player's team (e.g. "Geelong Cats", "Gold Coast") – used to show that team's match lineup. */
+  playerTeam?: string | null;
+}) {
+  const [data, setData] = useState<TeamSelectionsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retried, setRetried] = useState(false);
+
+  const fetchLineup = (refresh = false) => {
+    const params = new URLSearchParams();
+    if (refresh) params.set('refresh', '1');
+    if (playerTeam?.trim()) params.set('team', playerTeam.trim());
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return fetch(`/api/afl/footywire-team-selections${q}`).then((r) => r.json());
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    fetchLineup()
+      .then((json) => {
+        if (cancelled) return;
+        if (json?.error && !json?.url) {
+          setError(json.error);
+          setData(null);
+          return;
+        }
+        const positions = Array.isArray(json?.positions) ? json.positions : [];
+        const inter = json?.interchange ?? { home: [], away: [] };
+        let hasLineup = positions.length > 0 || (inter.home?.length ?? 0) > 0 || (inter.away?.length ?? 0) > 0;
+
+        if (!hasLineup && Array.isArray(json?.matches) && json.matches.length > 0) {
+          const matches = json.matches as MatchEntry[];
+          const forTeam = playerTeam?.trim()
+            ? matches.find((m) => matchIncludesTeam(m, playerTeam))
+            : matches[0];
+          const chosen = forTeam ?? matches[0];
+          if (chosen?.positions?.length || chosen?.interchange?.home?.length || chosen?.interchange?.away?.length) {
+            hasLineup = true;
+            setData({
+              url: json?.url ?? TEAM_SELECTIONS_URL,
+              title: json?.title ?? chosen?.title ?? null,
+              round_label: json?.round_label ?? chosen?.round_label ?? null,
+              match: chosen?.match ?? null,
+              home_team: chosen?.home_team ?? null,
+              away_team: chosen?.away_team ?? null,
+              positions: chosen?.positions ?? [],
+              interchange: chosen?.interchange ?? { home: [], away: [] },
+              emergencies: chosen?.emergencies ?? { home: [], away: [] },
+              average_attributes: chosen?.average_attributes ?? null,
+              total_players_by_games: chosen?.total_players_by_games ?? null,
+            });
+            setError(null);
+            return;
+          }
+        }
+
+        if (!hasLineup && json?.match && !retried) {
+          setRetried(true);
+          fetchLineup(true).then((retryJson) => {
+            if (cancelled) return;
+            const retryPos = Array.isArray(retryJson?.positions) ? retryJson.positions : [];
+            const retryInter = retryJson?.interchange ?? { home: [], away: [] };
+            const retryHas = retryPos.length > 0 || (retryInter.home?.length ?? 0) > 0 || (retryInter.away?.length ?? 0) > 0;
+            setData({
+              url: retryJson?.url ?? TEAM_SELECTIONS_URL,
+              title: retryJson?.title ?? null,
+              round_label: retryJson?.round_label ?? null,
+              match: retryJson?.match ?? null,
+              home_team: retryJson?.home_team ?? null,
+              away_team: retryJson?.away_team ?? null,
+              positions: retryPos,
+              interchange: retryInter,
+              emergencies: retryJson?.emergencies ?? { home: [], away: [] },
+              average_attributes: retryJson?.average_attributes ?? null,
+              total_players_by_games: retryJson?.total_players_by_games ?? null,
+            });
+            setError(null);
+          }).finally(() => { if (!cancelled) setLoading(false); });
+          return;
+        }
+        setData({
+          url: json?.url ?? TEAM_SELECTIONS_URL,
+          title: json?.title ?? null,
+          round_label: json?.round_label ?? null,
+          match: json?.match ?? null,
+          home_team: json?.home_team ?? null,
+          away_team: json?.away_team ?? null,
+          positions,
+          interchange: inter,
+          emergencies: json?.emergencies ?? { home: [], away: [] },
+          average_attributes: json?.average_attributes ?? null,
+          total_players_by_games: json?.total_players_by_games ?? null,
+        });
+        setError(null);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e?.message ?? 'Failed to load');
+          setData({ url: TEAM_SELECTIONS_URL, title: null, round_label: null, match: null, home_team: null, away_team: null, positions: [], interchange: { home: [], away: [] }, emergencies: { home: [], away: [] }, average_attributes: null, total_players_by_games: null });
+        }
+      })
+      .finally(() => {
+        if (!cancelled && !retried) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  // Refetch when playerTeam changes so we show the correct match lineup
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- retried is internal, avoid extra runs
+  }, [playerTeam]);
+
+  const borderCls = isDark ? 'border-gray-600' : 'border-gray-200';
+  const bgCls = isDark ? 'bg-[#0a1929]' : 'bg-gray-50';
+  const mutedCls = isDark ? 'text-gray-400' : 'text-gray-500';
+
+  if (loading) {
+    return (
+      <div className={`rounded-lg border p-3 ${borderCls} ${bgCls}`}>
+        <h3 className={`text-sm font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>AFL Team Selections</h3>
+        <p className={`text-sm ${mutedCls}`}>Loading lineup…</p>
+      </div>
+    );
+  }
+
+  const allPositionRows = data?.positions ?? [];
+  const getByPos = (pos: string) => allPositionRows.find((r) => r.position === pos || (pos === 'Fol' && (r.position === 'FOL' || r.position === 'Fol')));
+  const orderedFieldRows = FIELD_ORDER.map((pos) => getByPos(pos)).filter(Boolean) as Array<{ position: string; home_players: string[]; away_players: string[] }>;
+  const folRow = getByPos('Fol');
+
+  const followersHome = (folRow?.home_players ?? []).map(toPlayerEntry);
+  const followersAway = (folRow?.away_players ?? []).map(toPlayerEntry);
+  const ovalRows: { position: string; players: PlayerEntry[]; isHome: boolean }[] = [];
+  OVAL_POSITION_ORDER.forEach((pos) => {
+    const row = getByPos(pos);
+    const homeThree = (row?.home_players ?? []).slice(0, 3).map(toPlayerEntry);
+    const awayThree = (row?.away_players ?? []).slice(0, 3).map(toPlayerEntry);
+    if (homeThree.length > 0) ovalRows.push({ position: pos, players: homeThree, isHome: true });
+    if (awayThree.length > 0) ovalRows.push({ position: pos, players: awayThree, isHome: false });
+  });
+  const hasFieldRows = ovalRows.length > 0;
+  const interHome = data?.interchange?.home ?? [];
+  const interAway = data?.interchange?.away ?? [];
+  const followersInterleaved: { p: PlayerEntry; isHome: boolean }[] = [];
+  for (let i = 0; i < Math.max(followersHome.length, followersAway.length); i++) {
+    if (followersHome[i]) followersInterleaved.push({ p: followersHome[i], isHome: true });
+    if (followersAway[i]) followersInterleaved.push({ p: followersAway[i], isHome: false });
+  }
+  const interchangeInterleaved: { name: string; isHome: boolean }[] = [];
+  for (let i = 0; i < Math.max(interHome.length, interAway.length); i++) {
+    if (interHome[i]) interchangeInterleaved.push({ name: interHome[i], isHome: true });
+    if (interAway[i]) interchangeInterleaved.push({ name: interAway[i], isHome: false });
+  }
+  const emergHome = data?.emergencies?.home ?? [];
+  const emergAway = data?.emergencies?.away ?? [];
+  const homeTeam = data?.home_team ?? 'Home';
+  const awayTeam = data?.away_team ?? 'Away';
+  const hasContent = hasFieldRows || followersHome.length > 0 || followersAway.length > 0 || interHome.length > 0 || interAway.length > 0 || emergHome.length > 0 || emergAway.length > 0;
+
+  return (
+    <div className={`rounded-lg border p-3 ${borderCls} ${bgCls}`}>
+      {/* Title + match */}
+      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>AFL Team Selections</h3>
+      {(data?.round_label || data?.match) && (
+        <p className={`text-xs mb-3 ${mutedCls}`}>
+          {data.round_label && <span className="font-medium">{data.round_label}</span>}
+          {data.round_label && data.match && ' — '}
+          {data.match}
+        </p>
+      )}
+
+      {error && !data?.match && <p className={`text-sm ${mutedCls}`}>{error}</p>}
+
+      {hasContent && (
+        <>
+          {/* Legend: team names with colored dots */}
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <span className="flex items-center gap-1.5 text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden />
+              {homeTeam}
+            </span>
+            <span className="flex items-center gap-1.5 text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-slate-500" aria-hidden />
+              {awayTeam}
+            </span>
+          </div>
+
+          {/* Portrait layout: Large field then position rows */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+            {/* Left: Followers (home, away, home, away …) */}
+            <div className={`rounded-lg border ${borderCls} p-2 flex flex-col w-full sm:w-36 flex-shrink-0`}>
+              <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Followers</p>
+              <div className="flex flex-col gap-1 overflow-y-auto">
+                {followersInterleaved.map(({ p, isHome }, i) => (
+                  <PlayerChip key={`f-${i}`} name={p.name} number={p.number} isHome={isHome} isDark={isDark} />
+                ))}
+                {followersInterleaved.length === 0 && (
+                  <span className={`text-[10px] ${mutedCls}`}>—</span>
+                )}
+              </div>
+            </div>
+
+            {/* Center: AFL pitch with center square and 50m lines */}
+            <div className="flex-1 min-w-0 flex flex-col items-center min-h-[400px]">
+              <div className="relative rounded-[50%] aspect-[1/1.25] w-full min-w-[280px] max-w-[440px] sm:min-w-[340px] sm:max-w-[520px] flex-shrink-0 min-h-[280px]">
+                {/* Field layer: green oval + markings (clipped to oval) */}
+                <div className="absolute inset-0 rounded-[50%] bg-green-700 border-2 border-green-800 overflow-hidden" aria-hidden>
+                  {/* Inner outline a few pixels in from the edge (thick so 50m lines meet it) */}
+                  <div className="absolute inset-[4px] rounded-[50%] border-[3px] border-white/50 pointer-events-none" aria-hidden />
+                  {/* 50m lines as curved arcs, ending at the inner outline */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 125" preserveAspectRatio="none" aria-hidden>
+                    <path d="M 12 25 Q 50 52 88 25" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.8" strokeLinecap="round" />
+                    <path d="M 12 100 Q 50 73 88 100" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="0.8" strokeLinecap="round" />
+                  </svg>
+                  {/* Center square */}
+                  <div className="absolute top-1/2 left-1/2 w-[14%] min-w-[36px] aspect-square -translate-x-1/2 -translate-y-1/2 border-2 border-white/60 rounded-sm bg-transparent" title="Centre square" />
+                </div>
+                {/* Content layer: player rows on top */}
+                <div className="relative z-10 flex flex-col gap-0 py-6 px-5 sm:py-8 sm:px-6 h-full justify-center items-center overflow-visible pointer-events-auto">
+                  {hasFieldRows ? (
+                    ovalRows.map((row, ri) => {
+                      const isEndOfPositionPair = (ri + 1) % 2 === 0 && ri < ovalRows.length - 1;
+                      const isSecondLineInPair = ri % 2 === 1;
+                      const positionLabel = isSecondLineInPair ? oppositePositionLabel(row.position) : row.position;
+                      return (
+                      <div key={ri} className={`flex items-center justify-center gap-1.5 sm:gap-2 flex-shrink-0 w-full ${isEndOfPositionPair ? 'mb-5 sm:mb-6 py-1.5 sm:py-2' : 'py-0 sm:py-0.5'}`}>
+                        <span className="flex-shrink-0 text-[10px] font-bold w-7 text-purple-300">{positionLabel}</span>
+                        <div className="grid grid-cols-3 gap-x-1 gap-y-0 min-w-0 flex-1 justify-items-center w-[min(100%,22.5rem)]" role="group" aria-label={`${row.position} ${row.isHome ? homeTeam : awayTeam}`}>
+                          {row.players.slice(0, 3).map((p, i) => (
+                            <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} isDark={false} uniformWidth />
+                          ))}
+                        </div>
+                      </div>
+                    ); })
+                  ) : (
+                    <p className={`text-[10px] text-center ${isDark ? 'text-green-200' : 'text-green-900'}`}>No positions parsed</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Interchanges (home, away, home, away …) */}
+            <div className={`rounded-lg border ${borderCls} p-2 flex flex-col w-full sm:w-36 flex-shrink-0`}>
+              <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Interchanges</p>
+              <div className="flex flex-col gap-1 overflow-y-auto">
+                {interchangeInterleaved.map(({ name, isHome }, i) => (
+                  <PlayerChip key={`i-${i}`} name={name} isHome={isHome} isDark={isDark} />
+                ))}
+                {interchangeInterleaved.length === 0 && (
+                  <span className={`text-[10px] ${mutedCls}`}>—</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Emergencies – below the main grid */}
+          {(emergHome.length > 0 || emergAway.length > 0) && (
+            <div className={`mt-3 pt-3 border-t ${borderCls}`}>
+              <p className={`text-[10px] font-semibold uppercase tracking-wide mb-2 ${mutedCls}`}>Emergencies</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`text-[10px] font-medium ${mutedCls}`}>{homeTeam}:</span>
+                  {emergHome.map((name, i) => (
+                    <PlayerChip key={`eh-${i}`} name={name} isHome isDark={isDark} />
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`text-[10px] font-medium ${mutedCls}`}>{awayTeam}:</span>
+                  {emergAway.map((name, i) => (
+                    <PlayerChip key={`ea-${i}`} name={name} isHome={false} isDark={isDark} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {!hasContent && data?.match && (
+        <div className="mt-2">
+          <p className={`text-sm ${mutedCls} mb-2`}>Lineup could not be parsed for this round.</p>
+          <a
+            href={data?.url ?? TEAM_SELECTIONS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-1.5 text-sm font-medium ${isDark ? 'text-sky-400 hover:text-sky-300' : 'text-sky-600 hover:text-sky-700'}`}
+          >
+            View full lineup on FootyWire
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+      )}
+
+      <a
+        href={data?.url ?? TEAM_SELECTIONS_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`inline-flex items-center gap-1 text-[10px] mt-2 ${isDark ? 'text-sky-400 hover:text-sky-300' : 'text-sky-600 hover:text-sky-700'}`}
+      >
+        Source: FootyWire
+        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+    </div>
+  );
+}

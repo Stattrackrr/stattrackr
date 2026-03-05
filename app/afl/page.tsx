@@ -9,6 +9,7 @@ import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownC
 import AflLeagueRankingCard from '@/app/afl/components/AflLeagueRankingCard';
 import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
 import AflLineupCard from '@/app/afl/components/AflLineupCard';
+import { AflTeamSelectionsCard } from '@/app/afl/components/AflTeamSelectionsCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflLadderCard } from '@/app/afl/components/AflLadderCard';
 import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
@@ -2275,6 +2276,16 @@ export default function AFLPage() {
                           onSupportingStatKindChange={setSupportingStatKind}
                           isDark={!!mounted && isDark}
                         />
+                        <div className="hidden lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <AflTeamSelectionsCard
+                            isDark={!!mounted && isDark}
+                            playerTeam={
+                              selectedPlayer?.team
+                                ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+                                : null
+                            }
+                          />
+                        </div>
                       </>
                     )}
                   </div>
