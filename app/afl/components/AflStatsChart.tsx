@@ -734,6 +734,7 @@ export function AflStatsChart({
     emitTransientLine(next);
   }, [emitTransientLine, normalizeLineValue]);
 
+  // Set line from stat average only when stat or external line changes — not when timeframe changes, so the user's manual line persists across timeframe changes.
   useEffect(() => {
     if (externalLineValue != null && Number.isFinite(externalLineValue)) return;
     if (!Number.isFinite(statAverage)) return;
@@ -744,9 +745,9 @@ export function AflStatsChart({
     emitTransientLine(next);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
     if (input) input.value = String(next);
-  }, [selectedStat, selectedTimeframe, statAverage, hasDecimalValues, emitTransientLine, externalLineValue]);
+  }, [selectedStat, externalLineValue, hasDecimalValues, emitTransientLine]);
 
-  // When external line (e.g. from selected bookmaker) is provided, sync chart line to it.
+  // When external line (e.g. from selected bookmaker) changes, sync chart line to it. Do NOT depend on yAxisConfig.domain so that changing timeframe (which changes domain) doesn't overwrite the user's manual line.
   useEffect(() => {
     if (externalLineValue == null || !Number.isFinite(externalLineValue)) return;
     const [min, max] = yAxisConfig.domain;
@@ -756,7 +757,7 @@ export function AflStatsChart({
     emitTransientLine(next);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
     if (input) input.value = String(next);
-  }, [externalLineValue, yAxisConfig.domain, hasDecimalValues, emitTransientLine]);
+  }, [externalLineValue, hasDecimalValues, emitTransientLine]);
 
   const timeframeLabels: Record<(typeof TIMEFRAME_OPTIONS)[number], string> = {
     last5: 'L5',
@@ -903,7 +904,7 @@ export function AflStatsChart({
           <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
           <input
             id="betting-line-input"
-            key={`line-${selectedStat}-${selectedTimeframe}`}
+            key={`line-${selectedStat}`}
             type="number"
             step={sliderStep}
             defaultValue={lineValue}

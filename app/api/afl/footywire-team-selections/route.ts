@@ -397,7 +397,7 @@ function parsePositionTable(html: string): PositionRow[] {
       const texts = row.map((c) => htmlToText(c).trim());
       const first = texts[0] || '';
       const isPosRow = isPositionLabel(first);
-      const homePos = isPosRow ? normalizePos(first) : pendingPos;
+      const homePos: string | null = isPosRow ? normalizePos(first) : pendingPos;
 
       // 7+ cells: [pos, h1, h2, h3, a1, a2, a3] – one player per cell
       if (row.length >= 7 && homePos && isPosRow) {

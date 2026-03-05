@@ -69,6 +69,8 @@ interface AflLineSelectorProps {
   onSelectDisposalsOption?: (bookIndex: number, column: 'Disposals' | 'DisposalsOver') => void;
   /** When playerPropColumn is GoalsOver, called when user picks a line (book index + line value) so 0.5 (Anytime) and Goals Over both show. */
   onSelectGoalsOption?: (bookIndex: number, lineValue: number) => void;
+  /** Called when user picks any line (e.g. disposals) so chart and header update to that value; keeps selector from showing skeleton. */
+  onSelectLineValue?: (lineValue: number) => void;
   /** Current line value from the input; when it doesn't match the selected book's line, show skeleton instead of bookmaker. */
   currentLineValue?: number | null;
 }
@@ -87,6 +89,7 @@ export function AflLineSelector({
   selectedDisposalsColumn = 'Disposals',
   onSelectDisposalsOption,
   onSelectGoalsOption,
+  onSelectLineValue,
   currentLineValue = null,
 }: AflLineSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -304,6 +307,8 @@ export function AflLineSelector({
                           onClick={() => {
                             onSelectBookIndex(item.bookIndex);
                             onSelectDisposalsOption?.(item.bookIndex, 'Disposals');
+                            const lineNum = d?.line != null && d.line !== 'N/A' ? parseFloat(String(d.line).replace(/[^0-9.-]/g, '')) : NaN;
+                            if (Number.isFinite(lineNum)) onSelectLineValue?.(lineNum);
                             setIsOpen(false);
                           }}
                           className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between transition-colors border ${
@@ -382,6 +387,8 @@ export function AflLineSelector({
                               onClick={() => {
                                 onSelectBookIndex(item.bookIndex);
                                 onSelectDisposalsOption?.(item.bookIndex, 'DisposalsOver');
+                                const lineNum = d?.line != null && d.line !== 'N/A' ? parseFloat(String(d.line).replace(/[^0-9.-]/g, '')) : NaN;
+                                if (Number.isFinite(lineNum)) onSelectLineValue?.(lineNum);
                                 setIsOpen(false);
                               }}
                               className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between transition-colors border ${

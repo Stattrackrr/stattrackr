@@ -59,6 +59,29 @@ function oppositePositionLabel(pos: string): string {
   return pos; // C stays C
 }
 
+/** Normalize name for comparison: lowercase, collapse spaces, remove punctuation. */
+function normalizeNameForMatch(name: string): string {
+  return (name || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** True if lineup player name matches the searched/selected player (handles "P. Dangerfield" vs "Patrick Dangerfield"). */
+function lineupNameMatchesSelected(lineupName: string, selectedName: string | null | undefined): boolean {
+  if (!selectedName?.trim() || !lineupName?.trim()) return false;
+  const a = normalizeNameForMatch(lineupName);
+  const b = normalizeNameForMatch(selectedName);
+  if (a === b) return true;
+  if (a.includes(b) || b.includes(a)) return true;
+  const aWords = a.split(/\s+/).filter(Boolean);
+  const bWords = b.split(/\s+/).filter(Boolean);
+  if (aWords.length === 0 || bWords.length === 0) return false;
+  const aLast = aWords[aWords.length - 1];
+  const bLast = bWords[bWords.length - 1];
+  if (aLast !== bLast) return false;
+  const aFirst = aWords[0];
+  const bFirst = bWords[0];
+  return aFirst === bFirst || (aFirst.length === 1 && bFirst.startsWith(aFirst)) || (bFirst.length === 1 && aFirst.startsWith(bFirst));
+}
+
 /** Single player chip: jumper number (or initial) in badge + name. uniformWidth = same width as largest for symmetry on oval. */
 function PlayerChip({
   name,
@@ -66,23 +89,27 @@ function PlayerChip({
   isHome,
   isDark,
   uniformWidth,
+  highlight,
 }: {
   name: string;
   number?: string | null;
   isHome: boolean;
   isDark: boolean;
   uniformWidth?: boolean;
+  /** When true, show purple highlight for the searched player. */
+  highlight?: boolean;
 }) {
   const initial = name.trim() ? name.trim().split(/\s+/).pop()?.[0] ?? '?' : '–';
   const badgeLabel = number != null && number !== '' ? number : initial;
   const numBg = isHome ? 'bg-red-500 text-white' : 'bg-slate-500 text-white';
   const boxCls = isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200';
+  const highlightCls = highlight ? 'ring-2 ring-purple-500 bg-purple-500/20 dark:bg-purple-500/30' : '';
   return (
-    <div className={`flex items-center rounded-md border py-1 min-w-0 ${uniformWidth ? 'w-[7.25rem] min-w-[7.25rem] max-w-[7.25rem] gap-1 px-1.5' : 'gap-2 px-2'} ${boxCls}`}>
-      <span className={`flex-shrink-0 rounded font-bold flex items-center justify-center ${numBg} ${uniformWidth ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>
+    <div className={`flex items-center rounded-md border py-1 min-w-0 ${uniformWidth ? 'w-[4.25rem] min-w-[4.25rem] max-w-[4.25rem] sm:w-[5.25rem] sm:min-w-[5.25rem] sm:max-w-[5.25rem] min-[1520px]:w-[6.25rem] min-[1520px]:min-w-[6.25rem] min-[1520px]:max-w-[6.25rem] min-[1600px]:w-[7.25rem] min-[1600px]:min-w-[7.25rem] min-[1600px]:max-w-[7.25rem] gap-0.5 sm:gap-1 min-[1520px]:gap-1 min-[1600px]:gap-1 px-1 sm:px-1.5 min-[1520px]:px-1.5' : 'gap-2 px-2'} ${boxCls} ${highlightCls}`}>
+      <span className={`flex-shrink-0 rounded font-bold flex items-center justify-center ${numBg} ${uniformWidth ? 'w-4 h-4 text-[9px] sm:w-[18px] sm:h-[18px] sm:text-[9px] min-[1520px]:w-5 min-[1520px]:h-5 min-[1520px]:text-[10px] min-[1600px]:w-5 min-[1600px]:h-5 min-[1600px]:text-[10px]' : 'w-6 h-6 text-xs'}`}>
         {badgeLabel}
       </span>
-      <span className={`truncate font-medium ${uniformWidth ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+      <span className={`truncate font-medium ${uniformWidth ? 'text-[10px] sm:text-[11px] min-[1520px]:text-xs min-[1600px]:text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
         {name}
       </span>
     </div>
@@ -92,10 +119,13 @@ function PlayerChip({
 export function AflTeamSelectionsCard({
   isDark,
   playerTeam,
+  selectedPlayerName,
 }: {
   isDark: boolean;
   /** Selected player's team (e.g. "Geelong Cats", "Gold Coast") – used to show that team's match lineup. */
   playerTeam?: string | null;
+  /** Name of the searched/selected player – highlighted in purple in the lineup. */
+  selectedPlayerName?: string | null;
 }) {
   const [data, setData] = useState<TeamSelectionsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -283,24 +313,11 @@ export function AflTeamSelectionsCard({
             </span>
           </div>
 
-          {/* Portrait layout: Large field then position rows */}
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-            {/* Left: Followers (home, away, home, away …) */}
-            <div className={`rounded-lg border ${borderCls} p-2 flex flex-col w-full sm:w-36 flex-shrink-0`}>
-              <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Followers</p>
-              <div className="flex flex-col gap-1 overflow-y-auto">
-                {followersInterleaved.map(({ p, isHome }, i) => (
-                  <PlayerChip key={`f-${i}`} name={p.name} number={p.number} isHome={isHome} isDark={isDark} />
-                ))}
-                {followersInterleaved.length === 0 && (
-                  <span className={`text-[10px] ${mutedCls}`}>—</span>
-                )}
-              </div>
-            </div>
-
-            {/* Center: AFL pitch with center square and 50m lines */}
-            <div className="flex-1 min-w-0 flex flex-col items-center min-h-[400px]">
-              <div className="relative rounded-[50%] aspect-[1/1.25] w-full min-w-[280px] max-w-[440px] sm:min-w-[340px] sm:max-w-[520px] flex-shrink-0 min-h-[280px]">
+          {/* Portrait layout: stack when viewport < 1520px; from 1520px up = Followers | Field | Interchange */}
+          <div className="flex flex-col min-[1520px]:flex-row gap-3 items-stretch">
+            {/* Center: AFL pitch – first when stacked (order-1), middle when side-by-side (order-2) */}
+            <div className="flex-1 min-w-0 flex flex-col items-center order-1 min-[1520px]:order-2 min-h-[320px] sm:min-h-[380px] min-[1520px]:min-h-[400px]">
+              <div className="relative rounded-[50%] aspect-[1/1.25] w-full min-w-[220px] max-w-[340px] sm:min-w-[280px] sm:max-w-[440px] md:min-w-[340px] md:max-w-[520px] flex-shrink-0 min-h-[220px] sm:min-h-[280px]">
                 {/* Field layer: green oval + markings (clipped to oval) */}
                 <div className="absolute inset-0 rounded-[50%] bg-green-700 border-2 border-green-800 overflow-hidden" aria-hidden>
                   {/* Inner outline a few pixels in from the edge (thick so 50m lines meet it) */}
@@ -313,19 +330,19 @@ export function AflTeamSelectionsCard({
                   {/* Center square */}
                   <div className="absolute top-1/2 left-1/2 w-[14%] min-w-[36px] aspect-square -translate-x-1/2 -translate-y-1/2 border-2 border-white/60 rounded-sm bg-transparent" title="Centre square" />
                 </div>
-                {/* Content layer: player rows on top */}
-                <div className="relative z-10 flex flex-col gap-0 py-6 px-5 sm:py-8 sm:px-6 h-full justify-center items-center overflow-visible pointer-events-auto">
+                {/* Content layer: player rows on top; on mobile no left padding so position labels sit further left */}
+                <div className="relative z-10 flex flex-col gap-0 py-3 pl-0 pr-2 sm:py-6 sm:px-5 md:py-8 md:px-6 h-full justify-center items-center overflow-visible pointer-events-auto">
                   {hasFieldRows ? (
                     ovalRows.map((row, ri) => {
                       const isEndOfPositionPair = (ri + 1) % 2 === 0 && ri < ovalRows.length - 1;
                       const isSecondLineInPair = ri % 2 === 1;
                       const positionLabel = isSecondLineInPair ? oppositePositionLabel(row.position) : row.position;
                       return (
-                      <div key={ri} className={`flex items-center justify-center gap-1.5 sm:gap-2 flex-shrink-0 w-full ${isEndOfPositionPair ? 'mb-5 sm:mb-6 py-1.5 sm:py-2' : 'py-0 sm:py-0.5'}`}>
-                        <span className="flex-shrink-0 text-[10px] font-bold w-7 text-purple-300">{positionLabel}</span>
-                        <div className="grid grid-cols-3 gap-x-1 gap-y-0 min-w-0 flex-1 justify-items-center w-[min(100%,22.5rem)]" role="group" aria-label={`${row.position} ${row.isHome ? homeTeam : awayTeam}`}>
+                      <div key={ri} className={`flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 min-[1520px]:gap-2 flex-shrink-0 w-full -ml-3 sm:ml-0 ${isEndOfPositionPair ? 'mb-3 sm:mb-4 min-[1520px]:mb-5 min-[1600px]:mb-6 py-1 sm:py-1.5 min-[1520px]:py-2' : 'py-0 sm:py-0.5'}`}>
+                        <span className="flex-shrink-0 text-sm sm:text-xs min-[1520px]:text-sm font-bold w-8 sm:w-7 min-[1520px]:w-8 text-purple-300">{positionLabel}</span>
+                        <div className="grid grid-cols-3 gap-x-0.5 sm:gap-x-1 min-[1520px]:gap-x-1 min-[1600px]:gap-x-1 gap-y-0 min-w-0 flex-1 justify-items-center w-[min(100%,13.5rem)] sm:w-[min(100%,16.5rem)] min-[1520px]:w-[min(100%,19.5rem)] min-[1600px]:w-[min(100%,22.5rem)]" role="group" aria-label={`${row.position} ${row.isHome ? homeTeam : awayTeam}`}>
                           {row.players.slice(0, 3).map((p, i) => (
-                            <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} isDark={false} uniformWidth />
+                            <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} isDark={false} uniformWidth highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
                           ))}
                         </div>
                       </div>
@@ -337,16 +354,32 @@ export function AflTeamSelectionsCard({
               </div>
             </div>
 
-            {/* Right: Interchanges (home, away, home, away …) */}
-            <div className={`rounded-lg border ${borderCls} p-2 flex flex-col w-full sm:w-36 flex-shrink-0`}>
-              <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Interchanges</p>
-              <div className="flex flex-col gap-1 overflow-y-auto">
-                {interchangeInterleaved.map(({ name, isHome }, i) => (
-                  <PlayerChip key={`i-${i}`} name={name} isHome={isHome} isDark={isDark} />
-                ))}
-                {interchangeInterleaved.length === 0 && (
-                  <span className={`text-[10px] ${mutedCls}`}>—</span>
-                )}
+            {/* Below field when stacked (order-2); from 1520px up wrapper has contents so panels sit left/right of field */}
+            <div className="flex flex-row gap-3 order-2 min-[1520px]:contents flex-wrap min-[1520px]:flex-nowrap">
+              {/* Left when side-by-side: Followers (home, away, home, away …) */}
+              <div className={`rounded-lg border ${borderCls} p-2 flex flex-col flex-1 min-w-0 sm:min-w-[6rem] min-[1520px]:flex-none min-[1520px]:w-32 min-[1520px]:min-w-[8rem] min-[1600px]:w-36 min-[1600px]:min-w-[9rem] flex-shrink-0 min-[1520px]:order-1`}>
+                <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Followers</p>
+                <div className="flex flex-col gap-1 overflow-y-auto">
+                  {followersInterleaved.map(({ p, isHome }, i) => (
+                    <PlayerChip key={`f-${i}`} name={p.name} number={p.number} isHome={isHome} isDark={isDark} highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
+                  ))}
+                  {followersInterleaved.length === 0 && (
+                    <span className={`text-[10px] ${mutedCls}`}>—</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Right when side-by-side: Interchanges (home, away, home, away …) */}
+              <div className={`rounded-lg border ${borderCls} p-2 flex flex-col flex-1 min-w-0 sm:min-w-[6rem] min-[1520px]:flex-none min-[1520px]:w-32 min-[1520px]:min-w-[8rem] min-[1600px]:w-36 min-[1600px]:min-w-[9rem] flex-shrink-0 min-[1520px]:order-3`}>
+                <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Interchanges</p>
+                <div className="flex flex-col gap-1 overflow-y-auto">
+                  {interchangeInterleaved.map(({ name, isHome }, i) => (
+                    <PlayerChip key={`i-${i}`} name={name} isHome={isHome} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                  ))}
+                  {interchangeInterleaved.length === 0 && (
+                    <span className={`text-[10px] ${mutedCls}`}>—</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -359,13 +392,13 @@ export function AflTeamSelectionsCard({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`text-[10px] font-medium ${mutedCls}`}>{homeTeam}:</span>
                   {emergHome.map((name, i) => (
-                    <PlayerChip key={`eh-${i}`} name={name} isHome isDark={isDark} />
+                    <PlayerChip key={`eh-${i}`} name={name} isHome isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
                   ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`text-[10px] font-medium ${mutedCls}`}>{awayTeam}:</span>
                   {emergAway.map((name, i) => (
-                    <PlayerChip key={`ea-${i}`} name={name} isHome={false} isDark={isDark} />
+                    <PlayerChip key={`ea-${i}`} name={name} isHome={false} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
                   ))}
                 </div>
               </div>
@@ -391,17 +424,6 @@ export function AflTeamSelectionsCard({
         </div>
       )}
 
-      <a
-        href={data?.url ?? TEAM_SELECTIONS_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`inline-flex items-center gap-1 text-[10px] mt-2 ${isDark ? 'text-sky-400 hover:text-sky-300' : 'text-sky-600 hover:text-sky-700'}`}
-      >
-        Source: FootyWire
-        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-      </a>
     </div>
   );
 }

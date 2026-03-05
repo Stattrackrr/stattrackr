@@ -428,7 +428,6 @@ export default function NBALandingPage() {
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
-  const aflFiltersAutoSelectedRef = useRef(false); // so we auto-select all bookmakers/prop types once when AFL loads
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
 
@@ -2377,52 +2376,51 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     }
   };
 
-  // Initialize selected filters when data loads (only if localStorage is empty)
+  // NBA: ensure all bookmakers/prop types selected when none or invalid (e.g. after switching from AFL)
   useEffect(() => {
-    if (availableBookmakers.length > 0 && selectedBookmakers.size === 0) {
-      let parsed: string[] = [];
-      try {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_bookmakers') : null;
-        parsed = saved ? JSON.parse(saved) : [];
-      } catch {
-        parsed = [];
-      }
-
-      if (parsed.length > 0) {
-        const savedSet = new Set(parsed);
-        setSelectedBookmakers(savedSet);
-      } else {
-        // Default: select all bookmakers except Betway (still available as option)
-        const defaultBookmakers = availableBookmakers.filter(bm => bm.toLowerCase() !== 'betway');
-        const newSet = new Set(defaultBookmakers);
-        setSelectedBookmakers(newSet);
-        saveFiltersToStorage(newSet, selectedPropTypes, selectedGames);
-      }
+    if (propsSport !== 'nba' || availableBookmakers.length === 0) return;
+    const hasOverlap = Array.from(selectedBookmakers).some((b) => availableBookmakers.includes(b));
+    if (selectedBookmakers.size > 0 && hasOverlap) return; // user has a valid selection
+    let parsed: string[] = [];
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_bookmakers') : null;
+      parsed = saved ? JSON.parse(saved) : [];
+    } catch {
+      parsed = [];
+    }
+    const savedOverlap = parsed.length > 0 && parsed.some((b: string) => availableBookmakers.includes(b));
+    if (savedOverlap) {
+      setSelectedBookmakers(new Set(parsed.filter((b: string) => availableBookmakers.includes(b))));
+    } else {
+      const defaultBookmakers = availableBookmakers.filter((bm) => bm.toLowerCase() !== 'betway');
+      const newSet = new Set(defaultBookmakers);
+      setSelectedBookmakers(newSet);
+      saveFiltersToStorage(newSet, selectedPropTypes, selectedGames);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableBookmakers]);
+  }, [propsSport, availableBookmakers]);
 
   useEffect(() => {
-    if (availablePropTypes.length > 0 && selectedPropTypes.size === 0) {
-      let parsed: string[] = [];
-      try {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_propTypes') : null;
-        parsed = saved ? JSON.parse(saved) : [];
-      } catch {
-        parsed = [];
-      }
-
-      if (parsed.length > 0) {
-        setSelectedPropTypes(new Set(parsed));
-      } else {
-        // Default: select all prop types
-        const newSet = new Set(availablePropTypes);
-        setSelectedPropTypes(newSet);
-        saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
-      }
+    if (propsSport !== 'nba' || availablePropTypes.length === 0) return;
+    const hasOverlap = Array.from(selectedPropTypes).some((t) => availablePropTypes.includes(t));
+    if (selectedPropTypes.size > 0 && hasOverlap) return;
+    let parsed: string[] = [];
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_propTypes') : null;
+      parsed = saved ? JSON.parse(saved) : [];
+    } catch {
+      parsed = [];
+    }
+    const savedOverlap = parsed.length > 0 && parsed.some((t: string) => availablePropTypes.includes(t));
+    if (savedOverlap) {
+      setSelectedPropTypes(new Set(parsed.filter((t: string) => availablePropTypes.includes(t))));
+    } else {
+      const newSet = new Set(availablePropTypes);
+      setSelectedPropTypes(newSet);
+      saveFiltersToStorage(selectedBookmakers, newSet, selectedGames);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availablePropTypes]);
+  }, [propsSport, availablePropTypes]);
 
   // Helper to match a prop to a game based on team/opponent
   // OPTIMIZATION: useCallback to prevent unnecessary re-creation on every render
@@ -2519,18 +2517,28 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const effectiveBookmakers = propsSport === 'afl' ? availableAflBookmakers : availableBookmakers;
   const effectivePropTypes = propsSport === 'afl' ? availableAflPropTypes : availablePropTypes;
 
-  // AFL: auto-select all bookmakers, prop types (and all games already set when data loads) so everything is selected by default
+  // AFL: ensure all bookmakers and prop types selected when none or invalid (e.g. after switching from NBA)
   useEffect(() => {
-    if (propsSport !== 'afl') {
-      aflFiltersAutoSelectedRef.current = false;
-      return;
+    if (propsSport !== 'afl' || aflProps.length === 0 || availableAflBookmakers.length === 0) return;
+    const bookmakersOverlap = Array.from(selectedBookmakers).some((b) => availableAflBookmakers.includes(b));
+    const propTypesOverlap = Array.from(selectedPropTypes).some((t) => availableAflPropTypes.includes(t));
+    if (selectedBookmakers.size > 0 && bookmakersOverlap && selectedPropTypes.size > 0 && propTypesOverlap) return;
+    if (selectedBookmakers.size === 0 || !bookmakersOverlap) {
+      setSelectedBookmakers(new Set(availableAflBookmakers));
     }
-    if (aflProps.length === 0 || availableAflBookmakers.length === 0) return;
-    if (aflFiltersAutoSelectedRef.current) return;
-    aflFiltersAutoSelectedRef.current = true;
-    setSelectedBookmakers(new Set(availableAflBookmakers));
-    setSelectedPropTypes(new Set(availableAflPropTypes));
-  }, [propsSport, aflProps.length, availableAflBookmakers, availableAflPropTypes]);
+    if (selectedPropTypes.size === 0 || !propTypesOverlap) {
+      setSelectedPropTypes(new Set(availableAflPropTypes));
+    }
+  }, [propsSport, aflProps.length, availableAflBookmakers, availableAflPropTypes, selectedBookmakers, selectedPropTypes]);
+
+  // AFL: ensure all games selected when none or invalid (e.g. after switching from NBA or cache miss)
+  useEffect(() => {
+    if (propsSport !== 'afl' || aflGamesWithProps.length === 0) return;
+    const gameIds = new Set(aflGamesWithProps.map((g) => g.gameId));
+    const hasOverlap = Array.from(selectedAflGames).some((id) => gameIds.has(id));
+    if (selectedAflGames.size > 0 && hasOverlap) return;
+    setSelectedAflGames(new Set(gameIds));
+  }, [propsSport, aflGamesWithProps, selectedAflGames]);
 
   const filteredAflProps = useMemo(() => {
     return aflProps.filter((prop) => {
@@ -2641,31 +2649,27 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     }
   };
 
-  // Initialize: Select all games with props by default (unless explicitly deselected)
+  // NBA: Select all games with props by default (unless explicitly deselected); also fix when selection has no overlap (e.g. after switching from AFL)
   useEffect(() => {
-    if (gamesWithProps.length === 0) return;
-    
-    const gameIds = new Set(gamesWithProps.map(game => game.id));
-    
-    // If no games are selected yet (first load), select all games except explicitly deselected ones
-    if (selectedGames.size === 0) {
-      const savedGames = typeof window !== 'undefined' ? localStorage.getItem('nba_filters_games') : null;
-      if (!savedGames) {
-        // First time: select all games except those explicitly deselected
-        const newSet = new Set(Array.from(gameIds).filter(id => !deselectedGames.has(id)));
-        setSelectedGames(newSet);
-        saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
-      }
-    } else {
+    if (propsSport !== 'nba' || gamesWithProps.length === 0) return;
+    const gameIds = new Set(gamesWithProps.map((game) => game.id));
+    const hasOverlap = Array.from(selectedGames).some((id) => gameIds.has(id));
+    if (selectedGames.size > 0 && hasOverlap) {
       // Add any new games that appeared (unless they were explicitly deselected)
-      const newGames = Array.from(gameIds).filter(id => !selectedGames.has(id) && !deselectedGames.has(id));
+      const newGames = Array.from(gameIds).filter((id) => !selectedGames.has(id) && !deselectedGames.has(id));
       if (newGames.length > 0) {
         const merged = new Set([...Array.from(selectedGames), ...newGames]);
         setSelectedGames(merged);
         saveFiltersToStorage(selectedBookmakers, selectedPropTypes, merged);
       }
+      return;
     }
-  }, [gamesWithProps, deselectedGames]);
+    // No selection or no overlap: select all games except explicitly deselected
+    const newSet = new Set(Array.from(gameIds).filter((id) => !deselectedGames.has(id)));
+    setSelectedGames(newSet);
+    saveFiltersToStorage(selectedBookmakers, selectedPropTypes, newSet);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propsSport, gamesWithProps, deselectedGames]);
 
   // Pagination reset is handled by the effect at ~462 that runs on filter/sort change only.
   // Do not depend on playerProps here — it gets new references often and was resetting
