@@ -1,12 +1,29 @@
 /*
-Shared cache wrapper with optional Upstash Redis.
-If UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set, uses Upstash REST API.
-Otherwise falls back to an in-memory process cache (per instance).
-*/
+ * Shared cache wrapper with optional Upstash Redis.
+ * If UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set, uses Upstash REST API
+ * (same backend in local and production).
+ * Otherwise falls back to an in-memory process cache (empty on server start, lost on restart).
+ *
+ * Local dev – to use the same AFL (and other) cache as production, add to .env.local:
+ *   UPSTASH_REDIS_REST_URL=<your Upstash REST URL>
+ *   UPSTASH_REDIS_REST_TOKEN=<your Upstash REST token>
+ */
 
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const HAS_UPSTASH = !!(REST_URL && REST_TOKEN);
+
+// One-time dev hint when using in-memory fallback (AFL props etc. will be empty until populated)
+if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && !HAS_UPSTASH) {
+  if (!(typeof globalThis !== 'undefined' && (globalThis as any).__sharedCacheDevHintShown)) {
+    console.info(
+      '[sharedCache] Using in-memory fallback. For same AFL cache as production, set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in .env.local'
+    );
+    try {
+      (globalThis as any).__sharedCacheDevHintShown = true;
+    } catch {}
+  }
+}
 
 // Simple per-process fallback
 const memory = new Map<string, { v: any; exp: number }>();

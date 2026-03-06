@@ -2,6 +2,10 @@
  * NBA API Cache using Supabase
  * Persistent, shared cache that works across all Vercel instances
  * Populated by external service, read by Vercel
+ *
+ * Local dev: set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
+ * to use the same cache as production (otherwise getNBACache returns null and only
+ * in-memory cache is used, which is empty on server restart).
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -70,9 +74,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
   // In production, if Supabase is consistently slow, we'll skip it after first timeout
   // This prevents blocking the entire request
   try {
-    // Use REST API directly in production (faster than JS client)
+    // Use REST API when Supabase is configured (same path in local and production for consistent cache behavior)
     // This bypasses the JS client overhead and goes straight to PostgREST
-    if (!options.disableRest && process.env.NODE_ENV === 'production' && supabaseUrl && supabaseServiceKey) {
+    if (!options.disableRest && supabaseUrl && supabaseServiceKey) {
       try {
         // Use simpler query - just get data column, limit to 1 row
         const restUrl = `${supabaseUrl}/rest/v1/nba_api_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=data,expires_at&limit=1`;

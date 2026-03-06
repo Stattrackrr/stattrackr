@@ -495,6 +495,7 @@ export default function NBALandingPage() {
       const sportParam = url.searchParams.get('sport');
       if (sportParam === 'afl') {
         setPropsSport('afl');
+        setAflPropsLoading(true);
         url.searchParams.delete('sport');
         window.history.replaceState({}, '', url.toString());
       }
@@ -3348,7 +3349,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               </button>
               <button
                 type="button"
-                onClick={() => setPropsSport('afl')}
+                onClick={() => { setPropsSport('afl'); setAflPropsLoading(true); }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'afl'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
@@ -4017,20 +4018,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 </h2>
                 
                 {(propsSport === 'nba' ? filteredPlayerProps.length === 0 : filteredAflProps.length === 0) ? (
-                    (propsSport === 'afl' && aflPropsLoading) ? (
-                      <div className={`flex items-center justify-center py-16 ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Loading AFL props…</div>
-                    ) : propsSport === 'afl' ? (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium">No odds for AFL</p>
-                      </div>
-                    ) : propsSport === 'nba' && showNoPropsMessage ? (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
-                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        <p className="text-lg font-medium mb-2">No props found</p>
-                        <p className="text-sm">Come back later</p>
-                      </div>
-                    ) : (
+                    ((propsSport === 'afl' && aflPropsLoading) || (propsSport === 'nba' && !showNoPropsMessage)) ? (
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -4146,6 +4134,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         ))}
                       </div>
                     </>
+                    ) : propsSport === 'afl' ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-lg font-medium">No odds for AFL</p>
+                      </div>
+                    ) : (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
+                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p className="text-lg font-medium mb-2">No props found</p>
+                        <p className="text-sm">Come back later</p>
+                      </div>
                     )
                   ) : (propsSport === 'nba' ? filteredPlayerProps.length > 0 : filteredAflProps.length > 0) ? (
                     <>
