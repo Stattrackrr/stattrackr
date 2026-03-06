@@ -185,6 +185,22 @@ export function leagueTeamToOfficial(leagueTeam: string): string | null {
   return entry ? entry[1] : null;
 }
 
+/** Odds API / display names that differ from league canonical -> same form used in stats cache keys. */
+export const TEAM_CANONICAL_FOR_STATS: Record<string, string> = {
+  'Greater Western Sydney Giants': 'GWS Giants',
+};
+
+/** Canonical team string for stats cache key so warm (league names) and list (Odds API names) match. */
+export function canonicalTeamForStatsKey(team: string): string {
+  if (!team || typeof team !== 'string') return team.trim();
+  const t = team.trim();
+  const fromMap = TEAM_CANONICAL_FOR_STATS[t];
+  if (fromMap) return fromMap;
+  const fromRoster = rosterTeamToInjuryTeam(t);
+  if (fromRoster) return fromRoster;
+  return t;
+}
+
 /** Return true if game team string (from Odds API) matches the league team name. */
 export function gameTeamMatchesLeagueTeam(gameTeam: string, leagueTeam: string): boolean {
   if (!gameTeam || !leagueTeam) return false;

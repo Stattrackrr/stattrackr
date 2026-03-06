@@ -42,6 +42,11 @@ async function upstash(command: unknown[]): Promise<unknown> {
   return json?.[0];
 }
 
+/** 'redis' when UPSTASH_* are set (shared across processes); 'memory' otherwise (per-process). */
+export function getSharedCacheBackend(): 'redis' | 'memory' {
+  return HAS_UPSTASH ? 'redis' : 'memory';
+}
+
 export const sharedCache = {
   async getJSON<T = any>(key: string): Promise<T | null> {
     if (HAS_UPSTASH) {

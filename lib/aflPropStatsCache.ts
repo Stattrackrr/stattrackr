@@ -3,7 +3,7 @@
  * Used by /api/afl/props-stats/batch so the props page gets fast, cached stats.
  */
 
-import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { opponentToFootywireTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
@@ -24,10 +24,17 @@ export type AflPropStatsPayload = {
   dvpStatValue?: number | null;
 };
 
-function cacheKey(playerName: string, team: string, opponent: string, statType: string, line: number): string {
+/** Same key used for getAflPropStats cache store/lookup. Use in list API so statsByKey matches. */
+export function getAflPropStatsCacheKey(playerName: string, team: string, opponent: string, statType: string, line: number): string {
   const normalizedName = normalizeAflPlayerNameForMatch(playerName);
-  const s = `${normalizedName}|${team}|${opponent}|${statType}|${line}`;
+  const teamCanon = canonicalTeamForStatsKey(team);
+  const oppCanon = canonicalTeamForStatsKey(opponent);
+  const s = `${normalizedName}|${teamCanon}|${oppCanon}|${statType}|${line}`;
   return `${CACHE_PREFIX}:${Buffer.from(s, 'utf8').toString('base64url')}`;
+}
+
+function cacheKey(playerName: string, team: string, opponent: string, statType: string, line: number): string {
+  return getAflPropStatsCacheKey(playerName, team, opponent, statType, line);
 }
 
 function getStatValue(game: Record<string, unknown>, statType: string): number | null {
@@ -118,6 +125,7 @@ async function fetchGameLogs(
 /**
  * Get AFL prop stats from cache or compute. When cacheOnly is true, returns null on cache miss (no computation).
  * Pass cronSecret when called from props-stats/warm so player-game-logs will fetch from FootyWire instead of cache-only.
+ * Pass resolvedPlayerTeam (player's actual team from league data) so we fetch game logs by that team first when it differs from game home/away.
  */
 export async function getAflPropStats(
   playerName: string,
@@ -128,7 +136,8 @@ export async function getAflPropStats(
   baseUrl: string,
   dvpLookup?: { rank: number; value: number } | null,
   cacheOnly?: boolean,
-  cronSecret?: string
+  cronSecret?: string,
+  resolvedPlayerTeam?: string
 ): Promise<AflPropStatsPayload | null> {
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
@@ -140,7 +149,11 @@ export async function getAflPropStats(
   }
   if (cacheOnly) return null;
   const season = new Date().getFullYear();
-  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
+  let games: Record<string, unknown>[] = [];
+  if (resolvedPlayerTeam?.trim()) {
+    games = await fetchGameLogs(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
+  }
+  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
   if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
   const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
   const payload: AflPropStatsPayload = {

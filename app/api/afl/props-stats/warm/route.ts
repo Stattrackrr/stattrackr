@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
-import { getAflPropStats, buildAflPropStatKey } from '@/lib/aflPropStatsCache';
-import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles, resolveTeamAndOpponent } from '@/lib/aflPlayerTeamResolver';
+import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
+import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
+import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const BATCH_SIZE = 30;
-const MAX_PROPS = 2000;
+/** Run this many getAflPropStats calls in parallel per batch. */
+const BATCH_SIZE = 50;
+/** How many batches to run concurrently (BATCH_SIZE * CONCURRENT_BATCHES in flight). */
+const CONCURRENT_BATCHES = 2;
+/** Warm every unique prop with odds (no cap) so all teams/players get stats. */
+const MAX_PROPS = 50000;
 
 type PropToWarm = { playerName: string; team: string; opponent: string; statType: string; line: number };
 
@@ -28,9 +33,34 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl?.origin ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`;
 
+  const useListApi = request.nextUrl?.searchParams?.get('useList') === '1';
+
   try {
-    console.log('[AFL props-stats/warm] Starting... baseUrl=', baseUrl);
-    const result = await listAflPlayerPropsFromCache();
+    console.log('[AFL props-stats/warm] Starting... baseUrl=', baseUrl, 'useListApi=', useListApi);
+
+    type ListRow = { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number; overOdds?: string; underOdds?: string };
+    let rowsFromList: ListRow[] = [];
+    let gamesCount = 0;
+
+    if (useListApi) {
+      try {
+        const listUrl = `${baseUrl}/api/afl/player-props/list?enrich=false`;
+        const listRes = await fetch(listUrl, { cache: 'no-store' });
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          rowsFromList = Array.isArray(listData?.data) ? listData.data : [];
+          gamesCount = Array.isArray(listData?.games) ? listData.games.length : 0;
+          console.log('[AFL props-stats/warm] List API returned', rowsFromList.length, 'rows,', gamesCount, 'games');
+        }
+      } catch (e) {
+        console.warn('[AFL props-stats/warm] List API fetch failed, falling back to cache:', e);
+      }
+    }
+
+    const result = useListApi && rowsFromList.length > 0
+      ? { props: rowsFromList, games: [] as { gameId: string }[] }
+      : await listAflPlayerPropsFromCache();
+
     if (!result?.props?.length) {
       console.log('[AFL props-stats/warm] No props in cache. Run /api/afl/odds/refresh first.');
       return NextResponse.json({
@@ -40,7 +70,7 @@ export async function GET(request: NextRequest) {
         message: 'No AFL props in cache. Run /api/afl/player-props/refresh first.',
       });
     }
-    console.log('[AFL props-stats/warm] Props in odds cache:', result.props.length);
+    console.log('[AFL props-stats/warm] Props to consider:', result.props.length);
 
     const hasBoth = (r: { overOdds?: string; underOdds?: string }) => {
       const o = r.overOdds != null && String(r.overOdds).trim() !== '' && String(r.overOdds) !== 'N/A';
@@ -63,49 +93,65 @@ export async function GET(request: NextRequest) {
     const toWarm: PropToWarm[] = [];
     for (const r of result.props) {
       if (!hasBoth(r)) continue;
-      const resolved = resolveTeamAndOpponent(r.playerName, r.homeTeam, r.awayTeam, playerTeamMap);
-      const team = resolved?.team ?? r.homeTeam;
-      const opponent = resolved?.opponent ?? r.awayTeam;
-      const key = buildAflPropStatKey(r.playerName, team, opponent, r.statType, r.line);
+      const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       if (seen.has(key)) continue;
       seen.add(key);
       toWarm.push({
         playerName: r.playerName,
-        team,
-        opponent,
+        team: r.homeTeam,
+        opponent: r.awayTeam,
         statType: r.statType,
         line: r.line,
       });
     }
 
     const toProcess = toWarm.slice(0, MAX_PROPS);
-    console.log('[AFL props-stats/warm] Unique props to warm:', toProcess.length, '(skipped', Math.max(0, toWarm.length - MAX_PROPS), 'over limit)');
+    const totalRowsFromCache = result.props.filter(hasBoth).length;
+    console.log('[AFL props-stats/warm] Unique props to warm:', toProcess.length, '(skipped', Math.max(0, toWarm.length - MAX_PROPS), 'over limit). Rows with over/under:', totalRowsFromCache);
 
     const cronSecret = process.env.CRON_SECRET ?? '';
     let warmed = 0;
-    for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
-      const batch = toProcess.slice(i, i + BATCH_SIZE);
-      await Promise.all(
+    const runBatch = (batch: PropToWarm[]) =>
+      Promise.all(
         batch.map((p) => {
           const dvp = getDvp(p.opponent, p.statType);
-          return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp, false, cronSecret).then((r) => {
+          const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (r) warmed++;
           }).catch((err) => {
             console.warn('[AFL props-stats/warm] getAflPropStats failed:', p.playerName, p.statType, err);
           });
         })
       );
-      if ((i + BATCH_SIZE) % 100 === 0 || i + BATCH_SIZE >= toProcess.length) {
-        console.log('[AFL props-stats/warm] Progress:', Math.min(i + BATCH_SIZE, toProcess.length), '/', toProcess.length, 'warmed:', warmed);
+    for (let i = 0; i < toProcess.length; i += BATCH_SIZE * CONCURRENT_BATCHES) {
+      const batchPromises: Promise<void>[] = [];
+      for (let b = 0; b < CONCURRENT_BATCHES; b++) {
+        const start = i + b * BATCH_SIZE;
+        if (start >= toProcess.length) break;
+        const batch = toProcess.slice(start, start + BATCH_SIZE);
+        if (batch.length) batchPromises.push(runBatch(batch));
+      }
+      await Promise.all(batchPromises);
+      const done = Math.min(i + BATCH_SIZE * CONCURRENT_BATCHES, toProcess.length);
+      if (done % 100 === 0 || done >= toProcess.length) {
+        console.log('[AFL props-stats/warm] Progress:', done, '/', toProcess.length, 'warmed:', warmed);
       }
     }
 
     console.log('[AFL props-stats/warm] Done. Warmed', warmed, 'prop stats (with DvP). Reload props page to see them.');
+    const message =
+      toProcess.length < 50
+        ? 'Run /api/afl/odds/refresh first so the props cache has all games (aim for eventsRefreshed = gamesCount). Use ?useList=1 to warm the exact rows the list API returns.'
+        : undefined;
     return NextResponse.json({
       success: true,
       warmed,
       total: toProcess.length,
       skipped: Math.max(0, toWarm.length - MAX_PROPS),
+      rowsFromCache: result.props.length,
+      uniqueProps: toWarm.length,
+      ...(useListApi ? { source: 'listApi' } : {}),
+      ...(message ? { message } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
