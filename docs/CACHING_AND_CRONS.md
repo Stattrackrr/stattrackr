@@ -129,6 +129,8 @@ interface OddsCache {
 
 ## Cron Jobs (`vercel.json`)
 
+**To verify crons on Vercel (dashboard, logs, manual test):** see **[docs/VERCEL_CRONS.md](VERCEL_CRONS.md)**.
+
 ### Active Cron Jobs
 
 #### 1. **Odds Refresh** (`/api/odds/refresh`)

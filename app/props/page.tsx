@@ -817,7 +817,7 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; team?: string; opponent?: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
         for (const r of rows) {
           const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
           const existing = keyToRow.get(key);
@@ -830,6 +830,8 @@ export default function NBALandingPage() {
               gameId: r.gameId,
               homeTeam: r.homeTeam,
               awayTeam: r.awayTeam,
+              team: r.team,
+              opponent: r.opponent,
               statType: r.statType,
               line: r.line,
               commenceTime: r.commenceTime || '',
@@ -851,8 +853,8 @@ export default function NBALandingPage() {
         const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
           playerName: a.playerName,
           playerId: '',
-          team: a.homeTeam,
-          opponent: a.awayTeam,
+          team: a.team ?? a.homeTeam,
+          opponent: a.opponent ?? a.awayTeam,
           statType: a.statType,
           line: a.line,
           overProb: 0,
@@ -925,9 +927,9 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         setAflGames(games);
-        // List API returns only rows with both over/under and includes stats from cache (no processing on page)
+        // List API returns only rows with both over/under and includes stats from cache (no processing on page). team/opponent are resolved per player.
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; team?: string; opponent?: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
         for (const r of rows) {
           const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
           const existing = keyToRow.get(key);
@@ -940,6 +942,8 @@ export default function NBALandingPage() {
               gameId: r.gameId,
               homeTeam: r.homeTeam,
               awayTeam: r.awayTeam,
+              team: r.team,
+              opponent: r.opponent,
               statType: r.statType,
               line: r.line,
               commenceTime: r.commenceTime || '',
@@ -961,8 +965,8 @@ export default function NBALandingPage() {
         const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
           playerName: a.playerName,
           playerId: '',
-          team: a.homeTeam,
-          opponent: a.awayTeam,
+          team: a.team ?? a.homeTeam,
+          opponent: a.opponent ?? a.awayTeam,
           statType: a.statType,
           line: a.line,
           overProb: 0,

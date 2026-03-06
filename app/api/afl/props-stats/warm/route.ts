@@ -8,8 +8,8 @@ import { loadDvpMaps, getDvpLookup } from '@/lib/aflDvpLookup';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const BATCH_SIZE = 25;
-const MAX_PROPS = 800;
+const BATCH_SIZE = 30;
+const MAX_PROPS = 2000;
 
 type PropToWarm = { playerName: string; team: string; opponent: string; statType: string; line: number };
 
