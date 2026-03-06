@@ -16,8 +16,8 @@ function hasUnder(u: string) {
 
 /**
  * GET /api/afl/player-props/list
- * Returns all cached AFL player props with stats from cache (read-only, no computation).
- * Same behaviour as NBA: one response, no loading on the page.
+ * Returns all cached AFL player props with L5/L10/H2H/Season/Streak from cache only (no FootyWire, no compute).
+ * Cron props-stats/warm fills the stats cache; this route just reads it for a fast response.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,19 +62,16 @@ export async function GET(request: NextRequest) {
           team = resolved.team;
           opponent = resolved.opponent;
           dvp = getDvpLookup(opponent, statType, dvpMaps);
-          // Try cache first; on miss compute so props page shows stats (e.g. after team move or cold cache)
-          let stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
-          if (!stats) stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, false);
+          // Cache only: no FootyWire, no compute. Cron (props-stats/warm) fills the cache.
+          const stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
           if (stats) statsByKey.set(rowKey, stats);
           return;
         }
         dvp = getDvpLookup(awayTeam, statType, dvpMaps);
         let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, true);
-        if (!stats) stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, false);
         if (!stats) {
           dvp = getDvpLookup(homeTeam, statType, dvpMaps);
           stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, true);
-          if (!stats) stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, false);
         }
         if (stats) statsByKey.set(rowKey, stats);
       })

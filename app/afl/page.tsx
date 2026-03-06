@@ -595,6 +595,122 @@ export default function AFLPage() {
     };
   }, []);
 
+  // Single dashboard request when we have player+team: next-game, odds, player-props, game-logs from cache (one round-trip).
+  const useDashboardBatch = !!(selectedPlayer?.name && selectedPlayer?.team);
+  useEffect(() => {
+    if (!useDashboardBatch || typeof window === 'undefined') return;
+    const playerName = String(selectedPlayer!.name).trim();
+    const team = String(selectedPlayer!.team).trim();
+    const url = new URL(window.location.href);
+    const opponentParam = url.searchParams.get('opponent')?.trim();
+    const lastRound = typeof selectedPlayer?.last_round === 'string' ? selectedPlayer.last_round.trim() : '';
+    let cancelled = false;
+    setAflOddsLoading(true);
+    setStatsLoadingForPlayer(true);
+    setAflPlayerPropsLoading(true);
+    const params = new URLSearchParams({ player: playerName, team, season: String(season) });
+    if (opponentParam && opponentParam !== '—') params.set('opponent', opponentParam);
+    if (lastRound) params.set('last_round', lastRound);
+    fetch(`/api/afl/dashboard?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const next = data?.nextGame;
+        if (next) {
+          setNextGameOpponent(next.next_opponent ?? null);
+          setNextGameTipoff(next.next_game_tipoff ? new Date(next.next_game_tipoff) : null);
+        }
+        const odds = data?.odds;
+        if (odds && Array.isArray(odds.data)) {
+          setAflOddsBooks(odds.data);
+          setAflOddsHomeTeam(odds.homeTeam ?? '');
+          setAflOddsAwayTeam(odds.awayTeam ?? '');
+          setAflOddsError(null);
+        }
+        const all = data?.playerProps && typeof data.playerProps === 'object' ? data.playerProps : {};
+        const toAmerican = (dec: number): string => {
+          if (!Number.isFinite(dec) || dec <= 1) return 'N/A';
+          if (dec >= 2) return `+${Math.round((dec - 1) * 100)}`;
+          return `-${Math.round(100 / (dec - 1))}`;
+        };
+        const bookMap = new Map<string, AflBookRow>();
+        AFL_PLAYER_PROP_FETCH.forEach((config) => {
+          const props = Array.isArray(all[config.stat]) ? all[config.stat] : [];
+          const col = config.column;
+          for (const p of props) {
+            const name = (p?.bookmaker ?? '').trim() || 'Unknown';
+            let row = bookMap.get(name);
+            if (!row) {
+              row = { name, H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' } };
+              bookMap.set(name, row);
+            }
+            const lineStr = p?.line != null ? String(p.line) : 'N/A';
+            if (config.type === 'ou') {
+              const over = typeof p?.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+              const under = typeof p?.underPrice === 'number' ? toAmerican(p.underPrice) : 'N/A';
+              (row as unknown as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
+            } else if (config.type === 'over') {
+              const over = typeof p?.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+              (row as unknown as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
+            } else if (config.type === 'yesno') {
+              const yes = typeof p?.yesPrice === 'number' ? toAmerican(p.yesPrice) : 'N/A';
+              const no = typeof p?.noPrice === 'number' ? toAmerican(p.noPrice) : 'N/A';
+              (row as unknown as Record<string, AflPropYesNo>)[col] = { yes, no };
+            }
+          }
+        });
+        setAflPlayerPropsBooks(Array.from(bookMap.values()));
+        lastPlayerPropsKeyRef.current = `${playerName}-${team}`;
+        const gl = data?.gameLogs;
+        if (gl && Array.isArray(gl.games) && gl.games.length > 0) {
+          const games = gl.games as Record<string, unknown>[];
+          const gamesWithQuarters = (Array.isArray(gl.gamesWithQuarters) ? gl.gamesWithQuarters : games) as Record<string, unknown>[];
+          setSelectedPlayerGameLogs(games);
+          setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
+          const latest = games[games.length - 1];
+          const numericKeys = new Set<string>();
+          const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
+          for (const g of games) {
+            for (const [k, v] of Object.entries(g)) {
+              if (typeof v === 'number' && Number.isFinite(v) && !numericMetaKeys.has(k)) numericKeys.add(k);
+            }
+          }
+          const toMerge: Partial<AflPlayerRecord> = { games_played: games.length };
+          for (const key of numericKeys) {
+            const values = games.map((g) => g[key]).filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+            if (!values.length) continue;
+            const total = values.reduce((s, v) => s + v, 0);
+            const seasonAvg = Math.round((total / values.length) * 10) / 10;
+            const lastGame = typeof latest[key] === 'number' && Number.isFinite(latest[key]) ? (latest[key] as number) : 0;
+            const last5Values = values.slice(-5);
+            const last5Avg = last5Values.length ? Math.round((last5Values.reduce((s, v) => s + v, 0) / last5Values.length) * 10) / 10 : 0;
+            toMerge[`${key}_season_avg`] = seasonAvg;
+            toMerge[`${key}_last_game`] = lastGame;
+            toMerge[`${key}_last5_avg`] = last5Avg;
+          }
+          if (typeof latest.opponent === 'string') toMerge.last_opponent = latest.opponent;
+          if (typeof latest.round === 'string') toMerge.last_round = latest.round;
+          if (typeof latest.result === 'string') toMerge.last_result = latest.result;
+          if (typeof latest.guernsey === 'number' && Number.isFinite(latest.guernsey)) toMerge.guernsey = latest.guernsey;
+          if (typeof gl.height === 'string' && gl.height.trim()) toMerge.height = gl.height.trim();
+          setSelectedPlayer((prev) => (prev ? ({ ...prev, ...toMerge } as AflPlayerRecord) : prev));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAflOddsError('Failed to load dashboard data');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setAflOddsLoading(false);
+          setStatsLoadingForPlayer(false);
+          setAflPlayerPropsLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [useDashboardBatch, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season]);
+
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
   // When URL has ?player= we are coming from props with a specific player — do not restore old selectedPlayer so we don't flash the previous player's chart.
   useEffect(() => {
@@ -719,6 +835,7 @@ export default function AFLPage() {
   const aflOddsGameDate = nextGameTipoff ? nextGameTipoff.toISOString().split('T')[0] : '';
 
   useEffect(() => {
+    if (useDashboardBatch) return; // Dashboard batch provides odds in one request
     if (!aflOddsTeam || !aflOddsOpponent) {
       setAflOddsBooks([]);
       setAflOddsHomeTeam('');
@@ -777,7 +894,7 @@ export default function AFLPage() {
         if (!cancelled) setAflOddsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [aflOddsTeam, aflOddsOpponent, aflOddsGameDate]);
+  }, [useDashboardBatch, aflOddsTeam, aflOddsOpponent, aflOddsGameDate]);
 
   type PlayerPropFetchCol = keyof Pick<AflBookRow, 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver'>;
   const AFL_PLAYER_PROP_FETCH: { stat: string; column: PlayerPropFetchCol; type: 'ou' | 'over' | 'yesno' }[] = [
@@ -816,6 +933,7 @@ export default function AFLPage() {
   }
 
   useEffect(() => {
+    if (useDashboardBatch) return; // Dashboard batch provides player props in one request
     if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
       setAflPlayerPropsBooks([]);
       return;
@@ -930,7 +1048,7 @@ export default function AFLPage() {
         if (!cancelled) setAflPlayerPropsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsLoading]);
+  }, [useDashboardBatch, aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsLoading]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
@@ -1071,6 +1189,7 @@ export default function AFLPage() {
 
   // Fetch scraped AFLTables game logs for the selected player.
   useEffect(() => {
+    if (useDashboardBatch) return; // Dashboard batch provides game logs in one request
     const playerName = selectedPlayer?.name;
     if (!playerName) return;
     setLastStatsError(null);
@@ -1223,7 +1342,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+  }, [useDashboardBatch, selectedPlayer?.name, selectedPlayer?.team, season]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
@@ -1542,6 +1661,7 @@ export default function AFLPage() {
 
   // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
   useEffect(() => {
+    if (useDashboardBatch) return; // Dashboard batch provides next-game in one request
     const team = selectedPlayer?.team;
     if (!team || typeof team !== 'string' || !team.trim()) {
       setNextGameOpponent(null);
@@ -1571,7 +1691,7 @@ export default function AFLPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
+  }, [useDashboardBatch, selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
 
   // Mark game as in progress when tipoff has passed and within ~3.5h (AFL match duration)
   const AFL_MATCH_DURATION_MS = 3.5 * 60 * 60 * 1000;
