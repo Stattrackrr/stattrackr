@@ -3,7 +3,7 @@
  * Used by /api/afl/props-stats/batch so the props page gets fast, cached stats.
  */
 
-import { opponentToFootywireTeam, opponentToCanonicalNickname } from '@/lib/aflTeamMapping';
+import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
@@ -48,7 +48,7 @@ export function computeAflPropStatsFromGames(
   opponent: string,
   line: number
 ): Omit<AflPropStatsPayload, 'dvpRating' | 'dvpStatValue'> {
-  const propOpponentCanon = opponentToCanonicalNickname(opponent);
+  const propOpponentNorm = opponentToFootywireTeam(opponent) || opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
   const gamesWithValue: { value: number; opponent: string }[] = [];
   for (const g of games) {
     const v = getStatValue(g, statType);
@@ -61,13 +61,12 @@ export function computeAflPropStatsFromGames(
   const seasonValues = gamesWithValue.map((x) => x.value);
   const h2hValues = gamesWithValue
     .filter((x) => {
-      if (!propOpponentCanon) return false;
-      const gameOppCanon = opponentToCanonicalNickname(x.opponent);
-      if (!gameOppCanon) return false;
-      if (gameOppCanon === propOpponentCanon) return true;
-      const oppLower = opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
-      const xLower = x.opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
-      return (xLower && oppLower.includes(xLower)) || (oppLower && xLower.includes(oppLower));
+      const oppNorm = opponentToFootywireTeam(x.opponent) || x.opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
+      return (
+        oppNorm === propOpponentNorm ||
+        (x.opponent && opponent.toLowerCase().includes(x.opponent.toLowerCase())) ||
+        (opponent && x.opponent.toLowerCase().includes(opponent.toLowerCase()))
+      );
     })
     .slice(0, 6)
     .map((x) => x.value);
@@ -97,20 +96,9 @@ export function computeAflPropStatsFromGames(
   };
 }
 
-async function fetchGameLogs(
-  baseUrl: string,
-  playerName: string,
-  team: string,
-  season: number,
-  cronSecret?: string | null
-): Promise<Record<string, unknown>[]> {
+async function fetchGameLogs(baseUrl: string, playerName: string, team: string, season: number): Promise<Record<string, unknown>[]> {
   const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}`;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (cronSecret?.trim()) {
-    headers['Authorization'] = `Bearer ${cronSecret.trim()}`;
-    headers['X-Cron-Secret'] = cronSecret.trim();
-  }
-  const r = await fetch(url, { cache: 'no-store', headers });
+  const r = await fetch(url, { cache: 'no-store', headers: { 'Content-Type': 'application/json' } });
   if (!r.ok) return [];
   const data = (await r.json()) as { games?: unknown[] };
   return Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
@@ -118,8 +106,6 @@ async function fetchGameLogs(
 
 /**
  * Get AFL prop stats from cache or compute. When cacheOnly is true, returns null on cache miss (no computation).
- * When cronSecret is set (e.g. from props-stats warm cron), game-log fetches are authenticated so player-game-logs
- * will fetch from FootyWire on cache miss instead of returning empty.
  */
 export async function getAflPropStats(
   playerName: string,
@@ -129,8 +115,7 @@ export async function getAflPropStats(
   line: number,
   baseUrl: string,
   dvpLookup?: { rank: number; value: number } | null,
-  cacheOnly?: boolean,
-  cronSecret?: string | null
+  cacheOnly?: boolean
 ): Promise<AflPropStatsPayload | null> {
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
@@ -142,8 +127,8 @@ export async function getAflPropStats(
   }
   if (cacheOnly) return null;
   const season = new Date().getFullYear();
-  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
-  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
+  let games = await fetchGameLogs(baseUrl, playerName, team, season);
+  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season);
   const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
   const payload: AflPropStatsPayload = {
     ...stats,

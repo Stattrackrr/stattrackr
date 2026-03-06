@@ -16,8 +16,8 @@ function hasUnder(u: string) {
 
 /**
  * GET /api/afl/player-props/list
- * Returns all cached AFL player props with L5/L10/H2H/Season/Streak from cache only (no FootyWire, no compute).
- * Cron props-stats/warm fills the stats cache; this route just reads it for a fast response.
+ * Returns all cached AFL player props with stats from cache (read-only, no computation).
+ * Same behaviour as NBA: one response, no loading on the page.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,33 +62,30 @@ export async function GET(request: NextRequest) {
           team = resolved.team;
           opponent = resolved.opponent;
           dvp = getDvpLookup(opponent, statType, dvpMaps);
-          // Cache only: no FootyWire, no compute. Cron (props-stats/warm) fills the cache.
-          const stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
+          // Try cache first; on miss compute so props page shows stats (e.g. after team move or cold cache)
+          let stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
+          if (!stats) stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, false);
           if (stats) statsByKey.set(rowKey, stats);
           return;
         }
         dvp = getDvpLookup(awayTeam, statType, dvpMaps);
         let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, true);
+        if (!stats) stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, false);
         if (!stats) {
           dvp = getDvpLookup(homeTeam, statType, dvpMaps);
           stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, true);
+          if (!stats) stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, false);
         }
         if (stats) statsByKey.set(rowKey, stats);
       })
     );
 
-    // Resolve each player's actual team and opponent so Collingwood players show opponent St Kilda, not the other way around.
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rows.map((r) => {
-      const resolved = resolveTeamAndOpponent(r.playerName, r.homeTeam, r.awayTeam, playerTeamMap);
-      const team = resolved?.team ?? r.homeTeam;
-      const opponent = resolved?.opponent ?? r.awayTeam;
       const key = `${r.playerName}|${r.homeTeam}|${r.awayTeam}|${r.statType}|${r.line}`;
       const stats = statsByKey.get(key);
-      if (!stats) return { ...r, team, opponent };
+      if (!stats) return r;
       return {
         ...r,
-        team,
-        opponent,
         last5Avg: stats.last5Avg,
         last10Avg: stats.last10Avg,
         h2hAvg: stats.h2hAvg,

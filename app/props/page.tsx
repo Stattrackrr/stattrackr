@@ -817,7 +817,7 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; team?: string; opponent?: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
         for (const r of rows) {
           const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
           const existing = keyToRow.get(key);
@@ -830,8 +830,6 @@ export default function NBALandingPage() {
               gameId: r.gameId,
               homeTeam: r.homeTeam,
               awayTeam: r.awayTeam,
-              team: r.team,
-              opponent: r.opponent,
               statType: r.statType,
               line: r.line,
               commenceTime: r.commenceTime || '',
@@ -853,8 +851,8 @@ export default function NBALandingPage() {
         const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
           playerName: a.playerName,
           playerId: '',
-          team: a.team ?? a.homeTeam,
-          opponent: a.opponent ?? a.awayTeam,
+          team: a.homeTeam,
+          opponent: a.awayTeam,
           statType: a.statType,
           line: a.line,
           overProb: 0,
@@ -927,9 +925,9 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         setAflGames(games);
-        // List API returns only rows with both over/under and includes stats from cache (no processing on page). team/opponent are resolved per player.
+        // List API returns only rows with both over/under and includes stats from cache (no processing on page)
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; team?: string; opponent?: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
         for (const r of rows) {
           const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
           const existing = keyToRow.get(key);
@@ -942,8 +940,6 @@ export default function NBALandingPage() {
               gameId: r.gameId,
               homeTeam: r.homeTeam,
               awayTeam: r.awayTeam,
-              team: r.team,
-              opponent: r.opponent,
               statType: r.statType,
               line: r.line,
               commenceTime: r.commenceTime || '',
@@ -965,8 +961,8 @@ export default function NBALandingPage() {
         const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => ({
           playerName: a.playerName,
           playerId: '',
-          team: a.team ?? a.homeTeam,
-          opponent: a.opponent ?? a.awayTeam,
+          team: a.homeTeam,
+          opponent: a.awayTeam,
           statType: a.statType,
           line: a.line,
           overProb: 0,
@@ -4023,6 +4019,124 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 
                 {(propsSport === 'nba' ? filteredPlayerProps.length === 0 : filteredAflProps.length === 0) ? (
                     ((propsSport === 'afl' && aflPropsLoading) || (propsSport === 'nba' && !showNoPropsMessage)) ? (
+                      <>
+                      {/* Desktop Skeleton - AFL loading or NBA empty */}
+                      <div className="hidden lg:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
+                              <th className="py-3 px-4 text-left">
+                                <div className={`h-8 w-32 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                              </th>
+                              <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
+                              <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L5</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L10</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Tipoff</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...Array(10)].map((_, idx) => (
+                              <tr key={idx} className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                                      <div className={`h-3 w-24 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="space-y-1.5">
+                                    <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                    <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className={`h-4 w-12 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-6 w-12 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                                <td className="py-3 px-1 text-center">
+                                  <div className={`h-4 w-16 mx-auto rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className={`lg:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
+                        {[...Array(5)].map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={`rounded-xl border-2 pl-3 pr-4 py-3.5 ${isDark ? 'bg-[#0a1929] border-gray-900' : 'bg-white border-gray-200'}`}
+                          >
+                            <div className="mb-1.5">
+                              <div className="flex items-center gap-2.5 mb-2">
+                                <div className={`w-10 h-10 rounded-full animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                <div className="flex-1 space-y-2">
+                                  <div className={`h-5 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  <div className={`h-4 w-24 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-6 h-6 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                                  <div className={`w-6 h-6 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 mb-2">
+                              {[...Array(4)].map((_, statIdx) => (
+                                <div
+                                  key={statIdx}
+                                  className={`rounded-lg border p-2 animate-pulse ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'}`}
+                                  style={{ animationDelay: `${idx * 0.1 + statIdx * 0.05}s` }}
+                                >
+                                  <div className={`h-3 w-12 mb-1 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                                  <div className={`h-4 w-8 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className={`h-4 w-20 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1}s` }}></div>
+                              <div className={`h-4 w-16 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} style={{ animationDelay: `${idx * 0.1 + 0.05}s` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      </>
+                    ) : propsSport === 'afl' ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-lg font-medium">No odds for AFL</p>
+                      </div>
+                    ) : propsSport === 'nba' && showNoPropsMessage ? (
+                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
+                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p className="text-lg font-medium mb-2">No props found</p>
+                        <p className="text-sm">Come back later</p>
+                      </div>
+                    ) : (
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -4138,17 +4252,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         ))}
                       </div>
                     </>
-                    ) : propsSport === 'afl' ? (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium">No odds for AFL</p>
-                      </div>
-                    ) : (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
-                        mounted && isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        <p className="text-lg font-medium mb-2">No props found</p>
-                        <p className="text-sm">Come back later</p>
-                      </div>
                     )
                   ) : (propsSport === 'nba' ? filteredPlayerProps.length > 0 : filteredAflProps.length > 0) ? (
                     <>
@@ -4462,10 +4565,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
                                   if (propsSport === 'afl') {
-                                    const aflParams = new URLSearchParams({ player: prop.playerName });
-                                    if (prop.team?.trim()) aflParams.set('team', prop.team.trim());
-                                    if (prop.opponent?.trim()) aflParams.set('opponent', prop.opponent.trim());
-                                    router.push(`/afl?${aflParams.toString()}`);
+                                    router.push(`/afl?player=${encodeURIComponent(prop.playerName)}`);
                                     setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                     return;
                                   }
@@ -5577,10 +5677,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
                                 if (propsSport === 'afl') {
-                                  const aflParams = new URLSearchParams({ player: prop.playerName });
-                                  if (prop.team?.trim()) aflParams.set('team', prop.team.trim());
-                                  if (prop.opponent?.trim()) aflParams.set('opponent', prop.opponent.trim());
-                                  router.push(`/afl?${aflParams.toString()}`);
+                                  router.push(`/afl?player=${encodeURIComponent(prop.playerName)}`);
                                   setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                   return;
                                 }

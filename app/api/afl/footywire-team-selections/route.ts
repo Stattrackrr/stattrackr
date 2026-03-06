@@ -67,11 +67,8 @@ function normalizeNameForLookup(name: string): string {
 function matchTeamToLeagueKey(team: string | null): string | null {
   if (!team || !team.trim()) return null;
   const t = team.trim().toLowerCase();
-  // GWS vs Sydney: "Greater Western Sydney" / "GWS Giants" must map to GWS, not Sydney (substring)
-  if (t.includes('greater western') || t === 'gws' || /^gws\s/.test(t) || t.startsWith('gws ')) return 'GWS';
   const byLength = [...LEAGUE_TEAM_KEYS].sort((a, b) => b.length - a.length);
   for (const key of byLength) {
-    if (key === 'GWS') continue; // already handled above
     if (t.includes(key.toLowerCase()) || key.toLowerCase().includes(t)) return key;
   }
   return null;
@@ -975,19 +972,25 @@ function parsePage(html: string): TeamSelectionsResponse {
   };
 }
 
-/** Canonical team key for lineup match (one of LEAGUE_TEAM_KEYS). Avoids "Greater Western Sydney" matching "Sydney". */
-function getCanonicalTeamKeyForMatch(team: string | null): string | null {
-  return matchTeamToLeagueKey(team);
+/** Normalise team name for matching (e.g. "Geelong Cats" -> "geelong", "Gold Coast" -> "gold coast"). */
+function normaliseTeamForMatch(team: string): string {
+  return (team || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-/** True if the match (home/away) involves the given team (e.g. player's team). Uses canonical keys so GWS ≠ Sydney. */
+/** True if the match (home/away) involves the given team (e.g. player's team). */
 function matchIncludesTeam(m: TeamSelectionsResponse, team: string): boolean {
   if (!team || !m.home_team || !m.away_team) return false;
-  const teamKey = getCanonicalTeamKeyForMatch(team);
-  const homeKey = getCanonicalTeamKeyForMatch(m.home_team);
-  const awayKey = getCanonicalTeamKeyForMatch(m.away_team);
-  if (!teamKey || !homeKey || !awayKey) return false;
-  return teamKey === homeKey || teamKey === awayKey;
+  const t = normaliseTeamForMatch(team);
+  const h = normaliseTeamForMatch(m.home_team);
+  const a = normaliseTeamForMatch(m.away_team);
+  if (t === h || t === a) return true;
+  if (h.includes(t) || t.includes(h)) return true;
+  if (a.includes(t) || t.includes(a)) return true;
+  return false;
 }
 
 export async function GET(request: Request) {

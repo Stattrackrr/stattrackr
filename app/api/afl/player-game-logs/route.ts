@@ -704,7 +704,7 @@ function parseOneTableToRows(tableContent: string): { rows: FootyWireTableRow[];
 
 const COL_ALIASES: Record<string, string[]> = {
   Description: ['Round', 'Rnd', 'Desc'],
-  Opponent: ['Vs', 'VS', 'Opp', 'Opponent', 'Vs Team', 'Opponent Team', 'Team', 'Against'],
+  Opponent: ['Vs', 'VS', 'Opp'],
   Result: ['Res', 'W/L'],
   K: ['Kicks'],
   D: ['Disposals'],

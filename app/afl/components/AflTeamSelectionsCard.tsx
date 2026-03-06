@@ -37,14 +37,11 @@ function normaliseTeam(t: string): string {
   return (t || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Canonical match: GWS / Greater Western Sydney must not match "Sydney" (substring). */
 function matchIncludesTeam(m: { home_team?: string | null; away_team?: string | null }, team: string): boolean {
   if (!team || !m.home_team || !m.away_team) return false;
   const t = normaliseTeam(team);
   const h = normaliseTeam(m.home_team);
   const a = normaliseTeam(m.away_team);
-  const isGws = t.includes('greater western') || t === 'gws' || t.startsWith('gws ');
-  if (isGws) return h === 'gws' || h.includes('greater western') || a === 'gws' || a.includes('greater western');
   return t === h || t === a || h.includes(t) || t.includes(h) || a.includes(t) || t.includes(a);
 }
 

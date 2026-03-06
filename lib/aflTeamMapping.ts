@@ -65,38 +65,7 @@ export const AFL_TEAM_TO_FOOTYWIRE: Record<string, string> = {
   'Western Bulldogs': 'Bulldogs',
   Footscray: 'Bulldogs',
   Bulldogs: 'Bulldogs',
-
-  // Full "Club Nickname" variants (odds/props often use these) – only add if not already above
-  'St Kilda Saints': 'Saints',
-  'North Melbourne Kangaroos': 'Kangaroos',
-  'Collingwood Magpies': 'Magpies',
-  'Carlton Blues': 'Blues',
-  'Essendon Bombers': 'Bombers',
-  'Fremantle Dockers': 'Dockers',
-  'Geelong Cats': 'Cats',
-  'GWS Giants': 'Giants',
-  'Greater Western Sydney Giants': 'Giants',
-  'Hawthorn Hawks': 'Hawks',
-  'Melbourne Demons': 'Demons',
-  'Port Adelaide Power': 'Power',
-  'Richmond Tigers': 'Tigers',
 };
-
-/** All FootyWire nicknames (lowercase) for H2H matching (last-word fallback). */
-const _nicknames = Object.values(AFL_TEAM_TO_FOOTYWIRE).filter((v, i, a) => a.indexOf(v) === i);
-export const FOOTYWIRE_NICKNAMES = new Set<string>(_nicknames.map((n) => n.toLowerCase()));
-
-/** Canonical nickname (lowercase) for H2H comparison. Prefer map, then last word if it's a known nickname. */
-export function opponentToCanonicalNickname(opponent: string): string | null {
-  if (!opponent || typeof opponent !== 'string') return null;
-  const s = opponent.replace(/^vs\s*/i, '').trim();
-  if (!s || s === '—') return null;
-  const fromMap = opponentToFootywireTeam(s);
-  if (fromMap) return fromMap.toLowerCase();
-  const lastWord = s.split(/\s+/).filter(Boolean).pop()?.toLowerCase();
-  if (lastWord && FOOTYWIRE_NICKNAMES.has(lastWord)) return lastWord;
-  return s.toLowerCase();
-}
 
 /** Convert opponent string from game logs to Footywire team name. */
 export function opponentToFootywireTeam(opponent: string): string | null {
@@ -190,7 +159,6 @@ export const LEAGUE_TEAM_TO_OFFICIAL: Record<string, string> = {
   Brisbane: 'Brisbane Lions',
   Carlton: 'Carlton Blues',
   Collingwood: 'Collingwood Magpies',
-  Magpies: 'Collingwood Magpies',
   Essendon: 'Essendon Bombers',
   Fremantle: 'Fremantle Dockers',
   Geelong: 'Geelong Cats',
