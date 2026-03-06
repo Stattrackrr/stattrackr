@@ -32,17 +32,41 @@ type TeamSelectionsData = {
 
 type MatchEntry = TeamSelectionsData & { match: string; home_team: string; away_team: string };
 
-/** Normalise team for matching (e.g. "Geelong Cats" vs "Geelong"). */
-function normaliseTeam(t: string): string {
-  return (t || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+/** Canonical league key for lineup matching. Strict: GWS and Sydney must not match each other. */
+function teamToCanonicalKey(team: string): string {
+  const t = (team || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  if (t.includes('greater western sydney') || t === 'gws' || (t.includes('gws') && t.includes('giant'))) return 'gws';
+  if (t === 'sydney' || t.includes('sydney swans')) return 'sydney';
+  if (t.includes('hawthorn') || t === 'hawks') return 'hawthorn';
+  if (t.includes('carlton') || t === 'blues') return 'carlton';
+  if (t.includes('brisbane') || t === 'lions') return 'brisbane';
+  if (t.includes('collingwood') || t === 'magpies') return 'collingwood';
+  if (t.includes('geelong') || t === 'cats') return 'geelong';
+  if (t.includes('melbourne') || t === 'demons') return 'melbourne';
+  if (t.includes('essendon') || t === 'bombers') return 'essendon';
+  if (t.includes('richmond') || t === 'tigers') return 'richmond';
+  if (t.includes('st kilda') || t === 'saints') return 'st kilda';
+  if (t.includes('fremantle') || t === 'dockers') return 'fremantle';
+  if (t.includes('adelaide') || t === 'crows') return 'adelaide';
+  if (t.includes('west coast') || t === 'eagles') return 'west coast';
+  if (t.includes('north melbourne') || t === 'kangaroos') return 'north melbourne';
+  if (t.includes('port adelaide') || t === 'power') return 'port adelaide';
+  if (t.includes('western bulldogs') || t === 'bulldogs') return 'western bulldogs';
+  if (t.includes('gold coast') || t === 'suns') return 'gold coast';
+  return t.replace(/[^a-z0-9]/g, '');
 }
 
+/** Strict match: only when canonical keys are equal. Prevents GWS matching Sydney (e.g. "greater western sydney" contains "sydney"). */
 function matchIncludesTeam(m: { home_team?: string | null; away_team?: string | null }, team: string): boolean {
   if (!team || !m.home_team || !m.away_team) return false;
-  const t = normaliseTeam(team);
-  const h = normaliseTeam(m.home_team);
-  const a = normaliseTeam(m.away_team);
-  return t === h || t === a || h.includes(t) || t.includes(h) || a.includes(t) || t.includes(a);
+  const tKey = teamToCanonicalKey(team);
+  const hKey = teamToCanonicalKey(m.home_team);
+  const aKey = teamToCanonicalKey(m.away_team);
+  if (!tKey) return false;
+  if (tKey === 'gws' && (hKey === 'sydney' || aKey === 'sydney')) return false;
+  if (tKey === 'sydney' && (hKey === 'gws' || aKey === 'gws')) return false;
+  return tKey === hKey || tKey === aKey;
 }
 
 /** Normalise API player (string or { name, number? }) to PlayerEntry. */
@@ -159,11 +183,12 @@ export function AflTeamSelectionsCard({
 
         if (!hasLineup && Array.isArray(json?.matches) && json.matches.length > 0) {
           const matches = json.matches as MatchEntry[];
+          // When a team is requested, only use a match that strictly matches that team; never fall back to first match (e.g. GWS must not show Sydney v Carlton).
           const forTeam = playerTeam?.trim()
             ? matches.find((m) => matchIncludesTeam(m, playerTeam))
             : matches[0];
-          const chosen = forTeam ?? matches[0];
-          if (chosen?.positions?.length || chosen?.interchange?.home?.length || chosen?.interchange?.away?.length) {
+          const chosen = playerTeam?.trim() ? (forTeam ?? null) : (forTeam ?? matches[0]);
+          if (chosen && (chosen.positions?.length || chosen.interchange?.home?.length || chosen.interchange?.away?.length)) {
             hasLineup = true;
             setData({
               url: json?.url ?? TEAM_SELECTIONS_URL,

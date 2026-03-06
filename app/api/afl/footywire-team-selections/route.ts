@@ -63,16 +63,12 @@ function normalizeNameForLookup(name: string): string {
   return (name || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-/** GWS variants that must resolve to GWS, not Sydney (FootyWire uses "GWS"; "Greater Western Sydney" contains "sydney"). */
-const GWS_PATTERNS = ['gws', 'giants', 'greater western sydney'];
-
 /** Match team string from lineup (e.g. "Geelong Cats", "Gold Coast") to league stats team key. */
 function matchTeamToLeagueKey(team: string | null): string | null {
   if (!team || !team.trim()) return null;
   const t = team.trim().toLowerCase().replace(/\s+/g, ' ');
-  for (const p of GWS_PATTERNS) {
-    if (t === p || t.includes(p) || p.includes(t)) return 'GWS';
-  }
+  // GWS: only if string contains "gws", "giants", or "greater western" — never match plain "sydney" (Sydney Swans)
+  if (t.includes('gws') || t.includes('giants') || t.includes('greater western')) return 'GWS';
   const byLength = [...LEAGUE_TEAM_KEYS].sort((a, b) => b.length - a.length);
   for (const key of byLength) {
     if (key === 'GWS') continue;
@@ -229,9 +225,9 @@ function parseTitle(html: string): { title: string | null; round_label: string |
   };
 }
 
-/** Known AFL team names for match line parsing. */
+/** Known AFL team names for match line parsing. Longer names first so "Greater Western Sydney" matches before "Sydney". */
 const TEAM_NAMES =
-  'Sydney|Carlton|Collingwood|Melbourne|Geelong|Richmond|Essendon|Hawthorn|Brisbane|Port Adelaide|Western Bulldogs|St Kilda|Fremantle|Adelaide|West Coast|North Melbourne|GWS|Gold Coast';
+  'Greater Western Sydney|GWS Giants|Port Adelaide|Western Bulldogs|North Melbourne|West Coast|Gold Coast|GWS|Sydney|Carlton|Collingwood|Melbourne|Geelong|Richmond|Essendon|Hawthorn|Brisbane|St Kilda|Fremantle|Adelaide';
 
 /** Parse match line e.g. "Sydney v Carlton (SCG)". */
 function parseMatch(html: string): { match: string | null; home_team: string | null; away_team: string | null } {
@@ -984,14 +980,32 @@ function getCanonicalTeamKeyForMatch(team: string | null): string | null {
   return matchTeamToLeagueKey(team);
 }
 
-/** True if the match (home/away) involves the given team (e.g. player's team). Uses canonical keys so GWS returns GWS lineup not Swans. */
+/** True if the match (home/away) involves the given team. Uses canonical keys; strict so GWS never matches Sydney. */
 function matchIncludesTeam(m: TeamSelectionsResponse, team: string): boolean {
   if (!team || !m.home_team || !m.away_team) return false;
   const tKey = getCanonicalTeamKeyForMatch(team);
   const hKey = getCanonicalTeamKeyForMatch(m.home_team);
   const aKey = getCanonicalTeamKeyForMatch(m.away_team);
   if (!tKey) return false;
+  // Strict: only match when canonical keys are equal (no substring). GWS must not match Sydney.
+  if (tKey === 'GWS' && (hKey === 'Sydney' || aKey === 'Sydney')) return false;
+  if (tKey === 'Sydney' && (hKey === 'GWS' || aKey === 'GWS')) return false;
   return tKey === hKey || tKey === aKey;
+}
+
+/** When filtering by team param, select match only by canonical key equality. Never use matchIncludesTeam so we can't accidentally pick Sydney for GWS. */
+function findMatchByCanonicalTeam(
+  matches: TeamSelectionsResponse[],
+  teamParam: string
+): TeamSelectionsResponse | undefined {
+  const tKey = getCanonicalTeamKeyForMatch(teamParam);
+  if (!tKey) return undefined;
+  return matches.find((m) => {
+    if (!m.home_team || !m.away_team) return false;
+    const hKey = getCanonicalTeamKeyForMatch(m.home_team);
+    const aKey = getCanonicalTeamKeyForMatch(m.away_team);
+    return tKey === hKey || tKey === aKey;
+  });
 }
 
 export async function GET(request: Request) {
@@ -1002,10 +1016,13 @@ export async function GET(request: Request) {
   if (!skipCache && cached && cached.expiresAt > Date.now()) {
     const data = cached.data;
     if (teamParam && data.matches?.length) {
-      const found = data.matches.find((m) => matchIncludesTeam(m, teamParam));
+      const found = findMatchByCanonicalTeam(data.matches, teamParam);
       if (found) {
         return NextResponse.json({
-          ...data,
+          url: data.url,
+          title: data.title,
+          round_label: data.round_label,
+          matches: [found],
           match: found.match,
           home_team: found.home_team,
           away_team: found.away_team,
@@ -1017,6 +1034,20 @@ export async function GET(request: Request) {
           source: 'footywire.com',
         });
       }
+      // Requested team not in cache: return empty so client does not show wrong game
+      return NextResponse.json({
+        ...data,
+        matches: [],
+        match: null,
+        home_team: null,
+        away_team: null,
+        positions: [],
+        interchange: { home: [], away: [] },
+        emergencies: { home: [], away: [] },
+        average_attributes: null,
+        total_players_by_games: null,
+        source: 'footywire.com',
+      });
     }
     return NextResponse.json({ ...data, source: 'footywire.com' });
   }
@@ -1042,10 +1073,13 @@ export async function GET(request: Request) {
     }
 
     if (teamParam && roundData.matches.length > 0) {
-      const found = roundData.matches.find((m) => matchIncludesTeam(m, teamParam));
+      const found = findMatchByCanonicalTeam(roundData.matches, teamParam);
       if (found) {
         return NextResponse.json({
-          ...roundData,
+          url: roundData.url,
+          title: roundData.title,
+          round_label: roundData.round_label,
+          matches: [found],
           match: found.match,
           home_team: found.home_team,
           away_team: found.away_team,
@@ -1057,6 +1091,20 @@ export async function GET(request: Request) {
           source: 'footywire.com',
         });
       }
+      // Requested team not found: return empty single match so client does not show another game's lineup
+      return NextResponse.json({
+        ...roundData,
+        matches: [],
+        match: null,
+        home_team: null,
+        away_team: null,
+        positions: [],
+        interchange: { home: [], away: [] },
+        emergencies: { home: [], away: [] },
+        average_attributes: null,
+        total_players_by_games: null,
+        source: 'footywire.com',
+      });
     }
 
     return NextResponse.json({ ...roundData, source: 'footywire.com' });

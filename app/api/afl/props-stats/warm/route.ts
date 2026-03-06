@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         })
       );
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE * CONCURRENT_BATCHES) {
-      const batchPromises: Promise<void>[] = [];
+      const batchPromises: Promise<unknown>[] = [];
       for (let b = 0; b < CONCURRENT_BATCHES; b++) {
         const start = i + b * BATCH_SIZE;
         if (start >= toProcess.length) break;
