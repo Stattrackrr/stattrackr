@@ -12,14 +12,14 @@ export type PlayerTeamMap = Map<string, string>;
 
 /**
  * Fetch league player stats and build map: normalized player name -> official team name.
- * Uses current season first, then merges in previous season so players not yet in current
- * season data (e.g. Ned Long in 2026) still resolve correctly from prior year.
- * Returns empty map if fetch fails.
+ * Loads previous season (e.g. 2025) first as the full baseline, then overlays current season
+ * (e.g. 2026) so everyone has at least last year's team and current-season data overrides when present.
+ * Returns empty map if both fetches fail.
  */
 export async function getAflPlayerTeamMap(baseUrl: string, season: number = CURRENT_SEASON): Promise<PlayerTeamMap> {
   const map: PlayerTeamMap = new Map();
-  const seasons = [season, season - 1].filter((s) => s >= 2020);
-  for (const s of seasons) {
+  const prevSeason = Math.max(2020, season - 1);
+  for (const s of [prevSeason, season]) {
     try {
       const url = `${baseUrl}/api/afl/league-player-stats?season=${s}`;
       const r = await fetch(url, { cache: 'no-store' });
@@ -31,7 +31,6 @@ export async function getAflPlayerTeamMap(baseUrl: string, season: number = CURR
         const leagueTeam = (p?.team ?? '').trim();
         if (!name || !leagueTeam) continue;
         const key = normalizeAflPlayerNameForMatch(name);
-        if (map.has(key)) continue; // current season already set
         const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
         map.set(key, official);
       }
