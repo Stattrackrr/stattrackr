@@ -62,19 +62,16 @@ export async function GET(request: NextRequest) {
           team = resolved.team;
           opponent = resolved.opponent;
           dvp = getDvpLookup(opponent, statType, dvpMaps);
-          // Try cache first; on miss compute so props page shows stats (e.g. after team move or cold cache)
-          let stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
-          if (!stats) stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, false);
+          // Cache only: stats are filled by props-stats/warm cron. No compute on miss (player-game-logs is cache-only in prod so compute would get empty anyway).
+          const stats = await getAflPropStats(playerName, team, opponent, statType, line, baseUrl, dvp, true);
           if (stats) statsByKey.set(rowKey, stats);
           return;
         }
         dvp = getDvpLookup(awayTeam, statType, dvpMaps);
         let stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, true);
-        if (!stats) stats = await getAflPropStats(playerName, homeTeam, awayTeam, statType, line, baseUrl, dvp, false);
         if (!stats) {
           dvp = getDvpLookup(homeTeam, statType, dvpMaps);
           stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, true);
-          if (!stats) stats = await getAflPropStats(playerName, awayTeam, homeTeam, statType, line, baseUrl, dvp, false);
         }
         if (stats) statsByKey.set(rowKey, stats);
       })

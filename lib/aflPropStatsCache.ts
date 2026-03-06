@@ -96,9 +96,20 @@ export function computeAflPropStatsFromGames(
   };
 }
 
-async function fetchGameLogs(baseUrl: string, playerName: string, team: string, season: number): Promise<Record<string, unknown>[]> {
+async function fetchGameLogs(
+  baseUrl: string,
+  playerName: string,
+  team: string,
+  season: number,
+  cronSecret?: string
+): Promise<Record<string, unknown>[]> {
   const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}`;
-  const r = await fetch(url, { cache: 'no-store', headers: { 'Content-Type': 'application/json' } });
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cronSecret) {
+    headers['Authorization'] = `Bearer ${cronSecret}`;
+    headers['x-cron-secret'] = cronSecret;
+  }
+  const r = await fetch(url, { cache: 'no-store', headers });
   if (!r.ok) return [];
   const data = (await r.json()) as { games?: unknown[] };
   return Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
@@ -106,6 +117,7 @@ async function fetchGameLogs(baseUrl: string, playerName: string, team: string, 
 
 /**
  * Get AFL prop stats from cache or compute. When cacheOnly is true, returns null on cache miss (no computation).
+ * Pass cronSecret when called from props-stats/warm so player-game-logs will fetch from FootyWire instead of cache-only.
  */
 export async function getAflPropStats(
   playerName: string,
@@ -115,7 +127,8 @@ export async function getAflPropStats(
   line: number,
   baseUrl: string,
   dvpLookup?: { rank: number; value: number } | null,
-  cacheOnly?: boolean
+  cacheOnly?: boolean,
+  cronSecret?: string
 ): Promise<AflPropStatsPayload | null> {
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
@@ -127,8 +140,8 @@ export async function getAflPropStats(
   }
   if (cacheOnly) return null;
   const season = new Date().getFullYear();
-  let games = await fetchGameLogs(baseUrl, playerName, team, season);
-  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season);
+  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
+  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
   const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
   const payload: AflPropStatsPayload = {
     ...stats,

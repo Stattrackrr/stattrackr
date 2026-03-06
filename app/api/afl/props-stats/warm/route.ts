@@ -75,13 +75,14 @@ export async function GET(request: NextRequest) {
     const toProcess = toWarm.slice(0, MAX_PROPS);
     console.log('[AFL props-stats/warm] Unique props to warm:', toProcess.length, '(skipped', Math.max(0, toWarm.length - MAX_PROPS), 'over limit)');
 
+    const cronSecret = process.env.CRON_SECRET ?? '';
     let warmed = 0;
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
       await Promise.all(
         batch.map((p) => {
           const dvp = getDvp(p.opponent, p.statType);
-          return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp).then((r) => {
+          return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp, false, cronSecret).then((r) => {
             if (r) warmed++;
           }).catch((err) => {
             console.warn('[AFL props-stats/warm] getAflPropStats failed:', p.playerName, p.statType, err);
