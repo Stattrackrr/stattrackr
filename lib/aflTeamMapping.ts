@@ -66,25 +66,20 @@ export const AFL_TEAM_TO_FOOTYWIRE: Record<string, string> = {
   Footscray: 'Bulldogs',
   Bulldogs: 'Bulldogs',
 
-  // Full "Club Nickname" variants (odds/props often use these)
+  // Full "Club Nickname" variants (odds/props often use these) – only add if not already above
   'St Kilda Saints': 'Saints',
   'North Melbourne Kangaroos': 'Kangaroos',
   'Collingwood Magpies': 'Magpies',
-  'Adelaide Crows': 'Crows',
-  'Brisbane Lions': 'Lions',
   'Carlton Blues': 'Blues',
   'Essendon Bombers': 'Bombers',
   'Fremantle Dockers': 'Dockers',
   'Geelong Cats': 'Cats',
-  'Gold Coast Suns': 'Suns',
   'GWS Giants': 'Giants',
   'Greater Western Sydney Giants': 'Giants',
   'Hawthorn Hawks': 'Hawks',
   'Melbourne Demons': 'Demons',
   'Port Adelaide Power': 'Power',
   'Richmond Tigers': 'Tigers',
-  'Sydney Swans': 'Swans',
-  'West Coast Eagles': 'Eagles',
 };
 
 /** All FootyWire nicknames (lowercase) for H2H matching (last-word fallback). */
