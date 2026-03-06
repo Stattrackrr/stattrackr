@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, buildAflPropStatKey } from '@/lib/aflPropStatsCache';
-import { getAflPlayerTeamMap, resolveTeamAndOpponent } from '@/lib/aflPlayerTeamResolver';
-import { loadDvpMaps, getDvpLookup } from '@/lib/aflDvpLookup';
+import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles, resolveTeamAndOpponent } from '@/lib/aflPlayerTeamResolver';
+import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const BATCH_SIZE = 20;
-const MAX_PROPS = 500;
+const BATCH_SIZE = 30;
+const MAX_PROPS = 2000;
 
 type PropToWarm = { playerName: string; team: string; opponent: string; statType: string; line: number };
 
@@ -48,8 +48,14 @@ export async function GET(request: NextRequest) {
       return o && u;
     };
 
-    const playerTeamMap = await getAflPlayerTeamMap(baseUrl);
-    const dvpMaps = await loadDvpMaps(baseUrl);
+    let playerTeamMap = await getAflPlayerTeamMapFromFiles();
+    if (playerTeamMap.size === 0) {
+      playerTeamMap = await getAflPlayerTeamMap(baseUrl);
+    }
+    let dvpMaps = await loadDvpMapsFromFiles();
+    if (dvpMaps.disposals.size === 0 && dvpMaps.goals.size === 0) {
+      dvpMaps = await loadDvpMaps(baseUrl);
+    }
     const getDvp = (opponent: string, statType: string) => getDvpLookup(opponent, statType, dvpMaps);
     console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map size:', playerTeamMap.size);
 

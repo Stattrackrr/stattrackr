@@ -3,6 +3,9 @@
  * Maps opponent names to DvP file keys (afl-dvp-*.json uses short names).
  */
 
+import path from 'path';
+import fs from 'fs/promises';
+
 const OPPONENT_TO_DVP_KEY: Record<string, string> = {
   'adelaide crows': 'adelaide', adelaide: 'adelaide',
   'brisbane lions': 'brisbane', brisbane: 'brisbane',
@@ -70,6 +73,53 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
     if (fallback.hasData) result = fallback;
   }
   return { disposals: result.disposals, goals: result.goals };
+}
+
+type DvpFileRow = { opponent?: string; perPlayerGame?: Record<string, number> };
+
+/** Build DvP maps from file (for cron so we don't depend on self-fetch). */
+function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
+  const map = new Map<string, { rank: number; value: number }>();
+  const byOpponent = new Map<string, number>();
+  for (const row of rows) {
+    const key = (row.opponent || '').trim().toLowerCase();
+    if (!key) continue;
+    const val = Number(row.perPlayerGame?.[stat] ?? 0);
+    const existing = byOpponent.get(key);
+    if (existing == null || val > existing) byOpponent.set(key, val);
+  }
+  const sorted = Array.from(byOpponent.entries()).sort((a, b) => b[1] - a[1]);
+  sorted.forEach(([key, value], i) => {
+    const rank = i + 1;
+    map.set(key, { rank, value });
+    for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY))
+      if (short === key) map.set(full, { rank, value });
+  });
+  return map;
+}
+
+/** Load DvP maps by reading data/afl-dvp-{season}.json (avoids self-fetch in cron). */
+export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
+  const empty = { disposals: new Map(), goals: new Map() };
+  const year = new Date().getFullYear();
+  for (const season of [year, year - 1]) {
+    if (season < 2020) continue;
+    try {
+      const filePath = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
+      const raw = await fs.readFile(filePath, 'utf8');
+      const data = JSON.parse(raw) as { rows?: DvpFileRow[] };
+      const rows = data?.rows ?? [];
+      if (rows.length === 0) continue;
+      const disposals = buildFromFileRows(rows, 'disposals');
+      const goals = buildFromFileRows(rows, 'goals');
+      if (disposals.size > 0 || goals.size > 0) {
+        return { disposals, goals };
+      }
+    } catch {
+      /* try next season */
+    }
+  }
+  return empty;
 }
 
 export function getDvpLookup(
