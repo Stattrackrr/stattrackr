@@ -555,16 +555,22 @@ export default function AFLPage() {
           const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
           return name.toLowerCase() === playerParam.toLowerCase();
         }) ?? list[0];
-        if (cancelled || !match) {
+        let record: AflPlayerRecord;
+        if (match) {
+          record = {
+            name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
+            ...(typeof match.team === 'string' ? { team: match.team } : {}),
+            ...(typeof match.number === 'number' && Number.isFinite(match.number) ? { guernsey: match.number } : {}),
+            ...(match.id != null ? { id: match.id } : {}),
+          };
+        } else if (teamParam) {
+          // Fallback when players API returns no match (e.g. local cache empty): use URL params so we can still load game/odds
+          record = { name: playerParam, team: teamParam };
+        } else {
           if (!cancelled) setLoadingPlayerFromUrl(false);
           return;
         }
-        const record: AflPlayerRecord = {
-          name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
-          ...(typeof match.team === 'string' ? { team: match.team } : {}),
-          ...(typeof match.number === 'number' && Number.isFinite(match.number) ? { guernsey: match.number } : {}),
-          ...(match.id != null ? { id: match.id } : {}),
-        };
+        if (!record.team && teamParam) record.team = teamParam;
         setSelectedPlayer(record);
         setSelectedPlayerGameLogs([]);
         setSelectedPlayerGameLogsWithQuarters([]);
