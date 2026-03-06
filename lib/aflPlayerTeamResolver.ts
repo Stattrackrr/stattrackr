@@ -12,27 +12,34 @@ export type PlayerTeamMap = Map<string, string>;
 
 /**
  * Fetch league player stats and build map: normalized player name -> official team name.
+ * Uses current season first, then merges in previous season so players not yet in current
+ * season data (e.g. Ned Long in 2026) still resolve correctly from prior year.
  * Returns empty map if fetch fails.
  */
 export async function getAflPlayerTeamMap(baseUrl: string, season: number = CURRENT_SEASON): Promise<PlayerTeamMap> {
-  const url = `${baseUrl}/api/afl/league-player-stats?season=${season}`;
-  try {
-    const r = await fetch(url, { cache: 'no-store' });
-    if (!r.ok) return new Map();
-    const data = (await r.json()) as { players?: Array<{ name?: string; team?: string }> };
-    const players = data?.players ?? [];
-    const map: PlayerTeamMap = new Map();
-    for (const p of players) {
-      const name = (p?.name ?? '').trim();
-      const leagueTeam = (p?.team ?? '').trim();
-      if (!name || !leagueTeam) continue;
-      const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
-      map.set(normalizeAflPlayerNameForMatch(name), official);
+  const map: PlayerTeamMap = new Map();
+  const seasons = [season, season - 1].filter((s) => s >= 2020);
+  for (const s of seasons) {
+    try {
+      const url = `${baseUrl}/api/afl/league-player-stats?season=${s}`;
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const data = (await r.json()) as { players?: Array<{ name?: string; team?: string }> };
+      const players = data?.players ?? [];
+      for (const p of players) {
+        const name = (p?.name ?? '').trim();
+        const leagueTeam = (p?.team ?? '').trim();
+        if (!name || !leagueTeam) continue;
+        const key = normalizeAflPlayerNameForMatch(name);
+        if (map.has(key)) continue; // current season already set
+        const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
+        map.set(key, official);
+      }
+    } catch {
+      // continue with next season
     }
-    return map;
-  } catch {
-    return new Map();
   }
+  return map;
 }
 
 function gameTeamMatchesOfficial(gameTeam: string, officialTeam: string): boolean {

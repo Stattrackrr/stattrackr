@@ -190,6 +190,7 @@ export const LEAGUE_TEAM_TO_OFFICIAL: Record<string, string> = {
   Brisbane: 'Brisbane Lions',
   Carlton: 'Carlton Blues',
   Collingwood: 'Collingwood Magpies',
+  Magpies: 'Collingwood Magpies',
   Essendon: 'Essendon Bombers',
   Fremantle: 'Fremantle Dockers',
   Geelong: 'Geelong Cats',
