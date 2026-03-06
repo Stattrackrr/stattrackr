@@ -4565,7 +4565,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
                                   if (propsSport === 'afl') {
-                                    router.push(`/afl?player=${encodeURIComponent(prop.playerName)}`);
+                                    const q = new URLSearchParams({ player: prop.playerName });
+                                    if (prop.team) q.set('team', prop.team);
+                                    if (prop.opponent) q.set('opponent', prop.opponent);
+                                    router.push(`/afl?${q.toString()}`);
                                     setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                     return;
                                   }
@@ -5677,7 +5680,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
                                 if (propsSport === 'afl') {
-                                  router.push(`/afl?player=${encodeURIComponent(prop.playerName)}`);
+                                  const q = new URLSearchParams({ player: prop.playerName });
+                                  if (prop.team) q.set('team', prop.team);
+                                  if (prop.opponent) q.set('opponent', prop.opponent);
+                                  router.push(`/afl?${q.toString()}`);
                                   setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                   return;
                                 }

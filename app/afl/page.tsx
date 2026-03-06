@@ -555,16 +555,36 @@ export default function AFLPage() {
           const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
           return name.toLowerCase() === playerParam.toLowerCase();
         }) ?? list[0];
-        if (cancelled || !match) {
-          if (!cancelled) setLoadingPlayerFromUrl(false);
+        if (cancelled) {
+          setLoadingPlayerFromUrl(false);
+          return;
+        }
+        const opponentParam = url.searchParams.get('opponent')?.trim();
+        if (!match) {
+          if (teamParam || opponentParam) {
+            const fallback: AflPlayerRecord = {
+              name: playerParam,
+              ...(teamParam ? { team: teamParam } : {}),
+              ...(opponentParam ? { last_opponent: opponentParam } : {}),
+            };
+            setSelectedPlayer(fallback);
+          }
+          setLoadingPlayerFromUrl(false);
+          url.searchParams.delete('player');
+          url.searchParams.delete('team');
+          url.searchParams.delete('opponent');
+          window.history.replaceState({}, '', url.toString());
           return;
         }
         const record: AflPlayerRecord = {
           name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
-          ...(typeof match.team === 'string' ? { team: match.team } : {}),
+          ...(typeof match.team === 'string' ? { team: match.team } : teamParam ? { team: teamParam } : {}),
           ...(typeof match.number === 'number' && Number.isFinite(match.number) ? { guernsey: match.number } : {}),
           ...(match.id != null ? { id: match.id } : {}),
         };
+        if (opponentParam) {
+          (record as AflPlayerRecord & { last_opponent?: string }).last_opponent = opponentParam;
+        }
         setSelectedPlayer(record);
         setSelectedPlayerGameLogs([]);
         setSelectedPlayerGameLogsWithQuarters([]);
@@ -573,12 +593,14 @@ export default function AFLPage() {
         setLoadingPlayerFromUrl(false);
         url.searchParams.delete('player');
         url.searchParams.delete('team');
+        url.searchParams.delete('opponent');
         window.history.replaceState({}, '', url.toString());
       } catch {
         if (!cancelled) {
           setLoadingPlayerFromUrl(false);
           url.searchParams.delete('player');
           url.searchParams.delete('team');
+          url.searchParams.delete('opponent');
           window.history.replaceState({}, '', url.toString());
         }
       }
