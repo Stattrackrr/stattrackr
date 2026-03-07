@@ -26,8 +26,16 @@ const AFL_DVP_BUILD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
  * We only replace caches when the run is successful and we have data; if unsuccessful or empty we leave
  * old cache until TTL (e.g. 24h for stats) or next successful run.
  */
+/**
+ * Query: dvpBaseUrl – override base URL for DvP build (e.g. production URL to avoid 401).
+ * Example: /api/afl/odds/refresh?dvpBaseUrl=https://your-production.vercel.app
+ */
 export async function GET(request: NextRequest) {
   console.log('[AFL cron] /api/afl/odds/refresh started');
+  const dvpBaseUrlParam = request.nextUrl.searchParams.get('dvpBaseUrl')?.trim();
+  const dvpBaseUrlOverride =
+    dvpBaseUrlParam && /^https?:\/\//i.test(dvpBaseUrlParam) ? dvpBaseUrlParam.replace(/\/+$/, '') : null;
+
   if (process.env.NODE_ENV === 'production') {
     const auth = authorizeCronRequest(request);
     if (!auth.authorized) {
@@ -64,8 +72,12 @@ export async function GET(request: NextRequest) {
     try {
       const cwd = process.cwd();
       const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
+      // ?dvpBaseUrl= override, then env DVP_BUILD_BASE_URL, then VERCEL_URL (avoids 401 when production URL has no protection).
       const baseUrl =
-        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        dvpBaseUrlOverride ||
+        process.env.DVP_BUILD_BASE_URL?.trim() ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+      if (dvpBaseUrlOverride) console.log('[AFL cron] DvP build using baseUrl from query:', baseUrl);
       const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
       const bypassSecret =
         (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '').replace(

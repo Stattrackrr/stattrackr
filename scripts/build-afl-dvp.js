@@ -389,7 +389,7 @@ async function main() {
   if (!fantasyRes.ok || !Array.isArray(fantasyRes.body?.players)) {
     const hint =
       fantasyRes.status === 401
-        ? ' Set VERCEL_AUTOMATION_BYPASS_SECRET (or CRON_SECRET) in Vercel so the cron can bypass deployment protection.'
+        ? ' In Vercel, set DVP_BUILD_BASE_URL to your production URL (if it has no deployment protection), or set VERCEL_AUTOMATION_BYPASS_SECRET.'
         : '';
     throw new Error(`Failed to fetch fantasy positions (${fantasyRes.status})${hint}`);
   }
