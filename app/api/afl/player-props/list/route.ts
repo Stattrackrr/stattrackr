@@ -3,6 +3,7 @@ import { listAflPlayerPropsFromCache, type AflListPropRow } from '@/lib/aflPlaye
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
+import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
@@ -60,7 +61,11 @@ export async function GET(request: Request) {
         : process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : 'http://localhost:3000';
-    const playerTeamMap = await getAflPlayerTeamMapFromFiles();
+    let playerTeamMap = await getAflPlayerTeamMapFromFiles();
+    const seasonForTeam = new Date().getFullYear();
+    const fantasyTeamMap = await getAflPlayerTeamMapFromFantasy(seasonForTeam);
+    const resolvePlayerTeam = (name: string) =>
+      playerTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? fantasyTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? null;
     const uniqueCacheKeys = new Set<string>();
     const paramsByCacheKey = new Map<string, { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number }>();
     for (const r of rows) {
@@ -96,24 +101,28 @@ export async function GET(request: Request) {
     };
     if (missedKeys.length > 0) {
       const dvpMaps = await loadDvpMapsFromFiles();
+      const season = new Date().getFullYear();
+      let positionMap = await getAflPlayerPositionMap(season);
+      if (positionMap.size === 0) positionMap = await getAflPlayerPositionMap(season - 1);
       const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
       await Promise.all(
         missedKeys.map(async (cacheKey) => {
           const p = paramsByCacheKey.get(cacheKey);
           if (!p) return;
-          const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           const opponent = resolvedTeam && teamMatches(resolvedTeam, p.homeTeam) ? p.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, p.awayTeam) ? p.homeTeam : undefined);
           const playerTeam = resolvedTeam ?? p.homeTeam;
-          const dvp = opponent != null ? getDvp(opponent, p.statType) : null;
+          const position = positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          const dvp = opponent != null ? getDvp(opponent, p.statType, position) : null;
           let stats = opponent != null
             ? await getAflPropStats(p.playerName, playerTeam, opponent, p.statType, p.line, baseUrl, dvp, false, undefined, resolvedTeam)
             : null;
           if (!stats) {
-            const dvpHomeAway = getDvp(p.awayTeam, p.statType);
+            const dvpHomeAway = getDvp(p.awayTeam, p.statType, position);
             stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam);
           }
           if (!stats) {
-            const dvpAwayHome = getDvp(p.homeTeam, p.statType);
+            const dvpAwayHome = getDvp(p.homeTeam, p.statType, position);
             stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam);
           }
           if (stats) {
@@ -124,11 +133,33 @@ export async function GET(request: Request) {
         })
       );
     }
+    // Always override DvP from current position-aware lookup so we never show stale "everyone 6"
+    const dvpMapsForOverride = await loadDvpMapsFromFiles();
+    const seasonForPos = new Date().getFullYear();
+    let positionMapForOverride = await getAflPlayerPositionMap(seasonForPos);
+    if (positionMapForOverride.size === 0) positionMapForOverride = await getAflPlayerPositionMap(seasonForPos - 1);
+    const getDvpOverride = (opponent: string, statType: string, position?: string | null) =>
+      getDvpLookup(opponent, statType, dvpMapsForOverride, position);
+    const teamMatchesOverride = (a: string, b: string) => {
+      const x = (a ?? '').trim().toLowerCase();
+      const y = (b ?? '').trim().toLowerCase();
+      return (x && y) && (x === y || x.includes(y) || y.includes(x));
+    };
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rows.map((r) => {
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
       const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
-      const playerTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
+      const playerTeam = resolvePlayerTeam(r.playerName);
+      const opponent =
+        playerTeam && teamMatchesOverride(playerTeam, r.homeTeam)
+          ? r.awayTeam
+          : playerTeam && teamMatchesOverride(playerTeam, r.awayTeam)
+            ? r.homeTeam
+            : r.awayTeam;
+      const position = positionMapForOverride.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? undefined;
+      const dvpLookupResult = getDvpOverride(opponent, r.statType, position);
+      const dvpRating = dvpLookupResult?.rank ?? stats?.dvpRating ?? null;
+      const dvpStatValue = dvpLookupResult?.value ?? stats?.dvpStatValue ?? null;
       const baseRow = {
         ...r,
         playerTeam: playerTeam ?? undefined,
@@ -141,8 +172,8 @@ export async function GET(request: Request) {
         last10HitRate: stats?.last10HitRate,
         h2hHitRate: stats?.h2hHitRate,
         seasonHitRate: stats?.seasonHitRate,
-        dvpRating: stats?.dvpRating,
-        dvpStatValue: stats?.dvpStatValue,
+        dvpRating,
+        dvpStatValue,
       };
       return baseRow;
     });

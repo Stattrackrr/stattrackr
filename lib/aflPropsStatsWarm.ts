@@ -7,6 +7,7 @@ import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
+import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 const BATCH_SIZE = 50;
@@ -83,17 +84,23 @@ export async function runAflPropsStatsWarm(
     if (playerTeamMap.size === 0) {
       playerTeamMap = await getAflPlayerTeamMap(url);
     }
+    const season = new Date().getFullYear();
+    const fantasyTeamMap = await getAflPlayerTeamMapFromFantasy(season);
+    const resolvePlayerTeam = (name: string) =>
+      playerTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? fantasyTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? null;
     let dvpMaps = await loadDvpMapsFromFiles();
     if (dvpMaps.disposals.size === 0 && dvpMaps.goals.size === 0) {
       dvpMaps = await loadDvpMaps(url);
     }
+    let positionMap = await getAflPlayerPositionMap(season);
+    if (positionMap.size === 0) positionMap = await getAflPlayerPositionMap(season - 1);
     const teamMatches = (a: string, b: string) => {
       const x = (a ?? '').trim().toLowerCase();
       const y = (b ?? '').trim().toLowerCase();
       return (x && y) && (x === y || x.includes(y) || y.includes(x));
     };
     const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
-    console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map size:', playerTeamMap.size);
+    console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map:', playerTeamMap.size, 'position map:', positionMap.size);
 
     const seen = new Set<string>();
     const toWarm: PropToWarm[] = [];
@@ -102,7 +109,7 @@ export async function runAflPropsStatsWarm(
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       if (seen.has(key)) continue;
       seen.add(key);
-      const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
+      const resolvedTeam = resolvePlayerTeam(r.playerName);
       const playerTeam = resolvedTeam ?? r.homeTeam;
       const opponent = resolvedTeam && teamMatches(resolvedTeam, r.homeTeam) ? r.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, r.awayTeam) ? r.homeTeam : r.awayTeam);
       toWarm.push({
@@ -122,8 +129,9 @@ export async function runAflPropsStatsWarm(
     const runBatch = (batch: PropToWarm[]) =>
       Promise.all(
         batch.map((p) => {
-          const dvp = getDvp(p.opponent, p.statType, undefined);
-          const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          const position = positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          const dvp = getDvp(p.opponent, p.statType, position);
+          const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (r) warmed++;
           }).catch((err) => {

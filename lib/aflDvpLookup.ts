@@ -100,7 +100,7 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
     const entries = Array.from(byOpponentPosition.entries())
       .filter(([k]) => k.endsWith(`|${pos}`))
       .map(([k, v]) => [k.replace(/\|[^|]+$/, ''), v] as [string, number]);
-    const sorted = entries.sort((a, b) => b[1] - a[1]);
+    const sorted = entries.sort((a, b) => a[1] - b[1]); // low->high so rank 1 = hardest (lowest value)
     sorted.forEach(([opp, value], i) => {
       const rank = i + 1;
       const key = `${opp}|${pos}`;
