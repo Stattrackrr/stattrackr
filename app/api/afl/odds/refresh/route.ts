@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { execSync } from 'child_process';
+import path from 'path';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
@@ -7,9 +9,13 @@ import { runAflPropsStatsWarm } from '@/lib/aflPropsStatsWarm';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const AFL_DVP_BUILD_SEASON = 2025;
+const AFL_DVP_BUILD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * GET /api/afl/odds/refresh
- * Single cron: (1) fetches AFL game odds, (2) refreshes player props cache, (3) runs props-stats warm.
+ * Single cron: (1) fetches AFL game odds, (2) refreshes player props cache, (3) runs props-stats warm,
+ * (4) builds AFL DvP dataset (script) so data/afl-dvp-{season}.json is up to date.
  * We only replace caches when the run is successful and we have data; if unsuccessful or empty we leave
  * old cache until TTL (e.g. 24h for stats) or next successful run.
  */
@@ -60,6 +66,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Build AFL DvP dataset so data/afl-dvp-{season}.json is up to date (used by DvP batch API and script).
+    let dvpBuildOk = false;
+    try {
+      const cwd = process.cwd();
+      const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
+      const baseUrl =
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+      execSync(
+        `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl}`,
+        {
+          cwd,
+          timeout: AFL_DVP_BUILD_TIMEOUT_MS,
+          stdio: 'pipe',
+          encoding: 'utf8',
+        }
+      );
+      dvpBuildOk = true;
+      console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ')');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[AFL cron] DvP build failed:', msg);
+    }
+
     return NextResponse.json({
       success: true,
       gamesCount: result.gamesCount,
@@ -71,6 +100,7 @@ export async function GET(request: NextRequest) {
       playerPropsError: ppResult.error ?? undefined,
       statsWarmed: warmResult.warmed,
       statsWarmError: warmResult.error,
+      dvpBuildOk,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

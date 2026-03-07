@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import sharedCache from '@/lib/sharedCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_SEASON = 2025;
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
+const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v2';
+const DVP_BATCH_CACHE_TTL_SECONDS = 60 * 60 * 2; // 2 hours – match script calibration, reduce file reads
 
 type DvpRow = {
   opponent: string;
@@ -39,6 +42,14 @@ function parseIntSafe(v: string | null, fallback: number): number {
   if (!v) return fallback;
   const n = parseInt(v, 10);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/** Exclude numeric/garbage opponent keys from DvP file so dropdown and ranks are 1–18 only. */
+function isValidOpponent(opponent: string): boolean {
+  const s = String(opponent ?? '').trim();
+  if (s.length < 3) return false;
+  if (/^\d+$/.test(s)) return false;
+  return true;
 }
 
 async function readDvpFile(season: number): Promise<DvpFileShape> {
@@ -81,10 +92,27 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const statsKey = (statsParam || '').trim() || 'all';
+  const cacheKey = `${DVP_BATCH_CACHE_PREFIX}:${season}:${position}:${statsKey}`;
+
   try {
+    const cached = await sharedCache.getJSON<{
+      success: true;
+      source: string;
+      season: number;
+      position: string;
+      generatedAt: string;
+      opponents: string[];
+      metrics: Record<string, unknown>;
+      metricCount: number;
+    }>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const data = await readDvpFile(season);
     const allRows = Array.isArray(data.rows) ? data.rows : [];
-    const rows = allRows.filter((r) => r.position === position);
+    const rows = allRows.filter((r) => r.position === position && isValidOpponent(r.opponent));
     const oa = await readOaFile(season);
 
     if (rows.length === 0) {
@@ -143,10 +171,11 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Rank 1 = hardest (lowest allowed), N = easiest (highest allowed)
       const sorted = Object.entries(values).sort((a, b) => a[1] - b[1]); // low->high
       const ranks: Record<string, number> = {};
       sorted.forEach(([team], idx) => {
-        ranks[team] = idx + 1; // 1 = hardest (lowest allowed), N = easiest (highest allowed)
+        ranks[team] = idx + 1;
       });
 
       const sortedTeamTotals = Object.entries(teamTotalValues).sort((a, b) => a[1] - b[1]); // low->high
@@ -160,6 +189,7 @@ export async function GET(req: NextRequest) {
       if (oa && oaCode) {
         const sumByOpponent: Record<string, number> = {};
         for (const rAll of allRows) {
+          if (!isValidOpponent(rAll.opponent)) continue;
           const vAll = Number(rAll.perTeamGame?.[stat] ?? NaN);
           if (Number.isFinite(vAll)) {
             sumByOpponent[rAll.opponent] = (sumByOpponent[rAll.opponent] || 0) + vAll;
@@ -178,7 +208,7 @@ export async function GET(req: NextRequest) {
           teamTotalValues[opp] = Math.round(teamTotalValues[opp] * factor * 100) / 100;
         }
 
-        // Re-rank after calibration
+        // Re-rank after calibration (rank 1 = hardest / lowest)
         const recalibrated = Object.entries(teamTotalValues).sort((a, b) => a[1] - b[1]);
         const recalibratedRanks: Record<string, number> = {};
         recalibrated.forEach(([team], idx) => {
@@ -192,8 +222,8 @@ export async function GET(req: NextRequest) {
 
     const opponents = [...new Set(rows.map((r) => r.opponent))].sort((a, b) => a.localeCompare(b));
 
-    return NextResponse.json({
-      success: true,
+    const payload = {
+      success: true as const,
       source: 'afl-dvp-file',
       season,
       position,
@@ -201,7 +231,10 @@ export async function GET(req: NextRequest) {
       opponents,
       metrics,
       metricCount: stats.length,
-    });
+    };
+    await sharedCache.setJSON(cacheKey, payload, DVP_BATCH_CACHE_TTL_SECONDS);
+
+    return NextResponse.json(payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const missingFile = /ENOENT/i.test(message) || /no such file/i.test(message);
