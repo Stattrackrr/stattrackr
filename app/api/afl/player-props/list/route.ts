@@ -89,16 +89,29 @@ export async function GET(request: Request) {
     );
     // 2) On cache miss: compute so we never show 0 stats (load DvP when needed; playerTeamMap already loaded)
     const missedKeys = Array.from(uniqueCacheKeys).filter((k) => !statsByKey.has(k));
+    const teamMatches = (a: string, b: string) => {
+      const x = (a ?? '').trim().toLowerCase();
+      const y = (b ?? '').trim().toLowerCase();
+      return (x && y) && (x === y || x.includes(y) || y.includes(x));
+    };
     if (missedKeys.length > 0) {
       const dvpMaps = await loadDvpMapsFromFiles();
-      const getDvp = (opponent: string, statType: string) => getDvpLookup(opponent, statType, dvpMaps);
+      const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
       await Promise.all(
         missedKeys.map(async (cacheKey) => {
           const p = paramsByCacheKey.get(cacheKey);
           if (!p) return;
           const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
-          const dvpHomeAway = getDvp(p.awayTeam, p.statType);
-          let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam);
+          const opponent = resolvedTeam && teamMatches(resolvedTeam, p.homeTeam) ? p.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, p.awayTeam) ? p.homeTeam : undefined);
+          const playerTeam = resolvedTeam ?? p.homeTeam;
+          const dvp = opponent != null ? getDvp(opponent, p.statType) : null;
+          let stats = opponent != null
+            ? await getAflPropStats(p.playerName, playerTeam, opponent, p.statType, p.line, baseUrl, dvp, false, undefined, resolvedTeam)
+            : null;
+          if (!stats) {
+            const dvpHomeAway = getDvp(p.awayTeam, p.statType);
+            stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam);
+          }
           if (!stats) {
             const dvpAwayHome = getDvp(p.homeTeam, p.statType);
             stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam);

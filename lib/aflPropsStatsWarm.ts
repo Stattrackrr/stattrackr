@@ -87,7 +87,12 @@ export async function runAflPropsStatsWarm(
     if (dvpMaps.disposals.size === 0 && dvpMaps.goals.size === 0) {
       dvpMaps = await loadDvpMaps(url);
     }
-    const getDvp = (opponent: string, statType: string) => getDvpLookup(opponent, statType, dvpMaps);
+    const teamMatches = (a: string, b: string) => {
+      const x = (a ?? '').trim().toLowerCase();
+      const y = (b ?? '').trim().toLowerCase();
+      return (x && y) && (x === y || x.includes(y) || y.includes(x));
+    };
+    const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
     console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map size:', playerTeamMap.size);
 
     const seen = new Set<string>();
@@ -97,10 +102,13 @@ export async function runAflPropsStatsWarm(
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       if (seen.has(key)) continue;
       seen.add(key);
+      const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
+      const playerTeam = resolvedTeam ?? r.homeTeam;
+      const opponent = resolvedTeam && teamMatches(resolvedTeam, r.homeTeam) ? r.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, r.awayTeam) ? r.homeTeam : r.awayTeam);
       toWarm.push({
         playerName: r.playerName,
-        team: r.homeTeam,
-        opponent: r.awayTeam,
+        team: playerTeam,
+        opponent,
         statType: r.statType,
         line: r.line,
       });
@@ -114,7 +122,7 @@ export async function runAflPropsStatsWarm(
     const runBatch = (batch: PropToWarm[]) =>
       Promise.all(
         batch.map((p) => {
-          const dvp = getDvp(p.opponent, p.statType);
+          const dvp = getDvp(p.opponent, p.statType, undefined);
           const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (r) warmed++;

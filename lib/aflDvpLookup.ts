@@ -34,9 +34,13 @@ export function normalizeOpponentForDvp(opponent: string): string {
 }
 
 export type DvpMaps = {
+  /** Key: normalized "opponent|position" (e.g. "st kilda|def") for per-team, per-position rank. */
   disposals: Map<string, { rank: number; value: number }>;
   goals: Map<string, { rank: number; value: number }>;
 };
+
+export const DVP_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
+export type DvpPosition = (typeof DVP_POSITIONS)[number];
 
 export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
   const currentYear = new Date().getFullYear();
@@ -75,26 +79,36 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
   return { disposals: result.disposals, goals: result.goals };
 }
 
-type DvpFileRow = { opponent?: string; perPlayerGame?: Record<string, number> };
+type DvpFileRow = { opponent?: string; position?: string; perPlayerGame?: Record<string, number> };
 
-/** Build DvP maps from file (for cron so we don't depend on self-fetch). */
+/** Build DvP maps from file keyed by "opponent|position" so rank is per team and per position (DEF/MID/FWD/RUC). */
 function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
   const map = new Map<string, { rank: number; value: number }>();
-  const byOpponent = new Map<string, number>();
+  const byOpponentPosition = new Map<string, number>();
   for (const row of rows) {
-    const key = (row.opponent || '').trim().toLowerCase();
-    if (!key) continue;
+    const opp = (row.opponent || '').trim().toLowerCase();
+    const pos = (row.position || 'MID').trim().toUpperCase();
+    if (!opp) continue;
     const val = Number(row.perPlayerGame?.[stat] ?? 0);
-    const existing = byOpponent.get(key);
-    if (existing == null || val > existing) byOpponent.set(key, val);
+    const key = `${opp}|${pos}`;
+    byOpponentPosition.set(key, val);
   }
-  const sorted = Array.from(byOpponent.entries()).sort((a, b) => b[1] - a[1]);
-  sorted.forEach(([key, value], i) => {
-    const rank = i + 1;
-    map.set(key, { rank, value });
-    for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY))
-      if (short === key) map.set(full, { rank, value });
-  });
+  const positions = Array.from(new Set(byOpponentPosition.keys().map((k) => k.split('|')[1]).filter(Boolean)));
+  for (const pos of positions) {
+    const entries = Array.from(byOpponentPosition.entries())
+      .filter(([k]) => k.endsWith(`|${pos}`))
+      .map(([k, v]) => [k.replace(/\|[^|]+$/, ''), v] as [string, number]);
+    const sorted = entries.sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([opp, value], i) => {
+      const rank = i + 1;
+      const key = `${opp}|${pos}`;
+      map.set(key, { rank, value });
+      const shortKey = normalizeOpponentForDvp(opp) || opp;
+      map.set(`${shortKey}|${pos}`, { rank, value });
+      for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY))
+        if (short === shortKey || short === opp) map.set(`${full}|${pos}`, { rank, value });
+    });
+  }
   return map;
 }
 
@@ -122,18 +136,27 @@ export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
   return empty;
 }
 
+/** Default position when unknown (MID is most common for disposals). */
+const DEFAULT_DVP_POSITION = 'MID';
+
 export function getDvpLookup(
   opponent: string,
   statType: string,
-  maps: DvpMaps
+  maps: DvpMaps,
+  position?: string | null
 ): { rank: number; value: number } | null {
   const opp = (opponent || '').trim().toLowerCase();
+  const pos = (position || DEFAULT_DVP_POSITION).trim().toUpperCase();
   const m = statType === 'goals_over' ? maps.goals : maps.disposals;
-  let out = m.get(opp);
-  if (out) return out;
   const normalized = normalizeOpponentForDvp(opponent);
-  if (normalized) out = m.get(normalized);
+  const tryKey = (o: string) => m.get(`${o}|${pos}`);
+  let out = tryKey(opp) ?? (normalized ? tryKey(normalized) : null);
   if (out) return out;
-  const entry = Array.from(m.entries()).find(([team]) => team.includes(opp) || opp.includes(team));
-  return entry ? entry[1] : null;
+  const prefix = `${opp}|`;
+  const entry = Array.from(m.entries()).find(([k]) => k.startsWith(prefix) || (normalized && k.startsWith(`${normalized}|`)));
+  if (entry) return entry[1];
+  const legacyKey = m.get(opp) ?? (normalized ? m.get(normalized) : null);
+  if (legacyKey) return legacyKey;
+  const fallback = Array.from(m.entries()).find(([k]) => k.includes(opp) || (normalized && k.includes(normalized)));
+  return fallback ? fallback[1] : null;
 }
