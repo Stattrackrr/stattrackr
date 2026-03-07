@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { refreshAflOddsData } from '@/lib/refreshAflOdds';
+import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
 
 export const dynamic = 'force-dynamic';
@@ -8,8 +8,9 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/afl/odds/refresh
- * Single cron: (1) fetches AFL game odds and refreshes player props cache, (2) runs props-stats warm
- * so L5/L10/Season/DvP etc are populated for current props in the same run. No separate warm cron.
+ * Single cron: (1) fetches AFL game odds, (2) refreshes player props cache, (3) runs props-stats warm.
+ * We only replace caches when the run is successful and we have data; if unsuccessful or empty we leave
+ * old cache until TTL (e.g. 24h for stats) or next successful run.
  */
 export async function GET(request: NextRequest) {
   console.log('[AFL cron] /api/afl/odds/refresh started');
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await refreshAflOddsData();
+    const result = await refreshAflOddsData({ skipWrite: true });
     if (!result.success) {
       console.log('[AFL cron] Odds fetch failed:', result.error);
       return NextResponse.json(
@@ -59,6 +60,11 @@ export async function GET(request: NextRequest) {
         warmResult = { error: e instanceof Error ? e.message : String(e) };
         console.warn('[AFL cron] Props-stats warm failed:', warmResult.error);
       }
+    }
+
+    // Only replace odds cache when we have data and props refresh succeeded; never overwrite with empty.
+    if (result.cachePayload && result.gamesCount > 0 && ppResult.eventsRefreshed > 0) {
+      await setAflOddsCache(result.cachePayload);
     }
 
     return NextResponse.json({

@@ -247,6 +247,7 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
 
       const eventCache = buildEventCacheFromBookmakers(bookmakers);
       if (Object.keys(eventCache).length === 0) continue;
+      // Only write when we have data; never overwrite with empty (old cache stays until TTL or next successful run).
       const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
       await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
       eventsRefreshed++;

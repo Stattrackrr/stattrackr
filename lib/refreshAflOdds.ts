@@ -2,6 +2,9 @@
  * AFL odds refresh using The Odds API (v4).
  * Game odds (H2H, spreads, totals) are cached for 90 minutes (~30 API credits per refresh).
  * Cron runs every 90 min; 16/day × 30 ≈ 480 credits/day, ~14.4k/month.
+ *
+ * Cache policy: only write when we have non-empty data. If the run fails or returns empty,
+ * we do not overwrite; old cache stays until TTL (e.g. 24h for stats) or next successful run.
  */
 
 import sharedCache from '@/lib/sharedCache';
@@ -161,14 +164,16 @@ function parseOutcomesToBookRow(
   };
 }
 
-export async function refreshAflOddsData(): Promise<{
+export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Promise<{
   success: boolean;
   gamesCount: number;
   lastUpdated: string;
   nextUpdate: string;
   games?: AflGameOdds[];
+  cachePayload?: AflOddsCache;
   error?: string;
 }> {
+  const skipWrite = options?.skipWrite === true;
   const apiKey = process.env.ODDS_API_KEY?.trim();
   if (!apiKey) {
     return { success: false, gamesCount: 0, lastUpdated: '', nextUpdate: '', error: 'ODDS_API_KEY not set' };
@@ -222,7 +227,8 @@ export async function refreshAflOddsData(): Promise<{
       lastUpdated: now.toISOString(),
       nextUpdate: nextUpdate.toISOString(),
     };
-    if (games.length > 0) {
+    // Only replace cache when we have data; never overwrite with empty (wait for TTL or next successful run).
+    if (games.length > 0 && !skipWrite) {
       await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, cachePayload, AFL_ODDS_CACHE_TTL_SECONDS);
     }
 
@@ -232,6 +238,7 @@ export async function refreshAflOddsData(): Promise<{
       lastUpdated: cachePayload.lastUpdated,
       nextUpdate: cachePayload.nextUpdate,
       games,
+      cachePayload,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -243,6 +250,12 @@ export async function refreshAflOddsData(): Promise<{
       error: message,
     };
   }
+}
+
+/** Write odds cache (used by cron only after props refresh succeeds so we never show new odds without props). */
+export async function setAflOddsCache(payload: AflOddsCache): Promise<void> {
+  if (!payload?.games?.length) return;
+  await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, payload, AFL_ODDS_CACHE_TTL_SECONDS);
 }
 
 /** Read game odds from 90-min cache (populated by cron every 90 min). */

@@ -1,6 +1,7 @@
 /**
  * Server-side cache for AFL prop stats (L5, L10, H2H, Season, Streak, hit rates).
  * Used by /api/afl/props-stats/batch so the props page gets fast, cached stats.
+ * We only set entries when we have computed stats; never overwrite with empty (24h TTL).
  */
 
 import { opponentToFootywireTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
