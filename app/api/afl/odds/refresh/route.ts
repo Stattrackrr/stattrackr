@@ -51,29 +51,12 @@ export async function GET(request: NextRequest) {
     console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
 
     // Only replace odds cache when we have data and props refresh succeeded; never overwrite with empty.
-    // Write odds first so the in-process warm can read new games/props from the list API.
     if (result.cachePayload && result.gamesCount > 0 && ppResult.eventsRefreshed > 0) {
       await setAflOddsCache(result.cachePayload);
     }
 
-    // Run props-stats warm in-process (no internal HTTP call) so we never hit 401; L5/L10/Season/DvP for current props.
-    let warmResult: { warmed?: number; error?: string } = {};
-    if (result.gamesCount > 0) {
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000';
-      const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
-      try {
-        const warm = await runAflPropsStatsWarm(baseUrl, { useListApi: true, cronSecret });
-        warmResult = { warmed: warm.warmed, error: warm.success ? undefined : warm.error };
-        console.log('[AFL cron] Props-stats warm done:', warmResult.warmed ?? 0, warmResult.error ?? 'OK');
-      } catch (e) {
-        warmResult = { error: e instanceof Error ? e.message : String(e) };
-        console.warn('[AFL cron] Props-stats warm failed:', warmResult.error);
-      }
-    }
-
-    // Build AFL DvP dataset: on Vercel /tmp is writable, so write there then store in Redis.
+    // Build AFL DvP first so the props-stats warm below uses fresh DvP rankings.
+    // On Vercel /tmp is writable; we write there then store in Redis.
     // Readers (batch API, props warm) use cache first, then fall back to data/ file (e.g. local dev).
     let dvpBuildOk = false;
     const tmpDir = os.tmpdir();
@@ -107,6 +90,23 @@ export async function GET(request: NextRequest) {
       const msg = e instanceof Error ? e.message : String(e);
       console.warn('[AFL cron] DvP build failed:', msg);
       await fs.unlink(tmpDvpPath).catch(() => {});
+    }
+
+    // Run props-stats warm in-process so L5/L10/Season/DvP use the DvP we just cached.
+    let warmResult: { warmed?: number; error?: string } = {};
+    if (result.gamesCount > 0) {
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000';
+      const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
+      try {
+        const warm = await runAflPropsStatsWarm(baseUrl, { useListApi: true, cronSecret });
+        warmResult = { warmed: warm.warmed, error: warm.success ? undefined : warm.error };
+        console.log('[AFL cron] Props-stats warm done:', warmResult.warmed ?? 0, warmResult.error ?? 'OK');
+      } catch (e) {
+        warmResult = { error: e instanceof Error ? e.message : String(e) };
+        console.warn('[AFL cron] Props-stats warm failed:', warmResult.error);
+      }
     }
 
     return NextResponse.json({
