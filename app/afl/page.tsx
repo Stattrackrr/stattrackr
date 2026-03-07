@@ -464,10 +464,19 @@ export default function AFLPage() {
       ? parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''))
       : 0.5;
     if (Number.isFinite(n)) {
+      // Don't overwrite user's manual line when returning from background (refetch): keep custom value e.g. 22 if book has 24.5
+      const tol = 0.01;
+      if (
+        aflCurrentLineValue != null &&
+        Number.isFinite(aflCurrentLineValue) &&
+        Math.abs(aflCurrentLineValue - n) > tol
+      ) {
+        return; // User has set a different line; keep it
+      }
       ignoreNextTransientLineRef.current = true;
       setAflCurrentLineValue(n);
     }
-  }, [aflPropsMode, mainChartStat, selectedAflDisposalsColumn, aflPlayerPropsBooks]);
+  }, [aflPropsMode, mainChartStat, selectedAflDisposalsColumn, aflPlayerPropsBooks, aflCurrentLineValue]);
 
   // When game props stat changes (spread / total_points): pick a book that has a line for that stat. For total_goals we don't use book Total (that's points); chart shows goals only, no odds line.
   useEffect(() => {
@@ -527,16 +536,22 @@ export default function AFLPage() {
     }
   }, []);
 
-  // When landing with ?player=Name (e.g. from AFL props page click), fetch and select that player.
-  // Clear current player immediately so we don't flash the previous player's chart before the new one loads.
+  // When landing with ?player=Name (e.g. from AFL props page click), show name immediately from URL then fetch full details in background.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const playerParam = url.searchParams.get('player')?.trim();
     if (!playerParam) return;
     const teamParam = url.searchParams.get('team')?.trim();
-    setLoadingPlayerFromUrl(true);
-    setSelectedPlayer(null);
+    const opponentParam = url.searchParams.get('opponent')?.trim();
+    // Show name (and team/opponent) immediately from URL so we don't wait ~2.8s for /api/afl/players
+    const urlFallback: AflPlayerRecord = {
+      name: playerParam,
+      ...(teamParam ? { team: teamParam } : {}),
+      ...(opponentParam ? { last_opponent: opponentParam } : {}),
+    };
+    setSelectedPlayer(urlFallback);
+    setLoadingPlayerFromUrl(false);
     setSelectedPlayerGameLogs([]);
     setSelectedPlayerGameLogsWithQuarters([]);
     let cancelled = false;
@@ -546,30 +561,14 @@ export default function AFLPage() {
         if (teamParam) params.set('team', teamParam);
         const res = await fetch(`/api/afl/players?${params.toString()}`);
         const data = await res.json();
-        if (cancelled || !res.ok) {
-          if (!cancelled) setLoadingPlayerFromUrl(false);
-          return;
-        }
+        if (cancelled || !res.ok) return;
         const list = Array.isArray(data?.players) ? data.players : [];
         const match = list.find((p: Record<string, unknown>) => {
           const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
           return name.toLowerCase() === playerParam.toLowerCase();
         }) ?? list[0];
-        if (cancelled) {
-          setLoadingPlayerFromUrl(false);
-          return;
-        }
-        const opponentParam = url.searchParams.get('opponent')?.trim();
+        if (cancelled) return;
         if (!match) {
-          if (teamParam || opponentParam) {
-            const fallback: AflPlayerRecord = {
-              name: playerParam,
-              ...(teamParam ? { team: teamParam } : {}),
-              ...(opponentParam ? { last_opponent: opponentParam } : {}),
-            };
-            setSelectedPlayer(fallback);
-          }
-          setLoadingPlayerFromUrl(false);
           url.searchParams.delete('player');
           url.searchParams.delete('team');
           url.searchParams.delete('opponent');
@@ -585,19 +584,18 @@ export default function AFLPage() {
         if (opponentParam) {
           (record as AflPlayerRecord & { last_opponent?: string }).last_opponent = opponentParam;
         }
+        if (match.position != null) (record as AflPlayerRecord & { position?: string }).position = String(match.position);
         setSelectedPlayer(record);
         setSelectedPlayerGameLogs([]);
         setSelectedPlayerGameLogsWithQuarters([]);
         setStatsLoadingForPlayer(true);
         setSearchQuery('');
-        setLoadingPlayerFromUrl(false);
         url.searchParams.delete('player');
         url.searchParams.delete('team');
         url.searchParams.delete('opponent');
         window.history.replaceState({}, '', url.toString());
       } catch {
         if (!cancelled) {
-          setLoadingPlayerFromUrl(false);
           url.searchParams.delete('player');
           url.searchParams.delete('team');
           url.searchParams.delete('opponent');
@@ -605,10 +603,7 @@ export default function AFLPage() {
         }
       }
     })();
-    return () => {
-      cancelled = true;
-      setLoadingPlayerFromUrl(false);
-    };
+    return () => { cancelled = true; };
   }, []);
 
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
@@ -2305,12 +2300,18 @@ export default function AFLPage() {
                     )}
                   </div>
                 )}
-                {/* 4b. Lineup under chart - Game Props only */}
+                {/* 4b. Lineup under chart - Game Props only; show lineup for same game as odds (spread/total) */}
                 {aflPropsMode === 'team' && (
                   <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 border border-gray-200 dark:border-gray-700">
                     <AflTeamSelectionsCard
                       isDark={!!mounted && isDark}
-                      playerTeam={aflTeamFilter && aflTeamFilter !== 'All' ? (rosterTeamToInjuryTeam(aflTeamFilter) || aflTeamFilter) : null}
+                      playerTeam={
+                        aflOddsHomeTeam?.trim()
+                          ? (rosterTeamToInjuryTeam(aflOddsHomeTeam) || aflOddsHomeTeam)
+                          : aflTeamFilter && aflTeamFilter !== 'All'
+                            ? (rosterTeamToInjuryTeam(aflTeamFilter) || aflTeamFilter)
+                            : null
+                      }
                       selectedPlayerName={null}
                     />
                   </div>
@@ -2423,7 +2424,7 @@ export default function AFLPage() {
                     )}
                   </div>
                 )}
-                {/* 4.55. Lineups - mobile only; same as desktop lineup, under DVP/opp breakdown */}
+                {/* 4.55. Lineups - mobile only; same as desktop lineup, under DVP/opp breakdown. Game Props: use odds game so lineup matches. */}
                 {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
                   <div className="lg:hidden w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-4 border border-gray-200 dark:border-gray-700">
                     <AflTeamSelectionsCard
@@ -2431,8 +2432,12 @@ export default function AFLPage() {
                       playerTeam={
                         aflPropsMode === 'player' && selectedPlayer?.team
                           ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
-                          : aflPropsMode === 'team' && aflTeamFilter && aflTeamFilter !== 'All'
-                            ? (rosterTeamToInjuryTeam(aflTeamFilter) || aflTeamFilter)
+                          : aflPropsMode === 'team'
+                            ? (aflOddsHomeTeam?.trim()
+                                ? (rosterTeamToInjuryTeam(aflOddsHomeTeam) || aflOddsHomeTeam)
+                                : aflTeamFilter && aflTeamFilter !== 'All'
+                                  ? (rosterTeamToInjuryTeam(aflTeamFilter) || aflTeamFilter)
+                                  : null)
                             : null
                       }
                       selectedPlayerName={aflPropsMode === 'player' && selectedPlayer?.name ? String(selectedPlayer.name) : null}

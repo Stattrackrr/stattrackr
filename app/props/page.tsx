@@ -422,7 +422,7 @@ export default function NBALandingPage() {
   // Odds format state - load from localStorage or default to 'american'
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
 
-  // Props page sport: NBA (default) | AFL
+  // Props page sport: NBA (default) | AFL — must init to 'nba' to avoid hydration mismatch; restore from URL in useEffect
   const [propsSport, setPropsSport] = useState<'nba' | 'afl'>('nba');
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
@@ -488,16 +488,14 @@ export default function NBALandingPage() {
       setOddsFormat(savedFormat as 'american' | 'decimal');
     }
     
-    // Clear any player-related URL parameters when landing on player props page
-    // This ensures a clean state when navigating back from dashboard
+    // Restore sport from URL so refresh keeps AFL tab when on /props?sport=afl
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const sportParam = url.searchParams.get('sport');
       if (sportParam === 'afl') {
         setPropsSport('afl');
         setAflPropsLoading(true);
-        url.searchParams.delete('sport');
-        window.history.replaceState({}, '', url.toString());
+        // Keep sport=afl in URL so refresh stays on AFL
       }
       // When coming back from AFL dashboard "Back to Player Props", clear the search filter
       // and debounced value so the next search (e.g. same player name) runs correctly.
@@ -3349,7 +3347,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             <div className={`flex gap-1.5 mb-2 lg:gap-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <button
                 type="button"
-                onClick={() => setPropsSport('nba')}
+                onClick={() => {
+                  setPropsSport('nba');
+                  router.replace('/props', { scroll: false });
+                }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'nba'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
@@ -3361,7 +3362,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               </button>
               <button
                 type="button"
-                onClick={() => { setPropsSport('afl'); setAflPropsLoading(true); }}
+                onClick={() => {
+                  setPropsSport('afl');
+                  setAflPropsLoading(true);
+                  router.replace('/props?sport=afl', { scroll: false });
+                }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'afl'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
