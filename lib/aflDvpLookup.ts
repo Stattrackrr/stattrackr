@@ -81,9 +81,9 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
   return { disposals: result.disposals, goals: result.goals };
 }
 
-type DvpFileRow = { opponent?: string; position?: string; perPlayerGame?: Record<string, number> };
+type DvpFileRow = { opponent?: string; position?: string; perPlayerGame?: Record<string, number>; perTeamGame?: Record<string, number | null> };
 
-/** Build DvP maps from file keyed by "opponent|position" so rank is per team and per position (DEF/MID/FWD/RUC). */
+/** Build DvP maps from file keyed by "opponent|position" using perTeamGame (team total vs position), not per-player. */
 function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
   const map = new Map<string, { rank: number; value: number }>();
   const byOpponentPosition = new Map<string, number>();
@@ -91,7 +91,7 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
     const opp = (row.opponent || '').trim().toLowerCase();
     const pos = (row.position || 'MID').trim().toUpperCase();
     if (!opp) continue;
-    const val = Number(row.perPlayerGame?.[stat] ?? 0);
+    const val = Number(row.perTeamGame?.[stat] ?? row.perPlayerGame?.[stat] ?? 0);
     const key = `${opp}|${pos}`;
     byOpponentPosition.set(key, val);
   }
