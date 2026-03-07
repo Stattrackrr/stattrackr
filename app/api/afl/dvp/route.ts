@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { getAflDvpPayloadFromCache } from '@/lib/aflDvpCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,8 @@ function parseIntSafe(v: string | null, fallback: number): number {
 }
 
 async function readDvpFile(season: number): Promise<DvpFileShape> {
+  const cached = await getAflDvpPayloadFromCache(season);
+  if (cached?.rows) return cached as DvpFileShape;
   const file = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
   const raw = await fs.readFile(file, 'utf8');
   return JSON.parse(raw) as DvpFileShape;

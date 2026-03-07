@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { execSync } from 'child_process';
+import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
 import { runAflPropsStatsWarm } from '@/lib/aflPropsStatsWarm';
+import {
+  getAflDvpPayloadCacheKey,
+  AFL_DVP_CACHE_TTL_SECONDS,
+} from '@/lib/aflDvpCache';
+import sharedCache from '@/lib/sharedCache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -66,15 +73,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build AFL DvP dataset so data/afl-dvp-{season}.json is up to date (used by DvP batch API and script).
+    // Build AFL DvP dataset: on Vercel /tmp is writable, so write there then store in Redis.
+    // Readers (batch API, props warm) use cache first, then fall back to data/ file (e.g. local dev).
     let dvpBuildOk = false;
+    const tmpDir = os.tmpdir();
+    const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
     try {
       const cwd = process.cwd();
       const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
       const baseUrl =
         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+      const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
       execSync(
-        `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl}`,
+        `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
         {
           cwd,
           timeout: AFL_DVP_BUILD_TIMEOUT_MS,
@@ -82,11 +93,20 @@ export async function GET(request: NextRequest) {
           encoding: 'utf8',
         }
       );
+      const raw = await fs.readFile(tmpDvpPath, 'utf8');
+      const payload = JSON.parse(raw) as Record<string, unknown>;
+      await sharedCache.setJSON(
+        getAflDvpPayloadCacheKey(AFL_DVP_BUILD_SEASON),
+        payload,
+        AFL_DVP_CACHE_TTL_SECONDS
+      );
+      await fs.unlink(tmpDvpPath).catch(() => {});
       dvpBuildOk = true;
-      console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ')');
+      console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.warn('[AFL cron] DvP build failed:', msg);
+      await fs.unlink(tmpDvpPath).catch(() => {});
     }
 
     return NextResponse.json({

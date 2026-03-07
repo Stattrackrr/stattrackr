@@ -520,7 +520,10 @@ async function main() {
       .sort((a, b) => a.name.localeCompare(b.name)),
   };
 
-  const dataDir = path.join(process.cwd(), 'data');
+  const outputDir = getArg('output-dir', '');
+  const dataDir = outputDir
+    ? path.resolve(process.cwd(), outputDir)
+    : path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   const outPath = path.join(dataDir, `afl-dvp-${season}.json`);
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8');

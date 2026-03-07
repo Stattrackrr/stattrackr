@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import sharedCache from '@/lib/sharedCache';
+import { getAflDvpPayloadFromCache } from '@/lib/aflDvpCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,8 @@ function isValidOpponent(opponent: string): boolean {
 }
 
 async function readDvpFile(season: number): Promise<DvpFileShape> {
+  const cached = await getAflDvpPayloadFromCache(season);
+  if (cached?.rows) return cached as DvpFileShape;
   const file = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
   const raw = await fs.readFile(file, 'utf8');
   return JSON.parse(raw) as DvpFileShape;

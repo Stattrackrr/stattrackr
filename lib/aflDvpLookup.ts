@@ -1,10 +1,12 @@
 /**
  * Shared DvP lookup for AFL props (list API and warm endpoint).
  * Maps opponent names to DvP file keys (afl-dvp-*.json uses short names).
+ * Reads from cache first (Vercel cron writes there), then data/ file.
  */
 
 import path from 'path';
 import fs from 'fs/promises';
+import { getAflDvpPayloadFromCache } from '@/lib/aflDvpCache';
 
 const OPPONENT_TO_DVP_KEY: Record<string, string> = {
   'adelaide crows': 'adelaide', adelaide: 'adelaide',
@@ -112,23 +114,28 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
   return map;
 }
 
-/** Load DvP maps by reading data/afl-dvp-{season}.json (avoids self-fetch in cron). */
+/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. */
 export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
   const empty = { disposals: new Map(), goals: new Map() };
   const year = new Date().getFullYear();
   for (const season of [year, year - 1]) {
     if (season < 2020) continue;
     try {
+      const cached = await getAflDvpPayloadFromCache(season);
+      const rows = cached?.rows ?? [];
+      if (rows.length > 0) {
+        const disposals = buildFromFileRows(rows as DvpFileRow[], 'disposals');
+        const goals = buildFromFileRows(rows as DvpFileRow[], 'goals');
+        if (disposals.size > 0 || goals.size > 0) return { disposals, goals };
+      }
       const filePath = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
       const raw = await fs.readFile(filePath, 'utf8');
       const data = JSON.parse(raw) as { rows?: DvpFileRow[] };
-      const rows = data?.rows ?? [];
-      if (rows.length === 0) continue;
-      const disposals = buildFromFileRows(rows, 'disposals');
-      const goals = buildFromFileRows(rows, 'goals');
-      if (disposals.size > 0 || goals.size > 0) {
-        return { disposals, goals };
-      }
+      const fileRows = data?.rows ?? [];
+      if (fileRows.length === 0) continue;
+      const disposals = buildFromFileRows(fileRows, 'disposals');
+      const goals = buildFromFileRows(fileRows, 'goals');
+      if (disposals.size > 0 || goals.size > 0) return { disposals, goals };
     } catch {
       /* try next season */
     }
