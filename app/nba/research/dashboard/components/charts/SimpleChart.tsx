@@ -884,15 +884,15 @@ const SimpleChart = memo(function SimpleChart({
           </div>
         </div>
       )}
-      {/* Betting line overlay - updates via DOM, no re-renders */}
+      {/* Betting line overlay - updates via DOM, no re-renders; on mobile match chart margin + x-axis so line aligns with bar area */}
       <div 
         id="simple-chart-betting-line-container"
         className="absolute pointer-events-none"
         style={{
           left: isMobile ? '0px' : '32px', // Full width on mobile, yAxis width on desktop
           right: isMobile ? '0px' : '14px', // Full width on mobile, updated via DOM when second axis changes on desktop
-          top: '22px', // margin.top
-          bottom: '57px', // margin.bottom + extra space for alignment
+          top: isMobile ? '44px' : '22px',   // Match chart margin.top (mobile 44, desktop 22)
+          bottom: isMobile ? '59px' : '57px', // Match chart margin.bottom (19) + XAxis height (40) so overlay = bar area only
           zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
         }}
       >
