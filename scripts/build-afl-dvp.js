@@ -8,7 +8,11 @@
  *   node scripts/build-afl-dvp.js --season=2025 --concurrency=6 --base-url=http://localhost:3000
  */
 
-require('dotenv').config({ path: '.env.local' });
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch (_) {
+  // dotenv not available (e.g. Vercel serverless); use process.env as-is
+}
 
 const fs = require('fs');
 const path = require('path');
