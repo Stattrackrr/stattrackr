@@ -427,6 +427,7 @@ export default function NBALandingPage() {
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
+  const aflPropsFetchCompleteRef = useRef(false); // only show "No odds for AFL" after we've actually fetched
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
@@ -899,10 +900,12 @@ export default function NBALandingPage() {
   }, []);
 
   // Fetch AFL games + player props list when sport is AFL. Restore from sessionStorage first so returning from dashboard is instant (stale-while-revalidate).
+  // Never replace existing props with empty: if we have props (from cache or prior fetch) and the API returns empty, keep showing them.
   useEffect(() => {
     if (propsSport !== 'afl') return;
     let cancelled = false;
     let hadCache = false;
+    let hadCacheWithProps = false;
     try {
       const raw = typeof window !== 'undefined' ? sessionStorage.getItem(AFL_PROPS_CACHE_KEY) : null;
       if (raw) {
@@ -914,14 +917,19 @@ export default function NBALandingPage() {
             setAflGames(parsed.games);
             setSelectedAflGames(new Set(parsed.games.map((g: { gameId: string }) => g.gameId)));
           }
+          aflPropsFetchCompleteRef.current = true;
           setAflPropsLoading(false);
           hadCache = true;
+          hadCacheWithProps = parsed.props.length > 0;
         }
       }
     } catch {
       // Ignore cache read errors
     }
-    if (!hadCache) setAflPropsLoading(true);
+    if (!hadCache) {
+      aflPropsFetchCompleteRef.current = false;
+      setAflPropsLoading(true);
+    }
     (async () => {
       try {
         const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
@@ -999,30 +1007,39 @@ export default function NBALandingPage() {
           dvpStatValue: a.dvpStatValue,
         };
         });
-        setAflProps(aggregated);
-        if (games.length > 0) {
+        // Never replace existing props with empty: if we had props (from cache) and API returned empty, keep showing them
+        if (aggregated.length > 0 || !hadCacheWithProps) {
+          setAflProps(aggregated);
+          if (games.length > 0) {
+            setSelectedAflGames(new Set(games.map((g) => g.gameId)));
+          }
+          if (!cancelled) {
+            try {
+              const toCache = {
+                props: aggregated,
+                games,
+                selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
+                timestamp: Date.now(),
+              };
+              sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+            } catch {
+              // Ignore cache write (quota, etc.)
+            }
+          }
+        } else if (games.length > 0) {
+          setAflGames(games);
           setSelectedAflGames(new Set(games.map((g) => g.gameId)));
         }
-        if (!cancelled) {
-          try {
-            const toCache = {
-              props: aggregated,
-              games,
-              selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
-              timestamp: Date.now(),
-            };
-            sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
-          } catch {
-            // Ignore cache write (quota, etc.)
-          }
-        }
       } catch (e) {
-        if (!cancelled) {
+        if (!cancelled && !hadCacheWithProps) {
           setAflGames([]);
           setAflProps([]);
         }
       } finally {
-        if (!cancelled) setAflPropsLoading(false);
+        if (!cancelled) {
+          aflPropsFetchCompleteRef.current = true;
+          setAflPropsLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -4035,7 +4052,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 </h2>
                 
                 {(propsSport === 'nba' ? filteredPlayerProps.length === 0 : filteredAflProps.length === 0) ? (
-                    ((propsSport === 'afl' && aflPropsLoading) || (propsSport === 'nba' && !showNoPropsMessage)) ? (
+                    ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage)) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
                       <div className="hidden lg:block overflow-x-auto">
@@ -4142,7 +4159,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         ))}
                       </div>
                       </>
-                    ) : propsSport === 'afl' ? (
+                    ) : propsSport === 'afl' && aflPropsFetchCompleteRef.current ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         <p className="text-lg font-medium">No odds for AFL</p>
                       </div>
