@@ -60,6 +60,7 @@ export async function GET(request: Request) {
         : process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : 'http://localhost:3000';
+    const playerTeamMap = await getAflPlayerTeamMapFromFiles();
     const uniqueCacheKeys = new Set<string>();
     const paramsByCacheKey = new Map<string, { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number }>();
     for (const r of rows) {
@@ -86,10 +87,10 @@ export async function GET(request: Request) {
         }
       })
     );
-    // 2) On cache miss: compute so we never show 0 stats (load DvP + player team only when needed)
+    // 2) On cache miss: compute so we never show 0 stats (load DvP when needed; playerTeamMap already loaded)
     const missedKeys = Array.from(uniqueCacheKeys).filter((k) => !statsByKey.has(k));
     if (missedKeys.length > 0) {
-      const [playerTeamMap, dvpMaps] = await Promise.all([getAflPlayerTeamMapFromFiles(), loadDvpMapsFromFiles()]);
+      const dvpMaps = await loadDvpMapsFromFiles();
       const getDvp = (opponent: string, statType: string) => getDvpLookup(opponent, statType, dvpMaps);
       await Promise.all(
         missedKeys.map(async (cacheKey) => {
@@ -114,21 +115,23 @@ export async function GET(request: Request) {
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
       const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
-      if (!stats) return r;
-      return {
+      const playerTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
+      const baseRow = {
         ...r,
-        last5Avg: stats.last5Avg,
-        last10Avg: stats.last10Avg,
-        h2hAvg: stats.h2hAvg,
-        seasonAvg: stats.seasonAvg,
-        streak: stats.streak,
-        last5HitRate: stats.last5HitRate,
-        last10HitRate: stats.last10HitRate,
-        h2hHitRate: stats.h2hHitRate,
-        seasonHitRate: stats.seasonHitRate,
-        dvpRating: stats.dvpRating,
-        dvpStatValue: stats.dvpStatValue,
+        playerTeam: playerTeam ?? undefined,
+        last5Avg: stats?.last5Avg,
+        last10Avg: stats?.last10Avg,
+        h2hAvg: stats?.h2hAvg,
+        seasonAvg: stats?.seasonAvg,
+        streak: stats?.streak,
+        last5HitRate: stats?.last5HitRate,
+        last10HitRate: stats?.last10HitRate,
+        h2hHitRate: stats?.h2hHitRate,
+        seasonHitRate: stats?.seasonHitRate,
+        dvpRating: stats?.dvpRating,
+        dvpStatValue: stats?.dvpStatValue,
       };
+      return baseRow;
     });
     const rowsWithStats = enrichedRows.filter((r) => r.last5Avg != null || r.seasonAvg != null);
     const payload: Record<string, unknown> = {
