@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
+import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
+import { loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
+import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,9 +18,9 @@ function hasUnder(u: string) {
 
 /**
  * GET /api/afl/player-props/list
- * Reads from AFL props cache and attaches stats from stats cache only (no computation).
- * Stats cache is filled by props-stats/warm cron (which now uses file-based DvP/league data so cron works).
- * ?enrich=false returns the same filtered rows without stats (for warm cron to use the exact set the list serves).
+ * Reads from AFL props cache and attaches stats from stats cache. On cache miss, computes stats
+ * so we never show 0 stats (L5/L10/Season/DvP etc). Stats cache is filled by the single AFL cron
+ * (odds/refresh then props-stats warm). ?enrich=false returns raw rows without stats (for warm to use).
  */
 export async function GET(request: Request) {
   try {
@@ -51,7 +54,12 @@ export async function GET(request: Request) {
       });
     }
 
-    const baseUrl = '';
+    const baseUrl =
+      typeof request.url === 'string'
+        ? new URL(request.url).origin
+        : process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : 'http://localhost:3000';
     const uniqueCacheKeys = new Set<string>();
     const paramsByCacheKey = new Map<string, { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number }>();
     for (const r of rows) {
@@ -62,6 +70,7 @@ export async function GET(request: Request) {
       }
     }
     const statsByKey = new Map<string, Awaited<ReturnType<typeof getAflPropStats>>>();
+    // 1) Try cache only for every unique prop
     await Promise.all(
       Array.from(uniqueCacheKeys).map(async (cacheKey) => {
         const p = paramsByCacheKey.get(cacheKey);
@@ -77,6 +86,30 @@ export async function GET(request: Request) {
         }
       })
     );
+    // 2) On cache miss: compute so we never show 0 stats (load DvP + player team only when needed)
+    const missedKeys = Array.from(uniqueCacheKeys).filter((k) => !statsByKey.has(k));
+    if (missedKeys.length > 0) {
+      const [playerTeamMap, dvpMaps] = await Promise.all([getAflPlayerTeamMapFromFiles(), loadDvpMapsFromFiles()]);
+      const getDvp = (opponent: string, statType: string) => getDvpLookup(opponent, statType, dvpMaps);
+      await Promise.all(
+        missedKeys.map(async (cacheKey) => {
+          const p = paramsByCacheKey.get(cacheKey);
+          if (!p) return;
+          const resolvedTeam = playerTeamMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
+          const dvpHomeAway = getDvp(p.awayTeam, p.statType);
+          let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam);
+          if (!stats) {
+            const dvpAwayHome = getDvp(p.homeTeam, p.statType);
+            stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam);
+          }
+          if (stats) {
+            statsByKey.set(cacheKey, stats);
+            const keyReverse = getAflPropStatsCacheKey(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line);
+            if (keyReverse !== cacheKey) statsByKey.set(keyReverse, stats);
+          }
+        })
+      );
+    }
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rows.map((r) => {
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);

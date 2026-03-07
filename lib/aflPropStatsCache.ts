@@ -8,7 +8,7 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
 const CACHE_PREFIX = 'afl_prop_stats_v1';
-const CACHE_TTL_SECONDS = 60 * 60 * 6; // 6 hours
+const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
   last5Avg: number | null;

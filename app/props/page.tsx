@@ -4991,7 +4991,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -5059,7 +5067,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -5127,7 +5143,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -5195,7 +5219,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -5263,7 +5295,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
@@ -5314,7 +5354,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </span>
                                     </div>
                                   ) : propsSport === 'afl' ? (
-                                    <div className={`text-sm ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</div>
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>N/A</div>
+                                    </div>
                                   ) : (
                                     <div className={`text-sm font-medium ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>-</div>
                                   )}
