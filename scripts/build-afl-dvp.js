@@ -6,6 +6,9 @@
  * Usage:
  *   node scripts/build-afl-dvp.js
  *   node scripts/build-afl-dvp.js --season=2025 --concurrency=6 --base-url=http://localhost:3000
+ *
+ * When run from Vercel cron, set VERCEL_AUTOMATION_BYPASS_SECRET (or CRON_SECRET) so requests
+ * to fantasy-positions and player-game-logs include x-vercel-protection-bypass and avoid 401.
  */
 
 try {
@@ -297,8 +300,23 @@ function statList() {
   ];
 }
 
-async function fetchJson(url) {
-  const res = await fetch(url);
+// Bypass Vercel Deployment Protection when cron runs build (401 on fantasy-positions / player-game-logs).
+function getAppRequestHeaders() {
+  const secret =
+    getArg('cron-secret', '') ||
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
+    process.env.CRON_SECRET ||
+    '';
+  if (!secret) return {};
+  return {
+    'x-vercel-protection-bypass': secret,
+    Authorization: `Bearer ${secret}`,
+  };
+}
+
+async function fetchJson(url, options = {}) {
+  const headers = options.headers || {};
+  const res = await fetch(url, { headers });
   const text = await res.text();
   let body = null;
   try {
@@ -363,8 +381,9 @@ async function main() {
     console.log(`AFLTables fixture teams found: ${seasonTeamGameCounts.size}`);
   }
 
+  const appHeaders = getAppRequestHeaders();
   const fantasyUrl = `${baseUrl}/api/afl/fantasy-positions?season=${encodeURIComponent(String(season))}`;
-  const fantasyRes = await fetchJson(fantasyUrl);
+  const fantasyRes = await fetchJson(fantasyUrl, { headers: appHeaders });
   if (!fantasyRes.ok || !Array.isArray(fantasyRes.body?.players)) {
     throw new Error(`Failed to fetch fantasy positions (${fantasyRes.status})`);
   }
@@ -388,7 +407,7 @@ async function main() {
   const fetched = await mapWithConcurrency(players, concurrency, async (player) => {
     const fullTeam = FANTASY_TEAM_TO_FULL[player.team] || player.team;
     const url = `${baseUrl}/api/afl/player-game-logs?season=${encodeURIComponent(String(season))}&player_name=${encodeURIComponent(player.name)}&team=${encodeURIComponent(fullTeam)}`;
-    const res = await fetchJson(url);
+    const res = await fetchJson(url, { headers: appHeaders });
     if (delayMs > 0) await sleep(delayMs);
     checked += 1;
     if (checked % 50 === 0 || checked === players.length) {
