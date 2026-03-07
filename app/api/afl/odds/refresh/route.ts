@@ -41,12 +41,17 @@ export async function GET(request: NextRequest) {
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : 'http://localhost:3000';
-      const warmUrl = `${baseUrl}/api/afl/props-stats/warm?useList=1`;
+      const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
+      const warmUrl = new URL(`${baseUrl}/api/afl/props-stats/warm`);
+      warmUrl.searchParams.set('useList', '1');
+      if (cronSecret) warmUrl.searchParams.set('secret', cronSecret);
       const headers: Record<string, string> = {};
-      const cronSecret = process.env.CRON_SECRET;
-      if (cronSecret) headers['Authorization'] = `Bearer ${cronSecret}`;
+      if (cronSecret) {
+        headers['Authorization'] = `Bearer ${cronSecret}`;
+        headers['x-cron-secret'] = cronSecret;
+      }
       try {
-        const warmRes = await fetch(warmUrl, { method: 'GET', headers, cache: 'no-store' });
+        const warmRes = await fetch(warmUrl.toString(), { method: 'GET', headers, cache: 'no-store' });
         const warmData = warmRes.ok ? await warmRes.json() : null;
         warmResult = { warmed: warmData?.warmed ?? warmData?.uniqueProps, error: warmRes.ok ? undefined : (warmData?.error ?? warmRes.statusText) };
         console.log('[AFL cron] Props-stats warm done:', warmResult.warmed ?? 0, warmResult.error ?? 'OK');
