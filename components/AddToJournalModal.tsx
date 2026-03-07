@@ -1221,11 +1221,11 @@ export default function AddToJournalModal({
     // Get player's team from search result or use default
     const playerTeam = selectedPlayer.team || team;
 
-    // Fetch the player's actual game info (opponent and gameDate)
-    let playerOpponent = opponent; // Fallback to original if fetch fails
-    let playerGameDate = gameDate; // Fallback to original if fetch fails
+    // Fetch the player's actual game info (opponent and gameDate) — NBA only; AFL uses the opponent/gameDate passed from the page (next-game API).
+    let playerOpponent = opponent; // Fallback to original if fetch fails (or always for AFL)
+    let playerGameDate = gameDate; // Fallback to original if fetch fails (or always for AFL)
 
-    if (playerTeam && playerTeam !== 'N/A') {
+    if (playerTeam && playerTeam !== 'N/A' && sport !== 'afl') {
       try {
         // Get today and tomorrow dates in US Eastern Time (NBA games are scheduled in ET)
         const getUSEasternDateString = (date: Date): string => {
@@ -1242,7 +1242,7 @@ export default function AddToJournalModal({
         const today = getUSEasternDateString(new Date());
         const tomorrow = getUSEasternDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
-        // Fetch games for today and tomorrow
+        // Fetch games for today and tomorrow (BDL = basketball)
         const gamesResponse = await fetch(`/api/bdl/games?start_date=${today}&end_date=${tomorrow}&per_page=100`);
         if (gamesResponse.ok) {
           const gamesData = await gamesResponse.json();
