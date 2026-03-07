@@ -67,6 +67,13 @@ export async function GET(request: NextRequest) {
       const baseUrl =
         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
       const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
+      const bypassSecret =
+        (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '').replace(
+          /\r\n|\r|\n/g,
+          ''
+        ).trim();
+      const env = { ...process.env };
+      if (bypassSecret) env.DVP_BYPASS_SECRET = bypassSecret;
       execSync(
         `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
         {
@@ -74,6 +81,7 @@ export async function GET(request: NextRequest) {
           timeout: AFL_DVP_BUILD_TIMEOUT_MS,
           stdio: 'pipe',
           encoding: 'utf8',
+          env,
         }
       );
       const raw = await fs.readFile(tmpDvpPath, 'utf8');

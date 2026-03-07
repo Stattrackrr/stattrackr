@@ -301,8 +301,10 @@ function statList() {
 }
 
 // Bypass Vercel Deployment Protection when cron runs build (401 on fantasy-positions / player-game-logs).
+// Cron passes secret via env.DVP_BYPASS_SECRET so the child process gets it on Vercel.
 function getAppRequestHeaders() {
   const secret =
+    process.env.DVP_BYPASS_SECRET ||
     getArg('cron-secret', '') ||
     process.env.VERCEL_AUTOMATION_BYPASS_SECRET ||
     process.env.CRON_SECRET ||
@@ -385,7 +387,11 @@ async function main() {
   const fantasyUrl = `${baseUrl}/api/afl/fantasy-positions?season=${encodeURIComponent(String(season))}`;
   const fantasyRes = await fetchJson(fantasyUrl, { headers: appHeaders });
   if (!fantasyRes.ok || !Array.isArray(fantasyRes.body?.players)) {
-    throw new Error(`Failed to fetch fantasy positions (${fantasyRes.status})`);
+    const hint =
+      fantasyRes.status === 401
+        ? ' Set VERCEL_AUTOMATION_BYPASS_SECRET (or CRON_SECRET) in Vercel so the cron can bypass deployment protection.'
+        : '';
+    throw new Error(`Failed to fetch fantasy positions (${fantasyRes.status})${hint}`);
   }
 
   let players = fantasyRes.body.players
