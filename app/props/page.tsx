@@ -437,6 +437,13 @@ export default function NBALandingPage() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showAflComingSoonPopup, setShowAflComingSoonPopup] = useState(false);
+
+  // Find player (not in props / no odds) modal: bottom-right on mobile, top-right on desktop
+  const [findPlayerOpen, setFindPlayerOpen] = useState(false);
+  const [findPlayerQuery, setFindPlayerQuery] = useState('');
+  const [findPlayerResults, setFindPlayerResults] = useState<Array<{ name: string; team?: string }>>([]);
+  const [findPlayerLoading, setFindPlayerLoading] = useState(false);
+  const findPlayerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -1060,6 +1067,58 @@ export default function NBALandingPage() {
       // Ignore quota etc.
     }
   }, [propsSport, aflProps, aflGames, selectedAflGames]);
+
+  // Find-player modal: use exact same search as AFL dashboard (fetchPlayers + client-side filter)
+  useEffect(() => {
+    if (!findPlayerOpen) return;
+    const q = findPlayerQuery.trim();
+    if (!q || q.length < 2) {
+      setFindPlayerResults([]);
+      return;
+    }
+    if (findPlayerDebounceRef.current) clearTimeout(findPlayerDebounceRef.current);
+    findPlayerDebounceRef.current = setTimeout(async () => {
+      findPlayerDebounceRef.current = null;
+      setFindPlayerLoading(true);
+      try {
+        if (propsSport === 'afl') {
+          // Match dashboard exactly: same API, same mapping, same client filter. Request limit 100 so API returns full set (dashboard gets 60 for single-word via effectiveLimit; we ask 100 to get everything).
+          const params = new URLSearchParams({ query: q, limit: '100' });
+          const res = await fetch(`/api/afl/players?${params.toString()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data?.error || 'Failed to load players');
+          }
+          const list = Array.isArray(data?.players) ? data.players : [];
+          const searchResults = list.map((p: Record<string, unknown>) => ({
+            name: String(p?.name ?? '-'),
+            team: typeof p?.team === 'string' ? p.team : undefined,
+          }));
+          // Same client-side filter as dashboard: name.includes(q) — show all matches (dashboard slices to 12 for dropdown; we show all)
+          const qLower = q.toLowerCase();
+          const filtered = searchResults.filter((p) =>
+            (p.name ?? '').toLowerCase().includes(qLower)
+          );
+          setFindPlayerResults(filtered);
+        } else {
+          const res = await fetch(`/api/bdl/players?q=${encodeURIComponent(q)}&per_page=25`, { cache: 'no-store' });
+          const data = await res.json();
+          let list = Array.isArray(data?.results) ? data.results : [];
+          list = list.map((p: { full?: string; team?: string }) => ({ name: String(p?.full ?? ''), team: p?.team }));
+          const qLower = q.toLowerCase();
+          list = list.filter((p) => (p.name || '').toLowerCase().includes(qLower));
+          setFindPlayerResults(list.slice(0, 25));
+        }
+      } catch {
+        setFindPlayerResults([]);
+      } finally {
+        setFindPlayerLoading(false);
+      }
+    }, 250);
+    return () => {
+      if (findPlayerDebounceRef.current) clearTimeout(findPlayerDebounceRef.current);
+    };
+  }, [findPlayerOpen, findPlayerQuery, propsSport]);
 
   // Fetch AFL league player stats for jumper numbers (for circle placeholder)
   useEffect(() => {
@@ -6314,6 +6373,129 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           </div>
         </div>
       </div>
+
+      {/* Find player (not in props / no odds): bottom-right mobile, top-right desktop */}
+      <button
+        type="button"
+        onClick={() => {
+          setFindPlayerOpen(true);
+          setFindPlayerQuery('');
+          setFindPlayerResults([]);
+        }}
+        className={`fixed z-[70] right-4 bottom-20 lg:bottom-auto lg:top-4 flex items-center justify-center w-12 h-12 rounded-full shadow-lg border transition-transform hover:scale-105 active:scale-95 ${
+          mounted && isDark
+            ? 'bg-[#0a1929] border-gray-600 text-purple-400 hover:bg-gray-800'
+            : 'bg-white border-gray-200 text-purple-600 hover:bg-gray-50'
+        }`}
+        aria-label="Search players who may not have odds"
+        title="Find player (may not have odds)"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </button>
+
+      {/* Find player modal */}
+      {findPlayerOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setFindPlayerOpen(false)}
+          role="presentation"
+        >
+          <div
+            className={`w-full max-w-md max-h-[85vh] flex flex-col rounded-xl border shadow-xl ${
+              mounted && isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-white border-gray-200'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="find-player-title"
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 id="find-player-title" className={`text-lg font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                Find player
+              </h2>
+              <button
+                type="button"
+                onClick={() => setFindPlayerOpen(false)}
+                className={`rounded p-1.5 transition-colors ${mounted && isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-500 hover:bg-gray-100'}`}
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <p className={`text-sm mb-3 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Search for players who may not appear or don&apos;t have odds on this page.
+              </p>
+              <input
+                type="text"
+                value={findPlayerQuery}
+                onChange={(e) => setFindPlayerQuery(e.target.value)}
+                placeholder={propsSport === 'afl' ? 'Search AFL players...' : 'Search NBA players...'}
+                className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
+                  mounted && isDark
+                    ? 'bg-[#10243e] border-gray-600 text-white placeholder-gray-500'
+                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
+                autoFocus
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+              {findPlayerLoading && (
+                <p className={`text-sm py-4 ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>Searching...</p>
+              )}
+              {!findPlayerLoading && findPlayerQuery.trim().length < 2 && (
+                <p className={`text-sm py-4 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Type at least 2 characters to search.
+                </p>
+              )}
+              {!findPlayerLoading && findPlayerQuery.trim().length >= 2 && findPlayerResults.length === 0 && (
+                <p className={`text-sm py-4 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>No players found.</p>
+              )}
+              {!findPlayerLoading && findPlayerResults.length > 0 && (
+                <ul className="space-y-1">
+                  {findPlayerResults.map((player, idx) => (
+                    <li key={`${player.name}-${player.team ?? ''}-${idx}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFindPlayerOpen(false);
+                          if (propsSport === 'afl') {
+                            try {
+                              sessionStorage.setItem('afl_player_from_props', JSON.stringify({ name: player.name, team: player.team ?? '' }));
+                            } catch {}
+                            router.push('/afl');
+                          } else {
+                            try {
+                              sessionStorage.removeItem('nba_dashboard_session_v1');
+                              sessionStorage.setItem('from_props_page', 'true');
+                            } catch {}
+                            router.push(`/nba/research/dashboard?player=${encodeURIComponent(player.name)}&tf=last10`);
+                          }
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors ${
+                          mounted && isDark
+                            ? 'text-gray-200 hover:bg-gray-800'
+                            : 'text-gray-800 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="font-medium">{player.name}</span>
+                        {player.team && (
+                          <span className={mounted && isDark ? 'text-gray-500 ml-2' : 'text-gray-400 ml-2'}>{player.team}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation - Only visible on mobile */}
       <MobileBottomNavigation

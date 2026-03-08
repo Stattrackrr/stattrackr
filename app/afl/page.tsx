@@ -38,6 +38,23 @@ import { Search, Loader2 } from 'lucide-react';
 type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
+
+/** Client-safe: normalize name for matching (no fs). "Daicos, Nick" and "Nick Daicos" → same key. */
+function normalizePlayerNameForMatch(name: string): string {
+  if (name == null || typeof name !== 'string') return '';
+  let s = name.trim();
+  if (!s) return '';
+  if (s.includes(',')) {
+    const parts = s.split(',').map((p) => p.trim());
+    if (parts.length === 2 && parts[0] && parts[1]) s = `${parts[1]} ${parts[0]}`.trim();
+  }
+  return s
+    .toLowerCase()
+    .replace(/[\u0027\u2018\u2019\u201B\u2032\u0060]/g, "'")
+    .replace(/[\u002D\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v1';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
@@ -536,7 +553,7 @@ export default function AFLPage() {
     }
   }, []);
 
-  // When landing with ?player=Name (e.g. from AFL props page click), show name immediately from URL then fetch full details in background.
+  // When landing with ?player=Name (e.g. from props Find player), use same search as dashboard so we get the same player record and stats load.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -544,28 +561,33 @@ export default function AFLPage() {
     if (!playerParam) return;
     const teamParam = url.searchParams.get('team')?.trim();
     const opponentParam = url.searchParams.get('opponent')?.trim();
-    // Show name (and team/opponent) immediately from URL so we don't wait ~2.8s for /api/afl/players
     const urlFallback: AflPlayerRecord = {
       name: playerParam,
       ...(teamParam ? { team: teamParam } : {}),
       ...(opponentParam ? { last_opponent: opponentParam } : {}),
     };
     setSelectedPlayer(urlFallback);
+    setAflPropsMode('player');
     setLoadingPlayerFromUrl(false);
     setSelectedPlayerGameLogs([]);
     setSelectedPlayerGameLogsWithQuarters([]);
     let cancelled = false;
     (async () => {
       try {
-        const params = new URLSearchParams({ query: playerParam, limit: '30', exact: '1' });
-        if (teamParam) params.set('team', teamParam);
+        // Same as dashboard search: no exact=1, same params — so we get the same list and same name/team format
+        const params = new URLSearchParams({ query: playerParam, limit: '30' });
+        if (teamParam && teamParam.trim() !== '') params.set('team', teamParam.trim());
         const res = await fetch(`/api/afl/players?${params.toString()}`);
         const data = await res.json();
         if (cancelled || !res.ok) return;
         const list = Array.isArray(data?.players) ? data.players : [];
+        const paramLookup = normalizePlayerNameForMatch(playerParam);
         const match = list.find((p: Record<string, unknown>) => {
           const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
-          return name.toLowerCase() === playerParam.toLowerCase();
+          return name && normalizePlayerNameForMatch(name) === paramLookup;
+        }) ?? list.find((p: Record<string, unknown>) => {
+          const name = String(p?.name ?? p?.player_name ?? p?.full_name ?? '').trim();
+          return name && name.toLowerCase().includes(playerParam.toLowerCase());
         }) ?? list[0];
         if (cancelled) return;
         if (!match) {
@@ -577,7 +599,7 @@ export default function AFLPage() {
         }
         const record: AflPlayerRecord = {
           name: String(match.name ?? match.player_name ?? match.full_name ?? '—'),
-          ...(typeof match.team === 'string' ? { team: match.team } : teamParam ? { team: teamParam } : {}),
+          ...(typeof match.team === 'string' && match.team.trim() ? { team: match.team.trim() } : teamParam ? { team: teamParam } : {}),
           ...(typeof match.number === 'number' && Number.isFinite(match.number) ? { guernsey: match.number } : {}),
           ...(match.id != null ? { id: match.id } : {}),
         };
@@ -607,7 +629,7 @@ export default function AFLPage() {
   }, []);
 
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
-  // When URL has ?player= we are coming from props with a specific player — do not restore old selectedPlayer so we don't flash the previous player's chart.
+  // When URL has ?player= we are coming from props/Find player with a specific player — do not restore old selectedPlayer, and force player mode so stats show.
   useEffect(() => {
     try {
       const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
@@ -618,7 +640,9 @@ export default function AFLPage() {
       if (!hasPlayerParam && parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
         setSelectedPlayer(parsed.selectedPlayer as AflPlayerRecord);
       }
-      if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
+      if (hasPlayerParam) {
+        setAflPropsMode('player');
+      } else if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
         setAflPropsMode(parsed.aflPropsMode);
       }
       if (typeof parsed.aflTeamFilter === 'string' && parsed.aflTeamFilter.trim() !== '') {
@@ -651,6 +675,36 @@ export default function AFLPage() {
       }
     } catch {
       // Ignore malformed local state.
+    }
+  }, []);
+
+  // When opening from props page Find player: use same player object as dashboard (sessionStorage) so stats load identically. Run after rehydrate so we overwrite.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem('afl_player_from_props');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { name?: string; team?: string };
+      const name = typeof parsed?.name === 'string' ? parsed.name.trim() : '';
+      if (!name) {
+        sessionStorage.removeItem('afl_player_from_props');
+        return;
+      }
+      const record: AflPlayerRecord = {
+        name,
+        ...(parsed.team && String(parsed.team).trim() ? { team: String(parsed.team).trim() } : {}),
+      };
+      sessionStorage.removeItem('afl_player_from_props');
+      setSelectedPlayer(record);
+      setAflPropsMode('player');
+      setLoadingPlayerFromUrl(false);
+      setSelectedPlayerGameLogs([]);
+      setSelectedPlayerGameLogsWithQuarters([]);
+      setStatsLoadingForPlayer(true);
+    } catch {
+      try {
+        sessionStorage.removeItem('afl_player_from_props');
+      } catch {}
     }
   }, []);
 
@@ -1071,6 +1125,7 @@ export default function AFLPage() {
         if (typeof latest.result === 'string') toMerge.last_result = latest.result;
         if (typeof latest.guernsey === 'number' && Number.isFinite(latest.guernsey)) toMerge.guernsey = latest.guernsey;
         if (typeof data?.height === 'string' && data.height.trim()) toMerge.height = data.height.trim();
+        if (typeof data?.team === 'string' && data.team.trim()) toMerge.team = data.team.trim();
         prefetchedLogsRef.current.set(logsCacheKey, {
           games: games as AflGameLogRecord[],
           gamesWithQuarters: gamesWithQuarters as AflGameLogRecord[],
@@ -1154,6 +1209,7 @@ export default function AFLPage() {
         if (!res.ok) {
           setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
           setSelectedPlayerGameLogs([]);
+          setStatsLoadingForPlayer(false);
           return;
         }
         const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
@@ -1207,6 +1263,7 @@ export default function AFLPage() {
         if (typeof latest.result === 'string') toMerge.last_result = latest.result;
         if (typeof latest.guernsey === 'number' && Number.isFinite(latest.guernsey)) toMerge.guernsey = latest.guernsey;
         if (typeof data?.height === 'string' && data.height.trim()) toMerge.height = data.height.trim();
+        if (typeof data?.team === 'string' && data.team.trim()) toMerge.team = data.team.trim();
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
@@ -1551,10 +1608,12 @@ export default function AFLPage() {
     });
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
 
-  // Fetch next game (fixture scrape) when we have a team so we can show Team vs Next Opponent and countdown.
+  // Fetch next game (fixture scrape) when we have a player so we can show Team vs Next Opponent and countdown.
+  // When we have team, call with team; when we only have name (e.g. from search), call with player_name so API resolves team from league.
   useEffect(() => {
+    const name = selectedPlayer?.name;
     const team = selectedPlayer?.team;
-    if (!team || typeof team !== 'string' || !team.trim()) {
+    if (!name || typeof name !== 'string' || !name.trim()) {
       setNextGameOpponent(null);
       setNextGameTipoff(null);
       setIsGameInProgress(false);
@@ -1565,7 +1624,13 @@ export default function AFLPage() {
       (typeof selectedPlayer?.last_round === 'string' && selectedPlayer.last_round.trim()
         ? selectedPlayer.last_round.trim()
         : lastRoundFromLogs) || '';
-    const params = new URLSearchParams({ team: team.trim(), season: String(season) });
+    const params = new URLSearchParams({ season: String(season) });
+    if (team && typeof team === 'string' && team.trim()) {
+      const resolvedTeam = rosterTeamToInjuryTeam(team.trim()) || footywireNicknameToOfficial(team.trim()) || team.trim();
+      params.set('team', resolvedTeam);
+    } else {
+      params.set('player_name', name.trim());
+    }
     if (lastRound) params.set('last_round', lastRound);
     fetch(`/api/afl/next-game?${params}`)
       .then((res) => res.json())
@@ -1574,6 +1639,10 @@ export default function AFLPage() {
         setNextGameOpponent(typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null);
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
         setNextGameTipoff(tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null);
+        // If we didn't have team (e.g. from search) and API resolved it, set it so Team vs Opponent and header show.
+        if (!team && typeof data?.team === 'string' && data.team.trim()) {
+          setSelectedPlayer((prev) => (prev ? { ...prev, team: data.team.trim() } : prev));
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -1582,7 +1651,7 @@ export default function AFLPage() {
         }
       });
     return () => { cancelled = true; };
-  }, [selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, lastRoundFromLogs, season]);
 
   // Mark game as in progress when tipoff has passed and within ~3.5h (AFL match duration)
   const AFL_MATCH_DURATION_MS = 3.5 * 60 * 60 * 1000;

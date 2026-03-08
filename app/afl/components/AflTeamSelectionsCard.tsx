@@ -183,12 +183,22 @@ export function AflTeamSelectionsCard({
 
         if (!hasLineup && Array.isArray(json?.matches) && json.matches.length > 0) {
           const matches = json.matches as MatchEntry[];
-          // When a team is requested, only use a match that strictly matches that team; never fall back to first match (e.g. GWS must not show Sydney v Carlton).
+          // Only use a match that strictly includes the requested team; never fall back to another game (e.g. GWS must not show Sydney v Carlton).
           const forTeam = playerTeam?.trim()
             ? matches.find((m) => matchIncludesTeam(m, playerTeam))
-            : matches[0];
-          const chosen = playerTeam?.trim() ? (forTeam ?? null) : (forTeam ?? matches[0]);
-          if (chosen && (chosen.positions?.length || chosen.interchange?.home?.length || chosen.interchange?.away?.length)) {
+            : null;
+          const chosen = forTeam ?? null;
+          const chosenHasBothTeams = (): boolean => {
+            if (!chosen?.positions?.length && !chosen?.interchange?.home?.length && !chosen?.interchange?.away?.length) return false;
+            let homeCount = (chosen.interchange?.home ?? []).length + (chosen.emergencies?.home ?? []).length;
+            let awayCount = (chosen.interchange?.away ?? []).length + (chosen.emergencies?.away ?? []).length;
+            for (const row of chosen.positions ?? []) {
+              homeCount += (row.home_players ?? []).length;
+              awayCount += (row.away_players ?? []).length;
+            }
+            return homeCount > 0 && awayCount > 0;
+          };
+          if (chosen && chosen.home_team && chosen.away_team && chosenHasBothTeams()) {
             hasLineup = true;
             setData({
               url: json?.url ?? TEAM_SELECTIONS_URL,
@@ -208,27 +218,35 @@ export function AflTeamSelectionsCard({
           }
         }
 
-        if (!hasLineup && json?.match && !retried) {
+        if (!hasLineup && json?.match && json?.home_team && json?.away_team && !retried) {
           setRetried(true);
           fetchLineup(true).then((retryJson) => {
             if (cancelled) return;
             const retryPos = Array.isArray(retryJson?.positions) ? retryJson.positions : [];
             const retryInter = retryJson?.interchange ?? { home: [], away: [] };
-            const retryHas = retryPos.length > 0 || (retryInter.home?.length ?? 0) > 0 || (retryInter.away?.length ?? 0) > 0;
-            setData({
-              url: retryJson?.url ?? TEAM_SELECTIONS_URL,
-              title: retryJson?.title ?? null,
-              round_label: retryJson?.round_label ?? null,
-              match: retryJson?.match ?? null,
-              home_team: retryJson?.home_team ?? null,
-              away_team: retryJson?.away_team ?? null,
-              positions: retryPos,
-              interchange: retryInter,
-              emergencies: retryJson?.emergencies ?? { home: [], away: [] },
-              average_attributes: retryJson?.average_attributes ?? null,
-              total_players_by_games: retryJson?.total_players_by_games ?? null,
-            });
-            setError(null);
+            let retryHome = (retryInter.home ?? []).length + ((retryJson?.emergencies as { home?: string[] })?.home ?? []).length;
+            let retryAway = (retryInter.away ?? []).length + ((retryJson?.emergencies as { away?: string[] })?.away ?? []).length;
+            for (const row of retryPos) {
+              retryHome += (row.home_players ?? []).length;
+              retryAway += (row.away_players ?? []).length;
+            }
+            const retryHasBoth = retryHome > 0 && retryAway > 0;
+            if (retryHasBoth && retryJson?.home_team && retryJson?.away_team) {
+              setData({
+                url: retryJson?.url ?? TEAM_SELECTIONS_URL,
+                title: retryJson?.title ?? null,
+                round_label: retryJson?.round_label ?? null,
+                match: retryJson?.match ?? null,
+                home_team: retryJson?.home_team ?? null,
+                away_team: retryJson?.away_team ?? null,
+                positions: retryPos,
+                interchange: retryInter,
+                emergencies: retryJson?.emergencies ?? { home: [], away: [] },
+                average_attributes: retryJson?.average_attributes ?? null,
+                total_players_by_games: retryJson?.total_players_by_games ?? null,
+              });
+              setError(null);
+            }
           }).finally(() => { if (!cancelled) setLoading(false); });
           return;
         }
@@ -309,12 +327,17 @@ export function AflTeamSelectionsCard({
   const homeTeam = data?.home_team ?? 'Home';
   const awayTeam = data?.away_team ?? 'Away';
   const hasContent = hasFieldRows || followersHome.length > 0 || followersAway.length > 0 || interHome.length > 0 || interAway.length > 0 || emergHome.length > 0 || emergAway.length > 0;
+  const hasHomePlayers = followersHome.length > 0 || interHome.length > 0 || emergHome.length > 0 || ovalRows.some((r) => r.isHome);
+  const hasAwayPlayers = followersAway.length > 0 || interAway.length > 0 || emergAway.length > 0 || ovalRows.some((r) => !r.isHome);
+  const hasBothTeams = hasHomePlayers && hasAwayPlayers;
+  const hasSuccessfulMatch = Boolean(data?.home_team && data?.away_team);
+  const showLineup = Boolean(playerTeam) && hasSuccessfulMatch && hasContent && hasBothTeams;
 
   return (
     <div className={`rounded-lg border p-3 ${borderCls} ${bgCls}`}>
       {/* Title + match */}
       <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>AFL Team Selections</h3>
-      {(data?.round_label || data?.match) && (
+      {(data?.round_label || data?.match) && showLineup && (
         <p className={`text-xs mb-3 ${mutedCls}`}>
           {data.round_label && <span className="font-medium">{data.round_label}</span>}
           {data.round_label && data.match && ' — '}
@@ -324,7 +347,13 @@ export function AflTeamSelectionsCard({
 
       {error && !data?.match && <p className={`text-sm ${mutedCls}`}>{error}</p>}
 
-      {hasContent && (
+      {!showLineup && !error && (
+        <p className={`text-sm ${mutedCls}`}>
+          No lineups out yet. Lineups on FootyWire usually appear a few days before the game — come back later.
+        </p>
+      )}
+
+      {showLineup && (
         <>
           {/* Legend: team names with colored dots */}
           <div className="flex items-center justify-center gap-4 mb-3">
@@ -430,23 +459,6 @@ export function AflTeamSelectionsCard({
             </div>
           )}
         </>
-      )}
-
-      {!hasContent && data?.match && (
-        <div className="mt-2">
-          <p className={`text-sm ${mutedCls} mb-2`}>Lineup could not be parsed for this round.</p>
-          <a
-            href={data?.url ?? TEAM_SELECTIONS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-1.5 text-sm font-medium ${isDark ? 'text-sky-400 hover:text-sky-300' : 'text-sky-600 hover:text-sky-700'}`}
-          >
-            View full lineup on FootyWire
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
       )}
 
     </div>

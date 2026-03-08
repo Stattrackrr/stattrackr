@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Prefer players from props cache, merged with league/roster so symbol-name and all league players appear in dashboard search.
+    // Prefer players from props cache, merged with league/roster — but if that pool has 0 matches, fall through to full roster/index.
     const propsList = await playersFromPropsCache();
     const leagueList = readCachedLeaguePlayerList();
     const rosterOnly = leagueList && leagueList.length > 0 ? null : readCachedRoster();
@@ -251,16 +251,17 @@ export async function GET(request: NextRequest) {
         team: p.team,
         ...(p.number != null ? { number: p.number } : {}),
       }));
-
-      return NextResponse.json({
-        source: 'player-props-cache',
-        query,
-        count: players.length,
-        players,
-      });
+      if (players.length > 0) {
+        return NextResponse.json({
+          source: 'player-props-cache',
+          query,
+          count: players.length,
+          players,
+        });
+      }
     }
 
-    // Fallback: league player stats (FootyWire) then roster so search works when props cache is empty.
+    // Fallback: league player stats (FootyWire) then roster so search works when props cache is empty or had 0 matches.
     const fallbackLeague = readCachedLeaguePlayerList();
     const roster = fallbackLeague && fallbackLeague.length > 0 ? fallbackLeague : readCachedRoster();
     if (roster && roster.length > 0) {
@@ -277,13 +278,14 @@ export async function GET(request: NextRequest) {
         team: p.team,
         ...(p.number != null ? { number: p.number } : {}),
       }));
-
-      return NextResponse.json({
-        source: fallbackLeague && fallbackLeague.length > 0 ? 'footywire.com' : 'afltables.com',
-        query,
-        count: players.length,
-        players,
-      });
+      if (players.length > 0) {
+        return NextResponse.json({
+          source: fallbackLeague && fallbackLeague.length > 0 ? 'footywire.com' : 'afltables.com',
+          query,
+          count: players.length,
+          players,
+        });
+      }
     }
 
     // Fallback: full AFLTables index (includes retired). Run fetch-afl-roster.js or fetch-footywire-league-player-stats for filtered list.
