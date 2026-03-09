@@ -554,7 +554,7 @@ export default function AFLPage() {
     }
   }, []);
 
-  // When landing with ?player=Name (e.g. from props Find player), use same search as dashboard so we get the same player record and stats load.
+  // When landing with ?player=Name (e.g. from props Find player), show name from URL immediately, then merge API record without replacing so game-logs effect doesn't re-run.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -575,7 +575,6 @@ export default function AFLPage() {
     let cancelled = false;
     (async () => {
       try {
-        // Same as dashboard search: no exact=1, same params — so we get the same list and same name/team format
         const params = new URLSearchParams({ query: playerParam, limit: '30' });
         if (teamParam && teamParam.trim() !== '') params.set('team', teamParam.trim());
         const res = await fetch(`/api/afl/players?${params.toString()}`);
@@ -608,10 +607,8 @@ export default function AFLPage() {
           (record as AflPlayerRecord & { last_opponent?: string }).last_opponent = opponentParam;
         }
         if (match.position != null) (record as AflPlayerRecord & { position?: string }).position = String(match.position);
-        setSelectedPlayer(record);
-        setSelectedPlayerGameLogs([]);
-        setSelectedPlayerGameLogsWithQuarters([]);
-        setStatsLoadingForPlayer(true);
+        // Merge into existing selectedPlayer so name/team stay the same and game-logs effect doesn't re-run (avoids stats load then re-render).
+        setSelectedPlayer((prev) => (prev ? { ...prev, ...record } : record));
         setSearchQuery('');
         url.searchParams.delete('player');
         url.searchParams.delete('team');
