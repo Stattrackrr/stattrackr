@@ -40,6 +40,11 @@ function hasBoth(r: { overOdds?: string; underOdds?: string }): boolean {
 /**
  * Run the props-stats warm: load props (from list API or cache), then compute and cache L5/L10/Season/DvP for each.
  * Call in-process from odds/refresh to avoid internal HTTP 401; also used by GET /api/afl/props-stats/warm.
+ *
+ * When called from the cron (odds/refresh), use useListApi: false so we read from listAflPlayerPropsFromCache()
+ * in the same process. Using useListApi: true would fetch /api/afl/player-props/list over HTTP, which can hit
+ * another serverless instance with stale or empty cache (e.g. in-memory), so new games/matchups would never
+ * get their stats warmed and the props page would show N/A for L5/L10/Season/Streak.
  */
 export async function runAflPropsStatsWarm(
   baseUrl: string,

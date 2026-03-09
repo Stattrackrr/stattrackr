@@ -113,6 +113,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Run props-stats warm in-process so L5/L10/Season/DvP use the DvP we just cached.
+    // Use useListApi: false so we read props from listAflPlayerPropsFromCache() in this same process.
+    // If we used useListApi: true, the internal fetch to /api/afl/player-props/list can hit another
+    // serverless instance with stale/empty cache (e.g. in-memory), so new games/matchups never get
+    // their stats warmed and the props page shows N/A for L5/L10/Season.
     let warmResult: { warmed?: number; error?: string } = {};
     if (result.gamesCount > 0) {
       const baseUrl = process.env.VERCEL_URL
@@ -120,7 +124,7 @@ export async function GET(request: NextRequest) {
         : 'http://localhost:3000';
       const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
       try {
-        const warm = await runAflPropsStatsWarm(baseUrl, { useListApi: true, cronSecret });
+        const warm = await runAflPropsStatsWarm(baseUrl, { useListApi: false, cronSecret });
         warmResult = { warmed: warm.warmed, error: warm.success ? undefined : warm.error };
         console.log('[AFL cron] Props-stats warm done:', warmResult.warmed ?? 0, warmResult.error ?? 'OK');
       } catch (e) {
