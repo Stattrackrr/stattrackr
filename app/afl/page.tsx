@@ -55,6 +55,15 @@ function normalizePlayerNameForMatch(name: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+function isSameAflTeam(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const n = (s: string) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
+  const na = n(a);
+  const nb = n(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v1';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
@@ -1871,16 +1880,11 @@ export default function AFLPage() {
   const showEmptyShell = !selectedPlayer && !loadingPlayerFromUrl;
   const showStatsLoadingShell = loadingPlayerFromUrl || (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
 
-  // Single source of truth for opponent: same value for Team vs Team header and Opponent Breakdown.
-  const displayOpponent = selectedPlayer?.team
-    ? (nextGameOpponent && nextGameOpponent !== '—'
-        ? nextGameOpponent
-        : typeof selectedPlayer?.last_opponent === 'string' && selectedPlayer.last_opponent
-          ? selectedPlayer.last_opponent
-          : selectedPlayerGameLogs.length > 0
-            ? String((selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.opponent ?? '')
-            : null)
-    : null;
+  // Opponent for header: only use next-game opponent so we never show "Essendon vs Essendon" from wrong fallbacks, and only one update when it loads.
+  const displayOpponent =
+    selectedPlayer?.team && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
+      ? nextGameOpponent
+      : null;
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -2011,7 +2015,8 @@ export default function AFLPage() {
                       <div className="hidden lg:flex min-w-0 flex-shrink items-end mx-2 xl:mx-4">
                         {selectedPlayer && selectedPlayer.team ? (() => {
                           const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
-                          const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                          let opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                          if (opponentFull !== '—' && isSameAflTeam(opponentFull, teamFull)) opponentFull = '—';
                           const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
                           const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
                           return (
@@ -2185,7 +2190,8 @@ export default function AFLPage() {
                           {selectedPlayer?.team ? (
                             (() => {
                               const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
-                              const opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                              let opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                              if (opponentFull !== '—' && isSameAflTeam(opponentFull, teamFull)) opponentFull = '—';
                               const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
                               const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
                               return (
