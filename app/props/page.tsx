@@ -4257,21 +4257,28 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                       </>
                     ) : propsSport === 'afl' && aflPropsFetchCompleteRef.current ? (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium">Odds will appear when the next round is available</p>
-                        <p className="text-sm mt-1">If you expected to see odds, try again in a moment.</p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            aflPropsFetchCompleteRef.current = false;
-                            setAflPropsLoading(true);
-                            setAflPropsRetryKey((k) => k + 1);
-                          }}
-                          className={`mt-4 px-4 py-2 rounded-lg font-medium ${mounted && isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
-                        >
-                          Try again
-                        </button>
-                      </div>
+                      aflProps.length > 0 ? (
+                        <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className="text-lg font-medium">No props match your search or filters</p>
+                          <p className="text-sm mt-1">Try a different search term or adjust the Games / Prop Types / Bookmakers filters.</p>
+                        </div>
+                      ) : (
+                        <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className="text-lg font-medium">Odds will appear when the next round is available</p>
+                          <p className="text-sm mt-1">If you expected to see odds, try again in a moment.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              aflPropsFetchCompleteRef.current = false;
+                              setAflPropsLoading(true);
+                              setAflPropsRetryKey((k) => k + 1);
+                            }}
+                            className={`mt-4 px-4 py-2 rounded-lg font-medium ${mounted && isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      )
                     ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
                         mounted && isDark ? 'text-gray-400' : 'text-gray-500'

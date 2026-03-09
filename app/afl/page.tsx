@@ -1168,11 +1168,16 @@ export default function AFLPage() {
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
     const has2026InGames = (g: { season?: unknown }[]) =>
       Array.isArray(g) && g.some((x) => (x?.season as number) === 2026);
+    const has2025InGames = (g: { season?: unknown; date?: string; game_date?: string }[]) =>
+      Array.isArray(g) && g.some((x) => (x?.season as number) === 2025 || (typeof (x?.date ?? x?.game_date) === 'string' && String(x?.date ?? x?.game_date).slice(0, 4) === '2025'));
+    // For 2026 we need both seasons so players who changed teams (e.g. Bailey Smith) get 2025 + 2026. Don't use cache/prefetch that only has 2026.
+    const cacheOkFor2026 = (games: { season?: unknown; date?: string; game_date?: string }[]) =>
+      season !== 2026 || (has2026InGames(games) && has2025InGames(games));
     // Symbol-name players: never use prefetched or localStorage — always fetch fresh.
     const isSymbolPlayer = playerNameHasSymbol(String(playerName));
     if (!isSymbolPlayer) {
       const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
-      if (prefetched && (season !== 2026 || has2026InGames(prefetched.games))) {
+      if (prefetched && (season !== 2026 || has2026InGames(prefetched.games)) && cacheOkFor2026(prefetched.games)) {
         prefetchedLogsRef.current.delete(logsCacheKey);
         setSelectedPlayerGameLogs(prefetched.games);
         setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
@@ -1201,8 +1206,10 @@ export default function AFLPage() {
           const parsed = JSON.parse(raw) as CachedAflPlayerLogs;
           const isFresh = Number.isFinite(parsed?.createdAt) && (Date.now() - Number(parsed.createdAt) <= AFL_PLAYER_LOGS_CACHE_TTL_MS);
           const gamesOk = Array.isArray(parsed.games);
-          const has2026 = season !== 2026 || has2026InGames(parsed.games as { season?: unknown }[]);
-          if (isFresh && gamesOk && has2026) {
+          const gamesTyped = parsed.games as { season?: unknown; date?: string; game_date?: string }[];
+          const has2026 = season !== 2026 || has2026InGames(gamesTyped);
+          const bothSeasonsOk = cacheOkFor2026(gamesTyped);
+          if (isFresh && gamesOk && has2026 && bothSeasonsOk) {
             setSelectedPlayerGameLogs(parsed.games);
             setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
             if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
@@ -1212,7 +1219,7 @@ export default function AFLPage() {
             setStatsLoadingForPlayer(false);
             return;
           }
-          if (gamesOk && season === 2026 && !has2026InGames(parsed.games as { season?: unknown }[])) {
+          if (gamesOk && season === 2026 && (!has2026InGames(gamesTyped) || !has2025InGames(gamesTyped))) {
             try {
               localStorage.removeItem(logsCacheKey);
             } catch {
