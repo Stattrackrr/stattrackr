@@ -323,6 +323,7 @@ export default function AFLPage() {
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
+  const nextGameFromFetchRef = useRef<{ opponent: string | null; tipoff: Date | null }>({ opponent: null, tipoff: null });
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
   const [refreshLogsKey, setRefreshLogsKey] = useState(0);
 
@@ -1776,15 +1777,39 @@ export default function AFLPage() {
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
 
   // Fetch next game (fixture scrape) when we have a player so we can show Team vs Next Opponent and countdown.
-  // When we have team, call with team; when we only have name (e.g. from search), call with player_name so API resolves team from league.
+  // Use prefetch from sessionStorage (props page) so opponent shows immediately and no re-render when API returns same data.
   useEffect(() => {
     const name = selectedPlayer?.name;
     const team = selectedPlayer?.team;
     if (!name || typeof name !== 'string' || !name.trim()) {
       setNextGameOpponent(null);
       setNextGameTipoff(null);
+      nextGameFromFetchRef.current = { opponent: null, tipoff: null };
       setIsGameInProgress(false);
       return;
+    }
+    const resolvedTeam = team && typeof team === 'string' && team.trim()
+      ? rosterTeamToInjuryTeam(team.trim()) || footywireNicknameToOfficial(team.trim()) || team.trim()
+      : '';
+    const teamNorm = (t: string) => String(t ?? '').trim().toLowerCase();
+    try {
+      const prefetchRaw = typeof window !== 'undefined' ? sessionStorage.getItem('afl_next_game_prefetch') : null;
+      if (prefetchRaw && resolvedTeam) {
+        const prefetch = JSON.parse(prefetchRaw) as { team?: string; next_opponent?: string; next_game_tipoff?: string; fetchedAt?: number };
+        const prefetchTeamNorm = teamNorm(prefetch.team ?? '');
+        if (prefetchTeamNorm && (teamNorm(resolvedTeam) === prefetchTeamNorm || teamNorm(resolvedTeam).includes(prefetchTeamNorm) || prefetchTeamNorm.includes(teamNorm(resolvedTeam)))) {
+          const age = prefetch.fetchedAt != null ? Date.now() - prefetch.fetchedAt : 99999;
+          if (age < 60000) {
+            const opp = typeof prefetch.next_opponent === 'string' && prefetch.next_opponent ? prefetch.next_opponent : null;
+            const tipoff = prefetch.next_game_tipoff && typeof prefetch.next_game_tipoff === 'string' ? new Date(prefetch.next_game_tipoff) : null;
+            setNextGameOpponent(opp);
+            setNextGameTipoff(tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null);
+            nextGameFromFetchRef.current = { opponent: opp, tipoff };
+          }
+        }
+      }
+    } catch {
+      // ignore prefetch read
     }
     let cancelled = false;
     const lastRound =
@@ -1792,8 +1817,7 @@ export default function AFLPage() {
         ? selectedPlayer.last_round.trim()
         : lastRoundFromLogs) || '';
     const params = new URLSearchParams({ season: String(season) });
-    if (team && typeof team === 'string' && team.trim()) {
-      const resolvedTeam = rosterTeamToInjuryTeam(team.trim()) || footywireNicknameToOfficial(team.trim()) || team.trim();
+    if (resolvedTeam) {
       params.set('team', resolvedTeam);
     } else {
       params.set('player_name', name.trim());
@@ -1803,18 +1827,24 @@ export default function AFLPage() {
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        setNextGameOpponent(typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null);
+        const opp = typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null;
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
-        setNextGameTipoff(tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null);
-        // If we didn't have team (e.g. from search) and API resolved it, set it so Team vs Opponent and header show.
+        const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
+        const prev = nextGameFromFetchRef.current;
+        if (prev.opponent !== opp || (prev.tipoff?.getTime() !== tipoffValid?.getTime())) {
+          setNextGameOpponent(opp);
+          setNextGameTipoff(tipoffValid);
+          nextGameFromFetchRef.current = { opponent: opp, tipoff: tipoffValid };
+        }
         if (!team && typeof data?.team === 'string' && data.team.trim()) {
-          setSelectedPlayer((prev) => (prev ? { ...prev, team: data.team.trim() } : prev));
+          setSelectedPlayer((prevPlayer) => (prevPlayer ? { ...prevPlayer, team: data.team.trim() } : prevPlayer));
         }
       })
       .catch(() => {
         if (!cancelled) {
           setNextGameOpponent(null);
           setNextGameTipoff(null);
+          nextGameFromFetchRef.current = { opponent: null, tipoff: null };
         }
       });
     return () => { cancelled = true; };

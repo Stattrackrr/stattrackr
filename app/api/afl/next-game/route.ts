@@ -12,6 +12,28 @@ const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_FIXTURE_TTL = 1000 * 60 * 30; // 30 min
 const footyWireFixtureCache = new Map<number, { expiresAt: number; matches: FootyWireMatch[] }>();
 
+/** Cache "game IDs that have props" so next-game API is fast after first request (avoids calling listAflPlayerPropsFromCache on every request). */
+const GAME_IDS_WITH_PROPS_TTL_MS = 1000 * 60 * 2; // 2 min
+const gameIdsWithPropsCache = new Map<number, { expiresAt: number; gameIds: Set<string> }>();
+
+async function getGameIdsWithProps(season: number): Promise<Set<string>> {
+  const cached = gameIdsWithPropsCache.get(season);
+  if (cached && cached.expiresAt > Date.now()) return cached.gameIds;
+  const gameIds = new Set<string>();
+  try {
+    const propsList = await listAflPlayerPropsFromCache();
+    if (propsList?.props?.length) {
+      for (const row of propsList.props) {
+        if (row.gameId) gameIds.add(row.gameId);
+      }
+    }
+  } catch {
+    // ignore
+  }
+  gameIdsWithPropsCache.set(season, { expiresAt: Date.now() + GAME_IDS_WITH_PROPS_TTL_MS, gameIds });
+  return gameIds;
+}
+
 type FootyWireMatch = { round: string; home: string; away: string; tipoff_iso?: string };
 
 function htmlToText(v: string): string {
@@ -346,19 +368,10 @@ export async function GET(request: NextRequest) {
 
     // Prefer odds cache so "next game" matches the matchup that has odds/props (e.g. Gold Coast v Geelong).
     // When props exist, prefer the game that has player props so dashboard shows same matchup as props page (e.g. GWS v Bulldogs, not St Kilda).
+    // getGameIdsWithProps is cached (2 min) so opponent fetch is fast after first request and avoids re-render delay.
     const oddsCache = await getAflOddsCache();
     if (oddsCache?.games?.length) {
-      const gameIdsWithProps = new Set<string>();
-      try {
-        const propsList = await listAflPlayerPropsFromCache();
-        if (propsList?.props?.length) {
-          for (const row of propsList.props) {
-            if (row.gameId) gameIdsWithProps.add(row.gameId);
-          }
-        }
-      } catch {
-        // ignore; fall back to all games
-      }
+      const gameIdsWithProps = await getGameIdsWithProps(season);
       const gamesToUse =
         gameIdsWithProps.size > 0
           ? oddsCache.games.filter((g) => gameIdsWithProps.has(g.gameId))

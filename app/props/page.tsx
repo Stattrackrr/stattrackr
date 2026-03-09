@@ -4751,6 +4751,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
                                   if (propsSport === 'afl') {
+                                    const team = prop.team || '';
+                                    if (team) {
+                                      fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
+                                        .then((r) => r.json())
+                                        .then((d) => {
+                                          try {
+                                            sessionStorage.setItem('afl_next_game_prefetch', JSON.stringify({
+                                              team,
+                                              next_opponent: d?.next_opponent ?? null,
+                                              next_game_tipoff: d?.next_game_tipoff ?? null,
+                                              fetchedAt: Date.now(),
+                                            }));
+                                          } catch {}
+                                        })
+                                        .catch(() => {});
+                                    }
                                     const q = new URLSearchParams();
                                     q.set('mode', 'player');
                                     q.set('name', prop.playerName);
@@ -5923,6 +5939,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
                                 if (propsSport === 'afl') {
+                                  const team = prop.team || '';
+                                  if (team) {
+                                    fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
+                                      .then((r) => r.json())
+                                      .then((d) => {
+                                        try {
+                                          sessionStorage.setItem('afl_next_game_prefetch', JSON.stringify({
+                                            team,
+                                            next_opponent: d?.next_opponent ?? null,
+                                            next_game_tipoff: d?.next_game_tipoff ?? null,
+                                            fetchedAt: Date.now(),
+                                          }));
+                                        } catch {}
+                                      })
+                                      .catch(() => {});
+                                  }
                                   const q = new URLSearchParams();
                                   q.set('mode', 'player');
                                   q.set('name', prop.playerName);
@@ -6569,6 +6601,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         onClick={() => {
                           setFindPlayerOpen(false);
                           if (propsSport === 'afl') {
+                            const team = player.team ?? '';
+                            if (team) {
+                              fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
+                                .then((r) => r.json())
+                                .then((d) => {
+                                  try {
+                                    sessionStorage.setItem('afl_next_game_prefetch', JSON.stringify({
+                                      team,
+                                      next_opponent: d?.next_opponent ?? null,
+                                      next_game_tipoff: d?.next_game_tipoff ?? null,
+                                      fetchedAt: Date.now(),
+                                    }));
+                                  } catch {}
+                                })
+                                .catch(() => {});
+                            }
                             const q = new URLSearchParams();
                             q.set('mode', 'player');
                             q.set('name', player.name);
