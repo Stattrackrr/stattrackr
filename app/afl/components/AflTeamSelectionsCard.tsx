@@ -349,7 +349,7 @@ export function AflTeamSelectionsCard({
 
       {!showLineup && !error && (
         <p className={`text-sm ${mutedCls}`}>
-          No lineups out yet. Lineups on FootyWire usually appear a few days before the game — come back later.
+          No lineups available. Come back later.
         </p>
       )}
 
