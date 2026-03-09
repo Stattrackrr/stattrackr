@@ -5,20 +5,10 @@ import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { rosterTeamToInjuryTeam, leagueTeamToOfficial, footywireNicknameToOfficial } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerName } from '@/lib/aflPlayerNameUtils';
 
-const AFL_TABLES_BASE = 'https://afltables.com';
-const PLAYERS_INDEX_URL = `${AFL_TABLES_BASE}/afl/stats/players.html`;
-const TTL_MS = 1000 * 60 * 60; // 1 hour
-/** Current AFL season year (AFLTables uses e.g. 2025a.html). Use calendar year; override with AFL_CURRENT_SEASON. */
+/** Current AFL season year; override with AFL_CURRENT_SEASON. */
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 
-type PlayerIndexEntry = {
-  name: string;
-  href: string;
-};
-
 type PlayerListEntry = { name: string; team?: string; number?: number | null };
-
-let playersIndexCache: { expiresAt: number; data: PlayerIndexEntry[] } | null = null;
 
 /** Normalize for search/key matching; keeps apostrophe and hyphen, normalizes unicode variants. */
 function normalizeName(v: string): string {
@@ -132,46 +122,6 @@ function htmlToText(v: string): string {
     .trim();
 }
 
-/** Fetch full players index from AFLTables (scrape). Includes retired. */
-async function fetchPlayersIndex(): Promise<PlayerIndexEntry[]> {
-  if (playersIndexCache && playersIndexCache.expiresAt > Date.now()) {
-    return playersIndexCache.data;
-  }
-
-  const res = await fetch(PLAYERS_INDEX_URL, { next: { revalidate: 60 * 60 } });
-  if (!res.ok) throw new Error(`Failed to fetch AFL players index (${res.status})`);
-  const html = await res.text();
-
-  const out: PlayerIndexEntry[] = [];
-  const linkRegex = /<a[^>]+href=['"]([^'"]*players\/[A-Z]\/[^'"]+\.html)['"][^>]*>([\s\S]*?)<\/a>/gi;
-  let m: RegExpExecArray | null = linkRegex.exec(html);
-  while (m) {
-    const rawHref = m[1];
-    let href = rawHref;
-    if (!rawHref.startsWith('http')) {
-      if (rawHref.startsWith('/')) {
-        href = `${AFL_TABLES_BASE}${rawHref}`;
-      } else if (rawHref.startsWith('../')) {
-        href = `${AFL_TABLES_BASE}/afl/${rawHref.slice(3)}`;
-      } else {
-        href = `${AFL_TABLES_BASE}/afl/stats/${rawHref}`;
-      }
-    }
-    const name = htmlToText(m[2]);
-    if (name && href) out.push({ name, href });
-    m = linkRegex.exec(html);
-  }
-
-  const dedupByHref = new Map<string, PlayerIndexEntry>();
-  for (const entry of out) {
-    if (!dedupByHref.has(entry.href)) dedupByHref.set(entry.href, entry);
-  }
-  const deduped = Array.from(dedupByHref.values());
-
-  playersIndexCache = { expiresAt: Date.now() + TTL_MS, data: deduped };
-  return deduped;
-}
-
 /** Resolve player team string (league or roster format) to official full name for comparison. */
 function resolveToOfficialTeam(teamRaw: string | undefined): string | null {
   if (!teamRaw || typeof teamRaw !== 'string') return null;
@@ -211,7 +161,7 @@ export async function GET(request: NextRequest) {
           ...(match.number != null ? { number: match.number } : {}),
         }];
         return NextResponse.json({
-          source: leagueList && leagueList.length > 0 ? 'footywire.com' : 'afltables.com',
+          source: leagueList && leagueList.length > 0 ? 'footywire.com' : 'roster',
           query,
           count: 1,
           players,
@@ -280,7 +230,7 @@ export async function GET(request: NextRequest) {
       }));
       if (players.length > 0) {
         return NextResponse.json({
-          source: fallbackLeague && fallbackLeague.length > 0 ? 'footywire.com' : 'afltables.com',
+          source: fallbackLeague && fallbackLeague.length > 0 ? 'footywire.com' : 'roster',
           query,
           count: players.length,
           players,
@@ -288,29 +238,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback: full AFLTables index (includes retired). Run fetch-afl-roster.js or fetch-footywire-league-player-stats for filtered list.
-    const allPlayers = await fetchPlayersIndex();
-    let pool = allPlayers;
-    if (q) {
-      pool = pool.filter((p) => nameMatchesQuery(p.name, q));
-    }
-    pool = [...pool].sort((a, b) => a.name.localeCompare(b.name, 'en'));
-    const seenNames = new Set<string>();
-    const players = pool
-      .filter((p) => {
-        const n = normalizeName(p.name);
-        if (seenNames.has(n)) return false;
-        seenNames.add(n);
-        return true;
-      })
-      .slice(0, effectiveLimit)
-      .map((p) => ({ name: p.name }));
-
+    // FootyWire only: no AFL Tables. Return empty when league/roster have no matches.
     return NextResponse.json({
-      source: 'afltables.com',
+      source: 'footywire.com',
       query,
-      count: players.length,
-      players,
+      count: 0,
+      players: [],
     });
   } catch (err) {
     return NextResponse.json(

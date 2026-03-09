@@ -427,7 +427,8 @@ export default function NBALandingPage() {
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
-  const aflPropsFetchCompleteRef = useRef(false); // only show "No odds for AFL" after we've actually fetched
+  const aflPropsFetchCompleteRef = useRef(false);
+  const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
@@ -908,6 +909,7 @@ export default function NBALandingPage() {
 
   // Fetch AFL games + player props list when sport is AFL. Restore from sessionStorage first so returning from dashboard is instant (stale-while-revalidate).
   // Never replace existing props with empty: if we have props (from cache or prior fetch) and the API returns empty, keep showing them.
+  // When API returns empty and we had no cache, retry once after 2s (transient/cache expiry) before showing empty state.
   useEffect(() => {
     if (propsSport !== 'afl') return;
     let cancelled = false;
@@ -937,52 +939,49 @@ export default function NBALandingPage() {
       aflPropsFetchCompleteRef.current = false;
       setAflPropsLoading(true);
     }
-    (async () => {
-      try {
-        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
-        if (cancelled) return;
-        const listData = await listRes.json();
-        const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
-        setAflGames(games);
-        // List API returns only rows with both over/under and includes stats from cache (no processing on page)
-        const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
-        for (const r of rows) {
-          const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
-          const existing = keyToRow.get(key);
-          const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
-          if (existing) {
-            existing.bookmakerLines.push(bl);
-          } else {
-            keyToRow.set(key, {
-              playerName: r.playerName,
-              gameId: r.gameId,
-              homeTeam: r.homeTeam,
-              awayTeam: r.awayTeam,
-              playerTeam: r.playerTeam ?? null,
-              statType: r.statType,
-              line: r.line,
-              commenceTime: r.commenceTime || '',
-              bookmakerLines: [bl],
-              last5Avg: r.last5Avg,
-              last10Avg: r.last10Avg,
-              h2hAvg: r.h2hAvg,
-              seasonAvg: r.seasonAvg,
-              streak: r.streak,
-              last5HitRate: r.last5HitRate,
-              last10HitRate: r.last10HitRate,
-              h2hHitRate: r.h2hHitRate,
-              seasonHitRate: r.seasonHitRate,
-              dvpRating: r.dvpRating,
-              dvpStatValue: r.dvpStatValue,
-            });
-          }
+    const doFetch = async (isRetry: boolean): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[] }> => {
+      const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+      if (cancelled) return { games: [], aggregated: [] };
+      const listData = await listRes.json();
+      const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
+      const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
+      const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
+      for (const r of rows) {
+        const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
+        const existing = keyToRow.get(key);
+        const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
+        if (existing) {
+          existing.bookmakerLines.push(bl);
+        } else {
+          keyToRow.set(key, {
+            playerName: r.playerName,
+            gameId: r.gameId,
+            homeTeam: r.homeTeam,
+            awayTeam: r.awayTeam,
+            playerTeam: r.playerTeam ?? null,
+            statType: r.statType,
+            line: r.line,
+            commenceTime: r.commenceTime || '',
+            bookmakerLines: [bl],
+            last5Avg: r.last5Avg,
+            last10Avg: r.last10Avg,
+            h2hAvg: r.h2hAvg,
+            seasonAvg: r.seasonAvg,
+            streak: r.streak,
+            last5HitRate: r.last5HitRate,
+            last10HitRate: r.last10HitRate,
+            h2hHitRate: r.h2hHitRate,
+            seasonHitRate: r.seasonHitRate,
+            dvpRating: r.dvpRating,
+            dvpStatValue: r.dvpStatValue,
+          });
         }
-        const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
-          const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-          const team = playerTeam ?? a.homeTeam;
-          const opponent = playerTeam ? (playerTeam === a.homeTeam ? a.awayTeam : a.homeTeam) : a.awayTeam;
-          return {
+      }
+      const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
+        const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
+        const team = playerTeam ?? a.homeTeam;
+        const opponent = playerTeam ? (playerTeam === a.homeTeam ? a.awayTeam : a.homeTeam) : a.awayTeam;
+        return {
           playerName: a.playerName,
           playerId: '',
           team,
@@ -1013,7 +1012,46 @@ export default function NBALandingPage() {
           dvpRating: a.dvpRating,
           dvpStatValue: a.dvpStatValue,
         };
-        });
+      });
+      return { games, aggregated };
+    };
+    (async () => {
+      try {
+        let result = await doFetch(false);
+        if (cancelled) return;
+        const { games, aggregated } = result;
+        setAflGames(games);
+        // Retry once when empty and we had no cache (transient failure or cache expiry)
+        if (aggregated.length === 0 && !hadCacheWithProps && !cancelled) {
+          await new Promise((r) => setTimeout(r, 2000));
+          if (cancelled) return;
+          result = await doFetch(true);
+          if (cancelled) return;
+          const retryGames = result.games;
+          const retryAggregated = result.aggregated;
+          setAflGames(retryGames);
+          if (retryAggregated.length > 0 || !hadCacheWithProps) {
+            setAflProps(retryAggregated);
+            if (retryGames.length > 0) setSelectedAflGames(new Set(retryGames.map((g) => g.gameId)));
+            if (!cancelled) {
+              try {
+                sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
+                  props: retryAggregated,
+                  games: retryGames,
+                  selectedGameIds: retryGames.length > 0 ? retryGames.map((g) => g.gameId) : [],
+                  timestamp: Date.now(),
+                }));
+              } catch {
+                // Ignore
+              }
+            }
+          }
+          if (!cancelled) {
+            aflPropsFetchCompleteRef.current = true;
+            setAflPropsLoading(false);
+          }
+          return;
+        }
         // Never replace existing props with empty: if we had props (from cache) and API returned empty, keep showing them
         if (aggregated.length > 0 || !hadCacheWithProps) {
           setAflProps(aggregated);
@@ -1050,7 +1088,7 @@ export default function NBALandingPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [propsSport]);
+  }, [propsSport, aflPropsRetryKey]);
 
   // Persist AFL props + game filter to sessionStorage when user changes selection (so returning from dashboard restores filter)
   useEffect(() => {
@@ -4220,7 +4258,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </>
                     ) : propsSport === 'afl' && aflPropsFetchCompleteRef.current ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium">No odds for AFL</p>
+                        <p className="text-lg font-medium">Odds will appear when the next round is available</p>
+                        <p className="text-sm mt-1">If you expected to see odds, try again in a moment.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            aflPropsFetchCompleteRef.current = false;
+                            setAflPropsLoading(true);
+                            setAflPropsRetryKey((k) => k + 1);
+                          }}
+                          className={`mt-4 px-4 py-2 rounded-lg font-medium ${mounted && isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                        >
+                          Try again
+                        </button>
                       </div>
                     ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${

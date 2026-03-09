@@ -56,6 +56,24 @@ export async function getAflPlayerTeamMapFromFiles(): Promise<PlayerTeamMap> {
   return map;
 }
 
+/** Resolve a player's team for a given season from league stats (for next-game when only player_name is provided). */
+export async function getPlayerTeamForSeason(season: number, playerName: string): Promise<string | null> {
+  if (season < 2020 || !playerName || typeof playerName !== 'string') return null;
+  try {
+    const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
+    const raw = await fs.readFile(filePath, 'utf8');
+    const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
+    if (!Array.isArray(data?.players)) return null;
+    const normalized = normalizeAflPlayerNameForMatch(playerName.trim());
+    const row = data.players.find((p) => normalizeAflPlayerNameForMatch((p?.name ?? '').trim()) === normalized);
+    if (!row?.team) return null;
+    const official = leagueTeamToOfficial(row.team.trim()) ?? row.team.trim();
+    return official || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getAflPlayerTeamMap(baseUrl: string, season: number = CURRENT_SEASON): Promise<PlayerTeamMap> {
   const url = `${baseUrl}/api/afl/league-player-stats?season=${season}`;
   try {

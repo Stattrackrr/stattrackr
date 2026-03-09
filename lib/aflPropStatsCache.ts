@@ -149,13 +149,24 @@ export async function getAflPropStats(
     return cached;
   }
   if (cacheOnly) return null;
-  const season = new Date().getFullYear();
-  let games: Record<string, unknown>[] = [];
-  if (resolvedPlayerTeam?.trim()) {
-    games = await fetchGameLogs(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
-  }
-  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
-  if (games.length === 0) games = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
+  const currentSeason = new Date().getFullYear();
+  const prevSeason = currentSeason - 1;
+  // Fetch both current and previous season so we have 2025 + 2026 stats (most recent first).
+  const fetchForSeason = async (season: number): Promise<Record<string, unknown>[]> => {
+    let list: Record<string, unknown>[] = [];
+    if (resolvedPlayerTeam?.trim()) {
+      list = await fetchGameLogs(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
+    }
+    if (list.length === 0) list = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
+    if (list.length === 0) list = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
+    return list;
+  };
+  const [gamesCurrent, gamesPrev] = await Promise.all([
+    fetchForSeason(currentSeason),
+    fetchForSeason(prevSeason),
+  ]);
+  // Merge: current season first (most recent), then previous season so L5/L10/season use both years.
+  const games = [...gamesCurrent, ...gamesPrev];
   const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
   const payload: AflPropStatsPayload = {
     ...stats,

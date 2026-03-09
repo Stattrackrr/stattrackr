@@ -1080,7 +1080,7 @@ export default function AFLPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Prefetch game logs when user hovers over a search result so data is ready on click.
+  // Prefetch game logs for both 2026 and 2025 and merge (same as main fetch) so we never show only 2026 for players who played Round 0.
   const prefetchPlayerLogs = useCallback((player: AflPlayerRecord) => {
     const name = String(player?.name ?? '').trim();
     if (!name) return;
@@ -1090,13 +1090,28 @@ export default function AFLPage() {
     const logsCacheKey = getAflPlayerLogsCacheKey(season, name, teamForApi);
     if (prefetchedLogsRef.current.has(logsCacheKey)) return;
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
-    const url = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(name)}${teamQuery}&include_both=1`;
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
-        const gamesWithQuarters = Array.isArray(data?.gamesWithQuarters) ? (data.gamesWithQuarters as Record<string, unknown>[]) : games;
+    const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(name)}${teamQuery}&include_both=1`;
+    const currentYear = season;
+    const prevYear = currentYear - 1;
+    const fetchOpts = { cache: 'no-store' as RequestCache };
+    Promise.all([
+      fetch(`${baseUrl}&season=${currentYear}&force_fetch=1`, fetchOpts).then((r) => r.json()),
+      fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
+    ])
+      .then(([dataCurrent, dataPrev]) => {
+        let gamesCurrent = Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
+        const gamesPrev = Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const payloadSeasonCurrent = dataCurrent?.season;
+        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
+        if (is2026ResponseActually2025) gamesCurrent = [];
+        let qCurrent = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : gamesCurrent;
+        if (is2026ResponseActually2025) qCurrent = [];
+        const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
+        const games = [...gamesCurrent, ...gamesPrev];
+        const gamesWithQuarters = [...qCurrent, ...qPrev];
         if (games.length === 0) return;
+        const data = gamesCurrent.length > 0 ? dataCurrent : dataPrev;
         const latest = games[0];
         const numericKeys = new Set<string>();
         const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
@@ -1130,7 +1145,7 @@ export default function AFLPage() {
         prefetchedLogsRef.current.set(logsCacheKey, {
           games: games as AflGameLogRecord[],
           gamesWithQuarters: gamesWithQuarters as AflGameLogRecord[],
-          mergedStats: toMerge,
+          mergedStats: toMerge as AflPlayerRecord,
         });
       })
       .catch(() => {});
@@ -1214,23 +1229,58 @@ export default function AFLPage() {
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
+    const currentYear = season;
+    const prevYear = currentYear - 1;
+    const forceFetchCurrent = currentYear === 2026 || refreshLogsKey > 0 ? '&force_fetch=1' : '';
+    const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
+    let dataCurrent: Record<string, unknown> | null = null;
+    let dataPrev: Record<string, unknown> | null = null;
+    let shownPartial = false;
+    const maybeShowPartial = () => {
+      if (cancelled || shownPartial) return;
+      const curGames = dataCurrent && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
+      const prevGames = dataPrev && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+      if (curGames.length > 0 && !dataPrev) {
+        shownPartial = true;
+        setSelectedPlayerGameLogs(curGames);
+        const q = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : curGames;
+        setSelectedPlayerGameLogsWithQuarters(q);
+        setStatsLoadingForPlayer(false);
+        return;
+      }
+      if (prevGames.length > 0 && !dataCurrent) {
+        shownPartial = true;
+        setSelectedPlayerGameLogs(prevGames);
+        const q = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : prevGames;
+        setSelectedPlayerGameLogsWithQuarters(q);
+        setStatsLoadingForPlayer(false);
+      }
+    };
     (async () => {
       try {
-        // Fetch both 2026 and 2025 so dashboard shows combined stats (same as props process).
-        const currentYear = season;
-        const prevYear = currentYear - 1;
-        const forceFetchCurrent = currentYear === 2026 || refreshLogsKey > 0 ? '&force_fetch=1' : '';
-        const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
-        const [resCurrent, resPrev] = await Promise.all([
-          fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts),
-          fetch(`${baseUrl}&season=${prevYear}`, fetchOpts),
-        ]);
+        // Fetch 2026 and 2025 in parallel; show first response that has games so UI isn't stuck ~10s for slow 2025.
+        const p1 = fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then(async (res) => {
+          const d = (await res.json()) as Record<string, unknown>;
+          if (!cancelled) {
+            dataCurrent = d;
+            maybeShowPartial();
+          }
+          return { ok: res.ok, data: d };
+        });
+        const p2 = fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then(async (res) => {
+          const d = (await res.json()) as Record<string, unknown>;
+          if (!cancelled) {
+            dataPrev = d;
+            maybeShowPartial();
+          }
+          return { ok: res.ok, data: d };
+        });
+        const [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
         if (cancelled) return;
-        const dataCurrent = await resCurrent.json();
-        const dataPrev = await resPrev.json();
-        if (cancelled) return;
-        let gamesCurrent = resCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
-        const gamesPrev = resPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        dataCurrent = resultCurrent.data;
+        dataPrev = resultPrev.data;
+        let gamesCurrent = resultCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
+        const gamesPrev = resultPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
         const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);

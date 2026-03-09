@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAflOddsCache, getNextAflGameFromGames } from '@/lib/refreshAflOdds';
-import { fetchSeasonMatches, type SeasonMatch } from '../match-lineup/route';
+import { getPlayerTeamForSeason } from '@/lib/aflPlayerTeamResolver';
 import {
   rosterTeamToInjuryTeam,
-  opponentToOfficialTeamName,
   opponentToFootywireTeam,
   footywireNicknameToOfficial,
 } from '@/lib/aflTeamMapping';
@@ -226,28 +225,6 @@ function footyWireTeamAliases(teamFull: string, teamNickname: string): Set<strin
   );
 }
 
-/** Find the team's next match: first match where team plays and round >= nextRoundStart. */
-function findNextMatch(
-  matches: SeasonMatch[],
-  teamFull: string,
-  nextRoundStart: string
-): SeasonMatch | null {
-  const teamAlts = [teamFull, shortName(teamFull)].filter(Boolean);
-  const startIdx = roundOrderIndex(nextRoundStart);
-  let best: SeasonMatch | null = null;
-  let bestIdx = 999;
-  for (const m of matches) {
-    const teamIn = teamAlts.some((t) => teamMatches(m.home, t) || teamMatches(m.away, t));
-    if (!teamIn) continue;
-    const idx = roundOrderIndex(m.round);
-    if (idx >= startIdx && idx < bestIdx) {
-      bestIdx = idx;
-      best = m;
-    }
-  }
-  return best;
-}
-
 /** Find next match from FootyWire fixture (nickname-based). Prefer the chronologically earliest match that has tipoff_iso so we can show a countdown. */
 function findNextMatchFootyWire(
   matches: FootyWireMatch[],
@@ -312,26 +289,35 @@ function findNextMatchFootyWire(
 
 export async function GET(request: NextRequest) {
   const teamParam = request.nextUrl.searchParams.get('team')?.trim();
+  const playerNameParam = request.nextUrl.searchParams.get('player_name')?.trim();
   const seasonParam = request.nextUrl.searchParams.get('season');
   const lastRoundParam = request.nextUrl.searchParams.get('last_round')?.trim();
 
-  if (!teamParam) {
-    return NextResponse.json(
-      {
-        error: 'team query param required',
-        example: `${request.nextUrl.origin}/api/afl/next-game?team=Essendon&season=2026`,
-      },
-      { status: 400 }
-    );
-  }
   const season = seasonParam ? parseInt(seasonParam, 10) : new Date().getFullYear();
   if (!Number.isFinite(season)) {
     return NextResponse.json({ error: 'season must be a year (e.g. 2025)' }, { status: 400 });
   }
 
+  // Require either team or player_name so we can resolve next game (resolve team from league when only player_name given).
+  let resolvedTeam: string | null = null;
+  if (teamParam) {
+    resolvedTeam = rosterTeamToInjuryTeam(teamParam) || teamParam;
+  } else if (playerNameParam) {
+    resolvedTeam = await getPlayerTeamForSeason(season, playerNameParam);
+  }
+  if (!resolvedTeam) {
+    return NextResponse.json(
+      {
+        error: 'team or player_name query param required',
+        example: `${request.nextUrl.origin}/api/afl/next-game?team=Essendon&season=2026`,
+      },
+      { status: 400 }
+    );
+  }
+
   try {
-    const teamFull = rosterTeamToInjuryTeam(teamParam) || teamParam;
-    const teamNickname = opponentToFootywireTeam(teamFull) || opponentToFootywireTeam(teamParam) || '';
+    const teamFull = resolvedTeam;
+    const teamNickname = opponentToFootywireTeam(teamFull) || (teamParam ? opponentToFootywireTeam(teamParam) : '') || '';
 
     // Next round: for 2026 always use R0 (opening round) so we show next 2026 match, not 2025's last opponent.
     // When game logs are from 2025 fallback, last_round is 2025's round; we want 2026's first match.
@@ -396,29 +382,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback: AFLTables season page (often only has completed matches).
-    const matches = await fetchSeasonMatches(season);
-    if (matches.length === 0) return emptyResponse('afltables.com');
-
-    const nextMatch = findNextMatch(matches, teamFull, nextRoundStart);
-    if (!nextMatch) return emptyResponse('afltables.com');
-
-    const opponentRaw =
-      teamMatches(nextMatch.home, teamFull) || teamMatches(nextMatch.home, shortName(teamFull))
-        ? nextMatch.away
-        : nextMatch.home;
-    const nextOpponentFull = opponentToOfficialTeamName(opponentRaw) || opponentRaw;
-
-    const aflTablesBody: Record<string, unknown> = {
-      season,
-      team: teamFull,
-      next_opponent: nextOpponentFull,
-      next_round: nextMatch.round,
-      next_game_tipoff: null,
-      match_url: nextMatch.match_url,
-      source: 'afltables.com',
-    };
-    return NextResponse.json(aflTablesBody);
+    return emptyResponse('footywire.com');
   } catch (err) {
     return NextResponse.json(
       { error: 'Failed to fetch next game', details: err instanceof Error ? err.message : String(err) },
