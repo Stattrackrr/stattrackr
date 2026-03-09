@@ -65,8 +65,10 @@ interface PlayerProp {
   dvpRating?: number | null;
   dvpStatValue?: number | null;
   bookmakerLines?: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>;
-  // AFL: link to game for filtering
+  // AFL: link to game for filtering; game matchup for display
   gameId?: string;
+  homeTeam?: string;
+  awayTeam?: string;
 }
 
 /** AFL game from list API (for props page games filter). */
@@ -435,6 +437,8 @@ export default function NBALandingPage() {
   const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
+  // AFL team logos (normalized name -> url) for matchup display
+  const [aflLogoByTeam, setAflLogoByTeam] = useState<Record<string, string>>({});
 
   // Mobile bottom nav dropdown state
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
@@ -882,6 +886,8 @@ export default function NBALandingPage() {
           gameDate: a.commenceTime,
           bookmakerLines: a.bookmakerLines,
           gameId: a.gameId,
+          homeTeam: a.homeTeam,
+          awayTeam: a.awayTeam,
           last5Avg: a.last5Avg,
           last10Avg: a.last10Avg,
           h2hAvg: a.h2hAvg,
@@ -1007,6 +1013,8 @@ export default function NBALandingPage() {
           gameDate: a.commenceTime,
           bookmakerLines: a.bookmakerLines,
           gameId: a.gameId,
+          homeTeam: a.homeTeam,
+          awayTeam: a.awayTeam,
           last5Avg: a.last5Avg,
           last10Avg: a.last10Avg,
           h2hAvg: a.h2hAvg,
@@ -1187,6 +1195,17 @@ export default function NBALandingPage() {
       setAflPlayerNumbers(map);
     }).catch(() => {});
   }, [propsSport, aflProps.length]);
+
+  // Fetch AFL team logos for matchup display (when on AFL tab)
+  useEffect(() => {
+    if (propsSport !== 'afl') return;
+    fetch('/api/afl/team-logos')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { logos?: Record<string, string> } | null) => {
+        if (data?.logos && typeof data.logos === 'object') setAflLogoByTeam(data.logos);
+      })
+      .catch(() => {});
+  }, [propsSport]);
 
   // Helper to check if a bookmaker is a pick'em/DFS-only bookmaker
   const isPickemBookmaker = (name: string): boolean => {
@@ -3604,12 +3623,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
                                       {(() => {
                                   const h = toOfficialAflTeamDisplayName(game.homeTeam);
-                                  const a = toOfficialAflTeamDisplayName(game.awayTeam);
+                                  let a = toOfficialAflTeamDisplayName(game.awayTeam);
                                   const same = h && a && h === a;
+                                  if (same) a = '';
+                                  const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                  const tryAflLogo = (name: string): string | null => {
+                                    if (!name) return null;
+                                    if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
+                                    for (const w of name.split(/\s+/)) {
+                                      if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
+                                    }
+                                    return null;
+                                  };
+                                  const homeLogoUrl = h ? tryAflLogo(h) : null;
+                                  const awayLogoUrl = a ? tryAflLogo(a) : null;
                                   return (
-                                    <span className="text-xs font-medium truncate">
-                                      {same ? `${h} vs —` : `${a} vs ${h}`}
-                                    </span>
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      {homeLogoUrl && <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                      <span className={`text-xs font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
+                                      {awayLogoUrl && <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                      {(!homeLogoUrl || !awayLogoUrl) && (
+                                        <span className="text-xs font-medium truncate">{[h || '—', a || '—'].filter(Boolean).join(' vs ')}</span>
+                                      )}
+                                    </div>
                                   );
                                 })()}
                                     </label>
@@ -3717,12 +3753,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
                                       {(() => {
                                         const h = toOfficialAflTeamDisplayName(game.homeTeam);
-                                        const a = toOfficialAflTeamDisplayName(game.awayTeam);
+                                        let a = toOfficialAflTeamDisplayName(game.awayTeam);
                                         const same = h && a && h === a;
+                                        if (same) a = '';
+                                        const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        const tryAflLogo = (name: string): string | null => {
+                                          if (!name) return null;
+                                          if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
+                                          for (const w of name.split(/\s+/)) {
+                                            if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
+                                          }
+                                          return null;
+                                        };
+                                        const homeLogoUrl = h ? tryAflLogo(h) : null;
+                                        const awayLogoUrl = a ? tryAflLogo(a) : null;
                                         return (
-                                          <span className="text-sm font-medium truncate">
-                                            {same ? `${h} vs —` : `${a} vs ${h}`}
-                                          </span>
+                                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            {homeLogoUrl && <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                            <span className={`text-sm font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
+                                            {awayLogoUrl && <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                            {(!homeLogoUrl || !awayLogoUrl) && (
+                                              <span className="text-sm font-medium truncate">{[h || '—', a || '—'].filter(Boolean).join(' vs ')}</span>
+                                            )}
+                                          </div>
                                         );
                                       })()}
                                     </label>
@@ -4849,13 +4902,32 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
                                         {propsSport === 'afl' ? (() => {
-                                          const homeD = toOfficialAflTeamDisplayName(prop.team || '');
-                                          const awayD = toOfficialAflTeamDisplayName(prop.opponent || '');
+                                          const homeRaw = prop.homeTeam ?? prop.team ?? '';
+                                          const awayRaw = prop.awayTeam ?? prop.opponent ?? '';
+                                          const homeD = toOfficialAflTeamDisplayName(homeRaw);
+                                          let awayD = toOfficialAflTeamDisplayName(awayRaw);
                                           const same = homeD && awayD && homeD === awayD;
+                                          if (same) awayD = '';
+                                          const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                          const tryAflLogo = (name: string): string | null => {
+                                            if (!name) return null;
+                                            if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
+                                            for (const w of name.split(/\s+/)) {
+                                              if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
+                                            }
+                                            return null;
+                                          };
+                                          const homeLogoUrl = homeD ? tryAflLogo(homeD) : null;
+                                          const awayLogoUrl = awayD ? tryAflLogo(awayD) : null;
                                           return (
-                                            <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                              {same ? `${homeD} vs —` : `${awayD} vs ${homeD}`}
-                                            </span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {homeLogoUrl && <img src={homeLogoUrl} alt={homeD || ''} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                              <span className={`text-xs flex-shrink-0 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
+                                              {awayLogoUrl && <img src={awayLogoUrl} alt={awayD || ''} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                              {(!homeLogoUrl || !awayLogoUrl) && (
+                                                <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>{[homeD || '—', awayD || '—'].filter(Boolean).join(' vs ')}</span>
+                                              )}
+                                            </div>
                                           );
                                         })() : (
                                           <>
