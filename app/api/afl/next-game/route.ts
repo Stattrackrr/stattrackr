@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflOddsCache, getNextAflGameFromGames } from '@/lib/refreshAflOdds';
 import { getPlayerTeamForSeason } from '@/lib/aflPlayerTeamResolver';
 import {
@@ -344,9 +345,28 @@ export async function GET(request: NextRequest) {
       });
 
     // Prefer odds cache so "next game" matches the matchup that has odds/props (e.g. Gold Coast v Geelong).
+    // When props exist, prefer the game that has player props so dashboard shows same matchup as props page (e.g. GWS v Bulldogs, not St Kilda).
     const oddsCache = await getAflOddsCache();
     if (oddsCache?.games?.length) {
-      const nextFromOdds = getNextAflGameFromGames(oddsCache.games, teamFull);
+      const gameIdsWithProps = new Set<string>();
+      try {
+        const propsList = await listAflPlayerPropsFromCache();
+        if (propsList?.props?.length) {
+          for (const row of propsList.props) {
+            if (row.gameId) gameIdsWithProps.add(row.gameId);
+          }
+        }
+      } catch {
+        // ignore; fall back to all games
+      }
+      const gamesToUse =
+        gameIdsWithProps.size > 0
+          ? oddsCache.games.filter((g) => gameIdsWithProps.has(g.gameId))
+          : oddsCache.games;
+      const nextFromOdds =
+        gamesToUse.length > 0
+          ? getNextAflGameFromGames(gamesToUse, teamFull)
+          : getNextAflGameFromGames(oddsCache.games, teamFull);
       if (nextFromOdds) {
         return NextResponse.json({
           season,
