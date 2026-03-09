@@ -97,7 +97,8 @@ function findMatchingGame(
     games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team) && (!opponent || gameMatchesOpponent(g.homeTeam, g.awayTeam, opponent))) ??
     games.find((g) => gameMatchesTeam(g.homeTeam, g.awayTeam, team));
   if (!game && team && opponent) {
-    game = games.find((g) => gameHasBothTeams(g.homeTeam, g.awayTeam, team, opponent)) ?? null;
+    const fallback = games.find((g) => gameHasBothTeams(g.homeTeam, g.awayTeam, team, opponent));
+    if (fallback) game = fallback;
   }
   if (!game) return null;
   const allMatching =
