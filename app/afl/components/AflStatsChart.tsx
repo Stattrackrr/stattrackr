@@ -517,18 +517,62 @@ export function AflStatsChart({
     });
   }, [gameLogs, teammateFilterName, teammateRounds, withWithoutMode]);
 
+  const effectiveSeason = useCallback((g: Record<string, unknown>) => {
+    const s = (g as { season?: number }).season;
+    if (typeof s === 'number' && Number.isFinite(s)) return s;
+    const dateStr = String(g.date ?? g.game_date ?? '').trim();
+    if (dateStr.length >= 4) {
+      const isoYear = parseInt(dateStr.slice(0, 4), 10);
+      if (isoYear >= 2020 && isoYear <= 2030) return isoYear;
+      const parsed = new Date(dateStr);
+      if (Number.isFinite(parsed.getTime())) {
+        const y = parsed.getFullYear();
+        if (y >= 2020 && y <= 2030) return y;
+      }
+    }
+    return 0;
+  }, []);
+
+  const gameToChartRow = useCallback((g: Record<string, unknown>, idx: number) => {
+    const gameNum = typeof g.game_number === 'number' ? g.game_number : idx + 1;
+    const round = String(g.round ?? '-');
+    const opponent = String(g.opponent ?? '-');
+    const result = String(g.result ?? '-');
+    const gameDate = String(g.date ?? g.game_date ?? '');
+    const value = toNumericValue(g[selectedStat]) ?? 0;
+    const key = `${gameNum}-${round}-${opponent}-${idx}`;
+    const gameSeason = effectiveSeason(g);
+    const sourceGameIndexRaw = g.__aflGameIndex;
+    const sourceGameIndex = typeof sourceGameIndexRaw === 'number' && Number.isFinite(sourceGameIndexRaw) ? sourceGameIndexRaw : null;
+    return {
+      key,
+      xKey: key,
+      tickLabel: opponent,
+      round,
+      opponent,
+      result,
+      value,
+      gameId: key,
+      gameDate,
+      gameSeason,
+      sourceGameIndex,
+      game: { id: key, date: gameDate, home_team: { abbreviation: opponent.toUpperCase() }, visitor_team: { abbreviation: opponent.toUpperCase() } },
+    };
+  }, [selectedStat, effectiveSeason]);
+
   const baseChartData = useMemo(() => {
     if (!selectedStat) return [];
     return [...filteredGameLogs]
       .sort((a, b) => {
-        const aRound = parseRoundIndex(a.round);
-        const bRound = parseRoundIndex(b.round);
-        if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
-
+        const aSeason = effectiveSeason(a as Record<string, unknown>);
+        const bSeason = effectiveSeason(b as Record<string, unknown>);
+        if (aSeason !== bSeason) return aSeason - bSeason;
         const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
         const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
         if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
-
+        const aRound = parseRoundIndex(a.round);
+        const bRound = parseRoundIndex(b.round);
+        if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
         const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
         const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
         const hasANum = Number.isFinite(aNum) && aNum > 0;
@@ -536,41 +580,8 @@ export function AflStatsChart({
         if (hasANum && hasBNum && aNum !== bNum) return aNum - bNum;
         return 0;
       })
-      .map((g, idx) => {
-        const gameNum = typeof g.game_number === 'number' ? g.game_number : idx + 1;
-        const round = String(g.round ?? '-');
-        const opponent = String(g.opponent ?? '-');
-        const result = String(g.result ?? '-');
-        const gameDate = String(g.date ?? g.game_date ?? '');
-        const value = toNumericValue(g[selectedStat]) ?? 0;
-        const key = `${gameNum}-${round}-${opponent}-${idx}`;
-        const gameSeason = typeof (g as Record<string, unknown>).season === 'number' ? (g as Record<string, unknown>).season as number : season;
-        const sourceGameIndexRaw = (g as Record<string, unknown>).__aflGameIndex;
-        const sourceGameIndex = typeof sourceGameIndexRaw === 'number' && Number.isFinite(sourceGameIndexRaw)
-          ? sourceGameIndexRaw
-          : null;
-
-        return {
-          key,
-          xKey: `G${gameNum}`,
-          tickLabel: opponent,
-          round,
-          opponent,
-          result,
-          value,
-          gameId: key,
-          gameDate,
-          gameSeason,
-          sourceGameIndex,
-          game: {
-            id: key,
-            date: gameDate,
-            home_team: { abbreviation: opponent.toUpperCase() },
-            visitor_team: { abbreviation: opponent.toUpperCase() },
-          },
-        };
-      });
-  }, [filteredGameLogs, selectedStat, season]);
+      .map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
+  }, [filteredGameLogs, selectedStat, effectiveSeason, gameToChartRow]);
 
   const chartData = useMemo(() => {
     if (!baseChartData.length) return [];
@@ -600,22 +611,40 @@ export function AflStatsChart({
         data = h2hData;
       }
     } else {
+      // L5/L10/L15/L20 = N most recent games (NBA approach: sort by date desc, take first N, then display chronological)
       const lastN = parseInt(selectedTimeframe.replace('last', ''), 10);
-      data = Number.isFinite(lastN) && lastN > 0 ? baseChartData.slice(-lastN) : baseChartData;
+      if (Number.isFinite(lastN) && lastN > 0) {
+        const sortedNewestFirst = [...filteredGameLogs].sort((a, b) => {
+          const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
+          const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
+          if (Number.isFinite(aDate) && Number.isFinite(bDate)) return bDate - aDate;
+          const aSeason = effectiveSeason(a as Record<string, unknown>);
+          const bSeason = effectiveSeason(b as Record<string, unknown>);
+          if (aSeason !== bSeason) return bSeason - aSeason;
+          return 0;
+        });
+        const nMostRecent = sortedNewestFirst.slice(0, lastN);
+        data = nMostRecent.map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
+      } else {
+        data = baseChartData;
+      }
     }
-    // Ensure oldest is left, newest is right: sort by round order (R0, R1, ... R24) then by date
+    // Ensure oldest is left, newest is right: sort by season then date (chronological)
     const ordered = [...data];
     ordered.sort((a, b) => {
-      const aRi = parseRoundIndex(a.round);
-      const bRi = parseRoundIndex(b.round);
-      if (aRi !== bRi) return aRi - bRi;
+      const aSeason = (a as { gameSeason?: number }).gameSeason ?? 0;
+      const bSeason = (b as { gameSeason?: number }).gameSeason ?? 0;
+      if (aSeason !== bSeason) return aSeason - bSeason;
       const aDate = new Date(a.gameDate || 0).getTime();
       const bDate = new Date(b.gameDate || 0).getTime();
       if (Number.isFinite(aDate) && Number.isFinite(bDate)) return aDate - bDate;
+      const aRi = parseRoundIndex(a.round);
+      const bRi = parseRoundIndex(b.round);
+      if (aRi !== bRi) return aRi - bRi;
       return 0;
     });
     return ordered;
-  }, [baseChartData, selectedTimeframe, season, nextOpponent]);
+  }, [baseChartData, selectedTimeframe, season, nextOpponent, filteredGameLogs, gameToChartRow, effectiveSeason]);
 
   const secondAxisData = useMemo(() => {
     if (!showAdvancedFilters || !selectedAdvancedFilter || !perGameFilterData?.length) return null;

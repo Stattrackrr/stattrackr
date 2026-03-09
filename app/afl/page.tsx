@@ -1100,7 +1100,7 @@ export default function AFLPage() {
         const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
         const gamesWithQuarters = Array.isArray(data?.gamesWithQuarters) ? (data.gamesWithQuarters as Record<string, unknown>[]) : games;
         if (games.length === 0) return;
-        const latest = games[games.length - 1];
+        const latest = games[0];
         const numericKeys = new Set<string>();
         const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
         for (const g of games) {
@@ -1115,11 +1115,14 @@ export default function AFLPage() {
           const total = values.reduce((s, v) => s + v, 0);
           const seasonAvg = Math.round((total / values.length) * 10) / 10;
           const lastGame = typeof latest[key] === 'number' && Number.isFinite(latest[key]) ? (latest[key] as number) : 0;
-          const last5Values = values.slice(-5);
+          const last5Values = values.slice(0, 5);
+          const last10Values = values.slice(0, 10);
           const last5Avg = last5Values.length ? Math.round((last5Values.reduce((s, v) => s + v, 0) / last5Values.length) * 10) / 10 : 0;
+          const last10Avg = last10Values.length ? Math.round((last10Values.reduce((s, v) => s + v, 0) / last10Values.length) * 10) / 10 : 0;
           toMerge[`${key}_season_avg`] = seasonAvg;
           toMerge[`${key}_last_game`] = lastGame;
           toMerge[`${key}_last5_avg`] = last5Avg;
+          toMerge[`${key}_last10_avg`] = last10Avg;
         }
         if (typeof latest.opponent === 'string') toMerge.last_opponent = latest.opponent;
         if (typeof latest.round === 'string') toMerge.last_round = latest.round;
@@ -1232,7 +1235,8 @@ export default function AFLPage() {
         let gamesCurrent = resCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
         const gamesPrev = resPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
-        const is2026ResponseActually2025 = currentYear === 2026 && (payloadSeasonCurrent === 2025 || (gamesCurrent.length > 0 && !gamesCurrent.some((g: { season?: number }) => g?.season === 2026)));
+        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
         if (is2026ResponseActually2025) {
           gamesCurrent = [];
         }
@@ -1250,7 +1254,8 @@ export default function AFLPage() {
           setStatsLoadingForPlayer(false);
           return;
         }
-        const latest = games[games.length - 1];
+        // games is [2026..., 2025...] = most recent first; latest = most recent game
+        const latest = games[0];
         const numericKeys = new Set<string>();
         const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
         for (const g of games) {
@@ -1275,15 +1280,21 @@ export default function AFLPage() {
           const seasonAvg = Math.round((total / values.length) * 10) / 10;
           const lastGameRaw = latest[key];
           const lastGame = typeof lastGameRaw === 'number' && Number.isFinite(lastGameRaw) ? lastGameRaw : 0;
-          const last5Values = values.slice(-5);
+          // L5/L10 = most recent 5/10 games (fill timeframe: e.g. 1x 2026 + 9x 2025 = L10)
+          const last5Values = values.slice(0, 5);
+          const last10Values = values.slice(0, 10);
           const last5Avg = last5Values.length
             ? Math.round((last5Values.reduce((s, v) => s + v, 0) / last5Values.length) * 10) / 10
+            : 0;
+          const last10Avg = last10Values.length
+            ? Math.round((last10Values.reduce((s, v) => s + v, 0) / last10Values.length) * 10) / 10
             : 0;
 
           // Keep intuitive keys for charting.
           toMerge[`${key}_season_avg`] = seasonAvg;
           toMerge[`${key}_last_game`] = lastGame;
           toMerge[`${key}_last5_avg`] = last5Avg;
+          toMerge[`${key}_last10_avg`] = last10Avg;
         }
 
         // Keep core metadata from the most recent game log for context.
@@ -1822,25 +1833,6 @@ export default function AFLPage() {
                                 Height: {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
                               </div>
                             ) : null}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const name = String(selectedPlayer?.name ?? '').trim();
-                                const teamRaw = selectedPlayer?.team;
-                                const teamForApi = teamRaw
-                                  ? (rosterTeamToInjuryTeam(String(teamRaw)) || footywireNicknameToOfficial(String(teamRaw)) || String(teamRaw))
-                                  : '';
-                                const key = getAflPlayerLogsCacheKey(season, name, teamForApi);
-                                try {
-                                  localStorage.removeItem(key);
-                                } catch {}
-                                playerStatsCacheRef.current.delete(`${season}:${name.toLowerCase()}`);
-                                setRefreshLogsKey((k) => k + 1);
-                              }}
-                              className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
-                            >
-                              Refresh stats
-                            </button>
                           </div>
                         ) : loadingPlayerFromUrl ? (
                           <div className="min-w-0">
@@ -1970,25 +1962,6 @@ export default function AFLPage() {
                                   ) : null;
                                 })()}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const name = String(selectedPlayer?.name ?? '').trim();
-                                  const teamRaw = selectedPlayer?.team;
-                                  const teamForApi = teamRaw
-                                    ? (rosterTeamToInjuryTeam(String(teamRaw)) || footywireNicknameToOfficial(String(teamRaw)) || String(teamRaw))
-                                    : '';
-                                  const key = getAflPlayerLogsCacheKey(season, name, teamForApi);
-                                  try {
-                                    localStorage.removeItem(key);
-                                  } catch {}
-                                  playerStatsCacheRef.current.delete(`${season}:${name.toLowerCase()}`);
-                                  setRefreshLogsKey((k) => k + 1);
-                                }}
-                                className="mt-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
-                              >
-                                Refresh stats
-                              </button>
                             </div>
                           ) : loadingPlayerFromUrl ? (
                             <div className="min-w-0 flex-1">
