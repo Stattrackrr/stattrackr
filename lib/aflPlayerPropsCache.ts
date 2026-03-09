@@ -344,17 +344,13 @@ export type AflListPropRow = {
 };
 
 /**
- * List all cached AFL player props for all events (for props page).
- * Returns flattened rows: one per (game, player, stat, line, bookmaker).
+ * List props from cache for a given list of games. Games are the single source of truth (e.g. from Odds API).
+ * Use this so matchups always come from the provided games, never from a stale cache.
  */
-export async function listAflPlayerPropsFromCache(): Promise<{
+export async function listAflPlayerPropsFromCacheWithGames(games: AflGameOdds[]): Promise<{
   props: AflListPropRow[];
   games: AflGameOdds[];
-} | null> {
-  const cache = await getAflOddsCache();
-  const games = cache?.games ?? [];
-  if (!games.length) return null;
-
+}> {
   const props: AflListPropRow[] = [];
   for (const game of games) {
     const eventCache = await sharedCache.getJSON<EventPlayerPropsCache>(
@@ -368,36 +364,49 @@ export async function listAflPlayerPropsFromCache(): Promise<{
 
       for (const stat of CACHED_PP_STATS) {
         const items = playerData[stat];
-            if (!Array.isArray(items) || !items.length) continue;
+        if (!Array.isArray(items) || !items.length) continue;
 
-            for (const item of items) {
-              const line = typeof item.line === 'number' ? item.line : 0;
-              const overOdds =
-                item.overPrice != null ? decimalToAmerican(item.overPrice) : 'N/A';
-              const underOdds =
-                item.underPrice != null ? decimalToAmerican(item.underPrice) : 'N/A';
-              const yesOdds =
-                item.yesPrice != null ? decimalToAmerican(item.yesPrice) : undefined;
-              const noOdds =
-                item.noPrice != null ? decimalToAmerican(item.noPrice) : undefined;
-              props.push({
-                gameId: game.gameId,
-                homeTeam: game.homeTeam,
-                awayTeam: game.awayTeam,
-                commenceTime: game.commenceTime,
-                playerName,
-                statType: stat,
-                line,
-                overOdds,
-                underOdds,
-                yesOdds,
-                noOdds,
-                bookmaker: item.bookmaker || 'Unknown',
-              });
-            }
+        for (const item of items) {
+          const line = typeof item.line === 'number' ? item.line : 0;
+          const overOdds =
+            item.overPrice != null ? decimalToAmerican(item.overPrice) : 'N/A';
+          const underOdds =
+            item.underPrice != null ? decimalToAmerican(item.underPrice) : 'N/A';
+          const yesOdds =
+            item.yesPrice != null ? decimalToAmerican(item.yesPrice) : undefined;
+          const noOdds =
+            item.noPrice != null ? decimalToAmerican(item.noPrice) : undefined;
+          props.push({
+            gameId: game.gameId,
+            homeTeam: game.homeTeam,
+            awayTeam: game.awayTeam,
+            commenceTime: game.commenceTime,
+            playerName,
+            statType: stat,
+            line,
+            overOdds,
+            underOdds,
+            yesOdds,
+            noOdds,
+            bookmaker: item.bookmaker || 'Unknown',
+          });
+        }
       }
     }
   }
-
   return { props, games };
+}
+
+/**
+ * List all cached AFL player props for all events (for props page).
+ * Uses odds cache for game list – prefer listAflPlayerPropsFromCacheWithGames(canonicalGames) so games come from API.
+ */
+export async function listAflPlayerPropsFromCache(): Promise<{
+  props: AflListPropRow[];
+  games: AflGameOdds[];
+} | null> {
+  const cache = await getAflOddsCache();
+  const games = cache?.games ?? [];
+  if (!games.length) return null;
+  return listAflPlayerPropsFromCacheWithGames(games);
 }

@@ -233,12 +233,21 @@ export function footywireNicknameToOfficial(nickname: string): string | null {
 }
 
 /**
+ * Odds API / external names that need mapping to our display form (exact match before fuzzy logic).
+ */
+const ODDS_API_TEAM_TO_DISPLAY: Record<string, string> = {
+  'Greater Western Sydney Giants': 'GWS Giants',
+};
+
+/**
  * Normalize any team string (from Odds API, nickname, or full name) to official display name.
  * Use when storing or displaying so we never show "Essendon Bombers vs Bombers" (nickname-only).
  */
 export function toOfficialAflTeamDisplayName(team: string): string {
   if (!team || typeof team !== 'string') return (team ?? '').trim();
   const t = team.trim();
+  const fromOdds = ODDS_API_TEAM_TO_DISPLAY[t];
+  if (fromOdds) return fromOdds;
   const fromNick = footywireNicknameToOfficial(t);
   if (fromNick) return fromNick;
   const fromOpp = opponentToOfficialTeamName(t);
@@ -260,6 +269,12 @@ export function opponentToOfficialTeamName(opponent: string): string | null {
     if (name.toLowerCase() === lower) return name;
     if (name.toLowerCase().includes(lower)) return name;
   }
-  const partial = [...OFFICIAL_TEAM_NAMES].find((n) => lower.includes(n.toLowerCase().split(' ')[0]));
+  // Match only if the official name's first word appears as a whole word (avoid "western" matching "St").
+  const partial = [...OFFICIAL_TEAM_NAMES].find((n) => {
+    const firstWord = n.toLowerCase().split(' ')[0] ?? '';
+    if (!firstWord || firstWord.length < 2) return false;
+    const wordBoundary = new RegExp(`\\b${firstWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    return wordBoundary.test(lower);
+  });
   return partial ?? null;
 }

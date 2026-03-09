@@ -302,6 +302,7 @@ export default function AFLPage() {
   const [aflFilterDataOa, setAflFilterDataOa] = useState<{ teams: Array<{ team: string; stats?: Record<string, number | string | null> }> } | null>(null);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
+  const [nextGameId, setNextGameId] = useState<string | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
@@ -865,7 +866,8 @@ export default function AFLPage() {
   const aflOddsGameDate = nextGameTipoff ? nextGameTipoff.toISOString().split('T')[0] : '';
 
   useEffect(() => {
-    if (!aflOddsTeam || !aflOddsOpponent) {
+    const hasMatchup = (aflOddsTeam && aflOddsOpponent) || (nextGameId && nextGameOpponent);
+    if (!hasMatchup) {
       setAflOddsBooks([]);
       setAflOddsHomeTeam('');
       setAflOddsAwayTeam('');
@@ -875,8 +877,11 @@ export default function AFLPage() {
     let cancelled = false;
     setAflOddsLoading(true);
     setAflOddsError(null);
-    const urlWithDate = `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}&game_date=${encodeURIComponent(aflOddsGameDate)}`;
-    const urlNoDate = `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}`;
+    const base = nextGameId
+      ? `/api/afl/odds?game_id=${encodeURIComponent(nextGameId)}`
+      : `/api/afl/odds?team=${encodeURIComponent(aflOddsTeam)}&opponent=${encodeURIComponent(aflOddsOpponent)}`;
+    const urlWithDate = aflOddsGameDate ? `${base}&game_date=${encodeURIComponent(aflOddsGameDate)}` : base;
+    const urlNoDate = base;
     const apply = (data: { success?: boolean; data?: unknown[]; homeTeam?: string; awayTeam?: string; error?: string | null }) => {
       if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
         setAflOddsBooks(data.data as AflBookRow[]);
@@ -923,7 +928,7 @@ export default function AFLPage() {
         if (!cancelled) setAflOddsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [aflOddsTeam, aflOddsOpponent, aflOddsGameDate]);
+  }, [aflOddsTeam, aflOddsOpponent, aflOddsGameDate, nextGameId]);
 
   type PlayerPropFetchCol = keyof Pick<AflBookRow, 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver'>;
   const AFL_PLAYER_PROP_FETCH: { stat: string; column: PlayerPropFetchCol; type: 'ou' | 'over' | 'yesno' }[] = [
@@ -1019,6 +1024,7 @@ export default function AFLPage() {
             : '';
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
         const gameDateForProps = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff.toISOString().split('T')[0] : '';
+        const nextGameIdFromApi = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : '';
         if (!opponent) {
           setAflPlayerPropsBooks([]);
           return null;
@@ -1027,6 +1033,7 @@ export default function AFLPage() {
           `team=${encodeURIComponent(teamForProps)}`,
           `opponent=${encodeURIComponent(opponent)}`,
           gameDateForProps && `game_date=${encodeURIComponent(gameDateForProps)}`,
+          nextGameIdFromApi && `event_id=${encodeURIComponent(nextGameIdFromApi)}`,
         ]
           .filter(Boolean)
           .join('&');
@@ -1793,6 +1800,7 @@ export default function AFLPage() {
     if (!name || typeof name !== 'string' || !name.trim()) {
       setNextGameOpponent(null);
       setNextGameTipoff(null);
+      setNextGameId(null);
       nextGameFromFetchRef.current = { opponent: null, tipoff: null };
       setIsGameInProgress(false);
       return;
@@ -1839,6 +1847,8 @@ export default function AFLPage() {
         const opp = typeof data?.next_opponent === 'string' && data.next_opponent ? data.next_opponent : null;
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
         const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
+        const gameId = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : null;
+        setNextGameId(gameId);
         const prev = nextGameFromFetchRef.current;
         if (prev.opponent !== opp || (prev.tipoff?.getTime() !== tipoffValid?.getTime())) {
           setNextGameOpponent(opp);
@@ -1853,6 +1863,7 @@ export default function AFLPage() {
         if (!cancelled) {
           setNextGameOpponent(null);
           setNextGameTipoff(null);
+          setNextGameId(null);
           nextGameFromFetchRef.current = { opponent: null, tipoff: null };
         }
       });

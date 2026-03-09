@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAflEventIdForMatchup,
   getAflOddsCache,
+  refreshAflOddsData,
 } from '@/lib/refreshAflOdds';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import {
   CACHED_PP_STATS,
   getAflPlayerPropsAllFromCache,
@@ -40,8 +42,16 @@ export async function GET(request: NextRequest) {
   let resolvedEventId = eventIdParam ?? null;
   if (!resolvedEventId && team && opponent) {
     const cache = await getAflOddsCache();
-    const games = cache?.games ?? [];
+    let games = cache?.games ?? [];
     resolvedEventId = getAflEventIdForMatchup(games, team, opponent, gameDate || undefined);
+    if (!resolvedEventId) {
+      const canonical = await refreshAflOddsData({ skipWrite: true });
+      if (canonical.success && canonical.games?.length) {
+        const teamNorm = toOfficialAflTeamDisplayName(team);
+        const oppNorm = toOfficialAflTeamDisplayName(opponent);
+        resolvedEventId = getAflEventIdForMatchup(canonical.games, teamNorm || team, oppNorm || opponent, gameDate || undefined);
+      }
+    }
   }
 
   if (!resolvedEventId) {

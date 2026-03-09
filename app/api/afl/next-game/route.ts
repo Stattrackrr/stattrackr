@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
-import { getAflOddsCache, getNextAflGameFromGames } from '@/lib/refreshAflOdds';
+import { getAflOddsCache, getNextAflGameFromGames, refreshAflOddsData } from '@/lib/refreshAflOdds';
 import { getPlayerTeamForSeason } from '@/lib/aflPlayerTeamResolver';
 import {
   rosterTeamToInjuryTeam,
@@ -366,20 +366,28 @@ export async function GET(request: NextRequest) {
         source,
       });
 
-    // Prefer odds cache so "next game" matches the matchup that has odds/props (e.g. Gold Coast v Geelong).
-    // When props exist, prefer the game that has player props so dashboard shows same matchup as props page (e.g. GWS v Bulldogs, not St Kilda).
-    // getGameIdsWithProps is cached (2 min) so opponent fetch is fast after first request and avoids re-render delay.
-    const oddsCache = await getAflOddsCache();
-    if (oddsCache?.games?.length) {
+    // Prefer odds cache so "next game" matches the matchup that has odds/props.
+    // If cache has no matching game (e.g. wrong team names in cache for GWS), try canonical from Odds API so dashboard gets correct opponent and odds.
+    let gamesForNext = (await getAflOddsCache())?.games ?? [];
+    if (gamesForNext.length > 0) {
       const gameIdsWithProps = await getGameIdsWithProps(season);
       const gamesToUse =
         gameIdsWithProps.size > 0
-          ? oddsCache.games.filter((g) => gameIdsWithProps.has(g.gameId))
-          : oddsCache.games;
-      const nextFromOdds =
+          ? gamesForNext.filter((g) => gameIdsWithProps.has(g.gameId))
+          : gamesForNext;
+      let nextFromOdds =
         gamesToUse.length > 0
           ? getNextAflGameFromGames(gamesToUse, teamFull)
-          : getNextAflGameFromGames(oddsCache.games, teamFull);
+          : getNextAflGameFromGames(gamesForNext, teamFull);
+      if (!nextFromOdds && gamesForNext.length >= 0) {
+        const canonical = await refreshAflOddsData({ skipWrite: true });
+        if (canonical.success && canonical.games?.length) {
+          gamesForNext = canonical.games;
+          nextFromOdds =
+            getNextAflGameFromGames(canonical.games, teamFull) ??
+            null;
+        }
+      }
       if (nextFromOdds) {
         return NextResponse.json({
           season,
@@ -387,9 +395,27 @@ export async function GET(request: NextRequest) {
           next_opponent: nextFromOdds.opponent,
           next_round: null,
           next_game_tipoff: nextFromOdds.commenceTime,
+          next_game_id: nextFromOdds.gameId ?? null,
           match_url: null,
-          source: 'odds_cache',
+          source: gamesForNext.length ? 'odds_cache' : 'odds_api',
         });
+      }
+    } else {
+      const canonical = await refreshAflOddsData({ skipWrite: true });
+      if (canonical.success && canonical.games?.length) {
+        const nextFromOdds = getNextAflGameFromGames(canonical.games, teamFull);
+        if (nextFromOdds) {
+          return NextResponse.json({
+            season,
+            team: teamFull,
+            next_opponent: nextFromOdds.opponent,
+            next_round: null,
+            next_game_tipoff: nextFromOdds.commenceTime,
+            next_game_id: nextFromOdds.gameId ?? null,
+            match_url: null,
+            source: 'odds_api',
+          });
+        }
       }
     }
 
@@ -402,12 +428,23 @@ export async function GET(request: NextRequest) {
         const teamIsHome = aliases.has(normalize(nextMatch.home));
         const opponentNickname = teamIsHome ? nextMatch.away : nextMatch.home;
         const nextOpponentFull = footywireNicknameToOfficial(opponentNickname) || opponentNickname;
+        let nextGameId: string | null = null;
+        try {
+          const canonical = await refreshAflOddsData({ skipWrite: true });
+          if (canonical.success && canonical.games?.length) {
+            const fromCanonical = getNextAflGameFromGames(canonical.games, teamFull);
+            if (fromCanonical) nextGameId = fromCanonical.gameId;
+          }
+        } catch {
+          // ignore
+        }
         const body: Record<string, unknown> = {
           season,
           team: teamFull,
           next_opponent: nextOpponentFull,
           next_round: nextMatch.round,
           next_game_tipoff: nextMatch.tipoff_iso ?? null,
+          next_game_id: nextGameId,
           match_url: null,
           source: 'footywire.com',
         };

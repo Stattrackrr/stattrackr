@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listAflPlayerPropsFromCache, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
+import { listAflPlayerPropsFromCache, listAflPlayerPropsFromCacheWithGames, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
@@ -30,9 +30,30 @@ export async function GET(request: Request) {
     const enrich = searchParams.get('enrich') !== 'false';
     const debugStats = searchParams.get('debugStats') === '1';
 
-    const result = await listAflPlayerPropsFromCache();
-    if (!result) {
-      // Lazy refresh: populate cache in background so next request (or client retry) gets data (same idea as NBA props always having data).
+    // Single source of truth: get games from the Odds API. Props come from cache keyed by gameId.
+    let result: { props: AflListPropRow[]; games: AflGameOdds[] } | null = null;
+    let canonicalError: string | undefined;
+    let usedCanonicalGames = false;
+    const canonical = await refreshAflOddsData({ skipWrite: true });
+    if (canonical.success && canonical.games?.length) {
+      usedCanonicalGames = true;
+      result = await listAflPlayerPropsFromCacheWithGames(canonical.games);
+      if (result.props.length === 0 && result.games.length > 0) {
+        void (async () => {
+          try {
+            const pp = await refreshAflPlayerPropsCache(canonical.games!);
+            if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
+          } catch (e) {
+            console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
+          }
+        })();
+      }
+    } else {
+      canonicalError = canonical.error ?? 'No games from Odds API';
+      result = await listAflPlayerPropsFromCache();
+    }
+
+    if (!result || !result.games.length) {
       void (async () => {
         try {
           const r = await refreshAflOddsData({ skipWrite: true });
@@ -47,21 +68,11 @@ export async function GET(request: Request) {
         success: true,
         data: [],
         games: [],
-        message: 'No AFL player props in cache. Run /api/afl/odds/refresh to populate.',
+        message: 'No AFL games from Odds API. Run /api/afl/odds/refresh to populate props cache.',
+        _meta: { canonicalError },
       });
     }
-    if (result.props.length === 0) {
-      void (async () => {
-        try {
-          const r = await refreshAflOddsData({ skipWrite: true });
-          if (!r.success || !r.games?.length) return;
-          const pp = await refreshAflPlayerPropsCache(r.games);
-          if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
-        } catch (e) {
-          console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
-        }
-      })();
-    }
+
     const rows = result.props.filter((r) => hasOver(r.overOdds) && hasUnder(r.underOdds));
     const gamesPayload = result.games.map((g) => ({
       gameId: g.gameId,
@@ -69,13 +80,19 @@ export async function GET(request: Request) {
       awayTeam: g.awayTeam,
       commenceTime: g.commenceTime,
     }));
+    const rowsWithCanonical = rows;
 
     if (!enrich) {
       return NextResponse.json({
         success: true,
-        data: rows,
+        data: rowsWithCanonical,
         games: gamesPayload,
-        _meta: { rowsFromList: rows.length, enrich: false },
+        _meta: {
+          rowsFromList: rowsWithCanonical.length,
+          enrich: false,
+          canonicalUsed: usedCanonicalGames,
+          canonicalError: canonicalError ?? undefined,
+        },
       });
     }
 
@@ -211,6 +228,10 @@ export async function GET(request: Request) {
       success: true,
       data: enrichedRows,
       games: gamesPayload,
+      _meta: {
+        canonicalUsed: usedCanonicalGames,
+        canonicalError: canonicalError ?? undefined,
+      },
     };
     if (debugStats) {
       const cacheHits = uniqueCacheKeys.size - missedKeys.length;
