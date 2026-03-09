@@ -123,10 +123,13 @@ async function fetchGameLogs(
   return Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
 }
 
+export type AflPropStatsDebug = { fromCache: boolean; gamesCount: number };
+
 /**
  * Get AFL prop stats from cache or compute. When cacheOnly is true, returns null on cache miss (no computation).
  * Pass cronSecret when called from props-stats/warm so player-game-logs will fetch from FootyWire instead of cache-only.
  * Pass resolvedPlayerTeam (player's actual team from league data) so we fetch game logs by that team first when it differs from game home/away.
+ * If debugOut is provided, it is filled with { fromCache, gamesCount } for debugging N/A on the props page.
  */
 export async function getAflPropStats(
   playerName: string,
@@ -138,17 +141,37 @@ export async function getAflPropStats(
   dvpLookup?: { rank: number; value: number } | null,
   cacheOnly?: boolean,
   cronSecret?: string,
-  resolvedPlayerTeam?: string
+  resolvedPlayerTeam?: string,
+  debugOut?: AflPropStatsDebug
 ): Promise<AflPropStatsPayload | null> {
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
   if (cached && typeof cached === 'object') {
-    if (dvpLookup != null && (cached.dvpRating == null || cached.dvpStatValue == null)) {
-      return { ...cached, dvpRating: dvpLookup.rank, dvpStatValue: dvpLookup.value };
+    // Don't use cached entry when it has no stats (warm may have stored 0-game result). Treat as miss and recompute.
+    const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
+    if (hasAnyStat) {
+      if (debugOut) {
+        debugOut.fromCache = true;
+        debugOut.gamesCount = -1; // not stored in cache
+      }
+      if (dvpLookup != null && (cached.dvpRating == null || cached.dvpStatValue == null)) {
+        return { ...cached, dvpRating: dvpLookup.rank, dvpStatValue: dvpLookup.value };
+      }
+      return cached;
     }
-    return cached;
+    // Cached but empty: fall through so list API will recompute in phase 2, or return null here if cacheOnly
+    if (cacheOnly && debugOut) {
+      debugOut.fromCache = true;
+      debugOut.gamesCount = -1; // so debug shows "cached_but_empty" not "computed_0_games"
+    }
   }
-  if (cacheOnly) return null;
+  if (cacheOnly) {
+    if (debugOut && debugOut.gamesCount !== -1) {
+      debugOut.fromCache = false;
+      debugOut.gamesCount = 0;
+    }
+    return null;
+  }
   const currentSeason = new Date().getFullYear();
   const prevSeason = currentSeason - 1;
   // Fetch both current and previous season so we have 2025 + 2026 stats (most recent first).
@@ -167,13 +190,20 @@ export async function getAflPropStats(
   ]);
   // Merge: current season first (most recent), then previous season so L5/L10/season use both years.
   const games = [...gamesCurrent, ...gamesPrev];
+  if (debugOut) {
+    debugOut.fromCache = false;
+    debugOut.gamesCount = games.length;
+  }
   const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
   const payload: AflPropStatsPayload = {
     ...stats,
     dvpRating: dvpLookup?.rank ?? null,
     dvpStatValue: dvpLookup?.value ?? null,
   };
-  await sharedCache.setJSON(key, payload, CACHE_TTL_SECONDS);
+  // Don't cache empty stats (0 games) so we don't pollute Redis and next request can retry
+  if (games.length > 0) {
+    await sharedCache.setJSON(key, payload, CACHE_TTL_SECONDS);
+  }
   return payload;
 }
 

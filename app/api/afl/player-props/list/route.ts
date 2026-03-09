@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
-import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
+import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
@@ -76,14 +76,17 @@ export async function GET(request: Request) {
       }
     }
     const statsByKey = new Map<string, Awaited<ReturnType<typeof getAflPropStats>>>();
+    const debugByKey = debugStats ? new Map<string, AflPropStatsDebug>() : null;
     // 1) Try cache only for every unique prop
     await Promise.all(
       Array.from(uniqueCacheKeys).map(async (cacheKey) => {
         const p = paramsByCacheKey.get(cacheKey);
         if (!p) return;
-        let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, null, true);
+        const debug = debugByKey ? ({ fromCache: false, gamesCount: 0 } as AflPropStatsDebug) : undefined;
+        if (debugByKey) debugByKey.set(cacheKey, debug!);
+        let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, null, true, undefined, undefined, debug);
         if (!stats) {
-          stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, null, true);
+          stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, null, true, undefined, undefined, debug);
         }
         if (stats) {
           statsByKey.set(cacheKey, stats);
@@ -109,21 +112,22 @@ export async function GET(request: Request) {
         missedKeys.map(async (cacheKey) => {
           const p = paramsByCacheKey.get(cacheKey);
           if (!p) return;
+          const debug = debugByKey?.get(cacheKey) ?? undefined;
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           const opponent = resolvedTeam && teamMatches(resolvedTeam, p.homeTeam) ? p.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, p.awayTeam) ? p.homeTeam : undefined);
           const playerTeam = resolvedTeam ?? p.homeTeam;
           const position = positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
           const dvp = opponent != null ? getDvp(opponent, p.statType, position) : null;
           let stats = opponent != null
-            ? await getAflPropStats(p.playerName, playerTeam, opponent, p.statType, p.line, baseUrl, dvp, false, undefined, resolvedTeam)
+            ? await getAflPropStats(p.playerName, playerTeam, opponent, p.statType, p.line, baseUrl, dvp, false, undefined, resolvedTeam, debug)
             : null;
           if (!stats) {
             const dvpHomeAway = getDvp(p.awayTeam, p.statType, position);
-            stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam);
+            stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam, debug);
           }
           if (!stats) {
             const dvpAwayHome = getDvp(p.homeTeam, p.statType, position);
-            stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam);
+            stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam, debug);
           }
           if (stats) {
             statsByKey.set(cacheKey, stats);
@@ -178,20 +182,61 @@ export async function GET(request: Request) {
       return baseRow;
     });
     const rowsWithStats = enrichedRows.filter((r) => r.last5Avg != null || r.seasonAvg != null);
+    const rowsNa = enrichedRows.filter((r) => r.last5Avg == null && r.seasonAvg == null);
     const payload: Record<string, unknown> = {
       success: true,
       data: enrichedRows,
       games: gamesPayload,
     };
     if (debugStats) {
-      payload._meta = {
+      const cacheHits = uniqueCacheKeys.size - missedKeys.length;
+      const cacheMisses = missedKeys.length;
+      console.log('[AFL list debugStats]', {
         uniqueCacheKeys: uniqueCacheKeys.size,
-        cacheHits: statsByKey.size,
+        cacheHits,
+        cacheMisses,
         rowsWithStats: rowsWithStats.length,
+        rowsNa: rowsNa.length,
         totalRows: rows.length,
         cacheBackend: getSharedCacheBackend(),
+      });
+      const debugNa = debugByKey
+        ? rowsNa.slice(0, 80).map((r) => {
+            const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
+            const d = debugByKey.get(key);
+            const reason =
+              !d
+                ? 'no_debug'
+                : d.fromCache && d.gamesCount === -1
+                  ? 'cached_but_empty (cache had entry with null stats)'
+                  : !d.fromCache && d.gamesCount === 0
+                    ? 'computed_0_games (player-game-logs returned empty for both seasons)'
+                    : !d.fromCache && d.gamesCount > 0
+                      ? 'computed_has_games_but_nulls (bug?)'
+                      : `fromCache=${d.fromCache} gamesCount=${d.gamesCount}`;
+            return {
+              playerName: r.playerName,
+              statType: r.statType,
+              line: r.line,
+              homeTeam: r.homeTeam,
+              awayTeam: r.awayTeam,
+              fromCache: d?.fromCache ?? null,
+              gamesCount: d?.gamesCount ?? null,
+              reason,
+            };
+          })
+        : [];
+      payload._meta = {
+        uniqueCacheKeys: uniqueCacheKeys.size,
+        cacheHits,
+        cacheMisses,
+        rowsWithStats: rowsWithStats.length,
+        rowsNa: rowsNa.length,
+        totalRows: rows.length,
+        cacheBackend: getSharedCacheBackend(),
+        debugNa,
         hint:
-          getSharedCacheBackend() === 'memory' && statsByKey.size < uniqueCacheKeys.size
+          getSharedCacheBackend() === 'memory' && cacheMisses > 0
             ? 'Stats cache is in-memory (per process). Warm and list may run in different processes, so only some keys are found. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in .env.local to use Redis and share cache across all requests.'
             : undefined,
       };
