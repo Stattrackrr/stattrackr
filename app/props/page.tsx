@@ -1096,7 +1096,7 @@ export default function NBALandingPage() {
           }));
           // Same client-side filter as dashboard: name.includes(q) — show all matches (dashboard slices to 12 for dropdown; we show all)
           const qLower = q.toLowerCase();
-          const filtered = searchResults.filter((p) =>
+          const filtered = searchResults.filter((p: { name: string; team?: string }) =>
             (p.name ?? '').toLowerCase().includes(qLower)
           );
           setFindPlayerResults(filtered);
@@ -1106,7 +1106,7 @@ export default function NBALandingPage() {
           let list = Array.isArray(data?.results) ? data.results : [];
           list = list.map((p: { full?: string; team?: string }) => ({ name: String(p?.full ?? ''), team: p?.team }));
           const qLower = q.toLowerCase();
-          list = list.filter((p) => (p.name || '').toLowerCase().includes(qLower));
+          list = list.filter((p: { name: string; team?: string }) => (p.name || '').toLowerCase().includes(qLower));
           setFindPlayerResults(list.slice(0, 25));
         }
       } catch {
