@@ -645,8 +645,8 @@ export default function AFLPage() {
         setSearchQuery('');
         // NBA-style URL: set mode=player&name=...&team=... so URL is shareable and matches NBA dashboard
         url.searchParams.set('mode', 'player');
-        url.searchParams.set('name', record.name);
-        url.searchParams.set('team', (record.team || teamParam || '').trim() || '');
+        url.searchParams.set('name', String(record.name ?? ''));
+        url.searchParams.set('team', String(record.team ?? teamParam ?? '').trim() || '');
         url.searchParams.delete('player');
         if (opponentParam) url.searchParams.set('opponent', opponentParam);
         else url.searchParams.delete('opponent');
@@ -776,8 +776,8 @@ export default function AFLPage() {
     const url = new URL(window.location.href);
     if (aflPropsMode === 'player' && selectedPlayer?.name) {
       url.searchParams.set('mode', 'player');
-      url.searchParams.set('name', selectedPlayer.name);
-      url.searchParams.set('team', (selectedPlayer.team || '').trim());
+      url.searchParams.set('name', String(selectedPlayer.name ?? ''));
+      url.searchParams.set('team', String(selectedPlayer.team ?? '').trim());
       const nextOpp = nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—' ? nextGameOpponent : null;
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
       else url.searchParams.delete('opponent');
