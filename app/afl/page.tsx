@@ -324,6 +324,7 @@ export default function AFLPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
+  const [refreshLogsKey, setRefreshLogsKey] = useState(0);
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
@@ -1135,7 +1136,7 @@ export default function AFLPage() {
       .catch(() => {});
   }, [season]);
 
-  // Fetch scraped AFLTables game logs for the selected player.
+  // Fetch FootyWire game logs for the selected player.
   useEffect(() => {
     const playerName = selectedPlayer?.name;
     if (!playerName) return;
@@ -1150,11 +1151,13 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || footywireNicknameToOfficial(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
-    // Symbol-name players: never use prefetched or localStorage — always fetch fresh (AFL Tables).
+    const has2026InGames = (g: { season?: unknown }[]) =>
+      Array.isArray(g) && g.some((x) => (x?.season as number) === 2026);
+    // Symbol-name players: never use prefetched or localStorage — always fetch fresh.
     const isSymbolPlayer = playerNameHasSymbol(String(playerName));
     if (!isSymbolPlayer) {
       const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
-      if (prefetched) {
+      if (prefetched && (season !== 2026 || has2026InGames(prefetched.games))) {
         prefetchedLogsRef.current.delete(logsCacheKey);
         setSelectedPlayerGameLogs(prefetched.games);
         setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
@@ -1165,6 +1168,7 @@ export default function AFLPage() {
         setStatsLoadingForPlayer(false);
         return;
       }
+      if (prefetched) prefetchedLogsRef.current.delete(logsCacheKey);
     } else {
       prefetchedLogsRef.current.delete(logsCacheKey);
     }
@@ -1181,7 +1185,9 @@ export default function AFLPage() {
         if (raw) {
           const parsed = JSON.parse(raw) as CachedAflPlayerLogs;
           const isFresh = Number.isFinite(parsed?.createdAt) && (Date.now() - Number(parsed.createdAt) <= AFL_PLAYER_LOGS_CACHE_TTL_MS);
-          if (isFresh && Array.isArray(parsed.games)) {
+          const gamesOk = Array.isArray(parsed.games);
+          const has2026 = season !== 2026 || has2026InGames(parsed.games as { season?: unknown }[]);
+          if (isFresh && gamesOk && has2026) {
             setSelectedPlayerGameLogs(parsed.games);
             setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
             if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
@@ -1191,29 +1197,52 @@ export default function AFLPage() {
             setStatsLoadingForPlayer(false);
             return;
           }
+          if (gamesOk && season === 2026 && !has2026InGames(parsed.games as { season?: unknown }[])) {
+            try {
+              localStorage.removeItem(logsCacheKey);
+            } catch {
+              // Ignore.
+            }
+          }
         }
       } catch {
         // Ignore malformed local cache.
       }
     }
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
-    const url = `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_both=1`;
+    const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(String(playerName))}${teamQuery}&include_both=1`;
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
     (async () => {
       try {
-        const res = await fetch(url);
-        const data = await res.json();
+        // Fetch both 2026 and 2025 so dashboard shows combined stats (same as props process).
+        const currentYear = season;
+        const prevYear = currentYear - 1;
+        const forceFetchCurrent = currentYear === 2026 || refreshLogsKey > 0 ? '&force_fetch=1' : '';
+        const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
+        const [resCurrent, resPrev] = await Promise.all([
+          fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts),
+          fetch(`${baseUrl}&season=${prevYear}`, fetchOpts),
+        ]);
         if (cancelled) return;
-        if (!res.ok) {
-          setLastStatsError(String(data?.error ?? 'Failed to load game logs'));
-          setSelectedPlayerGameLogs([]);
-          setStatsLoadingForPlayer(false);
-          return;
+        const dataCurrent = await resCurrent.json();
+        const dataPrev = await resPrev.json();
+        if (cancelled) return;
+        let gamesCurrent = resCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
+        const gamesPrev = resPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const payloadSeasonCurrent = dataCurrent?.season;
+        const is2026ResponseActually2025 = currentYear === 2026 && (payloadSeasonCurrent === 2025 || (gamesCurrent.length > 0 && !gamesCurrent.some((g: { season?: number }) => g?.season === 2026)));
+        if (is2026ResponseActually2025) {
+          gamesCurrent = [];
         }
-        const games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
-        const gamesWithQuarters = Array.isArray(data?.gamesWithQuarters) ? (data.gamesWithQuarters as Record<string, unknown>[]) : games;
+        let qCurrent = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : gamesCurrent;
+        if (is2026ResponseActually2025) qCurrent = [];
+        const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
+        // Merge: current season first (most recent), then previous so chart/L5/season use both years.
+        const games = [...gamesCurrent, ...gamesPrev];
+        const gamesWithQuarters = [...qCurrent, ...qPrev];
+        const data = gamesCurrent.length > 0 ? dataCurrent : dataPrev;
         setSelectedPlayerGameLogs(games);
         setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
         if (games.length === 0) {
@@ -1291,7 +1320,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season, refreshLogsKey]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
@@ -1793,6 +1822,25 @@ export default function AFLPage() {
                                 Height: {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
                               </div>
                             ) : null}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const name = String(selectedPlayer?.name ?? '').trim();
+                                const teamRaw = selectedPlayer?.team;
+                                const teamForApi = teamRaw
+                                  ? (rosterTeamToInjuryTeam(String(teamRaw)) || footywireNicknameToOfficial(String(teamRaw)) || String(teamRaw))
+                                  : '';
+                                const key = getAflPlayerLogsCacheKey(season, name, teamForApi);
+                                try {
+                                  localStorage.removeItem(key);
+                                } catch {}
+                                playerStatsCacheRef.current.delete(`${season}:${name.toLowerCase()}`);
+                                setRefreshLogsKey((k) => k + 1);
+                              }}
+                              className="mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
+                            >
+                              Refresh stats
+                            </button>
                           </div>
                         ) : loadingPlayerFromUrl ? (
                           <div className="min-w-0">
@@ -1922,6 +1970,25 @@ export default function AFLPage() {
                                   ) : null;
                                 })()}
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const name = String(selectedPlayer?.name ?? '').trim();
+                                  const teamRaw = selectedPlayer?.team;
+                                  const teamForApi = teamRaw
+                                    ? (rosterTeamToInjuryTeam(String(teamRaw)) || footywireNicknameToOfficial(String(teamRaw)) || String(teamRaw))
+                                    : '';
+                                  const key = getAflPlayerLogsCacheKey(season, name, teamForApi);
+                                  try {
+                                    localStorage.removeItem(key);
+                                  } catch {}
+                                  playerStatsCacheRef.current.delete(`${season}:${name.toLowerCase()}`);
+                                  setRefreshLogsKey((k) => k + 1);
+                                }}
+                                className="mt-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline"
+                              >
+                                Refresh stats
+                              </button>
                             </div>
                           ) : loadingPlayerFromUrl ? (
                             <div className="min-w-0 flex-1">
