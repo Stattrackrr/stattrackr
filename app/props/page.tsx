@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
@@ -430,6 +431,8 @@ export default function NBALandingPage() {
   const aflPropsFetchCompleteRef = useRef(false);
   const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+  /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
+  const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
 
@@ -940,9 +943,13 @@ export default function NBALandingPage() {
       setAflPropsLoading(true);
     }
     const doFetch = async (isRetry: boolean): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[] }> => {
-      const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+      const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
+      const listUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
+      const listRes = await fetch(listUrl, { cache: 'no-store' });
       if (cancelled) return { games: [], aggregated: [] };
       const listData = await listRes.json();
+      if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
+      if (!cancelled && !debugStats) setAflListDebugMeta(null);
       const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
       const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
       const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
@@ -3595,7 +3602,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       }`}
                                     >
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
-                                      <span className="text-xs font-medium truncate">{game.awayTeam} vs {game.homeTeam}</span>
+                                      {(() => {
+                                  const h = toOfficialAflTeamDisplayName(game.homeTeam);
+                                  const a = toOfficialAflTeamDisplayName(game.awayTeam);
+                                  const same = h && a && h === a;
+                                  return (
+                                    <span className="text-xs font-medium truncate">
+                                      {same ? `${h} vs —` : `${a} vs ${h}`}
+                                    </span>
+                                  );
+                                })()}
                                     </label>
                                   );
                                 })
@@ -3699,7 +3715,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       }`}
                                     >
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
-                                      <span className="text-sm font-medium truncate">{game.awayTeam} vs {game.homeTeam}</span>
+                                      {(() => {
+                                        const h = toOfficialAflTeamDisplayName(game.homeTeam);
+                                        const a = toOfficialAflTeamDisplayName(game.awayTeam);
+                                        const same = h && a && h === a;
+                                        return (
+                                          <span className="text-sm font-medium truncate">
+                                            {same ? `${h} vs —` : `${a} vs ${h}`}
+                                          </span>
+                                        );
+                                      })()}
                                     </label>
                                   );
                                 })
@@ -4147,6 +4172,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 }`} style={{ marginTop: 0, paddingTop: 0 }}>
                   Top Player Props
                 </h2>
+
+                {propsSport === 'afl' && aflListDebugMeta && (
+                  <details className={`mb-4 rounded-lg border text-sm ${mounted && isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <summary className={`cursor-pointer px-3 py-2 font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Debug: why L5/L10/Season show N/A ({aflListDebugMeta.rowsNa != null ? String(aflListDebugMeta.rowsNa) : '?'} rows with N/A)
+                    </summary>
+                    <pre className={`p-3 overflow-auto max-h-80 whitespace-pre-wrap break-words ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {JSON.stringify({ cacheBackend: aflListDebugMeta.cacheBackend, cacheHits: aflListDebugMeta.cacheHits, cacheMisses: aflListDebugMeta.cacheMisses, rowsWithStats: aflListDebugMeta.rowsWithStats, rowsNa: aflListDebugMeta.rowsNa, totalRows: aflListDebugMeta.totalRows, hint: aflListDebugMeta.hint, debugNaSample: Array.isArray(aflListDebugMeta.debugNa) ? (aflListDebugMeta.debugNa as unknown[]).slice(0, 25) : aflListDebugMeta.debugNa }, null, 2)}
+                    </pre>
+                  </details>
+                )}
                 
                 {(propsSport === 'nba' ? filteredPlayerProps.length === 0 : filteredAflProps.length === 0) ? (
                     ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage)) ? (
@@ -4715,7 +4751,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
                                   if (propsSport === 'afl') {
-                                    const q = new URLSearchParams({ player: prop.playerName });
+                                    const q = new URLSearchParams();
+                                    q.set('mode', 'player');
+                                    q.set('name', prop.playerName);
                                     if (prop.team) q.set('team', prop.team);
                                     if (prop.opponent) q.set('opponent', prop.opponent);
                                     router.push(`/afl?${q.toString()}`);
@@ -4794,9 +4832,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
-                                        {propsSport === 'afl' ? (
-                                          <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>{prop.opponent} vs {prop.team}</span>
-                                        ) : (
+                                        {propsSport === 'afl' ? (() => {
+                                          const homeD = toOfficialAflTeamDisplayName(prop.team || '');
+                                          const awayD = toOfficialAflTeamDisplayName(prop.opponent || '');
+                                          const same = homeD && awayD && homeD === awayD;
+                                          return (
+                                            <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                              {same ? `${homeD} vs —` : `${awayD} vs ${homeD}`}
+                                            </span>
+                                          );
+                                        })() : (
                                           <>
                                             <img src={teamLogoUrl} alt={prop.team} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                             <img src={opponentLogoUrl} alt={prop.opponent} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -5878,7 +5923,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
                                 if (propsSport === 'afl') {
-                                  const q = new URLSearchParams({ player: prop.playerName });
+                                  const q = new URLSearchParams();
+                                  q.set('mode', 'player');
+                                  q.set('name', prop.playerName);
                                   if (prop.team) q.set('team', prop.team);
                                   if (prop.opponent) q.set('opponent', prop.opponent);
                                   router.push(`/afl?${q.toString()}`);
@@ -6522,10 +6569,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         onClick={() => {
                           setFindPlayerOpen(false);
                           if (propsSport === 'afl') {
-                            try {
-                              sessionStorage.setItem('afl_player_from_props', JSON.stringify({ name: player.name, team: player.team ?? '' }));
-                            } catch {}
-                            router.push('/afl');
+                            const q = new URLSearchParams();
+                            q.set('mode', 'player');
+                            q.set('name', player.name);
+                            if (player.team) q.set('team', player.team);
+                            router.push(`/afl?${q.toString()}`);
                           } else {
                             try {
                               sessionStorage.removeItem('nba_dashboard_session_v1');

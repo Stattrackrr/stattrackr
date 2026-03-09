@@ -554,6 +554,39 @@ export default function AFLPage() {
     }
   }, []);
 
+  // NBA-style URL: ?mode=player&name=...&team=... (and optionally stat, tf, line, opponent). Read on load so /afl?mode=player&name=Andrew+McGrath&team=Essendon+Bombers works like NBA.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const nameParam = url.searchParams.get('name')?.trim();
+    if (!nameParam) return;
+    if (url.searchParams.get('player')?.trim()) return; // prefer ?player= when both present (e.g. from props)
+    const teamParam = url.searchParams.get('team')?.trim();
+    const opponentParam = url.searchParams.get('opponent')?.trim();
+    const urlFallback: AflPlayerRecord = {
+      name: nameParam,
+      ...(teamParam ? { team: teamParam } : {}),
+      ...(opponentParam ? { last_opponent: opponentParam } : {}),
+    };
+    setSelectedPlayer(urlFallback);
+    setAflPropsMode('player');
+    setLoadingPlayerFromUrl(false);
+    const statParam = url.searchParams.get('stat')?.trim();
+    const tfParam = url.searchParams.get('tf')?.trim();
+    const lineParam = url.searchParams.get('line')?.trim();
+    const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
+    if (statParam && ['disposals', 'goals', 'marks', 'tackles', 'kicks', 'handballs', 'tog', 'inside_50s', 'uncontested'].includes(statParam)) {
+      setMainChartStat(statParam);
+    }
+    if (tfParam && validTimeframes.includes(tfParam as AflChartTimeframe)) {
+      setAflChartTimeframe(tfParam as AflChartTimeframe);
+    }
+    if (lineParam) {
+      const n = parseFloat(lineParam);
+      if (Number.isFinite(n)) setAflCurrentLineValue(n);
+    }
+  }, []);
+
   // When landing with ?player=Name (e.g. from props Find player), show name from URL immediately, then merge API record without replacing so game-logs effect doesn't re-run.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -610,9 +643,13 @@ export default function AFLPage() {
         // Merge into existing selectedPlayer so name/team stay the same and game-logs effect doesn't re-run (avoids stats load then re-render).
         setSelectedPlayer((prev) => (prev ? { ...prev, ...record } : record));
         setSearchQuery('');
+        // NBA-style URL: set mode=player&name=...&team=... so URL is shareable and matches NBA dashboard
+        url.searchParams.set('mode', 'player');
+        url.searchParams.set('name', record.name);
+        url.searchParams.set('team', (record.team || teamParam || '').trim() || '');
         url.searchParams.delete('player');
-        url.searchParams.delete('team');
-        url.searchParams.delete('opponent');
+        if (opponentParam) url.searchParams.set('opponent', opponentParam);
+        else url.searchParams.delete('opponent');
         window.history.replaceState({}, '', url.toString());
       } catch {
         if (!cancelled) {
@@ -627,18 +664,20 @@ export default function AFLPage() {
   }, []);
 
   // Rehydrate AFL page context on refresh so the selected player/screen is preserved.
-  // When URL has ?player= we are coming from props/Find player with a specific player — do not restore old selectedPlayer, and force player mode so stats show.
+  // When URL has ?player= or ?name= (NBA-style) we are coming with a specific player — do not restore old selectedPlayer from localStorage.
   useEffect(() => {
     try {
       const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
-      const hasPlayerParam = url?.searchParams.get('player')?.trim() ?? '';
+      const hasPlayerParam = (url?.searchParams.get('player')?.trim() ?? '') !== '';
+      const hasNameParam = (url?.searchParams.get('name')?.trim() ?? '') !== '';
+      const hasPlayerInUrl = hasPlayerParam || hasNameParam;
       const raw = localStorage.getItem(AFL_PAGE_STATE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Partial<PersistedAflPageState>;
-      if (!hasPlayerParam && parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
+      if (!hasPlayerInUrl && parsed.selectedPlayer && typeof parsed.selectedPlayer === 'object') {
         setSelectedPlayer(parsed.selectedPlayer as AflPlayerRecord);
       }
-      if (hasPlayerParam) {
+      if (hasPlayerInUrl) {
         setAflPropsMode('player');
       } else if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
         setAflPropsMode(parsed.aflPropsMode);
@@ -730,6 +769,40 @@ export default function AFLPage() {
       // Ignore localStorage write failures.
     }
   }, [selectedPlayer, aflPropsMode, aflTeamFilter, aflRightTab, aflChartTimeframe, withWithoutMode, aflGameFilters]);
+
+  // Keep URL in sync with selection (same pattern as NBA): mode=player&name=...&team=...&opponent= (next opponent, not last game)&stat=...&tf=...&line=...
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (aflPropsMode === 'player' && selectedPlayer?.name) {
+      url.searchParams.set('mode', 'player');
+      url.searchParams.set('name', selectedPlayer.name);
+      url.searchParams.set('team', (selectedPlayer.team || '').trim());
+      const nextOpp = nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—' ? nextGameOpponent : null;
+      if (nextOpp) url.searchParams.set('opponent', nextOpp);
+      else url.searchParams.delete('opponent');
+      if (mainChartStat) url.searchParams.set('stat', mainChartStat);
+      else url.searchParams.delete('stat');
+      url.searchParams.set('tf', aflChartTimeframe);
+      if (aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue)) {
+        url.searchParams.set('line', String(aflCurrentLineValue));
+      } else url.searchParams.delete('line');
+      url.searchParams.delete('player');
+    } else {
+      url.searchParams.delete('mode');
+      url.searchParams.delete('name');
+      url.searchParams.delete('team');
+      url.searchParams.delete('opponent');
+      url.searchParams.delete('player');
+      url.searchParams.delete('stat');
+      url.searchParams.delete('tf');
+      url.searchParams.delete('line');
+    }
+    const newUrlStr = url.toString();
+    if (window.location.href !== newUrlStr) {
+      window.history.replaceState({}, '', newUrlStr);
+    }
+  }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, nextGameOpponent, mainChartStat, aflChartTimeframe, aflCurrentLineValue]);
 
   useEffect(() => {
     const loadUser = async () => {

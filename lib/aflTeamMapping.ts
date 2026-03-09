@@ -233,6 +233,20 @@ export function footywireNicknameToOfficial(nickname: string): string | null {
 }
 
 /**
+ * Normalize any team string (from Odds API, nickname, or full name) to official display name.
+ * Use when storing or displaying so we never show "Essendon Bombers vs Bombers" (nickname-only).
+ */
+export function toOfficialAflTeamDisplayName(team: string): string {
+  if (!team || typeof team !== 'string') return (team ?? '').trim();
+  const t = team.trim();
+  const fromNick = footywireNicknameToOfficial(t);
+  if (fromNick) return fromNick;
+  const fromOpp = opponentToOfficialTeamName(t);
+  if (fromOpp) return fromOpp;
+  return t;
+}
+
+/**
  * Map game log opponent string (e.g. "Geelong", "vs North Melbourne") to the full
  * team name used by the AFL official API (e.g. "Geelong Cats", "North Melbourne Kangaroos").
  * Used for lineup card when using AFL API only.

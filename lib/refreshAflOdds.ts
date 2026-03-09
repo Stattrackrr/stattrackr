@@ -7,6 +7,7 @@
  * we do not overwrite; old cache stays until TTL (e.g. 24h for stats) or next successful run.
  */
 
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import sharedCache from '@/lib/sharedCache';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
@@ -213,10 +214,12 @@ export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Pro
         const row = parseOutcomesToBookRow(ev.home_team, ev.away_team, b);
         if (row) bookmakers.push(row);
       }
+      const homeTeam = toOfficialAflTeamDisplayName(ev.home_team);
+      const awayTeam = toOfficialAflTeamDisplayName(ev.away_team);
       return {
         gameId: ev.id,
-        homeTeam: ev.home_team,
-        awayTeam: ev.away_team,
+        homeTeam,
+        awayTeam,
         commenceTime: ev.commence_time,
         bookmakers,
       };
