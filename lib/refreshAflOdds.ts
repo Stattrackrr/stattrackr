@@ -4,7 +4,7 @@
  * Cron runs every 90 min; 16/day × 30 ≈ 480 credits/day, ~14.4k/month.
  *
  * Cache policy: only write when we have non-empty data. If the run fails or returns empty,
- * we do not overwrite; old cache stays until TTL (e.g. 24h for stats) or next successful run.
+ * we do not overwrite; old cache stays until next successful run (cache does not expire, only replaced – same as NBA).
  */
 
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
@@ -13,9 +13,9 @@ import sharedCache from '@/lib/sharedCache';
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const AFL_SPORT_KEY = 'aussierules_afl';
 
-/** Cache key and TTL: 2.5 hours so odds/props refresh sooner if a player is ruled out; old data stays until new refresh succeeds. */
+/** Cache key. TTL: never expire; only replaced when cron runs successfully (same as NBA – cache does not expire, only replaced). */
 export const AFL_ODDS_CACHE_KEY = 'afl_game_odds_v2';
-export const AFL_ODDS_CACHE_TTL_SECONDS = 2.5 * 60 * 60;
+export const AFL_ODDS_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10; // 10 years – effectively never expire, only replace on cron
 
 // Same bookmaker shape the NBA dashboard expects (game odds only)
 export interface AflBookRow {
@@ -181,7 +181,7 @@ export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Pro
   }
 
   const now = new Date();
-  const nextUpdate = new Date(now.getTime() + AFL_ODDS_CACHE_TTL_SECONDS * 1000);
+  const nextUpdate = new Date(now.getTime() + 2.5 * 60 * 60 * 1000); // next cron run hint (2.5h); cache itself does not expire
 
   const url = `${ODDS_API_BASE}/sports/${AFL_SPORT_KEY}/odds?regions=au&oddsFormat=american&markets=h2h,spreads,totals&apiKey=${encodeURIComponent(apiKey)}`;
 

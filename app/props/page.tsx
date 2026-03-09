@@ -431,6 +431,7 @@ export default function NBALandingPage() {
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
   const aflPropsFetchCompleteRef = useRef(false);
+  const aflRetryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
   /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
@@ -865,8 +866,13 @@ export default function NBALandingPage() {
         }
         const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
           const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-          const team = playerTeam ?? a.homeTeam;
-          const opponent = playerTeam ? (playerTeam === a.homeTeam ? a.awayTeam : a.homeTeam) : a.awayTeam;
+          const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
+          const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
+          const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
+          const team = playerNorm || homeNorm;
+          const opponent = playerNorm
+            ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
+            : awayNorm;
           return {
           playerName: a.playerName,
           playerId: '',
@@ -992,8 +998,13 @@ export default function NBALandingPage() {
       }
       const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
         const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-        const team = playerTeam ?? a.homeTeam;
-        const opponent = playerTeam ? (playerTeam === a.homeTeam ? a.awayTeam : a.homeTeam) : a.awayTeam;
+        const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
+        const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
+        const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
+        const team = playerNorm || homeNorm;
+        const opponent = playerNorm
+          ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
+          : awayNorm;
         return {
           playerName: a.playerName,
           playerId: '',
@@ -1061,6 +1072,38 @@ export default function NBALandingPage() {
               }
             }
           }
+          if (!cancelled && retryAggregated.length === 0) {
+            // List API now triggers background refresh when empty; retry list fetch so we pick up data (same idea as NBA never empty).
+            fetch('/api/afl/odds/refresh').catch(() => {});
+            const delays = [12000, 27000, 45000];
+            const timeouts: ReturnType<typeof setTimeout>[] = [];
+            delays.forEach((delay) => {
+              const t = setTimeout(async () => {
+                if (cancelled) return;
+                const res = await doFetch(true);
+                if (cancelled) return;
+                if (res.aggregated.length > 0) {
+                  setAflGames(res.games);
+                  setAflProps(res.aggregated);
+                  if (res.games.length > 0) setSelectedAflGames(new Set(res.games.map((g) => g.gameId)));
+                  try {
+                    sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
+                      props: res.aggregated,
+                      games: res.games,
+                      selectedGameIds: res.games.length > 0 ? res.games.map((g) => g.gameId) : [],
+                      timestamp: Date.now(),
+                    }));
+                  } catch {
+                    // Ignore
+                  }
+                  aflRetryTimeoutsRef.current.forEach((id) => clearTimeout(id));
+                  aflRetryTimeoutsRef.current = [];
+                }
+              }, delay);
+              timeouts.push(t);
+            });
+            aflRetryTimeoutsRef.current = timeouts;
+          }
           if (!cancelled) {
             aflPropsFetchCompleteRef.current = true;
             setAflPropsLoading(false);
@@ -1102,7 +1145,11 @@ export default function NBALandingPage() {
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      aflRetryTimeoutsRef.current.forEach((id) => clearTimeout(id));
+      aflRetryTimeoutsRef.current = [];
+    };
   }, [propsSport, aflPropsRetryKey]);
 
   // Persist AFL props + game filter to sessionStorage when user changes selection (so returning from dashboard restores filter)
@@ -4902,10 +4949,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                       <div className="flex items-center gap-2 mt-1">
                                         {propsSport === 'afl' ? (() => {
-                                          const homeRaw = prop.homeTeam ?? prop.team ?? '';
-                                          const awayRaw = prop.awayTeam ?? prop.opponent ?? '';
-                                          const homeD = toOfficialAflTeamDisplayName(homeRaw);
-                                          let awayD = toOfficialAflTeamDisplayName(awayRaw);
+                                          // Use the prop's gameId to get the correct game from aflGames (same source as list API); display that game's matchup.
+                                          const game = prop.gameId ? aflGames.find((g) => g.gameId === prop.gameId) ?? null : null;
+                                          const gameHome = game ? toOfficialAflTeamDisplayName(game.homeTeam) : toOfficialAflTeamDisplayName(prop.homeTeam || prop.team || '');
+                                          const gameAway = game ? toOfficialAflTeamDisplayName(game.awayTeam) : toOfficialAflTeamDisplayName(prop.awayTeam || prop.opponent || '');
+                                          const playerTeam = toOfficialAflTeamDisplayName(prop.team || '') || gameHome;
+                                          const opponent = playerTeam === gameHome ? gameAway : playerTeam === gameAway ? gameHome : gameAway;
+                                          const homeD = playerTeam;
+                                          let awayD = opponent;
                                           const same = homeD && awayD && homeD === awayD;
                                           if (same) awayD = '';
                                           const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');

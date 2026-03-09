@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { listAflPlayerPropsFromCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
+import { listAflPlayerPropsFromCache, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
+import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
@@ -31,12 +32,35 @@ export async function GET(request: Request) {
 
     const result = await listAflPlayerPropsFromCache();
     if (!result) {
+      // Lazy refresh: populate cache in background so next request (or client retry) gets data (same idea as NBA props always having data).
+      void (async () => {
+        try {
+          const r = await refreshAflOddsData({ skipWrite: true });
+          if (!r.success || !r.games?.length) return;
+          const pp = await refreshAflPlayerPropsCache(r.games);
+          if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
+        } catch (e) {
+          console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
+        }
+      })();
       return NextResponse.json({
         success: true,
         data: [],
         games: [],
         message: 'No AFL player props in cache. Run /api/afl/odds/refresh to populate.',
       });
+    }
+    if (result.props.length === 0) {
+      void (async () => {
+        try {
+          const r = await refreshAflOddsData({ skipWrite: true });
+          if (!r.success || !r.games?.length) return;
+          const pp = await refreshAflPlayerPropsCache(r.games);
+          if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
+        } catch (e) {
+          console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
+        }
+      })();
     }
     const rows = result.props.filter((r) => hasOver(r.overOdds) && hasUnder(r.underOdds));
     const gamesPayload = result.games.map((g) => ({

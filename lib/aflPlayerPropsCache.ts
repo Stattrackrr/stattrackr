@@ -11,7 +11,8 @@ const AFL_SPORT = 'aussierules_afl';
 
 export const AFL_PP_CACHE_KEY_PREFIX = 'afl_pp_v3';
 /** 2.5 hours so props refresh sooner if a player is ruled out; old cache displayed until new refresh succeeds. */
-export const AFL_PP_CACHE_TTL_SECONDS = 2.5 * 60 * 60;
+/** Never expire; only replaced when cron runs (same as NBA – cache only replaced, not expired). */
+export const AFL_PP_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10; // 10 years – effectively never expire, only replace on cron
 
 /** Only these stats are cached (goals + disposals); fewer API calls. */
 export const CACHED_PP_STATS = ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'] as const;
@@ -247,7 +248,7 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
 
       const eventCache = buildEventCacheFromBookmakers(bookmakers);
       if (Object.keys(eventCache).length === 0) continue;
-      // Only write when we have data; never overwrite with empty (old cache stays until TTL or next successful run).
+      // Only write when we have data; never overwrite with empty (old cache stays until next successful run; no TTL expiry).
       const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
       await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
       eventsRefreshed++;
