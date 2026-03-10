@@ -3619,16 +3619,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 className={`mt-2 flex flex-col gap-1.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} 
                 style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               >
-                {/* AFL ingest status (same as NBA: fetched X stats for Y season, Z games) */}
-                {propsSport === 'afl' && (aflIngestMessage || aflLastUpdated) && (
-                  <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {aflIngestMessage && <span>{aflIngestMessage}</span>}
-                    {aflIngestMessage && aflLastUpdated && ' · '}
-                    {aflLastUpdated && (
-                      <span>Last updated: {new Date(aflLastUpdated).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}</span>
-                    )}
-                  </div>
-                )}
                 <div className="flex gap-1.5">
                 {/* Games Dropdown */}
                 <div className="relative flex-1">

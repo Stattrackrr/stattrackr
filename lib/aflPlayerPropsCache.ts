@@ -236,30 +236,36 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
   const apiKeyEnc = encodeURIComponent(apiKey);
   const marketsParam = CACHED_PP_STATS.map((s) => STAT_TO_MARKET[s] ?? s).join(',');
 
+  const results = await Promise.all(
+    games.map(async (game) => {
+      try {
+        const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
+        const res = await fetch(url, { next: { revalidate: 0 } });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
+        const bookmakers = data?.bookmakers ?? [];
+        if (!bookmakers.length) return null;
+
+        const eventCache = buildEventCacheFromBookmakers(bookmakers);
+        const names = Object.keys(eventCache);
+        if (names.length === 0) return null;
+        const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
+        await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
+        return { events: 1, players: names.length, names: names.map((n) => toDisplayName(n)) };
+      } catch {
+        return null;
+      }
+    })
+  );
+
   let eventsRefreshed = 0;
   let playersWithProps = 0;
   const playerNames: string[] = [];
-  for (const game of games) {
-    try {
-      const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
-      const res = await fetch(url, { next: { revalidate: 0 } });
-      if (!res.ok) continue;
-      const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
-      const bookmakers = data?.bookmakers ?? [];
-      if (!bookmakers.length) continue;
-
-      const eventCache = buildEventCacheFromBookmakers(bookmakers);
-      const names = Object.keys(eventCache);
-      if (names.length === 0) continue;
-      // Only write when we have data; never overwrite with empty (old cache stays until next successful run; no TTL expiry).
-      const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
-      await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
-      eventsRefreshed++;
-      playersWithProps += names.length;
-      for (const n of names) playerNames.push(toDisplayName(n));
-    } catch {
-      // skip this event, continue with others
-    }
+  for (const r of results) {
+    if (!r) continue;
+    eventsRefreshed += r.events;
+    playersWithProps += r.players;
+    playerNames.push(...r.names);
   }
 
   return { success: true, eventsRefreshed, playersWithProps, playerNames };
