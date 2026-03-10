@@ -42,29 +42,30 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "🔄 Refreshing AFL odds and player props (same as NBA flow: get odds → props → stats)..."
-          URL="${{ secrets.PROD_URL }}/api/afl/odds/refresh"
-          # Strip trailing slash from PROD_URL so URL is correct
-          URL="${URL%/}"
-          RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}" -X GET "${URL}?secret=${{ secrets.CRON_SECRET }}" \
+          RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 300 --connect-timeout 60 2>&1) || true
+            -L \
+            --max-time 300 \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
           echo "Response ($HTTP_STATUS): $BODY"
-          if [ "$HTTP_STATUS" = "000" ] || [ -z "$HTTP_STATUS" ]; then
-            echo "❌ No HTTP response (000). Check: PROD_URL is correct (e.g. https://your-app.vercel.app, no trailing slash) and Vercel app is up."
+          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
+            echo "❌ AFL odds/props refresh failed with HTTP status: $HTTP_STATUS"
+            echo "Response: $BODY"
             exit 1
           fi
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "❌ AFL odds/props refresh failed with HTTP $HTTP_STATUS"
+          if [ -n "$EXIT_CODE" ]; then
+            echo "❌ AFL odds/props refresh failed with exit code: $EXIT_CODE"
+            echo "Response: $BODY"
             exit 1
           fi
+          echo "✅ Odds refresh completed successfully"
+          echo "Response: $BODY"
           if command -v jq &>/dev/null; then
             GAMES=$(echo "$BODY" | jq -r '.gamesCount // "?"')
-            MSG=$(echo "$BODY" | jq -r '.message // ""')
-            echo "✅ AFL ingest OK. Games: $GAMES. $MSG"
-          else
-            echo "✅ AFL odds/player props refresh completed"
+            echo "✅ AFL ingest OK. Games: $GAMES"
           fi
