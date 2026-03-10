@@ -42,8 +42,9 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "🔄 Refreshing AFL odds and player props (same as NBA flow: get odds → props → stats)..."
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh?secret=${{ secrets.CRON_SECRET }}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -L --max-time 300) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
