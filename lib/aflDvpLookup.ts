@@ -1,13 +1,14 @@
 /**
  * Shared DvP lookup for AFL props (list API and warm endpoint).
- * Maps opponent names to DvP file keys (afl-dvp-*.json uses short names).
- * Reads from cache first (Vercel cron writes there), then data/ file.
+ * All team names are normalized via aflTeamMapping so we never get wrong matches.
  */
 
 import path from 'path';
 import fs from 'fs/promises';
 import { getAflDvpPayloadFromCache } from '@/lib/aflDvpCache';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
+/** Official name (lowercase) or common variant -> canonical DvP key used in file/cache. */
 const OPPONENT_TO_DVP_KEY: Record<string, string> = {
   'adelaide crows': 'adelaide', adelaide: 'adelaide',
   'brisbane lions': 'brisbane', brisbane: 'brisbane',
@@ -20,19 +21,24 @@ const OPPONENT_TO_DVP_KEY: Record<string, string> = {
   'gws giants': 'gws', 'greater western sydney giants': 'gws', gws: 'gws',
   'hawthorn hawks': 'hawthorn', hawthorn: 'hawthorn',
   'melbourne demons': 'melbourne', melbourne: 'melbourne',
-  'north melbourne kangaroos': 'north melbourne', 'north melbourne': 'north melbourne',
-  'port adelaide power': 'port adelaide', 'port adelaide': 'port adelaide',
-  'richmond tigers': 'richmond', richmond: 'richmond',
-  'st kilda saints': 'st kilda', 'st kilda': 'st kilda',
-  'sydney swans': 'sydney', sydney: 'sydney',
-  'west coast eagles': 'west coast', 'west coast': 'west coast',
-  'western bulldogs': 'western bulldogs', footscray: 'western bulldogs',
+  'north melbourne kangaroos': 'north melbourne', 'north melbourne': 'north melbourne', north: 'north melbourne', kangaroos: 'north melbourne',
+  'port adelaide power': 'port adelaide', 'port adelaide': 'port adelaide', port: 'port adelaide', power: 'port adelaide',
+  'richmond tigers': 'richmond', richmond: 'richmond', tigers: 'richmond',
+  'st kilda saints': 'st kilda', 'st kilda': 'st kilda', saints: 'st kilda',
+  'sydney swans': 'sydney', sydney: 'sydney', swans: 'sydney',
+  'west coast eagles': 'west coast', 'west coast': 'west coast', eagles: 'west coast',
+  'western bulldogs': 'western bulldogs', footscray: 'western bulldogs', bulldogs: 'western bulldogs',
+  crows: 'adelaide', lions: 'brisbane', blues: 'carlton', magpies: 'collingwood', bombers: 'essendon',
+  dockers: 'fremantle', cats: 'geelong', suns: 'gold coast', giants: 'gws', hawks: 'hawthorn', demons: 'melbourne',
 };
 
+/** Normalize any team/opponent string to canonical DvP key (official name first, then map). */
 export function normalizeOpponentForDvp(opponent: string): string {
-  const s = (opponent || '').trim().toLowerCase();
-  if (!s) return s;
-  return OPPONENT_TO_DVP_KEY[s] ?? s.split(/\s+/)[0] ?? s;
+  const s = (opponent || '').trim();
+  if (!s) return '';
+  const official = toOfficialAflTeamDisplayName(s).trim().toLowerCase();
+  if (!official) return s.toLowerCase();
+  return OPPONENT_TO_DVP_KEY[official] ?? OPPONENT_TO_DVP_KEY[s.toLowerCase()] ?? official;
 }
 
 export type DvpMaps = {
@@ -83,16 +89,16 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
 
 type DvpFileRow = { opponent?: string; position?: string; perPlayerGame?: Record<string, number>; perTeamGame?: Record<string, number | null> };
 
-/** Build DvP maps from file keyed by "opponent|position" using perTeamGame (team total vs position), not per-player. */
+/** Build DvP maps from file keyed by "opponent|position". Uses perPlayerGame and rank 1 = easiest (desc) to match dashboard API. Normalises all team names so file variants match lookups. */
 function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
   const map = new Map<string, { rank: number; value: number }>();
   const byOpponentPosition = new Map<string, number>();
   for (const row of rows) {
-    const opp = (row.opponent || '').trim().toLowerCase();
+    const oppKey = normalizeOpponentForDvp((row.opponent || '').trim());
     const pos = (row.position || 'MID').trim().toUpperCase();
-    if (!opp) continue;
-    const val = Number(row.perTeamGame?.[stat] ?? row.perPlayerGame?.[stat] ?? 0);
-    const key = `${opp}|${pos}`;
+    if (!oppKey) continue;
+    const val = Number(row.perPlayerGame?.[stat] ?? row.perTeamGame?.[stat] ?? 0);
+    const key = `${oppKey}|${pos}`;
     byOpponentPosition.set(key, val);
   }
   const positions = Array.from(new Set(byOpponentPosition.keys().map((k) => k.split('|')[1]).filter(Boolean)));
@@ -100,7 +106,7 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
     const entries = Array.from(byOpponentPosition.entries())
       .filter(([k]) => k.endsWith(`|${pos}`))
       .map(([k, v]) => [k.replace(/\|[^|]+$/, ''), v] as [string, number]);
-    const sorted = entries.sort((a, b) => a[1] - b[1]); // low->high so rank 1 = hardest (lowest value)
+    const sorted = entries.sort((a, b) => b[1] - a[1]); // high->low so rank 1 = easiest (highest value), matches dashboard
     sorted.forEach(([opp, value], i) => {
       const rank = i + 1;
       const key = `${opp}|${pos}`;
@@ -152,18 +158,12 @@ export function getDvpLookup(
   maps: DvpMaps,
   position?: string | null
 ): { rank: number; value: number } | null {
-  const opp = (opponent || '').trim().toLowerCase();
   const pos = (position || DEFAULT_DVP_POSITION).trim().toUpperCase();
   const m = statType === 'goals_over' ? maps.goals : maps.disposals;
-  const normalized = normalizeOpponentForDvp(opponent);
-  const tryKey = (o: string) => m.get(`${o}|${pos}`);
-  let out = tryKey(opp) ?? (normalized ? tryKey(normalized) : null);
+  const key = `${normalizeOpponentForDvp((opponent || '').trim())}|${pos}`;
+  const out = m.get(key);
   if (out) return out;
-  const prefix = `${opp}|`;
-  const entry = Array.from(m.entries()).find(([k]) => k.startsWith(prefix) || (normalized && k.startsWith(`${normalized}|`)));
-  if (entry) return entry[1];
-  const legacyKey = m.get(opp) ?? (normalized ? m.get(normalized) : null);
-  if (legacyKey) return legacyKey;
-  const fallback = Array.from(m.entries()).find(([k]) => k.includes(opp) || (normalized && k.includes(normalized)));
-  return fallback ? fallback[1] : null;
+  const prefix = key.replace(/\|[^|]+$/, '|');
+  const entry = Array.from(m.entries()).find(([k]) => k.startsWith(prefix));
+  return entry ? entry[1] : null;
 }

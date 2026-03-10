@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAflOddsCache, refreshAflOddsData } from '@/lib/refreshAflOdds';
-import { AFL_TEAM_TO_FOOTYWIRE, toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 const AFL_ODDS_EXCLUDED_BOOKMAKERS = ['tabtouch', 'playup', 'betrivers', 'bet rivers'];
 
@@ -14,45 +14,27 @@ function filterExcludedBookmakers<T extends { name?: string }>(rows: T[]): T[] {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-function normalize(s: string | null | undefined): string {
-  return String(s ?? '').trim().toLowerCase();
-}
-
 function dateKey(s: string | null | undefined): string {
   const str = String(s ?? '');
   const i = str.indexOf('T');
   return i >= 0 ? str.slice(0, i) : str.slice(0, 10);
 }
 
-/** Team name variants (full, short, nickname) so dashboard request matches cache regardless of format. */
-function teamAliases(team: string): string[] {
-  const t = team.trim();
-  if (!t) return [];
-  const lower = t.toLowerCase();
-  const out = new Set<string>([lower]);
-  const nick = AFL_TEAM_TO_FOOTYWIRE[t] ?? AFL_TEAM_TO_FOOTYWIRE[t.split(/\s+/)[0]];
-  if (nick) out.add(nick.trim().toLowerCase());
-  const short = t.split(/\s+/)[0];
-  if (short && short.length >= 2) out.add(short.toLowerCase());
-  return [...out];
-}
-
+/** Compare using official names only so we never match wrong (e.g. Melbourne vs North Melbourne). */
 function gameMatchesTeam(home: string, away: string, team: string): boolean {
-  const h = normalize(home);
-  const a = normalize(away);
-  const aliases = teamAliases(team);
-  if (!aliases.length) return false;
-  return aliases.some((t) => (t && (h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a))));
+  const h = toOfficialAflTeamDisplayName(home).trim().toLowerCase();
+  const a = toOfficialAflTeamDisplayName(away).trim().toLowerCase();
+  const t = toOfficialAflTeamDisplayName(team).trim().toLowerCase();
+  if (!t) return false;
+  return h === t || a === t;
 }
 
 function gameMatchesOpponent(home: string, away: string, opponent: string): boolean {
-  const o = normalize(opponent);
-  const h = normalize(home);
-  const a = normalize(away);
+  const h = toOfficialAflTeamDisplayName(home).trim().toLowerCase();
+  const a = toOfficialAflTeamDisplayName(away).trim().toLowerCase();
+  const o = (opponent ?? '').trim() ? toOfficialAflTeamDisplayName(opponent).trim().toLowerCase() : '';
   if (!o) return true;
-  const aliases = teamAliases(opponent);
-  if (!aliases.length) return h.includes(o) || a.includes(o) || o.includes(h) || o.includes(a);
-  return aliases.some((alias) => alias && (h.includes(alias) || a.includes(alias) || alias.includes(h) || alias.includes(a)));
+  return h === o || a === o;
 }
 
 /** No date filter: show odds for any game in cache matching team+opponent (unlimited). */
@@ -60,22 +42,21 @@ function dateMatches(_requestedDateKey: string, _commenceTime: string): boolean 
   return true;
 }
 
-/** Fallback: both team and opponent strings appear in home/away (handles any naming mismatch). */
+/** Fallback: both team and opponent match by official name. */
 function gameHasBothTeams(
   home: string,
   away: string,
   team: string,
   opponent: string
 ): boolean {
-  const h = normalize(home);
-  const a = normalize(away);
-  const t = normalize(team);
-  const o = normalize(opponent);
+  const h = toOfficialAflTeamDisplayName(home).trim().toLowerCase();
+  const a = toOfficialAflTeamDisplayName(away).trim().toLowerCase();
+  const t = toOfficialAflTeamDisplayName(team).trim().toLowerCase();
+  const o = (opponent ?? '').trim() ? toOfficialAflTeamDisplayName(opponent).trim().toLowerCase() : '';
   if (!t) return false;
-  const teamIn = h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a);
+  const teamIn = h === t || a === t;
   if (!o) return teamIn;
-  const oppIn = h.includes(o) || a.includes(o) || o.includes(h) || o.includes(a);
-  return teamIn && oppIn;
+  return teamIn && (h === o || a === o);
 }
 
 function findMatchingGame(

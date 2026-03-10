@@ -7,6 +7,7 @@ import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -153,48 +154,7 @@ export async function GET(request: Request) {
         }
       })
     );
-    // 2) On cache miss: compute so we never show 0 stats (load DvP when needed; playerTeamMap already loaded)
-    const missedKeys = Array.from(uniqueCacheKeys).filter((k) => !statsByKey.has(k));
-    const teamMatches = (a: string, b: string) => {
-      const x = (a ?? '').trim().toLowerCase();
-      const y = (b ?? '').trim().toLowerCase();
-      return (x && y) && (x === y || x.includes(y) || y.includes(x));
-    };
-    if (missedKeys.length > 0) {
-      const dvpMaps = await loadDvpMapsFromFiles();
-      const season = new Date().getFullYear();
-      let positionMap = await getAflPlayerPositionMap(season);
-      if (positionMap.size === 0) positionMap = await getAflPlayerPositionMap(season - 1);
-      const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
-      await Promise.all(
-        missedKeys.map(async (cacheKey) => {
-          const p = paramsByCacheKey.get(cacheKey);
-          if (!p) return;
-          const debug = debugByKey?.get(cacheKey) ?? undefined;
-          const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
-          const opponent = resolvedTeam && teamMatches(resolvedTeam, p.homeTeam) ? p.awayTeam : (resolvedTeam && teamMatches(resolvedTeam, p.awayTeam) ? p.homeTeam : undefined);
-          const playerTeam = resolvedTeam ?? p.homeTeam;
-          const position = positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
-          const dvp = opponent != null ? getDvp(opponent, p.statType, position) : null;
-          let stats = opponent != null
-            ? await getAflPropStats(p.playerName, playerTeam, opponent, p.statType, p.line, baseUrl, dvp, false, undefined, resolvedTeam, debug)
-            : null;
-          if (!stats) {
-            const dvpHomeAway = getDvp(p.awayTeam, p.statType, position);
-            stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, dvpHomeAway, false, undefined, resolvedTeam, debug);
-          }
-          if (!stats) {
-            const dvpAwayHome = getDvp(p.homeTeam, p.statType, position);
-            stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, dvpAwayHome, false, undefined, resolvedTeam, debug);
-          }
-          if (stats) {
-            statsByKey.set(cacheKey, stats);
-            const keyReverse = getAflPropStatsCacheKey(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line);
-            if (keyReverse !== cacheKey) statsByKey.set(keyReverse, stats);
-          }
-        })
-      );
-    }
+    // No on-demand computation: list is cache-only (like NBA). Stats warm runs hourly; rows without cached stats show N/A.
     // Always override DvP from current position-aware lookup so we never show stale "everyone 6"
     const dvpMapsForOverride = await loadDvpMapsFromFiles();
     const seasonForPos = new Date().getFullYear();
@@ -203,9 +163,9 @@ export async function GET(request: Request) {
     const getDvpOverride = (opponent: string, statType: string, position?: string | null) =>
       getDvpLookup(opponent, statType, dvpMapsForOverride, position);
     const teamMatchesOverride = (a: string, b: string) => {
-      const x = (a ?? '').trim().toLowerCase();
-      const y = (b ?? '').trim().toLowerCase();
-      return (x && y) && (x === y || x.includes(y) || y.includes(x));
+      const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
+      const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
+      return (officialA && officialB) && officialA === officialB;
     };
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rows.map((r) => {
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
@@ -261,6 +221,7 @@ export async function GET(request: Request) {
       },
     };
     if (debugStats) {
+      const missedKeys = Array.from(uniqueCacheKeys).filter((k) => !statsByKey.has(k));
       const cacheHits = uniqueCacheKeys.size - missedKeys.length;
       const cacheMisses = missedKeys.length;
       console.log('[AFL list debugStats]', {

@@ -258,19 +258,22 @@ export function toOfficialAflTeamDisplayName(team: string): string {
 /**
  * Map game log opponent string (e.g. "Geelong", "vs North Melbourne") to the full
  * team name used by the AFL official API (e.g. "Geelong Cats", "North Melbourne Kangaroos").
- * Used for lineup card when using AFL API only.
+ * Prefers exact then prefix match so "Melbourne" -> Melbourne Demons, not North Melbourne Kangaroos.
  */
 export function opponentToOfficialTeamName(opponent: string): string | null {
   if (!opponent || typeof opponent !== 'string') return null;
   const s = opponent.replace(/^vs\.?\s*/i, '').trim();
   if (!s) return null;
   const lower = s.toLowerCase();
-  for (const name of OFFICIAL_TEAM_NAMES) {
-    if (name.toLowerCase() === lower) return name;
-    if (name.toLowerCase().includes(lower)) return name;
-  }
-  // Match only if the official name's first word appears as a whole word (avoid "western" matching "St").
-  const partial = [...OFFICIAL_TEAM_NAMES].find((n) => {
+  const names = [...OFFICIAL_TEAM_NAMES];
+  const exact = names.find((n) => n.toLowerCase() === lower);
+  if (exact) return exact;
+  const byPrefix = names.filter((n) => n.toLowerCase().startsWith(lower));
+  if (byPrefix.length === 1) return byPrefix[0];
+  if (byPrefix.length > 1) return byPrefix.sort((a, b) => a.length - b.length)[0];
+  const byIncludes = names.find((n) => n.toLowerCase().includes(lower));
+  if (byIncludes) return byIncludes;
+  const partial = names.find((n) => {
     const firstWord = n.toLowerCase().split(' ')[0] ?? '';
     if (!firstWord || firstWord.length < 2) return false;
     const wordBoundary = new RegExp(`\\b${firstWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);

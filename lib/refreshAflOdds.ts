@@ -268,34 +268,32 @@ export async function getAflOddsCache(): Promise<AflOddsCache | null> {
   return raw;
 }
 
-/** Find event ID for a matchup from games list (for player-props event-level fetch). No date filter: match any game with team+opponent. */
+/** Find event ID for a matchup from games list (for player-props event-level fetch). Normalises team/opponent to official names so we never match wrong (e.g. Melbourne vs North Melbourne). */
 export function getAflEventIdForMatchup(games: AflGameOdds[], team: string, opponent: string, _gameDate?: string | null): string | null {
   if (!games?.length) return null;
-  const n = (s: string) => String(s ?? '').trim().toLowerCase();
-  const t = n(team);
-  const o = n(opponent);
+  const teamNorm = toOfficialAflTeamDisplayName((team ?? '').trim()).trim().toLowerCase();
+  const oppNorm = (opponent ?? '').trim() ? toOfficialAflTeamDisplayName((opponent ?? '').trim()).trim().toLowerCase() : '';
   for (const g of games) {
-    const h = n(g.homeTeam);
-    const a = n(g.awayTeam);
-    if (!t || (!h && !a)) continue;
-    const teamMatch = h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a);
-    const oppMatch = !o || h.includes(o) || a.includes(o) || o.includes(h) || o.includes(a);
+    const h = toOfficialAflTeamDisplayName(g.homeTeam).trim().toLowerCase();
+    const a = toOfficialAflTeamDisplayName(g.awayTeam).trim().toLowerCase();
+    if (!teamNorm || (!h && !a)) continue;
+    const teamMatch = h === teamNorm || a === teamNorm;
+    const oppMatch = !oppNorm || h === oppNorm || a === oppNorm;
     if (!teamMatch || !oppMatch) continue;
     return g.gameId;
   }
   return null;
 }
 
-const nTeam = (s: string) => String(s ?? '').trim().toLowerCase();
 function gameHasTeam(g: AflGameOdds, team: string): boolean {
-  const t = nTeam(team);
-  if (!t) return false;
-  const h = nTeam(g.homeTeam);
-  const a = nTeam(g.awayTeam);
-  return h.includes(t) || a.includes(t) || t.includes(h) || t.includes(a);
+  const teamNorm = toOfficialAflTeamDisplayName((team ?? '').trim()).trim().toLowerCase();
+  if (!teamNorm) return false;
+  const h = toOfficialAflTeamDisplayName(g.homeTeam).trim().toLowerCase();
+  const a = toOfficialAflTeamDisplayName(g.awayTeam).trim().toLowerCase();
+  return h === teamNorm || a === teamNorm;
 }
 
-/** Next game for a team from odds cache: earliest future commence time, or latest past. Used so dashboard shows the same matchup as props/odds. */
+/** Next game for a team from odds cache: earliest future commence time, or latest past. Normalises team so we never match wrong (e.g. North vs North Melbourne). */
 export function getNextAflGameFromGames(
   games: AflGameOdds[],
   team: string
@@ -307,8 +305,9 @@ export function getNextAflGameFromGames(
   matching.sort((a, b) => Date.parse(a.commenceTime) - Date.parse(b.commenceTime));
   const nextUpcoming = matching.find((g) => Date.parse(g.commenceTime) >= now);
   const game = nextUpcoming ?? matching[matching.length - 1];
-  const t = nTeam(team);
-  const isHome = nTeam(game.homeTeam).includes(t) || t.includes(nTeam(game.homeTeam));
+  const teamNorm = toOfficialAflTeamDisplayName((team ?? '').trim()).trim().toLowerCase();
+  const homeNorm = toOfficialAflTeamDisplayName(game.homeTeam).trim().toLowerCase();
+  const isHome = homeNorm === teamNorm;
   const opponent = isHome ? game.awayTeam : game.homeTeam;
   return {
     opponent,
