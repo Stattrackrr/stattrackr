@@ -5,7 +5,7 @@ import { getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds 
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
-import { loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
+import { loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
@@ -160,8 +160,14 @@ export async function GET(request: Request) {
     const seasonForPos = new Date().getFullYear();
     let positionMapForOverride = await getAflPlayerPositionMap(seasonForPos);
     if (positionMapForOverride.size === 0) positionMapForOverride = await getAflPlayerPositionMap(seasonForPos - 1);
-    const getDvpOverride = (opponent: string, statType: string, position?: string | null) =>
-      getDvpLookup(opponent, statType, dvpMapsForOverride, position);
+    const AFL_TEAMS_COUNT = 18;
+    const getDvpOverride = (opponent: string, statType: string, position?: string | null) => {
+      const teamTotal = getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
+      if (teamTotal) return teamTotal;
+      const perPlayer = getDvpLookup(opponent, statType, dvpMapsForOverride, position);
+      if (!perPlayer) return null;
+      return { rank: AFL_TEAMS_COUNT + 1 - perPlayer.rank, value: perPlayer.value };
+    };
     const teamMatchesOverride = (a: string, b: string) => {
       const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
@@ -205,6 +211,14 @@ export async function GET(request: Request) {
     const season = new Date().getFullYear();
     const gamesCount = gamesPayload.length;
     const propsCount = enrichedRows.length;
+
+    const naSummary = {
+      totalProps: enrichedRows.length,
+      withStats: rowsWithStats.length,
+      naCount: rowsNa.length,
+      naPct: enrichedRows.length > 0 ? Math.round((rowsNa.length / enrichedRows.length) * 100) : 0,
+    };
+
     const payload: Record<string, unknown> = {
       success: true,
       data: enrichedRows,
@@ -214,6 +228,7 @@ export async function GET(request: Request) {
       gamesCount,
       propsCount,
       season,
+      naSummary,
       ingestMessage: `Fetched ${propsCount} stats for ${season} season, ${gamesCount} games`,
       _meta: {
         canonicalUsed: usedCanonicalGames,
@@ -259,6 +274,24 @@ export async function GET(request: Request) {
             };
           })
         : [];
+      const naReasons: Record<string, number> = {};
+      if (debugByKey) {
+        for (const r of rowsNa) {
+          const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
+          const d = debugByKey.get(key);
+          const reason =
+            !d
+              ? 'no_debug'
+              : d.fromCache && d.gamesCount === -1
+                ? 'cached_but_empty'
+                : !d.fromCache && d.gamesCount === 0
+                  ? 'no_game_logs'
+                  : !d.fromCache && d.gamesCount > 0
+                    ? 'computed_has_games_but_nulls'
+                    : `fromCache=${d.fromCache}_games=${d.gamesCount}`;
+          naReasons[reason] = (naReasons[reason] ?? 0) + 1;
+        }
+      }
       payload._meta = {
         uniqueCacheKeys: uniqueCacheKeys.size,
         cacheHits,
@@ -267,7 +300,9 @@ export async function GET(request: Request) {
         rowsNa: rowsNa.length,
         totalRows: rows.length,
         cacheBackend: getSharedCacheBackend(),
-        debugNa,
+        naSummary,
+        naReasons: Object.keys(naReasons).length ? naReasons : undefined,
+        debugNaSample: debugNa.slice(0, 50),
         hint:
           getSharedCacheBackend() === 'memory' && cacheMisses > 0
             ? 'Stats cache is in-memory (per process). Warm and list may run in different processes, so only some keys are found. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in .env.local to use Redis and share cache across all requests.'

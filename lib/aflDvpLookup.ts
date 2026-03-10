@@ -42,9 +42,12 @@ export function normalizeOpponentForDvp(opponent: string): string {
 }
 
 export type DvpMaps = {
-  /** Key: normalized "opponent|position" (e.g. "st kilda|def") for per-team, per-position rank. */
+  /** Key: normalized "opponent|position". Per-player; rank 1 = easiest (highest value). */
   disposals: Map<string, { rank: number; value: number }>;
   goals: Map<string, { rank: number; value: number }>;
+  /** Team-total rank/value: rank 1 = hardest (lowest allowed). Matches dashboard DVP batch API. Optional when loaded from HTTP API. */
+  disposalsTeamTotal?: Map<string, { rank: number; value: number }>;
+  goalsTeamTotal?: Map<string, { rank: number; value: number }>;
 };
 
 export const DVP_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
@@ -120,9 +123,45 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
   return map;
 }
 
+/** Build team-total DvP maps: rank 1 = hardest (lowest value), matches dashboard /api/afl/dvp/batch. */
+function buildTeamTotalFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
+  const map = new Map<string, { rank: number; value: number }>();
+  const byOpponentPosition = new Map<string, number>();
+  for (const row of rows) {
+    const oppKey = normalizeOpponentForDvp((row.opponent || '').trim());
+    const pos = (row.position || 'MID').trim().toUpperCase();
+    if (!oppKey) continue;
+    const val = Number(row.perTeamGame?.[stat] ?? row.perPlayerGame?.[stat] ?? 0);
+    const key = `${oppKey}|${pos}`;
+    byOpponentPosition.set(key, val);
+  }
+  const positions = Array.from(new Set(byOpponentPosition.keys().map((k) => k.split('|')[1]).filter(Boolean)));
+  for (const pos of positions) {
+    const entries = Array.from(byOpponentPosition.entries())
+      .filter(([k]) => k.endsWith(`|${pos}`))
+      .map(([k, v]) => [k.replace(/\|[^|]+$/, ''), v] as [string, number]);
+    const sorted = entries.sort((a, b) => a[1] - b[1]); // low->high so rank 1 = hardest (lowest value)
+    sorted.forEach(([opp, value], i) => {
+      const rank = i + 1;
+      const key = `${opp}|${pos}`;
+      map.set(key, { rank, value });
+      const shortKey = normalizeOpponentForDvp(opp) || opp;
+      map.set(`${shortKey}|${pos}`, { rank, value });
+      for (const [full, short] of Object.entries(OPPONENT_TO_DVP_KEY))
+        if (short === shortKey || short === opp) map.set(`${full}|${pos}`, { rank, value });
+    });
+  }
+  return map;
+}
+
 /** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. */
 export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
-  const empty = { disposals: new Map(), goals: new Map() };
+  const empty: DvpMaps = {
+    disposals: new Map(),
+    goals: new Map(),
+    disposalsTeamTotal: new Map(),
+    goalsTeamTotal: new Map(),
+  };
   const year = new Date().getFullYear();
   for (const season of [year, year - 1]) {
     if (season < 2020) continue;
@@ -132,7 +171,9 @@ export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
       if (rows.length > 0) {
         const disposals = buildFromFileRows(rows as DvpFileRow[], 'disposals');
         const goals = buildFromFileRows(rows as DvpFileRow[], 'goals');
-        if (disposals.size > 0 || goals.size > 0) return { disposals, goals };
+        const disposalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'disposals');
+        const goalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'goals');
+        if (disposals.size > 0 || goals.size > 0) return { disposals, goals, disposalsTeamTotal, goalsTeamTotal };
       }
       const filePath = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
       const raw = await fs.readFile(filePath, 'utf8');
@@ -141,7 +182,9 @@ export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
       if (fileRows.length === 0) continue;
       const disposals = buildFromFileRows(fileRows, 'disposals');
       const goals = buildFromFileRows(fileRows, 'goals');
-      if (disposals.size > 0 || goals.size > 0) return { disposals, goals };
+      const disposalsTeamTotal = buildTeamTotalFromFileRows(fileRows, 'disposals');
+      const goalsTeamTotal = buildTeamTotalFromFileRows(fileRows, 'goals');
+      if (disposals.size > 0 || goals.size > 0) return { disposals, goals, disposalsTeamTotal, goalsTeamTotal };
     } catch {
       /* try next season */
     }
@@ -152,6 +195,7 @@ export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
 /** Default position when unknown (MID is most common for disposals). */
 const DEFAULT_DVP_POSITION = 'MID';
 
+/** Lookup per-player DvP (rank 1 = easiest). Do not fall back to another position. */
 export function getDvpLookup(
   opponent: string,
   statType: string,
@@ -161,9 +205,19 @@ export function getDvpLookup(
   const pos = (position || DEFAULT_DVP_POSITION).trim().toUpperCase();
   const m = statType === 'goals_over' ? maps.goals : maps.disposals;
   const key = `${normalizeOpponentForDvp((opponent || '').trim())}|${pos}`;
-  const out = m.get(key);
-  if (out) return out;
-  const prefix = key.replace(/\|[^|]+$/, '|');
-  const entry = Array.from(m.entries()).find(([k]) => k.startsWith(prefix));
-  return entry ? entry[1] : null;
+  return m.get(key) ?? null;
+}
+
+/** Lookup team-total DvP (rank 1 = hardest). Matches dashboard /api/afl/dvp/batch. Use for props list so ranks match dashboard. */
+export function getDvpLookupTeamTotal(
+  opponent: string,
+  statType: string,
+  maps: DvpMaps,
+  position?: string | null
+): { rank: number; value: number } | null {
+  const pos = (position || DEFAULT_DVP_POSITION).trim().toUpperCase();
+  const m = statType === 'goals_over' ? maps.goalsTeamTotal : maps.disposalsTeamTotal;
+  if (!m?.size) return null;
+  const key = `${normalizeOpponentForDvp((opponent || '').trim())}|${pos}`;
+  return m.get(key) ?? null;
 }

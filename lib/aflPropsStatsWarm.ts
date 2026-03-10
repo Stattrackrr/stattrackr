@@ -6,7 +6,7 @@
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
-import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup } from '@/lib/aflDvpLookup';
+import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
@@ -24,6 +24,7 @@ export type RunAflPropsStatsWarmOptions = {
 export type RunAflPropsStatsWarmResult = {
   success: boolean;
   warmed: number;
+  failed: number;
   total?: number;
   skipped?: number;
   rowsFromCache?: number;
@@ -104,7 +105,14 @@ export async function runAflPropsStatsWarm(
       const y = (b ?? '').trim().toLowerCase();
       return (x && y) && (x === y || x.includes(y) || y.includes(x));
     };
-    const getDvp = (opponent: string, statType: string, position?: string | null) => getDvpLookup(opponent, statType, dvpMaps, position);
+    const AFL_TEAMS_COUNT = 18;
+    const getDvp = (opponent: string, statType: string, position?: string | null) => {
+      const teamTotal = getDvpLookupTeamTotal(opponent, statType, dvpMaps, position);
+      if (teamTotal) return teamTotal;
+      const perPlayer = getDvpLookup(opponent, statType, dvpMaps, position);
+      if (!perPlayer) return null;
+      return { rank: AFL_TEAMS_COUNT + 1 - perPlayer.rank, value: perPlayer.value };
+    };
     console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map:', playerTeamMap.size, 'position map:', positionMap.size);
 
     const seen = new Set<string>();
@@ -131,6 +139,7 @@ export async function runAflPropsStatsWarm(
     console.log('[AFL props-stats/warm] Unique props to warm:', toProcess.length, '(skipped', Math.max(0, toWarm.length - MAX_PROPS), 'over limit). Rows with over/under:', totalRowsFromCache);
 
     let warmed = 0;
+    let failed = 0;
     const runBatch = (batch: PropToWarm[]) =>
       Promise.all(
         batch.map((p) => {
@@ -139,7 +148,9 @@ export async function runAflPropsStatsWarm(
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (r) warmed++;
+            else failed++;
           }).catch((err) => {
+            failed++;
             console.warn('[AFL props-stats/warm] getAflPropStats failed:', p.playerName, p.statType, err);
           });
         })
@@ -159,10 +170,11 @@ export async function runAflPropsStatsWarm(
       }
     }
 
-    console.log('[AFL props-stats/warm] Done. Warmed', warmed, 'prop stats (with DvP).');
+    console.log('[AFL props-stats/warm] Done. Warmed', warmed, '| Failed (N/A):', failed, '| Total processed:', toProcess.length);
     return {
       success: true,
       warmed,
+      failed,
       total: toProcess.length,
       skipped: Math.max(0, toWarm.length - MAX_PROPS),
       rowsFromCache: result.props.length,
@@ -171,6 +183,6 @@ export async function runAflPropsStatsWarm(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[AFL props-stats/warm]', err);
-    return { success: false, warmed: 0, error: message };
+    return { success: false, warmed: 0, failed: 0, error: message };
   }
 }

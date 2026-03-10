@@ -68,7 +68,9 @@ jobs:
             GAMES=$(echo "$BODY" | jq -r '.gamesCount // "?"')
             EVENTS=$(echo "$BODY" | jq -r '.eventsRefreshed // "?"')
             PLAYERS=$(echo "$BODY" | jq -r '.playersWithProps // "?"')
-            echo "✅ AFL ingest OK. Games: $GAMES | Events refreshed: $EVENTS | Players with props: $PLAYERS"
+            WARMED=$(echo "$BODY" | jq -r '.statsWarmed // "?"')
+            FAILED=$(echo "$BODY" | jq -r '.statsFailed // "?"')
+            echo "✅ AFL ingest OK. Games: $GAMES | Events: $EVENTS | Players: $PLAYERS | Stats warmed: $WARMED | Failed (N/A): $FAILED"
             echo ""
             echo "Players processed (same as NBA):"
             echo "$BODY" | jq -r '.playerNames[]? // empty' | while read -r name; do
@@ -77,6 +79,45 @@ jobs:
             if [ -z "$(echo "$BODY" | jq -r '.playerNames[0]? // empty')" ]; then
               echo "  (none this run)"
             fi
+            if [ "$FAILED" != "?" ] && [ "$FAILED" != "0" ] && [ -n "$FAILED" ]; then
+              echo ""
+              echo "⚠️ N/A debug: $FAILED props have no stats (will show N/A on props page). Fetching breakdown..."
+              NA_RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" -L --max-time 60 2>&1) || true
+              if command -v jq &>/dev/null && [ -n "$NA_RESPONSE" ]; then
+                NA_SUMMARY=$(echo "$NA_RESPONSE" | jq -r '.naSummary // empty')
+                if [ -n "$NA_SUMMARY" ]; then
+                  echo "  naSummary: $NA_SUMMARY"
+                fi
+                NA_REASONS=$(echo "$NA_RESPONSE" | jq -r '._meta.naReasons // empty' 2>/dev/null)
+                if [ -n "$NA_REASONS" ] && [ "$NA_REASONS" != "null" ]; then
+                  echo "  Why N/A (count by reason):"
+                  echo "$NA_REASONS" | jq -r 'to_entries[] | "    \(.key): \(.value)"' 2>/dev/null || echo "    $NA_REASONS"
+                fi
+                SAMPLE=$(echo "$NA_RESPONSE" | jq -r '._meta.debugNaSample[0:10] // empty' 2>/dev/null)
+                if [ -n "$SAMPLE" ] && [ "$SAMPLE" != "[]" ]; then
+                  echo "  Sample N/A props (first 10):"
+                  echo "$SAMPLE" | jq -r '.[] | "    \(.playerName) | \(.statType) | \(.reason)"' 2>/dev/null || true
+                fi
+                HINT=$(echo "$NA_RESPONSE" | jq -r '._meta.hint // empty' 2>/dev/null)
+                if [ -n "$HINT" ] && [ "$HINT" != "null" ]; then
+                  echo "  Hint: $HINT"
+                fi
+              fi
+            fi
           else
             echo "Response: $BODY"
+          fi
+
+      - name: N/A report (props with no stats)
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "📊 N/A report – props that will show N/A on the props page"
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" -L --max-time 90 2>&1) || true
+          if command -v jq &>/dev/null && [ -n "$RESPONSE" ]; then
+            TOTAL=$(echo "$RESPONSE" | jq -r '.naSummary.totalProps // "?"')
+            WITH_STATS=$(echo "$RESPONSE" | jq -r '.naSummary.withStats // "?"')
+            NA_COUNT=$(echo "$RESPONSE" | jq -r '.naSummary.naCount // "?"')
+            NA_PCT=$(echo "$RESPONSE" | jq -r '.naSummary.naPct // "?"')
+            echo "  Total props: $TOTAL | With stats: $WITH_STATS | N/A count: $NA_COUNT ($NA_PCT%)"
+            echo "$RESPONSE" | jq -r '._meta.naReasons // empty' | jq -r 'to_entries[]? | "  Reason \"\(.key)\": \(.value) props"' 2>/dev/null || true
           fi

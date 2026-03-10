@@ -65,31 +65,15 @@ export async function GET(request: NextRequest) {
     const ppResult = await refreshAflPlayerPropsCache(result.games);
     console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
 
-    const responsePayload = {
-      success: true,
-      gamesCount: result.gamesCount,
-      lastUpdated: result.lastUpdated,
-      nextUpdate: result.nextUpdate,
-      eventsRefreshed: ppResult.eventsRefreshed,
-      playersWithProps: ppResult.playersWithProps,
-      playerNames: ppResult.playerNames ?? [],
-      playerPropsOk: ppResult.success,
-      playerPropsError: ppResult.error,
-      dvpBuildOk: false,
-      statsWarmed: undefined as number | undefined,
-      statsWarmError: undefined as string | undefined,
-      message: ppResult.playerNames?.length
-        ? `Odds cache updated. Processed ${ppResult.playersWithProps} players across ${ppResult.eventsRefreshed} events. DvP + stats warm running in background.`
-        : 'Odds cache updated. Props refresh + DvP + stats warm running in background (list may fill in 1–2 min).',
-    };
+    let dvpBuildOk = false;
+    let statsWarmed: number | undefined;
+    let statsFailed: number | undefined;
+    let statsWarmError: string | undefined;
 
-    // Run DvP build and stats warm in background so response is still timely after props.
-    void (async () => {
+    try {
+      const tmpDir = os.tmpdir();
+      const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
       try {
-
-        const tmpDir = os.tmpdir();
-        const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
-        try {
           const cwd = process.cwd();
           const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
           const baseUrl =
@@ -123,6 +107,7 @@ export async function GET(request: NextRequest) {
             AFL_DVP_CACHE_TTL_SECONDS
           );
           await fs.unlink(tmpDvpPath).catch(() => {});
+          dvpBuildOk = true;
           console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -130,22 +115,47 @@ export async function GET(request: NextRequest) {
           await fs.unlink(tmpDvpPath).catch(() => {});
         }
 
-        if (result.gamesCount > 0) {
-          const warmBaseUrl = process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : 'http://localhost:3000';
-          const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
-          try {
-            const warm = await runAflPropsStatsWarm(warmBaseUrl, { useListApi: false, cronSecret });
-            console.log('[AFL cron] Props-stats warm done:', warm.warmed ?? 0, warm.success ? '' : warm.error ?? '');
-          } catch (e) {
-            console.warn('[AFL cron] Props-stats warm failed:', e instanceof Error ? e.message : String(e));
-          }
+      if (result.gamesCount > 0) {
+        const warmBaseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : 'http://localhost:3000';
+        const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
+        try {
+          const warm = await runAflPropsStatsWarm(warmBaseUrl, { useListApi: false, cronSecret });
+          statsWarmed = warm.warmed;
+          statsFailed = warm.failed;
+          console.log('[AFL cron] Props-stats warm done: warmed=', warm.warmed, 'failed (N/A)=', warm.failed, warm.success ? '' : warm.error ?? '');
+          if (warm.error) statsWarmError = warm.error;
+        } catch (e) {
+          statsWarmError = e instanceof Error ? e.message : String(e);
+          console.warn('[AFL cron] Props-stats warm failed:', statsWarmError);
         }
-      } catch (e) {
-        console.warn('[AFL cron] Background DvP/warm error:', e instanceof Error ? e.message : String(e));
       }
-    })();
+    } catch (e) {
+      console.warn('[AFL cron] DvP/warm error:', e instanceof Error ? e.message : String(e));
+    }
+
+    const responsePayload = {
+      success: true,
+      gamesCount: result.gamesCount,
+      lastUpdated: result.lastUpdated,
+      nextUpdate: result.nextUpdate,
+      eventsRefreshed: ppResult.eventsRefreshed,
+      playersWithProps: ppResult.playersWithProps,
+      playerNames: ppResult.playerNames ?? [],
+      playerPropsOk: ppResult.success,
+      playerPropsError: ppResult.error,
+      dvpBuildOk,
+      statsWarmed,
+      statsFailed,
+      statsWarmError,
+      naSummaryHint: statsFailed != null && statsFailed > 0
+        ? 'Call GET /api/afl/player-props/list?enrich=true&debugStats=1 for naSummary and naReasons (why props show N/A).'
+        : undefined,
+      message: ppResult.playerNames?.length
+        ? `Odds updated. ${ppResult.playersWithProps} players, ${ppResult.eventsRefreshed} events. Stats warm: ${statsWarmed ?? '?'} warmed, ${statsFailed ?? 0} failed (N/A).`
+        : 'Odds cache updated. Props refresh + DvP + stats warm completed.',
+    };
 
     return NextResponse.json(responsePayload);
   } catch (err) {
