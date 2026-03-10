@@ -42,19 +42,25 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "🔄 Refreshing AFL odds and player props (same as NBA flow: get odds → props → stats)..."
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh?secret=${{ secrets.CRON_SECRET }}" \
+          URL="${{ secrets.PROD_URL }}/api/afl/odds/refresh"
+          # Strip trailing slash from PROD_URL so URL is correct
+          URL="${URL%/}"
+          RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}" -X GET "${URL}?secret=${{ secrets.CRON_SECRET }}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 300) || true
+            -L --max-time 300 --connect-timeout 60 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
           echo "Response ($HTTP_STATUS): $BODY"
-          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
+          if [ "$HTTP_STATUS" = "000" ] || [ -z "$HTTP_STATUS" ]; then
+            echo "❌ No HTTP response (000). Check: PROD_URL is correct (e.g. https://your-app.vercel.app, no trailing slash) and Vercel app is up."
+            exit 1
+          fi
+          if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ AFL odds/props refresh failed with HTTP $HTTP_STATUS"
             exit 1
           fi
-          # Parse and display same-style summary as NBA (games, props count from JSON if present)
           if command -v jq &>/dev/null; then
             GAMES=$(echo "$BODY" | jq -r '.gamesCount // "?"')
             MSG=$(echo "$BODY" | jq -r '.message // ""')
