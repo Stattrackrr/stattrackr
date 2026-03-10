@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, listAflPlayerPropsFromCacheWithGames, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
-import { refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
+import { getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
@@ -64,10 +64,17 @@ export async function GET(request: Request) {
           console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
         }
       })();
+      const emptyCache = await getAflOddsCache();
       return NextResponse.json({
         success: true,
         data: [],
         games: [],
+        lastUpdated: emptyCache?.lastUpdated ?? undefined,
+        nextUpdate: emptyCache?.nextUpdate ?? undefined,
+        gamesCount: 0,
+        propsCount: 0,
+        season: new Date().getFullYear(),
+        ingestMessage: undefined,
         message: 'No AFL games from Odds API. Run /api/afl/odds/refresh to populate props cache.',
         _meta: { canonicalError },
       });
@@ -83,10 +90,20 @@ export async function GET(request: Request) {
     const rowsWithCanonical = rows;
 
     if (!enrich) {
+      const oddsCacheEnrich = await getAflOddsCache();
+      const seasonEnrich = new Date().getFullYear();
+      const gamesCountEnrich = gamesPayload.length;
+      const propsCountEnrich = rowsWithCanonical.length;
       return NextResponse.json({
         success: true,
         data: rowsWithCanonical,
         games: gamesPayload,
+        lastUpdated: oddsCacheEnrich?.lastUpdated ?? undefined,
+        nextUpdate: oddsCacheEnrich?.nextUpdate ?? undefined,
+        gamesCount: gamesCountEnrich,
+        propsCount: propsCountEnrich,
+        season: seasonEnrich,
+        ingestMessage: `Fetched ${propsCountEnrich} stats for ${seasonEnrich} season, ${gamesCountEnrich} games`,
         _meta: {
           rowsFromList: rowsWithCanonical.length,
           enrich: false,
@@ -224,10 +241,20 @@ export async function GET(request: Request) {
     });
     const rowsWithStats = enrichedRows.filter((r) => r.last5Avg != null || r.seasonAvg != null);
     const rowsNa = enrichedRows.filter((r) => r.last5Avg == null && r.seasonAvg == null);
+    const oddsCache = await getAflOddsCache();
+    const season = new Date().getFullYear();
+    const gamesCount = gamesPayload.length;
+    const propsCount = enrichedRows.length;
     const payload: Record<string, unknown> = {
       success: true,
       data: enrichedRows,
       games: gamesPayload,
+      lastUpdated: oddsCache?.lastUpdated ?? undefined,
+      nextUpdate: oddsCache?.nextUpdate ?? undefined,
+      gamesCount,
+      propsCount,
+      season,
+      ingestMessage: `Fetched ${propsCount} stats for ${season} season, ${gamesCount} games`,
       _meta: {
         canonicalUsed: usedCanonicalGames,
         canonicalError: canonicalError ?? undefined,

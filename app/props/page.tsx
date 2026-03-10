@@ -436,6 +436,9 @@ export default function NBALandingPage() {
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
   /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
   const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
+  /** AFL ingest status from list API (same as NBA: "Fetched X stats for Y season, Z games"). */
+  const [aflIngestMessage, setAflIngestMessage] = useState<string | null>(null);
+  const [aflLastUpdated, setAflLastUpdated] = useState<string | null>(null);
   // AFL player jumper numbers (name -> number) from league stats, for circle placeholder
   const [aflPlayerNumbers, setAflPlayerNumbers] = useState<Record<string, number>>({});
   // AFL team logos (normalized name -> url) for matchup display
@@ -954,7 +957,7 @@ export default function NBALandingPage() {
       aflPropsFetchCompleteRef.current = false;
       setAflPropsLoading(true);
     }
-    const doFetch = async (isRetry: boolean): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[] }> => {
+    const doFetch = async (isRetry: boolean): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string }> => {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
       const listUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
       const listRes = await fetch(listUrl, { cache: 'no-store' });
@@ -1039,7 +1042,13 @@ export default function NBALandingPage() {
           dvpStatValue: a.dvpStatValue,
         };
       });
-      return { games, aggregated };
+      return {
+        games,
+        aggregated,
+        ingestMessage: typeof listData.ingestMessage === 'string' ? listData.ingestMessage : undefined,
+        lastUpdated: typeof listData.lastUpdated === 'string' ? listData.lastUpdated : undefined,
+        nextUpdate: typeof listData.nextUpdate === 'string' ? listData.nextUpdate : undefined,
+      };
     };
     (async () => {
       try {
@@ -1047,6 +1056,10 @@ export default function NBALandingPage() {
         if (cancelled) return;
         const { games, aggregated } = result;
         setAflGames(games);
+        if (!cancelled) {
+          setAflIngestMessage(result.ingestMessage ?? null);
+          setAflLastUpdated(result.lastUpdated ?? null);
+        }
         // Retry once when empty and we had no cache (transient failure or cache expiry)
         if (aggregated.length === 0 && !hadCacheWithProps && !cancelled) {
           await new Promise((r) => setTimeout(r, 2000));
@@ -1060,6 +1073,8 @@ export default function NBALandingPage() {
             setAflProps(retryAggregated);
             if (retryGames.length > 0) setSelectedAflGames(new Set(retryGames.map((g) => g.gameId)));
             if (!cancelled) {
+              setAflIngestMessage(result.ingestMessage ?? null);
+              setAflLastUpdated(result.lastUpdated ?? null);
               try {
                 sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
                   props: retryAggregated,
@@ -1086,6 +1101,10 @@ export default function NBALandingPage() {
                   setAflGames(res.games);
                   setAflProps(res.aggregated);
                   if (res.games.length > 0) setSelectedAflGames(new Set(res.games.map((g) => g.gameId)));
+                  if (!cancelled) {
+                    setAflIngestMessage(res.ingestMessage ?? null);
+                    setAflLastUpdated(res.lastUpdated ?? null);
+                  }
                   try {
                     sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
                       props: res.aggregated,
@@ -1117,6 +1136,8 @@ export default function NBALandingPage() {
             setSelectedAflGames(new Set(games.map((g) => g.gameId)));
           }
           if (!cancelled) {
+            setAflIngestMessage(result.ingestMessage ?? null);
+            setAflLastUpdated(result.lastUpdated ?? null);
             try {
               const toCache = {
                 props: aggregated,
@@ -3595,9 +3616,20 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               {/* Filters Section */}
               <div 
                 ref={filtersSectionRef}
-                className={`mt-2 flex gap-1.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} 
+                className={`mt-2 flex flex-col gap-1.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} 
                 style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               >
+                {/* AFL ingest status (same as NBA: fetched X stats for Y season, Z games) */}
+                {propsSport === 'afl' && (aflIngestMessage || aflLastUpdated) && (
+                  <div className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {aflIngestMessage && <span>{aflIngestMessage}</span>}
+                    {aflIngestMessage && aflLastUpdated && ' · '}
+                    {aflLastUpdated && (
+                      <span>Last updated: {new Date(aflLastUpdated).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}</span>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-1.5">
                 {/* Games Dropdown */}
                 <div className="relative flex-1">
                   <button
@@ -4258,6 +4290,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </>
                     )
                   )}
+                </div>
                 </div>
               </div>
             </div>

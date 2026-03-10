@@ -1,0 +1,63 @@
+# AFL player props ingest – same pattern as NBA Process Player Props.
+# 1) Refresh odds (get games from Odds API), 2) refresh player props cache, 3) DvP build, 4) stats warm.
+# All steps run in /api/afl/odds/refresh; this workflow triggers it on a schedule.
+name: Process AFL Player Props
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour at :00 (same as NBA)
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'What triggered this workflow'
+        required: false
+        default: 'manual'
+
+concurrency:
+  group: process-afl-player-props
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Melbourne
+
+jobs:
+  afl_ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Check PROD_URL and CRON_SECRET
+        id: check
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL or CRON_SECRET not set; skipping"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Refresh AFL odds and player props
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "🔄 Refreshing AFL odds and player props (same as NBA flow: get odds → props → stats)..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -L --max-time 300) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Response ($HTTP_STATUS): $BODY"
+          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
+            echo "❌ AFL odds/props refresh failed with HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          # Parse and display same-style summary as NBA (games, props count from JSON if present)
+          if command -v jq &>/dev/null; then
+            GAMES=$(echo "$BODY" | jq -r '.gamesCount // "?"')
+            MSG=$(echo "$BODY" | jq -r '.message // ""')
+            echo "✅ AFL ingest OK. Games: $GAMES. $MSG"
+          else
+            echo "✅ AFL odds/player props refresh completed"
+          fi
