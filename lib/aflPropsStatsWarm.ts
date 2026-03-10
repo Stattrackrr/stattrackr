@@ -82,7 +82,7 @@ export async function runAflPropsStatsWarm(
 
     if (!result?.props?.length) {
       console.log('[AFL props-stats/warm] No props in cache. Run /api/afl/odds/refresh first.');
-      return { success: true, warmed: 0, skipped: 0 };
+      return { success: true, warmed: 0, failed: 0, skipped: 0 };
     }
     console.log('[AFL props-stats/warm] Props to consider:', result.props.length);
 
