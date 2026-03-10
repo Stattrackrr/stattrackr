@@ -64,8 +64,19 @@ jobs:
             exit 1
           fi
           echo "✅ Odds refresh completed successfully"
-          echo "Response: $BODY"
           if command -v jq &>/dev/null; then
             GAMES=$(echo "$BODY" | jq -r '.gamesCount // "?"')
-            echo "✅ AFL ingest OK. Games: $GAMES"
+            EVENTS=$(echo "$BODY" | jq -r '.eventsRefreshed // "?"')
+            PLAYERS=$(echo "$BODY" | jq -r '.playersWithProps // "?"')
+            echo "✅ AFL ingest OK. Games: $GAMES | Events refreshed: $EVENTS | Players with props: $PLAYERS"
+            echo ""
+            echo "Players processed (same as NBA):"
+            echo "$BODY" | jq -r '.playerNames[]? // empty' | while read -r name; do
+              [ -n "$name" ] && echo "  ✅ $name"
+            done
+            if [ -z "$(echo "$BODY" | jq -r '.playerNames[0]? // empty')" ]; then
+              echo "  (none this run)"
+            fi
+          else
+            echo "Response: $BODY"
           fi

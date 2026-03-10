@@ -61,26 +61,31 @@ export async function GET(request: NextRequest) {
       await setAflOddsCache(result.cachePayload);
     }
 
+    // Await props refresh so we can return player list in response (like NBA workflow logs). DvP + stats warm run in background.
+    const ppResult = await refreshAflPlayerPropsCache(result.games);
+    console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
+
     const responsePayload = {
       success: true,
       gamesCount: result.gamesCount,
       lastUpdated: result.lastUpdated,
       nextUpdate: result.nextUpdate,
-      eventsRefreshed: 0,
-      playersWithProps: 0,
-      playerPropsOk: true,
-      playerPropsError: undefined as string | undefined,
+      eventsRefreshed: ppResult.eventsRefreshed,
+      playersWithProps: ppResult.playersWithProps,
+      playerNames: ppResult.playerNames ?? [],
+      playerPropsOk: ppResult.success,
+      playerPropsError: ppResult.error,
       dvpBuildOk: false,
       statsWarmed: undefined as number | undefined,
       statsWarmError: undefined as string | undefined,
-      message: 'Odds cache updated. Props refresh + DvP + stats warm running in background (list may fill in 1–2 min).',
+      message: ppResult.playerNames?.length
+        ? `Odds cache updated. Processed ${ppResult.playersWithProps} players across ${ppResult.eventsRefreshed} events. DvP + stats warm running in background.`
+        : 'Odds cache updated. Props refresh + DvP + stats warm running in background (list may fill in 1–2 min).',
     };
 
-    // Run props refresh, then DvP, then stats warm in background so the HTTP response returns in ~5s.
+    // Run DvP build and stats warm in background so response is still timely after props.
     void (async () => {
       try {
-        const ppResult = await refreshAflPlayerPropsCache(result.games);
-        console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
 
         const tmpDir = os.tmpdir();
         const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);

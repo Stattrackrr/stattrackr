@@ -220,16 +220,17 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
   success: boolean;
   eventsRefreshed: number;
   playersWithProps: number;
+  playerNames: string[];
   error?: string;
 }> {
   const apiKey = process.env.ODDS_API_KEY?.trim();
   if (!apiKey) {
-    return { success: false, eventsRefreshed: 0, playersWithProps: 0, error: 'ODDS_API_KEY not set' };
+    return { success: false, eventsRefreshed: 0, playersWithProps: 0, playerNames: [], error: 'ODDS_API_KEY not set' };
   }
 
   let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
-    return { success: false, eventsRefreshed: 0, playersWithProps: 0, error: 'No games in odds cache. Run game odds refresh first.' };
+    return { success: false, eventsRefreshed: 0, playersWithProps: 0, playerNames: [], error: 'No games in odds cache. Run game odds refresh first.' };
   }
 
   const apiKeyEnc = encodeURIComponent(apiKey);
@@ -237,6 +238,7 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
 
   let eventsRefreshed = 0;
   let playersWithProps = 0;
+  const playerNames: string[] = [];
   for (const game of games) {
     try {
       const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
@@ -247,18 +249,20 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
       if (!bookmakers.length) continue;
 
       const eventCache = buildEventCacheFromBookmakers(bookmakers);
-      if (Object.keys(eventCache).length === 0) continue;
+      const names = Object.keys(eventCache);
+      if (names.length === 0) continue;
       // Only write when we have data; never overwrite with empty (old cache stays until next successful run; no TTL expiry).
       const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
       await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
       eventsRefreshed++;
-      playersWithProps += Object.keys(eventCache).length;
+      playersWithProps += names.length;
+      for (const n of names) playerNames.push(toDisplayName(n));
     } catch {
       // skip this event, continue with others
     }
   }
 
-  return { success: true, eventsRefreshed, playersWithProps };
+  return { success: true, eventsRefreshed, playersWithProps, playerNames };
 }
 
 /** Same set of name tokens (handles "errol gulden" vs "gulden errol" from API "Gulden, Errol"). */
