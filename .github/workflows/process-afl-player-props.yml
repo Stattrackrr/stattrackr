@@ -42,7 +42,7 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "🔄 Refreshing AFL odds and player props (same as NBA flow: get odds → props → stats)..."
-          RESPONSE=$(curl -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
