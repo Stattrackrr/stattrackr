@@ -31,6 +31,17 @@ export async function GET(request: Request) {
     const enrich = searchParams.get('enrich') !== 'false';
     const debugStats = searchParams.get('debugStats') === '1';
 
+    // When list is called with valid cron auth, we compute on cache miss (and pass secret to player-game-logs) so N/A report can populate stats.
+    const normalizeSecret = (s: string) => (s ?? '').replace(/\r\n|\r|\n/g, '').trim();
+    const envSecret = normalizeSecret(process.env.CRON_SECRET ?? '');
+    const authHeader = request.headers.get('authorization');
+    const bearerSecret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader ?? '';
+    const xCron = request.headers.get('x-cron-secret') ?? '';
+    const providedSecret = normalizeSecret(bearerSecret || xCron);
+    const hasCronAuth = !!envSecret && envSecret === providedSecret;
+    const listCronSecret = hasCronAuth ? envSecret : undefined;
+    const cacheOnly = !hasCronAuth;
+
     // Single source of truth: get games from the Odds API. Props come from cache keyed by gameId.
     let result: { props: AflListPropRow[]; games: AflGameOdds[] } | null = null;
     let canonicalError: string | undefined;
@@ -136,16 +147,17 @@ export async function GET(request: Request) {
     }
     const statsByKey = new Map<string, Awaited<ReturnType<typeof getAflPropStats>>>();
     const debugByKey = debugStats ? new Map<string, AflPropStatsDebug>() : null;
-    // 1) Try cache only for every unique prop
+    // 1) Try cache (and compute on miss when request has cron auth so player-game-logs can hit FootyWire)
     await Promise.all(
       Array.from(uniqueCacheKeys).map(async (cacheKey) => {
         const p = paramsByCacheKey.get(cacheKey);
         if (!p) return;
         const debug = debugByKey ? ({ fromCache: false, gamesCount: 0 } as AflPropStatsDebug) : undefined;
         if (debugByKey) debugByKey.set(cacheKey, debug!);
-        let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, null, true, undefined, undefined, debug);
+        const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
+        let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, null, cacheOnly, listCronSecret, resolvedTeam, debug);
         if (!stats) {
-          stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, null, true, undefined, undefined, debug);
+          stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, null, cacheOnly, listCronSecret, resolvedTeam, debug);
         }
         if (stats) {
           statsByKey.set(cacheKey, stats);
@@ -154,7 +166,7 @@ export async function GET(request: Request) {
         }
       })
     );
-    // No on-demand computation: list is cache-only (like NBA). Stats warm runs hourly; rows without cached stats show N/A.
+    // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
     // Always override DvP from current position-aware lookup so we never show stale "everyone 6"
     const dvpMapsForOverride = await loadDvpMapsFromFiles();
     const seasonForPos = new Date().getFullYear();
@@ -306,7 +318,9 @@ export async function GET(request: Request) {
         hint:
           getSharedCacheBackend() === 'memory' && cacheMisses > 0
             ? 'Stats cache is in-memory (per process). Warm and list may run in different processes, so only some keys are found. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in .env.local to use Redis and share cache across all requests.'
-            : undefined,
+            : !hasCronAuth && rowsNa.length > 0
+              ? '"no_game_logs" = no cached stats and list did not compute (cache-only). Call list with Authorization: Bearer CRON_SECRET to compute on miss and fetch from FootyWire; workflow N/A report does this.'
+              : undefined,
       };
     }
     return NextResponse.json(payload);

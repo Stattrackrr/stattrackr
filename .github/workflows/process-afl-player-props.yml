@@ -82,7 +82,10 @@ jobs:
             if [ "$FAILED" != "?" ] && [ "$FAILED" != "0" ] && [ -n "$FAILED" ]; then
               echo ""
               echo "⚠️ N/A debug: $FAILED props have no stats (will show N/A on props page). Fetching breakdown..."
-              NA_RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" -L --max-time 60 2>&1) || true
+              NA_RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" \
+                -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+                -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+                -L --max-time 60 2>&1) || true
               if command -v jq &>/dev/null && [ -n "$NA_RESPONSE" ]; then
                 NA_SUMMARY=$(echo "$NA_RESPONSE" | jq -r '.naSummary // empty')
                 if [ -n "$NA_SUMMARY" ]; then
@@ -112,7 +115,10 @@ jobs:
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "📊 N/A report – props that will show N/A on the props page"
-          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" -L --max-time 90 2>&1) || true
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true&debugStats=1" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -L --max-time 90 2>&1) || true
           if command -v jq &>/dev/null && [ -n "$RESPONSE" ]; then
             TOTAL=$(echo "$RESPONSE" | jq -r '.naSummary.totalProps // "?"')
             WITH_STATS=$(echo "$RESPONSE" | jq -r '.naSummary.withStats // "?"')
