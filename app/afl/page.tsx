@@ -582,6 +582,7 @@ export default function AFLPage() {
     setSelectedPlayer(urlFallback);
     setAflPropsMode('player');
     setLoadingPlayerFromUrl(false);
+    // Team filter stays "All" until the user chooses; don't set from URL opponent so refresh shows full L10 not one opponent.
     const statParam = url.searchParams.get('stat')?.trim();
     const tfParam = url.searchParams.get('tf')?.trim();
     const lineParam = url.searchParams.get('line')?.trim();
@@ -654,6 +655,7 @@ export default function AFLPage() {
         // Merge into existing selectedPlayer so name/team stay the same and game-logs effect doesn't re-run (avoids stats load then re-render).
         setSelectedPlayer((prev) => (prev ? { ...prev, ...record } : record));
         setSearchQuery('');
+        // Team filter stays "All" until the user chooses; don't set from URL opponent so refresh shows full L10.
         // NBA-style URL: set mode=player&name=...&team=... so URL is shareable and matches NBA dashboard
         url.searchParams.set('mode', 'player');
         url.searchParams.set('name', String(record.name ?? ''));
@@ -681,6 +683,7 @@ export default function AFLPage() {
       const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
       const hasPlayerParam = (url?.searchParams.get('player')?.trim() ?? '') !== '';
       const hasNameParam = (url?.searchParams.get('name')?.trim() ?? '') !== '';
+      const hasOpponentInUrl = (url?.searchParams.get('opponent')?.trim() ?? '') !== '';
       const hasPlayerInUrl = hasPlayerParam || hasNameParam;
       const raw = localStorage.getItem(AFL_PAGE_STATE_KEY);
       if (!raw) return;
@@ -693,7 +696,8 @@ export default function AFLPage() {
       } else if (parsed.aflPropsMode === 'player' || parsed.aflPropsMode === 'team') {
         setAflPropsMode(parsed.aflPropsMode);
       }
-      if (typeof parsed.aflTeamFilter === 'string' && parsed.aflTeamFilter.trim() !== '') {
+      // Don't restore aflTeamFilter from localStorage when URL has opponent (e.g. from props page) so the URL opponent wins.
+      if (!hasOpponentInUrl && typeof parsed.aflTeamFilter === 'string' && parsed.aflTeamFilter.trim() !== '') {
         const validTeams = new Set(['All', ...Object.values(ROSTER_TEAM_TO_INJURY_TEAM)]);
         if (validTeams.has(parsed.aflTeamFilter)) setAflTeamFilter(parsed.aflTeamFilter);
       }
@@ -1337,6 +1341,8 @@ export default function AFLPage() {
       if (cancelled || shownPartial) return;
       const curGames = dataCurrent && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
       const prevGames = dataPrev && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+      // For 2026 we need both seasons merged; don't show 2026-only or refresh will paint partial and effect re-run can leave it stuck.
+      if (currentYear === 2026 && !dataPrev) return;
       if (curGames.length > 0 && !dataPrev) {
         shownPartial = true;
         setSelectedPlayerGameLogs(curGames);
@@ -1452,7 +1458,11 @@ export default function AFLPage() {
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
         // Don't cache symbol-name players in localStorage — we always fetch fresh (AFL Tables) for them.
-        if (!isSymbolPlayer) {
+        // For 2026, only persist when we have both seasons so refresh doesn't load 2026-only and show one bar.
+        const mergedHas2025 = games.some((g: Record<string, unknown>) => (g?.season as number) === 2025 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2025'));
+        const mergedHas2026 = currentYear !== 2026 || games.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2026'));
+        const persistOk = currentYear !== 2026 || (mergedHas2025 && mergedHas2026);
+        if (!isSymbolPlayer && persistOk) {
           try {
             const cachePayload: CachedAflPlayerLogs = {
               createdAt: Date.now(),
@@ -1896,6 +1906,8 @@ export default function AFLPage() {
     selectedPlayer?.team && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
       ? nextGameOpponent
       : null;
+  // Matchup opponent for DVP / Opponent Breakdown: next game when loaded, else URL last_opponent (e.g. from props) so both cards show Kangaroos not Demons.
+  const matchupOpponent = displayOpponent ?? (selectedPlayer && typeof (selectedPlayer as Record<string, unknown>).last_opponent === 'string' ? (selectedPlayer as Record<string, unknown>).last_opponent as string : null) ?? null;
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -2672,7 +2684,7 @@ export default function AFLPage() {
                               isDark={!!mounted && isDark}
                               season={season}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                              lastOpponent={displayOpponent ?? null}
+                              lastOpponent={matchupOpponent}
                             />
                           </div>
                         )}
@@ -2693,7 +2705,7 @@ export default function AFLPage() {
                               isDark={!!mounted && isDark}
                               season={Math.min(season, 2025)}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                              opponentTeam={displayOpponent || ''}
+                              opponentTeam={aflTeamFilter !== 'All' && aflTeamFilter ? aflTeamFilter : (matchupOpponent || '')}
                               logoByTeam={logoByTeam}
                               playerPosition={
                                 selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))
@@ -2913,7 +2925,7 @@ export default function AFLPage() {
                               isDark={!!mounted && isDark}
                               season={season}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                              lastOpponent={displayOpponent ?? null}
+                              lastOpponent={matchupOpponent}
                             />
                           </div>
                         )}
@@ -2934,7 +2946,7 @@ export default function AFLPage() {
                               isDark={!!mounted && isDark}
                               season={Math.min(season, 2025)}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
-                              opponentTeam={displayOpponent || ''}
+                              opponentTeam={aflTeamFilter !== 'All' && aflTeamFilter ? aflTeamFilter : (matchupOpponent || '')}
                               logoByTeam={logoByTeam}
                               playerPosition={
                                 selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))

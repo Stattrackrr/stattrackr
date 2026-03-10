@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AFL_TEAM_TO_FOOTYWIRE } from '@/lib/aflTeamMapping';
 
 const DVP_METRICS = [
@@ -132,9 +132,18 @@ export default function AflDvpCard({
   const [oppSel, setOppSel] = useState<string>(opponentTeam || '');
   const [posOpen, setPosOpen] = useState(false);
   const [oppOpen, setOppOpen] = useState(false);
+  const opponentTeamRef = useRef(opponentTeam);
+  opponentTeamRef.current = opponentTeam;
+  const userChangedOpponentRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => setOppSel(opponentTeam || ''), [opponentTeam]);
+  // Sync from parent only when user hasn't chosen an opponent yet, so their dropdown choice isn't overwritten.
+  useEffect(() => {
+    if (!userChangedOpponentRef.current) setOppSel(opponentTeam || '');
+  }, [opponentTeam]);
+  useEffect(() => {
+    userChangedOpponentRef.current = false;
+  }, [playerName]);
 
   // Prefer page's player position so DvP matches the header (e.g. DEF for Jaspa Fletcher)
   useEffect(() => {
@@ -184,8 +193,16 @@ export default function AflDvpCard({
       if (isFresh && cached) {
         const opponents = cached.data.opponents || [];
         setAllTeams(opponents);
-        const oppKey = findOpponentKey(targetOpp, opponents);
-        if (oppKey && oppKey !== oppSel) setOppSel(oppKey);
+        const parentOpp = userChangedOpponentRef.current ? null : opponentTeamRef.current?.trim();
+        const parentKey = parentOpp ? findOpponentKey(parentOpp, opponents) : '';
+        // Apply parent's matchup (e.g. Power) as soon as we have the list so we never show Crows/Demons by default
+        if (parentKey && parentKey !== oppSel) setOppSel(parentKey);
+        const fallbackKey = findOpponentKey(targetOpp, opponents);
+        const oppKey = parentKey || fallbackKey;
+        if (!parentKey && oppKey && oppKey !== oppSel) {
+          const isDefaultFirst = !targetOpp && fallbackKey === (opponents[0] || '');
+          if (!isDefaultFirst) setOppSel(oppKey);
+        }
         const statMap: Record<string, number | null> = {};
         const rankMap: Record<string, number | null> = {};
         for (const m of DVP_METRICS) {
@@ -217,8 +234,16 @@ export default function AflDvpCard({
         dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
         const opponents = data.opponents || [];
         setAllTeams(opponents);
-        const oppKey = findOpponentKey(targetOpp, opponents);
-        if (oppKey && oppKey !== oppSel) setOppSel(oppKey);
+        const parentOpp = userChangedOpponentRef.current ? null : opponentTeamRef.current?.trim();
+        const parentKey = parentOpp ? findOpponentKey(parentOpp, opponents) : '';
+        // Apply parent's matchup (e.g. Power) as soon as we have the list so we never show Crows/Demons by default
+        if (parentKey && parentKey !== oppSel) setOppSel(parentKey);
+        const fallbackKey = findOpponentKey(targetOpp, opponents);
+        const oppKey = parentKey || fallbackKey;
+        if (!parentKey && oppKey && oppKey !== oppSel) {
+          const isDefaultFirst = !targetOpp && fallbackKey === (opponents[0] || '');
+          if (!isDefaultFirst) setOppSel(oppKey);
+        }
         const statMap: Record<string, number | null> = {};
         const rankMap: Record<string, number | null> = {};
         for (const m of DVP_METRICS) {
@@ -324,7 +349,7 @@ export default function AflDvpCard({
                     {allTeams.map((t) => (
                       <button
                         key={t}
-                        onClick={() => { setOppSel(t); setOppOpen(false); }}
+                        onClick={() => { userChangedOpponentRef.current = true; setOppSel(t); setOppOpen(false); }}
                         className={`w-full flex items-center gap-2 px-2 py-2 text-sm text-left ${mounted && isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
                       >
                         {resolveTeamLogo(t, logoByTeam) && <img src={resolveTeamLogo(t, logoByTeam) || ''} alt={t} className="w-5 h-5 object-contain" />}
