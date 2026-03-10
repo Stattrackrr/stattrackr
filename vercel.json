@@ -12,10 +12,6 @@
     {
       "path": "/api/cron/cleanup-odds-snapshots",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/afl/odds/refresh",
-      "schedule": "0 0,3,6,9,12,15,18,21 * * *"
     }
   ],
   "functions": {
