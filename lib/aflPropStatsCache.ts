@@ -52,7 +52,7 @@ function getStatValue(game: Record<string, unknown>, statType: string): number |
 
 /** Normalize opponent to official name (same as dashboard H2H so props page matches). */
 function resolveOpponentForH2H(opp: string): string {
-  const s = (opp ?? '').replace(/^vs\.?\s*/i, '').trim();
+  const s = (opp ?? '').replace(/^vs\.?\s*/i, '').trim().replace(/\s+/g, ' ');
   if (!s) return '';
   return opponentToOfficialTeamName(s) ?? rosterTeamToInjuryTeam(s) ?? s;
 }
@@ -208,6 +208,11 @@ export async function getAflPropStats(
   // Don't cache empty stats (0 games) so we don't pollute Redis and next request can retry
   if (games.length > 0) {
     await sharedCache.setJSON(key, payload, CACHE_TTL_SECONDS);
+    // Store under reverse key (playerName, opponent, team) so list API finds stats whether row has (home, away) or (away, home)
+    const keyReverse = cacheKey(playerName, opponent, team, statType, line);
+    if (keyReverse !== key) {
+      await sharedCache.setJSON(keyReverse, payload, CACHE_TTL_SECONDS);
+    }
   }
   return payload;
 }
