@@ -4,7 +4,7 @@
  * We only set entries when we have computed stats; never overwrite with empty (24h TTL).
  */
 
-import { opponentToFootywireTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
+import { opponentToOfficialTeamName, rosterTeamToInjuryTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
@@ -50,13 +50,20 @@ function getStatValue(game: Record<string, unknown>, statType: string): number |
   return null;
 }
 
+/** Normalize opponent to official name (same as dashboard H2H so props page matches). */
+function resolveOpponentForH2H(opp: string): string {
+  const s = (opp ?? '').replace(/^vs\.?\s*/i, '').trim();
+  if (!s) return '';
+  return opponentToOfficialTeamName(s) ?? rosterTeamToInjuryTeam(s) ?? s;
+}
+
 export function computeAflPropStatsFromGames(
   games: Record<string, unknown>[],
   statType: string,
   opponent: string,
   line: number
 ): Omit<AflPropStatsPayload, 'dvpRating' | 'dvpStatValue'> {
-  const propOpponentNorm = opponentToFootywireTeam(opponent) || opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
+  const propOpponentOfficial = resolveOpponentForH2H(opponent);
   const gamesWithValue: { value: number; opponent: string }[] = [];
   for (const g of games) {
     const v = getStatValue(g, statType);
@@ -67,14 +74,12 @@ export function computeAflPropStatsFromGames(
   const last5 = gamesWithValue.slice(0, 5).map((x) => x.value);
   const last10 = gamesWithValue.slice(0, 10).map((x) => x.value);
   const seasonValues = gamesWithValue.map((x) => x.value);
+  // H2H: match by official name (same as dashboard) so "Kangaroos" / "North Melbourne" / "North Melbourne Kangaroos" all match, and we never match "Melbourne" when we want "North Melbourne"
   const h2hValues = gamesWithValue
     .filter((x) => {
-      const oppNorm = opponentToFootywireTeam(x.opponent) || x.opponent.replace(/^vs\s*/i, '').trim().toLowerCase();
-      return (
-        oppNorm === propOpponentNorm ||
-        (x.opponent && opponent.toLowerCase().includes(x.opponent.toLowerCase())) ||
-        (opponent && x.opponent.toLowerCase().includes(opponent.toLowerCase()))
-      );
+      if (!propOpponentOfficial) return false;
+      const rowOppOfficial = resolveOpponentForH2H(x.opponent);
+      return rowOppOfficial !== '' && rowOppOfficial === propOpponentOfficial;
     })
     .slice(0, 6)
     .map((x) => x.value);

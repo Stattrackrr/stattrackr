@@ -96,13 +96,30 @@ function pickBestPosition(playerName: string, players: FantasyPositionRow[]): (t
   return null;
 }
 
+/** Resolve target (e.g. "Kangaroos") to canonical key (e.g. "northmelbourne") using TEAM_ALIASES so we can match API opponents that use full names (e.g. "North Melbourne"). */
+function targetToCanonicalKey(tn: string): string | null {
+  if (!tn) return null;
+  if (Object.prototype.hasOwnProperty.call(TEAM_ALIASES, tn)) return tn;
+  for (const [key, aliases] of Object.entries(TEAM_ALIASES)) {
+    if (aliases.includes(tn)) return key;
+  }
+  return null;
+}
+
 function findOpponentKey(target: string, opponents: string[]): string {
   if (!target) return opponents[0] || '';
   const tn = normalizeText(target);
   const exact = opponents.find((o) => normalizeText(o) === tn);
   if (exact) return exact;
+  // Match by alias/canonical BEFORE partial: e.g. "Kangaroos" -> North Melbourne, and "North Melbourne Kangaroos" must resolve to North Melbourne not Melbourne (partial would match "melbourne" substring and wrongly return Demons).
+  const canonicalTarget = targetToCanonicalKey(tn);
+  if (canonicalTarget) {
+    const byCanonical = opponents.find((o) => normalizeText(o) === canonicalTarget);
+    if (byCanonical) return byCanonical;
+  }
   const partial = opponents.find((o) => normalizeText(o).includes(tn) || tn.includes(normalizeText(o)));
-  return partial || opponents[0] || '';
+  if (partial) return partial;
+  return opponents[0] || '';
 }
 
 export default function AflDvpCard({
