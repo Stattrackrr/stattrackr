@@ -242,7 +242,8 @@ export default function AFLPage() {
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isPro, setIsPro] = useState(true);
+  const [isPro, setIsPro] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -822,21 +823,39 @@ export default function AFLPage() {
   useEffect(() => {
     const loadUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        setSubscriptionChecked(true);
+        router.replace('/login?redirect=/afl');
+        return;
+      }
       const user = session.user;
       setUserEmail(user.email ?? null);
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, username, avatar_url, subscription_status, subscription_tier')
-        .eq('id', user.id)
-        .single();
-      const p = profile as { full_name?: string; username?: string; avatar_url?: string; subscription_status?: string; subscription_tier?: string } | null;
-      setUsername(p?.username ?? p?.full_name ?? null);
-      setAvatarUrl(p?.avatar_url ?? null);
-      setIsPro(p?.subscription_status === 'active' || p?.subscription_status === 'trialing' || p?.subscription_tier === 'pro');
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username, avatar_url, subscription_status, subscription_tier')
+          .eq('id', user.id)
+          .single();
+        const p = profile as { full_name?: string; username?: string; avatar_url?: string; subscription_status?: string; subscription_tier?: string } | null;
+        setUsername(p?.username ?? p?.full_name ?? null);
+        setAvatarUrl(p?.avatar_url ?? null);
+        const active = p?.subscription_status === 'active' || p?.subscription_status === 'trialing';
+        const proTier = p?.subscription_tier === 'pro';
+        setIsPro(Boolean(active && proTier));
+      } catch (e) {
+        console.error('Error loading profile:', e);
+      } finally {
+        setSubscriptionChecked(true);
+      }
     };
     loadUser();
-  }, []);
+  }, [router]);
+
+  useEffect(() => {
+    if (subscriptionChecked && !isPro) {
+      router.replace('/home#pricing');
+    }
+  }, [subscriptionChecked, isPro, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1908,6 +1927,15 @@ export default function AFLPage() {
       : null;
   // Matchup opponent for DVP / Opponent Breakdown: next game when loaded, else URL last_opponent (e.g. from props) so both cards show Kangaroos not Demons.
   const matchupOpponent = displayOpponent ?? (selectedPlayer && typeof (selectedPlayer as Record<string, unknown>).last_opponent === 'string' ? (selectedPlayer as Record<string, unknown>).last_opponent as string : null) ?? null;
+
+  // Paywall: show loading until subscription checked; non-pro users are redirected to home
+  if (!subscriptionChecked || !isPro) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#050d1a]">
+        <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">

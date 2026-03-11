@@ -268,6 +268,7 @@ export default function NBALandingPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [todaysGames, setTodaysGames] = useState<Game[]>([]);
@@ -684,6 +685,7 @@ export default function NBALandingPage() {
       
       if (!session?.user) {
         if (isMounted) {
+          setSubscriptionChecked(true);
           setTimeout(() => {
             router.push('/login?redirect=/props');
           }, 0);
@@ -722,13 +724,15 @@ export default function NBALandingPage() {
         const proStatus = isActive && isProTier;
         if (isMounted) {
           setIsPro(proStatus);
+          setSubscriptionChecked(true);
           if (!proStatus) {
-            router.replace('/home#pricing');
+            // Redirect happens in useEffect when cache has loaded
             return;
           }
         }
       } catch (error) {
         console.error('Error checking subscription:', error);
+        if (isMounted) setSubscriptionChecked(true);
       }
     };
     
@@ -750,6 +754,13 @@ export default function NBALandingPage() {
       subscription?.unsubscribe();
     };
   }, [router]);
+
+  // Kick non-pro users when subscription is checked and games (cache) have loaded
+  useEffect(() => {
+    if (subscriptionChecked && !isPro && !gamesLoading) {
+      router.replace('/home#pricing');
+    }
+  }, [subscriptionChecked, isPro, gamesLoading, router]);
 
   // Fetch games (today plus nearby) to keep props-linked games selected across date boundaries
   // OPTIMIZATION: Pre-fetch games immediately and cache them for dashboard
@@ -3423,6 +3434,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return mounted && isDark ? 'text-gray-400' : 'text-gray-600';
   };
 
+
+  // Paywall: show loading until subscription is checked; non-pro users are redirected when cache has loaded
+  if (!subscriptionChecked || !isPro) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'}`}>
+        <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen lg:h-screen ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'} transition-colors lg:overflow-x-auto lg:overflow-y-hidden`}>
