@@ -76,22 +76,22 @@ export default function HomePage() {
   const desktopSlides = [
     { 
       name: 'Analytics Dashboard', 
-      description: 'The most advanced in the game. Every stat you need in one dashboard.',
-      paragraph: 'The most advanced in the game—every stat you could want built into one dashboard. Find the best matchups and spots to maximize your edge. Desktop-grade research, built for your phone.',
+      description: 'Every stat in one dashboard.',
+      paragraph: 'Charts, trends, DvP, matchup data. Filter by stat, timeframe, bookmaker, game.',
       image: '/screenshots/desktop/player-detail.png',
       objectPosition: 'center center'
     },
     { 
       name: 'Player Props Research', 
-      description: 'Scans every line and displays the best lines first',
-      paragraph: 'We scan lines across sportsbooks and rank them so the best lines show up first. Use the filters above to narrow by any stat, and filter by timeframe, best or worst DvP, bookmaker, game, and more. Find the edges you\'re researching without digging through every market.',
+      description: 'Lines from 10+ books, ranked.',
+      paragraph: 'Filter by stat, DvP, bookmaker, game. Best lines surface first.',
       image: '/screenshots/desktop/props.png',
       objectPosition: 'center center'
     },
     { 
       name: 'Journal', 
-      description: 'Track how you go with every metric in one place',
-      paragraph: 'Track how you go. The Journal includes: Total P&L, total staked, average stake, ROI, wins and losses, bankroll (in units mode), Profit/Loss Over Time chart, Betting Calendar (day, week, month, year), Profit by Bookmaker, Profit by Market, and automated Insights. Filter by sport, bet type, bookmaker, and date.',
+      description: 'P&L, ROI, calendar, insights.',
+      paragraph: 'Track stakes, wins, losses, bankroll. Filter by sport, bookmaker, date.',
       image: '/screenshots/desktop/dashboard.png',
       objectPosition: 'center center'
     },
@@ -99,16 +99,16 @@ export default function HomePage() {
 
   // Screenshot paths - mobile screenshots (4 slides; add mobile-1.png … mobile-4.png to public/screenshots/mobile/)
   const mobileSlides = [
-    { name: 'Player Props', description: 'Scans every line and displays the best lines first', paragraph: 'We scan lines across sportsbooks and rank them so the best lines show up first. Use the filters above to narrow by any stat, and filter by timeframe, best or worst DvP, bookmaker, game, and more. Find the edges you\'re researching without digging through every market.', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
-    { name: 'Analytics Dashboard', description: 'The most advanced in the game. Every stat you need in one dashboard.', paragraph: 'The most advanced in the game—every stat you could want built into one dashboard. Find the best matchups and spots to maximize your edge. Desktop-grade research, built for your phone.', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
-    { name: 'Performance Journal', description: 'Track how you go with every metric in one place', paragraph: 'Track how you go. The Journal includes: Total P&L, total staked, average stake, ROI, wins and losses, bankroll (in units mode), Profit/Loss Over Time chart, Betting Calendar (day, week, month, year), Profit by Bookmaker, Profit by Market, and automated Insights. Filter by sport, bet type, bookmaker, and date.', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
-    { name: 'Analytics & Insights', description: 'Insights and trends at a glance', paragraph: 'Quickly scan insights and trend summaries on mobile. Get automated takeaways and pattern highlights so you can focus on what matters most without digging through full reports.', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
+    { name: 'Player Props', description: 'Lines from 10+ books, ranked.', paragraph: 'Filter by stat, DvP, bookmaker, game. Best lines surface first.', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
+    { name: 'Analytics Dashboard', description: 'Every stat in one dashboard.', paragraph: 'Charts, trends, DvP, matchup data. Filter by stat, timeframe, bookmaker, game.', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
+    { name: 'Performance Journal', description: 'P&L, ROI, calendar, insights.', paragraph: 'Track stakes, wins, losses, bankroll. Filter by sport, bookmaker, date.', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
+    { name: 'Analytics & Insights', description: 'Insights and trends.', paragraph: 'Automated takeaways and pattern highlights.', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
   ];
 
   // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
-    { quote: "I was skeptical about the price. Figured it'd be bare bones. Only NBA right now but the stats are way more advanced than I expected. I've been winning more since I switched.", name: 'marct_22', tag: 'Pro user' },
-    { quote: "For how cheap it is I wasn't sure it'd be any good. It's only NBA but the dashboard is legit. Deeper than the free stuff I was using. Results don't lie.", name: 'jreed9', tag: 'Pro user' },
+    { quote: "I was skeptical about the price. Figured it'd be bare bones. NBA and AFL with stats way more advanced than I expected. I've been winning more since I switched.", name: 'marct_22', tag: 'Pro user' },
+    { quote: "For how cheap it is I wasn't sure it'd be any good. The dashboard is legit, NBA and AFL. Deeper than the free stuff I was using. Results don't lie.", name: 'jreed9', tag: 'Pro user' },
     { quote: "The journal makes it easy to see where I'm going wrong and what I need to fix. I was just guessing before. Now I actually know which spots are killing me.", name: 'jake_m82', tag: 'Pro user' },
     { quote: "This is the first one I've actually kept using. Most apps I sign up, use twice, and forget. I'm in here every day before the games.", name: 'alexk9', tag: 'Pro user' },
     { quote: "I was using like three different things before. Spreadsheets, a free site, notes on my phone. Now it's all in one place and I don't waste time switching.", name: 'samr91', tag: 'Pro user' },
@@ -298,10 +298,11 @@ export default function HomePage() {
   const plans = [
     {
       name: 'Pro',
-      description: 'Complete NBA research and analytics platform',
+      description: '',
       price: { monthly: 9.99, semiannual: 49.99, annual: 89.99 },
       features: [
-        'Advanced statistics',
+        'All statistics for NBA',
+        'All statistics for AFL',
         '10+ bookmakers',
         'Advanced journaling',
         'Automatic insights',
@@ -469,15 +470,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-blue-400 to-purple-600 bg-clip-text text-transparent">
-              Advanced NBA Research Platform
+              NBA &amp; AFL Research Platform
             </h1>
             <p className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto mb-4">
-              Professional sports analytics and data research tools for serious analysts
+              Professional sports analytics and data research for NBA and AFL
             </p>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
-              StatTrackr is a comprehensive research platform designed for sports analysts, researchers, and data enthusiasts. 
-              <span className="font-semibold text-white"> Not a betting platform</span> — a powerful tool for understanding player performance, 
-              team dynamics, and statistical patterns through advanced analytics.
+              Research and analytics for NBA and AFL. <span className="font-semibold text-white">Not a betting platform.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -793,53 +792,52 @@ export default function HomePage() {
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Why Choose StatTrackr?</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Why StatTrackr?</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Built for researchers, analysts, and data enthusiasts
+              We built StatTrackr to give you the stats and tools you need without the fluff. Here&apos;s what you get.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <BarChart3 className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Advanced Dashboard</h3>
+              <h3 className="text-xl font-bold mb-2">Advanced NBA &amp; AFL stats</h3>
               <p className="text-gray-400">
-                Advanced dashboard statistics on every single active NBA player. Charts, trends, DvP, and matchup data at your fingertips.
+                StatTrackr provides a very advanced NBA dashboard and the most advanced AFL dashboard out there, built to help you find edges and make winners.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <DollarSign className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Competitive Rate, Locked In</h3>
+              <h3 className="text-xl font-bold mb-2">Rate locked in</h3>
               <p className="text-gray-400">
-                Subscribe at today&apos;s rate and keep it. As we add more sports and adjust pricing for new members, your rate stays the same.
+                Subscribe at today&apos;s rate and keep it. If we add more sports or change pricing for new members later, your rate stays the same.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <BookOpen className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">The Most Advanced Journal</h3>
+              <h3 className="text-xl font-bold mb-2">Journal</h3>
               <p className="text-gray-400">
-                Put your props in and track how you go. The most advanced journal in the game—every metric, calendar, and breakdown you need.
+                Log your props and track how you go. P&L, ROI, calendar, profit by book and market, all in one place.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <Lightbulb className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Automatic Insights</h3>
+              <h3 className="text-xl font-bold mb-2">Auto insights</h3>
               <p className="text-gray-400">
-                Insights generated automatically from your journal bets. Spot patterns, strengths, and areas to improve without the guesswork.
+                We surface patterns and takeaways from your journal data so you can see where you&apos;re strong and where to improve.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <Zap className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Easy to Use</h3>
+              <h3 className="text-xl font-bold mb-2">Simple</h3>
               <p className="text-gray-400">
-                Built for speed and clarity. User-friendly layout and workflows so you can focus on research, not fighting the tool.
+                Clear layout and workflows so you can focus on research instead of fighting the tool.
               </p>
             </div>
             <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
               <Smartphone className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Cross-Platform</h3>
+              <h3 className="text-xl font-bold mb-2">Desktop and mobile</h3>
               <p className="text-gray-400">
-                Access your research tools anywhere with our responsive design. Optimized for 
-                desktop, tablet, and mobile devices.
+                Same tools and data on phone, tablet, and desktop. Research wherever you are.
               </p>
             </div>
           </div>
@@ -850,10 +848,7 @@ export default function HomePage() {
       <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Don&apos;t just trust what we say</h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              This is what our users have to say about StatTrackr
-            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">What users say</h2>
           </div>
         </div>
         <div className="overflow-x-hidden w-full mt-8">
@@ -889,10 +884,7 @@ export default function HomePage() {
       <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-              Choose the plan that fits your research needs
-            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Pricing</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -909,7 +901,7 @@ export default function HomePage() {
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-gray-400 mb-4 text-sm">{plan.description}</p>
+                    {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold">
                         ${plan.price.monthly.toFixed(2)}
@@ -922,7 +914,7 @@ export default function HomePage() {
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 text-sm">{feature}</span>
+                        <span className="text-gray-300 text-sm whitespace-pre-line">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -949,7 +941,7 @@ export default function HomePage() {
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-gray-400 mb-4 text-sm">{plan.description}</p>
+                    {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold">
                         ${plan.price.semiannual.toFixed(2)}
@@ -962,7 +954,7 @@ export default function HomePage() {
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 text-sm">{feature}</span>
+                        <span className="text-gray-300 text-sm whitespace-pre-line">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -989,7 +981,7 @@ export default function HomePage() {
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-gray-400 mb-4 text-sm">{plan.description}</p>
+                    {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold">
                         ${plan.price.annual.toFixed(2)}
@@ -1002,7 +994,7 @@ export default function HomePage() {
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 text-sm">{feature}</span>
+                        <span className="text-gray-300 text-sm whitespace-pre-line">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -1027,18 +1019,17 @@ export default function HomePage() {
       <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-bold text-center text-white mb-10">
-            Frequently Asked Questions
+            FAQ
           </h2>
           <div className="space-y-3">
             {[
-              { q: 'Is there a free trial?', a: 'Yes! All premium plans come with a 7-day free trial. A credit card is required, but you won\'t be charged until the trial ends. Cancel anytime during the trial period to avoid charges.' },
-              { q: 'Can I cancel anytime?', a: 'Yes! You can cancel your subscription at any time. No questions asked, no cancellation fees.' },
-              { q: 'Is mobile supported?', a: 'Yes! StatTrackr is fully optimized for mobile devices. Access all features, analytics, and your performance journal seamlessly from your smartphone or tablet.' },
-              { q: 'How do I contact support?', a: <>You can reach our support team at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
-              { q: 'Does the journal use real money?', a: 'No, the journal is a tracking tool only. It does not handle real money or connect to any external services. You manually enter your research data to track performance, analyze trends, and improve your analytical approach over time.' },
-              { q: 'What sports are available on StatTrackr?', a: "Currently, StatTrackr exclusively supports NBA basketball with comprehensive stats, analytics, and research insights. We're actively developing support for additional sports leagues and will announce them as they become available." },
-              { q: 'Should I tail the top pick on the props page?', a: 'No, it\'s not recommended. The props page surfaces lines and data to support your research—it\'s not a picks service. Do your own independent research using the dashboard, DvP, and filters to ensure you get the best look and make informed decisions.' },
-              { q: 'Are the top-ranked props the best picks?', a: 'No. Ranking is based on line value and available odds, not on our recommendations. We provide the data and tools; you should do your own independent research to find the best look for you. Use the dashboard, filters, and DvP to build your own edges.' },
+              { q: 'Is there a free trial?', a: 'Yes. All plans include a 7-day free trial. We need a card to start, but you won\'t be charged until the trial ends. If you cancel before the trial is over, you won\'t be charged at all.' },
+              { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and we don\'t make you jump through hoops.' },
+              { q: 'Is mobile supported?', a: 'Yes. StatTrackr works on phone, tablet, and desktop. You get the same features and data on mobile so you can research on the go.' },
+              { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
+              { q: 'Does the journal use real money?', a: 'No. The journal is for tracking only. You enter your own data; we don\'t handle real money or connect to any sportsbooks. It\'s just a tool to log your research and see how you\'re going over time.' },
+              { q: 'What sports are available?', a: 'Right now we have NBA and AFL with full stats, props, and research tools. We will add more sports and will announce them when they\'re ready.' },
+              { q: 'Are the top-ranked props the best picks?', a: 'No. The order is based on line value and odds we pull from books, not our recommendations. We give you the data and tools; you decide what to do with it. Use the filters and dashboard to build your own edges.' },
             ].map((faq, i) => (
               <div
                 key={i}
@@ -1064,9 +1055,15 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          <div className="mt-12 text-center">
+            <p className="text-gray-400 font-medium mb-6 text-lg">Sports coverage</p>
+            <div className="flex items-center justify-center gap-16">
+              <Image src="/images/nba-logo.png" alt="NBA" width={200} height={200} className="object-contain opacity-90 w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52" />
+              <Image src="/images/afl-logo.png" alt="AFL" width={200} height={200} className="object-contain opacity-90 w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52" />
+            </div>
+          </div>
           <p className="text-center text-gray-400 mt-10">
-            For more questions or help, email us at{' '}
-            <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>.
+            <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>
           </p>
         </div>
       </section>
@@ -1074,10 +1071,7 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">Ready to Start Researching?</h2>
-          <p className="text-xl text-white/90 mb-8">
-            Join thousands of analysts using StatTrackr for advanced NBA research and analytics
-          </p>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-8">Ready to start?</h2>
           <button
             onClick={() => {
               if (user && hasPremium) router.push('/props');
@@ -1107,7 +1101,7 @@ export default function HomePage() {
                 <span className="text-xl font-bold">StatTrackr</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Advanced NBA research and analytics platform for serious analysts and researchers.
+                NBA and AFL research and analytics platform for serious analysts and researchers.
               </p>
             </div>
             <div>
@@ -1117,7 +1111,8 @@ export default function HomePage() {
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
                 <li><button onClick={() => router.push('/props')} className="hover:text-white transition-colors">Player Props</button></li>
-                <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">Dashboard</button></li>
+                <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">NBA Dashboard</button></li>
+                <li><button onClick={() => router.push('/afl')} className="hover:text-white transition-colors">AFL Research</button></li>
               </ul>
             </div>
             <div>
