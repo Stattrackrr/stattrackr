@@ -10,7 +10,7 @@ import AflLeagueRankingCard from '@/app/afl/components/AflLeagueRankingCard';
 import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
 import { AflTeamSelectionsCard } from '@/app/afl/components/AflTeamSelectionsCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
-import { AflLadderCard } from '@/app/afl/components/AflLadderCard';
+import { AflLadderCard, getTeamAbbrev } from '@/app/afl/components/AflLadderCard';
 import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
@@ -2217,6 +2217,8 @@ export default function AFLPage() {
                               if (opponentFull !== '—' && isSameAflTeam(opponentFull, teamFull)) opponentFull = '—';
                               const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
                               const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
+                              const teamAbbr = getTeamAbbrev(teamFull);
+                              const opponentAbbr = opponentFull !== '—' ? getTeamAbbrev(opponentFull) : '—';
                               return (
                                 <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
                                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -2224,7 +2226,7 @@ export default function AFLPage() {
                                       {teamLogo ? (
                                         <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
                                       ) : null}
-                                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamFull}</span>
+                                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamAbbr}</span>
                                     </div>
                                     <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
                                     <div className="flex items-center gap-1 min-w-0">
@@ -2233,7 +2235,7 @@ export default function AFLPage() {
                                           {opponentLogo ? (
                                             <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
                                           ) : null}
-                                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentFull}</span>
+                                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentAbbr}</span>
                                         </>
                                       ) : (
                                         <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>

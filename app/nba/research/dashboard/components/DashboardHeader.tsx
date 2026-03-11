@@ -447,15 +447,14 @@ export function DashboardHeader({
             )}
           </div>
 
-          {/* Team vs Team Display - Mobile only - Aligned with height */}
+          {/* Team vs Team Display - Mobile only - Logo + abbreviation vs logo + abbreviation */}
           <div className="flex-shrink-0">
             {propsMode === 'player' ? (
-              // Player Props Mode - Show player's team vs next opponent (show team immediately, opponent when games load)
+              // Player Props Mode - Show player's team vs next opponent (logo + abbr vs logo + abbr)
               selectedTeam && selectedTeam !== 'N/A' ? (
                 <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-4 sm:py-2 min-w-0">
-                  {/* Team Logos */}
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    {/* Player Team */}
+                    {/* Player Team: logo + abbreviation */}
                     <div className="flex items-center gap-1 min-w-0">
                       <img 
                         src={selectedTeamLogoUrl || getEspnLogoUrl(selectedTeam)}
@@ -472,13 +471,12 @@ export function DashboardHeader({
                           }
                         }}
                       />
-                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{selectedTeam}</span>
+                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{normalizeAbbr(selectedTeam)}</span>
                     </div>
                     
-                    {/* VS */}
                     <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
                     
-                    {/* Next Game Opponent (or placeholder until games load) */}
+                    {/* Opponent: logo + abbreviation */}
                     <div className="flex items-center gap-1 min-w-0">
                       {(nextGameOpponent || opponentTeam) && (nextGameOpponent || opponentTeam) !== '' && (nextGameOpponent || opponentTeam) !== 'N/A' ? (
                         <>
@@ -498,7 +496,7 @@ export function DashboardHeader({
                               }
                             }}
                           />
-                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{nextGameOpponent || opponentTeam}</span>
+                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{normalizeAbbr(nextGameOpponent || opponentTeam || '')}</span>
                         </>
                       ) : (
                         <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
@@ -530,12 +528,11 @@ export function DashboardHeader({
                 </div>
               )
             ) : (
-              // Game Props Mode - Show selected team vs opponent or prompt
+              // Game Props Mode - Show selected team vs opponent (logo + abbr vs logo + abbr)
               gamePropsTeam && gamePropsTeam !== 'N/A' && opponentTeam ? (
                 <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2.5 py-1.5 sm:px-4 sm:py-2 min-w-0">
-                  {/* Team Logos */}
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    {/* Selected Team */}
+                    {/* Selected Team: logo + abbreviation */}
                     <div className="flex items-center gap-1 min-w-0">
                       <img 
                         src={selectedTeamLogoUrl || getEspnLogoUrl(gamePropsTeam)}
@@ -552,13 +549,12 @@ export function DashboardHeader({
                           }
                         }}
                       />
-                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{gamePropsTeam}</span>
+                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{normalizeAbbr(gamePropsTeam)}</span>
                     </div>
                     
-                    {/* VS */}
                     <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
                     
-                    {/* Opponent Team */}
+                    {/* Opponent: logo + abbreviation */}
                     <div className="flex items-center gap-1 min-w-0">
                       <img 
                         src={opponentTeamLogoUrl || getEspnLogoUrl(opponentTeam)}
@@ -575,7 +571,7 @@ export function DashboardHeader({
                           }
                         }}
                       />
-                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentTeam}</span>
+                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{normalizeAbbr(opponentTeam)}</span>
                     </div>
                   </div>
                   

@@ -66,7 +66,7 @@ function resolveTeamLogo(teamName: string, logoByTeam: Record<string, string>): 
   return null;
 }
 
-function getTeamAbbrev(teamName: string): string {
+export function getTeamAbbrev(teamName: string): string {
   return TEAM_TO_ABBREV[teamName] ?? (teamName.split(' ').map((w) => w[0]).join('').slice(0, 3).toUpperCase() || teamName.slice(0, 3).toUpperCase());
 }
 
