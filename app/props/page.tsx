@@ -3577,7 +3577,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 type="button"
                 onClick={() => {
                   setPropsSport('nba');
-                  router.replace('/props', { scroll: false });
+                  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+                  const testCode = params?.get('test_event_code');
+                  const path = '/props' + (testCode ? `?test_event_code=${encodeURIComponent(testCode)}` : '');
+                  router.replace(path, { scroll: false });
                 }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'nba'
@@ -3593,7 +3596,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 onClick={() => {
                   setPropsSport('afl');
                   setAflPropsLoading(true);
-                  router.replace('/props?sport=afl', { scroll: false });
+                  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+                  const testCode = params?.get('test_event_code');
+                  const path = '/props?sport=afl' + (testCode ? `&test_event_code=${encodeURIComponent(testCode)}` : '');
+                  router.replace(path, { scroll: false });
                 }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
                   propsSport === 'afl'
