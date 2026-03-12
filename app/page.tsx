@@ -26,7 +26,8 @@ export default function HomePage() {
       return;
     }
 
-    router.replace("/home");
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    router.replace("/home" + search);
   }, [router]);
 
   return (

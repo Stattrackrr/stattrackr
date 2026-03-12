@@ -178,10 +178,11 @@ export default function HomePage() {
     };
   }, []);
 
-  // Logged-in Pro users: redirect to props page, don't show home
+  // Logged-in Pro users: redirect to props page, don't show home (preserve query e.g. test_event_code for Meta)
   useEffect(() => {
     if (!isCheckingSubscription && user && hasPremium) {
-      router.replace('/props');
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      router.replace("/props" + search);
     }
   }, [isCheckingSubscription, user, hasPremium, router]);
 
