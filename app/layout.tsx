@@ -2,6 +2,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import RootLayoutClient from "./layout-client";
+import MetaPixel from "@/components/MetaPixel";
 
 export const metadata: Metadata = {
   title: "StatTrackr - Multi-Sport Research Platform (NBA & AFL)",
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Devtools disabled */}
       </head>
       <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]">
+        <MetaPixel />
         {/* Capture password-reset hash before React so it survives; runs on first paint */}
         <script
           dangerouslySetInnerHTML={{
