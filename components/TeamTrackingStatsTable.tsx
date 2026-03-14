@@ -10,6 +10,8 @@ interface TeamTrackingStatsTableProps {
   selectedPlayerName?: string;
   season?: number;
   isDark?: boolean;
+  opponentTeam?: string;
+  opponentTeamLogoUrl?: string;
 }
 
 type StatCategory = 'passing' | 'rebounding';
@@ -41,7 +43,9 @@ export function TeamTrackingStatsTable({
   selectedPlayerId,
   selectedPlayerName,
   season = 2025,
-  isDark = false
+  isDark = false,
+  opponentTeam: _opponentTeam,
+  opponentTeamLogoUrl: _opponentTeamLogoUrl,
 }: TeamTrackingStatsTableProps) {
   const [category, setCategory] = useState<StatCategory>('passing');
   const [gameFilter, setGameFilter] = useState<'all' | 'last5'>('all'); // 'all' or 'last5' games

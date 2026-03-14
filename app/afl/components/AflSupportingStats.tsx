@@ -50,7 +50,10 @@ function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTim
     return (h2h.length ? h2h : baseData) as T[];
   }
   const lastN = parseInt(timeframe.replace('last', ''), 10);
-  if (Number.isFinite(lastN) && lastN > 0) return baseData.slice(-lastN) as T[];
+  if (Number.isFinite(lastN) && lastN > 0) {
+    // baseData is already oldest → newest; take last N = N most recent, still oldest→newest (newest on right)
+    return baseData.slice(-lastN) as T[];
+  }
   return baseData;
 }
 
@@ -201,17 +204,16 @@ export function AflSupportingStats({
         : DEFAULT_TOGGLE_OPTIONS;
   const showSupportingToggle = true;
 
+  // All games (2025 + 2026) sorted oldest → newest (newest on the right)
   const baseData = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
     const sorted = [...gameLogs].sort((a, b) => {
-      const aRound = parseRoundIndex(a.round);
-      const bRound = parseRoundIndex(b.round);
-      if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
-
       const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
       const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
       if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
-
+      const aRound = parseRoundIndex(a.round);
+      const bRound = parseRoundIndex(b.round);
+      if (Number.isFinite(aRound) && Number.isFinite(bRound) && aRound !== bRound) return aRound - bRound;
       const aNum = typeof a.game_number === 'number' ? a.game_number : Number(a.game_number ?? 0);
       const bNum = typeof b.game_number === 'number' ? b.game_number : Number(b.game_number ?? 0);
       if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) return aNum - bNum;
@@ -287,31 +289,33 @@ export function AflSupportingStats({
                                 ? clangers
                         : marksInside50;
       const isPercent = useTog || supportingStatKind === 'disposal_efficiency';
+      const gameSeason =
+        typeof (g as Record<string, unknown>).season === 'number'
+          ? ((g as Record<string, unknown>).season as number)
+          : (() => {
+              const dateStr = String(g.date ?? g.game_date ?? '');
+              const year = dateStr ? parseInt(dateStr.slice(0, 4), 10) : NaN;
+              return Number.isFinite(year) ? year : season;
+            })();
       return {
         key,
-        xKey: `G${gameNum}`,
+        xKey: key,
         tickLabel: opponent,
         round,
         opponent,
         value,
         isPercent,
         gameDate: String(g.date ?? g.game_date ?? ''),
+        gameSeason,
       };
     });
-  }, [gameLogs, supportingStatKind]);
+  }, [gameLogs, supportingStatKind, season]);
 
   const chartData = useMemo(() => {
-    const data = applyTimeframe(baseData, timeframe);
-    return [...data].sort((a, b) => {
-      const aRi = parseRoundIndex(a.round);
-      const bRi = parseRoundIndex(b.round);
-      if (aRi !== bRi) return aRi - bRi;
-      const aDate = new Date((a as { gameDate?: string }).gameDate ?? 0).getTime();
-      const bDate = new Date((b as { gameDate?: string }).gameDate ?? 0).getTime();
-      if (Number.isFinite(aDate) && Number.isFinite(bDate)) return aDate - bDate;
-      return 0;
-    });
-  }, [baseData, timeframe]);
+    const data = applyTimeframe(baseData, timeframe, season) as (BaseRow & { value: number; isPercent: boolean; gameDate: string })[];
+    // Ensure unique keys per bar so Recharts doesn't merge (e.g. same game_number across seasons)
+    return data.map((row, idx) => ({ ...row, key: `supporting-${idx}`, xKey: `supporting-${idx}` }));
+  }, [baseData, timeframe, season]);
 
   const baseDataAll = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
@@ -355,7 +359,14 @@ export function AflSupportingStats({
       const free_kicks_against = Math.max(0, toNumericValue(g.free_kicks_against) ?? 0);
       const one_percenters = Math.max(0, toNumericValue(g.one_percenters) ?? 0);
       const clangers = Math.max(0, toNumericValue(g.clangers) ?? 0);
-      const gameSeason = typeof (g as Record<string, unknown>).season === 'number' ? (g as Record<string, unknown>).season as number : season;
+      const gameSeason =
+        typeof (g as Record<string, unknown>).season === 'number'
+          ? ((g as Record<string, unknown>).season as number)
+          : (() => {
+              const dateStr = String((g as Record<string, unknown>).date ?? (g as Record<string, unknown>).game_date ?? '');
+              const year = dateStr ? parseInt(dateStr.slice(0, 4), 10) : NaN;
+              return Number.isFinite(year) ? year : season;
+            })();
       return { key, xKey: `G${gameNum}`, tickLabel: opponent, round, opponent, gameSeason, tog, tackles, goals, goal_assists, disposals, kicks, handballs, effective_disposals, disposal_efficiency, behinds, inside_50s, marks_inside_50, contested_marks, meters_gained, intercepts, free_kicks_for, contested_possessions, tackles_inside_50, free_kicks_against, one_percenters, clangers };
     });
   }, [gameLogs, season]);
@@ -649,7 +660,7 @@ export function AflSupportingStats({
       )}
       <div className="w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={margin} barCategoryGap="5%">
+          <BarChart key={timeframe} data={chartData} margin={margin} barCategoryGap="5%">
             <XAxis
               dataKey="xKey"
               axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}

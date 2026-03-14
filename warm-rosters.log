@@ -11044,7 +11044,11 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Thu 11/12/2025 23:48:40.21] warm-rosters end (exit 0) 
+<<<<<<< Updated upstream
 [Fri 12/12/2025  5:18:36.69] warm-rosters start 
+=======
+[Fri 12/12/2025  0:18:36.71] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11054,8 +11058,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  5:18:39.51] warm-rosters end (exit 0) 
 [Fri 12/12/2025  5:48:36.68] warm-rosters start 
+=======
+[Fri 12/12/2025  0:18:40.75] warm-rosters end (exit 0) 
+[Fri 12/12/2025  0:48:36.69] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11065,8 +11074,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  5:48:39.42] warm-rosters end (exit 0) 
 [Fri 12/12/2025  6:18:36.69] warm-rosters start 
+=======
+[Fri 12/12/2025  0:48:39.51] warm-rosters end (exit 0) 
+[Fri 12/12/2025  1:18:36.70] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11076,8 +11090,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  6:18:39.32] warm-rosters end (exit 0) 
 [Fri 12/12/2025  6:48:36.71] warm-rosters start 
+=======
+[Fri 12/12/2025  1:18:40.05] warm-rosters end (exit 0) 
+[Fri 12/12/2025  1:48:36.69] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11087,8 +11106,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  6:48:39.42] warm-rosters end (exit 0) 
 [Fri 12/12/2025  7:18:36.75] warm-rosters start 
+=======
+[Fri 12/12/2025  1:48:39.45] warm-rosters end (exit 0) 
+[Fri 12/12/2025  2:18:36.69] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11098,8 +11122,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  7:18:39.51] warm-rosters end (exit 0) 
 [Fri 12/12/2025  7:48:36.73] warm-rosters start 
+=======
+[Fri 12/12/2025  2:18:39.53] warm-rosters end (exit 0) 
+[Fri 12/12/2025  2:48:36.67] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11109,6 +11138,7 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025  7:48:39.62] warm-rosters end (exit 0) 
 [Fri 12/12/2025  8:28:53.41] warm-rosters start 
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
@@ -11135,6 +11165,10 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
  
 [Fri 12/12/2025  8:28:54.44] warm-rosters end (exit 1) 
 [Fri 12/12/2025 11:48:08.53] warm-rosters start 
+=======
+[Fri 12/12/2025  2:48:39.56] warm-rosters end (exit 0) 
+[Fri 12/12/2025  3:18:37.75] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11144,8 +11178,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025 11:48:23.26] warm-rosters end (exit 0) 
 [Fri 12/12/2025 11:48:36.66] warm-rosters start 
+=======
+[Fri 12/12/2025  3:18:41.01] warm-rosters end (exit 0) 
+[Fri 12/12/2025  3:48:36.67] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11155,8 +11194,13 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025 11:48:39.83] warm-rosters end (exit 0) 
 [Fri 12/12/2025 12:18:37.12] warm-rosters start 
+=======
+[Fri 12/12/2025  3:48:39.46] warm-rosters end (exit 0) 
+[Fri 12/12/2025  4:18:36.72] warm-rosters start 
+>>>>>>> Stashed changes
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251212&window_min=180
 {
     "success":  true,
@@ -11166,6 +11210,7 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
                ],
     "source":  "espn"
 }
+<<<<<<< Updated upstream
 [Fri 12/12/2025 12:18:40.91] warm-rosters end (exit 0) 
 [Sat 13/12/2025  0:02:59.56] warm-rosters start 
 [warm-rosters] hitting http://127.0.0.1:3000/api/depth-chart/warm-tminus10?date=20251213&window_min=180
@@ -13431,3 +13476,6 @@ At C:\Users\nduar\stattrackr\warm-rosters-task.ps1:60 char:21
     "source":  "espn"
 }
 [Sat 20/12/2025  3:18:40.31] warm-rosters end (exit 0) 
+=======
+[Fri 12/12/2025  4:18:40.28] warm-rosters end (exit 0) 
+>>>>>>> Stashed changes

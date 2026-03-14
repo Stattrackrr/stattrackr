@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getAflTeamColor, getAflTeamBadgeTextColor } from '@/lib/aflTeamColors';
+import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
 
 const TEAM_SELECTIONS_URL = 'https://www.footywire.com/afl/footy/afl_team_selections';
 
@@ -21,6 +23,8 @@ type TeamSelectionsData = {
   away_team: string | null;
   positions: Array<{ position: string; home_players: (string | PlayerEntry)[]; away_players: (string | PlayerEntry)[] }>;
   interchange: { home: string[]; away: string[] };
+  ins?: { home: string[]; away: string[] };
+  outs?: { home: string[]; away: string[] };
   emergencies: { home: string[]; away: string[] };
   average_attributes: {
     home: { height?: string; age?: string; games?: string };
@@ -32,40 +36,15 @@ type TeamSelectionsData = {
 
 type MatchEntry = TeamSelectionsData & { match: string; home_team: string; away_team: string };
 
-/** Canonical league key for lineup matching. Strict: GWS and Sydney must not match each other. */
-function teamToCanonicalKey(team: string): string {
-  const t = (team || '').toLowerCase().replace(/\s+/g, ' ').trim();
-  if (!t) return '';
-  if (t.includes('greater western sydney') || t === 'gws' || (t.includes('gws') && t.includes('giant'))) return 'gws';
-  if (t === 'sydney' || t.includes('sydney swans')) return 'sydney';
-  if (t.includes('hawthorn') || t === 'hawks') return 'hawthorn';
-  if (t.includes('carlton') || t === 'blues') return 'carlton';
-  if (t.includes('brisbane') || t === 'lions') return 'brisbane';
-  if (t.includes('collingwood') || t === 'magpies') return 'collingwood';
-  if (t.includes('geelong') || t === 'cats') return 'geelong';
-  if (t.includes('melbourne') || t === 'demons') return 'melbourne';
-  if (t.includes('essendon') || t === 'bombers') return 'essendon';
-  if (t.includes('richmond') || t === 'tigers') return 'richmond';
-  if (t.includes('st kilda') || t === 'saints') return 'st kilda';
-  if (t.includes('fremantle') || t === 'dockers') return 'fremantle';
-  if (t.includes('adelaide') || t === 'crows') return 'adelaide';
-  if (t.includes('west coast') || t === 'eagles') return 'west coast';
-  if (t.includes('north melbourne') || t === 'kangaroos') return 'north melbourne';
-  if (t.includes('port adelaide') || t === 'power') return 'port adelaide';
-  if (t.includes('western bulldogs') || t === 'bulldogs') return 'western bulldogs';
-  if (t.includes('gold coast') || t === 'suns') return 'gold coast';
-  return t.replace(/[^a-z0-9]/g, '');
-}
-
-/** Strict match: only when canonical keys are equal. Prevents GWS matching Sydney (e.g. "greater western sydney" contains "sydney"). */
+/** Strict match: only when canonical keys are equal. Uses shared alt-name map so we never wrong-match (e.g. Adelaide vs Port Adelaide). */
 function matchIncludesTeam(m: { home_team?: string | null; away_team?: string | null }, team: string): boolean {
   if (!team || !m.home_team || !m.away_team) return false;
-  const tKey = teamToCanonicalKey(team);
-  const hKey = teamToCanonicalKey(m.home_team);
-  const aKey = teamToCanonicalKey(m.away_team);
-  if (!tKey) return false;
-  if (tKey === 'gws' && (hKey === 'sydney' || aKey === 'sydney')) return false;
-  if (tKey === 'sydney' && (hKey === 'gws' || aKey === 'gws')) return false;
+  const tKey = getAflCanonicalTeamKey(team);
+  const hKey = getAflCanonicalTeamKey(m.home_team);
+  const aKey = getAflCanonicalTeamKey(m.away_team);
+  if (!tKey || !hKey || !aKey) return false;
+  if (tKey === 'GWS' && (hKey === 'Sydney' || aKey === 'Sydney')) return false;
+  if (tKey === 'Sydney' && (hKey === 'GWS' || aKey === 'GWS')) return false;
   return tKey === hKey || tKey === aKey;
 }
 
@@ -111,6 +90,7 @@ function PlayerChip({
   name,
   number,
   isHome,
+  teamColor,
   isDark,
   uniformWidth,
   highlight,
@@ -118,6 +98,8 @@ function PlayerChip({
   name: string;
   number?: string | null;
   isHome: boolean;
+  /** Team brand color (hex); when set, used for badge instead of default red/grey. */
+  teamColor?: string | null;
   isDark: boolean;
   uniformWidth?: boolean;
   /** When true, show purple highlight for the searched player. */
@@ -125,12 +107,14 @@ function PlayerChip({
 }) {
   const initial = name.trim() ? name.trim().split(/\s+/).pop()?.[0] ?? '?' : '–';
   const badgeLabel = number != null && number !== '' ? number : initial;
-  const numBg = isHome ? 'bg-red-500 text-white' : 'bg-slate-500 text-white';
+  const defaultBg = isHome ? 'bg-red-500 text-white' : 'bg-slate-500 text-white';
   const boxCls = isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200';
   const highlightCls = highlight ? 'ring-2 ring-purple-500 bg-purple-500/20 dark:bg-purple-500/30' : '';
+  const badgeStyle = teamColor ? { backgroundColor: teamColor, color: getAflTeamBadgeTextColor(teamColor) } : undefined;
+  const badgeCls = !teamColor ? defaultBg : '';
   return (
     <div className={`flex items-center rounded-md border py-1 min-w-0 ${uniformWidth ? 'w-[4.25rem] min-w-[4.25rem] max-w-[4.25rem] sm:w-[5.25rem] sm:min-w-[5.25rem] sm:max-w-[5.25rem] min-[1520px]:w-[6.25rem] min-[1520px]:min-w-[6.25rem] min-[1520px]:max-w-[6.25rem] min-[1600px]:w-[7.25rem] min-[1600px]:min-w-[7.25rem] min-[1600px]:max-w-[7.25rem] gap-0.5 sm:gap-1 min-[1520px]:gap-1 min-[1600px]:gap-1 px-1 sm:px-1.5 min-[1520px]:px-1.5' : 'gap-2 px-2'} ${boxCls} ${highlightCls}`}>
-      <span className={`flex-shrink-0 rounded font-bold flex items-center justify-center ${numBg} ${uniformWidth ? 'w-4 h-4 text-[9px] sm:w-[18px] sm:h-[18px] sm:text-[9px] min-[1520px]:w-5 min-[1520px]:h-5 min-[1520px]:text-[10px] min-[1600px]:w-5 min-[1600px]:h-5 min-[1600px]:text-[10px]' : 'w-6 h-6 text-xs'}`}>
+      <span className={`flex-shrink-0 rounded font-bold flex items-center justify-center ${!teamColor ? defaultBg : badgeCls} ${uniformWidth ? 'w-4 h-4 text-[9px] sm:w-[18px] sm:h-[18px] sm:text-[9px] min-[1520px]:w-5 min-[1520px]:h-5 min-[1520px]:text-[10px] min-[1600px]:w-5 min-[1600px]:h-5 min-[1600px]:text-[10px]' : 'w-6 h-6 text-xs'}`} style={badgeStyle}>
         {badgeLabel}
       </span>
       <span className={`truncate font-medium ${uniformWidth ? 'text-[10px] sm:text-[11px] min-[1520px]:text-xs min-[1600px]:text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -209,6 +193,8 @@ export function AflTeamSelectionsCard({
               away_team: chosen?.away_team ?? null,
               positions: chosen?.positions ?? [],
               interchange: chosen?.interchange ?? { home: [], away: [] },
+              ins: chosen?.ins ?? { home: [], away: [] },
+              outs: chosen?.outs ?? { home: [], away: [] },
               emergencies: chosen?.emergencies ?? { home: [], away: [] },
               average_attributes: chosen?.average_attributes ?? null,
               total_players_by_games: chosen?.total_players_by_games ?? null,
@@ -241,6 +227,8 @@ export function AflTeamSelectionsCard({
                 away_team: retryJson?.away_team ?? null,
                 positions: retryPos,
                 interchange: retryInter,
+                ins: retryJson?.ins ?? { home: [], away: [] },
+                outs: retryJson?.outs ?? { home: [], away: [] },
                 emergencies: retryJson?.emergencies ?? { home: [], away: [] },
                 average_attributes: retryJson?.average_attributes ?? null,
                 total_players_by_games: retryJson?.total_players_by_games ?? null,
@@ -259,6 +247,8 @@ export function AflTeamSelectionsCard({
           away_team: json?.away_team ?? null,
           positions,
           interchange: inter,
+          ins: json?.ins ?? { home: [], away: [] },
+          outs: json?.outs ?? { home: [], away: [] },
           emergencies: json?.emergencies ?? { home: [], away: [] },
           average_attributes: json?.average_attributes ?? null,
           total_players_by_games: json?.total_players_by_games ?? null,
@@ -268,7 +258,7 @@ export function AflTeamSelectionsCard({
       .catch((e) => {
         if (!cancelled) {
           setError(e?.message ?? 'Failed to load');
-          setData({ url: TEAM_SELECTIONS_URL, title: null, round_label: null, match: null, home_team: null, away_team: null, positions: [], interchange: { home: [], away: [] }, emergencies: { home: [], away: [] }, average_attributes: null, total_players_by_games: null });
+          setData({ url: TEAM_SELECTIONS_URL, title: null, round_label: null, match: null, home_team: null, away_team: null, positions: [], interchange: { home: [], away: [] }, ins: { home: [], away: [] }, outs: { home: [], away: [] }, emergencies: { home: [], away: [] }, average_attributes: null, total_players_by_games: null });
         }
       })
       .finally(() => {
@@ -324,11 +314,17 @@ export function AflTeamSelectionsCard({
   }
   const emergHome = data?.emergencies?.home ?? [];
   const emergAway = data?.emergencies?.away ?? [];
+  const insHome = data?.ins?.home ?? [];
+  const insAway = data?.ins?.away ?? [];
+  const outsHome = data?.outs?.home ?? [];
+  const outsAway = data?.outs?.away ?? [];
   const homeTeam = data?.home_team ?? 'Home';
   const awayTeam = data?.away_team ?? 'Away';
-  const hasContent = hasFieldRows || followersHome.length > 0 || followersAway.length > 0 || interHome.length > 0 || interAway.length > 0 || emergHome.length > 0 || emergAway.length > 0;
-  const hasHomePlayers = followersHome.length > 0 || interHome.length > 0 || emergHome.length > 0 || ovalRows.some((r) => r.isHome);
-  const hasAwayPlayers = followersAway.length > 0 || interAway.length > 0 || emergAway.length > 0 || ovalRows.some((r) => !r.isHome);
+  const homeColor = getAflTeamColor(homeTeam);
+  const awayColor = getAflTeamColor(awayTeam);
+  const hasContent = hasFieldRows || followersHome.length > 0 || followersAway.length > 0 || interHome.length > 0 || interAway.length > 0 || emergHome.length > 0 || emergAway.length > 0 || insHome.length > 0 || insAway.length > 0 || outsHome.length > 0 || outsAway.length > 0;
+  const hasHomePlayers = followersHome.length > 0 || interHome.length > 0 || emergHome.length > 0 || insHome.length > 0 || outsHome.length > 0 || ovalRows.some((r) => r.isHome);
+  const hasAwayPlayers = followersAway.length > 0 || interAway.length > 0 || emergAway.length > 0 || insAway.length > 0 || outsAway.length > 0 || ovalRows.some((r) => !r.isHome);
   const hasBothTeams = hasHomePlayers && hasAwayPlayers;
   const hasSuccessfulMatch = Boolean(data?.home_team && data?.away_team);
   const showLineup = Boolean(playerTeam) && hasSuccessfulMatch && hasContent && hasBothTeams;
@@ -355,14 +351,14 @@ export function AflTeamSelectionsCard({
 
       {showLineup && (
         <>
-          {/* Legend: team names with colored dots */}
+          {/* Legend: team names with team-colored dots */}
           <div className="flex items-center justify-center gap-4 mb-3">
             <span className="flex items-center gap-1.5 text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: homeColor }} aria-hidden />
               {homeTeam}
             </span>
             <span className="flex items-center gap-1.5 text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-slate-500" aria-hidden />
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: awayColor }} aria-hidden />
               {awayTeam}
             </span>
           </div>
@@ -396,7 +392,7 @@ export function AflTeamSelectionsCard({
                         <span className="flex-shrink-0 text-sm sm:text-xs min-[1520px]:text-sm font-bold w-8 sm:w-7 min-[1520px]:w-8 text-purple-300">{positionLabel}</span>
                         <div className="grid grid-cols-3 gap-x-0.5 sm:gap-x-1 min-[1520px]:gap-x-1 min-[1600px]:gap-x-1 gap-y-0 min-w-0 flex-1 justify-items-center w-[min(100%,13.5rem)] sm:w-[min(100%,16.5rem)] min-[1520px]:w-[min(100%,19.5rem)] min-[1600px]:w-[min(100%,22.5rem)]" role="group" aria-label={`${row.position} ${row.isHome ? homeTeam : awayTeam}`}>
                           {row.players.slice(0, 3).map((p, i) => (
-                            <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} isDark={false} uniformWidth highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
+                            <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} teamColor={row.isHome ? homeColor : awayColor} isDark={false} uniformWidth highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
                           ))}
                         </div>
                       </div>
@@ -410,17 +406,51 @@ export function AflTeamSelectionsCard({
 
             {/* Below field when stacked (order-2); from 1520px up wrapper has contents so panels sit left/right of field */}
             <div className="flex flex-row gap-3 order-2 min-[1520px]:contents flex-wrap min-[1520px]:flex-nowrap">
-              {/* Left when side-by-side: Followers (home, away, home, away …) */}
+              {/* Left when side-by-side: Followers, then Ins & Outs (home, away, home, away …) */}
               <div className={`rounded-lg border ${borderCls} p-2 flex flex-col flex-1 min-w-0 sm:min-w-[6rem] min-[1520px]:flex-none min-[1520px]:w-32 min-[1520px]:min-w-[8rem] min-[1600px]:w-36 min-[1600px]:min-w-[9rem] flex-shrink-0 min-[1520px]:order-1`}>
                 <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Followers</p>
                 <div className="flex flex-col gap-1 overflow-y-auto">
                   {followersInterleaved.map(({ p, isHome }, i) => (
-                    <PlayerChip key={`f-${i}`} name={p.name} number={p.number} isHome={isHome} isDark={isDark} highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
+                    <PlayerChip key={`f-${i}`} name={p.name} number={p.number} isHome={isHome} teamColor={isHome ? homeColor : awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
                   ))}
                   {followersInterleaved.length === 0 && (
                     <span className={`text-[10px] ${mutedCls}`}>—</span>
                   )}
                 </div>
+                {/* Ins & Outs – under Followers */}
+                {(insHome.length > 0 || insAway.length > 0 || outsHome.length > 0 || outsAway.length > 0) && (
+                  <div className="mt-2 pt-2 border-t border-gray-500/40">
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Ins & Outs</p>
+                    <div className="flex flex-col gap-1.5">
+                      {(insHome.length > 0 || insAway.length > 0) && (
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-[10px] font-medium ${mutedCls}`}>Ins</span>
+                          <div className="flex flex-wrap gap-1">
+                            {insHome.map((name, i) => (
+                              <PlayerChip key={`inh-${i}`} name={name} isHome teamColor={homeColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                            ))}
+                            {insAway.map((name, i) => (
+                              <PlayerChip key={`ina-${i}`} name={name} isHome={false} teamColor={awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(outsHome.length > 0 || outsAway.length > 0) && (
+                        <div className="flex flex-col gap-1">
+                          <span className={`text-[10px] font-medium ${mutedCls}`}>Outs</span>
+                          <div className="flex flex-wrap gap-1">
+                            {outsHome.map((name, i) => (
+                              <PlayerChip key={`outh-${i}`} name={name} isHome teamColor={homeColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                            ))}
+                            {outsAway.map((name, i) => (
+                              <PlayerChip key={`outa-${i}`} name={name} isHome={false} teamColor={awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right when side-by-side: Interchanges (home, away, home, away …) */}
@@ -428,7 +458,7 @@ export function AflTeamSelectionsCard({
                 <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Interchanges</p>
                 <div className="flex flex-col gap-1 overflow-y-auto">
                   {interchangeInterleaved.map(({ name, isHome }, i) => (
-                    <PlayerChip key={`i-${i}`} name={name} isHome={isHome} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                    <PlayerChip key={`i-${i}`} name={name} isHome={isHome} teamColor={isHome ? homeColor : awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
                   ))}
                   {interchangeInterleaved.length === 0 && (
                     <span className={`text-[10px] ${mutedCls}`}>—</span>
@@ -446,13 +476,13 @@ export function AflTeamSelectionsCard({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`text-[10px] font-medium ${mutedCls}`}>{homeTeam}:</span>
                   {emergHome.map((name, i) => (
-                    <PlayerChip key={`eh-${i}`} name={name} isHome isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                    <PlayerChip key={`eh-${i}`} name={name} isHome teamColor={homeColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
                   ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`text-[10px] font-medium ${mutedCls}`}>{awayTeam}:</span>
                   {emergAway.map((name, i) => (
-                    <PlayerChip key={`ea-${i}`} name={name} isHome={false} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
+                    <PlayerChip key={`ea-${i}`} name={name} isHome={false} teamColor={awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />
                   ))}
                 </div>
               </div>

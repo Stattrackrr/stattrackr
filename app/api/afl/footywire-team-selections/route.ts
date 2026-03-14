@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
+import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
 
 /** FootyWire AFL Team Selections page - actual lineup (positions, interchange, emergencies) + URL. */
 const FOOTYWIRE_TEAM_SELECTIONS_URL = 'https://www.footywire.com/afl/footy/afl_team_selections';
@@ -32,6 +33,8 @@ export type TeamSelectionsResponse = {
   away_team: string | null;
   positions: PositionRow[];
   interchange: { home: string[]; away: string[] };
+  ins: { home: string[]; away: string[] };
+  outs: { home: string[]; away: string[] };
   emergencies: { home: string[]; away: string[] };
   average_attributes: {
     home: { height?: string; age?: string; games?: string };
@@ -50,31 +53,15 @@ export type TeamSelectionsRoundResponse = {
   error?: string;
 };
 
-/** League stats team keys (data/afl-league-player-stats-*.json). */
-const LEAGUE_TEAM_KEYS = [
-  'Adelaide', 'Brisbane', 'Carlton', 'Collingwood', 'Essendon', 'Fremantle', 'Geelong', 'Gold Coast',
-  'GWS', 'Hawthorn', 'Melbourne', 'North Melbourne', 'Port Adelaide', 'Richmond', 'St Kilda',
-  'Sydney', 'West Coast', 'Western Bulldogs',
-] as const;
-
 let cached2026Lookup: Map<string, number> | null = null;
 
 function normalizeNameForLookup(name: string): string {
   return (name || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-/** Match team string from lineup (e.g. "Geelong Cats", "Gold Coast") to league stats team key. */
+/** Match team string from lineup to canonical key (uses shared alt-name map so we never wrong-match). */
 function matchTeamToLeagueKey(team: string | null): string | null {
-  if (!team || !team.trim()) return null;
-  const t = team.trim().toLowerCase().replace(/\s+/g, ' ');
-  // GWS: only if string contains "gws", "giants", or "greater western" — never match plain "sydney" (Sydney Swans)
-  if (t.includes('gws') || t.includes('giants') || t.includes('greater western')) return 'GWS';
-  const byLength = [...LEAGUE_TEAM_KEYS].sort((a, b) => b.length - a.length);
-  for (const key of byLength) {
-    if (key === 'GWS') continue;
-    if (t.includes(key.toLowerCase()) || key.toLowerCase().includes(t)) return key;
-  }
-  return null;
+  return getAflCanonicalTeamKey(team);
 }
 
 /** Build lookup from data/afl-player-jumper-numbers-2026.json (run scripts/fetch-afl-2026-jumper-numbers.js to generate). */
@@ -629,6 +616,92 @@ function extractAllPlayerLinksInOrder(html: string): string[] {
   return names;
 }
 
+/** Parse Ins and Outs by table rows: row label "Ins"/"In" or "Outs"/"Out", then home/away player columns. Uses full html so the table is complete. */
+function parseInsOuts(html: string): { ins: { home: string[]; away: string[] }; outs: { home: string[]; away: string[] } } {
+  const ins = { home: [] as string[], away: [] as string[] };
+  const outs = { home: [] as string[], away: [] as string[] };
+  // Use full html so we get complete tables (slicing from "interchange" can cut the table and miss Ins/Outs rows)
+  const tables = extractTopLevelAndNestedTables(html);
+  for (const table of tables) {
+    const tableLower = table.toLowerCase();
+    if (tableLower.includes('average attribute') || (!tableLower.includes('interchange') && !tableLower.includes('emergenc'))) continue;
+    const rows = getTableRows(table);
+    for (const row of rows) {
+      if (row.length < 2) continue;
+      const label = htmlToText(row[0]).trim().toLowerCase().replace(/[:\s]+$/, '');
+      const homeCol = row.length >= 3 ? row[1] : row[0];
+      const awayCol = row.length >= 3 ? row[2] : row[1];
+      const isIns = label === 'ins' || label === 'in' || (label.startsWith('ins') && label.length <= 5);
+      const isOuts = label === 'outs' || label === 'out' || (label.startsWith('outs') && label.length <= 6);
+      if (isIns) {
+        const h = [...new Set(cellToPlayerNames(homeCol))];
+        const a = [...new Set(cellToPlayerNames(awayCol))];
+        if (h.length > 0 || a.length > 0) {
+          ins.home = h;
+          ins.away = a;
+        }
+      } else if (isOuts) {
+        const h = [...new Set(cellToPlayerNames(homeCol))];
+        const a = [...new Set(cellToPlayerNames(awayCol))];
+        if (h.length > 0 || a.length > 0) {
+          outs.home = h;
+          outs.away = a;
+        }
+      }
+    }
+    if (ins.home.length > 0 || ins.away.length > 0 || outs.home.length > 0 || outs.away.length > 0) break;
+  }
+  if (ins.home.length === 0 && ins.away.length === 0 && outs.home.length === 0 && outs.away.length === 0) {
+    for (const tbl of extractTopLevelTables('<div>' + html + '</div>')) {
+      const rows = getTableRows(tbl);
+      for (const row of rows) {
+        if (row.length < 3) continue;
+        const first = htmlToText(row[0]).trim().toLowerCase().replace(/[:\s]+$/, '');
+        const isIns = first === 'ins' || first === 'in' || (first.startsWith('ins') && first.length <= 5);
+        const isOuts = first === 'outs' || first === 'out' || (first.startsWith('outs') && first.length <= 6);
+        if (isIns) {
+          ins.home = [...new Set(extractAllPlayerLinksInOrder(row[1]))];
+          ins.away = [...new Set(extractAllPlayerLinksInOrder(row[2]))];
+        } else if (isOuts) {
+          outs.home = [...new Set(extractAllPlayerLinksInOrder(row[1]))];
+          outs.away = [...new Set(extractAllPlayerLinksInOrder(row[2]))];
+        }
+      }
+    }
+  }
+  // Text fallback: find "Ins" or "Outs" in HTML and take player links from the next fragment (FootyWire may use different structure).
+  // When we can't tell team, assign to home only so we don't show duplicate/incorrect ins or outs for the other team.
+  if (ins.home.length === 0 && ins.away.length === 0 && outs.home.length === 0 && outs.away.length === 0) {
+    const lower = html.toLowerCase();
+    const insIdx = lower.search(/\bins\b/);
+    const outsIdx = lower.search(/\bouts\b/);
+    const fragmentLen = 350;
+    if (insIdx >= 0) {
+      const fragment = html.slice(insIdx, insIdx + fragmentLen);
+      const names = extractAllPlayerLinksInOrder(fragment);
+      if (names.length > 0 && names.length <= 5) {
+        ins.home = names;
+        ins.away = [];
+      }
+    }
+    if (outsIdx >= 0) {
+      const fragment = html.slice(outsIdx, outsIdx + fragmentLen);
+      const names = extractAllPlayerLinksInOrder(fragment);
+      if (names.length > 0 && names.length <= 5) {
+        outs.home = names;
+        outs.away = [];
+      }
+    }
+  }
+  // No player should appear in both Ins and Outs: remove from ins anyone who is in outs (stops duplicate e.g. Humphrey in both)
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const outsAll = [...outs.home, ...outs.away];
+  const inOuts = (name: string) => outsAll.some((o) => norm(name) === norm(o) || norm(name).includes(norm(o)) || norm(o).includes(norm(name)));
+  ins.home = ins.home.filter((n) => !inOuts(n));
+  ins.away = ins.away.filter((n) => !inOuts(n));
+  return { ins, outs };
+}
+
 /** Parse interchange/emergencies by table columns: column 0 = home, column 1 = away (not "split list in half"). */
 function parseInterchangeEmergencies(html: string): {
   interchange: { home: string[]; away: string[] };
@@ -731,45 +804,66 @@ function parseInterchangeEmergencies(html: string): {
     }
   }
   if (sliceEmerg && emergencies.home.length === 0 && emergencies.away.length === 0) {
-    let parsedEmerg = parseTwoColumnTable(sliceEmerg);
-    if (parsedEmerg.home.length + parsedEmerg.away.length < 3) {
-      const tables = extractTopLevelTables('<div>' + html + '</div>');
-      for (const tbl of tables) {
-        const rows = getTableRows(tbl);
-        for (const row of rows) {
-          if (row.length >= 3 && row[0].toLowerCase().includes('emergenc') && row[2].toLowerCase().includes('emergenc')) {
-            const leftHtml = (row[0].split(/interchange/i)[1] ?? row[0]).split(/<\/table/i)[0] ?? row[0];
-            const rightHtml = (row[2].split(/interchange/i)[1] ?? row[2]).split(/<\/table/i)[0] ?? row[2];
-            emergencies.home = [...new Set(extractAllPlayerLinksInOrder(leftHtml))];
-            emergencies.away = [...new Set(extractAllPlayerLinksInOrder(rightHtml))];
-            parsedEmerg = { home: emergencies.home, away: emergencies.away };
-            break;
+    // Prefer only the row labeled "Emergencies", so we don't merge Ins/Outs rows into emergencies
+    const allTablesForEmerg = extractTopLevelAndNestedTables(html);
+    for (const tbl of allTablesForEmerg) {
+      const tblLower = tbl.toLowerCase();
+      if (!tblLower.includes('emergenc') || tblLower.includes('average attribute')) continue;
+      const rows = getTableRows(tbl);
+      for (const row of rows) {
+        if (row.length < 3) continue;
+        const first = htmlToText(row[0]).trim().toLowerCase();
+        const isInsOrOut = first === 'ins' || first === 'in' || first === 'outs' || first === 'out' || first.startsWith('ins') || first.startsWith('outs');
+        if (isInsOrOut) continue;
+        if (first.includes('emergenc')) {
+          emergencies.home = [...new Set(extractAllPlayerLinksInOrder(row[1]))];
+          emergencies.away = [...new Set(extractAllPlayerLinksInOrder(row[2]))];
+          if (emergencies.home.length > 0 || emergencies.away.length > 0) break;
+        }
+      }
+      if (emergencies.home.length > 0 || emergencies.away.length > 0) break;
+    }
+    if (emergencies.home.length === 0 && emergencies.away.length === 0) {
+      let parsedEmerg = parseTwoColumnTable(sliceEmerg);
+      if (parsedEmerg.home.length + parsedEmerg.away.length < 3) {
+        const tables = extractTopLevelTables('<div>' + html + '</div>');
+        for (const tbl of tables) {
+          const rows = getTableRows(tbl);
+          for (const row of rows) {
+            if (row.length >= 3 && row[0].toLowerCase().includes('emergenc') && row[2].toLowerCase().includes('emergenc')) {
+              const leftHtml = (row[0].split(/interchange/i)[1] ?? row[0]).split(/<\/table/i)[0] ?? row[0];
+              const rightHtml = (row[2].split(/interchange/i)[1] ?? row[2]).split(/<\/table/i)[0] ?? row[2];
+              emergencies.home = [...new Set(extractAllPlayerLinksInOrder(leftHtml))];
+              emergencies.away = [...new Set(extractAllPlayerLinksInOrder(rightHtml))];
+              parsedEmerg = { home: emergencies.home, away: emergencies.away };
+              break;
+            }
+          }
+          if (emergencies.home.length + emergencies.away.length >= 2) break;
+        }
+      }
+      if (parsedEmerg.home.length + parsedEmerg.away.length < 3) {
+        const allTables = extractTopLevelAndNestedTables(html);
+        const emergTables: string[] = [];
+        for (const tbl of allTables) {
+          const lower = tbl.toLowerCase();
+          if (lower.includes('emergenc') && !lower.includes('average attribute')) {
+            const afterInterchange = tbl.split(/interchange/i)[1] ?? tbl;
+            const links = extractAllPlayerLinksInOrder(afterInterchange.split(/<\/table/i)[0] ?? afterInterchange);
+            if (links.length >= 1 && links.length <= 5) emergTables.push(afterInterchange.split(/<\/table/i)[0] ?? afterInterchange);
           }
         }
-        if (emergencies.home.length + emergencies.away.length >= 2) break;
-      }
-    }
-    if (parsedEmerg.home.length + parsedEmerg.away.length < 3) {
-      const allTables = extractTopLevelAndNestedTables(html);
-      const emergTables: string[] = [];
-      for (const tbl of allTables) {
-        const lower = tbl.toLowerCase();
-        if (lower.includes('emergenc') && !lower.includes('average attribute')) {
-          const afterInterchange = tbl.split(/interchange/i)[1] ?? tbl;
-          const links = extractAllPlayerLinksInOrder(afterInterchange.split(/<\/table/i)[0] ?? afterInterchange);
-          if (links.length >= 1 && links.length <= 5) emergTables.push(afterInterchange.split(/<\/table/i)[0] ?? afterInterchange);
+        if (emergTables.length >= 2) {
+          parsedEmerg = {
+            home: [...new Set(extractAllPlayerLinksInOrder(emergTables[0]))],
+            away: [...new Set(extractAllPlayerLinksInOrder(emergTables[1]))],
+          };
         }
       }
-      if (emergTables.length >= 2) {
-        parsedEmerg = {
-          home: [...new Set(extractAllPlayerLinksInOrder(emergTables[0]))],
-          away: [...new Set(extractAllPlayerLinksInOrder(emergTables[1]))],
-        };
+      if (parsedEmerg.home.length > 0 || parsedEmerg.away.length > 0) {
+        emergencies.home = parsedEmerg.home;
+        emergencies.away = parsedEmerg.away;
       }
-    }
-    if (parsedEmerg.home.length > 0 || parsedEmerg.away.length > 0) {
-      emergencies.home = parsedEmerg.home;
-      emergencies.away = parsedEmerg.away;
     }
   }
   return { interchange, emergencies };
@@ -896,6 +990,47 @@ function parseOneMatch(segmentHtml: string): TeamSelectionsResponse {
     interchange.home = fallback.interchange.home;
     interchange.away = fallback.interchange.away;
   }
+  let { ins, outs } = parseInsOuts(mainHtml);
+  if (ins.home.length === 0 && ins.away.length === 0 && outs.home.length === 0 && outs.away.length === 0) {
+    const fallbackInsOuts = parseInsOuts(segmentHtml);
+    ins = fallbackInsOuts.ins;
+    outs = fallbackInsOuts.outs;
+  }
+  // Exclude from emergencies: (1) anyone in ins/outs, (2) anyone already in the main lineup (positions or interchange).
+  // Match by normalized name or "one contains the other" so "J Rogers" matches "R J Rogers".
+  const normalizeForDedup = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const nameMatchesList = (name: string, list: string[]): boolean => {
+    const e = normalizeForDedup(name);
+    for (const n of list) {
+      const o = normalizeForDedup(n);
+      if (e === o) return true;
+      if (e.includes(o) || o.includes(e)) return true;
+    }
+    return false;
+  };
+  const allLineupHome: string[] = [...interchange.home];
+  const allLineupAway: string[] = [...interchange.away];
+  for (const row of positions) {
+    for (const p of row.home_players ?? []) allLineupHome.push(typeof p === 'string' ? p : p.name);
+    for (const p of row.away_players ?? []) allLineupAway.push(typeof p === 'string' ? p : p.name);
+  }
+  const emergenciesFiltered = {
+    home: emergencies.home.filter(
+      (name) =>
+        !nameMatchesList(name, [...ins.home, ...outs.home]) && !nameMatchesList(name, allLineupHome)
+    ),
+    away: emergencies.away.filter(
+      (name) =>
+        !nameMatchesList(name, [...ins.away, ...outs.away]) && !nameMatchesList(name, allLineupAway)
+    ),
+  };
+  // If we didn't parse Ins from the page, infer ins from players we removed from emergencies because they're in the lineup (so they show in Ins & Outs)
+  const removedHomeBecauseLineup = emergencies.home.filter((name) => nameMatchesList(name, allLineupHome));
+  const removedAwayBecauseLineup = emergencies.away.filter((name) => nameMatchesList(name, allLineupAway));
+  if (removedHomeBecauseLineup.length > 0 || removedAwayBecauseLineup.length > 0) {
+    ins.home = [...new Set([...ins.home, ...removedHomeBecauseLineup])];
+    ins.away = [...new Set([...ins.away, ...removedAwayBecauseLineup])];
+  }
   const average_attributes = parseAverageAttributes(mainHtml);
   const total_players_by_games = parseTotalPlayersByGames(mainHtml);
 
@@ -908,7 +1043,9 @@ function parseOneMatch(segmentHtml: string): TeamSelectionsResponse {
     away_team,
     positions,
     interchange,
-    emergencies,
+    ins,
+    outs,
+    emergencies: emergenciesFiltered,
     average_attributes,
     total_players_by_games,
   };
@@ -969,6 +1106,8 @@ function parsePage(html: string): TeamSelectionsResponse {
     away_team: null,
     positions: [],
     interchange: { home: [], away: [] },
+    ins: { home: [], away: [] },
+    outs: { home: [], away: [] },
     emergencies: { home: [], away: [] },
     average_attributes: null,
     total_players_by_games: null,
@@ -1028,6 +1167,8 @@ export async function GET(request: Request) {
           away_team: found.away_team,
           positions: found.positions,
           interchange: found.interchange,
+          ins: found.ins,
+          outs: found.outs,
           emergencies: found.emergencies,
           average_attributes: found.average_attributes,
           total_players_by_games: found.total_players_by_games,
@@ -1043,6 +1184,8 @@ export async function GET(request: Request) {
         away_team: null,
         positions: [],
         interchange: { home: [], away: [] },
+        ins: { home: [], away: [] },
+        outs: { home: [], away: [] },
         emergencies: { home: [], away: [] },
         average_attributes: null,
         total_players_by_games: null,
@@ -1085,6 +1228,8 @@ export async function GET(request: Request) {
           away_team: found.away_team,
           positions: found.positions,
           interchange: found.interchange,
+          ins: found.ins,
+          outs: found.outs,
           emergencies: found.emergencies,
           average_attributes: found.average_attributes,
           total_players_by_games: found.total_players_by_games,
@@ -1100,6 +1245,8 @@ export async function GET(request: Request) {
         away_team: null,
         positions: [],
         interchange: { home: [], away: [] },
+        ins: { home: [], away: [] },
+        outs: { home: [], away: [] },
         emergencies: { home: [], away: [] },
         average_attributes: null,
         total_players_by_games: null,

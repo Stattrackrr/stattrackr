@@ -305,9 +305,6 @@ async function saveOddsSnapshots(games: GameOdds[]) {
           'PTS': 'player_points',
           'REB': 'player_rebounds',
           'AST': 'player_assists',
-          'PTS_1Q': 'player_points_1q',
-          'REB_1Q': 'player_rebounds_1q',
-          'AST_1Q': 'player_assists_1q',
           'THREES': 'player_threes',
           'BLK': 'player_blocks',
           'STL': 'player_steals',
@@ -432,7 +429,6 @@ type BdlOddsRow = {
 type BdlGame = {
   id: number;
   date: string;
-  datetime?: string; // Full datetime if available from BDL API
   home_team: { abbreviation?: string; full_name?: string; name?: string };
   visitor_team: { abbreviation?: string; full_name?: string; name?: string };
 };
@@ -445,12 +441,10 @@ type BdlPlayerProp = {
   prop_type: string;
   line_value: string;
   market: {
-    type: 'over_under' | 'milestone' | 'yes_no';
+    type: 'over_under' | 'milestone';
     over_odds?: number;
     under_odds?: number;
     odds?: number;
-    yes_odds?: number;
-    no_odds?: number;
   };
   updated_at: string;
 };
@@ -515,7 +509,14 @@ async function fetchGamesForDates(dateStrings: string[]): Promise<BdlGame[]> {
   const params = new URLSearchParams();
   dateStrings.forEach(d => params.append('dates[]', d));
   // Games are on v1
-  return fetchAllPages<BdlGame>(BDL_BASE_V1, '/games', params);
+  try {
+    const games = await fetchAllPages<BdlGame>(BDL_BASE_V1, '/games', params);
+    console.log(`📊 Fetched ${games.length} games for dates: ${dateStrings.join(', ')}`);
+    return games;
+  } catch (err: any) {
+    console.error(`❌ Failed to fetch games for dates ${dateStrings.join(', ')}:`, err.message);
+    throw err;
+  }
 }
 
 async function fetchOddsForDates(dateStrings: string[]): Promise<BdlOddsRow[]> {
@@ -555,43 +556,36 @@ async function fetchPropsForGame(gameId: number): Promise<BdlPlayerProp[]> {
 }
 
 function getDateStringsNext24h(): string[] {
-  // Get dates in US Eastern Time (NBA games are scheduled in ET)
-  // Include yesterday, today, and tomorrow to catch all relevant games
-  const now = new Date();
-  
+  // NBA games are scheduled in US Eastern Time, so we need to use US ET to determine dates
   const getUSEasternDateString = (date: Date): string => {
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
+    const formatter = new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
-    }).format(date).replace(/(\d+)\/(\d+)\/(\d+)/, (_, month, day, year) => {
-      // Convert MM/DD/YYYY to YYYY-MM-DD
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      day: '2-digit',
+      timeZone: 'America/New_York'
     });
+    const parts = formatter.formatToParts(date);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
   };
   
-  const yesterdayUSET = getUSEasternDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const now = new Date();
   const todayUSET = getUSEasternDateString(now);
+  const yesterdayUSET = getUSEasternDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
   const tomorrowUSET = getUSEasternDateString(new Date(now.getTime() + 24 * 60 * 60 * 1000));
   
-  // Return unique dates (in case of timezone edge cases)
-  const dates = [yesterdayUSET, todayUSET, tomorrowUSET].filter((v, i, a) => a.indexOf(v) === i);
-  
-  console.log(`📅 US Eastern Time dates: yesterday=${yesterdayUSET}, today=${todayUSET}, tomorrow=${tomorrowUSET}`);
+  // Query today and tomorrow in US ET to catch all games
+  const dates = [yesterdayUSET, todayUSET, tomorrowUSET];
+  console.log(`📅 Querying BDL API for dates (US Eastern Time): ${dates.join(', ')}`);
+  console.log(`📅 Current time: ${now.toISOString()}, Today in US ET: ${todayUSET}`);
   return dates;
 }
 
 function normalizeTeamName(team: { abbreviation?: string; full_name?: string; name?: string } | null | undefined): string {
-  if (!team) {
-    console.warn('[normalizeTeamName] Team is null/undefined, returning N/A');
-    return 'N/A';
-  }
-  const result = team.abbreviation || team.full_name || team.name || 'N/A';
-  if (result === 'N/A') {
-    console.warn('[normalizeTeamName] Team object has no abbreviation, full_name, or name:', JSON.stringify(team));
-  }
-  return result;
+  if (!team) return 'N/A';
+  return team.abbreviation || team.full_name || team.name || 'N/A';
 }
 
 function mapPropTypeToStatKey(propType: string): string | null {
@@ -612,9 +606,9 @@ function mapPropTypeToStatKey(propType: string): string | null {
     points_first3min: 'PTS', // best-effort mapping
     rebounds_first3min: 'REB',
     assists_first3min: 'AST',
-    points_1q: 'PTS_1Q',
-    rebounds_1q: 'REB_1Q',
-    assists_1q: 'AST_1Q',
+    points_1q: 'PTS',
+    rebounds_1q: 'REB',
+    assists_1q: 'AST',
   };
   return map[propType] || null;
 }
@@ -663,7 +657,7 @@ async function fetchPlayerPropsForGames(gameIds: number[], concurrency = 6): Pro
 }
 
 export async function refreshOddsData(
-  options: { source: RefreshSource; request?: Request } = { source: 'scheduler' }
+  options: { source: RefreshSource } = { source: 'scheduler' }
 ) {
   const bdlApiKeyPresent = !!bdlAuthHeader;
   
@@ -674,15 +668,13 @@ export async function refreshOddsData(
   console.log(`🔄 Starting BDL odds refresh... (source: ${options.source})`);
   const startTime = Date.now();
   const dates = getDateStringsNext24h();
-  console.log(`📅 Fetching odds for dates: ${dates.join(', ')} (US Eastern Time dates)`);
 
   try {
     // 1) Fetch odds (spreads/ML/totals) for next 24h
-    console.log(`📡 Calling BDL API: /odds?dates[]=${dates.join('&dates[]=')}`);
+    console.log(`📅 Fetching odds for dates: ${dates.join(', ')}`);
     const oddsRows = await fetchOddsForDates(dates);
-    console.log(`📊 BDL returned ${oddsRows.length} odds rows for ${dates.join(', ')}`);
     const gameIds = Array.from(new Set(oddsRows.map(o => o.game_id)));
-    console.log(`📊 Found ${gameIds.length} unique game IDs from odds: ${gameIds.slice(0, 5).join(', ')}${gameIds.length > 5 ? '...' : ''}`);
+    console.log(`📊 Found ${gameIds.length} unique games in odds data:`, gameIds.sort((a, b) => a - b));
     const vendorsFromOdds = Array.from(new Set(oddsRows.map(o => o.vendor))).sort();
     console.log(`📊 BDL returned ${oddsRows.length} odds rows from ${vendorsFromOdds.length} vendors: ${vendorsFromOdds.join(', ')}`);
     console.log(`📊 Expected 10 vendors per docs: betmgm, fanduel, draftkings, bet365, caesars, ballybet, betway, betparx, betrivers, rebet`);
@@ -695,18 +687,9 @@ export async function refreshOddsData(
     }
 
     // 2) Fetch games to map game_id -> teams/date
-    console.log(`📡 Calling BDL API: /games?dates[]=${dates.join('&dates[]=')}`);
     const gamesData = await fetchGamesForDates(dates);
-    console.log(`📊 BDL returned ${gamesData.length} games for ${dates.join(', ')}`);
     const gameMap = new Map<number, BdlGame>();
     for (const g of gamesData) gameMap.set(g.id, g);
-    
-    // Log game details
-    if (gamesData.length > 0) {
-      console.log(`📊 Games found:`, gamesData.map(g => `${g.visitor_team?.abbreviation || g.visitor_team?.name} @ ${g.home_team?.abbreviation || g.home_team?.name} (${g.date})`).join(', '));
-    } else {
-      console.warn(`⚠️ No games found for dates: ${dates.join(', ')}`);
-    }
 
     // 3) Fetch player props for those games
     const playerProps = await fetchPlayerPropsForGames(gameIds);
@@ -749,8 +732,7 @@ export async function refreshOddsData(
         gameId: String(gameId),
         homeTeam: normalizeTeamName(gameInfo?.home_team),
         awayTeam: normalizeTeamName(gameInfo?.visitor_team),
-        // Use datetime if available (has time), otherwise fall back to date-only
-        commenceTime: gameInfo?.datetime || gameInfo?.date || '',
+        commenceTime: gameInfo?.date || '',
         bookmakers: [],
         playerPropsByBookmaker: {},
       };
@@ -798,9 +780,21 @@ export async function refreshOddsData(
           bookRow.H2H.away = formatOddsPrice(row.moneyline_away_odds, row.vendor);
         }
         if (row.spread_home_value !== null && bookRow.Spread.line === 'N/A') {
-          bookRow.Spread.line = String(row.spread_home_value);
-          bookRow.Spread.over = formatOddsPrice(row.spread_home_odds, row.vendor);
-          bookRow.Spread.under = formatOddsPrice(row.spread_away_odds, row.vendor);
+          // BDL returns spread_home_value as "-7.5" (negative = home favored) or "2.5" (positive = away favored)
+          // The line should be the absolute value
+          const spreadValue = parseFloat(row.spread_home_value);
+          const spreadLine = Number.isFinite(spreadValue) ? Math.abs(spreadValue).toFixed(1) : String(Math.abs(parseFloat(row.spread_home_value) || 0));
+          
+          // For spread betting:
+          // - If home is favored (negative spread_home_value), "Over" = home covers = spread_home_odds, "Under" = away covers = spread_away_odds
+          // - If away is favored (positive spread_home_value), "Over" = away covers = spread_away_odds, "Under" = home covers = spread_home_odds
+          // But the dashboard expects: Over = favorite covers, Under = underdog covers
+          // So we always use: Over = odds for the favorite, Under = odds for the underdog
+          // Since spread_home_value negative = home favored, positive = away favored:
+          const isHomeFavored = spreadValue < 0;
+          bookRow.Spread.line = spreadLine;
+          bookRow.Spread.over = formatOddsPrice(isHomeFavored ? row.spread_home_odds : row.spread_away_odds, row.vendor);
+          bookRow.Spread.under = formatOddsPrice(isHomeFavored ? row.spread_away_odds : row.spread_home_odds, row.vendor);
         }
         if (row.total_value !== null && bookRow.Total.line === 'N/A') {
           bookRow.Total.line = String(row.total_value);
@@ -863,18 +857,6 @@ export async function refreshOddsData(
         };
 
         if (prop.market?.type === 'over_under') {
-          // Double-double / triple-double: BDL may return as over_under (Over=Yes, Under=No)
-          if (statKey === 'DD' || statKey === 'TD') {
-            const rawOverOdds = prop.market.over_odds;
-            const rawUnderOdds = prop.market.under_odds;
-            if (rawOverOdds != null && rawUnderOdds != null) {
-              bucket[statKey] = {
-                yes: formatOddsPrice(rawOverOdds, vendorName),
-                no: formatOddsPrice(rawUnderOdds, vendorName),
-              };
-            }
-            continue;
-          }
           // Parse line_value as number to ensure proper sorting
           const lineNum = parseFloat(prop.line_value);
           const line = Number.isFinite(lineNum) ? lineNum : parseFloat(String(prop.line_value)) || 0;
@@ -933,16 +915,6 @@ export async function refreshOddsData(
             }
           }
           // For all other prop types, non-allowed milestone values, or non-DK/FD vendors, skip (leave blank)
-        } else if (statKey === 'DD' || statKey === 'TD') {
-          // Double-double / triple-double: yes/no market from BDL
-          const yesOdds = (prop.market as any)?.yes_odds ?? prop.market?.over_odds;
-          const noOdds = (prop.market as any)?.no_odds ?? prop.market?.under_odds;
-          if (yesOdds != null && noOdds != null) {
-            bucket[statKey] = {
-              yes: formatOddsPrice(yesOdds, vendorName),
-              no: formatOddsPrice(noOdds, vendorName),
-            };
-          }
         }
       }
       
@@ -950,14 +922,24 @@ export async function refreshOddsData(
       const allVendors = new Set<string>();
       gameOdds.bookmakers.forEach(b => allVendors.add(b.name));
       Object.keys(gameOdds.playerPropsByBookmaker).forEach(v => allVendors.add(v));
+      const playerPropVendors = Object.keys(gameOdds.playerPropsByBookmaker).sort();
+      const totalPlayersWithProps = Object.keys(gameOdds.playerPropsByBookmaker).reduce((sum, vendor) => {
+        return sum + Object.keys(gameOdds.playerPropsByBookmaker[vendor] || {}).length;
+      }, 0);
+      
+      const homeTeam = gameOdds.homeTeam;
+      const awayTeam = gameOdds.awayTeam;
+      
       if (allVendors.size > 0) {
+        console.log(`✅ Game ${gameId} (${awayTeam} @ ${homeTeam}): ${playerPropVendors.length} vendors, ${totalPlayersWithProps} players, ${processedProps} props`);
         console.log(`📊 Game ${gameId} all vendors: ${Array.from(allVendors).sort().join(', ')}`);
-        const playerPropVendors = Object.keys(gameOdds.playerPropsByBookmaker).sort();
         console.log(`📊 Game ${gameId} player prop vendors: ${playerPropVendors.length} - ${playerPropVendors.join(', ')}`);
         console.log(`📊 Game ${gameId} processed ${processedProps} props, skipped ${skippedProps} props (unmapped prop types)`);
         if (vendorPropTypes.size > 0) {
           console.log(`📊 Game ${gameId} vendors and their prop types:`, Array.from(vendorPropTypes.entries()).map(([v, types]) => `${v}:[${Array.from(types).join(',')}]`).join('; '));
         }
+      } else {
+        console.warn(`⚠️ Game ${gameId} (${awayTeam} @ ${homeTeam}): NO PLAYER PROPS FOUND - BDL API returned 0 props for this game`);
       }
 
       games.push(gameOdds);
@@ -980,87 +962,130 @@ export async function refreshOddsData(
     const ttlMinutes = 2 * 60; // cache for 2 hours
     const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
-    // Prune games that started more than 1 hour ago (player props not needed after start)
-    // BUT: Keep games that are "today", "tomorrow", or "day after tomorrow" in US Eastern Time
-    // This ensures users in different timezones (like Australia) still see relevant games
-    const ONE_HOUR_MS = 60 * 60 * 1000;
-    const nowMs = now.getTime();
-    
-    // Get today, tomorrow, and day after tomorrow in US Eastern Time
+    // Helper to get US Eastern Time date string (same as getGameDateFromOddsCache)
     const getUSEasternDateString = (date: Date): string => {
-      return new Intl.DateTimeFormat('en-US', {
+      const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/New_York',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
-      }).format(date);
+      });
+      const parts = formatter.formatToParts(date);
+      const year = parts.find(p => p.type === 'year')?.value;
+      const month = parts.find(p => p.type === 'month')?.value;
+      const day = parts.find(p => p.type === 'day')?.value;
+      return `${year}-${month}-${day}`;
     };
-    
+
+    // Prune games that started more than 1 hour ago (player props not needed after start)
+    // BUT: Always keep games scheduled for today, tomorrow, OR day after tomorrow (in US ET) even if they've started
+    // This ensures today's games are always available for users in all timezones
+    // (e.g., games at 12pm Sydney time on Dec 12 are Dec 11 in US ET, so we need to keep Dec 11 games)
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const nowMs = now.getTime();
     const todayUSET = getUSEasternDateString(now);
-    const tomorrowUSET = getUSEasternDateString(new Date(nowMs + 24 * 60 * 60 * 1000));
-    const dayAfterUSET = getUSEasternDateString(new Date(nowMs + 2 * 24 * 60 * 60 * 1000));
+    const tomorrowUSET = getUSEasternDateString(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+    const dayAfterTomorrowUSET = getUSEasternDateString(new Date(now.getTime() + 48 * 60 * 60 * 1000));
     
     const prunedGames = games.filter((g) => {
-      if (!g?.commenceTime) {
-        console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: no commenceTime`);
-        return true; // Keep if no commence time (be conservative)
+      const startMs = g?.commenceTime ? new Date(g.commenceTime).getTime() : Number.NaN;
+      // Keep if start time invalid (be conservative)
+      if (!Number.isFinite(startMs)) {
+        console.log(`⚠️ Game ${g.gameId} (${g.awayTeam} @ ${g.homeTeam}): Invalid commenceTime "${g.commenceTime}" - keeping it (conservative)`);
+        return true;
       }
       
-      // If commenceTime is a date-only string (YYYY-MM-DD), parse it carefully
-      const commenceStr = String(g.commenceTime).trim();
-      let startMs: number;
-      let gameDateUSET: string | null = null;
-      
-      if (/^\d{4}-\d{2}-\d{2}$/.test(commenceStr)) {
-        // Date-only string: parse as UTC noon to avoid timezone issues
-        const [year, month, day] = commenceStr.split('-').map(Number);
-        const dateInUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-        startMs = dateInUTC.getTime();
-        
-        // Get the date string in US ET for this commenceTime
-        gameDateUSET = getUSEasternDateString(dateInUTC);
-        
-        // Keep if game is today, tomorrow, or day after tomorrow in US ET
-        if (gameDateUSET === todayUSET || gameDateUSET === tomorrowUSET || gameDateUSET === dayAfterUSET) {
-          console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: date ${gameDateUSET} is in range (${todayUSET}, ${tomorrowUSET}, ${dayAfterUSET})`);
-          return true;
-        } else {
-          console.log(`🧹 Pruning game ${g.homeTeam} vs ${g.awayTeam}: date ${gameDateUSET} is NOT in range (${todayUSET}, ${tomorrowUSET}, ${dayAfterUSET})`);
-          return false;
-        }
+      // Check if game is scheduled for today, tomorrow, or day after tomorrow (in US ET)
+      // Handle date string parsing: if commenceTime is just a date (YYYY-MM-DD), use it directly
+      // Otherwise, convert the full ISO string to US ET date
+      let gameDateUSET: string;
+      const isDateOnly = g.commenceTime && /^\d{4}-\d{2}-\d{2}$/.test(g.commenceTime);
+      if (isDateOnly) {
+        // Date-only string - use it directly (BDL returns dates in YYYY-MM-DD format)
+        // This avoids timezone conversion issues where "2025-12-11" parsed as UTC becomes Dec 10 in US ET
+        gameDateUSET = g.commenceTime;
       } else {
-        // Has time component, parse normally
-        startMs = new Date(commenceStr).getTime();
+        // Full ISO string with time - convert to US ET date
         gameDateUSET = getUSEasternDateString(new Date(startMs));
       }
       
-      // Keep if start time invalid (be conservative), or starts in future, or started within past hour
-      if (!Number.isFinite(startMs)) {
-        console.log(`🧹 Keeping game ${g.homeTeam} vs ${g.awayTeam}: invalid start time`);
+      const hoursUntil = (startMs - nowMs) / (1000 * 60 * 60);
+      
+      const isTodayOrTomorrowOrDayAfter = gameDateUSET === todayUSET || gameDateUSET === tomorrowUSET || gameDateUSET === dayAfterTomorrowUSET;
+      
+      // Always keep games scheduled for today, tomorrow, or day after tomorrow, even if they've started
+      // This ensures users in all timezones can see games happening "today" in their local time
+      // (e.g., games at 12pm Sydney time on Dec 12 are Dec 11 in US ET, so we keep Dec 11 games)
+      if (isTodayOrTomorrowOrDayAfter) {
+        console.log(`✅ Keeping game ${g.gameId} (${g.awayTeam} @ ${g.homeTeam}): Scheduled for ${gameDateUSET} (today/tomorrow/day-after in US ET), ${hoursUntil >= 0 ? 'starts in' : 'started'} ${Math.abs(hoursUntil).toFixed(2)} hours (commenceTime: ${g.commenceTime})`);
         return true;
       }
-      const keep = startMs >= (nowMs - ONE_HOUR_MS);
-      if (!keep) {
-        console.log(`🧹 Pruning game ${g.homeTeam} vs ${g.awayTeam}: started >1h ago (${gameDateUSET}, startMs: ${startMs}, nowMs: ${nowMs}, diff: ${nowMs - startMs}ms)`);
+      
+      // For games not today/tomorrow/day-after, only keep if they start in the future or started within past hour
+      const shouldKeep = startMs >= (nowMs - ONE_HOUR_MS);
+      if (!shouldKeep) {
+        console.log(`🧹 Pruning game ${g.gameId} (${g.awayTeam} @ ${g.homeTeam}): Started ${hoursUntil.toFixed(2)} hours ago, scheduled for ${gameDateUSET} (not today/tomorrow/day-after) (commenceTime: ${g.commenceTime})`);
+      } else {
+        console.log(`✅ Keeping game ${g.gameId} (${g.awayTeam} @ ${g.homeTeam}): ${hoursUntil >= 0 ? 'starts in' : 'started'} ${Math.abs(hoursUntil).toFixed(2)} hours, scheduled for ${gameDateUSET} (commenceTime: ${g.commenceTime})`);
       }
-      return keep;
+      return shouldKeep;
     });
 
     if (prunedGames.length !== games.length) {
       console.log(`🧹 Pruned ${games.length - prunedGames.length} games that started >1h ago. Keeping ${prunedGames.length}.`);
-      console.log(`🧹 US ET dates: today=${todayUSET}, tomorrow=${tomorrowUSET}, dayAfter=${dayAfterUSET}`);
-      console.log(`🧹 Kept games:`, prunedGames.map(g => `${g.homeTeam} vs ${g.awayTeam} (${g.commenceTime})`).join(', '));
-      const pruned = games.filter(g => !prunedGames.includes(g));
-      console.log(`🧹 Pruned games:`, pruned.map(g => `${g.homeTeam} vs ${g.awayTeam} (${g.commenceTime})`).join(', '));
+    } else {
+      console.log(`✅ All ${games.length} games passed pruning (all within 1 hour of start or future games)`);
     }
 
-    // Always overwrite cache - no preservation logic
+    // Get previous cache to compare (before we potentially overwrite it)
+    const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
+    
+    // If the new payload is empty, keep the previous cache (avoid zeroing)
     if (games.length === 0) {
-      console.warn('[Odds Cache] ⚠️ Refresh returned 0 games. Will overwrite cache with empty data.');
+      console.warn('[Odds Cache] ⚠️ Refresh returned 0 games. Keeping previous cache.');
+      if (previous) {
+        return {
+          success: true,
+          gamesCount: previous.games.length,
+          lastUpdated: previous.lastUpdated,
+          nextUpdate: previous.nextUpdate,
+          note: 'served previous cache because refresh returned 0 games'
+        };
+      }
+      // If no previous cache, fall through and set empty (rare)
     }
     
-    if (prunedGames.length === 0) {
-      console.warn('[Odds Cache] ⚠️ Pruning removed all games. Will overwrite cache with empty data.');
+    // If pruning removed all games, preserve previous cache to avoid blanking the UI
+    if (prunedGames.length === 0 && previous && previous.games.length > 0) {
+      console.warn('[Odds Cache] ⚠️ Pruning removed all games but previous cache has data. Preserving previous cache.');
+      return {
+        success: true,
+        gamesCount: previous.games.length,
+        lastUpdated: previous.lastUpdated,
+        nextUpdate: previous.nextUpdate,
+        note: 'preserved previous cache because pruning removed all games'
+      };
+    }
+    
+    // If new cache has significantly fewer games than previous, preserve previous (avoid clearing during refresh)
+    // Only do this if previous cache is recent (< 2 hours old) to avoid keeping stale data
+    // This prevents background refreshes from clearing the cache during page loads
+    if (previous && previous.games.length > 0 && prunedGames.length > 0) {
+      const previousAge = previous.lastUpdated ? (now.getTime() - new Date(previous.lastUpdated).getTime()) / 60000 : Infinity;
+      const isPreviousRecent = previousAge < 120; // Less than 2 hours old
+      
+      // If previous has games and new has way fewer (less than 50% of previous), preserve previous
+      // This prevents the "flash and disappear" issue where background refresh clears cache during page load
+      if (isPreviousRecent && prunedGames.length < (previous.games.length * 0.5)) {
+        console.warn(`[Odds Cache] ⚠️ New cache has ${prunedGames.length} games vs previous ${previous.games.length}. Preserving previous cache to avoid clearing during refresh.`);
+        return {
+          success: true,
+          gamesCount: previous.games.length,
+          lastUpdated: previous.lastUpdated,
+          nextUpdate: previous.nextUpdate,
+          note: 'preserved previous cache because new cache has significantly fewer games'
+        };
+      }
     }
 
     const newCache: OddsCache = {
@@ -1069,31 +1094,17 @@ export async function refreshOddsData(
       nextUpdate: nextUpdate.toISOString(),
     };
 
-    // STAGING APPROACH: Build new cache in staging key first, then swap atomically
-    // This ensures users always see the old cache until the new one is fully ready
-    const STAGING_CACHE_KEY = 'all_nba_odds_v2_bdl_staging';
-    
-    // Step 1: Write new cache to staging key (old cache still available at main key)
-    console.log(`[Odds Cache] 📦 Writing new cache to staging key: ${STAGING_CACHE_KEY}`);
-    cache.set(STAGING_CACHE_KEY, newCache, ttlMinutes);
-    await setNBACache(STAGING_CACHE_KEY, 'odds', newCache, ttlMinutes);
-    console.log(`[Odds Cache] ✅ Staging cache ready (${games.length} games)`);
-    
-    // Step 2: Atomically swap staging to main (users now see new cache)
-    // This is an atomic operation - old cache is replaced only when new one is complete
-    console.log(`[Odds Cache] 🔄 Swapping staging cache to main key: ${ODDS_CACHE_KEY}`);
+    // Cache the data in both in-memory and Supabase (persistent, shared across instances)
+    // In-memory cache is fast and always succeeds
     cache.set(ODDS_CACHE_KEY, newCache, ttlMinutes);
-    await setNBACache(ODDS_CACHE_KEY, 'odds', newCache, ttlMinutes);
-    console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${games.length} games) - swap complete`);
     
-    // Step 3: Clean up staging key (optional, but keeps cache clean)
-    try {
-      cache.delete(STAGING_CACHE_KEY);
-      // Note: We don't delete from Supabase staging key - it can serve as backup
-      // and will expire naturally based on TTL
-    } catch (e) {
-      // Ignore cleanup errors
-    }
+    // Supabase cache write - make it non-blocking to avoid timeouts
+    // If it fails, in-memory cache will still work for this instance
+    setNBACache(ODDS_CACHE_KEY, 'odds', newCache, ttlMinutes).then(() => {
+      console.log(`[Odds Cache] 💾 Cached BDL odds to Supabase (${prunedGames.length} games)`);
+    }).catch(err => {
+      console.warn(`[Odds Cache] ⚠️ Failed to cache to Supabase (in-memory cache still available):`, err.message);
+    });
     
     // Trigger background player props update (non-blocking)
     // This ensures player props cache updates automatically when odds change
@@ -1142,82 +1153,6 @@ export async function refreshOddsData(
 
     const elapsed = Date.now() - startTime;
     console.log(`✅ BDL odds refresh complete in ${elapsed}ms - ${games.length} games cached`);
-
-    // Update player props with new odds (non-blocking, in background)
-    // This updates lines/odds while preserving calculated stats (last5, last10, h2h, seasonAvg, streak)
-    // In Vercel, we need to use the actual request URL or environment variable
-    let baseUrl = 'http://localhost:3000';
-    
-    // Priority order: production URL env var > production domain check > VERCEL_URL > request URL > NEXT_PUBLIC_BASE_URL
-    if (process.env.PROD_URL) {
-      baseUrl = process.env.PROD_URL;
-    } else if (process.env.NODE_ENV === 'production' && process.env.VERCEL) {
-      // In production on Vercel, use the production domain instead of preview URL
-      // Check if VERCEL_URL is a preview deployment (contains project name) or production
-      const vercelUrl = process.env.VERCEL_URL || '';
-      const isPreviewDeployment = vercelUrl.includes('-') && vercelUrl.includes('.vercel.app');
-      
-      if (isPreviewDeployment) {
-        // Use production domain if available, otherwise skip (preview deployments can't call themselves)
-        if (process.env.NEXT_PUBLIC_BASE_URL) {
-          baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-        } else {
-          // Skip update in preview deployments - they can't authenticate to themselves
-          console.log('[Odds Refresh] ⏭️ Skipping player props update in preview deployment (use production domain)');
-          return {
-            success: true,
-            gamesCount: games.length,
-            lastUpdated: newCache.lastUpdated,
-            nextUpdate: newCache.nextUpdate,
-            apiCalls: oddsRows.length + playerProps.length,
-            elapsed: `${elapsed}ms`
-          };
-        }
-      } else {
-        // Production deployment - use VERCEL_URL
-        baseUrl = `https://${vercelUrl}`;
-      }
-    } else if (process.env.VERCEL_URL && process.env.NODE_ENV !== 'production') {
-      // Development/preview - use VERCEL_URL
-      baseUrl = `https://${process.env.VERCEL_URL}`;
-    } else if (options.request) {
-      // Try to get URL from request if available
-      try {
-        const url = new URL(options.request.url || '');
-        baseUrl = `${url.protocol}//${url.host}`;
-      } catch (e) {
-        // Ignore
-      }
-    } else if (process.env.NEXT_PUBLIC_BASE_URL) {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    }
-    
-    const updateUrl = `${baseUrl}/api/nba/player-props/update-odds`;
-    console.log(`[Odds Refresh] 🔄 Triggering background player props update: ${updateUrl} (baseUrl: ${baseUrl}, source: ${options.source})`);
-    
-    // Trigger update in background (non-blocking)
-    fetch(updateUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(30000) // 30 second timeout
-    }).then(async (response) => {
-      if (response.ok) {
-        const result = await response.json();
-        console.log(`[Odds Refresh] ✅ Player props updated: ${result.updated}/${result.total} props (${result.notFound || 0} not found)`);
-      } else {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        console.warn(`[Odds Refresh] ⚠️ Failed to update player props: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-    }).catch((err) => {
-      if (err.name === 'AbortError') {
-        console.warn(`[Odds Refresh] ⚠️ Player props update timed out after 30s`);
-      } else {
-        console.warn(`[Odds Refresh] ⚠️ Error updating player props:`, err.message || err);
-      }
-    });
 
     return {
       success: true,
@@ -1438,9 +1373,6 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
             'player_points': 'PTS',
             'player_rebounds': 'REB',
             'player_assists': 'AST',
-            'player_points_1q': 'PTS_1Q',
-            'player_rebounds_1q': 'REB_1Q',
-            'player_assists_1q': 'AST_1Q',
             'player_threes': 'THREES',
             'player_blocks': 'BLK',
             'player_steals': 'STL',
@@ -1475,7 +1407,7 @@ function transformOddsData(gamesData: any[], playerPropsData: any[]): GameOdds[]
           const isPickemBook = isPickemBookmaker(baseBookmakerName);
 
           // Handle over/under markets (most props)
-          if (['PTS', 'REB', 'AST', 'PTS_1Q', 'REB_1Q', 'AST_1Q', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
+          if (['PTS', 'REB', 'AST', 'THREES', 'BLK', 'STL', 'TO', 'PRA', 'PR', 'PA', 'RA'].includes(statKey)) {
             // Skip straight entries for pick'em-only books
             if (isPickemBook && !isAlternateMarket) continue;
 

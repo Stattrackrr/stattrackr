@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: [],
-          message: 'No game found for team'
+          message: 'No game found for team after refresh'
         });
       }
       
@@ -183,9 +183,22 @@ export async function GET(request: NextRequest) {
     
     // If player is provided, find their props across all games
     if (player) {
+      console.log(`[Odds API] 🔍 Searching for player "${player}" across ${oddsCache.games.length} games`);
+      
       // Search all games for this player's props
       for (const game of oddsCache.games) {
         const playerPropsByBookmaker = game.playerPropsByBookmaker || {};
+        
+        // Debug: Log available players for first game to help debug
+        if (oddsCache.games.indexOf(game) === 0) {
+          const samplePlayers = new Set<string>();
+          Object.keys(playerPropsByBookmaker).forEach(bookName => {
+            Object.keys(playerPropsByBookmaker[bookName] || {}).forEach(playerName => {
+              samplePlayers.add(playerName);
+            });
+          });
+          console.log(`[Odds API] 📋 Sample players in first game (${game.homeTeam} @ ${game.awayTeam}):`, Array.from(samplePlayers).slice(0, 10).join(', '));
+        }
         
         // Check if this player has props in any bookmaker
         // Use case-insensitive matching since player names might be stored differently
