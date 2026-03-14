@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import NBADashboard from '../page';
+import { NBADashboardContent } from '../page';
 
 // Wrapper component to ensure theme context is available
 // This ensures the component only renders client-side after ThemeProvider is mounted
@@ -19,7 +19,7 @@ export default function NBADashboardWrapper() {
 
   return (
     <Suspense fallback={null}>
-      <NBADashboard />
+      <NBADashboardContent />
     </Suspense>
   );
 }
