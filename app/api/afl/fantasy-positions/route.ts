@@ -39,9 +39,14 @@ function normalizePosition(pos: string): string {
     .replace(/[^A-Z/]/g, '');
 }
 
+const POSITION_ALIASES: Record<string, string> = { DEF: 'DEF', MID: 'MID', FWD: 'FWD', RUC: 'RUC', RUCK: 'RUC' };
+
 function splitPositions(pos: string): string[] {
   const clean = normalizePosition(pos);
-  return clean.split('/').map((p) => p.trim()).filter((p) => p === 'DEF' || p === 'MID' || p === 'FWD' || p === 'RUC');
+  return clean
+    .split('/')
+    .map((p) => (POSITION_ALIASES[p.trim()] ?? p.trim()))
+    .filter((p) => p === 'DEF' || p === 'MID' || p === 'FWD' || p === 'RUC');
 }
 
 function parseFantasyTables(html: string): FantasyPositionRow[] {

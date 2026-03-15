@@ -20,6 +20,7 @@ type DvpRow = {
   perPlayerGame: Record<string, number>;
   perTeamGame?: Record<string, number | null>;
   teamGames?: number;
+  totals?: Record<string, number>;
 };
 
 type DvpFileShape = {
@@ -96,21 +97,24 @@ export async function GET(req: NextRequest) {
   }
 
   const statsKey = (statsParam || '').trim() || 'all';
+  const skipCache = searchParams.get('bust') === '1' || searchParams.get('nocache') === '1';
   const cacheKey = `${DVP_BATCH_CACHE_PREFIX}:${season}:${position}:${statsKey}`;
 
   try {
-    const cached = await sharedCache.getJSON<{
-      success: true;
-      source: string;
-      season: number;
-      position: string;
-      generatedAt: string;
-      opponents: string[];
-      metrics: Record<string, unknown>;
-      metricCount: number;
-    }>(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
+    if (!skipCache) {
+      const cached = await sharedCache.getJSON<{
+        success: true;
+        source: string;
+        season: number;
+        position: string;
+        generatedAt: string;
+        opponents: string[];
+        metrics: Record<string, unknown>;
+        metricCount: number;
+      }>(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
     }
 
     const data = await readDvpFile(season);
@@ -159,13 +163,25 @@ export async function GET(req: NextRequest) {
       const teamTotalValues: Record<string, number> = {};
       const samples: Record<string, number> = {};
       const teamGames: Record<string, number> = {};
+      const MIN_DISPOSALS_TEAM = 60;
       for (const r of rows) {
         const v = Number(r.perPlayerGame?.[stat] ?? NaN);
         if (Number.isFinite(v)) {
           values[r.opponent] = v;
           samples[r.opponent] = Number(r.sampleSize || 0);
         }
-        const tv = Number(r.perTeamGame?.[stat] ?? NaN);
+        let tv = Number(r.perTeamGame?.[stat] ?? NaN);
+        const disp = Number(r.perTeamGame?.disposals ?? NaN);
+        const tg = Number(r.teamGames ?? 0);
+        const ss = Number(r.sampleSize ?? 0);
+        const pv = Number(r.perPlayerGame?.[stat] ?? NaN);
+        if (Number.isFinite(disp) && disp < MIN_DISPOSALS_TEAM && tg > 0) {
+          if (r.totals && typeof r.totals[stat] === 'number') {
+            tv = Math.round((r.totals[stat] / tg) * 100) / 100;
+          } else if (Number.isFinite(pv) && ss > 0) {
+            tv = Math.round((pv * (ss / tg)) * 100) / 100;
+          }
+        }
         if (Number.isFinite(tv)) {
           teamTotalValues[r.opponent] = tv;
         }
@@ -235,7 +251,9 @@ export async function GET(req: NextRequest) {
       metrics,
       metricCount: stats.length,
     };
-    await sharedCache.setJSON(cacheKey, payload, DVP_BATCH_CACHE_TTL_SECONDS);
+    if (!skipCache) {
+      await sharedCache.setJSON(cacheKey, payload, DVP_BATCH_CACHE_TTL_SECONDS);
+    }
 
     return NextResponse.json(payload);
   } catch (err) {

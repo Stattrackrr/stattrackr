@@ -7,6 +7,9 @@
  *   node scripts/build-afl-dvp.js
  *   node scripts/build-afl-dvp.js --season=2025 --concurrency=6 --base-url=http://localhost:3000
  *
+ * Local testing (no push needed): 1) npm run dev (in one terminal), 2) npm run build:afl:dvp:local (in another).
+ *   Writes data/afl-dvp-2026.json; app reads it when cache is empty. Then check DvP tab in the app.
+ *
  * When run from Vercel cron, set VERCEL_AUTOMATION_BYPASS_SECRET (or CRON_SECRET) so requests
  * to fantasy-positions and player-game-logs include x-vercel-protection-bypass and avoid 401.
  */
@@ -493,6 +496,7 @@ async function main() {
 
   const rows = [];
   const MAX_SANE_TEAM_GAMES = 30;
+  const MIN_DISPOSALS_TEAM_TOTAL = 60;
   for (const [, acc] of byOpponentPosition.entries()) {
     const baseline = leagueBaseline[acc.position];
     const perPlayerGame = toAverages(acc);
@@ -500,11 +504,22 @@ async function main() {
     const inferredGames = opponentGameKeys.has(acc.opponent) ? opponentGameKeys.get(acc.opponent).size : 0;
     let teamGames = seasonTeamGameCounts.get(acc.opponent) || inferredGames;
     if (teamGames <= 0 || teamGames > MAX_SANE_TEAM_GAMES) teamGames = inferredGames;
-    const perTeamGame = {};
+    let perTeamGame = {};
     for (const stat of statList()) {
       perTeamGame[stat] = teamGames > 0
         ? Math.round((safeNumber(totals[stat]) / teamGames) * 100) / 100
         : null;
+    }
+    if (inferredGames > 0 && (teamGames !== inferredGames || (perTeamGame.disposals != null && perTeamGame.disposals < MIN_DISPOSALS_TEAM_TOTAL))) {
+      const useGames = inferredGames;
+      const disp = perTeamGame.disposals;
+      if (disp != null && disp < MIN_DISPOSALS_TEAM_TOTAL && useGames > 0) {
+        perTeamGame = {};
+        for (const stat of statList()) {
+          perTeamGame[stat] = Math.round((safeNumber(totals[stat]) / useGames) * 100) / 100;
+        }
+        teamGames = useGames;
+      }
     }
     const indexVsLeague = {};
     const basePer = baseline?.perPlayerGame || {};

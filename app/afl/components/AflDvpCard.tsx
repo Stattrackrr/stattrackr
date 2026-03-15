@@ -205,7 +205,8 @@ export default function AflDvpCard({
       const cacheKey = `${selectedSeason}:${targetPos}`;
       const cached = dvpBatchCache.get(cacheKey);
       const now = Date.now();
-      const isFresh = cached && (now - cached.timestamp) < DVP_CACHE_TTL;
+      const skipClientCache = process.env.NODE_ENV === 'development';
+      const isFresh = !skipClientCache && cached && (now - cached.timestamp) < DVP_CACHE_TTL;
 
       if (isFresh && cached) {
         const opponents = cached.data.opponents || [];
@@ -238,8 +239,9 @@ export default function AflDvpCard({
       setLoading(true);
       try {
         const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
+        const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
         const res = await fetch(
-          `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}`
+          `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}${bust}`
         );
         const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
         if (abort) return;
