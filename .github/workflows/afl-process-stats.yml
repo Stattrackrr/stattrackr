@@ -1,0 +1,122 @@
+# Single AFL stats workflow: Compare tab (league stats), Opponent Breakdown (team rankings),
+# player logs cache warm, odds/props refresh, DvP build, and props-stats warm.
+# Replaces: warm-afl-player-logs, warm-afl-props-stats, fetch-afl-league-player-stats, process-afl-player-props.
+name: AFL Process Stats
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Every 2 hours
+  workflow_dispatch:
+    inputs:
+      warm_limit:
+        description: 'Optional player limit for logs warm (0 = all)'
+        required: false
+        default: '0'
+      seasons:
+        description: 'Seasons to warm for player logs (default 2026)'
+        required: false
+        default: '2026'
+
+concurrency:
+  group: afl-process-stats
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Melbourne
+
+jobs:
+  process_stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Compare tab: league player stats
+      - name: Fetch league player stats (Compare tab)
+        run: |
+          npm run fetch:footywire-league-player-stats -- --season=2026 &
+          npm run fetch:footywire-league-player-stats -- --season=2025 &
+          wait
+        env:
+          NODE_OPTIONS: '--max-old-space-size=512'
+
+      # Opponent Breakdown: team rankings (OA/TA)
+      - name: Fetch team rankings (Opponent Breakdown)
+        run: npm run fetch:footywire-team-rankings -- --season=2026
+
+      # Commit and push data files so app has latest league stats + team rankings
+      - name: Commit and push data files if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          if git diff --staged --quiet; then
+            echo "No changes to AFL data files"
+          else
+            git commit -m "chore(data): update AFL league stats and team rankings [skip ci]"
+            git push
+          fi
+
+      - name: Check PROD_URL and CRON_SECRET
+        id: check
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PROD_URL or CRON_SECRET not set; skipping warm and odds/refresh"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      # Player logs cache warm (Redis)
+      - name: Warm AFL player logs cache
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "🔄 Warming AFL player logs cache..."
+          npm run warm:afl:player-logs
+        env:
+          AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
+          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026' }}
+          AFL_WARM_CONCURRENCY: '24'
+          AFL_WARM_MAX_FAILURES: '100'
+
+      # Odds, props, DvP build, props-stats warm
+      - name: Refresh AFL odds and run DvP + props-stats warm
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "🔄 Refreshing AFL odds, props, DvP build, and props-stats warm..."
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -L --max-time 300 \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Response ($HTTP_STATUS): $BODY"
+          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
+            echo "❌ AFL odds/refresh failed with HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          if [ -n "$EXIT_CODE" ]; then
+            echo "❌ AFL odds/refresh failed (exit $EXIT_CODE)"
+            exit 1
+          fi
+          echo "✅ AFL process stats completed (odds, props, DvP, props-stats warm)"
