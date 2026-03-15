@@ -1,13 +1,13 @@
 {
   "season": 2025,
-  "generatedAt": "2026-03-02T07:32:37.650Z",
+  "generatedAt": "2026-03-15T14:08:21.296Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 667,
   "players": [
     {
       "name": "Bailey Smith",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 23,
       "number": 1,
       "disposals": 31.3,
@@ -22,7 +22,7 @@
     },
     {
       "name": "Noah Anderson",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 2,
       "disposals": 30.08,
@@ -37,7 +37,7 @@
     },
     {
       "name": "Nick Daicos",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 3,
       "disposals": 30,
@@ -52,7 +52,7 @@
     },
     {
       "name": "Nasiah Wanganeen-Milera",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 4,
       "disposals": 29.91,
@@ -67,7 +67,7 @@
     },
     {
       "name": "Tom Green",
-      "team": "Giants",
+      "team": "GWS",
       "games": 23,
       "number": 5,
       "disposals": 29.74,
@@ -82,7 +82,7 @@
     },
     {
       "name": "Darcy Parish",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 3,
       "number": 6,
       "disposals": 29.33,
@@ -97,7 +97,7 @@
     },
     {
       "name": "Harry Sheezel",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 23,
       "number": 7,
       "disposals": 29.3,
@@ -112,7 +112,7 @@
     },
     {
       "name": "Lachie Whitfield",
-      "team": "Giants",
+      "team": "GWS",
       "games": 23,
       "number": 8,
       "disposals": 28.65,
@@ -127,7 +127,7 @@
     },
     {
       "name": "Finn Callaghan",
-      "team": "Giants",
+      "team": "GWS",
       "games": 21,
       "number": 9,
       "disposals": 28.38,
@@ -142,7 +142,7 @@
     },
     {
       "name": "George Hewett",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 10,
       "disposals": 28.13,
@@ -157,7 +157,7 @@
     },
     {
       "name": "Zak Butters",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 20,
       "number": 11,
       "disposals": 27.95,
@@ -172,7 +172,7 @@
     },
     {
       "name": "Lachlan Ash",
-      "team": "Giants",
+      "team": "GWS",
       "games": 24,
       "number": 12,
       "disposals": 27.88,
@@ -187,7 +187,7 @@
     },
     {
       "name": "Zachary Merrett",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 22,
       "number": 13,
       "disposals": 27.77,
@@ -202,7 +202,7 @@
     },
     {
       "name": "Connor Rozee",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 21,
       "number": 14,
       "disposals": 27.48,
@@ -217,7 +217,7 @@
     },
     {
       "name": "Caleb Serong",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 15,
       "disposals": 27.38,
@@ -232,7 +232,7 @@
     },
     {
       "name": "Will Ashcroft",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 16,
       "disposals": 27.15,
@@ -247,7 +247,7 @@
     },
     {
       "name": "Hugh McCluggage",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 17,
       "disposals": 27.11,
@@ -262,7 +262,7 @@
     },
     {
       "name": "Marcus Bontempelli",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 18,
       "number": 18,
       "disposals": 27.06,
@@ -277,7 +277,7 @@
     },
     {
       "name": "Bailey Dale",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 19,
       "disposals": 27.04,
@@ -292,7 +292,7 @@
     },
     {
       "name": "Jack Sinclair",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 20,
       "disposals": 27,
@@ -307,7 +307,7 @@
     },
     {
       "name": "Andrew Brayshaw",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 21,
       "disposals": 26.96,
@@ -322,7 +322,7 @@
     },
     {
       "name": "Max Holmes",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": 22,
       "disposals": 26.88,
@@ -337,7 +337,7 @@
     },
     {
       "name": "Josh Daicos",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 23,
       "disposals": 26.84,
@@ -352,7 +352,7 @@
     },
     {
       "name": "Lachie Neale",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 22,
       "number": 24,
       "disposals": 26.82,
@@ -367,7 +367,7 @@
     },
     {
       "name": "Errol Gulden",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 10,
       "number": 25,
       "disposals": 26.6,
@@ -382,7 +382,7 @@
     },
     {
       "name": "Thomas Liberatore",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 26,
       "disposals": 26.43,
@@ -397,7 +397,7 @@
     },
     {
       "name": "Jacob Hopper",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 23,
       "number": 27,
       "disposals": 26.39,
@@ -412,7 +412,7 @@
     },
     {
       "name": "Dayne Zorko",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 28,
       "disposals": 26.33,
@@ -427,7 +427,7 @@
     },
     {
       "name": "Sam Walsh",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 14,
       "number": 29,
       "disposals": 26.29,
@@ -442,7 +442,7 @@
     },
     {
       "name": "Matt Rowell",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 30,
       "disposals": 26.28,
@@ -457,7 +457,7 @@
     },
     {
       "name": "Jye Caldwell",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 11,
       "number": 31,
       "disposals": 25.91,
@@ -472,7 +472,7 @@
     },
     {
       "name": "Ed Richards",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 32,
       "disposals": 25.78,
@@ -487,7 +487,7 @@
     },
     {
       "name": "Matt Crouch",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 6,
       "number": 33,
       "disposals": 25.67,
@@ -502,7 +502,7 @@
     },
     {
       "name": "Tim Taranto",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 21,
       "number": 34,
       "disposals": 25.62,
@@ -517,7 +517,7 @@
     },
     {
       "name": "Caleb Daniel",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 23,
       "number": 35,
       "disposals": 25.61,
@@ -532,7 +532,7 @@
     },
     {
       "name": "Clayton Oliver",
-      "team": "Demons",
+      "team": "GWS",
       "games": 22,
       "number": 36,
       "disposals": 25.55,
@@ -547,7 +547,7 @@
     },
     {
       "name": "Christian Petracca",
-      "team": "Demons",
+      "team": "Gold Coast",
       "games": 23,
       "number": 37,
       "disposals": 25.43,
@@ -562,7 +562,7 @@
     },
     {
       "name": "Oliver Wines",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 20,
       "number": 38,
       "disposals": 25.4,
@@ -577,7 +577,7 @@
     },
     {
       "name": "John Noble",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 39,
       "disposals": 25.28,
@@ -592,7 +592,7 @@
     },
     {
       "name": "Touk Miller",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 23,
       "number": 40,
       "disposals": 24.74,
@@ -607,7 +607,7 @@
     },
     {
       "name": "Luke Davies-Uniacke",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": 41,
       "disposals": 24.73,
@@ -622,7 +622,7 @@
     },
     {
       "name": "Adam Cerra",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 19,
       "number": 42,
       "disposals": 24.63,
@@ -637,7 +637,7 @@
     },
     {
       "name": "Jackson Macrae",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 21,
       "number": 43,
       "disposals": 24.57,
@@ -652,7 +652,7 @@
     },
     {
       "name": "Josh Dunkley",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 44,
       "disposals": 24.56,
@@ -667,7 +667,7 @@
     },
     {
       "name": "Archie Roberts",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 23,
       "number": 45,
       "disposals": 24.48,
@@ -682,7 +682,7 @@
     },
     {
       "name": "Nicholas Martin",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 16,
       "number": 46,
       "disposals": 24.31,
@@ -697,7 +697,7 @@
     },
     {
       "name": "Patrick Cripps",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 47,
       "disposals": 24.17,
@@ -712,7 +712,7 @@
     },
     {
       "name": "Rory Laird",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 22,
       "number": 48,
       "disposals": 24.14,
@@ -727,7 +727,7 @@
     },
     {
       "name": "Jordan Clark",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 49,
       "disposals": 24.12,
@@ -742,7 +742,7 @@
     },
     {
       "name": "Karl Amon",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": 50,
       "disposals": 24,
@@ -757,7 +757,7 @@
     },
     {
       "name": "Callum Mills",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 12,
       "number": 51,
       "disposals": 23.75,
@@ -772,7 +772,7 @@
     },
     {
       "name": "Tom McCarthy",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 10,
       "number": 52,
       "disposals": 23.6,
@@ -787,7 +787,7 @@
     },
     {
       "name": "Isaac Heeney",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": 53,
       "disposals": 23.57,
@@ -802,7 +802,7 @@
     },
     {
       "name": "Jordan Dawson",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 54,
       "disposals": 23.36,
@@ -817,7 +817,7 @@
     },
     {
       "name": "Luke Parker",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": 55,
       "disposals": 23.32,
@@ -832,7 +832,7 @@
     },
     {
       "name": "Tom Mitchell",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 4,
       "number": 56,
       "disposals": 23.25,
@@ -847,7 +847,7 @@
     },
     {
       "name": "Matthew Kennedy",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 57,
       "disposals": 23.17,
@@ -862,7 +862,7 @@
     },
     {
       "name": "Colby McKercher",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 23,
       "number": 58,
       "disposals": 23.13,
@@ -877,7 +877,7 @@
     },
     {
       "name": "Tom Powell",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 23,
       "number": 59,
       "disposals": 23,
@@ -892,7 +892,7 @@
     },
     {
       "name": "Dion Prestia",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 12,
       "number": 59,
       "disposals": 23,
@@ -907,7 +907,7 @@
     },
     {
       "name": "Jai Newcombe",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 26,
       "number": 61,
       "disposals": 22.92,
@@ -922,7 +922,7 @@
     },
     {
       "name": "Christian Salem",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 62,
       "disposals": 22.91,
@@ -937,7 +937,7 @@
     },
     {
       "name": "Mason Redman",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 19,
       "number": 63,
       "disposals": 22.89,
@@ -952,7 +952,7 @@
     },
     {
       "name": "Andrew McGrath",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 23,
       "number": 64,
       "disposals": 22.74,
@@ -967,7 +967,7 @@
     },
     {
       "name": "Jake Bowey",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 65,
       "disposals": 22.57,
@@ -982,7 +982,7 @@
     },
     {
       "name": "Gryan Miers",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 24,
       "number": 66,
       "disposals": 22.25,
@@ -997,7 +997,7 @@
     },
     {
       "name": "Chad Warner",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": 67,
       "disposals": 22.17,
@@ -1012,7 +1012,7 @@
     },
     {
       "name": "Jy Simpkin",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 21,
       "number": 68,
       "disposals": 22.14,
@@ -1027,7 +1027,7 @@
     },
     {
       "name": "Liam Baker",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 23,
       "number": 69,
       "disposals": 22.09,
@@ -1042,7 +1042,7 @@
     },
     {
       "name": "Marcus Windhager",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 69,
       "disposals": 22.09,
@@ -1057,7 +1057,7 @@
     },
     {
       "name": "Scott Pendlebury",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 22,
       "number": 69,
       "disposals": 22.09,
@@ -1072,7 +1072,7 @@
     },
     {
       "name": "Jack Viney",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 18,
       "number": 72,
       "disposals": 21.89,
@@ -1087,7 +1087,7 @@
     },
     {
       "name": "Sam Durham",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 20,
       "number": 73,
       "disposals": 21.85,
@@ -1102,7 +1102,7 @@
     },
     {
       "name": "Will Setterfield",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 13,
       "number": 74,
       "disposals": 21.69,
@@ -1117,7 +1117,7 @@
     },
     {
       "name": "Justin McInerney",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 17,
       "number": 75,
       "disposals": 21.47,
@@ -1132,7 +1132,7 @@
     },
     {
       "name": "Joshua Kelly",
-      "team": "Giants",
+      "team": "GWS",
       "games": 15,
       "number": 75,
       "disposals": 21.47,
@@ -1147,7 +1147,7 @@
     },
     {
       "name": "Nick Blakey",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": 77,
       "disposals": 21.39,
@@ -1162,7 +1162,7 @@
     },
     {
       "name": "Jaspa Fletcher",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 78,
       "disposals": 21.3,
@@ -1177,7 +1177,7 @@
     },
     {
       "name": "Trent Rivers",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 78,
       "disposals": 21.3,
@@ -1192,7 +1192,7 @@
     },
     {
       "name": "Adam Treloar",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 4,
       "number": 80,
       "disposals": 21.25,
@@ -1207,7 +1207,7 @@
     },
     {
       "name": "Steele Sidebottom",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 23,
       "number": 81,
       "disposals": 21.22,
@@ -1222,7 +1222,7 @@
     },
     {
       "name": "Matthew Roberts",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 18,
       "number": 81,
       "disposals": 21.22,
@@ -1237,7 +1237,7 @@
     },
     {
       "name": "Jayden Short",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 15,
       "number": 83,
       "disposals": 21.2,
@@ -1252,7 +1252,7 @@
     },
     {
       "name": "Sam Banks",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 22,
       "number": 84,
       "disposals": 21.18,
@@ -1267,7 +1267,7 @@
     },
     {
       "name": "Dylan Shiel",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 14,
       "number": 85,
       "disposals": 21.14,
@@ -1282,7 +1282,7 @@
     },
     {
       "name": "Josh Worrell",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 86,
       "disposals": 21,
@@ -1297,7 +1297,7 @@
     },
     {
       "name": "Will Day",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 6,
       "number": 86,
       "disposals": 21,
@@ -1312,7 +1312,7 @@
     },
     {
       "name": "Brayden Fiorini",
-      "team": "Suns",
+      "team": "Essendon",
       "games": 18,
       "number": 88,
       "disposals": 20.94,
@@ -1327,7 +1327,7 @@
     },
     {
       "name": "Ryan Maric",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 22,
       "number": 89,
       "disposals": 20.91,
@@ -1342,7 +1342,7 @@
     },
     {
       "name": "Jake Soligo",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 90,
       "disposals": 20.88,
@@ -1357,7 +1357,7 @@
     },
     {
       "name": "Jason Horne-Francis",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 15,
       "number": 91,
       "disposals": 20.87,
@@ -1372,7 +1372,7 @@
     },
     {
       "name": "Jack Steele",
-      "team": "Saints",
+      "team": "Melbourne",
       "games": 21,
       "number": 92,
       "disposals": 20.86,
@@ -1387,7 +1387,7 @@
     },
     {
       "name": "Luke Ryan",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 93,
       "disposals": 20.75,
@@ -1402,7 +1402,7 @@
     },
     {
       "name": "Max Gawn",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 94,
       "disposals": 20.74,
@@ -1417,7 +1417,7 @@
     },
     {
       "name": "Josh Ward",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": 95,
       "disposals": 20.56,
@@ -1432,7 +1432,7 @@
     },
     {
       "name": "Izak Rankine",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 22,
       "number": 96,
       "disposals": 20.55,
@@ -1447,7 +1447,7 @@
     },
     {
       "name": "Travis Boak",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 16,
       "number": 97,
       "disposals": 20.5,
@@ -1462,7 +1462,7 @@
     },
     {
       "name": "Darcy Wilmot",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 98,
       "disposals": 20.33,
@@ -1477,7 +1477,7 @@
     },
     {
       "name": "Kane Farrell",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 21,
       "number": 99,
       "disposals": 20.29,
@@ -1492,7 +1492,7 @@
     },
     {
       "name": "Sam Docherty",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 15,
       "number": 60,
       "disposals": 20.27,
@@ -1507,7 +1507,7 @@
     },
     {
       "name": "Liam Duggan",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 21,
       "number": 28,
       "disposals": 20.24,
@@ -1522,7 +1522,7 @@
     },
     {
       "name": "Jake Lloyd",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 22,
       "number": 75,
       "disposals": 20.05,
@@ -1537,7 +1537,7 @@
     },
     {
       "name": "James Worpel",
-      "team": "Hawks",
+      "team": "Geelong",
       "games": 21,
       "number": 74,
       "disposals": 20.05,
@@ -1552,7 +1552,7 @@
     },
     {
       "name": "Jack Crisp",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 27,
       "disposals": 20.04,
@@ -1567,7 +1567,7 @@
     },
     {
       "name": "Zac Bailey",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 26,
       "number": 82,
       "disposals": 20,
@@ -1582,7 +1582,7 @@
     },
     {
       "name": "Jarrod Berry",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 24,
       "number": 90,
       "disposals": 19.88,
@@ -1597,7 +1597,7 @@
     },
     {
       "name": "Bailey Williams",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 87,
       "disposals": 19.7,
@@ -1612,7 +1612,7 @@
     },
     {
       "name": "Tom Atkins",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": 51,
       "disposals": 19.65,
@@ -1627,7 +1627,7 @@
     },
     {
       "name": "Bradley Hill",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 22,
       "number": 73,
       "disposals": 19.59,
@@ -1642,7 +1642,7 @@
     },
     {
       "name": "Kysaiah Pickett",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 20,
       "number": 49,
       "disposals": 19.55,
@@ -1657,7 +1657,7 @@
     },
     {
       "name": "James Sicily",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 23,
       "number": 57,
       "disposals": 19.52,
@@ -1672,7 +1672,7 @@
     },
     {
       "name": "Xavier Duursma",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 22,
       "number": 84,
       "disposals": 19.45,
@@ -1687,7 +1687,7 @@
     },
     {
       "name": "Brodie Grundy",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 22,
       "number": 38,
       "disposals": 19.45,
@@ -1702,7 +1702,7 @@
     },
     {
       "name": "Dylan Moore",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 26,
       "number": 97,
       "disposals": 19.42,
@@ -1717,7 +1717,7 @@
     },
     {
       "name": "Jarman Impey",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 24,
       "number": 72,
       "disposals": 19.29,
@@ -1732,7 +1732,7 @@
     },
     {
       "name": "Ryan Burton",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 8,
       "number": 52,
       "disposals": 19.25,
@@ -1747,7 +1747,7 @@
     },
     {
       "name": "Jack Graham",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 18,
       "number": 90,
       "disposals": 19.22,
@@ -1762,7 +1762,7 @@
     },
     {
       "name": "Levi Ashcroft",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 92,
       "disposals": 19.15,
@@ -1777,7 +1777,7 @@
     },
     {
       "name": "Jase Burgoyne",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 20,
       "number": null,
       "disposals": 19.15,
@@ -1792,7 +1792,7 @@
     },
     {
       "name": "Nick Vlastuin",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 22,
       "number": 42,
       "disposals": 19.14,
@@ -1807,7 +1807,7 @@
     },
     {
       "name": "Oliver Hollands",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 89,
       "disposals": 19.09,
@@ -1822,7 +1822,7 @@
     },
     {
       "name": "Ed Langdon",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 93,
       "disposals": 19.04,
@@ -1837,7 +1837,7 @@
     },
     {
       "name": "Jack Ross",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 23,
       "number": 55,
       "disposals": 19.04,
@@ -1852,7 +1852,7 @@
     },
     {
       "name": "Joel Freijah",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 89,
       "disposals": 19,
@@ -1867,7 +1867,7 @@
     },
     {
       "name": "Keidean Coleman",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 1,
       "number": 63,
       "disposals": 19,
@@ -1882,7 +1882,7 @@
     },
     {
       "name": "Joel Jeffrey",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 67,
       "disposals": 18.84,
@@ -1897,7 +1897,7 @@
     },
     {
       "name": "Harley Reid",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 19,
       "number": 68,
       "disposals": 18.84,
@@ -1912,7 +1912,7 @@
     },
     {
       "name": "Matt Johnson",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 18,
       "number": 79,
       "disposals": 18.78,
@@ -1927,7 +1927,7 @@
     },
     {
       "name": "Sam Flanders",
-      "team": "Suns",
+      "team": "St Kilda",
       "games": 23,
       "number": 64,
       "disposals": 18.7,
@@ -1942,7 +1942,7 @@
     },
     {
       "name": "Blake Acres",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 19,
       "number": null,
       "disposals": 18.68,
@@ -1957,7 +1957,7 @@
     },
     {
       "name": "James Peatling",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 23,
       "number": 70,
       "disposals": 18.65,
@@ -1972,7 +1972,7 @@
     },
     {
       "name": "Callum Wilkie",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 44,
       "disposals": 18.65,
@@ -1987,7 +1987,7 @@
     },
     {
       "name": "Jack Ginnivan",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": 80,
       "disposals": 18.64,
@@ -2002,7 +2002,7 @@
     },
     {
       "name": "Daniel Rioli",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 20,
       "number": 94,
       "disposals": 18.6,
@@ -2017,7 +2017,7 @@
     },
     {
       "name": "Rowan Marshall",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 45,
       "disposals": 18.57,
@@ -2032,7 +2032,7 @@
     },
     {
       "name": "Ryley Sanders",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 21,
       "number": 33,
       "disposals": 18.57,
@@ -2047,7 +2047,7 @@
     },
     {
       "name": "Thomson Dow",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 11,
       "number": 39,
       "disposals": 18.55,
@@ -2062,7 +2062,7 @@
     },
     {
       "name": "Thomas Stewart",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 20,
       "number": 33,
       "disposals": 18.5,
@@ -2077,7 +2077,7 @@
     },
     {
       "name": "Josh Battle",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 26,
       "number": 92,
       "disposals": 18.46,
@@ -2092,7 +2092,7 @@
     },
     {
       "name": "Harrison Himmelberg",
-      "team": "Giants",
+      "team": "GWS",
       "games": 24,
       "number": 98,
       "disposals": 18.46,
@@ -2107,7 +2107,7 @@
     },
     {
       "name": "Kane McAuliffe",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 5,
       "number": 48,
       "disposals": 18.4,
@@ -2122,7 +2122,7 @@
     },
     {
       "name": "Conor Nash",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 22,
       "number": 82,
       "disposals": 18.36,
@@ -2137,7 +2137,7 @@
     },
     {
       "name": "Shaun Mannagh",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 23,
       "number": 57,
       "disposals": 18.3,
@@ -2152,7 +2152,7 @@
     },
     {
       "name": "Connor Idun",
-      "team": "Giants",
+      "team": "GWS",
       "games": 24,
       "number": 16,
       "disposals": 18.21,
@@ -2167,7 +2167,7 @@
     },
     {
       "name": "Willem Drew",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 23,
       "number": 73,
       "disposals": 18.17,
@@ -2182,7 +2182,7 @@
     },
     {
       "name": "Massimo D'Ambrosio",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 26,
       "number": 95,
       "disposals": 18.15,
@@ -2197,7 +2197,7 @@
     },
     {
       "name": "Adam Saad",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 21,
       "number": 76,
       "disposals": 18,
@@ -2212,7 +2212,7 @@
     },
     {
       "name": "Harvey Langford",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 22,
       "number": null,
       "disposals": 17.95,
@@ -2227,7 +2227,7 @@
     },
     {
       "name": "Shai Bolton",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 23,
       "number": 74,
       "disposals": 17.91,
@@ -2242,7 +2242,7 @@
     },
     {
       "name": "Ned Long",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 59,
       "disposals": 17.84,
@@ -2257,7 +2257,7 @@
     },
     {
       "name": "Wayne Milera",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 24,
       "number": 92,
       "disposals": 17.83,
@@ -2272,7 +2272,7 @@
     },
     {
       "name": "Timothy English",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 31,
       "disposals": 17.83,
@@ -2287,7 +2287,7 @@
     },
     {
       "name": "Jeremy McGovern",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 6,
       "number": 87,
       "disposals": 17.83,
@@ -2302,7 +2302,7 @@
     },
     {
       "name": "Luke Jackson",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 21,
       "number": 61,
       "disposals": 17.76,
@@ -2317,7 +2317,7 @@
     },
     {
       "name": "Miles Bergman",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 19,
       "number": 86,
       "disposals": 17.74,
@@ -2332,7 +2332,7 @@
     },
     {
       "name": "Steven May",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 16,
       "number": 39,
       "disposals": 17.69,
@@ -2347,7 +2347,7 @@
     },
     {
       "name": "Darcy Cameron",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 96,
       "disposals": 17.64,
@@ -2362,7 +2362,7 @@
     },
     {
       "name": "Tim Kelly",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 20,
       "number": 99,
       "disposals": 17.6,
@@ -2377,7 +2377,7 @@
     },
     {
       "name": "Dylan Stephens",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": null,
       "disposals": 17.5,
@@ -2392,7 +2392,7 @@
     },
     {
       "name": "Zach Guthrie",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": 78,
       "disposals": 17.46,
@@ -2407,7 +2407,7 @@
     },
     {
       "name": "Harry Morrison",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 20,
       "number": null,
       "disposals": 17.4,
@@ -2422,7 +2422,7 @@
     },
     {
       "name": "James Harmes",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 13,
       "number": 88,
       "disposals": 17.38,
@@ -2437,7 +2437,7 @@
     },
     {
       "name": "Jaeger O'Meara",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 14,
       "number": 81,
       "disposals": 17.36,
@@ -2452,7 +2452,7 @@
     },
     {
       "name": "Tom De Koning",
-      "team": "Blues",
+      "team": "St Kilda",
       "games": 22,
       "number": 51,
       "disposals": 17.32,
@@ -2467,7 +2467,7 @@
     },
     {
       "name": "Lachlan Bramble",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": null,
       "disposals": 17.3,
@@ -2482,7 +2482,7 @@
     },
     {
       "name": "Tristan Xerri",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 20,
       "number": 50,
       "disposals": 17.25,
@@ -2497,7 +2497,7 @@
     },
     {
       "name": "Patrick Lipinski",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 23,
       "number": null,
       "disposals": 17.17,
@@ -2512,7 +2512,7 @@
     },
     {
       "name": "Jason Johannisen",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 16,
       "number": 69,
       "disposals": 17.06,
@@ -2527,7 +2527,7 @@
     },
     {
       "name": "Nick Haynes",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 85,
       "disposals": 17.04,
@@ -2542,7 +2542,7 @@
     },
     {
       "name": "Jordan Ridley",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 10,
       "number": 91,
       "disposals": 17,
@@ -2557,7 +2557,7 @@
     },
     {
       "name": "Alex Davies",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 8,
       "number": 53,
       "disposals": 17,
@@ -2572,7 +2572,7 @@
     },
     {
       "name": "Elijah Hollands",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 5,
       "number": null,
       "disposals": 17,
@@ -2587,7 +2587,7 @@
     },
     {
       "name": "Ollie Dempsey",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": 59,
       "disposals": 16.96,
@@ -2602,7 +2602,7 @@
     },
     {
       "name": "Dan Houston",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 21,
       "number": null,
       "disposals": 16.86,
@@ -2617,7 +2617,7 @@
     },
     {
       "name": "Ryan Byrnes",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 17,
       "number": 86,
       "disposals": 16.82,
@@ -2632,7 +2632,7 @@
     },
     {
       "name": "Jaxon Binns",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 5,
       "number": 71,
       "disposals": 16.8,
@@ -2647,7 +2647,7 @@
     },
     {
       "name": "Elijah Tsatas",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 5,
       "number": 34,
       "disposals": 16.8,
@@ -2662,7 +2662,7 @@
     },
     {
       "name": "Hayden Young",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 9,
       "number": 89,
       "disposals": 16.78,
@@ -2677,7 +2677,7 @@
     },
     {
       "name": "Ben Keays",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 46,
       "disposals": 16.76,
@@ -2692,7 +2692,7 @@
     },
     {
       "name": "Campbell Chesser",
-      "team": "Eagles",
+      "team": "Carlton",
       "games": 4,
       "number": null,
       "disposals": 16.75,
@@ -2707,7 +2707,7 @@
     },
     {
       "name": "Ryan Angwin",
-      "team": "Giants",
+      "team": "GWS",
       "games": 10,
       "number": 71,
       "disposals": 16.6,
@@ -2722,7 +2722,7 @@
     },
     {
       "name": "Cameron Mackenzie",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 12,
       "number": 62,
       "disposals": 16.5,
@@ -2737,7 +2737,7 @@
     },
     {
       "name": "Matt Cottrell",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 6,
       "number": 19,
       "disposals": 16.5,
@@ -2752,7 +2752,7 @@
     },
     {
       "name": "Toby Greene",
-      "team": "Giants",
+      "team": "GWS",
       "games": 22,
       "number": 22,
       "disposals": 16.45,
@@ -2767,7 +2767,7 @@
     },
     {
       "name": "Tom Cole",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 18,
       "number": null,
       "disposals": 16.39,
@@ -2782,7 +2782,7 @@
     },
     {
       "name": "Alex Neal-Bullen",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 66,
       "disposals": 16.32,
@@ -2797,7 +2797,7 @@
     },
     {
       "name": "Elijah Hewett",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 20,
       "number": 96,
       "disposals": 16.25,
@@ -2812,7 +2812,7 @@
     },
     {
       "name": "Clay Hall",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 13,
       "number": 80,
       "disposals": 16.23,
@@ -2827,7 +2827,7 @@
     },
     {
       "name": "Wil Powell",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 56,
       "disposals": 16.2,
@@ -2842,7 +2842,7 @@
     },
     {
       "name": "Zak Jones",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 15,
       "number": null,
       "disposals": 16.13,
@@ -2857,7 +2857,7 @@
     },
     {
       "name": "Lawson Humphries",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": 80,
       "disposals": 16.12,
@@ -2872,7 +2872,7 @@
     },
     {
       "name": "Joshua Weddle",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 18,
       "number": null,
       "disposals": 16.11,
@@ -2887,7 +2887,7 @@
     },
     {
       "name": "Brayden Maynard",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 20,
       "number": 99,
       "disposals": 16.05,
@@ -2902,7 +2902,7 @@
     },
     {
       "name": "Angus Sheldrick",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 20,
       "number": 94,
       "disposals": 16.05,
@@ -2917,7 +2917,7 @@
     },
     {
       "name": "James Rowbottom",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": 8,
       "disposals": 16.04,
@@ -2932,7 +2932,7 @@
     },
     {
       "name": "Bodhi Uwland",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 79,
       "disposals": 16,
@@ -2947,7 +2947,7 @@
     },
     {
       "name": "Arie Schoenmaker",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 3,
       "number": 74,
       "disposals": 16,
@@ -2962,7 +2962,7 @@
     },
     {
       "name": "Lewis Hayes",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 1,
       "number": 74,
       "disposals": 16,
@@ -2977,7 +2977,7 @@
     },
     {
       "name": "Neil Erasmus",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 16,
       "number": null,
       "disposals": 15.94,
@@ -2992,7 +2992,7 @@
     },
     {
       "name": "Toby Nankervis",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 22,
       "number": 88,
       "disposals": 15.86,
@@ -3007,7 +3007,7 @@
     },
     {
       "name": "Nathan O'Driscoll",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 14,
       "number": null,
       "disposals": 15.86,
@@ -3022,7 +3022,7 @@
     },
     {
       "name": "Jaxon Prior",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 23,
       "number": 48,
       "disposals": 15.74,
@@ -3037,7 +3037,7 @@
     },
     {
       "name": "Hugo Garcia",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 17,
       "number": 21,
       "disposals": 15.65,
@@ -3052,7 +3052,7 @@
     },
     {
       "name": "Hunter Clark",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 13,
       "number": 60,
       "disposals": 15.62,
@@ -3067,7 +3067,7 @@
     },
     {
       "name": "Mitchell Hinge",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 24,
       "number": 54,
       "disposals": 15.58,
@@ -3082,7 +3082,7 @@
     },
     {
       "name": "Cameron Rayner",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 61,
       "disposals": 15.56,
@@ -3097,7 +3097,7 @@
     },
     {
       "name": "Darcy Wilson",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 18,
       "number": null,
       "disposals": 15.56,
@@ -3112,7 +3112,7 @@
     },
     {
       "name": "George Wardlaw",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 13,
       "number": 25,
       "disposals": 15.54,
@@ -3127,7 +3127,7 @@
     },
     {
       "name": "Sam Davidson",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 19,
       "number": null,
       "disposals": 15.53,
@@ -3142,7 +3142,7 @@
     },
     {
       "name": "Luke McDonald",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 15,
       "number": 80,
       "disposals": 15.47,
@@ -3157,7 +3157,7 @@
     },
     {
       "name": "Brady Hough",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 22,
       "number": null,
       "disposals": 15.45,
@@ -3172,7 +3172,7 @@
     },
     {
       "name": "Jayden Laverde",
-      "team": "Bombers",
+      "team": "GWS",
       "games": 14,
       "number": 14,
       "disposals": 15.43,
@@ -3187,7 +3187,7 @@
     },
     {
       "name": "Zach Reid",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 10,
       "number": 4,
       "disposals": 15.4,
@@ -3202,7 +3202,7 @@
     },
     {
       "name": "Bailey Humphrey",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 23,
       "number": 93,
       "disposals": 15.39,
@@ -3217,7 +3217,7 @@
     },
     {
       "name": "Lachlan Weller",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 19,
       "number": null,
       "disposals": 15.37,
@@ -3232,7 +3232,7 @@
     },
     {
       "name": "Oskar Baker",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 9,
       "number": null,
       "disposals": 15.33,
@@ -3247,7 +3247,7 @@
     },
     {
       "name": "Harry Perryman",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": null,
       "disposals": 15.32,
@@ -3262,7 +3262,7 @@
     },
     {
       "name": "Sam Clohesy",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 14,
       "number": 99,
       "disposals": 15.29,
@@ -3277,7 +3277,7 @@
     },
     {
       "name": "Max Hall",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 99,
       "disposals": 15.26,
@@ -3292,7 +3292,7 @@
     },
     {
       "name": "Tyler Sonsie",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 16,
       "number": null,
       "disposals": 15.25,
@@ -3307,7 +3307,7 @@
     },
     {
       "name": "Joe Richards",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 22,
       "number": null,
       "disposals": 15.23,
@@ -3322,7 +3322,7 @@
     },
     {
       "name": "Patrick Dangerfield",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 23,
       "number": 66,
       "disposals": 15.22,
@@ -3337,7 +3337,7 @@
     },
     {
       "name": "Stephen Coniglio",
-      "team": "Giants",
+      "team": "GWS",
       "games": 10,
       "number": 71,
       "disposals": 15.2,
@@ -3352,7 +3352,7 @@
     },
     {
       "name": "Oliver Florent",
-      "team": "Swans",
+      "team": "Carlton",
       "games": 16,
       "number": null,
       "disposals": 15.19,
@@ -3367,7 +3367,7 @@
     },
     {
       "name": "Callan Ward",
-      "team": "Giants",
+      "team": "GWS",
       "games": 12,
       "number": null,
       "disposals": 15.08,
@@ -3382,7 +3382,7 @@
     },
     {
       "name": "Angus Clarke",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 14,
       "number": null,
       "disposals": 15.07,
@@ -3397,7 +3397,7 @@
     },
     {
       "name": "Xavier O'Halloran",
-      "team": "Giants",
+      "team": "GWS",
       "games": 23,
       "number": 69,
       "disposals": 15,
@@ -3412,7 +3412,7 @@
     },
     {
       "name": "Jordan De Goey",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 11,
       "number": 96,
       "disposals": 15,
@@ -3427,7 +3427,7 @@
     },
     {
       "name": "Tom Papley",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 11,
       "number": 31,
       "disposals": 15,
@@ -3442,7 +3442,7 @@
     },
     {
       "name": "Ewan Mackinlay",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 1,
       "number": 94,
       "disposals": 15,
@@ -3457,7 +3457,7 @@
     },
     {
       "name": "Ben Hobbs",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 18,
       "number": 90,
       "disposals": 14.89,
@@ -3472,7 +3472,7 @@
     },
     {
       "name": "Connor MacDonald",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 24,
       "number": null,
       "disposals": 14.88,
@@ -3487,7 +3487,7 @@
     },
     {
       "name": "Mark Keane",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 96,
       "disposals": 14.8,
@@ -3502,7 +3502,7 @@
     },
     {
       "name": "Zachary Williams",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 19,
       "number": 80,
       "disposals": 14.79,
@@ -3517,7 +3517,7 @@
     },
     {
       "name": "Blake Hardwick",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 26,
       "number": 79,
       "disposals": 14.73,
@@ -3532,7 +3532,7 @@
     },
     {
       "name": "Sam Berry",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 19,
       "number": 67,
       "disposals": 14.68,
@@ -3547,7 +3547,7 @@
     },
     {
       "name": "Sam Wicks",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 21,
       "number": null,
       "disposals": 14.67,
@@ -3562,7 +3562,7 @@
     },
     {
       "name": "Mason Wood",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 21,
       "number": 49,
       "disposals": 14.67,
@@ -3577,7 +3577,7 @@
     },
     {
       "name": "Isaac Cumming",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 24,
       "number": null,
       "disposals": 14.62,
@@ -3592,7 +3592,7 @@
     },
     {
       "name": "Sam Powell-Pepper",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 16,
       "number": 87,
       "disposals": 14.62,
@@ -3607,7 +3607,7 @@
     },
     {
       "name": "Kade Chandler",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 23,
       "number": 86,
       "disposals": 14.61,
@@ -3622,7 +3622,7 @@
     },
     {
       "name": "Corey Wagner",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 17,
       "number": 51,
       "disposals": 14.59,
@@ -3637,7 +3637,7 @@
     },
     {
       "name": "James Jordon",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": 94,
       "disposals": 14.52,
@@ -3652,7 +3652,7 @@
     },
     {
       "name": "Lachlan Schultz",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 16,
       "number": 36,
       "disposals": 14.5,
@@ -3667,7 +3667,7 @@
     },
     {
       "name": "Lachlan Cowan",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 14,
       "number": 75,
       "disposals": 14.5,
@@ -3682,7 +3682,7 @@
     },
     {
       "name": "Kamdyn McIntosh",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 23,
       "number": null,
       "disposals": 14.48,
@@ -3697,7 +3697,7 @@
     },
     {
       "name": "Murphy Reid",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 98,
       "disposals": 14.46,
@@ -3712,7 +3712,7 @@
     },
     {
       "name": "Will Phillips",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 7,
       "number": 92,
       "disposals": 14.43,
@@ -3727,7 +3727,7 @@
     },
     {
       "name": "Tom McDonald",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 17,
       "number": 32,
       "disposals": 14.41,
@@ -3742,7 +3742,7 @@
     },
     {
       "name": "Mitch McGovern",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 17,
       "number": 75,
       "disposals": 14.35,
@@ -3757,7 +3757,7 @@
     },
     {
       "name": "Judd McVee",
-      "team": "Demons",
+      "team": "Fremantle",
       "games": 17,
       "number": null,
       "disposals": 14.35,
@@ -3772,7 +3772,7 @@
     },
     {
       "name": "Harry McKay",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 12,
       "number": 28,
       "disposals": 14.33,
@@ -3787,7 +3787,7 @@
     },
     {
       "name": "Finn O'Sullivan",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": null,
       "disposals": 14.32,
@@ -3802,7 +3802,7 @@
     },
     {
       "name": "Sam Darcy",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 17,
       "number": 37,
       "disposals": 14.24,
@@ -3817,7 +3817,7 @@
     },
     {
       "name": "Caleb Windsor",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 17,
       "number": null,
       "disposals": 14.24,
@@ -3832,7 +3832,7 @@
     },
     {
       "name": "Mark Blicavs",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": null,
       "disposals": 14.2,
@@ -3847,7 +3847,7 @@
     },
     {
       "name": "Harris Andrews",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 27,
       "number": 2,
       "disposals": 14.19,
@@ -3862,7 +3862,7 @@
     },
     {
       "name": "Jack Bowes",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 21,
       "number": null,
       "disposals": 14.19,
@@ -3877,7 +3877,7 @@
     },
     {
       "name": "Riley Garcia",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 8,
       "number": 92,
       "disposals": 14.12,
@@ -3892,7 +3892,7 @@
     },
     {
       "name": "Mani Liddy",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 9,
       "number": null,
       "disposals": 14.11,
@@ -3907,7 +3907,7 @@
     },
     {
       "name": "Darcy Jones",
-      "team": "Giants",
+      "team": "GWS",
       "games": 23,
       "number": null,
       "disposals": 14.09,
@@ -3922,7 +3922,7 @@
     },
     {
       "name": "Nathan Broad",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 22,
       "number": 50,
       "disposals": 14.05,
@@ -3937,7 +3937,7 @@
     },
     {
       "name": "Archie Perkins",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 21,
       "number": null,
       "disposals": 14.05,
@@ -3952,7 +3952,7 @@
     },
     {
       "name": "Isaac Quaynor",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 62,
       "disposals": 14.04,
@@ -3967,7 +3967,7 @@
     },
     {
       "name": "Tom Brown",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 23,
       "number": 50,
       "disposals": 14,
@@ -3982,7 +3982,7 @@
     },
     {
       "name": "Cooper Lord",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 21,
       "number": 82,
       "disposals": 14,
@@ -3997,7 +3997,7 @@
     },
     {
       "name": "Sam Taylor",
-      "team": "Giants",
+      "team": "GWS",
       "games": 20,
       "number": 24,
       "disposals": 14,
@@ -4012,7 +4012,7 @@
     },
     {
       "name": "Conor Stone",
-      "team": "Giants",
+      "team": "GWS",
       "games": 7,
       "number": 65,
       "disposals": 14,
@@ -4027,7 +4027,7 @@
     },
     {
       "name": "Tylar Young",
-      "team": "Tigers",
+      "team": "West Coast",
       "games": 7,
       "number": 18,
       "disposals": 14,
@@ -4042,7 +4042,7 @@
     },
     {
       "name": "Lachlan Sholl",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 5,
       "number": null,
       "disposals": 14,
@@ -4057,7 +4057,7 @@
     },
     {
       "name": "Jed Bews",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 4,
       "number": 37,
       "disposals": 14,
@@ -4072,7 +4072,7 @@
     },
     {
       "name": "George Stevens",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 2,
       "number": 48,
       "disposals": 14,
@@ -4087,7 +4087,7 @@
     },
     {
       "name": "Jack Billings",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 1,
       "number": 95,
       "disposals": 14,
@@ -4102,7 +4102,7 @@
     },
     {
       "name": "Billy Dowling",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 1,
       "number": 14,
       "disposals": 14,
@@ -4117,7 +4117,7 @@
     },
     {
       "name": "Lucca Grego",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 1,
       "number": 22,
       "disposals": 14,
@@ -4132,7 +4132,7 @@
     },
     {
       "name": "Luke Trainor",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 21,
       "number": null,
       "disposals": 13.95,
@@ -4147,7 +4147,7 @@
     },
     {
       "name": "Mac Andrew",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 24,
       "number": 77,
       "disposals": 13.88,
@@ -4162,7 +4162,7 @@
     },
     {
       "name": "Mark O'Connor",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": null,
       "disposals": 13.84,
@@ -4177,7 +4177,7 @@
     },
     {
       "name": "Riley Bice",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 16,
       "number": null,
       "disposals": 13.81,
@@ -4192,7 +4192,7 @@
     },
     {
       "name": "Changkuoth Jiath",
-      "team": "Hawks",
+      "team": "Melbourne",
       "games": 20,
       "number": null,
       "disposals": 13.8,
@@ -4207,7 +4207,7 @@
     },
     {
       "name": "Jack Silvagni",
-      "team": "Blues",
+      "team": "St Kilda",
       "games": 13,
       "number": 51,
       "disposals": 13.77,
@@ -4222,7 +4222,7 @@
     },
     {
       "name": "Henry Hustwaite",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 4,
       "number": null,
       "disposals": 13.75,
@@ -4237,7 +4237,7 @@
     },
     {
       "name": "Jacob Weitering",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 11,
       "disposals": 13.74,
@@ -4252,7 +4252,7 @@
     },
     {
       "name": "Karl Worner",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 23,
       "number": null,
       "disposals": 13.74,
@@ -4267,7 +4267,7 @@
     },
     {
       "name": "Riley Thilthorpe",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": 66,
       "disposals": 13.72,
@@ -4282,7 +4282,7 @@
     },
     {
       "name": "Aidan Corr",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 10,
       "number": 61,
       "disposals": 13.7,
@@ -4297,7 +4297,7 @@
     },
     {
       "name": "Jack Scrimshaw",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 16,
       "number": null,
       "disposals": 13.69,
@@ -4312,7 +4312,7 @@
     },
     {
       "name": "Harry Cunningham",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 11,
       "number": 87,
       "disposals": 13.64,
@@ -4327,7 +4327,7 @@
     },
     {
       "name": "Rhylee West",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 34,
       "disposals": 13.61,
@@ -4342,7 +4342,7 @@
     },
     {
       "name": "Jeremy Cameron",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": 51,
       "disposals": 13.58,
@@ -4357,7 +4357,7 @@
     },
     {
       "name": "Xavier Lindsay",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 18,
       "number": null,
       "disposals": 13.56,
@@ -4372,7 +4372,7 @@
     },
     {
       "name": "Lloyd Meek",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": 63,
       "disposals": 13.52,
@@ -4387,7 +4387,7 @@
     },
     {
       "name": "Jai Culley",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 4,
       "number": null,
       "disposals": 13.5,
@@ -4402,7 +4402,7 @@
     },
     {
       "name": "Sam De Koning",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 23,
       "number": null,
       "disposals": 13.43,
@@ -4417,7 +4417,7 @@
     },
     {
       "name": "Callum Ah Chee",
-      "team": "Lions",
+      "team": "Adelaide",
       "games": 26,
       "number": 83,
       "disposals": 13.42,
@@ -4432,7 +4432,7 @@
     },
     {
       "name": "Ben Ainsworth",
-      "team": "Suns",
+      "team": "Carlton",
       "games": 24,
       "number": null,
       "disposals": 13.42,
@@ -4447,7 +4447,7 @@
     },
     {
       "name": "Hugo Ralphsmith",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 12,
       "number": null,
       "disposals": 13.42,
@@ -4462,7 +4462,7 @@
     },
     {
       "name": "Sam Draper",
-      "team": "Bombers",
+      "team": "Brisbane",
       "games": 5,
       "number": 55,
       "disposals": 13.4,
@@ -4477,7 +4477,7 @@
     },
     {
       "name": "Dane Rampe",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 21,
       "number": 68,
       "disposals": 13.38,
@@ -4492,7 +4492,7 @@
     },
     {
       "name": "Daniel Curtin",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": null,
       "disposals": 13.36,
@@ -4507,7 +4507,7 @@
     },
     {
       "name": "Jacob Wehr",
-      "team": "Giants",
+      "team": "Port Adelaide",
       "games": 14,
       "number": null,
       "disposals": 13.36,
@@ -4522,7 +4522,7 @@
     },
     {
       "name": "Reuben Ginbey",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 23,
       "number": 35,
       "disposals": 13.35,
@@ -4537,7 +4537,7 @@
     },
     {
       "name": "Max Michalanney",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 21,
       "number": null,
       "disposals": 13.33,
@@ -4552,7 +4552,7 @@
     },
     {
       "name": "Jack Hutchinson",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 16,
       "number": null,
       "disposals": 13.31,
@@ -4567,7 +4567,7 @@
     },
     {
       "name": "Finn Maginness",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 13,
       "number": null,
       "disposals": 13.31,
@@ -4582,7 +4582,7 @@
     },
     {
       "name": "Noah Answerth",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 17,
       "number": null,
       "disposals": 13.29,
@@ -4597,7 +4597,7 @@
     },
     {
       "name": "Darcy Tucker",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 7,
       "number": null,
       "disposals": 13.29,
@@ -4612,7 +4612,7 @@
     },
     {
       "name": "Tom McCartin",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 20,
       "number": 27,
       "disposals": 13.25,
@@ -4627,7 +4627,7 @@
     },
     {
       "name": "Bailey Banfield",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 21,
       "number": null,
       "disposals": 13.24,
@@ -4642,7 +4642,7 @@
     },
     {
       "name": "Jeremy Sharp",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 14,
       "number": null,
       "disposals": 13.21,
@@ -4657,7 +4657,7 @@
     },
     {
       "name": "Jackson Mead",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 20,
       "number": null,
       "disposals": 13.2,
@@ -4672,7 +4672,7 @@
     },
     {
       "name": "Luke Cleary",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 16,
       "number": null,
       "disposals": 13.19,
@@ -4687,7 +4687,7 @@
     },
     {
       "name": "Aliir Aliir",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 22,
       "number": 48,
       "disposals": 13.18,
@@ -4702,7 +4702,7 @@
     },
     {
       "name": "Edward Allan",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 13,
       "number": null,
       "disposals": 13.15,
@@ -4717,7 +4717,7 @@
     },
     {
       "name": "Jade Gresham",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 19,
       "number": null,
       "disposals": 13.11,
@@ -4732,7 +4732,7 @@
     },
     {
       "name": "Zak Johnson",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 9,
       "number": null,
       "disposals": 13.11,
@@ -4747,7 +4747,7 @@
     },
     {
       "name": "Jack Martin",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 13,
       "number": 37,
       "disposals": 13.08,
@@ -4762,7 +4762,7 @@
     },
     {
       "name": "Tom Sparrow",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 22,
       "number": 71,
       "disposals": 13.05,
@@ -4777,7 +4777,7 @@
     },
     {
       "name": "Riley Hardeman",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 17,
       "number": null,
       "disposals": 13,
@@ -4792,7 +4792,7 @@
     },
     {
       "name": "Caleb Mitchell",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 1,
       "number": null,
       "disposals": 13,
@@ -4807,7 +4807,7 @@
     },
     {
       "name": "Sam Switkowski",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 17,
       "number": null,
       "disposals": 12.94,
@@ -4822,7 +4822,7 @@
     },
     {
       "name": "James Trezise",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 16,
       "number": null,
       "disposals": 12.94,
@@ -4837,7 +4837,7 @@
     },
     {
       "name": "Seth Campbell",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 22,
       "number": 69,
       "disposals": 12.91,
@@ -4852,7 +4852,7 @@
     },
     {
       "name": "Logan Evans",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 10,
       "number": null,
       "disposals": 12.9,
@@ -4867,7 +4867,7 @@
     },
     {
       "name": "Mitchito Owens",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 19,
       "number": 64,
       "disposals": 12.89,
@@ -4882,7 +4882,7 @@
     },
     {
       "name": "Mitchell Duncan",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 9,
       "number": null,
       "disposals": 12.89,
@@ -4897,7 +4897,7 @@
     },
     {
       "name": "Heath Chapman",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 23,
       "number": null,
       "disposals": 12.83,
@@ -4912,7 +4912,7 @@
     },
     {
       "name": "Brodie Smith",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 11,
       "number": 82,
       "disposals": 12.82,
@@ -4927,7 +4927,7 @@
     },
     {
       "name": "Ryan Lester",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 26,
       "number": 72,
       "disposals": 12.81,
@@ -4942,7 +4942,7 @@
     },
     {
       "name": "Jarrod Witts",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 24,
       "number": 57,
       "disposals": 12.75,
@@ -4957,7 +4957,7 @@
     },
     {
       "name": "Tyrell Dewar",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 16,
       "number": null,
       "disposals": 12.75,
@@ -4972,7 +4972,7 @@
     },
     {
       "name": "Nicholas Coffield",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 4,
       "number": 16,
       "disposals": 12.75,
@@ -4987,7 +4987,7 @@
     },
     {
       "name": "Darcy Byrne-Jones",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 22,
       "number": null,
       "disposals": 12.73,
@@ -5002,7 +5002,7 @@
     },
     {
       "name": "Matthew Flynn",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 18,
       "number": null,
       "disposals": 12.72,
@@ -5017,7 +5017,7 @@
     },
     {
       "name": "Zac Fisher",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 7,
       "number": null,
       "disposals": 12.71,
@@ -5032,7 +5032,7 @@
     },
     {
       "name": "Taj Hotton",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 7,
       "number": null,
       "disposals": 12.71,
@@ -5047,7 +5047,7 @@
     },
     {
       "name": "Rory Atkins",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 3,
       "number": 41,
       "disposals": 12.67,
@@ -5062,7 +5062,7 @@
     },
     {
       "name": "Hugh Boxshall",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 11,
       "number": 80,
       "disposals": 12.64,
@@ -5077,7 +5077,7 @@
     },
     {
       "name": "Bradley Close",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 26,
       "number": null,
       "disposals": 12.58,
@@ -5092,7 +5092,7 @@
     },
     {
       "name": "Jack Gunston",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 23,
       "number": 94,
       "disposals": 12.57,
@@ -5107,7 +5107,7 @@
     },
     {
       "name": "Luke Nankervis",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 7,
       "number": null,
       "disposals": 12.57,
@@ -5122,7 +5122,7 @@
     },
     {
       "name": "Connor O'Sullivan",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": 57,
       "disposals": 12.56,
@@ -5137,7 +5137,7 @@
     },
     {
       "name": "Bayley Fritsch",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 22,
       "number": 37,
       "disposals": 12.55,
@@ -5152,7 +5152,7 @@
     },
     {
       "name": "Jake Riccardi",
-      "team": "Giants",
+      "team": "GWS",
       "games": 20,
       "number": 82,
       "disposals": 12.55,
@@ -5167,7 +5167,7 @@
     },
     {
       "name": "Jeremy Howe",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 19,
       "number": 25,
       "disposals": 12.53,
@@ -5182,7 +5182,7 @@
     },
     {
       "name": "Brent Daniels",
-      "team": "Giants",
+      "team": "GWS",
       "games": 6,
       "number": 98,
       "disposals": 12.5,
@@ -5197,7 +5197,7 @@
     },
     {
       "name": "Vigo Visentini",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 2,
       "number": null,
       "disposals": 12.5,
@@ -5212,7 +5212,7 @@
     },
     {
       "name": "Ben Miller",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 23,
       "number": 34,
       "disposals": 12.43,
@@ -5227,7 +5227,7 @@
     },
     {
       "name": "Tyson Stengle",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 24,
       "number": 52,
       "disposals": 12.38,
@@ -5242,7 +5242,7 @@
     },
     {
       "name": "Braeden Campbell",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 23,
       "number": null,
       "disposals": 12.35,
@@ -5257,7 +5257,7 @@
     },
     {
       "name": "Jack Henry",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 21,
       "number": 23,
       "disposals": 12.29,
@@ -5272,7 +5272,7 @@
     },
     {
       "name": "Jayden Hunt",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 15,
       "number": null,
       "disposals": 12.27,
@@ -5287,7 +5287,7 @@
     },
     {
       "name": "Jack Buckley",
-      "team": "Giants",
+      "team": "GWS",
       "games": 19,
       "number": 53,
       "disposals": 12.26,
@@ -5302,7 +5302,7 @@
     },
     {
       "name": "Charlie Comben",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 20,
       "number": 67,
       "disposals": 12.25,
@@ -5317,7 +5317,7 @@
     },
     {
       "name": "Taylor Walker",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 23,
       "number": 34,
       "disposals": 12.22,
@@ -5332,7 +5332,7 @@
     },
     {
       "name": "Daniel Turner",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 19,
       "number": 30,
       "disposals": 12.21,
@@ -5347,7 +5347,7 @@
     },
     {
       "name": "Christian Moraes",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 14,
       "number": null,
       "disposals": 12.21,
@@ -5362,7 +5362,7 @@
     },
     {
       "name": "Rory Lobb",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 75,
       "disposals": 12.17,
@@ -5377,7 +5377,7 @@
     },
     {
       "name": "Anthony Caminiti",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 61,
       "disposals": 12.09,
@@ -5392,7 +5392,7 @@
     },
     {
       "name": "Mitch Georgiades",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 23,
       "number": 70,
       "disposals": 12.09,
@@ -5407,7 +5407,7 @@
     },
     {
       "name": "Jamie Elliott",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 25,
       "number": 99,
       "disposals": 12.08,
@@ -5422,7 +5422,7 @@
     },
     {
       "name": "Matt Carroll",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 17,
       "number": null,
       "disposals": 12.06,
@@ -5437,7 +5437,7 @@
     },
     {
       "name": "Reilly O'Brien",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 25,
       "number": null,
       "disposals": 12,
@@ -5452,7 +5452,7 @@
     },
     {
       "name": "Todd Goldstein",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 16,
       "number": 75,
       "disposals": 12,
@@ -5467,7 +5467,7 @@
     },
     {
       "name": "Corey Warner",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 14,
       "number": null,
       "disposals": 12,
@@ -5482,7 +5482,7 @@
     },
     {
       "name": "Sam Lalor",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 11,
       "number": 99,
       "disposals": 12,
@@ -5497,7 +5497,7 @@
     },
     {
       "name": "Jake Lever",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 8,
       "number": 64,
       "disposals": 12,
@@ -5512,7 +5512,7 @@
     },
     {
       "name": "Marc Pittonet",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 7,
       "number": null,
       "disposals": 12,
@@ -5527,7 +5527,7 @@
     },
     {
       "name": "Billy Wilson",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 4,
       "number": null,
       "disposals": 12,
@@ -5542,7 +5542,7 @@
     },
     {
       "name": "Harry Boyd",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 1,
       "number": 65,
       "disposals": 12,
@@ -5557,7 +5557,7 @@
     },
     {
       "name": "Ben Jepson",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 1,
       "number": null,
       "disposals": 12,
@@ -5572,7 +5572,7 @@
     },
     {
       "name": "Lachlan Fogarty",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 20,
       "number": 89,
       "disposals": 11.85,
@@ -5587,7 +5587,7 @@
     },
     {
       "name": "Noah Balta",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 13,
       "number": null,
       "disposals": 11.85,
@@ -5602,7 +5602,7 @@
     },
     {
       "name": "Peter Wright",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 19,
       "number": 45,
       "disposals": 11.84,
@@ -5617,7 +5617,7 @@
     },
     {
       "name": "Aaron Naughton",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 23,
       "number": 75,
       "disposals": 11.78,
@@ -5632,7 +5632,7 @@
     },
     {
       "name": "Charlie Curnow",
-      "team": "Blues",
+      "team": "Sydney",
       "games": 18,
       "number": 46,
       "disposals": 11.78,
@@ -5647,7 +5647,7 @@
     },
     {
       "name": "Paul Curtis",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 19,
       "number": 14,
       "disposals": 11.74,
@@ -5662,7 +5662,7 @@
     },
     {
       "name": "Jimmy Webster",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 15,
       "number": null,
       "disposals": 11.73,
@@ -5677,7 +5677,7 @@
     },
     {
       "name": "Joseph Fonti",
-      "team": "Giants",
+      "team": "GWS",
       "games": 17,
       "number": null,
       "disposals": 11.71,
@@ -5692,7 +5692,7 @@
     },
     {
       "name": "Jacob Blight",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 7,
       "number": 37,
       "disposals": 11.71,
@@ -5707,7 +5707,7 @@
     },
     {
       "name": "Connor Budarick",
-      "team": "Suns",
+      "team": "Western Bulldogs",
       "games": 19,
       "number": null,
       "disposals": 11.68,
@@ -5722,7 +5722,7 @@
     },
     {
       "name": "Sam Butler",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 6,
       "number": 31,
       "disposals": 11.67,
@@ -5737,7 +5737,7 @@
     },
     {
       "name": "Will Lorenz",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 6,
       "number": null,
       "disposals": 11.67,
@@ -5752,7 +5752,7 @@
     },
     {
       "name": "Griffin Logue",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 16,
       "number": null,
       "disposals": 11.62,
@@ -5767,7 +5767,7 @@
     },
     {
       "name": "Jack Payne",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 13,
       "number": 37,
       "disposals": 11.62,
@@ -5782,7 +5782,7 @@
     },
     {
       "name": "Harvey Thomas",
-      "team": "Giants",
+      "team": "GWS",
       "games": 18,
       "number": null,
       "disposals": 11.61,
@@ -5797,7 +5797,7 @@
     },
     {
       "name": "Mitchell Knevitt",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 7,
       "number": 93,
       "disposals": 11.57,
@@ -5812,7 +5812,7 @@
     },
     {
       "name": "Cooper Sharman",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 21,
       "number": 73,
       "disposals": 11.52,
@@ -5827,7 +5827,7 @@
     },
     {
       "name": "Josh Treacy",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 24,
       "disposals": 11.5,
@@ -5842,7 +5842,7 @@
     },
     {
       "name": "Josh Rachele",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 14,
       "number": 20,
       "disposals": 11.5,
@@ -5857,7 +5857,7 @@
     },
     {
       "name": "Jordan Croft",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 2,
       "number": 14,
       "disposals": 11.5,
@@ -5872,7 +5872,7 @@
     },
     {
       "name": "Callum Brown",
-      "team": "Giants",
+      "team": "GWS",
       "games": 22,
       "number": 83,
       "disposals": 11.45,
@@ -5887,7 +5887,7 @@
     },
     {
       "name": "Samuel Collins",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 22,
       "number": null,
       "disposals": 11.45,
@@ -5902,7 +5902,7 @@
     },
     {
       "name": "Josh Sinn",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 20,
       "number": 88,
       "disposals": 11.45,
@@ -5917,7 +5917,7 @@
     },
     {
       "name": "Toby McMullin",
-      "team": "Giants",
+      "team": "GWS",
       "games": 11,
       "number": null,
       "disposals": 11.45,
@@ -5932,7 +5932,7 @@
     },
     {
       "name": "Tyler Brockman",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 20,
       "number": null,
       "disposals": 11.4,
@@ -5947,7 +5947,7 @@
     },
     {
       "name": "Francis Evans",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 10,
       "number": 66,
       "disposals": 11.4,
@@ -5962,7 +5962,7 @@
     },
     {
       "name": "Harry Rowston",
-      "team": "Giants",
+      "team": "GWS",
       "games": 10,
       "number": null,
       "disposals": 11.4,
@@ -5977,7 +5977,7 @@
     },
     {
       "name": "Michael Frederick",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 70,
       "disposals": 11.33,
@@ -5992,7 +5992,7 @@
     },
     {
       "name": "Orazio Fantasia",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 6,
       "number": 77,
       "disposals": 11.33,
@@ -6007,7 +6007,7 @@
     },
     {
       "name": "Lucas Camporeale",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 3,
       "number": null,
       "disposals": 11.33,
@@ -6022,7 +6022,7 @@
     },
     {
       "name": "Jamie Cripps",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 21,
       "number": 83,
       "disposals": 11.29,
@@ -6037,7 +6037,7 @@
     },
     {
       "name": "Will Hayward",
-      "team": "Swans",
+      "team": "Carlton",
       "games": 21,
       "number": 58,
       "disposals": 11.29,
@@ -6052,7 +6052,7 @@
     },
     {
       "name": "Beau McCreery",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 19,
       "number": 52,
       "disposals": 11.26,
@@ -6067,7 +6067,7 @@
     },
     {
       "name": "Rhyan Mansell",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 20,
       "number": null,
       "disposals": 11.25,
@@ -6082,7 +6082,7 @@
     },
     {
       "name": "Liam Ryan",
-      "team": "Eagles",
+      "team": "St Kilda",
       "games": 20,
       "number": 92,
       "disposals": 11.25,
@@ -6097,7 +6097,7 @@
     },
     {
       "name": "Darcy Fogarty",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 24,
       "number": 32,
       "disposals": 11.21,
@@ -6112,7 +6112,7 @@
     },
     {
       "name": "Jordon Sweet",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 19,
       "number": null,
       "disposals": 11.21,
@@ -6127,7 +6127,7 @@
     },
     {
       "name": "Sam Marshall",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 11,
       "number": null,
       "disposals": 11.18,
@@ -6142,7 +6142,7 @@
     },
     {
       "name": "Isaac Kako",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 23,
       "number": null,
       "disposals": 11.17,
@@ -6157,7 +6157,7 @@
     },
     {
       "name": "Liam Stocker",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 17,
       "number": null,
       "disposals": 11.12,
@@ -6172,7 +6172,7 @@
     },
     {
       "name": "Kaleb Smith",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 8,
       "number": null,
       "disposals": 11.12,
@@ -6187,7 +6187,7 @@
     },
     {
       "name": "Saad El-Hawli",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 9,
       "number": null,
       "disposals": 11.11,
@@ -6202,7 +6202,7 @@
     },
     {
       "name": "Kyle Langford",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 9,
       "number": null,
       "disposals": 11.11,
@@ -6217,7 +6217,7 @@
     },
     {
       "name": "Kieren Briggs",
-      "team": "Giants",
+      "team": "GWS",
       "games": 20,
       "number": 77,
       "disposals": 11.1,
@@ -6232,7 +6232,7 @@
     },
     {
       "name": "Alex Pearce",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 16,
       "number": null,
       "disposals": 11.06,
@@ -6247,7 +6247,7 @@
     },
     {
       "name": "Toby Bedford",
-      "team": "Giants",
+      "team": "GWS",
       "games": 23,
       "number": 29,
       "disposals": 11,
@@ -6262,7 +6262,7 @@
     },
     {
       "name": "Sandy Brock",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 14,
       "number": 84,
       "disposals": 11,
@@ -6277,7 +6277,7 @@
     },
     {
       "name": "Brandon Zerk-Thatcher",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 13,
       "number": null,
       "disposals": 11,
@@ -6292,7 +6292,7 @@
     },
     {
       "name": "Caiden Cleary",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 12,
       "number": null,
       "disposals": 11,
@@ -6307,7 +6307,7 @@
     },
     {
       "name": "Harvey Gallagher",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 5,
       "number": null,
       "disposals": 11,
@@ -6322,7 +6322,7 @@
     },
     {
       "name": "Cody Angove",
-      "team": "Giants",
+      "team": "GWS",
       "games": 4,
       "number": 90,
       "disposals": 11,
@@ -6337,7 +6337,7 @@
     },
     {
       "name": "Dougal Howard",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 3,
       "number": 26,
       "disposals": 11,
@@ -6352,7 +6352,7 @@
     },
     {
       "name": "Nick Madden",
-      "team": "Giants",
+      "team": "GWS",
       "games": 3,
       "number": 76,
       "disposals": 11,
@@ -6367,7 +6367,7 @@
     },
     {
       "name": "Nate Caddy",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 17,
       "number": 76,
       "disposals": 10.94,
@@ -6382,7 +6382,7 @@
     },
     {
       "name": "Esava Ratugolea",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 13,
       "number": 56,
       "disposals": 10.92,
@@ -6397,7 +6397,7 @@
     },
     {
       "name": "Lachlan Jones",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 18,
       "number": null,
       "disposals": 10.89,
@@ -6412,7 +6412,7 @@
     },
     {
       "name": "Nick Watson",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": 46,
       "disposals": 10.88,
@@ -6427,7 +6427,7 @@
     },
     {
       "name": "Rhett Bazzo",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 7,
       "number": null,
       "disposals": 10.86,
@@ -6442,7 +6442,7 @@
     },
     {
       "name": "Blake Howes",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 12,
       "number": null,
       "disposals": 10.83,
@@ -6457,7 +6457,7 @@
     },
     {
       "name": "Taylor Duryea",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 5,
       "number": null,
       "disposals": 10.8,
@@ -6472,7 +6472,7 @@
     },
     {
       "name": "Ben Long",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 24,
       "number": 21,
       "disposals": 10.79,
@@ -6487,7 +6487,7 @@
     },
     {
       "name": "Lachie Sullivan",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 14,
       "number": null,
       "disposals": 10.71,
@@ -6502,7 +6502,7 @@
     },
     {
       "name": "Peter Ladhams",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 10,
       "number": null,
       "disposals": 10.7,
@@ -6517,7 +6517,7 @@
     },
     {
       "name": "Cooper Simpson",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 3,
       "number": null,
       "disposals": 10.67,
@@ -6532,7 +6532,7 @@
     },
     {
       "name": "Jesse Motlop",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 23,
       "number": 98,
       "disposals": 10.65,
@@ -6547,7 +6547,7 @@
     },
     {
       "name": "Darcy Moore",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 22,
       "number": null,
       "disposals": 10.64,
@@ -6562,7 +6562,7 @@
     },
     {
       "name": "Hamish Davis",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 8,
       "number": null,
       "disposals": 10.62,
@@ -6577,7 +6577,7 @@
     },
     {
       "name": "Jake Stringer",
-      "team": "Giants",
+      "team": "GWS",
       "games": 15,
       "number": 36,
       "disposals": 10.6,
@@ -6592,7 +6592,7 @@
     },
     {
       "name": "Toby Pink",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 17,
       "number": 96,
       "disposals": 10.59,
@@ -6607,7 +6607,7 @@
     },
     {
       "name": "Cameron Zurhaar",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": 31,
       "disposals": 10.55,
@@ -6622,7 +6622,7 @@
     },
     {
       "name": "Brennan Cox",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": null,
       "disposals": 10.54,
@@ -6637,7 +6637,7 @@
     },
     {
       "name": "Eric Hipwood",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 22,
       "number": 83,
       "disposals": 10.5,
@@ -6652,7 +6652,7 @@
     },
     {
       "name": "Bailey Scott",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 12,
       "number": null,
       "disposals": 10.5,
@@ -6667,7 +6667,7 @@
     },
     {
       "name": "Will Graham",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 8,
       "number": 70,
       "disposals": 10.5,
@@ -6682,7 +6682,7 @@
     },
     {
       "name": "Flynn Young",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 8,
       "number": null,
       "disposals": 10.5,
@@ -6697,7 +6697,7 @@
     },
     {
       "name": "Charlie Dean",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 4,
       "number": null,
       "disposals": 10.5,
@@ -6712,7 +6712,7 @@
     },
     {
       "name": "Billy Frampton",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 16,
       "number": null,
       "disposals": 10.44,
@@ -6727,7 +6727,7 @@
     },
     {
       "name": "James O'Donnell",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 22,
       "number": null,
       "disposals": 10.41,
@@ -6742,7 +6742,7 @@
     },
     {
       "name": "Darcy Gardiner",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 18,
       "number": null,
       "disposals": 10.39,
@@ -6757,7 +6757,7 @@
     },
     {
       "name": "Laitham Vandermeer",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 19,
       "number": null,
       "disposals": 10.37,
@@ -6772,7 +6772,7 @@
     },
     {
       "name": "Brandon Starcevich",
-      "team": "Lions",
+      "team": "West Coast",
       "games": 14,
       "number": null,
       "disposals": 10.36,
@@ -6787,7 +6787,7 @@
     },
     {
       "name": "Jacob Van Rooyen",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 16,
       "number": 99,
       "disposals": 10.31,
@@ -6802,7 +6802,7 @@
     },
     {
       "name": "Brynn Teakle",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 4,
       "number": 59,
       "disposals": 10.25,
@@ -6817,7 +6817,7 @@
     },
     {
       "name": "Darcy Fort",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 21,
       "number": null,
       "disposals": 10.19,
@@ -6832,7 +6832,7 @@
     },
     {
       "name": "Jesse Hogan",
-      "team": "Giants",
+      "team": "GWS",
       "games": 16,
       "number": 4,
       "disposals": 10.19,
@@ -6847,7 +6847,7 @@
     },
     {
       "name": "Kai Lohmann",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 18,
       "number": 89,
       "disposals": 10.17,
@@ -6862,7 +6862,7 @@
     },
     {
       "name": "Harry O'Farrell",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 6,
       "number": 96,
       "disposals": 10.17,
@@ -6877,7 +6877,7 @@
     },
     {
       "name": "Harrison Jones",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 7,
       "number": null,
       "disposals": 10.14,
@@ -6892,7 +6892,7 @@
     },
     {
       "name": "Jake Waterman",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 8,
       "number": 32,
       "disposals": 10.12,
@@ -6907,7 +6907,7 @@
     },
     {
       "name": "Mabior Chol",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 24,
       "number": 29,
       "disposals": 10,
@@ -6922,7 +6922,7 @@
     },
     {
       "name": "Tom Lynch",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 16,
       "number": 39,
       "disposals": 10,
@@ -6937,7 +6937,7 @@
     },
     {
       "name": "Jack Henderson",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 5,
       "number": null,
       "disposals": 10,
@@ -6952,7 +6952,7 @@
     },
     {
       "name": "Chris Burgess",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 1,
       "number": null,
       "disposals": 10,
@@ -6967,7 +6967,7 @@
     },
     {
       "name": "Tom Doedee",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 1,
       "number": 37,
       "disposals": 10,
@@ -6982,7 +6982,7 @@
     },
     {
       "name": "Sean Lemmens",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 1,
       "number": null,
       "disposals": 10,
@@ -6997,7 +6997,7 @@
     },
     {
       "name": "Taj Woewodin",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 1,
       "number": 41,
       "disposals": 10,
@@ -7012,7 +7012,7 @@
     },
     {
       "name": "Lewis Young",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 13,
       "number": null,
       "disposals": 9.92,
@@ -7027,7 +7027,7 @@
     },
     {
       "name": "Lachlan Blakiston",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 11,
       "number": null,
       "disposals": 9.91,
@@ -7042,7 +7042,7 @@
     },
     {
       "name": "Oisin Mullin",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": null,
       "disposals": 9.84,
@@ -7057,7 +7057,7 @@
     },
     {
       "name": "Sean Darcy",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 17,
       "number": 79,
       "disposals": 9.82,
@@ -7072,7 +7072,7 @@
     },
     {
       "name": "Jake Melksham",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 19,
       "number": 30,
       "disposals": 9.79,
@@ -7087,7 +7087,7 @@
     },
     {
       "name": "Willie Rioli",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 19,
       "number": 52,
       "disposals": 9.79,
@@ -7102,7 +7102,7 @@
     },
     {
       "name": "Rhys Stanley",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 19,
       "number": null,
       "disposals": 9.79,
@@ -7117,7 +7117,7 @@
     },
     {
       "name": "Tim Membrey",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 23,
       "number": 57,
       "disposals": 9.78,
@@ -7132,7 +7132,7 @@
     },
     {
       "name": "Jack Darling",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 22,
       "number": 93,
       "disposals": 9.77,
@@ -7147,7 +7147,7 @@
     },
     {
       "name": "Aaron Cadman",
-      "team": "Giants",
+      "team": "GWS",
       "games": 24,
       "number": 24,
       "disposals": 9.75,
@@ -7162,7 +7162,7 @@
     },
     {
       "name": "Nick Bryan",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 4,
       "number": null,
       "disposals": 9.75,
@@ -7177,7 +7177,7 @@
     },
     {
       "name": "Daniel McStay",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 18,
       "number": 95,
       "disposals": 9.72,
@@ -7192,7 +7192,7 @@
     },
     {
       "name": "Nick Larkey",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 17,
       "number": 9,
       "disposals": 9.71,
@@ -7207,7 +7207,7 @@
     },
     {
       "name": "Lewis Melican",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 17,
       "number": null,
       "disposals": 9.71,
@@ -7222,7 +7222,7 @@
     },
     {
       "name": "Jedd Busslinger",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 7,
       "number": null,
       "disposals": 9.71,
@@ -7237,7 +7237,7 @@
     },
     {
       "name": "Patrick Voss",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 20,
       "number": 23,
       "disposals": 9.7,
@@ -7252,7 +7252,7 @@
     },
     {
       "name": "Tom Barrass",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 25,
       "number": null,
       "disposals": 9.68,
@@ -7267,7 +7267,7 @@
     },
     {
       "name": "Campbell Gray",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 3,
       "number": 81,
       "disposals": 9.67,
@@ -7282,7 +7282,7 @@
     },
     {
       "name": "Lachlan Keeffe",
-      "team": "Giants",
+      "team": "GWS",
       "games": 3,
       "number": 54,
       "disposals": 9.67,
@@ -7297,7 +7297,7 @@
     },
     {
       "name": "Zac Taylor",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 17,
       "number": null,
       "disposals": 9.65,
@@ -7312,7 +7312,7 @@
     },
     {
       "name": "Charlie Cameron",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 25,
       "number": 68,
       "disposals": 9.6,
@@ -7327,7 +7327,7 @@
     },
     {
       "name": "Charlie Spargo",
-      "team": "Demons",
+      "team": "North Melbourne",
       "games": 10,
       "number": null,
       "disposals": 9.6,
@@ -7342,7 +7342,7 @@
     },
     {
       "name": "Roan Steele",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 5,
       "number": null,
       "disposals": 9.6,
@@ -7357,7 +7357,7 @@
     },
     {
       "name": "Brody Mihocek",
-      "team": "Magpies",
+      "team": "Melbourne",
       "games": 22,
       "number": 37,
       "disposals": 9.59,
@@ -7372,7 +7372,7 @@
     },
     {
       "name": "Leek Aleer",
-      "team": "Giants",
+      "team": "GWS",
       "games": 13,
       "number": null,
       "disposals": 9.46,
@@ -7387,7 +7387,7 @@
     },
     {
       "name": "Jack Higgins",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 23,
       "number": 14,
       "disposals": 9.43,
@@ -7402,7 +7402,7 @@
     },
     {
       "name": "Oscar McInerney",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 14,
       "number": 88,
       "disposals": 9.43,
@@ -7417,7 +7417,7 @@
     },
     {
       "name": "Oscar McDonald",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 7,
       "number": null,
       "disposals": 9.43,
@@ -7432,7 +7432,7 @@
     },
     {
       "name": "Caleb Poulter",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 7,
       "number": null,
       "disposals": 9.43,
@@ -7447,7 +7447,7 @@
     },
     {
       "name": "Logan Morris",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 26,
       "number": 13,
       "disposals": 9.42,
@@ -7462,7 +7462,7 @@
     },
     {
       "name": "Hugh Bond",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 5,
       "number": null,
       "disposals": 9.4,
@@ -7477,7 +7477,7 @@
     },
     {
       "name": "Liam Jones",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 5,
       "number": null,
       "disposals": 9.4,
@@ -7492,7 +7492,7 @@
     },
     {
       "name": "Harry Edwards",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 16,
       "number": null,
       "disposals": 9.38,
@@ -7507,7 +7507,7 @@
     },
     {
       "name": "Jy Farrar",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 8,
       "number": 70,
       "disposals": 9.38,
@@ -7522,7 +7522,7 @@
     },
     {
       "name": "Hugh Jackson",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 9,
       "number": null,
       "disposals": 9.33,
@@ -7537,7 +7537,7 @@
     },
     {
       "name": "Hayden McLean",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 19,
       "number": 64,
       "disposals": 9.32,
@@ -7552,7 +7552,7 @@
     },
     {
       "name": "Tobie Travaglia",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 12,
       "number": null,
       "disposals": 9.25,
@@ -7567,7 +7567,7 @@
     },
     {
       "name": "Taylor Adams",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 4,
       "number": null,
       "disposals": 9.25,
@@ -7582,7 +7582,7 @@
     },
     {
       "name": "Lachlan McNeil",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 21,
       "number": null,
       "disposals": 9.24,
@@ -7597,7 +7597,7 @@
     },
     {
       "name": "Bruce Reville",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 13,
       "number": null,
       "disposals": 9.23,
@@ -7612,7 +7612,7 @@
     },
     {
       "name": "Matt Guelfi",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 12,
       "number": null,
       "disposals": 9.17,
@@ -7627,7 +7627,7 @@
     },
     {
       "name": "Jack Buller",
-      "team": "Swans",
+      "team": "Collingwood",
       "games": 9,
       "number": 74,
       "disposals": 9.11,
@@ -7642,7 +7642,7 @@
     },
     {
       "name": "Jhye Clark",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 10,
       "number": null,
       "disposals": 9.1,
@@ -7657,7 +7657,7 @@
     },
     {
       "name": "Jacob Konstanty",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 23,
       "number": null,
       "disposals": 9.09,
@@ -7672,7 +7672,7 @@
     },
     {
       "name": "Joe Berry",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 12,
       "number": null,
       "disposals": 9,
@@ -7687,7 +7687,7 @@
     },
     {
       "name": "Alix Tauru",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 10,
       "number": null,
       "disposals": 9,
@@ -7702,7 +7702,7 @@
     },
     {
       "name": "Angus Hastie",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 9,
       "number": null,
       "disposals": 9,
@@ -7717,7 +7717,7 @@
     },
     {
       "name": "Jack Lukosius",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 7,
       "number": 83,
       "disposals": 9,
@@ -7732,7 +7732,7 @@
     },
     {
       "name": "Max Ramsden",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 4,
       "number": 99,
       "disposals": 9,
@@ -7747,7 +7747,7 @@
     },
     {
       "name": "Jesse Dattoli",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 3,
       "number": null,
       "disposals": 9,
@@ -7762,7 +7762,7 @@
     },
     {
       "name": "Brandon Walker",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 2,
       "number": null,
       "disposals": 9,
@@ -7777,7 +7777,7 @@
     },
     {
       "name": "Lachlan Gulbin",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 1,
       "number": 31,
       "disposals": 9,
@@ -7792,7 +7792,7 @@
     },
     {
       "name": "Matt Owies",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 16,
       "number": null,
       "disposals": 8.94,
@@ -7807,7 +7807,7 @@
     },
     {
       "name": "Bailey J. Williams",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 16,
       "number": null,
       "disposals": 8.94,
@@ -7822,7 +7822,7 @@
     },
     {
       "name": "Joel Amartey",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 8,
       "number": 39,
       "disposals": 8.88,
@@ -7837,7 +7837,7 @@
     },
     {
       "name": "Jeremy Finlayson",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 8,
       "number": null,
       "disposals": 8.88,
@@ -7852,7 +7852,7 @@
     },
     {
       "name": "Bobby Hill",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 14,
       "number": 49,
       "disposals": 8.86,
@@ -7867,7 +7867,7 @@
     },
     {
       "name": "Buku Khamis",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 14,
       "number": null,
       "disposals": 8.86,
@@ -7882,7 +7882,7 @@
     },
     {
       "name": "Archie May",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 7,
       "number": 99,
       "disposals": 8.86,
@@ -7897,7 +7897,7 @@
     },
     {
       "name": "Oscar Allen",
-      "team": "Eagles",
+      "team": "Brisbane",
       "games": 12,
       "number": 99,
       "disposals": 8.83,
@@ -7912,7 +7912,7 @@
     },
     {
       "name": "Aaron Francis",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 10,
       "number": null,
       "disposals": 8.8,
@@ -7927,7 +7927,7 @@
     },
     {
       "name": "Ben McKay",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 10,
       "number": null,
       "disposals": 8.8,
@@ -7942,7 +7942,7 @@
     },
     {
       "name": "Will Hoskin-Elliott",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 18,
       "number": null,
       "disposals": 8.78,
@@ -7957,7 +7957,7 @@
     },
     {
       "name": "Tom Gross",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 8,
       "number": null,
       "disposals": 8.75,
@@ -7972,7 +7972,7 @@
     },
     {
       "name": "Robert Hansen",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 12,
       "number": null,
       "disposals": 8.67,
@@ -7987,7 +7987,7 @@
     },
     {
       "name": "Ty Gallop",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 6,
       "number": null,
       "disposals": 8.67,
@@ -8002,7 +8002,7 @@
     },
     {
       "name": "Jed McEntee",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 6,
       "number": null,
       "disposals": 8.67,
@@ -8017,7 +8017,7 @@
     },
     {
       "name": "Jordan Boyd",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 3,
       "number": 70,
       "disposals": 8.67,
@@ -8032,7 +8032,7 @@
     },
     {
       "name": "Cooper Trembath",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 3,
       "number": 3,
       "disposals": 8.67,
@@ -8047,7 +8047,7 @@
     },
     {
       "name": "Harrison Petty",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 19,
       "number": 96,
       "disposals": 8.63,
@@ -8062,7 +8062,7 @@
     },
     {
       "name": "Oleg Markov",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 8,
       "number": null,
       "disposals": 8.62,
@@ -8077,7 +8077,7 @@
     },
     {
       "name": "Dante Visentini",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 8,
       "number": null,
       "disposals": 8.62,
@@ -8092,7 +8092,7 @@
     },
     {
       "name": "Archer Day-Wicks",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 5,
       "number": null,
       "disposals": 8.6,
@@ -8107,7 +8107,7 @@
     },
     {
       "name": "Brodie Kemp",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 5,
       "number": 55,
       "disposals": 8.6,
@@ -8122,7 +8122,7 @@
     },
     {
       "name": "Luamon Lual",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 12,
       "number": null,
       "disposals": 8.58,
@@ -8137,7 +8137,7 @@
     },
     {
       "name": "Will White",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 14,
       "number": null,
       "disposals": 8.57,
@@ -8152,7 +8152,7 @@
     },
     {
       "name": "Cooper Harvey",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 7,
       "number": 49,
       "disposals": 8.57,
@@ -8167,7 +8167,7 @@
     },
     {
       "name": "Mattaes Phillipou",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 7,
       "number": null,
       "disposals": 8.57,
@@ -8182,7 +8182,7 @@
     },
     {
       "name": "Wil Parker",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 4,
       "number": null,
       "disposals": 8.5,
@@ -8197,7 +8197,7 @@
     },
     {
       "name": "Maurice Rioli",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 13,
       "number": null,
       "disposals": 8.46,
@@ -8212,7 +8212,7 @@
     },
     {
       "name": "Nicholas Holman",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 16,
       "number": null,
       "disposals": 8.44,
@@ -8227,7 +8227,7 @@
     },
     {
       "name": "Nick Murray",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 12,
       "number": 91,
       "disposals": 8.42,
@@ -8242,7 +8242,7 @@
     },
     {
       "name": "Shannon Neale",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 25,
       "number": 28,
       "disposals": 8.36,
@@ -8257,7 +8257,7 @@
     },
     {
       "name": "Ashton Moir",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 9,
       "number": 89,
       "disposals": 8.33,
@@ -8272,7 +8272,7 @@
     },
     {
       "name": "Ben Paton",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 4,
       "number": null,
       "disposals": 8.25,
@@ -8287,7 +8287,7 @@
     },
     {
       "name": "Corey Durdin",
-      "team": "Blues",
+      "team": "Port Adelaide",
       "games": 16,
       "number": null,
       "disposals": 8,
@@ -8302,7 +8302,7 @@
     },
     {
       "name": "Sam Day",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 13,
       "number": null,
       "disposals": 8,
@@ -8317,7 +8317,7 @@
     },
     {
       "name": "Lachlan Murphy",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 5,
       "number": null,
       "disposals": 8,
@@ -8332,7 +8332,7 @@
     },
     {
       "name": "Jackson Archer",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 3,
       "number": null,
       "disposals": 8,
@@ -8347,7 +8347,7 @@
     },
     {
       "name": "James Leake",
-      "team": "Giants",
+      "team": "GWS",
       "games": 3,
       "number": null,
       "disposals": 8,
@@ -8362,7 +8362,7 @@
     },
     {
       "name": "Reef McInnes",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 3,
       "number": null,
       "disposals": 8,
@@ -8377,7 +8377,7 @@
     },
     {
       "name": "James Borlase",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 2,
       "number": null,
       "disposals": 8,
@@ -8392,7 +8392,7 @@
     },
     {
       "name": "Will Hayes",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 2,
       "number": null,
       "disposals": 8,
@@ -8407,7 +8407,7 @@
     },
     {
       "name": "Alex Dodson",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 1,
       "number": null,
       "disposals": 8,
@@ -8422,7 +8422,7 @@
     },
     {
       "name": "Ted Clohesy",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 9,
       "number": null,
       "disposals": 7.89,
@@ -8437,7 +8437,7 @@
     },
     {
       "name": "Mitchell Lewis",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 8,
       "number": 99,
       "disposals": 7.88,
@@ -8452,7 +8452,7 @@
     },
     {
       "name": "Jack Williams",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 13,
       "number": 73,
       "disposals": 7.85,
@@ -8467,7 +8467,7 @@
     },
     {
       "name": "Josh Dolan",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 11,
       "number": null,
       "disposals": 7.82,
@@ -8482,7 +8482,7 @@
     },
     {
       "name": "Josh Draper",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 11,
       "number": null,
       "disposals": 7.82,
@@ -8497,7 +8497,7 @@
     },
     {
       "name": "Oliver Henry",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 15,
       "number": null,
       "disposals": 7.8,
@@ -8512,7 +8512,7 @@
     },
     {
       "name": "Alex Cincotta",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 5,
       "number": 71,
       "disposals": 7.8,
@@ -8527,7 +8527,7 @@
     },
     {
       "name": "Jobe Shanahan",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 9,
       "number": 61,
       "disposals": 7.67,
@@ -8542,7 +8542,7 @@
     },
     {
       "name": "Bo Allan",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 6,
       "number": null,
       "disposals": 7.67,
@@ -8557,7 +8557,7 @@
     },
     {
       "name": "Daniel Butler",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 6,
       "number": 77,
       "disposals": 7.67,
@@ -8572,7 +8572,7 @@
     },
     {
       "name": "James Aish",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 3,
       "number": null,
       "disposals": 7.67,
@@ -8587,7 +8587,7 @@
     },
     {
       "name": "Kallan Dawson",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 3,
       "number": null,
       "disposals": 7.67,
@@ -8602,7 +8602,7 @@
     },
     {
       "name": "James Tunstill",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 3,
       "number": null,
       "disposals": 7.67,
@@ -8617,7 +8617,7 @@
     },
     {
       "name": "Noah Long",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 10,
       "number": null,
       "disposals": 7.6,
@@ -8632,7 +8632,7 @@
     },
     {
       "name": "Jayden Nguyen",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 5,
       "number": null,
       "disposals": 7.6,
@@ -8647,7 +8647,7 @@
     },
     {
       "name": "Ethan Read",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 21,
       "number": null,
       "disposals": 7.57,
@@ -8662,7 +8662,7 @@
     },
     {
       "name": "Joel Hamling",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 14,
       "number": null,
       "disposals": 7.57,
@@ -8677,7 +8677,7 @@
     },
     {
       "name": "Jye Menzie",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 10,
       "number": null,
       "disposals": 7.5,
@@ -8692,7 +8692,7 @@
     },
     {
       "name": "Jacob Koschitzke",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 2,
       "number": null,
       "disposals": 7.5,
@@ -8707,7 +8707,7 @@
     },
     {
       "name": "Samson Ryan",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 2,
       "number": null,
       "disposals": 7.5,
@@ -8722,7 +8722,7 @@
     },
     {
       "name": "Steely Green",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 19,
       "number": null,
       "disposals": 7.37,
@@ -8737,7 +8737,7 @@
     },
     {
       "name": "Isaac Keeler",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 11,
       "number": null,
       "disposals": 7.36,
@@ -8752,7 +8752,7 @@
     },
     {
       "name": "Calsher Dear",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 9,
       "number": 89,
       "disposals": 7.33,
@@ -8767,7 +8767,7 @@
     },
     {
       "name": "Liam Henry",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 6,
       "number": null,
       "disposals": 7.33,
@@ -8782,7 +8782,7 @@
     },
     {
       "name": "Ben King",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 25,
       "number": 5,
       "disposals": 7.32,
@@ -8797,7 +8797,7 @@
     },
     {
       "name": "Jonty Faull",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 16,
       "number": null,
       "disposals": 7.25,
@@ -8812,7 +8812,7 @@
     },
     {
       "name": "Jake Rogers",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 9,
       "number": null,
       "disposals": 7.22,
@@ -8827,7 +8827,7 @@
     },
     {
       "name": "Sid Draper",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 10,
       "number": null,
       "disposals": 7.2,
@@ -8842,7 +8842,7 @@
     },
     {
       "name": "Jye Amiss",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 24,
       "number": 61,
       "disposals": 7.12,
@@ -8857,7 +8857,7 @@
     },
     {
       "name": "Jed Walter",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 16,
       "number": 87,
       "disposals": 7.12,
@@ -8872,7 +8872,7 @@
     },
     {
       "name": "Tom Hanily",
-      "team": "Swans",
+      "team": "Sydney",
       "games": 8,
       "number": null,
       "disposals": 7.12,
@@ -8887,7 +8887,7 @@
     },
     {
       "name": "Koltyn Tholstrup",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 9,
       "number": null,
       "disposals": 7.11,
@@ -8902,7 +8902,7 @@
     },
     {
       "name": "Isaiah Dudley",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 16,
       "number": null,
       "disposals": 7.06,
@@ -8917,7 +8917,7 @@
     },
     {
       "name": "Luke Pedlar",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 9,
       "number": 46,
       "disposals": 7,
@@ -8932,7 +8932,7 @@
     },
     {
       "name": "Wil Dawson",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 5,
       "number": null,
       "disposals": 7,
@@ -8947,7 +8947,7 @@
     },
     {
       "name": "Hudson O'Keeffe",
-      "team": "Blues",
+      "team": "Carlton",
       "games": 5,
       "number": null,
       "disposals": 7,
@@ -8962,7 +8962,7 @@
     },
     {
       "name": "Tom Edwards",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 2,
       "number": 44,
       "disposals": 7,
@@ -8977,7 +8977,7 @@
     },
     {
       "name": "Josh Gibcus",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 1,
       "number": null,
       "disposals": 7,
@@ -8992,7 +8992,7 @@
     },
     {
       "name": "Angus McLennan",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 1,
       "number": null,
       "disposals": 7,
@@ -9007,7 +9007,7 @@
     },
     {
       "name": "Mason Cox",
-      "team": "Magpies",
+      "team": "Fremantle",
       "games": 10,
       "number": null,
       "disposals": 6.9,
@@ -9022,7 +9022,7 @@
     },
     {
       "name": "Thomas Sims",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 11,
       "number": null,
       "disposals": 6.82,
@@ -9037,7 +9037,7 @@
     },
     {
       "name": "Zane Duursma",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 10,
       "number": null,
       "disposals": 6.8,
@@ -9052,7 +9052,7 @@
     },
     {
       "name": "David Swallow",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 9,
       "number": null,
       "disposals": 6.78,
@@ -9067,7 +9067,7 @@
     },
     {
       "name": "Oscar Adams",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 8,
       "number": null,
       "disposals": 6.75,
@@ -9082,7 +9082,7 @@
     },
     {
       "name": "Luke Breust",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 8,
       "number": null,
       "disposals": 6.75,
@@ -9097,7 +9097,7 @@
     },
     {
       "name": "Zac Banch",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 4,
       "number": null,
       "disposals": 6.75,
@@ -9112,7 +9112,7 @@
     },
     {
       "name": "Max Heath",
-      "team": "Saints",
+      "team": "Melbourne",
       "games": 4,
       "number": null,
       "disposals": 6.75,
@@ -9127,7 +9127,7 @@
     },
     {
       "name": "Tom Cochrane",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 3,
       "number": null,
       "disposals": 6.67,
@@ -9142,7 +9142,7 @@
     },
     {
       "name": "Rhys Unwin",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 3,
       "number": null,
       "disposals": 6.67,
@@ -9157,7 +9157,7 @@
     },
     {
       "name": "Harry Armstrong",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 8,
       "number": null,
       "disposals": 6.62,
@@ -9172,7 +9172,7 @@
     },
     {
       "name": "Finnbar Maley",
-      "team": "Kangaroos",
+      "team": "Adelaide",
       "games": 7,
       "number": null,
       "disposals": 6.57,
@@ -9187,7 +9187,7 @@
     },
     {
       "name": "Liam McMahon",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 7,
       "number": 32,
       "disposals": 6.57,
@@ -9202,7 +9202,7 @@
     },
     {
       "name": "Jack Whitlock",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 4,
       "number": 99,
       "disposals": 6.5,
@@ -9217,7 +9217,7 @@
     },
     {
       "name": "Malakai Champion",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 2,
       "number": null,
       "disposals": 6.5,
@@ -9232,7 +9232,7 @@
     },
     {
       "name": "Oliver Wiltshire",
-      "team": "Cats",
+      "team": "Geelong",
       "games": 2,
       "number": null,
       "disposals": 6.5,
@@ -9247,7 +9247,7 @@
     },
     {
       "name": "Harry Sharp",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 18,
       "number": null,
       "disposals": 6.44,
@@ -9262,7 +9262,7 @@
     },
     {
       "name": "Jordon Butts",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 10,
       "number": null,
       "disposals": 6.4,
@@ -9277,7 +9277,7 @@
     },
     {
       "name": "Max Gruzewski",
-      "team": "Giants",
+      "team": "GWS",
       "games": 7,
       "number": 49,
       "disposals": 6.29,
@@ -9292,7 +9292,7 @@
     },
     {
       "name": "Cooper Hynes",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 8,
       "number": null,
       "disposals": 6.25,
@@ -9307,7 +9307,7 @@
     },
     {
       "name": "Seamus Mitchell",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 4,
       "number": null,
       "disposals": 6.25,
@@ -9322,7 +9322,7 @@
     },
     {
       "name": "Liam O'Connell",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 7,
       "number": null,
       "disposals": 6.14,
@@ -9337,7 +9337,7 @@
     },
     {
       "name": "Ollie Lord",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 15,
       "number": null,
       "disposals": 6.13,
@@ -9352,7 +9352,7 @@
     },
     {
       "name": "Nathan Fyfe",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 8,
       "number": null,
       "disposals": 6,
@@ -9367,7 +9367,7 @@
     },
     {
       "name": "Chayce Jones",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 5,
       "number": null,
       "disposals": 6,
@@ -9382,7 +9382,7 @@
     },
     {
       "name": "Brayden Cook",
-      "team": "Crows",
+      "team": "Adelaide",
       "games": 3,
       "number": null,
       "disposals": 6,
@@ -9397,7 +9397,7 @@
     },
     {
       "name": "Matt Whitlock",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 2,
       "number": null,
       "disposals": 6,
@@ -9412,7 +9412,7 @@
     },
     {
       "name": "Charlie Ballard",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 1,
       "number": null,
       "disposals": 6,
@@ -9427,7 +9427,7 @@
     },
     {
       "name": "Ned Reeves",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 1,
       "number": null,
       "disposals": 6,
@@ -9442,7 +9442,7 @@
     },
     {
       "name": "Liam Reidy",
-      "team": "Dockers",
+      "team": "Carlton",
       "games": 1,
       "number": null,
       "disposals": 6,
@@ -9457,7 +9457,7 @@
     },
     {
       "name": "Malcolm Rosas",
-      "team": "Suns",
+      "team": "Sydney",
       "games": 4,
       "number": null,
       "disposals": 5.75,
@@ -9472,7 +9472,7 @@
     },
     {
       "name": "Archer Reid",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 14,
       "number": null,
       "disposals": 5.64,
@@ -9487,7 +9487,7 @@
     },
     {
       "name": "Oskar Smartt",
-      "team": "Bombers",
+      "team": "Essendon",
       "games": 4,
       "number": null,
       "disposals": 5.5,
@@ -9502,7 +9502,7 @@
     },
     {
       "name": "Matthew Jefferson",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 7,
       "number": null,
       "disposals": 5.43,
@@ -9517,7 +9517,7 @@
     },
     {
       "name": "Lance Collard",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 12,
       "number": null,
       "disposals": 5.42,
@@ -9532,7 +9532,7 @@
     },
     {
       "name": "Aidan Johnson",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 5,
       "number": null,
       "disposals": 5.4,
@@ -9547,7 +9547,7 @@
     },
     {
       "name": "Bailey Macdonald",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 6,
       "number": null,
       "disposals": 5.33,
@@ -9562,7 +9562,7 @@
     },
     {
       "name": "Jack Carroll",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 3,
       "number": null,
       "disposals": 5.33,
@@ -9577,7 +9577,7 @@
     },
     {
       "name": "Ned Moyle",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 3,
       "number": null,
       "disposals": 5.33,
@@ -9592,7 +9592,7 @@
     },
     {
       "name": "Geordie Payne",
-      "team": "Kangaroos",
+      "team": "North Melbourne",
       "games": 3,
       "number": 99,
       "disposals": 5.33,
@@ -9607,7 +9607,7 @@
     },
     {
       "name": "Jacob Bauer",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 5,
       "number": null,
       "disposals": 5.2,
@@ -9622,7 +9622,7 @@
     },
     {
       "name": "Conor McKenna",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 5,
       "number": null,
       "disposals": 5,
@@ -9637,7 +9637,7 @@
     },
     {
       "name": "Jasper Alger",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 4,
       "number": null,
       "disposals": 5,
@@ -9652,7 +9652,7 @@
     },
     {
       "name": "Josaia Delana",
-      "team": "Giants",
+      "team": "GWS",
       "games": 3,
       "number": null,
       "disposals": 5,
@@ -9667,7 +9667,7 @@
     },
     {
       "name": "Quinton Narkle",
-      "team": "Dockers",
+      "team": "Fremantle",
       "games": 2,
       "number": null,
       "disposals": 5,
@@ -9682,7 +9682,7 @@
     },
     {
       "name": "Jed Adams",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9697,7 +9697,7 @@
     },
     {
       "name": "Liam Fawcett",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 1,
       "number": 99,
       "disposals": 5,
@@ -9712,7 +9712,7 @@
     },
     {
       "name": "Ryan Gardner",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9727,7 +9727,7 @@
     },
     {
       "name": "Harrison Ramm",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9742,7 +9742,7 @@
     },
     {
       "name": "Harry Schoenberg",
-      "team": "Crows",
+      "team": "West Coast",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9757,7 +9757,7 @@
     },
     {
       "name": "Ivan Soldo",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 1,
       "number": null,
       "disposals": 5,
@@ -9772,7 +9772,7 @@
     },
     {
       "name": "Leo Lombard",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 4,
       "number": null,
       "disposals": 4.75,
@@ -9787,7 +9787,7 @@
     },
     {
       "name": "Will McLachlan",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 6,
       "number": null,
       "disposals": 4.5,
@@ -9802,7 +9802,7 @@
     },
     {
       "name": "Arthur Jones",
-      "team": "Bulldogs",
+      "team": "Western Bulldogs",
       "games": 4,
       "number": null,
       "disposals": 4.5,
@@ -9817,7 +9817,7 @@
     },
     {
       "name": "Tom Fullarton",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 2,
       "number": null,
       "disposals": 4.5,
@@ -9832,7 +9832,7 @@
     },
     {
       "name": "Dylan Williams",
-      "team": "Power",
+      "team": "Port Adelaide",
       "games": 2,
       "number": null,
       "disposals": 4.5,
@@ -9847,7 +9847,7 @@
     },
     {
       "name": "Alex Sexton",
-      "team": "Suns",
+      "team": "Gold Coast",
       "games": 5,
       "number": null,
       "disposals": 4,
@@ -9862,7 +9862,7 @@
     },
     {
       "name": "Sam Frost",
-      "team": "Hawks",
+      "team": "Hawthorn",
       "games": 2,
       "number": null,
       "disposals": 4,
@@ -9877,7 +9877,7 @@
     },
     {
       "name": "Zaine Cordy",
-      "team": "Saints",
+      "team": "St Kilda",
       "games": 1,
       "number": 99,
       "disposals": 4,
@@ -9892,7 +9892,7 @@
     },
     {
       "name": "Charlie West",
-      "team": "Magpies",
+      "team": "Collingwood",
       "games": 1,
       "number": 99,
       "disposals": 4,
@@ -9907,7 +9907,7 @@
     },
     {
       "name": "Deven Robertson",
-      "team": "Lions",
+      "team": "West Coast",
       "games": 4,
       "number": null,
       "disposals": 3.5,
@@ -9922,7 +9922,7 @@
     },
     {
       "name": "Jack Petruccelle",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 2,
       "number": null,
       "disposals": 3.5,
@@ -9937,7 +9937,7 @@
     },
     {
       "name": "Henry Smith",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 2,
       "number": 14,
       "disposals": 3.5,
@@ -9952,7 +9952,7 @@
     },
     {
       "name": "Jacob Newton",
-      "team": "Eagles",
+      "team": "West Coast",
       "games": 2,
       "number": null,
       "disposals": 3,
@@ -9967,7 +9967,7 @@
     },
     {
       "name": "Luke Beecken",
-      "team": "Lions",
+      "team": "Brisbane",
       "games": 1,
       "number": null,
       "disposals": 3,
@@ -9982,7 +9982,7 @@
     },
     {
       "name": "Bailey Laurie",
-      "team": "Demons",
+      "team": "Melbourne",
       "games": 1,
       "number": null,
       "disposals": 3,
@@ -9997,7 +9997,7 @@
     },
     {
       "name": "Mykelti Lefau",
-      "team": "Tigers",
+      "team": "Richmond",
       "games": 1,
       "number": null,
       "disposals": 2,
