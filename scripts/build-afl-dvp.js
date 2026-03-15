@@ -492,12 +492,14 @@ async function main() {
   }
 
   const rows = [];
+  const MAX_SANE_TEAM_GAMES = 30;
   for (const [, acc] of byOpponentPosition.entries()) {
     const baseline = leagueBaseline[acc.position];
     const perPlayerGame = toAverages(acc);
     const totals = toRoundedTotals(acc);
     const inferredGames = opponentGameKeys.has(acc.opponent) ? opponentGameKeys.get(acc.opponent).size : 0;
-    const teamGames = seasonTeamGameCounts.get(acc.opponent) || inferredGames;
+    let teamGames = seasonTeamGameCounts.get(acc.opponent) || inferredGames;
+    if (teamGames <= 0 || teamGames > MAX_SANE_TEAM_GAMES) teamGames = inferredGames;
     const perTeamGame = {};
     for (const stat of statList()) {
       perTeamGame[stat] = teamGames > 0

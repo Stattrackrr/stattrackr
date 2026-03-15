@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const DEFAULT_SEASON = 2026;
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
 const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v2';
-const DVP_BATCH_CACHE_TTL_SECONDS = 60 * 60 * 2; // 2 hours – match script calibration, reduce file reads
+const DVP_BATCH_CACHE_TTL_SECONDS = 60 * 30; // 30 min – so updated DvP (team totals) is reflected sooner
 
 type DvpRow = {
   opponent: string;
