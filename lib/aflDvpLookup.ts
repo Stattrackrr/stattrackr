@@ -42,7 +42,7 @@ export function normalizeOpponentForDvp(opponent: string): string {
 }
 
 export type DvpMaps = {
-  /** Key: normalized "opponent|position". Per-player; rank 1 = easiest (highest value). */
+  /** Key: normalized "opponent|position". Per-team vs position (avg stat allowed per team game); rank 1 = easiest (highest value). */
   disposals: Map<string, { rank: number; value: number }>;
   goals: Map<string, { rank: number; value: number }>;
   /** Team-total rank/value: rank 1 = hardest (lowest allowed). Matches dashboard DVP batch API. Optional when loaded from HTTP API. */
@@ -92,7 +92,7 @@ export async function loadDvpMaps(origin: string): Promise<DvpMaps> {
 
 type DvpFileRow = { opponent?: string; position?: string; perPlayerGame?: Record<string, number>; perTeamGame?: Record<string, number | null> };
 
-/** Build DvP maps from file keyed by "opponent|position". Uses perPlayerGame and rank 1 = easiest (desc) to match dashboard API. Normalises all team names so file variants match lookups. */
+/** Build DvP maps from file keyed by "opponent|position". Prefers perTeamGame (per team vs position), rank 1 = easiest (desc). Normalises all team names so file variants match lookups. */
 function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map<string, { rank: number; value: number }> {
   const map = new Map<string, { rank: number; value: number }>();
   const byOpponentPosition = new Map<string, number>();
@@ -100,7 +100,7 @@ function buildFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goals'): Map
     const oppKey = normalizeOpponentForDvp((row.opponent || '').trim());
     const pos = (row.position || 'MID').trim().toUpperCase();
     if (!oppKey) continue;
-    const val = Number(row.perPlayerGame?.[stat] ?? row.perTeamGame?.[stat] ?? 0);
+    const val = Number(row.perTeamGame?.[stat] ?? row.perPlayerGame?.[stat] ?? 0);
     const key = `${oppKey}|${pos}`;
     byOpponentPosition.set(key, val);
   }

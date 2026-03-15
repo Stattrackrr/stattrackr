@@ -15,6 +15,7 @@ type DvpRow = {
   position: string;
   sampleSize: number;
   perPlayerGame: Record<string, number>;
+  perTeamGame?: Record<string, number | null>;
   indexVsLeague: Record<string, number | null>;
 };
 
@@ -69,29 +70,39 @@ export async function GET(req: NextRequest) {
     const data = await readDvpFile(season);
     const allRows = Array.isArray(data.rows) ? data.rows : [];
 
-    const statExists = allRows.some((r) => r?.perPlayerGame && Number.isFinite(Number(r.perPlayerGame?.[stat])));
+    const statExists = allRows.some(
+      (r) =>
+        Number.isFinite(Number(r?.perTeamGame?.[stat])) ||
+        Number.isFinite(Number(r?.perPlayerGame?.[stat]))
+    );
     if (!statExists) {
       return NextResponse.json(
         {
           success: false,
           error: `Stat '${stat}' is not available in built DVP file for ${season}.`,
-          hint: 'Check keys in rows[].perPlayerGame or rebuild with updated stat mappings.',
+          hint: 'Check keys in rows[].perTeamGame or perPlayerGame, or rebuild with updated stat mappings.',
         },
         { status: 400 }
       );
     }
 
+    // Prefer per-team (per game vs that position); fall back to per-player average only if missing
     let rows = allRows
       .filter((r) => (positionParam ? r.position === positionParam : true))
       .filter((r) => (team ? r.opponent.toLowerCase().includes(team) : true))
       .filter((r) => Number(r.sampleSize || 0) >= minSample)
-      .map((r) => ({
-        opponent: r.opponent,
-        position: r.position,
-        sampleSize: r.sampleSize,
-        value: Number(r.perPlayerGame?.[stat] ?? 0),
-        index: r.indexVsLeague?.[stat] ?? null,
-      }));
+      .map((r) => {
+        const teamVal = Number(r.perTeamGame?.[stat]);
+        const playerVal = Number(r.perPlayerGame?.[stat] ?? 0);
+        const value = Number.isFinite(teamVal) ? teamVal : playerVal;
+        return {
+          opponent: r.opponent,
+          position: r.position,
+          sampleSize: r.sampleSize,
+          value,
+          index: r.indexVsLeague?.[stat] ?? null,
+        };
+      });
 
     rows.sort((a, b) => (order === 'asc' ? a.value - b.value : b.value - a.value));
     rows = rows.slice(0, top);

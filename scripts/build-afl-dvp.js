@@ -101,11 +101,11 @@ async function fetchSeasonTotalsPlayers(season) {
 }
 
 async function fetchSeasonTeamGameCounts(season) {
-  // Prefer local rankings snapshot (already parsed/clean and includes finals via Gm).
-  try {
-    const rankingsPath = path.join(process.cwd(), 'data', `afl-team-rankings-${season}.json`);
-    if (fs.existsSync(rankingsPath)) {
-      const raw = fs.readFileSync(rankingsPath, 'utf8');
+  // Prefer local rankings snapshot (Gm = games played). Try plain file first, then -oa / -ta from workflow.
+  const tryRankingsFile = (filePath) => {
+    if (!fs.existsSync(filePath)) return null;
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
       const json = JSON.parse(raw);
       const teams = Array.isArray(json?.teams) ? json.teams : [];
       const fromRankings = new Map();
@@ -117,10 +117,20 @@ async function fetchSeasonTeamGameCounts(season) {
           fromRankings.set(teamName, gm);
         }
       }
-      if (fromRankings.size >= 10) return fromRankings;
+      return fromRankings.size >= 10 ? fromRankings : null;
+    } catch {
+      return null;
     }
-  } catch {
-    // fall through to fixture scrape
+  };
+  const dataDir = path.join(process.cwd(), 'data');
+  const candidates = [
+    path.join(dataDir, `afl-team-rankings-${season}.json`),
+    path.join(dataDir, `afl-team-rankings-${season}-oa.json`),
+    path.join(dataDir, `afl-team-rankings-${season}-ta.json`),
+  ];
+  for (const rankingsPath of candidates) {
+    const fromRankings = tryRankingsFile(rankingsPath);
+    if (fromRankings) return fromRankings;
   }
 
   const urls = [

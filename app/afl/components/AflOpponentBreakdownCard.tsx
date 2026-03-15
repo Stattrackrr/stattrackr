@@ -157,9 +157,9 @@ export function AflOpponentBreakdownCard({
 
         {loading ? (
           <div className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</div>
-        ) : selectedSeason === 2026 && (error || !teamRow || oaData?.season !== 2026) ? (
+        ) : selectedSeason === 2026 && (error || !oaData?.teams?.length) ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            2026 stats will show once all teams have played 1 game.
+            2026 stats will show once Opponent Breakdown data is available (AFL Process Stats workflow runs fetch and commits data).
           </div>
         ) : error ? (
           <div className="text-sm text-amber-600 dark:text-amber-400">{error}</div>

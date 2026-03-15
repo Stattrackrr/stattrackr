@@ -383,7 +383,7 @@ export default function AflDvpCard({
 
         {selectedSeason === 2026 && (error || (posSel && !loading && Object.keys(perStat).length === 0)) ? (
           <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            2026 stats will show once all teams have played 1 game.
+            2026 DvP will show once the AFL Process Stats workflow has run (builds DvP and caches it).
           </div>
         ) : error ? (
           <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading DvP stats: {error}</div>

@@ -129,7 +129,11 @@ export function AflLeagueRankingCard({
     return leagueData.players;
   }, [leagueData?.players, compareScope, footywireTeamNickname]);
 
-  const minGames = 5;
+  const minGames = useMemo(() => {
+    if (!comparePool.length) return 5;
+    const maxGames = Math.max(...comparePool.map((p) => p.games || 0), 0);
+    return maxGames >= 5 ? 5 : 1;
+  }, [comparePool]);
 
   const showCard = !!playerName;
 
@@ -180,7 +184,7 @@ export function AflLeagueRankingCard({
           <div className={`text-sm py-4 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{error}</div>
         ) : !leagueData?.players?.length ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            No league data. Run: <code className="text-xs bg-black/10 dark:bg-white/10 px-1 rounded">npm run fetch:footywire-league-player-stats</code>
+            No league data yet. Compare data is updated by the AFL Process Stats workflow (fetch + commit); it will appear after the next run and deploy.
           </div>
         ) : !playerMatch ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
