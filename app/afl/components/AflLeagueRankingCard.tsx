@@ -200,9 +200,10 @@ export function AflLeagueRankingCard({
               {playerName} vs {compareScope === 'league' ? 'league' : 'team'} (min {minGames} games)
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
-              {RANK_STATS.map(({ key, label, playerKey }) => {
-                const rawVal = playerStats?.[playerKey];
-                const value = typeof rawVal === 'number' && Number.isFinite(rawVal) ? rawVal : (playerMatch as unknown as Record<string, number>)[key];
+              {RANK_STATS.map(({ key, label }) => {
+                // Use league data (ft_player_rankings) for value so it matches rank source; avoid stale game-log averages.
+                const value = (playerMatch as unknown as Record<string, number>)[key];
+                if (typeof value !== 'number' || !Number.isFinite(value)) return null;
                 const rankResult = getRank(comparePool, key as keyof LeaguePlayerRow, value, minGames);
                 if (!rankResult) return null;
                 const { rank, total } = rankResult;

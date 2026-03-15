@@ -46,31 +46,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Compare tab: fetch from ft_player_rankings (URL changes per stat: st=DI, KI, HB, MA, GO, ...)
-      - name: Fetch league player stats (Compare tab – ft_player_rankings)
+      # Compare tab: fetch from ft_player_rankings (URL changes per stat: st=DI, KI, HB, MA, GO, ...) — 2026 primary
+      - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026
         run: |
-          npm run fetch:footywire-league-player-stats -- --season=2026 &
-          npm run fetch:footywire-league-player-stats -- --season=2025 &
-          wait
+          npm run fetch:footywire-league-player-stats -- --season=2026
+          npm run fetch:footywire-league-player-stats -- --season=2025
         env:
           NODE_OPTIONS: '--max-old-space-size=512'
 
-      # Opponent Breakdown: team rankings (OA/TA)
-      - name: Fetch team rankings (Opponent Breakdown)
+      # Opponent Breakdown: team rankings (OA/TA) — 2026
+      - name: Fetch team rankings (Opponent Breakdown) 2026
         run: npm run fetch:footywire-team-rankings -- --season=2026
 
-      # Commit and push data files so app has latest league stats + team rankings
+      # Commit and push 2026 (and 2025) data so app has latest league stats + team rankings
       - name: Commit and push data files if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
+          git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
           for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json; do
             [ -f "$f" ] && git add "$f"
           done
           if git diff --staged --quiet; then
             echo "No changes to AFL data files"
           else
-            git commit -m "chore(data): update AFL league stats and team rankings [skip ci]"
+            git commit -m "chore(data): update AFL 2026 league stats and team rankings [skip ci]"
             git push
           fi
 
