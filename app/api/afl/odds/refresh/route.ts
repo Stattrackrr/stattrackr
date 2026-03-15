@@ -16,7 +16,7 @@ import sharedCache from '@/lib/sharedCache';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const AFL_DVP_BUILD_SEASON = 2025;
+const AFL_DVP_BUILD_SEASON = 2026;
 const AFL_DVP_BUILD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**

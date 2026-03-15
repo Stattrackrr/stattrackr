@@ -319,7 +319,7 @@ export function AflStatsChart({
   apiErrorHint,
   teammateFilterName,
   withWithoutMode = 'with',
-  season = 2025,
+  season = 2026,
   clearTeammateFilter,
   selectedStat: selectedStatProp,
   selectedTimeframe: controlledTimeframe,

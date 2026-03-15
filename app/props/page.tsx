@@ -1224,8 +1224,8 @@ export default function NBALandingPage() {
             }
           }
           if (!cancelled && retryAggregated.length === 0) {
-            // List API now triggers background refresh when empty; retry list fetch so we pick up data (same idea as NBA never empty).
-            fetch('/api/afl/odds/refresh').catch(() => {});
+            // Retry list fetch so we pick up data when cron has run. Do not call /api/afl/odds/refresh from the client:
+            // that route runs execSync(build-afl-dvp) and heavy work that blocks the Node process and freezes the dev server.
             const delays = [12000, 27000, 45000];
             const timeouts: ReturnType<typeof setTimeout>[] = [];
             delays.forEach((delay) => {

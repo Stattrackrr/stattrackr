@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
-const DEFAULT_SEASON = 2025;
+const DEFAULT_SEASON = 2026;
 const DEFAULT_STAT = 'disposals';
 
 type DvpRow = {

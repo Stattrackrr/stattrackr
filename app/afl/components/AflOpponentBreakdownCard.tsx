@@ -41,7 +41,7 @@ export function AflOpponentBreakdownCard({
   playerName,
   lastOpponent,
 }: AflOpponentBreakdownCardProps) {
-  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
+  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2026);
   const [oaData, setOaData] = useState<OAData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

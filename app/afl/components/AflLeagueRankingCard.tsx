@@ -68,7 +68,7 @@ export function AflLeagueRankingCard({
   const [error, setError] = useState<string | null>(null);
   const [compareScope, setCompareScope] = useState<'league' | 'team'>('league');
 
-  const effectiveSeason = Math.min(season, 2025);
+  const effectiveSeason = Math.min(season, 2026);
 
   useEffect(() => {
     if (!playerName) {

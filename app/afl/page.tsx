@@ -1618,7 +1618,7 @@ export default function AFLPage() {
   }, [selectedPlayerGameLogs, selectedPlayerGameLogsWithQuarters, aflPropsMode]);
 
   // Fetch DVP batch and OA for game filters (player mode only). Use filter's dvpPosition so changing the dropdown refetches.
-  const dvpSeason = Math.min(season, 2025);
+  const dvpSeason = Math.min(season, 2026);
   useEffect(() => {
     if (aflPropsMode !== 'player' || !selectedPlayer || selectedPlayerGameLogs.length === 0) {
       setAflFilterDataDvp(null);
@@ -2732,7 +2732,7 @@ export default function AFLPage() {
                           <div className="flex flex-col min-h-0 overflow-y-auto">
                             <AflDvpCard
                               isDark={!!mounted && isDark}
-                              season={Math.min(season, 2025)}
+                              season={Math.min(season, 2026)}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                               opponentTeam={aflTeamFilter !== 'All' && aflTeamFilter ? aflTeamFilter : (matchupOpponent || '')}
                               logoByTeam={logoByTeam}
@@ -2800,7 +2800,7 @@ export default function AFLPage() {
                 )}
                 {/* 4.7. AFL Ladder - mobile only; desktop uses right panel */}
                 <div className="lg:hidden w-full min-w-0 rounded-lg shadow-sm p-3 sm:p-4 border bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700">
-                  <AflLadderCard isDark={!!mounted && isDark} season={Math.min(season, 2025)} logoByTeam={logoByTeam} />
+                  <AflLadderCard isDark={!!mounted && isDark} season={Math.min(season, 2026)} logoByTeam={logoByTeam} />
                 </div>
                 {/* 5. Game Log (Box Score) - same as NBA PlayerBoxScore, player mode only */}
                 {aflPropsMode === 'player' && (
@@ -2973,7 +2973,7 @@ export default function AFLPage() {
                           <div className={aflRightTab === 'dvp' ? 'flex-1 min-h-0 overflow-y-auto flex flex-col' : 'hidden'}>
                             <AflDvpCard
                               isDark={!!mounted && isDark}
-                              season={Math.min(season, 2025)}
+                              season={Math.min(season, 2026)}
                               playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                               opponentTeam={aflTeamFilter !== 'All' && aflTeamFilter ? aflTeamFilter : (matchupOpponent || '')}
                               logoByTeam={logoByTeam}
@@ -3035,7 +3035,7 @@ export default function AFLPage() {
                       : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  <AflLadderCard isDark={!!mounted && isDark} season={Math.min(season, 2025)} logoByTeam={logoByTeam} />
+                  <AflLadderCard isDark={!!mounted && isDark} season={Math.min(season, 2026)} logoByTeam={logoByTeam} />
                 </div>
               </div>
             </div>
