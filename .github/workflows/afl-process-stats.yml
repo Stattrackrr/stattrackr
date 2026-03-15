@@ -46,8 +46,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Compare tab: league player stats
-      - name: Fetch league player stats (Compare tab)
+      # Compare tab: fetch from ft_player_rankings (URL changes per stat: st=DI, KI, HB, MA, GO, ...)
+      - name: Fetch league player stats (Compare tab – ft_player_rankings)
         run: |
           npm run fetch:footywire-league-player-stats -- --season=2026 &
           npm run fetch:footywire-league-player-stats -- --season=2025 &

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Fetch AFL league player stats (season averages) from FootyWire player rankings.
- * Merges multiple stat pages into one dataset. Caches to data/afl-league-player-stats-{year}.json
+ * Fetch AFL league player stats (season averages) from FootyWire Player Rankings.
+ * Source: footywire.com/afl/footy/ft_player_rankings — URL changes per stat (year, rt=LA, st=DI|KI|HB|MA|GO|...).
+ * Merges all stat pages into one dataset. Caches to data/afl-league-player-stats-{year}.json (used by Compare tab).
  *
  *   node scripts/fetch-footywire-league-player-stats.js
  *   node scripts/fetch-footywire-league-player-stats.js --season=2025
@@ -163,8 +164,9 @@ function mergeByPlayer(statArrays) {
   return Array.from(byKey.values());
 }
 
+// Compare tab uses this data. One URL per stat: year, rt=LA (League Averages), st= stat code, pt= position (blank All), mg= min games.
 async function fetchOne(season, st) {
-  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&st=${st}`;
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&pt=&st=${st}&mg=1`;
   const res = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
