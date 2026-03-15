@@ -4,7 +4,7 @@ import LeftSidebar from "@/components/LeftSidebar";
 import { MobileBottomNavigation } from "@/app/nba/research/dashboard/components/header";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
@@ -259,7 +259,7 @@ const AFL_POPUP_DISMISSED_KEY = 'afl_launch_popup_dismissed_v1';
 const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
 const AFL_NOTIFICATION_ID = 'afl-launch-update-2026';
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v1';
-const AFL_PROPS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min – show cached list instantly when returning, refresh in background
+const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
 
 export default function NBALandingPage() {
   const router = useRouter();
@@ -510,12 +510,24 @@ export default function NBALandingPage() {
     }
     
     // Restore sport from URL so refresh keeps AFL tab when on /props?sport=afl
+    // Only set AFL loading true if we don't have cache (useLayoutEffect may have already restored cache and set loading false)
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const sportParam = url.searchParams.get('sport');
       if (sportParam === 'afl') {
         setPropsSport('afl');
-        setAflPropsLoading(true);
+        try {
+          const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { timestamp?: number };
+            const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+            if (age >= AFL_PROPS_CACHE_TTL_MS) setAflPropsLoading(true);
+          } else {
+            setAflPropsLoading(true);
+          }
+        } catch {
+          setAflPropsLoading(true);
+        }
         // Keep sport=afl in URL so refresh stays on AFL
       }
       // When coming back from AFL dashboard "Back to Player Props", clear the search filter
@@ -559,6 +571,119 @@ export default function NBALandingPage() {
     }
     
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Run before paint: restore from sessionStorage so first paint shows cache (no loading flash)
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const sportParam = url.searchParams.get('sport');
+
+    // 1) Restore sport from URL so AFL cache read uses correct tab
+    if (sportParam === 'afl') {
+      setPropsSport('afl');
+    }
+
+    // 2) NBA player props cache
+    const CACHE_KEY = 'nba-player-props-cache';
+    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+    const cachedData = sessionStorage.getItem(CACHE_KEY);
+    const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+    if (cachedData && cachedTimestamp) {
+      const age = Date.now() - parseInt(cachedTimestamp, 10);
+      if (age < CACHE_TTL_MS) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            let propsWithMergedStats = parsed;
+            const CALCULATED_STATS_KEY = 'nba-player-props-calculated-stats';
+            try {
+              const stored = sessionStorage.getItem(CALCULATED_STATS_KEY);
+              if (stored) {
+                const calculatedStats = JSON.parse(stored);
+                if (Array.isArray(calculatedStats)) {
+                  const calculatedMap = new Map<string, PlayerProp>();
+                  calculatedStats.forEach((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    calculatedMap.set(key, prop);
+                  });
+                  propsWithMergedStats = parsed.map((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    const calculated = calculatedMap.get(key);
+                    if (calculated) {
+                      return {
+                        ...prop,
+                        h2hAvg: calculated.h2hAvg ?? prop.h2hAvg,
+                        seasonAvg: calculated.seasonAvg ?? prop.seasonAvg,
+                        h2hHitRate: calculated.h2hHitRate ?? prop.h2hHitRate,
+                        seasonHitRate: calculated.seasonHitRate ?? prop.seasonHitRate,
+                      };
+                    }
+                    return prop;
+                  });
+                  calculatedStats.forEach((prop: PlayerProp) => {
+                    const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+                    calculatedKeysRef.current.add(key);
+                  });
+                  setPropsWithCalculatedStats(calculatedMap);
+                }
+              }
+            } catch {
+              // ignore
+            }
+            setPlayerProps(propsWithMergedStats);
+            propsLoadedRef.current = true;
+            setPropsLoading(false);
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+
+    // 3) Games cache (same key as fetchTodaysGames)
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+    const gamesCacheKey = `dashboard-games-${start}-${end}`;
+    const gamesCached = sessionStorage.getItem(gamesCacheKey);
+    const gamesTs = sessionStorage.getItem(`${gamesCacheKey}-timestamp`);
+    if (gamesCached && gamesTs) {
+      const age = Date.now() - parseInt(gamesTs, 10);
+      if (age < CACHE_TTL_MS) {
+        try {
+          const parsed = JSON.parse(gamesCached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTodaysGames(parsed);
+            setGamesLoading(false);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // 4) AFL cache when sport is AFL
+    if (sportParam === 'afl') {
+      try {
+        const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { props?: PlayerProp[]; games?: AflGameForProps[]; selectedGameIds?: string[]; timestamp?: number };
+          const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+          if (age < AFL_PROPS_CACHE_TTL_MS && Array.isArray(parsed?.props)) {
+            setAflProps(parsed.props);
+            if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
+              setAflGames(parsed.games);
+              setSelectedAflGames(new Set(parsed.games.map((g: { gameId: string }) => g.gameId)));
+            }
+            aflPropsFetchCompleteRef.current = true;
+            setAflPropsLoading(false);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
   }, []);
 
   // Keep playerPropsRef in sync for 8-second no-props check
@@ -1399,8 +1524,8 @@ export default function NBALandingPage() {
         // Define cacheUrl early so it's available in all code paths
         const cacheUrl = '/api/nba/player-props';
         
-        // If we already have props from initialization, just refresh in background
-        if (propsLoadedRef.current && playerProps.length > 0) {
+        // If we already have props from useLayoutEffect cache or prior load, just refresh in background
+        if (propsLoadedRef.current) {
           // Debug logging removed(`[NBA Landing] ✅ Props already loaded from initialization (${playerProps.length} props), refreshing in background...`);
           // Refresh in background without showing loading state
           fetch(cacheUrl, { cache: forceRefresh ? 'no-store' : 'default' }).then(async (response) => {

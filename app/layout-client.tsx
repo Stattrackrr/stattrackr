@@ -128,6 +128,9 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     
     // Prefetch dashboard games immediately (runs in background, doesn't block render)
     prefetchDashboardGames();
+
+    // Warm AFL props list API so props page AFL tab loads fast when user switches to it
+    fetch('/api/afl/player-props/list', { cache: 'no-store' }).catch(() => {});
   }, []);
 
   return (
