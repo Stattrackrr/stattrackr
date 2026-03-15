@@ -19,7 +19,8 @@ const fs = require('fs');
 const path = require('path');
 
 const prodUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
-const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026,2025')
+// Only warm current season (2026); 2025 is cached forever and never re-fetched
+const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026')
   .split(',')
   .map((v) => parseInt(v.trim(), 10))
   .filter((n) => Number.isFinite(n));

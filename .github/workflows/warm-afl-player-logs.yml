@@ -10,9 +10,9 @@ on:
         required: false
         default: '0'
       seasons:
-        description: 'Comma-separated seasons to warm'
+        description: 'Comma-separated seasons to warm (default 2026 only; 2025 is cache-only, never re-fetched)'
         required: false
-        default: '2026,2025'
+        default: '2026'
 
 concurrency:
   group: warm-afl-player-logs
@@ -49,11 +49,11 @@ jobs:
       - name: Warm AFL player logs cache
         run: |
           echo "🔄 Warming AFL player logs cache (production API with CRON_SECRET)..."
-          echo "📅 Seasons: ${{ github.event.inputs.seasons || '2026,2025' }}"
+          echo "📅 Seasons: ${{ github.event.inputs.seasons || '2026' }}"
           echo "👥 Player limit: ${{ github.event.inputs.warm_limit || '0' }} (0 = all)"
           npm run warm:afl:player-logs
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
-          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025' }}
+          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026' }}
           AFL_WARM_CONCURRENCY: '24'
           AFL_WARM_MAX_FAILURES: '100'
