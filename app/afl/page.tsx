@@ -336,8 +336,6 @@ export default function AFLPage() {
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
   const nextGameFromFetchRef = useRef<{ opponent: string | null; tipoff: Date | null }>({ opponent: null, tipoff: null });
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
-  const [refreshLogsKey, setRefreshLogsKey] = useState(0);
-
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
 
   useEffect(() => setMounted(true), []);
@@ -1208,7 +1206,7 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const fetchOpts = { cache: 'no-store' as RequestCache };
     Promise.all([
-      fetch(`${baseUrl}&season=${currentYear}&force_fetch=1`, fetchOpts).then((r) => r.json()),
+      fetch(`${baseUrl}&season=${currentYear}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
     ])
       .then(([dataCurrent, dataPrev]) => {
@@ -1351,7 +1349,8 @@ export default function AFLPage() {
     setStatsLoadingForPlayer(true);
     const currentYear = season;
     const prevYear = currentYear - 1;
-    const forceFetchCurrent = currentYear === 2026 || refreshLogsKey > 0 ? '&force_fetch=1' : '';
+    // Cache only: cron warms cache every 2h; dashboard never hits FootyWire
+    const forceFetchCurrent = '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     let dataCurrent: Record<string, unknown> | null = null;
     let dataPrev: Record<string, unknown> | null = null;
@@ -1504,7 +1503,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season, refreshLogsKey]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
