@@ -29,6 +29,7 @@
     "test:afl:massimo": "node scripts/test-afl-player-massimo.js",
     "test:afl:2025-2026-logs": "node scripts/test-afl-2025-2026-logs.js",
     "test:afl:2025-2026-logs:all": "node scripts/test-afl-2025-2026-logs.js --all",
+    "debug:afl:dvp": "node scripts/debug-afl-dvp-2026.js",
     "test:afl:symbols": "node scripts/test-afl-symbol-players.js",
     "test:afl:team-selections": "node scripts/test-footywire-team-selections.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
