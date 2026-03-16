@@ -3055,6 +3055,82 @@ export default function AFLPage() {
                     )}
                   </div>
                 )}
+                {/* 4.52. Player vs Team - mobile */}
+                {aflPropsMode === 'player' && (
+                  <div className="lg:hidden w-full min-w-0 rounded-lg shadow-sm px-3 sm:px-4 py-2.5 sm:py-3 border bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-center mb-2">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">Player vs Team</h3>
+                    </div>
+                    <div className="flex justify-center mb-2">
+                      <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <button
+                          type="button"
+                          onClick={() => setPlayerVsRankScope('team')}
+                          className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                            playerVsRankScope === 'team'
+                              ? 'bg-purple-600 text-white'
+                              : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          vs Team
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlayerVsRankScope('league')}
+                          className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                            playerVsRankScope === 'league'
+                              ? 'bg-purple-600 text-white'
+                              : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          vs League
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {aflTeamFilter !== 'All' && aflTeamFilter
+                          ? aflTeamFilter
+                          : (matchupOpponent || 'Select opponent')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Stat</span>
+                      <span className="col-span-2 text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-1">Player</span>
+                      <span className="col-span-2 text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Opp</span>
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Stat</span>
+                    </div>
+                    <div className="space-y-0.5 text-sm">
+                      {playerVsTeamRows.map((row) => {
+                        const playerValue = renderPlayerSeasonValue(row.playerStatKey);
+                        const opponentValue = renderOpponentSeasonValue(row.opponentStatCode);
+                        const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
+                        const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
+                        return (
+                          <div key={`m-${row.label}`} className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] items-center gap-x-1.5 min-w-0">
+                            <span className="text-gray-700 dark:text-gray-200 truncate pr-1">{row.label}</span>
+                            <span className="font-semibold text-gray-900 dark:text-white justify-self-end text-right tabular-nums whitespace-nowrap">
+                              {playerValue ?? '—'}
+                            </span>
+                            <span className="justify-self-start whitespace-nowrap">
+                              {playerRank ?? <span className="inline-block w-[3.5ch]" />}
+                            </span>
+                            <span className="justify-self-end whitespace-nowrap">
+                              {opponentRank ?? <span className="inline-block w-[3.5ch]" />}
+                            </span>
+                            <span className="font-semibold text-gray-900 dark:text-white justify-self-start text-left tabular-nums whitespace-nowrap">
+                              {opponentValue ?? '—'}
+                            </span>
+                            <span className="text-gray-700 dark:text-gray-200 truncate pl-1 text-right">{row.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {/* 4.55. Lineups - mobile only; same as desktop lineup, under DVP/opp breakdown. Game Props: use odds game so lineup matches. */}
                 {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
                   <div className="lg:hidden w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-4 border border-gray-200 dark:border-gray-700">
