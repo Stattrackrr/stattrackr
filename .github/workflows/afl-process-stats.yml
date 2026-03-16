@@ -60,6 +60,44 @@ jobs:
           npm run fetch:footywire-team-rankings -- --season=2026
           npm run fetch:footywire-team-rankings -- --season=2025
 
+      # Guardrail: Player vs Team relies on these advanced fields.
+      # - League player stats: UP/CP/MG/FF (player-side advanced rankings)
+      # - Team rankings OA: UP/CP/MG (opponent-side advanced values/rankings)
+      - name: Validate Player vs Team advanced stats payloads
+        run: |
+          node -e "
+          const fs = require('fs');
+          const seasons = [2026, 2025];
+          const errors = [];
+          for (const season of seasons) {
+            const lp = JSON.parse(fs.readFileSync('data/afl-league-player-stats-' + season + '.json', 'utf8'));
+            const players = Array.isArray(lp?.players) ? lp.players : [];
+            const hasPlayerAdvanced = players.some((p) =>
+              Number.isFinite(Number(p?.uncontested_possessions)) ||
+              Number.isFinite(Number(p?.contested_possessions)) ||
+              Number.isFinite(Number(p?.meters_gained)) ||
+              Number.isFinite(Number(p?.free_kicks_for))
+            );
+            if (!hasPlayerAdvanced) errors.push('Missing player advanced fields in afl-league-player-stats-' + season + '.json');
+
+            const oa = JSON.parse(fs.readFileSync('data/afl-team-rankings-' + season + '-oa.json', 'utf8'));
+            const cols = Array.isArray(oa?.statColumns) ? oa.statColumns : [];
+            const teams = Array.isArray(oa?.teams) ? oa.teams : [];
+            const colsOk = ['CP', 'UP', 'MG'].every((k) => cols.includes(k));
+            const rowsOk = teams.some((t) =>
+              Number.isFinite(Number(t?.stats?.CP)) &&
+              Number.isFinite(Number(t?.stats?.UP)) &&
+              Number.isFinite(Number(t?.stats?.MG))
+            );
+            if (!colsOk || !rowsOk) errors.push('Missing OA advanced fields in afl-team-rankings-' + season + '-oa.json');
+          }
+          if (errors.length) {
+            console.error('Player vs Team validation failed:\\n' + errors.map((e) => '- ' + e).join('\\n'));
+            process.exit(1);
+          }
+          console.log('✅ Player vs Team advanced stats validation passed');
+          "
+
       # Commit and push 2026 (and 2025) data so app has latest league stats + team rankings
       - name: Commit and push data files if changed
         run: |
