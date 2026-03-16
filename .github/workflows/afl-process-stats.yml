@@ -54,9 +54,11 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=512'
 
-      # Opponent Breakdown: team rankings (OA/TA) — 2026
-      - name: Fetch team rankings (Opponent Breakdown) 2026
-        run: npm run fetch:footywire-team-rankings -- --season=2026
+      # Opponent Breakdown: team rankings (OA/TA) — 2026 + 2025 (single workflow)
+      - name: Fetch team rankings (Opponent Breakdown) 2026 + 2025
+        run: |
+          npm run fetch:footywire-team-rankings -- --season=2026
+          npm run fetch:footywire-team-rankings -- --season=2025
 
       # Commit and push 2026 (and 2025) data so app has latest league stats + team rankings
       - name: Commit and push data files if changed

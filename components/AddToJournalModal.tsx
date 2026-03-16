@@ -111,6 +111,18 @@ const AFL_GAME_PROP_STAT_OPTIONS = [
   { value: 'total_points', label: 'Total Points' },
 ];
 
+// Map friendly AFL stat values used in the UI to the cache keys
+// expected by /api/afl/player-props (see CACHED_PP_STATS in aflPlayerPropsCache).
+function mapAflPlayerStatToCacheKey(stat: string): string {
+  const s = (stat || '').trim().toLowerCase();
+  if (!s) return 'disposals';
+  if (s === 'goals') return 'goals_over';
+  if (s === 'disposals') return 'disposals';
+  // For now, other stats (kicks, marks, tackles, etc.) are not cached;
+  // pass through so the API can return an empty result with a helpful message.
+  return s;
+}
+
 const CURRENCIES = ['USD', 'AUD', 'GBP', 'EUR'] as const;
 
 interface BookmakerOdds {
@@ -521,9 +533,25 @@ export default function AddToJournalModal({
             throw new Error('Player name and stat type are required');
           }
 
-          const playerPropsUrl = sport === 'afl'
-            ? `/api/afl/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`
-            : `/api/player-props?player=${encodeURIComponent(playerName.trim())}&stat=${encodeURIComponent(statType.trim())}`;
+          const trimmedPlayer = playerName.trim();
+          const rawStat = statType.trim();
+          if (!trimmedPlayer || !rawStat) {
+            throw new Error('Player name and stat type are required');
+          }
+
+          let playerPropsUrl: string;
+          if (sport === 'afl') {
+            const mappedStat = mapAflPlayerStatToCacheKey(rawStat);
+            const params = new URLSearchParams();
+            params.set('player', trimmedPlayer);
+            params.set('stat', mappedStat);
+            if (team?.trim()) params.set('team', team.trim());
+            if (opponent?.trim()) params.set('opponent', opponent.trim());
+            if (gameDate?.trim()) params.set('game_date', gameDate.trim());
+            playerPropsUrl = `/api/afl/player-props?${params.toString()}`;
+          } else {
+            playerPropsUrl = `/api/player-props?player=${encodeURIComponent(trimmedPlayer)}&stat=${encodeURIComponent(rawStat)}`;
+          }
           const response = await fetch(playerPropsUrl);
           
           if (!response.ok) {
@@ -842,9 +870,18 @@ export default function AddToJournalModal({
       try {
         const playerName = selectedPlayer.full.trim();
         const stat = playerStatType.trim();
-        const playerPropsUrl = sport === 'afl'
-          ? `/api/afl/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`
-          : `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`;
+
+        let playerPropsUrl: string;
+        if (sport === 'afl') {
+          const mappedStat = mapAflPlayerStatToCacheKey(stat);
+          const params = new URLSearchParams();
+          params.set('player', playerName);
+          params.set('stat', mappedStat);
+          // In parlay mode we do not always know the exact matchup; rely on cache event matching.
+          playerPropsUrl = `/api/afl/player-props?${params.toString()}`;
+        } else {
+          playerPropsUrl = `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`;
+        }
         const response = await fetch(playerPropsUrl);
         
         if (!response.ok) {

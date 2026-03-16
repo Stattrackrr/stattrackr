@@ -96,7 +96,9 @@ function parseTeamRankings(html) {
 }
 
 async function fetchOne(season, type) {
-  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=${type}`;
+  const isOpponentAverages = String(type).toUpperCase() === 'OA';
+  const advParam = isOpponentAverages ? '&advv=Y' : '';
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=${type}${advParam}`;
   const res = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

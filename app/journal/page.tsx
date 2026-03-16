@@ -639,9 +639,10 @@ function JournalContent() {
       
       if (!session) {
         if (isMounted) {
+          // No active session visible in this tab yet. Do not redirect;
+          // just mark as non-Pro so the page can render a paywall/empty state.
           setHasProAccess(false);
           setLoading(false);
-          router.push("/");
         }
         return;
       }
@@ -908,7 +909,7 @@ function JournalContent() {
           setHasProAccess(false);
           setIsPro(false);
           setLoading(false);
-          router.push("/");
+          // Stay on the journal page; user can navigate or log back in elsewhere.
         }
       }
       // Only check on SIGNED_IN (not TOKEN_REFRESHED to avoid frequent checks)

@@ -81,6 +81,7 @@ const STAT_TO_OA_CODE: Record<string, string> = {
   tackles: 'T',
   clearances: 'CL',
   inside_50s: 'I50',
+  free_kicks_against: 'FA',
 };
 
 export async function GET(req: NextRequest) {

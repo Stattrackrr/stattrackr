@@ -75,6 +75,9 @@ const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
   tackles: 'tackles',
   clearances: 'clearances',
   inside_50s: 'inside_50s',
+  uncontested_possessions: 'uncontested_possessions',
+  meters_gained: 'meters_gained',
+  free_kicks_against: 'free_kicks_against',
 };
 
 const CHART_STAT_TO_OA_CODE: Record<string, string> = {
@@ -86,6 +89,9 @@ const CHART_STAT_TO_OA_CODE: Record<string, string> = {
   tackles: 'T',
   clearances: 'CL',
   inside_50s: 'I50',
+  uncontested_possessions: 'D',
+  meters_gained: 'D',
+  free_kicks_against: 'FA',
 };
 
 type PersistedAflPageState = {
@@ -586,7 +592,7 @@ export default function AFLPage() {
     const tfParam = url.searchParams.get('tf')?.trim();
     const lineParam = url.searchParams.get('line')?.trim();
     const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
-    if (statParam && ['disposals', 'goals', 'marks', 'tackles', 'kicks', 'handballs', 'tog', 'inside_50s', 'uncontested'].includes(statParam)) {
+    if (statParam && ['disposals', 'goals', 'marks', 'tackles', 'kicks', 'handballs', 'tog', 'inside_50s', 'uncontested', 'uncontested_possessions', 'meters_gained', 'free_kicks_against'].includes(statParam)) {
       setMainChartStat(statParam);
     }
     if (tfParam && validTimeframes.includes(tfParam as AflChartTimeframe)) {
@@ -835,7 +841,8 @@ export default function AFLPage() {
           .eq('id', user.id)
           .single();
         const p = profile as { full_name?: string; username?: string; avatar_url?: string; subscription_status?: string; subscription_tier?: string } | null;
-        setUsername(p?.username ?? p?.full_name ?? null);
+        // Match props/dashboard behavior: prefer full_name, then username
+        setUsername(p?.full_name || p?.username || null);
         setAvatarUrl(p?.avatar_url ?? null);
         const active = p?.subscription_status === 'active' || p?.subscription_status === 'trialing';
         const proTier = p?.subscription_tier === 'pro';
@@ -1638,7 +1645,9 @@ export default function AFLPage() {
         : null) || 'MID';
     let cancelled = false;
     Promise.all([
-      fetch(`/api/afl/dvp/batch?season=${dvpSeason}&position=${pos}&stats=disposals,kicks,marks,goals,tackles,clearances,inside_50s`).then((r) => r.ok ? r.json() : null),
+      fetch(
+        `/api/afl/dvp/batch?season=${dvpSeason}&position=${pos}&stats=disposals,kicks,marks,goals,tackles,clearances,inside_50s,uncontested_possessions,meters_gained,free_kicks_against`
+      ).then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/afl/team-rankings?season=${dvpSeason}&type=oa`).then((r) => r.ok ? r.json() : null),
     ]).then(([dvpRes, oaRes]) => {
       if (cancelled) return;
@@ -1816,6 +1825,54 @@ export default function AFLPage() {
       .filter((g) => indices.has(Number((g as Record<string, unknown>).__aflGameIndex)));
     return filtered;
   }, [aflPropsMode, selectedPlayerGameLogs, perGameFilterData, aflGameFilters]);
+
+  const getCurrentSeasonAvg = (statKey: string): number | null => {
+    if (!selectedPlayerGameLogs.length) return null;
+    const effectiveSeason = Math.min(season, 2026);
+    const gamesThisSeason = selectedPlayerGameLogs.filter((g) => {
+      const s = Number((g as Record<string, unknown>)?.season);
+      if (Number.isFinite(s)) return s === effectiveSeason;
+      const date = (g as Record<string, unknown>)?.date ?? (g as Record<string, unknown>)?.game_date;
+      if (typeof date === 'string' && date.length >= 4) {
+        const year = Number(date.slice(0, 4));
+        return Number.isFinite(year) && year === effectiveSeason;
+      }
+      return false;
+    });
+    if (!gamesThisSeason.length) return null;
+    const values = gamesThisSeason
+      .map((g) => Number((g as Record<string, unknown>)?.[statKey]))
+      .filter((v) => Number.isFinite(v));
+    if (!values.length) return null;
+    const total = values.reduce((sum, v) => sum + v, 0);
+    const avg = total / values.length;
+    return Math.round(avg * 10) / 10;
+  };
+
+  const playerVsTeamOpponentKey = (): string | null => {
+    const raw =
+      aflTeamFilter !== 'All' && aflTeamFilter
+        ? aflTeamFilter
+        : (matchupOpponent || '');
+    if (!raw) return null;
+    const footy = opponentToFootywireTeam(raw) || raw;
+    return footy;
+  };
+
+  const getOpponentSeasonAvg = (statCode: string): number | null => {
+    const key = playerVsTeamOpponentKey();
+    const teams = aflFilterDataOa?.teams as
+      | Array<{ team: string; stats?: Record<string, number | string | null> }>
+      | undefined;
+    if (!key || !teams?.length) return null;
+    const teamRow = teams.find(
+      (t) => String(t.team || '').toLowerCase() === key.toLowerCase()
+    );
+    const raw = teamRow?.stats?.[statCode];
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isFinite(n)) return null;
+    return Math.round(n * 10) / 10;
+  };
 
   // When a team is selected in the Team dropdown, filter the chart to only games vs that opponent (so the dropdown visibly updates the chart).
   const chartGameLogsForPlayer = useMemo(() => {
@@ -3033,6 +3090,195 @@ export default function AFLPage() {
                       </div>
                     </>
                   )}
+                </div>
+                {/* Player vs Team – compare player season averages vs selected opponent */}
+                <div className="hidden lg:block rounded-lg shadow-sm p-2 xl:p-3 border w-full min-w-0 bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700 mt-2">
+                  <div className="flex items-center justify-center mb-2">
+                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
+                      Player vs Team
+                    </h3>
+                  </div>
+                  <div className="flex items-start mb-1">
+                    <div className="flex-1 flex items-start justify-start pr-3">
+                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
+                      </span>
+                    </div>
+                    <div className="w-px h-6 border-l border-dashed border-gray-300 dark:border-gray-600" />
+                    <div className="flex-1 flex items-start justify-end pl-3">
+                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-right truncate">
+                        {aflTeamFilter !== 'All' && aflTeamFilter
+                          ? aflTeamFilter
+                          : (matchupOpponent || 'Select opponent')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-center mt-0.5 mb-2">
+                    <div className="h-[12px] border-l border-dashed border-gray-300 dark:border-gray-600" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">
+                        Player season avg
+                      </span>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Disposals</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('disposals');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Uncont. poss.</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('uncontested_possessions');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Cont. poss.</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('contested_possessions');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Handballs</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('handballs');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Kicks</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('kicks');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Frees for</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('free_kicks_for');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Meters gained</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('meters_gained');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Goals</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getCurrentSeasonAvg('goals');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 items-end">
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">
+                        Opponent team avg
+                      </span>
+                      <div className="space-y-0.5 w-full max-w-[220px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Disposals</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('D');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Uncont. poss.</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('UP');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Cont. poss.</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('CP');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Handballs</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('HB');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Kicks</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('K');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Frees for</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('FF');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Meters gained</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('MG');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 dark:text-gray-200">Goals</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(() => {
+                              const v = getOpponentSeasonAvg('G');
+                              return typeof v === 'number' && Number.isFinite(v) ? v.toFixed(1) : '—';
+                            })()}
+                          </span>
+                        </div>
+                        <div className="pt-1 text-[10px] text-right text-gray-500 dark:text-gray-400">
+                          Team averages from Footywire OA (advanced) rankings
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 {/* Injuries - desktop right panel */}
                 <div
