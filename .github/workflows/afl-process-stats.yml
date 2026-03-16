@@ -1,5 +1,5 @@
 # Single AFL stats workflow: Compare tab (league stats), Opponent Breakdown (team rankings),
-# player logs cache warm, odds/props refresh, DvP build, and props-stats warm.
+# player logs cache warm, odds/props refresh, DvP build, then props-stats warm (L5/L10/H2H/Season/Streak) in a separate request.
 # Replaces: warm-afl-player-logs, warm-afl-props-stats, fetch-afl-league-player-stats, process-afl-player-props.
 name: AFL Process Stats
 
@@ -97,11 +97,11 @@ jobs:
           AFL_WARM_CONCURRENCY: '24'
           AFL_WARM_MAX_FAILURES: '100'
 
-      # Odds, props, DvP build, props-stats warm
-      - name: Refresh AFL odds and run DvP + props-stats warm
+      # Odds, props cache refresh, DvP build (stats warm runs in next step so it gets full timeout)
+      - name: Refresh AFL odds, props cache, and DvP build
         if: steps.check.outputs.configured == 'true'
         run: |
-          echo "🔄 Refreshing AFL odds, props, DvP build, and props-stats warm..."
+          echo "🔄 Refreshing AFL odds, props cache, and DvP build..."
           RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
@@ -120,4 +120,24 @@ jobs:
             echo "❌ AFL odds/refresh failed (exit $EXIT_CODE)"
             exit 1
           fi
-          echo "✅ AFL process stats completed (odds, props, DvP, props-stats warm)"
+          echo "✅ Odds + props cache + DvP done"
+
+      # Ingest L5/L10/H2H/Season/Streak into props-stats cache (separate request = full timeout; useList=1 = same props as UI)
+      - name: Warm AFL props-stats (L5, L10, H2H, Season, Streak)
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "🔄 Warming AFL props-stats cache (L5/L10/H2H/Season/Streak)..."
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/props-stats/warm?useList=1" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -L --max-time 600 \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
+            --fail-with-body 2>&1) || EXIT_CODE=$?
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Response ($HTTP_STATUS): $BODY"
+          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
+            echo "⚠️ AFL props-stats warm failed with HTTP $HTTP_STATUS (non-fatal)"
+          else
+            echo "✅ AFL props-stats warm completed"
+          fi
