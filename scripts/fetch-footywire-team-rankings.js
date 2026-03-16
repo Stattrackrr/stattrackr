@@ -55,6 +55,75 @@ function parseTeamRankings(html) {
     ? html.substring(Math.max(0, tableStart - 500), tableEnd + 100)
     : html;
 
+  // Try to infer the actual header codes from the header row so we also capture
+  // advanced columns (CP, UP, MG, etc.) when "Advanced stats" is enabled.
+  let headers = STAT_HEADERS;
+  // Footywire's advanced tables sometimes have multiple header rows; find the
+  // one that actually contains the "Team" label rather than blindly taking the
+  // first <tr>.
+  const headerRowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let headerMatch = null;
+  let m;
+  while ((m = headerRowRegex.exec(tableSection))) {
+    const rowHtml = m[1];
+    if (/>\s*team\s*</i.test(rowHtml)) {
+      headerMatch = m;
+      break;
+    }
+  }
+
+  if (headerMatch) {
+    const headerCells = [];
+    const cellRegexHeader = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    let hc;
+    while ((hc = cellRegexHeader.exec(headerMatch[1]))) {
+      headerCells.push(htmlToText(hc[1]).toUpperCase());
+    }
+    const HEADER_MAP = {
+      RK: 'Rk',
+      TEAM: 'Team',
+      GM: 'Gm',
+      DI: 'D',
+      D: 'D',
+      KI: 'K',
+      K: 'K',
+      HB: 'HB',
+      MR: 'M',
+      M: 'M',
+      G: 'G',
+      GA: 'GA',
+      I50: 'I50',
+      BH: 'BH',
+      T: 'T',
+      HO: 'HO',
+      FF: 'FF',
+      FA: 'FA',
+      CL: 'CL',
+      CCL: 'CL',
+      CG: 'CG',
+      R50: 'R50',
+      AF: 'AF',
+      SC: 'SC',
+      CP: 'CP',
+      UP: 'UP',
+      MG: 'MG',
+    };
+    // Keep one header key per source column so cell indexing stays aligned.
+    // If we drop unknown headers, later known keys (e.g. MG) shift onto the
+    // wrong values (e.g. contested marks), producing incorrect stats.
+    const inferred = headerCells.map((h, idx) => {
+      const compact = String(h || '')
+        .toUpperCase()
+        .replace(/\s+/g, '')
+        .replace(/[^A-Z0-9%]/g, '');
+      if (!compact) return null;
+      return HEADER_MAP[compact] || HEADER_MAP[h] || compact || `COL_${idx}`;
+    }).filter((h) => h);
+    if (inferred.length >= 4) {
+      headers = inferred;
+    }
+  }
+
   const rowRegex = /<tr[^>]*(?:class="(?:dark|light)color")[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch;
   const rows = [];
@@ -63,7 +132,7 @@ function parseTeamRankings(html) {
     if (row.includes('href="th-')) rows.push(row);
   }
 
-  for (const rowHtml of rows) {
+    for (const rowHtml of rows) {
     const cells = [];
     const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
     let c;
@@ -83,8 +152,8 @@ function parseTeamRankings(html) {
       team: teamName.trim(),
       stats: {},
     };
-    for (let j = 0; j < STAT_HEADERS.length && j < cells.length; j++) {
-      const key = STAT_HEADERS[j];
+    for (let j = 0; j < headers.length && j < cells.length; j++) {
+      const key = headers[j];
       const val = htmlToText(cells[j]);
       const num = parseFloat(val);
       team.stats[key] = Number.isFinite(num) ? num : (val || null);
@@ -92,13 +161,16 @@ function parseTeamRankings(html) {
     teams.push(team);
   }
 
-  return { teams, statColumns: STAT_HEADERS, statLabels: STAT_LABELS };
+  return { teams, statColumns: headers, statLabels: STAT_LABELS };
 }
 
 async function fetchOne(season, type) {
-  const isOpponentAverages = String(type).toUpperCase() === 'OA';
-  const advParam = isOpponentAverages ? '&advv=Y' : '';
-  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=${type}${advParam}`;
+  const upper = String(type).toUpperCase();
+  const isOpponentAverages = upper.startsWith('OA');
+  const isAdvanced = upper === 'OA_ADV';
+  const baseType = isOpponentAverages ? 'OA' : type;
+  const advParam = isAdvanced ? '&advv=Y' : '';
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=${baseType}${advParam}`;
   const res = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -127,15 +199,73 @@ async function main() {
   }
   console.log(`  TA: ${taRes.url}`);
 
-  const oaRes = await fetchOne(season, 'OA');
-  if (!oaRes.ok) {
-    console.error(`Failed to fetch Opponent Averages: ${oaRes.url}`);
+  // Opponent Averages: fetch both basic and advanced tables and merge so we
+  // have core stats (D, K, HB, G, etc.) plus advanced (CP, UP, MG, ...).
+  const oaBasicRes = await fetchOne(season, 'OA');
+  if (!oaBasicRes.ok) {
+    console.error(`Failed to fetch Opponent Averages (basic): ${oaBasicRes.url}`);
     process.exit(1);
   }
-  console.log(`  OA: ${oaRes.url}`);
+  console.log(`  OA (basic): ${oaBasicRes.url}`);
+
+  const oaAdvRes = await fetchOne(season, 'OA_ADV');
+  if (!oaAdvRes.ok) {
+    console.error(`Failed to fetch Opponent Averages (advanced): ${oaAdvRes.url}`);
+    process.exit(1);
+  }
+  console.log(`  OA (advanced): ${oaAdvRes.url}`);
 
   const taParsed = parseTeamRankings(taRes.html);
-  const oaParsed = parseTeamRankings(oaRes.html);
+  const oaBasicParsed = parseTeamRankings(oaBasicRes.html);
+  const oaAdvParsed = parseTeamRankings(oaAdvRes.html);
+
+  // Merge OA basic + advanced stats per team.
+  // Never let OA_ADV overwrite core OA columns (D/K/HB/G/etc), because
+  // FootyWire's adv table can occasionally misalign and relabel columns.
+  const oaMerged = (() => {
+    const teams = [];
+    const advByTeam = new Map();
+    const ADV_ONLY_KEYS = new Set([
+      'CP', 'UP', 'ED', 'DE%', 'CM', 'MI5', '1%', 'BO', 'CCL', 'SCL', 'MG', 'TO', 'ITC', 'T50',
+    ]);
+    for (const t of oaAdvParsed.teams) {
+      if (!t?.team) continue;
+      advByTeam.set(String(t.team).toLowerCase(), t);
+    }
+    for (const base of oaBasicParsed.teams) {
+      if (!base?.team) continue;
+      const key = String(base.team).toLowerCase();
+      const adv = advByTeam.get(key);
+      const advOnlyStats = {};
+      if (adv?.stats) {
+        for (const [k, v] of Object.entries(adv.stats)) {
+          if (ADV_ONLY_KEYS.has(k)) advOnlyStats[k] = v;
+        }
+      }
+      const mergedStats = {
+        ...(base.stats || {}),
+        ...advOnlyStats,
+      };
+      teams.push({
+        rank: base.rank ?? adv?.rank ?? null,
+        team: base.team || adv?.team,
+        stats: mergedStats,
+      });
+    }
+
+    const statColumns = Array.from(
+      new Set([
+        ...(oaBasicParsed.statColumns || []),
+        ...(oaAdvParsed.statColumns || []),
+      ]),
+    );
+
+    return {
+      teams,
+      statColumns,
+      statLabels: oaBasicParsed.statLabels || STAT_LABELS,
+    };
+  })();
 
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -158,10 +288,10 @@ async function main() {
   };
 
   write('ta', taParsed);
-  write('oa', oaParsed);
+  write('oa', oaMerged);
 
   console.log(`\nWrote TA: ${taParsed.teams.length} teams`);
-  console.log(`Wrote OA: ${oaParsed.teams.length} teams`);
+  console.log(`Wrote OA: ${oaMerged.teams.length} teams`);
   if (taParsed.teams.length > 0) {
     console.log('Teams:', taParsed.teams.map((t) => t.team).join(', '));
   }

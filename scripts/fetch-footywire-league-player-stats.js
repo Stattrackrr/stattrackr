@@ -69,6 +69,10 @@ const STAT_PAGES = [
   { key: 'clearances', st: 'CL' },
   { key: 'inside_50s', st: 'I5' },
   { key: 'rebound_50s', st: 'R5' },
+  { key: 'contested_possessions', st: 'CP' },
+  { key: 'uncontested_possessions', st: 'UP' },
+  { key: 'meters_gained', st: 'MG' },
+  { key: 'free_kicks_for', st: 'FF' },
 ];
 
 // Find the table that contains pp- player links: locate first pp-, then find the <table> that contains it
@@ -152,6 +156,10 @@ function mergeByPlayer(statArrays) {
           clearances: 0,
           inside_50s: 0,
           rebound_50s: 0,
+          contested_possessions: 0,
+          uncontested_possessions: 0,
+          meters_gained: 0,
+          free_kicks_for: 0,
         };
         byKey.set(key, existing);
       }
