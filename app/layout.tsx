@@ -50,6 +50,14 @@ export const metadata: Metadata = {
     description: "Analyze NBA and AFL player stats, team trends, and game props with an advanced, fast sports statistic dashboard.",
     type: "website",
     siteName: "StatTrackr",
+    images: [
+      {
+        url: "/images/stattrackr-icon.png?v=20260302",
+        width: 512,
+        height: 512,
+        alt: "StatTrackr logo",
+      },
+    ],
   },
   robots: {
     index: true,
