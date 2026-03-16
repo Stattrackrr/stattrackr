@@ -409,7 +409,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
               <Image 
-                src="/images/stattrackr-icon.png" 
+                src="/images/transparent-photo.png" 
                 alt="StatTrackr" 
                 width={32} 
                 height={32}
