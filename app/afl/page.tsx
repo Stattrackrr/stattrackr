@@ -1617,15 +1617,25 @@ export default function AFLPage() {
     });
   }, [selectedPlayerGameLogs, selectedPlayerGameLogsWithQuarters, aflPropsMode]);
 
-  // Fetch DVP batch and OA for game filters (player mode only). Use filter's dvpPosition so changing the dropdown refetches.
+  // Fetch DVP batch and OA for game filters (player mode only). Use the player's position so DvP matches their role (DEF/MID/FWD/RUC).
   const dvpSeason = Math.min(season, 2026);
+  const playerPositionForFilters = useMemo(
+    () =>
+      aflPropsMode === 'player' && selectedPlayer?.position && ['DEF', 'MID', 'FWD', 'RUC'].includes(String(selectedPlayer.position))
+        ? String(selectedPlayer.position)
+        : null,
+    [aflPropsMode, selectedPlayer?.position]
+  );
   useEffect(() => {
     if (aflPropsMode !== 'player' || !selectedPlayer || selectedPlayerGameLogs.length === 0) {
       setAflFilterDataDvp(null);
       setAflFilterDataOa(null);
       return;
     }
-    const pos = ['DEF', 'MID', 'FWD', 'RUC'].includes(aflGameFilters.dvpPosition) ? aflGameFilters.dvpPosition : 'MID';
+    const pos =
+      (playerPositionForFilters && ['DEF', 'MID', 'FWD', 'RUC'].includes(playerPositionForFilters)
+        ? playerPositionForFilters
+        : null) || 'MID';
     let cancelled = false;
     Promise.all([
       fetch(`/api/afl/dvp/batch?season=${dvpSeason}&position=${pos}&stats=disposals,kicks,marks,goals,tackles,clearances,inside_50s`).then((r) => r.ok ? r.json() : null),
@@ -1649,7 +1659,7 @@ export default function AFLPage() {
       }
     });
     return () => { cancelled = true; };
-  }, [aflPropsMode, selectedPlayer?.id, selectedPlayerGameLogs.length, dvpSeason, aflGameFilters.dvpPosition]);
+  }, [aflPropsMode, selectedPlayer?.id, selectedPlayerGameLogs.length, dvpSeason, playerPositionForFilters]);
 
   // OA stat code -> game log key for fallback rankings from player's own games
   const OA_STAT_TO_GAME_KEY: Record<string, string> = {
@@ -1819,6 +1829,19 @@ export default function AFLPage() {
       return resolved === officialTarget;
     });
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
+
+  // In Game Props (team) mode, apply the same Team dropdown filter to team game-props logs so both the chart and H2H timeframe respond to the selected opponent.
+  const chartGameLogsForTeamMode = useMemo(() => {
+    if (aflPropsMode !== 'team') return aflTeamGamePropsLogs;
+    if (!aflTeamFilter || aflTeamFilter === 'All' || aflTeamFilter.trim() === '') return aflTeamGamePropsLogs;
+    const officialTarget = aflTeamFilter.trim();
+    return aflTeamGamePropsLogs.filter((g) => {
+      const opp = (g as Record<string, unknown>)?.opponent;
+      if (opp == null || typeof opp !== 'string') return false;
+      const resolved = opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim();
+      return resolved === officialTarget;
+    });
+  }, [aflPropsMode, aflTeamGamePropsLogs, aflTeamFilter]);
 
   // Fetch next game (fixture scrape) when we have a player so we can show Team vs Next Opponent and countdown.
   // Use prefetch from sessionStorage (props page) so opponent shows immediately and no re-render when API returns same data.
@@ -2449,15 +2472,33 @@ export default function AFLPage() {
                     <>
                       <AflStatsChart
                         stats={selectedPlayer ?? {}}
-                        gameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : chartGameLogsForPlayer}
-                        allGameLogs={aflPropsMode === 'team' ? aflTeamGamePropsLogs : selectedPlayerGameLogs}
+                        gameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : chartGameLogsForPlayer}
+                        allGameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : selectedPlayerGameLogs}
                         isDark={!!mounted && isDark}
                         logoByTeam={logoByTeam}
                         isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
                         hasSelectedPlayer={!!selectedPlayer}
                         apiErrorHint={lastStatsError}
                         teammateFilterName={aflPropsMode === 'team' ? null : teammateFilterName}
-                        nextOpponent={aflPropsMode === 'player' && displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : null}
+                        nextOpponent={(() => {
+                          if (aflPropsMode === 'player' && displayOpponent) {
+                            return opponentToOfficialTeamName(displayOpponent) || displayOpponent;
+                          }
+                          if (aflPropsMode === 'team' && aflOddsHomeTeam && aflOddsAwayTeam) {
+                            // In Game Props mode, use the odds matchup so H2H is based on the upcoming game.
+                            const team = aflTeamFilter && aflTeamFilter !== 'All' ? aflTeamFilter.trim() : null;
+                            if (team) {
+                              const teamOfficial = opponentToOfficialTeamName(team) || rosterTeamToInjuryTeam(team) || team;
+                              const homeOfficial = opponentToOfficialTeamName(aflOddsHomeTeam) || rosterTeamToInjuryTeam(aflOddsHomeTeam) || aflOddsHomeTeam;
+                              const awayOfficial = opponentToOfficialTeamName(aflOddsAwayTeam) || rosterTeamToInjuryTeam(aflOddsAwayTeam) || aflOddsAwayTeam;
+                              if (teamOfficial === homeOfficial) return awayOfficial;
+                              if (teamOfficial === awayOfficial) return homeOfficial;
+                            }
+                            // Fallback: default to away team as opponent for H2H when team dropdown doesn't clearly match.
+                            return opponentToOfficialTeamName(aflOddsAwayTeam) || aflOddsAwayTeam;
+                          }
+                          return null;
+                        })()}
                         withWithoutMode={aflPropsMode === 'team' ? 'with' : withWithoutMode}
                         season={season}
                         clearTeammateFilter={aflPropsMode === 'team' ? undefined : () => {
@@ -2473,7 +2514,7 @@ export default function AFLPage() {
                         aflGameFilters={aflPropsMode === 'player' ? aflGameFilters : undefined}
                         setAflGameFilters={aflPropsMode === 'player' ? setAflGameFilters : undefined}
                         perGameFilterData={aflPropsMode === 'player' ? perGameFilterData : null}
-                        playerPositionForFilters={aflPropsMode === 'player' && selectedPlayer?.position ? String(selectedPlayer.position) : null}
+                        playerPositionForFilters={playerPositionForFilters}
                         slotRightOfControls={
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'} whitespace-nowrap`}>Team</span>
@@ -2618,6 +2659,8 @@ export default function AFLPage() {
                                 : null
                             }
                             selectedPlayerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                            expectedOpponentTeam={displayOpponent}
+                            resolveTeamLogo={(teamName) => resolveTeamLogo(teamName, logoByTeam)}
                           />
                         </div>
                       </>
@@ -2637,6 +2680,8 @@ export default function AFLPage() {
                             : null
                       }
                       selectedPlayerName={null}
+                      expectedOpponentTeam={aflOddsAwayTeam ?? null}
+                      resolveTeamLogo={(teamName) => resolveTeamLogo(teamName, logoByTeam)}
                     />
                   </div>
                 )}

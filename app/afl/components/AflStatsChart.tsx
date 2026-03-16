@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import type { AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
@@ -78,9 +79,11 @@ interface AflChartTooltipProps {
   coordinate?: { x: number; y: number };
   isDark: boolean;
   selectedStatLabel: string;
+  dvpPosition?: string | null;
+  perGameFilterData?: AflGameFilterDataItem[] | null;
 }
 
-function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel }: AflChartTooltipProps) {
+function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, dvpPosition, perGameFilterData }: AflChartTooltipProps) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -122,7 +125,7 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as
-    | { round?: string; opponent?: string; result?: string; value?: number }
+    | { round?: string; opponent?: string; result?: string; value?: number; gameDate?: string; sourceGameIndex?: number | null }
     | undefined;
   if (!point) return null;
 
@@ -132,6 +135,30 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const labelColor = isDark ? '#9ca3af' : '#6b7280';
   const winColor = isDark ? '#10b981' : '#059669';
   const lossColor = isDark ? '#ef4444' : '#dc2626';
+
+  // Lookup per-game DvP rank and TOG % for this game (by original game index).
+  let dvpRank: number | null = null;
+  let togPct: number | null = null;
+  if (Array.isArray(perGameFilterData) && typeof point.sourceGameIndex === 'number') {
+    const match = perGameFilterData.find((row) => row.gameIndex === point.sourceGameIndex);
+    if (match) {
+      dvpRank = match.dvpRank ?? null;
+      togPct = match.tog ?? null;
+    }
+  }
+
+  // Date formatting (NBA-style MM/DD/YY; fallback to raw string if parse fails)
+  let dateShort = point.gameDate ?? '';
+  if (point.gameDate) {
+    const ts = Date.parse(point.gameDate);
+    if (!Number.isNaN(ts)) {
+      const d = new Date(ts);
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const year = String(d.getFullYear()).slice(-2);
+      dateShort = `${month}/${day}/${year}`;
+    }
+  }
 
   const getTooltipPosition = () => {
     const currentPosition = mousePosition ?? (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
@@ -158,6 +185,44 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const isWin = point.result?.toLowerCase().startsWith('w');
   const resultColor = point.result ? (isWin ? winColor : lossColor) : labelColor;
 
+  // Derive "Won by X" / "Lost by X" style label from AFL result string (e.g. "Win 145-83").
+  let gameResultLabel: string | null = null;
+  if (point.result) {
+    const raw = String(point.result);
+    const lower = raw.toLowerCase();
+    // Try to parse scores like "Win 145-83" or "Loss 83-90"
+    const scoreMatch = raw.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (scoreMatch) {
+      const a = parseInt(scoreMatch[1], 10);
+      const b = parseInt(scoreMatch[2], 10);
+      if (Number.isFinite(a) && Number.isFinite(b) && a !== b) {
+        const margin = Math.abs(a - b);
+        const inferredWin = lower.includes('win') || a > b;
+        gameResultLabel = inferredWin ? `W by ${margin}` : `L by ${margin}`;
+      }
+    }
+    // Fallback if we couldn't parse scores
+    if (!gameResultLabel) {
+      if (lower.includes('won by') || lower.includes('lost by')) {
+        const cleaned = raw.trim();
+        // Normalise to W/L by N
+        const marginMatch = cleaned.match(/(\d+)\s*$/);
+        const margin = marginMatch ? parseInt(marginMatch[1], 10) : null;
+        if (!Number.isNaN(margin as number) && margin != null) {
+          gameResultLabel = lower.includes('won') ? `W by ${margin}` : `L by ${margin}`;
+        } else {
+          gameResultLabel = lower.includes('won') ? 'W' : 'L';
+        }
+      } else if (lower.includes('win')) {
+        gameResultLabel = 'W';
+      } else if (lower.includes('loss') || lower.includes('lost')) {
+        gameResultLabel = 'L';
+      } else {
+        gameResultLabel = raw;
+      }
+    }
+  }
+
   const tooltipStyle: React.CSSProperties = {
     backgroundColor: tooltipBg,
     border: `1px solid ${tooltipBorder}`,
@@ -183,10 +248,11 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   const tooltipContent = (
     <div style={tooltipStyle}>
+      {/* Header: Date, Opponent, and Game Result (NBA-style) */}
       <div
         style={{
-          marginBottom: '12px',
-          paddingBottom: '8px',
+          marginBottom: '10px',
+          paddingBottom: '6px',
           borderBottom: `1px solid ${tooltipBorder}`,
           fontSize: '13px',
           fontWeight: '600',
@@ -196,15 +262,22 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
           alignItems: 'center',
         }}
       >
-        <span>{point.round ?? '-'} vs {point.opponent ?? '-'}</span>
-        {point.result && (
+        <span>
+          {(dateShort || point.opponent)
+            ? `${dateShort || ''}${dateShort && point.opponent ? ' vs ' : ''}${point.opponent ?? ''}`
+            : '-'}
+        </span>
+        {gameResultLabel && (
           <span style={{ color: resultColor, fontWeight: '600', fontSize: '12px' }}>
-            {point.result}
+            {gameResultLabel}
           </span>
         )}
       </div>
+
+      {/* Main stat line - highlighted, like NBA hover */}
       <div
         style={{
+          marginBottom: '8px',
           padding: '8px',
           backgroundColor: isDark ? '#374151' : '#f3f4f6',
           borderRadius: '6px',
@@ -215,6 +288,49 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
       >
         {selectedStatLabel}: {formattedValue}
       </div>
+
+      {/* AFL-specific extra info: DvP rank + TOG (NBA-style rows) */}
+      {(dvpRank != null || togPct != null) && (() => {
+        const rows: Array<{ label: string; value: string }> = [];
+        if (togPct != null) {
+          rows.push({ label: 'TOG %', value: `${togPct.toFixed(1)}%` });
+        }
+        if (dvpRank != null) {
+          const posLabel = dvpPosition && ['DEF', 'MID', 'FWD', 'RUC'].includes(dvpPosition)
+            ? dvpPosition
+            : 'position';
+          rows.push({ label: `DvP rank vs ${posLabel}`, value: `#${dvpRank}` });
+        }
+        if (!rows.length) return null;
+        return (
+          <div
+            style={{
+              marginTop: '4px',
+              fontSize: '12px',
+              color: labelColor,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+            }}
+          >
+            {rows.map((row, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>{row.label}</span>
+                <span style={{ color: tooltipText, fontWeight: 600 }}>
+                  {row.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 
@@ -306,6 +422,8 @@ interface AflStatsChartProps {
   externalLineValue?: number | null;
   /** Upcoming opponent (official name). When H2H is selected, chart shows only games vs this opponent. */
   nextOpponent?: string | null;
+  /** In team (game props) mode, chart is for this team vs various opponents. Used for Team dropdown + H2H. */
+  gamePropsTeam?: string | null;
 }
 
 export function AflStatsChart({
@@ -335,6 +453,7 @@ export function AflStatsChart({
   slotRightOfControls = null,
   externalLineValue = null,
   nextOpponent = null,
+  gamePropsTeam = null,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
@@ -822,9 +941,11 @@ export function AflStatsChart({
         coordinate={props.coordinate}
         isDark={isDark}
         selectedStatLabel={selectedStatLabel}
+        dvpPosition={playerPositionForFilters ?? null}
+        perGameFilterData={perGameFilterData ?? undefined}
       />
     );
-  }, [isDark, selectedStatLabel]);
+  }, [isDark, selectedStatLabel, playerPositionForFilters, perGameFilterData]);
 
   const aflXAxisTick = useMemo(() => (
     <AflXAxisTick data={chartData} logoByTeam={chartLogoByTeam} isDark={isDark} />

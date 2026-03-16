@@ -157,7 +157,7 @@ function buildTeamTotalFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goa
 /** Season used for DvP matchup (props list + warm). 2026 only so ranks match full-season data (e.g. DEF vs Swans #6). */
 export const DVP_MATCHUP_SEASON = 2026;
 
-/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. Pass season to use that year only (e.g. 2026 for matchup). */
+/** Load DvP maps: prefer latest data file, then cache. Pass season to use that year only (e.g. 2026 for matchup). */
 export async function loadDvpMapsFromFiles(seasonHint?: number): Promise<DvpMaps> {
   const empty: DvpMaps = {
     disposals: new Map(),
@@ -170,15 +170,6 @@ export async function loadDvpMapsFromFiles(seasonHint?: number): Promise<DvpMaps
   for (const season of seasonsToTry) {
     if (season < 2020) continue;
     try {
-      const cached = await getAflDvpPayloadFromCache(season);
-      const rows = cached?.rows ?? [];
-      if (rows.length > 0) {
-        const disposals = buildFromFileRows(rows as DvpFileRow[], 'disposals');
-        const goals = buildFromFileRows(rows as DvpFileRow[], 'goals');
-        const disposalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'disposals');
-        const goalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'goals');
-        if (disposals.size > 0 || goals.size > 0) return { disposals, goals, disposalsTeamTotal, goalsTeamTotal };
-      }
       const filePath = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
       const raw = await fs.readFile(filePath, 'utf8');
       const data = JSON.parse(raw) as { rows?: DvpFileRow[] };
@@ -189,6 +180,24 @@ export async function loadDvpMapsFromFiles(seasonHint?: number): Promise<DvpMaps
       const disposalsTeamTotal = buildTeamTotalFromFileRows(fileRows, 'disposals');
       const goalsTeamTotal = buildTeamTotalFromFileRows(fileRows, 'goals');
       if (disposals.size > 0 || goals.size > 0) return { disposals, goals, disposalsTeamTotal, goalsTeamTotal };
+
+      // Fallback: older cached payload in Redis (e.g. before latest deploy)
+      const cached = await getAflDvpPayloadFromCache(season);
+      const rows = cached?.rows ?? [];
+      if (rows.length > 0) {
+        const cDisposals = buildFromFileRows(rows as DvpFileRow[], 'disposals');
+        const cGoals = buildFromFileRows(rows as DvpFileRow[], 'goals');
+        const cDisposalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'disposals');
+        const cGoalsTeamTotal = buildTeamTotalFromFileRows(rows as DvpFileRow[], 'goals');
+        if (cDisposals.size > 0 || cGoals.size > 0) {
+          return {
+            disposals: cDisposals,
+            goals: cGoals,
+            disposalsTeamTotal: cDisposalsTeamTotal,
+            goalsTeamTotal: cGoalsTeamTotal,
+          };
+        }
+      }
     } catch {
       /* try next season */
     }

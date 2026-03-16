@@ -128,12 +128,23 @@ export function AflTeamSelectionsCard({
   isDark,
   playerTeam,
   selectedPlayerName,
+  expectedOpponentTeam,
+  resolveTeamLogo,
 }: {
   isDark: boolean;
   /** Selected player's team (e.g. "Geelong Cats", "Gold Coast") – used to show that team's match lineup. */
   playerTeam?: string | null;
   /** Name of the searched/selected player – highlighted in purple in the lineup. */
   selectedPlayerName?: string | null;
+  /**
+   * When set, indicates the opponent for the NEXT game (from fixture/odds).
+   * If the FootyWire matchup's opponent differs, we label the card "Most Recent Lineup" instead of "Lineups".
+   */
+  expectedOpponentTeam?: string | null;
+  /**
+   * Resolve a team name to logo URL (from dashboard state). When provided, title shows home-logo vs away-logo.
+   */
+  resolveTeamLogo?: (teamName: string) => string | null;
 }) {
   const [data, setData] = useState<TeamSelectionsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -329,17 +340,49 @@ export function AflTeamSelectionsCard({
   const hasSuccessfulMatch = Boolean(data?.home_team && data?.away_team);
   const showLineup = Boolean(playerTeam) && hasSuccessfulMatch && hasContent && hasBothTeams;
 
+  // Decide whether this lineup is for the upcoming game (team vs expectedOpponentTeam) or just the most recent game.
+  let isUpcomingLineup: boolean | null = null;
+  if (showLineup) {
+    const playerKey = playerTeam ? getAflCanonicalTeamKey(playerTeam) : null;
+    const expectedOppKey = expectedOpponentTeam ? getAflCanonicalTeamKey(expectedOpponentTeam) : null;
+    const homeKey = getAflCanonicalTeamKey(homeTeam);
+    const awayKey = getAflCanonicalTeamKey(awayTeam);
+    if (playerKey && (homeKey || awayKey)) {
+      const opponentKey = playerKey === homeKey ? awayKey : playerKey === awayKey ? homeKey : null;
+      if (expectedOppKey && opponentKey) {
+        isUpcomingLineup = opponentKey === expectedOppKey;
+      }
+    }
+  }
+
+  const baseTitle =
+    showLineup && isUpcomingLineup === false ? 'Most Recent Lineup' : 'Confirmed Lineups';
+
   return (
     <div className={`rounded-lg border p-3 ${borderCls} ${bgCls}`}>
       {/* Title + match */}
-      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>AFL Team Selections</h3>
-      {(data?.round_label || data?.match) && showLineup && (
-        <p className={`text-xs mb-3 ${mutedCls}`}>
-          {data.round_label && <span className="font-medium">{data.round_label}</span>}
-          {data.round_label && data.match && ' — '}
-          {data.match}
-        </p>
-      )}
+      <h3 className={`text-sm font-semibold mb-2 flex items-center gap-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+        <span>{baseTitle}</span>
+        {showLineup && hasSuccessfulMatch && resolveTeamLogo && (
+          <span className="flex items-center gap-1.5">
+            {resolveTeamLogo(homeTeam) && (
+              <img
+                src={resolveTeamLogo(homeTeam) ?? ''}
+                alt={homeTeam}
+                className="w-5 h-5 sm:w-6 sm:h-6 object-contain rounded-full bg-gray-900/10"
+              />
+            )}
+            <span className={`text-[10px] uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
+            {resolveTeamLogo(awayTeam) && (
+              <img
+                src={resolveTeamLogo(awayTeam) ?? ''}
+                alt={awayTeam}
+                className="w-5 h-5 sm:w-6 sm:h-6 object-contain rounded-full bg-gray-900/10"
+              />
+            )}
+          </span>
+        )}
+      </h3>
 
       {error && !data?.match && <p className={`text-sm ${mutedCls}`}>{error}</p>}
 
