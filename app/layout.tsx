@@ -5,8 +5,8 @@ import RootLayoutClient from "./layout-client";
 import MetaPixel from "@/components/MetaPixel";
 
 export const metadata: Metadata = {
-  title: "StatTrackr - Multi-Sport Research Platform (NBA & AFL)",
-  description: "Multi-sport research platform for NBA and AFL. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
+  title: "StatTrackr - Advanced Sports Statistic Dashboard",
+  description: "Advanced sports statistic dashboard for NBA and AFL. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   keywords: [
     "sports analytics",
     "multi-sport research",
@@ -46,8 +46,8 @@ export const metadata: Metadata = {
     title: "StatTrackr",
   },
   openGraph: {
-    title: "StatTrackr - Multi-Sport Research Platform (NBA & AFL)",
-    description: "Analyze NBA and AFL player stats, team trends, and game props with a fast multi-sport research dashboard.",
+    title: "StatTrackr - Advanced Sports Statistic Dashboard",
+    description: "Analyze NBA and AFL player stats, team trends, and game props with an advanced, fast sports statistic dashboard.",
     type: "website",
     siteName: "StatTrackr",
   },
