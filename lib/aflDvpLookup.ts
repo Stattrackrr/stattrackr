@@ -154,10 +154,10 @@ function buildTeamTotalFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goa
   return map;
 }
 
-/** Season used for DvP matchup (props list + warm). 2025 only so ranks match full-season data (e.g. DEF vs Swans #6). */
-export const DVP_MATCHUP_SEASON = 2025;
+/** Season used for DvP matchup (props list + warm). 2026 only so ranks match full-season data (e.g. DEF vs Swans #6). */
+export const DVP_MATCHUP_SEASON = 2026;
 
-/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. Pass season to use that year only (e.g. 2025 for matchup). */
+/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. Pass season to use that year only (e.g. 2026 for matchup). */
 export async function loadDvpMapsFromFiles(seasonHint?: number): Promise<DvpMaps> {
   const empty: DvpMaps = {
     disposals: new Map(),

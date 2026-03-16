@@ -139,7 +139,7 @@ export default function AflDvpCard({
   playerPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2025);
+  const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2026);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [perStat, setPerStat] = useState<Record<string, number | null>>({});
