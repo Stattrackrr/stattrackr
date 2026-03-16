@@ -5,7 +5,7 @@ import { getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds 
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
-import { loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal } from '@/lib/aflDvpLookup';
+import { loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
@@ -167,8 +167,8 @@ export async function GET(request: Request) {
       })
     );
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
-    // Always override DvP from current position-aware lookup so we never show stale "everyone 6"
-    const dvpMapsForOverride = await loadDvpMapsFromFiles();
+    // Always override DvP from 2025 position-aware lookup so matchup rank matches dashboard (e.g. DEF vs Swans #6)
+    const dvpMapsForOverride = await loadDvpMapsFromFiles(DVP_MATCHUP_SEASON);
     const seasonForPos = new Date().getFullYear();
     let positionMapForOverride = await getAflPlayerPositionMap(seasonForPos);
     if (positionMapForOverride.size === 0) positionMapForOverride = await getAflPlayerPositionMap(seasonForPos - 1);

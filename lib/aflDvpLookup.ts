@@ -154,8 +154,11 @@ function buildTeamTotalFromFileRows(rows: DvpFileRow[], stat: 'disposals' | 'goa
   return map;
 }
 
-/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. */
-export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
+/** Season used for DvP matchup (props list + warm). 2025 only so ranks match full-season data (e.g. DEF vs Swans #6). */
+export const DVP_MATCHUP_SEASON = 2025;
+
+/** Load DvP maps: cache first (cron on Vercel), then data/afl-dvp-{season}.json. Pass season to use that year only (e.g. 2025 for matchup). */
+export async function loadDvpMapsFromFiles(seasonHint?: number): Promise<DvpMaps> {
   const empty: DvpMaps = {
     disposals: new Map(),
     goals: new Map(),
@@ -163,7 +166,8 @@ export async function loadDvpMapsFromFiles(): Promise<DvpMaps> {
     goalsTeamTotal: new Map(),
   };
   const year = new Date().getFullYear();
-  for (const season of [year, year - 1]) {
+  const seasonsToTry = seasonHint != null ? [seasonHint] : [year, year - 1];
+  for (const season of seasonsToTry) {
     if (season < 2020) continue;
     try {
       const cached = await getAflDvpPayloadFromCache(season);
