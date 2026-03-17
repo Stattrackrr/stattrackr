@@ -31,7 +31,14 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
   }
 
   if (!cronSecret) {
-    throw new Error('CRON_SECRET environment variable is required for cron endpoints');
+    console.warn('[Cron auth] 401: CRON_SECRET is not configured');
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        { error: 'Unauthorized cron access', hint: 'CRON_SECRET is not configured on this deployment environment.' },
+        { status: 401 }
+      ),
+    };
   }
 
   const headerSecret = normalizeSecret(request.headers.get('x-cron-secret') ?? '');
