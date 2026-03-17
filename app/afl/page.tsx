@@ -1733,6 +1733,10 @@ export default function AFLPage() {
         ? playerPositionForFilters
         : null) || 'MID';
     let cancelled = false;
+    // Clear prior snapshots immediately so per-game filter falls back to current selected stat
+    // data while the new metric snapshots are loading.
+    setAflOaRankSnapshots(null);
+    setAflDvpRankSnapshots(null);
     Promise.all([
       fetch(
         `/api/afl/rank-snapshots/history?season=${dvpSeason}&source=oa&metric=${encodeURIComponent(selectedAdvancedOaStat)}`

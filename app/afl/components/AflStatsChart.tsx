@@ -43,6 +43,18 @@ function isOpponentRankAdvancedFilter(
   return key != null && key.startsWith('rank_');
 }
 
+const CHART_STAT_TO_ADVANCED_OPPONENT_FILTER: Record<
+  string,
+  Exclude<AflAdvancedFilterKey, 'dvp_rank' | 'tog' | null>
+> = {
+  disposals: 'rank_disposals',
+  uncontested_possessions: 'rank_uncontested_possessions',
+  contested_possessions: 'rank_contested_possessions',
+  handballs: 'rank_handballs',
+  kicks: 'rank_kicks',
+  free_kicks_for: 'rank_free_kicks_for',
+};
+
 const STAT_PRIORITY = [
   'moneyline',
   'spread',
@@ -616,8 +628,52 @@ export function AflStatsChart({
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAutoSyncedStatRef = useRef<string | null>(null);
 
   const selectedStat = selectedStatProp ?? internalSelectedStat;
+
+  // When Advanced is open, keep opponent-rank advanced selection in sync with the
+  // currently selected main stat (for supported AFL opponent-rank stats).
+  useEffect(() => {
+    if (!showAdvancedFilters) return;
+    const mapped = CHART_STAT_TO_ADVANCED_OPPONENT_FILTER[selectedStat || ''];
+    if (!mapped) return;
+
+    // Only auto-sync when the main selected stat has actually changed.
+    if (lastAutoSyncedStatRef.current === selectedStat) return;
+    lastAutoSyncedStatRef.current = selectedStat || null;
+
+    // Only auto-sync opponent-rank filters (or when nothing is selected). Never override DVP/TOG.
+    if (selectedAdvancedFilter != null && !isOpponentRankAdvancedFilter(selectedAdvancedFilter)) return;
+
+    if (selectedAdvancedFilter !== mapped) {
+      setSelectedAdvancedFilter(mapped);
+    }
+    if (aflGameFilters && setAflGameFilters) {
+      const option = AFL_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === mapped);
+      if (option && aflGameFilters.opponentStat !== option.oaStatCode) {
+        setAflGameFilters({ ...aflGameFilters, opponentStat: option.oaStatCode });
+      }
+    }
+  }, [
+    showAdvancedFilters,
+    selectedStat,
+    selectedAdvancedFilter,
+    aflGameFilters,
+    setAflGameFilters,
+  ]);
+
+  // Always derive opponentStat code from the active advanced opponent-rank pill.
+  // This prevents stale opponentStat values when switching between rank pills.
+  useEffect(() => {
+    if (!showAdvancedFilters) return;
+    if (!selectedAdvancedFilter || !isOpponentRankAdvancedFilter(selectedAdvancedFilter)) return;
+    if (!aflGameFilters || !setAflGameFilters) return;
+    const option = AFL_ADVANCED_OPPONENT_RANK_FILTERS.find((o) => o.key === selectedAdvancedFilter);
+    if (!option) return;
+    if (aflGameFilters.opponentStat === option.oaStatCode) return;
+    setAflGameFilters({ ...aflGameFilters, opponentStat: option.oaStatCode });
+  }, [showAdvancedFilters, selectedAdvancedFilter, aflGameFilters, setAflGameFilters]);
 
   // Ensure we always have a valid selected stat. When the parent controls the stat,
   // ask it to adopt the preferred default; otherwise, fall back to internal state.
