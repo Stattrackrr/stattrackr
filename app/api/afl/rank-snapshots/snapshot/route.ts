@@ -34,6 +34,11 @@ type SnapshotRow = {
   rank: number;
 };
 
+type OaTeamRow = {
+  team?: string | null;
+  stats?: Record<string, number | string | null> | null;
+};
+
 function parseSeason(v: string | null): number {
   if (!v) return DEFAULT_SEASON;
   const n = parseInt(v, 10);
@@ -64,7 +69,7 @@ async function runSnapshot(request: NextRequest) {
   const rows: SnapshotRow[] = [];
 
   const oaRes = await fetchJson(`${origin}/api/afl/team-rankings?season=${season}&type=oa`);
-  const oaTeams = Array.isArray(oaRes?.teams) ? oaRes.teams : [];
+  const oaTeams: OaTeamRow[] = Array.isArray(oaRes?.teams) ? (oaRes.teams as OaTeamRow[]) : [];
   if (oaTeams.length > 0) {
     const allMetricCodes = new Set<string>();
     for (const t of oaTeams) {
@@ -77,7 +82,7 @@ async function runSnapshot(request: NextRequest) {
 
     for (const metricCode of allMetricCodes) {
       const values = oaTeams
-        .map((t) => ({
+        .map((t: OaTeamRow) => ({
           team: String(t?.team ?? '').trim(),
           value: Number(t?.stats?.[metricCode] ?? NaN),
         }))
