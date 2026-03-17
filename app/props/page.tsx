@@ -2953,8 +2953,24 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       });
       return out;
     }
-    // Default: best to worst — DvP (best first), then L10%, L5%, then implied prob
+    // Default (AFL): best from L10 first, then L5, then DvP, then implied prob.
+    // This matches the manual "best from last 10" user action.
     out.sort((a, b) => {
+      const aL10Total = a.last10HitRate?.total ?? 0;
+      const bL10Total = b.last10HitRate?.total ?? 0;
+      const aHasFullL10 = aL10Total >= 10;
+      const bHasFullL10 = bL10Total >= 10;
+      // Prioritize props with a full 10-game sample; smaller samples stay visible but rank later.
+      if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
+
+      const aL10 = percent(a.last10HitRate);
+      const bL10 = percent(b.last10HitRate);
+      if (aL10 !== null || bL10 !== null) return (bL10 ?? -1) - (aL10 ?? -1);
+
+      const aL5 = percent(a.last5HitRate);
+      const bL5 = percent(b.last5HitRate);
+      if (aL5 !== null || bL5 !== null) return (bL5 ?? -1) - (aL5 ?? -1);
+
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
       if (aDvp !== null || bDvp !== null) {
@@ -2962,12 +2978,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const bR = bDvp ?? 999;
         if (aR !== bR) return aR - bR;
       }
-      const aL10 = percent(a.last10HitRate);
-      const bL10 = percent(b.last10HitRate);
-      if (aL10 !== null || bL10 !== null) return (bL10 ?? -1) - (aL10 ?? -1);
-      const aL5 = percent(a.last5HitRate);
-      const bL5 = percent(b.last5HitRate);
-      if (aL5 !== null || bL5 !== null) return (bL5 ?? -1) - (aL5 ?? -1);
       const aP = Math.max(a.overProb ?? 0, a.underProb ?? 0);
       const bP = Math.max(b.overProb ?? 0, b.underProb ?? 0);
       return bP - aP;
@@ -3273,8 +3283,27 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       return sorted;
     }
 
-    // Default: sort by best DvP first (top 10 matchups = lowest rank), then L10%, then L5%, then prob
+    // Default: best from true L10 sample first, then L5, then DvP, then implied probability.
     return [...propsToSort].sort((a, b) => {
+      const aL10Total = a.last10HitRate?.total ?? 0;
+      const bL10Total = b.last10HitRate?.total ?? 0;
+      const aHasFullL10 = aL10Total >= 10;
+      const bHasFullL10 = bL10Total >= 10;
+      // Keep partial samples (e.g. 2/2) visible, but rank them after full 10-game samples.
+      if (aHasFullL10 !== bHasFullL10) return aHasFullL10 ? -1 : 1;
+
+      const aL10 = percent(a.last10HitRate);
+      const bL10 = percent(b.last10HitRate);
+      if (aL10 !== null || bL10 !== null) {
+        return (bL10 ?? -1) - (aL10 ?? -1);
+      }
+
+      const aL5 = percent(a.last5HitRate);
+      const bL5 = percent(b.last5HitRate);
+      if (aL5 !== null || bL5 !== null) {
+        return (bL5 ?? -1) - (aL5 ?? -1);
+      }
+
       const aDvp = a.dvpRating != null && a.dvpRating > 0 ? a.dvpRating : null;
       const bDvp = b.dvpRating != null && b.dvpRating > 0 ? b.dvpRating : null;
       if (aDvp !== null || bDvp !== null) {
@@ -3282,16 +3311,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const aRank = aDvp ?? 999;
         const bRank = bDvp ?? 999;
         if (aRank !== bRank) return aRank - bRank;
-      }
-      const aL10 = percent(a.last10HitRate);
-      const bL10 = percent(b.last10HitRate);
-      if (aL10 !== null || bL10 !== null) {
-        return (bL10 ?? -1) - (aL10 ?? -1);
-      }
-      const aL5 = percent(a.last5HitRate);
-      const bL5 = percent(b.last5HitRate);
-      if (aL5 !== null || bL5 !== null) {
-        return (bL5 ?? -1) - (aL5 ?? -1);
       }
       // Use implied probabilities for sorting
       const aProb = Math.max(a.overProb, a.underProb);
@@ -5450,30 +5469,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                         let glowColor = '';
                                         
-                                        // Color coding based on rank (same as dashboard)
-                                        // Higher rank = worse defense = better for player (green)
-                                        if (displayProp.dvpRating! >= 26) {
+                                        // Color coding by league size.
+                                        // AFL (18 teams): 1-6 hard (red), 7-12 neutral (orange), 13-18 easy (green)
+                                        // NBA (30 teams): 1-10 hard (red), 11-20 neutral (orange), 21-30 easy (green)
+                                        const isAflDvp = propsSport === 'afl';
+                                        const easyMin = isAflDvp ? 13 : 21;
+                                        const hardMax = isAflDvp ? 6 : 10;
+                                        if (displayProp.dvpRating! >= easyMin) {
                                           bgColor = mounted && isDark ? '#166534' : '#dcfce7'; // green-800 / green-100
                                           borderColor = '#22c55e';
                                           glowColor = '#22c55e';
-                                        } else if (displayProp.dvpRating! >= 21) {
-                                          bgColor = mounted && isDark ? '#166534' : '#dcfce7'; // green-800 / green-100
-                                          borderColor = '#22c55e';
-                                          glowColor = '#22c55e';
-                                        } else if (displayProp.dvpRating! >= 16) {
+                                        } else if (displayProp.dvpRating! > hardMax) {
                                           bgColor = mounted && isDark ? '#9a3412' : '#fed7aa'; // orange-800 / orange-100
                                           borderColor = '#f97316';
                                           glowColor = '#f97316';
-                                        } else if (displayProp.dvpRating! >= 11) {
-                                          bgColor = mounted && isDark ? '#9a3412' : '#fed7aa'; // orange-900 / orange-200
-                                          borderColor = '#f97316';
-                                          glowColor = '#f97316';
-                                        } else if (displayProp.dvpRating! >= 6) {
-                                          bgColor = mounted && isDark ? '#991b1b' : '#fee2e2'; // red-800 / red-100
-                                          borderColor = '#ef4444';
-                                          glowColor = '#ef4444';
                                         } else {
-                                          bgColor = mounted && isDark ? '#991b1b' : '#fee2e2'; // red-900 / red-800
+                                          bgColor = mounted && isDark ? '#991b1b' : '#fee2e2'; // red-800 / red-100
                                           borderColor = '#ef4444';
                                           glowColor = '#ef4444';
                                         }
@@ -6437,19 +6448,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
                                   let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
                                   let glowColor: string | null = null;
-                                  if (prop.dvpRating >= 26) {
+                                  const isAflDvp = propsSport === 'afl';
+                                  const easyMin = isAflDvp ? 13 : 21;
+                                  const hardMax = isAflDvp ? 6 : 10;
+                                  if (prop.dvpRating >= easyMin) {
                                     bgColor = '#22c55e';
                                     borderColor = '#22c55e';
                                     glowColor = '#22c55e';
-                                  } else if (prop.dvpRating >= 21) {
-                                    bgColor = '#22c55e';
-                                    borderColor = '#22c55e';
-                                    glowColor = '#22c55e';
-                                  } else if (prop.dvpRating >= 16) {
-                                    bgColor = '#f97316';
-                                    borderColor = '#f97316';
-                                    glowColor = '#f97316';
-                                  } else if (prop.dvpRating >= 11) {
+                                  } else if (prop.dvpRating > hardMax) {
                                     bgColor = '#f97316';
                                     borderColor = '#f97316';
                                     glowColor = '#f97316';
