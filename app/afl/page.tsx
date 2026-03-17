@@ -353,6 +353,7 @@ export default function AFLPage() {
   const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
   const lastPlayerPropsKeyRef = useRef<string | null>(null);
   const ignoreNextTransientLineRef = useRef(false);
+  const lastAutoLineContextRef = useRef<string | null>(null);
   /** Short delay before showing chart so odds have time to load and auto-select inline with chart. */
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
   const CHART_DISPLAY_DELAY_MS = 500;
@@ -533,10 +534,15 @@ export default function AFLPage() {
     const n = lineStr && lineStr !== 'N/A'
       ? parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''))
       : 0.5;
+    const currentContext = `${mainChartStat}|${mainChartStat === 'disposals' ? selectedAflDisposalsColumn : baseCol ?? ''}`;
+    const contextChanged = lastAutoLineContextRef.current !== currentContext;
+    lastAutoLineContextRef.current = currentContext;
     if (Number.isFinite(n)) {
       // Don't overwrite user's manual line when returning from background (refetch): keep custom value e.g. 22 if book has 24.5
+      // But when stat context changes (e.g. Disposals -> Goals), always switch to that stat's bookmaker line.
       const tol = 0.01;
       if (
+        !contextChanged &&
         aflCurrentLineValue != null &&
         Number.isFinite(aflCurrentLineValue) &&
         Math.abs(aflCurrentLineValue - n) > tol

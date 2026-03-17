@@ -22,6 +22,17 @@ type ImpactInfo = {
 
 const SEASON = 2025;
 
+function gameBelongsToSeason(game: Record<string, unknown>, season: number): boolean {
+  const seasonRaw = Number(game.season);
+  if (Number.isFinite(seasonRaw)) return seasonRaw === season;
+  const dateRaw = String(game.date ?? game.game_date ?? '').trim();
+  if (dateRaw.length >= 4) {
+    const y = Number(dateRaw.slice(0, 4));
+    if (Number.isFinite(y)) return y === season;
+  }
+  return false;
+}
+
 export function AflInjuriesCard({
   isDark,
   season = SEASON,
@@ -96,15 +107,19 @@ export function AflInjuriesCard({
     () => teamInjuries.map((i) => i.player).sort().join(','),
     [teamInjuries]
   );
+  const seasonGameLogs = useMemo(
+    () => (gameLogs ?? []).filter((g) => gameBelongsToSeason(g as Record<string, unknown>, season)),
+    [gameLogs, season]
+  );
 
   useEffect(() => {
-    if (!playerName || !gameLogs?.length || teamInjuries.length === 0) {
+    if (!playerName || !seasonGameLogs.length || teamInjuries.length === 0) {
       setImpactData({});
       setLoadingImpacts(new Set());
       return;
     }
     const selectedRounds = new Set(
-      gameLogs.map((g) => String(g.round ?? '').trim()).filter(Boolean)
+      seasonGameLogs.map((g) => String(g.round ?? '').trim()).filter(Boolean)
     );
     setLoadingImpacts(new Set(teamInjuries.map((i) => i.player)));
     let cancelled = false;
@@ -119,16 +134,19 @@ export function AflInjuriesCard({
           );
           const json = await res.json();
           const games = Array.isArray(json?.games) ? json.games : [];
+          const seasonGames = games.filter((g: Record<string, unknown>) =>
+            gameBelongsToSeason(g, season)
+          );
           const injuredRounds = new Set(
-            games.map((g: Record<string, unknown>) => String(g.round ?? '').trim()).filter(Boolean)
+            seasonGames.map((g: Record<string, unknown>) => String(g.round ?? '').trim()).filter(Boolean)
           );
           const overlap = [...selectedRounds].filter((r) => injuredRounds.has(r));
-          if (overlap.length === 0 && games.length === 0) {
-            next[injury.player] = { gamesWithoutCount: gameLogs.length, noGamesTogether: true };
+          if (overlap.length === 0 && seasonGames.length === 0) {
+            next[injury.player] = { gamesWithoutCount: seasonGameLogs.length };
           } else if (overlap.length === 0) {
-            next[injury.player] = { gamesWithoutCount: gameLogs.length, noGamesTogether: true };
+            next[injury.player] = { gamesWithoutCount: seasonGameLogs.length };
           } else {
-            const gamesWithout = gameLogs.filter((g) => {
+            const gamesWithout = seasonGameLogs.filter((g) => {
               const r = String(g.round ?? '').trim();
               return !injuredRounds.has(r);
             });
@@ -145,7 +163,7 @@ export function AflInjuriesCard({
     };
     fetchImpacts();
     return () => { cancelled = true; };
-  }, [playerName, season, teamInjuryKeys, gameLogs]);
+  }, [playerName, season, teamInjuryKeys, seasonGameLogs]);
 
   const getStatusDotColor = (returning: string): string => {
     const r = (returning || '').toLowerCase();
@@ -178,7 +196,7 @@ export function AflInjuriesCard({
   }
   const teams = [...byTeam.keys()].sort();
   const hasTeamToggle = !!playerTeam;
-  const showWithWithout = !!playerName && gameLogs.length > 0;
+  const showWithWithout = !!playerName && seasonGameLogs.length > 0;
 
   if (!teamInjuries.length) {
     return (

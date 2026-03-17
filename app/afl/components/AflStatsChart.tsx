@@ -495,7 +495,7 @@ export function AflStatsChart({
   gamePropsTeam = null,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
-  const [teammateRounds, setTeammateRounds] = useState<Set<string>>(new Set());
+  const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
   const [internalTimeframe, setInternalTimeframe] =
     useState<AflChartTimeframe>('last10');
   const [selectedAdvancedFilter, setSelectedAdvancedFilter] = useState<AflAdvancedFilterKey>(null);
@@ -520,29 +520,50 @@ export function AflStatsChart({
     [onTimeframeChange, controlledTimeframe]
   );
 
+  const resolveGameSeason = useCallback((g: Record<string, unknown>): number | null => {
+    const s = Number(g.season);
+    if (Number.isFinite(s)) return s;
+    const dateRaw = String(g.date ?? g.game_date ?? '').trim();
+    if (dateRaw.length >= 4) {
+      const y = Number(dateRaw.slice(0, 4));
+      if (Number.isFinite(y)) return y;
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     if (!teammateFilterName?.trim()) {
-      setTeammateRounds(new Set());
+      setTeammateGameKeys(new Set());
       return;
     }
     let cancelled = false;
-    fetch(
-      `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
-    )
-      .then((r) => r.json())
-      .then((json) => {
+    Promise.all([
+      fetch(
+        `/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
+      ).then((r) => r.json()),
+      fetch(
+        `/api/afl/player-game-logs?season=${season - 1}&player_name=${encodeURIComponent(teammateFilterName.trim())}`
+      ).then((r) => r.json()),
+    ])
+      .then(([jsonCurrent, jsonPrev]) => {
         if (cancelled) return;
-        const games = Array.isArray(json?.games) ? json.games : [];
-        const rounds = new Set<string>(
-          games.map((g: Record<string, unknown>) => String(g.round ?? '').trim()).filter(Boolean)
-        );
-        setTeammateRounds(rounds);
+        const currentGames = Array.isArray(jsonCurrent?.games) ? jsonCurrent.games : [];
+        const prevGames = Array.isArray(jsonPrev?.games) ? jsonPrev.games : [];
+        const games = [...currentGames, ...prevGames] as Record<string, unknown>[];
+        const keys = new Set<string>();
+        for (const g of games) {
+          const round = String(g.round ?? '').trim();
+          const gameSeason = resolveGameSeason(g);
+          if (!round || gameSeason == null) continue;
+          keys.add(`${gameSeason}:${round}`);
+        }
+        setTeammateGameKeys(keys);
       })
       .catch(() => {
-        if (!cancelled) setTeammateRounds(new Set());
+        if (!cancelled) setTeammateGameKeys(new Set());
       });
     return () => { cancelled = true; };
-  }, [teammateFilterName, season]);
+  }, [teammateFilterName, season, resolveGameSeason]);
 
   useEffect(() => {
     if (externalLogoByTeam && Object.keys(externalLogoByTeam).length > 0) {
@@ -710,14 +731,18 @@ export function AflStatsChart({
 
   const filteredGameLogs = useMemo(() => {
     if (!teammateFilterName?.trim()) return gameLogs;
-    if (teammateRounds.size === 0) return gameLogs;
+    if (teammateGameKeys.size === 0) {
+      return withWithoutMode === 'with' ? [] : gameLogs;
+    }
     return gameLogs.filter((g) => {
       const round = String(g.round ?? '').trim();
-      const playedWithTeammate = teammateRounds.has(round);
+      const gameSeason = resolveGameSeason(g);
+      const key = round && gameSeason != null ? `${gameSeason}:${round}` : '';
+      const playedWithTeammate = !!key && teammateGameKeys.has(key);
       if (withWithoutMode === 'with') return playedWithTeammate;
       return !playedWithTeammate;
     });
-  }, [gameLogs, teammateFilterName, teammateRounds, withWithoutMode]);
+  }, [gameLogs, teammateFilterName, teammateGameKeys, withWithoutMode, resolveGameSeason]);
 
   const effectiveSeason = useCallback((g: Record<string, unknown>) => {
     const s = (g as { season?: number }).season;
