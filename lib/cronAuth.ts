@@ -16,7 +16,17 @@ function normalizeSecret(s: string): string {
 export function authorizeCronRequest(request: Request): CronAuthResult {
   const cronSecret = normalizeSecret(process.env.CRON_SECRET ?? '');
 
-  if (request.headers.get('x-vercel-cron') === '1') {
+  const vercelCronHeader = normalizeSecret(request.headers.get('x-vercel-cron') ?? '').toLowerCase();
+  const userAgent = String(request.headers.get('user-agent') ?? '').toLowerCase();
+  const isVercelCronHeader =
+    !!vercelCronHeader &&
+    vercelCronHeader !== '0' &&
+    vercelCronHeader !== 'false' &&
+    vercelCronHeader !== 'no';
+  const isVercelCronUserAgent = userAgent.includes('vercel-cron');
+
+  // Vercel cron can identify itself by x-vercel-cron header and/or vercel-cron UA.
+  if (isVercelCronHeader || isVercelCronUserAgent) {
     return { authorized: true };
   }
 
