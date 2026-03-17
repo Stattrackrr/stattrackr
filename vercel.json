@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/cleanup-odds-snapshots",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/afl/rank-snapshots/snapshot",
+      "schedule": "0 13 * * 0"
     }
   ],
   "functions": {
@@ -58,6 +62,9 @@
       "maxDuration": 360
     },
     "app/api/afl/player-props/refresh/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/afl/rank-snapshots/snapshot/route.ts": {
       "maxDuration": 120
     },
     "app/api/afl/props-stats/warm/route.ts": {

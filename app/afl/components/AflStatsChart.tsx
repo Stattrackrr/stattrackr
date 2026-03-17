@@ -9,12 +9,39 @@ import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
-type AflAdvancedFilterKey = 'dvp_rank' | 'opponent_rank' | 'tog' | null;
+type AflAdvancedFilterKey =
+  | 'dvp_rank'
+  | 'tog'
+  | 'rank_disposals'
+  | 'rank_uncontested_possessions'
+  | 'rank_contested_possessions'
+  | 'rank_handballs'
+  | 'rank_kicks'
+  | 'rank_free_kicks_for'
+  | null;
+const AFL_ADVANCED_OPPONENT_RANK_FILTERS: Array<{
+  key: Exclude<AflAdvancedFilterKey, 'dvp_rank' | 'tog' | null>;
+  label: string;
+  oaStatCode: string;
+}> = [
+  { key: 'rank_disposals', label: 'Disposals', oaStatCode: 'D' },
+  { key: 'rank_uncontested_possessions', label: 'Uncontested Possessions', oaStatCode: 'UP' },
+  { key: 'rank_contested_possessions', label: 'Contested Possessions', oaStatCode: 'CP' },
+  { key: 'rank_handballs', label: 'Handballs', oaStatCode: 'HB' },
+  { key: 'rank_kicks', label: 'Kicks', oaStatCode: 'K' },
+  { key: 'rank_free_kicks_for', label: 'Frees For', oaStatCode: 'FF' },
+];
 const AFL_ADVANCED_FILTER_OPTIONS: { key: AflAdvancedFilterKey; label: string }[] = [
   { key: 'tog', label: 'TOG %' },
   { key: 'dvp_rank', label: 'DVP Rank' },
-  { key: 'opponent_rank', label: 'Opponent Rank' },
+  ...AFL_ADVANCED_OPPONENT_RANK_FILTERS.map(({ key, label }) => ({ key, label })),
 ];
+
+function isOpponentRankAdvancedFilter(
+  key: AflAdvancedFilterKey
+): key is Exclude<AflAdvancedFilterKey, 'dvp_rank' | 'tog' | null> {
+  return key != null && key.startsWith('rank_');
+}
 
 const STAT_PRIORITY = [
   'moneyline',
@@ -773,7 +800,7 @@ export function AflStatsChart({
       const value =
         selectedAdvancedFilter === 'dvp_rank'
           ? row.dvpRank
-          : selectedAdvancedFilter === 'opponent_rank'
+          : isOpponentRankAdvancedFilter(selectedAdvancedFilter)
             ? row.opponentRank
             : row.tog;
       byGameIndex.set(row.gameIndex, value ?? null);
@@ -1020,7 +1047,7 @@ export function AflStatsChart({
 
   return (
     <div className="h-full w-full px-2 sm:px-3 md:px-4 pt-3 pb-2 flex flex-col">
-      <div className="mb-4 sm:mb-5 md:mb-4 mt-1 sm:mt-0 w-full max-w-full">
+      <div className="mb-4 sm:mb-5 md:mb-4 mt-0 w-full max-w-full">
         <div
           className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar"
           style={{ scrollbarWidth: 'thin' }}
@@ -1048,7 +1075,13 @@ export function AflStatsChart({
       </div>
 
       {/* One row: Line input + Timeframe dropdown next to each other */}
-      <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
+      <div
+        className={`space-y-2 sm:space-y-3 md:space-y-4 ${
+          showAdvancedFilters
+            ? 'mb-1 sm:mb-2 md:mb-2 lg:mb-3'
+            : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
+        }`}
+      >
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-2 sm:ml-6">
           {slotLeftOfLine}
           <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
@@ -1135,7 +1168,7 @@ export function AflStatsChart({
 
       {showAdvancedFilters && (
         <>
-          <div className="mb-2 sm:mb-3 flex items-center gap-3 flex-wrap">
+          <div className="mb-1 sm:mb-2 flex items-center gap-3 flex-wrap">
             {aflGameFilters != null && setAflGameFilters != null && (
             <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar min-w-0">
               <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
@@ -1147,6 +1180,12 @@ export function AflStatsChart({
                       const next = selectedAdvancedFilter === option.key ? null : option.key;
                       // Switching advanced mode always starts fresh (no stale ranges).
                       resetAdvancedRanges();
+                      if (next && isOpponentRankAdvancedFilter(next)) {
+                        const selectedOption = AFL_ADVANCED_OPPONENT_RANK_FILTERS.find((row) => row.key === next);
+                        if (selectedOption && aflGameFilters && setAflGameFilters) {
+                          setAflGameFilters({ ...aflGameFilters, opponentStat: selectedOption.oaStatCode });
+                        }
+                      }
                       setSelectedAdvancedFilter(next);
                     }}
                     className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
@@ -1175,7 +1214,7 @@ export function AflStatsChart({
                 max = 18;
                 valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
                 valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-              } else if (selectedAdvancedFilter === 'opponent_rank') {
+              } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
                 min = 1;
                 max = 18;
                 valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
@@ -1195,7 +1234,7 @@ export function AflStatsChart({
                   valueMax={valueMax}
                   onChange={(newMin, newMax) => {
                     if (selectedAdvancedFilter === 'dvp_rank') setAflGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'opponent_rank') setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
+                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
                     else if (selectedAdvancedFilter === 'tog') setAflGameFilters({ ...f, togMin: newMin, togMax: newMax });
                   }}
                   step={step}
@@ -1223,7 +1262,7 @@ export function AflStatsChart({
               max = 18;
               valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
               valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-            } else if (selectedAdvancedFilter === 'opponent_rank') {
+            } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
               min = 1;
               max = 18;
               valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
@@ -1244,7 +1283,7 @@ export function AflStatsChart({
                   valueMax={valueMax}
                   onChange={(newMin, newMax) => {
                     if (selectedAdvancedFilter === 'dvp_rank') setAflGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'opponent_rank') setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
+                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setAflGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
                     else if (selectedAdvancedFilter === 'tog') setAflGameFilters({ ...f, togMin: newMin, togMax: newMax });
                   }}
                   step={step}
@@ -1267,6 +1306,7 @@ export function AflStatsChart({
           </div>
         ) : (
           <SimpleChart
+            key={`afl-chart-${showAdvancedFilters ? 'advanced' : 'base'}-${selectedAdvancedFilter ?? 'none'}`}
             chartData={chartData}
             yAxisConfig={yAxisConfig}
             isDark={isDark}
@@ -1284,6 +1324,8 @@ export function AflStatsChart({
             clearTeammateFilter={clearTeammateFilter}
             centerAverageOverlay={true}
             averageOverlayLowerOnMobile={true}
+            averageOverlayLower={showAdvancedFilters}
+            averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
           />
         )}
       </div>

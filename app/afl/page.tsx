@@ -58,6 +58,10 @@ type AflLeaguePlayerTeamRankRow = {
   free_kicks_for?: number;
   meters_gained?: number;
 };
+type AflHistoricalRankSnapshot = {
+  snapshotDate: string;
+  ranks: Record<string, number>;
+};
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
 
 /** Client-safe: normalize name for matching (no fs). "Daicos, Nick" and "Nick Daicos" → same key. */
@@ -103,20 +107,6 @@ const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
   uncontested_possessions: 'uncontested_possessions',
   meters_gained: 'meters_gained',
   free_kicks_against: 'free_kicks_against',
-};
-
-const CHART_STAT_TO_OA_CODE: Record<string, string> = {
-  disposals: 'D',
-  kicks: 'K',
-  handballs: 'HB',
-  marks: 'M',
-  goals: 'G',
-  tackles: 'T',
-  clearances: 'CL',
-  inside_50s: 'I50',
-  uncontested_possessions: 'D',
-  meters_gained: 'D',
-  free_kicks_against: 'FA',
 };
 
 type PersistedAflPageState = {
@@ -333,6 +323,8 @@ export default function AFLPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [aflFilterDataDvp, setAflFilterDataDvp] = useState<{ opponents: string[]; metrics: Record<string, { teamTotalRanks: Record<string, number> }> } | null>(null);
   const [aflFilterDataOa, setAflFilterDataOa] = useState<{ teams: Array<{ team: string; stats?: Record<string, number | string | null> }> } | null>(null);
+  const [aflOaRankSnapshots, setAflOaRankSnapshots] = useState<AflHistoricalRankSnapshot[] | null>(null);
+  const [aflDvpRankSnapshots, setAflDvpRankSnapshots] = useState<AflHistoricalRankSnapshot[] | null>(null);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [nextGameId, setNextGameId] = useState<string | null>(null);
@@ -585,20 +577,17 @@ export default function AFLPage() {
     }
   }, [aflPropsMode, mainChartStat, aflOddsBooks, selectedAflBookIndex]);
 
-  // Keep DVP metric / opponentStat in sync with the main chart stat so the filters
-  // and right-hand panels reflect the stat the user has actually selected.
+  // Keep DVP metric in sync with the main chart stat so DVP rank filter matches chart stat context.
   useEffect(() => {
     if (!mainChartStat) return;
     setAflGameFilters((prev) => {
       const nextMetric = CHART_STAT_TO_DVP_METRIC[mainChartStat] ?? prev.dvpMetric ?? 'disposals';
-      const nextOpponentStat = CHART_STAT_TO_OA_CODE[mainChartStat] ?? prev.opponentStat ?? 'D';
-      if (prev.dvpMetric === nextMetric && prev.opponentStat === nextOpponentStat) {
+      if (prev.dvpMetric === nextMetric) {
         return prev;
       }
       return {
         ...prev,
         dvpMetric: nextMetric,
-        opponentStat: nextOpponentStat,
       };
     });
   }, [mainChartStat]);
@@ -1719,20 +1708,68 @@ export default function AFLPage() {
     D: 'disposals',
     K: 'kicks',
     HB: 'handballs',
+    UP: 'uncontested_possessions',
+    CP: 'contested_possessions',
+    FF: 'free_kicks_for',
     M: 'marks',
     G: 'goals',
     T: 'tackles',
     CL: 'clearances',
     I50: 'inside_50s',
+    FA: 'free_kicks_against',
+    MG: 'meters_gained',
   };
+  const selectedAdvancedDvpMetric = CHART_STAT_TO_DVP_METRIC[mainChartStat] ?? aflGameFilters.dvpMetric ?? 'disposals';
+  const selectedAdvancedOaStat = aflGameFilters.opponentStat ?? 'D';
+
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !selectedPlayer || selectedPlayerGameLogs.length === 0) {
+      setAflOaRankSnapshots(null);
+      setAflDvpRankSnapshots(null);
+      return;
+    }
+    const pos =
+      (playerPositionForFilters && ['DEF', 'MID', 'FWD', 'RUC'].includes(playerPositionForFilters)
+        ? playerPositionForFilters
+        : null) || 'MID';
+    let cancelled = false;
+    Promise.all([
+      fetch(
+        `/api/afl/rank-snapshots/history?season=${dvpSeason}&source=oa&metric=${encodeURIComponent(selectedAdvancedOaStat)}`
+      ).then((r) => (r.ok ? r.json() : null)),
+      fetch(
+        `/api/afl/rank-snapshots/history?season=${dvpSeason}&source=dvp&position=${encodeURIComponent(pos)}&metric=${encodeURIComponent(selectedAdvancedDvpMetric)}`
+      ).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([oaHist, dvpHist]) => {
+      if (cancelled) return;
+      const oaSnapshots = Array.isArray(oaHist?.snapshots) ? oaHist.snapshots : [];
+      const dvpSnapshots = Array.isArray(dvpHist?.snapshots) ? dvpHist.snapshots : [];
+      setAflOaRankSnapshots(oaSnapshots);
+      setAflDvpRankSnapshots(dvpSnapshots);
+    }).catch(() => {
+      if (!cancelled) {
+        setAflOaRankSnapshots(null);
+        setAflDvpRankSnapshots(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [
+    aflPropsMode,
+    selectedPlayer?.id,
+    selectedPlayerGameLogs.length,
+    dvpSeason,
+    playerPositionForFilters,
+    selectedAdvancedOaStat,
+    selectedAdvancedDvpMetric,
+  ]);
 
   // Per-game filter data for the current player's games (DVP rank, opponent rank, TOG). Use API when available, else stale rankings from player's game log.
   const perGameFilterData = useMemo((): AflGameFilterDataItem[] | null => {
     if (!selectedPlayerGameLogs.length) return null;
     const dvp = aflFilterDataDvp;
     const oa = aflFilterDataOa;
-    const metric = CHART_STAT_TO_DVP_METRIC[mainChartStat] ?? aflGameFilters.dvpMetric ?? 'disposals';
-    const oaStat = CHART_STAT_TO_OA_CODE[mainChartStat] ?? aflGameFilters.opponentStat ?? 'D';
+    const metric = selectedAdvancedDvpMetric;
+    const oaStat = selectedAdvancedOaStat;
 
     const dvpRanksByOpp: Record<string, number> = {};
     if (dvp?.metrics?.[metric]?.teamTotalRanks) {
@@ -1765,7 +1802,6 @@ export default function AFLPage() {
       withStat.forEach((x, i) => { oaRankByTeam[x.team] = i + 1; });
     }
 
-    // Stale rankings from player's own game log: rank opponents by average stat in games vs them (lowest avg = rank 1 = toughest).
     const gameKeyForDvp = metric; // disposals, kicks, etc.
     const gameKeyForOa = OA_STAT_TO_GAME_KEY[oaStat] ?? 'disposals';
     const oppToSumCount: Record<string, { sum: number; count: number }> = {};
@@ -1774,7 +1810,6 @@ export default function AFLPage() {
       if (!opp) continue;
       const norm = opp.toLowerCase();
       const valDvp = Number((g as Record<string, unknown>)?.[gameKeyForDvp]);
-      const valOa = Number((g as Record<string, unknown>)?.[gameKeyForOa]);
       if (!oppToSumCount[norm]) oppToSumCount[norm] = { sum: 0, count: 0 };
       if (Number.isFinite(valDvp)) {
         oppToSumCount[norm].sum += valDvp;
@@ -1807,12 +1842,48 @@ export default function AFLPage() {
     entriesOa.sort((a, b) => a.avg - b.avg);
     entriesOa.forEach(({ opp }, i) => { staleOppRanks[opp] = i + 1; });
 
+    const getSnapshotRank = (
+      snapshots: AflHistoricalRankSnapshot[] | null,
+      gameDateRaw: string,
+      teamKeys: string[]
+    ): number | null => {
+      if (!Array.isArray(snapshots) || snapshots.length === 0) return null;
+      const gameDate =
+        gameDateRaw && Number.isFinite(Date.parse(gameDateRaw))
+          ? new Date(gameDateRaw).toISOString().slice(0, 10)
+          : null;
+      let chosen = null as AflHistoricalRankSnapshot | null;
+      if (gameDate) {
+        for (const snap of snapshots) {
+          if (snap.snapshotDate <= gameDate) chosen = snap;
+          else break;
+        }
+      }
+      // If game is older than first snapshot, use the latest snapshot we have now.
+      if (!chosen) chosen = snapshots[snapshots.length - 1] ?? null;
+      if (!chosen) return null;
+      for (const key of teamKeys) {
+        const rank = Number(chosen.ranks[key]);
+        if (Number.isFinite(rank) && rank > 0) return rank;
+      }
+      return null;
+    };
+
     return selectedPlayerGameLogs.map((g, gameIndex) => {
       const oppRaw = String((g as Record<string, unknown>)?.opponent ?? '').trim();
       const oppFooty = opponentToFootywireTeam(oppRaw) || oppRaw;
       const oppOfficial = opponentToOfficialTeamName(oppRaw) || oppRaw;
       const oppNorm = oppRaw.toLowerCase();
+      const gameDateRaw = String((g as Record<string, unknown>)?.date ?? (g as Record<string, unknown>)?.game_date ?? '').trim();
+      const teamKeys = [
+        oppNorm,
+        String(oppFooty || '').toLowerCase(),
+        String(oppOfficial || '').toLowerCase(),
+      ].filter(Boolean);
+      const snapshotDvpRank = getSnapshotRank(aflDvpRankSnapshots, gameDateRaw, teamKeys);
+      const snapshotOppRank = getSnapshotRank(aflOaRankSnapshots, gameDateRaw, teamKeys);
       const dvpRank =
+        snapshotDvpRank ??
         dvpRanksByOpp[oppRaw] ??
         dvpRanksByOpp[oppNorm] ??
         dvpRanksByOpp[oppFooty] ??
@@ -1822,12 +1893,21 @@ export default function AFLPage() {
         staleDvpRanks[oppNorm] ??
         null;
       const opponentRank =
+        snapshotOppRank ??
         oaRankByTeam[oppNorm] ?? oaRankByTeam[oppFooty?.toLowerCase() ?? ''] ?? staleOppRanks[oppNorm] ?? null;
       const togRaw = (g as Record<string, unknown>)?.percent_played;
       const tog = typeof togRaw === 'number' && Number.isFinite(togRaw) ? togRaw : null;
       return { gameIndex, opponent: oppRaw, dvpRank, opponentRank, tog };
     });
-  }, [selectedPlayerGameLogs, aflFilterDataDvp, aflFilterDataOa, mainChartStat, aflGameFilters.dvpMetric, aflGameFilters.opponentStat]);
+  }, [
+    selectedPlayerGameLogs,
+    aflFilterDataDvp,
+    aflFilterDataOa,
+    selectedAdvancedDvpMetric,
+    selectedAdvancedOaStat,
+    aflDvpRankSnapshots,
+    aflOaRankSnapshots,
+  ]);
 
   // Apply game filters to get the list of games used for chart and supporting stats.
   const filteredPlayerGameLogs = useMemo(() => {

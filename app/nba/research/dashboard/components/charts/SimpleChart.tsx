@@ -46,6 +46,10 @@ interface SimpleChartProps {
   centerAverageOverlay?: boolean;
   /** When true, on mobile position the Avg + Hit overlay lower so it doesn't sit on the Team/controls row (AFL). */
   averageOverlayLowerOnMobile?: boolean;
+  /** When true, lower the Avg + Hit overlay on all breakpoints. */
+  averageOverlayLower?: boolean;
+  /** Extra lowering for layouts with reduced controls height (e.g. advanced open with no selected filter). */
+  averageOverlayLowerExtra?: boolean;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
   [key: string]: any; // Accept other props for compatibility
@@ -77,6 +81,8 @@ const SimpleChart = memo(function SimpleChart({
   hideAverageOverlay = false,
   centerAverageOverlay = false,
   averageOverlayLowerOnMobile = false,
+  averageOverlayLower = false,
+  averageOverlayLowerExtra = false,
   secondaryRankAxisMax,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
@@ -770,7 +776,19 @@ const SimpleChart = memo(function SimpleChart({
       {/* In-chart average + hit rate - center when second axis visible, else top right; mobile: can sit lower to clear Team/controls (AFL) */}
       {averageDisplay && !hideAverageOverlay && (
         <div
-          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${averageOverlayLowerOnMobile ? 'top-1 sm:-top-5' : '-top-5'} ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${
+            averageOverlayLowerOnMobile
+              ? (
+                hasSecondAxis || averageOverlayLower
+                  ? (averageOverlayLowerExtra ? 'top-0 sm:top-0' : 'top-0 sm:top-0')
+                  : 'top-1 sm:-top-5'
+              )
+              : (
+                hasSecondAxis || averageOverlayLower
+                  ? (averageOverlayLowerExtra ? '-top-1' : '-top-2')
+                  : '-top-5'
+              )
+          } ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
             backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
