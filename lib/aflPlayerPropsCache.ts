@@ -268,6 +268,16 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
     playerNames.push(...r.names);
   }
 
+  if (eventsRefreshed === 0) {
+    return {
+      success: false,
+      eventsRefreshed,
+      playersWithProps,
+      playerNames,
+      error: 'No AFL player props were refreshed from Odds API (0 events updated)',
+    };
+  }
+
   return { success: true, eventsRefreshed, playersWithProps, playerNames };
 }
 

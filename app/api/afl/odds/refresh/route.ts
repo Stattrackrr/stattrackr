@@ -65,6 +65,23 @@ export async function GET(request: NextRequest) {
     const ppResult = await refreshAflPlayerPropsCache(result.games);
     console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
 
+    if (!ppResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          gamesCount: result.gamesCount,
+          lastUpdated: result.lastUpdated,
+          nextUpdate: result.nextUpdate,
+          eventsRefreshed: ppResult.eventsRefreshed,
+          playersWithProps: ppResult.playersWithProps,
+          playerPropsOk: false,
+          playerPropsError: ppResult.error ?? 'AFL player props refresh returned no updates',
+          message: 'Odds refreshed, but player props cache was not updated.',
+        },
+        { status: 502 }
+      );
+    }
+
     let dvpBuildOk = false;
     let statsWarmed: number | undefined;
     let statsFailed: number | undefined;
