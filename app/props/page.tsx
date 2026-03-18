@@ -260,6 +260,9 @@ const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
 const AFL_NOTIFICATION_ID = 'afl-launch-update-2026';
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v1';
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
+const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
+const AFL_TEAM_LOGOS_CACHE_TS_KEY = 'afl_team_logos_cache_ts_v1';
+const AFL_TEAM_LOGOS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 export default function NBALandingPage() {
   const router = useRouter();
@@ -678,6 +681,21 @@ export default function NBALandingPage() {
             }
             aflPropsFetchCompleteRef.current = true;
             setAflPropsLoading(false);
+          }
+        }
+      } catch {
+        // ignore
+      }
+      // 5) AFL team logos cache for instant logo-only matchup rendering
+      try {
+        const logosRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
+        const logosTsRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_TS_KEY);
+        const logosTs = logosTsRaw ? parseInt(logosTsRaw, 10) : 0;
+        const logosAge = Number.isFinite(logosTs) ? Date.now() - logosTs : Infinity;
+        if (logosRaw && logosAge < AFL_TEAM_LOGOS_CACHE_TTL_MS) {
+          const parsed = JSON.parse(logosRaw);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            setAflLogoByTeam(parsed as Record<string, string>);
           }
         }
       } catch {
@@ -1403,10 +1421,38 @@ export default function NBALandingPage() {
   // Fetch AFL team logos for matchup display (when on AFL tab)
   useEffect(() => {
     if (propsSport !== 'afl') return;
-    fetch('/api/afl/team-logos')
+    let hasFreshCache = false;
+    try {
+      const cachedRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
+      const cachedTsRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_TS_KEY);
+      const cachedTs = cachedTsRaw ? parseInt(cachedTsRaw, 10) : 0;
+      const age = Number.isFinite(cachedTs) ? Date.now() - cachedTs : Infinity;
+      if (cachedRaw && age < AFL_TEAM_LOGOS_CACHE_TTL_MS) {
+        const parsed = JSON.parse(cachedRaw);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          setAflLogoByTeam(parsed as Record<string, string>);
+          hasFreshCache = true;
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
+
+    // If we already have fresh cached logos, avoid unnecessary fetch on quick back-nav.
+    if (hasFreshCache) return;
+
+    fetch('/api/afl/team-logos', { cache: 'force-cache' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { logos?: Record<string, string> } | null) => {
-        if (data?.logos && typeof data.logos === 'object') setAflLogoByTeam(data.logos);
+        if (data?.logos && typeof data.logos === 'object' && Object.keys(data.logos).length > 0) {
+          setAflLogoByTeam(data.logos);
+          try {
+            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_KEY, JSON.stringify(data.logos));
+            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_TS_KEY, Date.now().toString());
+          } catch {
+            // ignore cache write errors
+          }
+        }
       })
       .catch(() => {});
   }, [propsSport]);
@@ -3878,11 +3924,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   const awayLogoUrl = a ? tryAflLogo(a) : null;
                                   return (
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                      {homeLogoUrl && <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                      {homeLogoUrl ? (
+                                        <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />
+                                      ) : (
+                                        <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                      )}
                                       <span className={`text-xs font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
-                                      {awayLogoUrl && <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />}
-                                      {(!homeLogoUrl || !awayLogoUrl) && (
-                                        <span className="text-xs font-medium truncate">{[h || '—', a || '—'].filter(Boolean).join(' vs ')}</span>
+                                      {awayLogoUrl ? (
+                                        <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />
+                                      ) : (
+                                        <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
                                       )}
                                     </div>
                                   );
@@ -4008,11 +4059,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         const awayLogoUrl = a ? tryAflLogo(a) : null;
                                         return (
                                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            {homeLogoUrl && <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                            {homeLogoUrl ? (
+                                              <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />
+                                            ) : (
+                                              <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                            )}
                                             <span className={`text-sm font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
-                                            {awayLogoUrl && <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />}
-                                            {(!homeLogoUrl || !awayLogoUrl) && (
-                                              <span className="text-sm font-medium truncate">{[h || '—', a || '—'].filter(Boolean).join(' vs ')}</span>
+                                            {awayLogoUrl ? (
+                                              <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />
+                                            ) : (
+                                              <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
                                             )}
                                           </div>
                                         );
@@ -5165,11 +5221,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           const awayLogoUrl = awayD ? tryAflLogo(awayD) : null;
                                           return (
                                             <div className="flex items-center gap-2 flex-wrap">
-                                              {homeLogoUrl && <img src={homeLogoUrl} alt={homeD || ''} className="w-8 h-8 object-contain flex-shrink-0" />}
+                                              {homeLogoUrl ? (
+                                                <img src={homeLogoUrl} alt={homeD || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                              ) : (
+                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+                                              )}
                                               <span className={`text-xs flex-shrink-0 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
-                                              {awayLogoUrl && <img src={awayLogoUrl} alt={awayD || ''} className="w-8 h-8 object-contain flex-shrink-0" />}
-                                              {(!homeLogoUrl || !awayLogoUrl) && (
-                                                <span className={`text-xs ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>{[homeD || '—', awayD || '—'].filter(Boolean).join(' vs ')}</span>
+                                              {awayLogoUrl ? (
+                                                <img src={awayLogoUrl} alt={awayD || ''} className="w-8 h-8 object-contain flex-shrink-0" />
+                                              ) : (
+                                                <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
                                               )}
                                             </div>
                                           );
