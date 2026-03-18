@@ -985,7 +985,7 @@ export default function NBALandingPage() {
     // Preload AFL props in parallel so switching to AFL tab is instant (writes to sessionStorage only)
     (async () => {
       try {
-        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+        const listRes = await fetch(`/api/afl/player-props/list?cb=${Date.now()}`, { cache: 'no-store' });
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
@@ -1113,7 +1113,10 @@ export default function NBALandingPage() {
     }
     const doFetch = async (isRetry: boolean): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string }> => {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
-      const listUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
+      // Add a cache-busting query param so AFL lines don't stick on stale edge/browser cache after cron refreshes.
+      const listUrl = debugStats
+        ? `/api/afl/player-props/list?debugStats=1&cb=${Date.now()}`
+        : `/api/afl/player-props/list?cb=${Date.now()}`;
       const listRes = await fetch(listUrl, { cache: 'no-store' });
       if (cancelled) return { games: [], aggregated: [] };
       const listData = await listRes.json();
