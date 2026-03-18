@@ -23,6 +23,36 @@ if (!supabaseServiceKey) {
 // Create Supabase admin client (bypasses RLS)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+function isPushoverConfigured(): boolean {
+  return Boolean(process.env.PUSHOVER_TOKEN && process.env.PUSHOVER_USER_KEY);
+}
+
+async function sendPushoverNotification(title: string, message: string): Promise<void> {
+  const token = process.env.PUSHOVER_TOKEN;
+  const user = process.env.PUSHOVER_USER_KEY;
+  if (!token || !user) return;
+
+  const body = new URLSearchParams();
+  body.set('token', token);
+  body.set('user', user);
+  body.set('title', title);
+  body.set('message', message);
+  body.set('priority', '0');
+
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Pushover API ${response.status}: ${errorText.slice(0, 300)}`);
+  }
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const headersList = await headers();
@@ -136,6 +166,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const billingCycle = session.metadata?.billing_cycle;
   const hasTrial = session.metadata?.has_trial === 'true';
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+  const checkoutEmail = session.customer_details?.email ?? null;
 
   console.log('💳 Processing checkout:', { userId, billingCycle, customerId, subscriptionId: session.subscription, hasTrial });
 
@@ -200,6 +231,27 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.error('❌ Error updating profile:', error);
   } else {
     console.log('✅ Profile updated successfully for user:', userId);
+  }
+
+  // Fire-and-forget signup push notification (never block or fail webhook flow)
+  if (isPushoverConfigured()) {
+    try {
+      const billingLabel =
+        billingCycle === 'annual'
+          ? 'Annual'
+          : billingCycle === 'semiannual'
+            ? '6 Months'
+            : billingCycle === 'monthly'
+              ? 'Monthly'
+              : (billingCycle || 'Unknown');
+      const trialLabel = hasTrial ? 'Yes' : 'No';
+      const emailLabel = checkoutEmail || 'No email in checkout';
+      const message = `New signup\nEmail: ${emailLabel}\nBilling: ${billingLabel}\nTrial: ${trialLabel}\nUser: ${userId}`;
+      await sendPushoverNotification('StatTrackr: New Signup', message);
+      console.log('✅ Pushover signup notification sent');
+    } catch (notifyError) {
+      console.error('⚠️ Failed to send Pushover signup notification:', notifyError);
+    }
   }
 }
 
