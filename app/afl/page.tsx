@@ -3,6 +3,7 @@
 import { DashboardStyles } from '@/app/nba/research/dashboard/components/DashboardStyles';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
+import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
@@ -330,6 +331,7 @@ export default function AFLPage() {
   const [nextGameId, setNextGameId] = useState<string | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
+  const [navigatingToProps, setNavigatingToProps] = useState(false);
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
   const [leaguePlayerStats, setLeaguePlayerStats] = useState<AflLeaguePlayerTeamRankRow[] | null>(null);
@@ -2365,6 +2367,7 @@ export default function AFLPage() {
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
+      <LoadingBar isLoading={navigatingToProps} isDark={isDark} showImmediately={navigatingToProps} mobileOffset={0} />
       <DashboardStyles />
       <div className="px-0 dashboard-container" style={containerStyle}>
         <div className={innerContainerClassName} style={innerContainerStyle}>
@@ -2433,6 +2436,7 @@ export default function AFLPage() {
                                     localStorage.removeItem(AFL_PAGE_STATE_KEY);
                                     sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                   } catch {}
+                                  setNavigatingToProps(true);
                                   router.push('/props?sport=afl');
                                 }}
                                 className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
@@ -2578,6 +2582,7 @@ export default function AFLPage() {
                                       localStorage.removeItem(AFL_PAGE_STATE_KEY);
                                       sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                     } catch {}
+                                    setNavigatingToProps(true);
                                     router.push('/props?sport=afl');
                                   }}
                                   className="flex items-center gap-1.5 mb-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
