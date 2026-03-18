@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       ],
       mode: 'subscription',
       subscription_data: subscriptionData,
-      success_url: `${request.headers.get('origin')}/nba/research/dashboard?success=true`,
+      success_url: `${request.headers.get('origin')}/props?success=true`,
       cancel_url: `${request.headers.get('origin')}/home`,
       metadata: {
         user_id: user.id,
