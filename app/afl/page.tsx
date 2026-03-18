@@ -960,31 +960,35 @@ export default function AFLPage() {
       }
       return false;
     };
-    fetch(urlWithDate)
-      .then((r) => r.json())
-      .then(async (data) => {
-        if (cancelled) return;
-        if (apply(data)) {
-          setAflOddsLoading(false);
-          return;
-        }
-        if (aflOddsGameDate) {
-          const fallback = await fetch(urlNoDate).then((r) => r.json());
-          if (!cancelled && apply(fallback)) {
-            setAflOddsError(null);
-          } else if (!cancelled) {
-            setAflOddsBooks([]);
-            setAflOddsHomeTeam('');
-            setAflOddsAwayTeam('');
-            setAflOddsError(fallback?.error || data?.error || null);
-          }
-        } else if (!cancelled) {
+    const fetchJson = (url: string) =>
+      fetch(url)
+        .then((r) => r.json())
+        .catch(() => null);
+
+    const request = aflOddsGameDate
+      ? Promise.all([fetchJson(urlWithDate), fetchJson(urlNoDate)]).then(([withDateData, fallbackData]) => {
+          if (cancelled) return;
+          if (apply(withDateData as { success?: boolean; data?: unknown[]; homeTeam?: string; awayTeam?: string; error?: string | null })) return;
+          if (apply(fallbackData as { success?: boolean; data?: unknown[]; homeTeam?: string; awayTeam?: string; error?: string | null })) return;
           setAflOddsBooks([]);
           setAflOddsHomeTeam('');
           setAflOddsAwayTeam('');
-          setAflOddsError(data?.error || null);
-        }
-      })
+          const primaryErr =
+            (withDateData as { error?: string | null } | null)?.error ??
+            (fallbackData as { error?: string | null } | null)?.error ??
+            null;
+          setAflOddsError(primaryErr);
+        })
+      : fetchJson(urlNoDate).then((data) => {
+          if (cancelled) return;
+          if (apply(data as { success?: boolean; data?: unknown[]; homeTeam?: string; awayTeam?: string; error?: string | null })) return;
+          setAflOddsBooks([]);
+          setAflOddsHomeTeam('');
+          setAflOddsAwayTeam('');
+          setAflOddsError((data as { error?: string | null } | null)?.error ?? null);
+        });
+
+    request
       .catch((err) => {
         if (!cancelled) {
           setAflOddsBooks([]);
@@ -1053,8 +1057,6 @@ export default function AFLPage() {
     if (lastPlayerPropsKeyRef.current !== null && lastPlayerPropsKeyRef.current !== playerKey) {
       setAflPlayerPropsBooks([]);
     }
-    // Wait for game odds request to finish first when we have an opponent, so player-props API can resolve event ID from the same fresh odds data
-    if (aflOddsOpponent && aflOddsLoading) return;
     const teamForProps = rosterTeamToInjuryTeam(String(teamRaw)) || String(teamRaw);
     const lastRound =
       (typeof selectedPlayer?.last_round === 'string' && selectedPlayer.last_round.trim()
@@ -1079,28 +1081,54 @@ export default function AFLPage() {
       noPrice?: number;
     };
 
-    const params = new URLSearchParams({ team: teamRaw.trim(), season: String(season) });
-    if (lastRound) params.set('last_round', lastRound);
-    fetch(`/api/afl/next-game?${params}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return null;
-        const opponent =
-          typeof data?.next_opponent === 'string' && data.next_opponent && data.next_opponent !== '—'
-            ? (opponentToOfficialTeamName(data.next_opponent) || data.next_opponent)
-            : '';
-        const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
-        const gameDateForProps = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff.toISOString().split('T')[0] : '';
-        const nextGameIdFromApi = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : '';
-        if (!opponent) {
+    const opponentFromState = aflOddsOpponent;
+    const gameDateFromState = aflOddsGameDate;
+    const gameIdFromState = nextGameId ?? '';
+
+    const resolveMatchup = () => {
+      if (opponentFromState || gameIdFromState) {
+        return Promise.resolve({
+          opponent: opponentFromState,
+          gameDateForProps: gameDateFromState,
+          nextGameIdFromApi: gameIdFromState,
+        });
+      }
+      const params = new URLSearchParams({ team: teamRaw.trim(), season: String(season) });
+      if (lastRound) params.set('last_round', lastRound);
+      return fetch(`/api/afl/next-game?${params}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return null;
+          const opponent =
+            typeof data?.next_opponent === 'string' && data.next_opponent && data.next_opponent !== '—'
+              ? (opponentToOfficialTeamName(data.next_opponent) || data.next_opponent)
+              : '';
+          const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
+          const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
+          const gameDateForProps = tipoffValid ? tipoffValid.toISOString().split('T')[0] : '';
+          const nextGameIdFromApi = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : '';
+          if (!cancelled) {
+            if (nextGameIdFromApi && nextGameIdFromApi !== nextGameId) setNextGameId(nextGameIdFromApi);
+            if (opponent && opponent !== nextGameOpponent) setNextGameOpponent(opponent);
+            if (tipoffValid && tipoffValid.getTime() !== nextGameTipoff?.getTime()) setNextGameTipoff(tipoffValid);
+          }
+          return { opponent, gameDateForProps, nextGameIdFromApi };
+        });
+    };
+
+    resolveMatchup()
+      .then((matchup) => {
+        if (cancelled || !matchup) return null;
+        const { opponent, gameDateForProps, nextGameIdFromApi } = matchup;
+        if (!opponent && !nextGameIdFromApi) {
           setAflPlayerPropsBooks([]);
           return null;
         }
         const teamOpp = [
           `team=${encodeURIComponent(teamForProps)}`,
-          `opponent=${encodeURIComponent(opponent)}`,
-          gameDateForProps && `game_date=${encodeURIComponent(gameDateForProps)}`,
-          nextGameIdFromApi && `event_id=${encodeURIComponent(nextGameIdFromApi)}`,
+          opponent ? `opponent=${encodeURIComponent(opponent)}` : '',
+          gameDateForProps ? `game_date=${encodeURIComponent(gameDateForProps)}` : '',
+          nextGameIdFromApi ? `event_id=${encodeURIComponent(nextGameIdFromApi)}` : '',
         ]
           .filter(Boolean)
           .join('&');
@@ -1150,7 +1178,7 @@ export default function AFLPage() {
         if (!cancelled) setAflPlayerPropsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsLoading]);
+  }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsGameDate, nextGameId, nextGameOpponent, nextGameTipoff]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
