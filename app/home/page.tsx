@@ -51,6 +51,16 @@ function getAvatarColor(name: string): string {
 
 export default function HomePage() {
   const router = useRouter();
+  const prefetchPropsResources = () => {
+    router.prefetch('/props');
+    void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
+    void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
+  };
+
+  const goToProps = () => {
+    prefetchPropsResources();
+    router.push('/props');
+  };
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
@@ -201,7 +211,7 @@ export default function HomePage() {
         const cached = sessionStorage.getItem(CACHE_KEY);
         const ts = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
         if (cached && ts && Date.now() - parseInt(ts, 10) < CACHE_TTL_MS) return;
-        const res = await fetch('/api/nba/player-props', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+        const res = await fetch('/api/nba/player-props', { cache: 'force-cache' });
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
@@ -238,13 +248,14 @@ export default function HomePage() {
 
     // Warm AFL list API so props page AFL tab loads fast (sessionStorage filled by props page when they open AFL)
     const prefetchAfl = () => {
-      fetch('/api/afl/player-props/list', { cache: 'no-store' }).catch(() => {});
+      fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
     };
 
+    router.prefetch('/props');
     prefetchNba();
     prefetchGames();
     prefetchAfl();
-  }, [isCheckingSubscription, user, hasPremium]);
+  }, [isCheckingSubscription, user, hasPremium, router]);
 
   useEffect(() => {
     const lg = 1024;
@@ -424,7 +435,9 @@ export default function HomePage() {
                     <>
                       <span className="text-sm text-gray-400">Pro Member</span>
                       <button
-                        onClick={() => router.push('/props')}
+                        onMouseEnter={prefetchPropsResources}
+                        onFocus={prefetchPropsResources}
+                        onClick={goToProps}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
                       >
                         Go to App
@@ -1135,7 +1148,7 @@ export default function HomePage() {
           <h2 className="text-4xl sm:text-5xl font-bold mb-8">Ready to start?</h2>
           <button
             onClick={() => {
-              if (user && hasPremium) router.push('/props');
+              if (user && hasPremium) goToProps();
               else if (user) router.push('/home#pricing');
               else router.push('/login');
             }}
@@ -1171,7 +1184,7 @@ export default function HomePage() {
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><button onClick={() => router.push('/props')} className="hover:text-white transition-colors">Player Props</button></li>
+                <li><button onMouseEnter={prefetchPropsResources} onFocus={prefetchPropsResources} onClick={goToProps} className="hover:text-white transition-colors">Player Props</button></li>
                 <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">NBA Dashboard</button></li>
                 <li><button onClick={() => router.push('/afl')} className="hover:text-white transition-colors">AFL Research</button></li>
               </ul>

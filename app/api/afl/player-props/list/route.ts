@@ -11,6 +11,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+const AFL_LIST_CACHE_CONTROL = 'public, max-age=15, s-maxage=60, stale-while-revalidate=300';
 
 function hasOver(o: string) {
   return o != null && String(o).trim() !== '' && String(o) !== 'N/A';
@@ -89,6 +90,10 @@ export async function GET(request: Request) {
         ingestMessage: undefined,
         message: 'No AFL games from Odds API. Run /api/afl/odds/refresh to populate props cache.',
         _meta: { canonicalError },
+      }, {
+        headers: {
+          'Cache-Control': AFL_LIST_CACHE_CONTROL,
+        },
       });
     }
 
@@ -121,6 +126,10 @@ export async function GET(request: Request) {
           enrich: false,
           canonicalUsed: usedCanonicalGames,
           canonicalError: canonicalError ?? undefined,
+        },
+      }, {
+        headers: {
+          'Cache-Control': AFL_LIST_CACHE_CONTROL,
         },
       });
     }
@@ -323,7 +332,11 @@ export async function GET(request: Request) {
               : undefined,
       };
     }
-    return NextResponse.json(payload);
+    return NextResponse.json(payload, {
+      headers: {
+        'Cache-Control': AFL_LIST_CACHE_CONTROL,
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ success: false, error: message, data: [], games: [] }, { status: 500 });

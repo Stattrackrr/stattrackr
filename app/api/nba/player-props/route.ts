@@ -12,6 +12,7 @@ const ODDS_CACHE_KEY_STAGING = 'all_nba_odds_v2_bdl_staging';
 // Cache key prefix for player props
 // Simplified: Just use date, no timestamp or vendor count
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
+const PROPS_LIST_CACHE_CONTROL = 'public, max-age=15, s-maxage=60, stale-while-revalidate=300';
 
 /**
  * Get the game date from odds cache in US Eastern Time
@@ -402,6 +403,10 @@ export async function GET(request: NextRequest) {
           gameDate,
           cached: true,
           filtered: removedCount > 0 ? removedCount : undefined
+        }, {
+          headers: {
+            'Cache-Control': PROPS_LIST_CACHE_CONTROL,
+          },
         });
       }
     }
@@ -417,6 +422,10 @@ export async function GET(request: NextRequest) {
       lastUpdated: oddsCache.lastUpdated,
       cached: false,
       message: 'Processing required - cache will be populated after processing'
+    }, {
+      headers: {
+        'Cache-Control': PROPS_LIST_CACHE_CONTROL,
+      },
     });
     
   } catch (error) {

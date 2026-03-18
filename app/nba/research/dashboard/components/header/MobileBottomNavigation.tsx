@@ -53,6 +53,11 @@ export function MobileBottomNavigation({
   setOddsFormat,
 }: MobileBottomNavigationProps) {
   const router = useRouter();
+  const prefetchProps = () => {
+    router.prefetch('/props');
+    void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
+    void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
+  };
 
   const journalButtonClasses = `flex flex-col items-center justify-center gap-1 transition-all duration-300 ${
     !hasPremium
@@ -90,7 +95,11 @@ export function MobileBottomNavigation({
       <div className="grid grid-cols-4 h-16 lg:hidden">
         {/* Props */}
         <button
-          onClick={() => router.push('/props')}
+          onTouchStart={prefetchProps}
+          onClick={() => {
+            prefetchProps();
+            router.push('/props');
+          }}
           className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
