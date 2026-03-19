@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     warmed: result.warmed,
+    failed: result.failed,
+    noData: result.noData,
+    coveragePct: result.coveragePct,
     total: result.total,
     skipped: result.skipped,
     rowsFromCache: result.rowsFromCache,

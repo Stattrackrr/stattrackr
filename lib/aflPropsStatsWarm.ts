@@ -25,10 +25,12 @@ export type RunAflPropsStatsWarmResult = {
   success: boolean;
   warmed: number;
   failed: number;
+  noData: number;
   total?: number;
   skipped?: number;
   rowsFromCache?: number;
   uniqueProps?: number;
+  coveragePct?: number;
   error?: string;
 };
 
@@ -82,7 +84,7 @@ export async function runAflPropsStatsWarm(
 
     if (!result?.props?.length) {
       console.log('[AFL props-stats/warm] No props in cache. Run /api/afl/odds/refresh first.');
-      return { success: true, warmed: 0, failed: 0, skipped: 0 };
+      return { success: true, warmed: 0, failed: 0, noData: 0, skipped: 0, coveragePct: 100 };
     }
     console.log('[AFL props-stats/warm] Props to consider:', result.props.length);
 
@@ -140,6 +142,8 @@ export async function runAflPropsStatsWarm(
 
     let warmed = 0;
     let failed = 0;
+    let noData = 0;
+    let errored = 0;
     const runBatch = (batch: PropToWarm[]) =>
       Promise.all(
         batch.map((p) => {
@@ -147,10 +151,29 @@ export async function runAflPropsStatsWarm(
           const dvp = getDvp(p.opponent, p.statType, position);
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
-            if (r) warmed++;
-            else failed++;
+            if (!r) {
+              failed++;
+              errored++;
+              return;
+            }
+            const hasStats =
+              r.last5Avg != null ||
+              r.last10Avg != null ||
+              r.h2hAvg != null ||
+              r.seasonAvg != null ||
+              r.streak != null ||
+              r.last5HitRate != null ||
+              r.last10HitRate != null ||
+              r.h2hHitRate != null ||
+              r.seasonHitRate != null;
+            if (hasStats) warmed++;
+            else {
+              failed++;
+              noData++;
+            }
           }).catch((err) => {
             failed++;
+            errored++;
             console.warn('[AFL props-stats/warm] getAflPropStats failed:', p.playerName, p.statType, err);
           });
         })
@@ -170,19 +193,33 @@ export async function runAflPropsStatsWarm(
       }
     }
 
-    console.log('[AFL props-stats/warm] Done. Warmed', warmed, '| Failed (N/A):', failed, '| Total processed:', toProcess.length);
+    const coveragePct = toProcess.length > 0 ? Math.round((warmed / toProcess.length) * 100) : 100;
+    console.log(
+      '[AFL props-stats/warm] Done. Warmed',
+      warmed,
+      '| No data:',
+      noData,
+      '| Errors:',
+      errored,
+      '| Coverage:',
+      `${coveragePct}%`,
+      '| Total processed:',
+      toProcess.length,
+    );
     return {
       success: true,
       warmed,
       failed,
+      noData,
       total: toProcess.length,
       skipped: Math.max(0, toWarm.length - MAX_PROPS),
       rowsFromCache: result.props.length,
       uniqueProps: toWarm.length,
+      coveragePct,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[AFL props-stats/warm]', err);
-    return { success: false, warmed: 0, failed: 0, error: message };
+    return { success: false, warmed: 0, failed: 0, noData: 0, coveragePct: 0, error: message };
   }
 }

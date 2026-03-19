@@ -116,7 +116,7 @@ async function fetchGameLogs(
   season: number,
   cronSecret?: string
 ): Promise<Record<string, unknown>[]> {
-  const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}`;
+  const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}&include_both=1`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cronSecret) {
     headers['Authorization'] = `Bearer ${cronSecret}`;
