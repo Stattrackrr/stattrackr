@@ -489,6 +489,24 @@ export default function NBALandingPage() {
   const aflRetryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+  // If the user manually checks/unchecks games, don't let the async AFL list fetch overwrite their selection.
+  const userModifiedAflGamesRef = useRef(false);
+
+  const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
+    const nextSet = new Set(nextGameIds);
+    if (!userModifiedAflGamesRef.current) {
+      setSelectedAflGames(nextSet);
+      return;
+    }
+    // Preserve user's current selection by intersecting with the newly loaded game list.
+    setSelectedAflGames((prev) => {
+      const out = new Set<string>();
+      for (const id of prev) {
+        if (nextSet.has(id)) out.add(id);
+      }
+      return out;
+    });
+  }, []);
   /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
   const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
   /** AFL ingest status from list API (same as NBA: "Fetched X stats for Y season, Z games"). */
@@ -503,6 +521,11 @@ export default function NBALandingPage() {
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+
+  // Reset "user modified" flag when leaving AFL-only filter mode.
+  useEffect(() => {
+    if (propsSport !== 'afl') userModifiedAflGamesRef.current = false;
+  }, [propsSport]);
   const [showAflComingSoonPopup, setShowAflComingSoonPopup] = useState(false);
 
   // Find player (not in props / no odds) modal: bottom-right on mobile, top-right on desktop
@@ -736,7 +759,11 @@ export default function NBALandingPage() {
             setAflProps(parsed.props);
             if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
               setAflGames(parsed.games);
-              setSelectedAflGames(new Set(parsed.games.map((g: { gameId: string }) => g.gameId)));
+              const selectedIds =
+                Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0
+                  ? parsed.selectedGameIds
+                  : parsed.games.map((g: { gameId: string }) => g.gameId);
+              syncSelectedAflGames(selectedIds);
             }
             aflPropsFetchCompleteRef.current = true;
             setAflPropsLoading(false);
@@ -1156,7 +1183,11 @@ export default function NBALandingPage() {
           setAflProps(parsed.props);
           if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
             setAflGames(parsed.games);
-            setSelectedAflGames(new Set(parsed.games.map((g: { gameId: string }) => g.gameId)));
+            const selectedIds =
+              Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0
+                ? parsed.selectedGameIds
+                : parsed.games.map((g: { gameId: string }) => g.gameId);
+            syncSelectedAflGames(selectedIds);
           }
           aflPropsFetchCompleteRef.current = true;
           setAflPropsLoading(false);
@@ -1284,7 +1315,7 @@ export default function NBALandingPage() {
           if (cancelled) return;
           if (quickResult.games.length > 0) {
             setAflGames(quickResult.games);
-            setSelectedAflGames(new Set(quickResult.games.map((g) => g.gameId)));
+            syncSelectedAflGames(quickResult.games.map((g) => g.gameId));
           }
           if (quickResult.aggregated.length > 0) {
             setAflProps(quickResult.aggregated);
@@ -1325,7 +1356,7 @@ export default function NBALandingPage() {
           setAflGames(retryGames);
           if (retryAggregated.length > 0 || !hadCacheWithProps) {
             setAflProps(retryAggregated);
-            if (retryGames.length > 0) setSelectedAflGames(new Set(retryGames.map((g) => g.gameId)));
+            if (retryGames.length > 0) syncSelectedAflGames(retryGames.map((g) => g.gameId));
             if (!cancelled) {
               setAflIngestMessage(result.ingestMessage ?? null);
               setAflLastUpdated(result.lastUpdated ?? null);
@@ -1351,10 +1382,10 @@ export default function NBALandingPage() {
                 if (cancelled) return;
                 const res = await doFetch(true);
                 if (cancelled) return;
-                if (res.aggregated.length > 0) {
-                  setAflGames(res.games);
-                  setAflProps(res.aggregated);
-                  if (res.games.length > 0) setSelectedAflGames(new Set(res.games.map((g) => g.gameId)));
+                  if (res.aggregated.length > 0) {
+                    setAflGames(res.games);
+                    setAflProps(res.aggregated);
+                    if (res.games.length > 0) syncSelectedAflGames(res.games.map((g) => g.gameId));
                   if (!cancelled) {
                     setAflIngestMessage(res.ingestMessage ?? null);
                     setAflLastUpdated(res.lastUpdated ?? null);
@@ -1387,7 +1418,7 @@ export default function NBALandingPage() {
         if (aggregated.length > 0 || !hadCacheWithProps) {
           setAflProps(aggregated);
           if (games.length > 0) {
-            setSelectedAflGames(new Set(games.map((g) => g.gameId)));
+            syncSelectedAflGames(games.map((g) => g.gameId));
           }
           if (!cancelled) {
             setAflIngestMessage(result.ingestMessage ?? null);
@@ -1406,7 +1437,7 @@ export default function NBALandingPage() {
           }
         } else if (games.length > 0) {
           setAflGames(games);
-          setSelectedAflGames(new Set(games.map((g) => g.gameId)));
+          syncSelectedAflGames(games.map((g) => g.gameId));
         }
       } catch (e) {
         if (!cancelled && !hadCacheWithProps) {
@@ -3077,6 +3108,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   // AFL: ensure all games selected when none or invalid (e.g. after switching from NBA or cache miss)
   useEffect(() => {
     if (propsSport !== 'afl' || aflGamesWithProps.length === 0) return;
+    // Don't auto-select all games after the user has manually toggled them.
+    if (userModifiedAflGamesRef.current) return;
     const gameIds = new Set(aflGamesWithProps.map((g) => g.gameId));
     const hasOverlap = Array.from(selectedAflGames).some((id) => gameIds.has(id));
     if (selectedAflGames.size > 0 && hasOverlap) return;
@@ -3961,6 +3994,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   };
 
   const toggleAflGame = (gameId: string) => {
+    userModifiedAflGamesRef.current = true;
     setSelectedAflGames((prev) => {
       const next = new Set(prev);
       if (next.has(gameId)) next.delete(gameId);
@@ -3968,8 +4002,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       return next;
     });
   };
-  const selectAllAflGames = () => setSelectedAflGames(new Set(aflGamesWithProps.map((g) => g.gameId)));
-  const clearAllAflGames = () => setSelectedAflGames(new Set());
+  const selectAllAflGames = () => {
+    userModifiedAflGamesRef.current = true;
+    setSelectedAflGames(new Set(aflGamesWithProps.map((g) => g.gameId)));
+  };
+  const clearAllAflGames = () => {
+    userModifiedAflGamesRef.current = true;
+    setSelectedAflGames(new Set());
+  };
 
   const getConfidenceColor = (confidence: string) => {
     if (confidence === 'High') return mounted && isDark ? 'text-green-400' : 'text-green-600';
@@ -4996,6 +5036,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           <button
                             type="button"
                             onClick={() => {
+                              userModifiedAflGamesRef.current = false;
                               aflPropsFetchCompleteRef.current = false;
                               setAflPropsLoading(true);
                               setAflPropsRetryKey((k) => k + 1);
