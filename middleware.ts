@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com https://analytics.tiktok.com data:",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://stats.nba.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://capig.stape.gl https://*.stape.gl",
+    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://stats.nba.com https://www.facebook.com https://connect.facebook.net https://analytics.tiktok.com https://capig.stape.gl https://*.stape.gl https://ads.tiktok.com https://*.tiktok.com https://*.tiktokw.us",
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
