@@ -216,21 +216,66 @@ function buildEventCacheFromBookmakers(bookmakers: OddsApiBookmaker[]): EventPla
  * Pass `games` from the same request's refreshAflOddsData() so we don't rely on cache read (avoids Redis/instance timing).
  * If `games` not provided, falls back to getAflOddsCache().
  */
-export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]): Promise<{
+export type RefreshAflPlayerPropsOptions = {
+  /** Delete all cached AFL player-props event keys before refresh. */
+  clearExisting?: boolean;
+  /** Treat partial refresh as failure (require one successful refresh per game). */
+  requireAllGames?: boolean;
+  /**
+   * Atomic mode: fetch all events first, then write cache only after validation passes.
+   * This avoids "blank window" where old cache is cleared before new cache is ready.
+   */
+  atomicSwap?: boolean;
+};
+
+export async function refreshAflPlayerPropsCache(
+  gamesFromCaller?: AflGameOdds[],
+  options?: RefreshAflPlayerPropsOptions,
+): Promise<{
   success: boolean;
   eventsRefreshed: number;
+  eventsAttempted: number;
+  eventsFailed: number;
   playersWithProps: number;
   playerNames: string[];
+  failedGameIds?: string[];
+  keysCleared?: number;
   error?: string;
 }> {
+  const clearExisting = options?.clearExisting === true;
+  const requireAllGames = options?.requireAllGames === true;
+  const atomicSwap = options?.atomicSwap === true;
+
   const apiKey = process.env.ODDS_API_KEY?.trim();
   if (!apiKey) {
-    return { success: false, eventsRefreshed: 0, playersWithProps: 0, playerNames: [], error: 'ODDS_API_KEY not set' };
+    return {
+      success: false,
+      eventsRefreshed: 0,
+      eventsAttempted: 0,
+      eventsFailed: 0,
+      playersWithProps: 0,
+      playerNames: [],
+      error: 'ODDS_API_KEY not set',
+    };
   }
 
   let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
-    return { success: false, eventsRefreshed: 0, playersWithProps: 0, playerNames: [], error: 'No games in odds cache. Run game odds refresh first.' };
+    return {
+      success: false,
+      eventsRefreshed: 0,
+      eventsAttempted: 0,
+      eventsFailed: 0,
+      playersWithProps: 0,
+      playerNames: [],
+      error: 'No games in odds cache. Run game odds refresh first.',
+    };
+  }
+
+  let keysCleared = 0;
+  // clearExisting is intentionally disabled in atomic mode to avoid an empty-data gap.
+  if (clearExisting && !atomicSwap) {
+    keysCleared = await sharedCache.clearKeysByPrefix(`${AFL_PP_CACHE_KEY_PREFIX}:`);
   }
 
   const apiKeyEnc = encodeURIComponent(apiKey);
@@ -241,19 +286,23 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
       try {
         const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
         const res = await fetch(url, { next: { revalidate: 0 } });
-        if (!res.ok) return null;
+        if (!res.ok) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
         const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
         const bookmakers = data?.bookmakers ?? [];
-        if (!bookmakers.length) return null;
+        if (!bookmakers.length) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
 
         const eventCache = buildEventCacheFromBookmakers(bookmakers);
         const names = Object.keys(eventCache);
-        if (names.length === 0) return null;
-        const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`;
-        await sharedCache.setJSON(cacheKey, eventCache, AFL_PP_CACHE_TTL_SECONDS);
-        return { events: 1, players: names.length, names: names.map((n) => toDisplayName(n)) };
+        if (names.length === 0) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
+        return {
+          gameId: game.gameId,
+          events: 1,
+          players: names.length,
+          names: names.map((n) => toDisplayName(n)),
+          eventCache,
+        };
       } catch {
-        return null;
+        return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
       }
     })
   );
@@ -261,24 +310,71 @@ export async function refreshAflPlayerPropsCache(gamesFromCaller?: AflGameOdds[]
   let eventsRefreshed = 0;
   let playersWithProps = 0;
   const playerNames: string[] = [];
+  const failedGameIds: string[] = [];
+  const successfulResults = results.filter((r) => r.events === 1 && r.eventCache) as Array<{
+    gameId: string;
+    events: number;
+    players: number;
+    names: string[];
+    eventCache: EventPlayerPropsCache;
+  }>;
   for (const r of results) {
-    if (!r) continue;
+    if (r.events === 0) {
+      failedGameIds.push(r.gameId);
+      continue;
+    }
     eventsRefreshed += r.events;
     playersWithProps += r.players;
     playerNames.push(...r.names);
   }
+  const eventsAttempted = games.length;
+  const eventsFailed = Math.max(0, eventsAttempted - eventsRefreshed);
 
   if (eventsRefreshed === 0) {
     return {
       success: false,
       eventsRefreshed,
+      eventsAttempted,
+      eventsFailed,
       playersWithProps,
       playerNames,
+      failedGameIds,
+      keysCleared,
       error: 'No AFL player props were refreshed from Odds API (0 events updated)',
     };
   }
 
-  return { success: true, eventsRefreshed, playersWithProps, playerNames };
+  if (requireAllGames && eventsRefreshed < eventsAttempted) {
+    return {
+      success: false,
+      eventsRefreshed,
+      eventsAttempted,
+      eventsFailed,
+      playersWithProps,
+      playerNames,
+      failedGameIds,
+      keysCleared,
+      error: `Partial AFL props refresh: ${eventsRefreshed}/${eventsAttempted} events updated`,
+    };
+  }
+
+  // In atomic mode, write only after validation succeeds so old cache stays visible until swap point.
+  // In non-atomic mode, this still writes after fetch; behavior remains safe and simple.
+  for (const r of successfulResults) {
+    const cacheKey = `${AFL_PP_CACHE_KEY_PREFIX}:${r.gameId}`;
+    await sharedCache.setJSON(cacheKey, r.eventCache, AFL_PP_CACHE_TTL_SECONDS);
+  }
+
+  return {
+    success: true,
+    eventsRefreshed,
+    eventsAttempted,
+    eventsFailed,
+    playersWithProps,
+    playerNames,
+    failedGameIds,
+    keysCleared,
+  };
 }
 
 /** Same set of name tokens (handles "errol gulden" vs "gulden errol" from API "Gulden, Errol"). */

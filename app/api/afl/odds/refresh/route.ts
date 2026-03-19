@@ -62,8 +62,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Await props refresh so we can return player list in response (like NBA workflow logs). DvP + stats warm run in background.
-    const ppResult = await refreshAflPlayerPropsCache(result.games);
-    console.log('[AFL cron] Props refreshed – events:', ppResult.eventsRefreshed, 'players:', ppResult.playersWithProps, ppResult.error ? `error: ${ppResult.error}` : 'OK');
+    const ppResult = await refreshAflPlayerPropsCache(result.games, {
+      requireAllGames: true,
+      atomicSwap: true,
+    });
+    console.log(
+      '[AFL cron] Props refreshed – events:',
+      `${ppResult.eventsRefreshed}/${ppResult.eventsAttempted}`,
+      'failed:',
+      ppResult.eventsFailed,
+      'players:',
+      ppResult.playersWithProps,
+      'keysCleared:',
+      ppResult.keysCleared ?? 0,
+      ppResult.error ? `error: ${ppResult.error}` : 'OK',
+    );
 
     if (!ppResult.success) {
       return NextResponse.json(
@@ -73,10 +86,14 @@ export async function GET(request: NextRequest) {
           lastUpdated: result.lastUpdated,
           nextUpdate: result.nextUpdate,
           eventsRefreshed: ppResult.eventsRefreshed,
+          eventsAttempted: ppResult.eventsAttempted,
+          eventsFailed: ppResult.eventsFailed,
+          failedGameIds: ppResult.failedGameIds ?? [],
+          keysCleared: ppResult.keysCleared ?? 0,
           playersWithProps: ppResult.playersWithProps,
           playerPropsOk: false,
           playerPropsError: ppResult.error ?? 'AFL player props refresh returned no updates',
-          message: 'Odds refreshed, but player props cache was not updated.',
+          message: 'Odds refreshed, but AFL player props full refresh did not complete for all games.',
         },
         { status: 502 }
       );
@@ -158,6 +175,10 @@ export async function GET(request: NextRequest) {
       lastUpdated: result.lastUpdated,
       nextUpdate: result.nextUpdate,
       eventsRefreshed: ppResult.eventsRefreshed,
+      eventsAttempted: ppResult.eventsAttempted,
+      eventsFailed: ppResult.eventsFailed,
+      failedGameIds: ppResult.failedGameIds ?? [],
+      keysCleared: ppResult.keysCleared ?? 0,
       playersWithProps: ppResult.playersWithProps,
       playerNames: ppResult.playerNames ?? [],
       playerPropsOk: ppResult.success,

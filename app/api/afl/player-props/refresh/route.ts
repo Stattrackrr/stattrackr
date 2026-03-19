@@ -19,10 +19,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await refreshAflPlayerPropsCache();
+    const result = await refreshAflPlayerPropsCache(undefined, {
+      requireAllGames: true,
+      atomicSwap: true,
+    });
     return NextResponse.json({
       success: result.success,
       eventsRefreshed: result.eventsRefreshed,
+      eventsAttempted: result.eventsAttempted,
+      eventsFailed: result.eventsFailed,
+      failedGameIds: result.failedGameIds ?? [],
+      keysCleared: result.keysCleared ?? 0,
       playersWithProps: result.playersWithProps,
       error: result.error ?? undefined,
     });
