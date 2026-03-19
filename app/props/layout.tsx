@@ -173,7 +173,7 @@ export default async function PropsLayout({ children }: { children: React.ReactN
     const baseUrl = `${proto}://${host}`;
     const [nbaData, aflData] = await Promise.all([
       fetchJsonWithTimeout<NbaPropsResponse>(`${baseUrl}/api/nba/player-props`, 1500),
-      fetchJsonWithTimeout<AflListResponse>(`${baseUrl}/api/afl/player-props/list`, 2000),
+      fetchJsonWithTimeout<AflListResponse>(`${baseUrl}/api/afl/player-props/list?enrich=false`, 2000),
     ]);
 
     const propsRows = Array.isArray(nbaData?.data) ? nbaData.data : [];
