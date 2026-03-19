@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-03-19T11:55:08.010Z",
+  "generatedAt": "2026-03-19T12:16:16.822Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 433,
@@ -1066,7 +1066,7 @@
       "rebound_50s": 1.33,
       "contested_possessions": 7,
       "uncontested_possessions": 17,
-      "meters_gained": 344.67,
+      "meters_gained": 342.67,
       "free_kicks_for": 0.67
     },
     {
@@ -1383,7 +1383,7 @@
       "handballs": 9.67,
       "marks": 2.33,
       "goals": 0.33,
-      "tackles": 3.33,
+      "tackles": 3,
       "clearances": 4,
       "inside_50s": 4.33,
       "rebound_50s": 1,
@@ -1864,7 +1864,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 10,
       "uncontested_possessions": 10.67,
-      "meters_gained": 409,
+      "meters_gained": 408.33,
       "free_kicks_for": 1.33
     },
     {
@@ -1957,8 +1957,8 @@
       "clearances": 0,
       "inside_50s": 1.67,
       "rebound_50s": 4.67,
-      "contested_possessions": 6,
-      "uncontested_possessions": 12.33,
+      "contested_possessions": 5.67,
+      "uncontested_possessions": 12.67,
       "meters_gained": 360.67,
       "free_kicks_for": 1
     },
@@ -1978,7 +1978,7 @@
       "rebound_50s": 5.33,
       "contested_possessions": 5.33,
       "uncontested_possessions": 14.67,
-      "meters_gained": 457,
+      "meters_gained": 456.33,
       "free_kicks_for": 0.33
     },
     {
@@ -2111,7 +2111,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 6,
       "uncontested_possessions": 12.33,
-      "meters_gained": 347,
+      "meters_gained": 348.33,
       "free_kicks_for": 1.67
     },
     {
@@ -2148,8 +2148,8 @@
       "inside_50s": 1.33,
       "rebound_50s": 0.67,
       "contested_possessions": 12,
-      "uncontested_possessions": 7.67,
-      "meters_gained": 121.33,
+      "uncontested_possessions": 8.33,
+      "meters_gained": 122.67,
       "free_kicks_for": 1
     },
     {
@@ -2261,9 +2261,9 @@
       "clearances": 0,
       "inside_50s": 0.67,
       "rebound_50s": 5,
-      "contested_possessions": 6.67,
+      "contested_possessions": 7,
       "uncontested_possessions": 12.67,
-      "meters_gained": 293.67,
+      "meters_gained": 293.33,
       "free_kicks_for": 0.67
     },
     {
@@ -2719,7 +2719,7 @@
       "rebound_50s": 3,
       "contested_possessions": 5,
       "uncontested_possessions": 11.33,
-      "meters_gained": 368.67,
+      "meters_gained": 368.33,
       "free_kicks_for": 1
     },
     {
@@ -2897,7 +2897,7 @@
       "name": "Daniel Rioli",
       "team": "Gold Coast",
       "games": 2,
-      "number": 93,
+      "number": 92,
       "disposals": 18,
       "kicks": 9.5,
       "handballs": 8.5,
@@ -3036,13 +3036,13 @@
       "handballs": 8.33,
       "marks": 1.33,
       "goals": 0.33,
-      "tackles": 9,
+      "tackles": 9.33,
       "clearances": 5,
       "inside_50s": 3.33,
       "rebound_50s": 1.67,
       "contested_possessions": 10.33,
       "uncontested_possessions": 8,
-      "meters_gained": 271.67,
+      "meters_gained": 271,
       "free_kicks_for": 1
     },
     {
@@ -3555,7 +3555,7 @@
       "rebound_50s": 3,
       "contested_possessions": 5.33,
       "uncontested_possessions": 10,
-      "meters_gained": 243.33,
+      "meters_gained": 244,
       "free_kicks_for": 1
     },
     {
@@ -3790,7 +3790,7 @@
       "name": "Kane McAuliffe",
       "team": "Richmond",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 16,
       "kicks": 9,
       "handballs": 7,
@@ -3916,7 +3916,7 @@
       "rebound_50s": 1,
       "contested_possessions": 5.33,
       "uncontested_possessions": 9.67,
-      "meters_gained": 336.33,
+      "meters_gained": 335,
       "free_kicks_for": 0.33
     },
     {
@@ -4030,7 +4030,7 @@
       "rebound_50s": 1.33,
       "contested_possessions": 4.67,
       "uncontested_possessions": 9.33,
-      "meters_gained": 244.33,
+      "meters_gained": 245,
       "free_kicks_for": 0
     },
     {
@@ -5025,7 +5025,7 @@
       "name": "Ewan Mackinlay",
       "team": "Port Adelaide",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 13,
       "kicks": 7,
       "handballs": 6,
@@ -5151,7 +5151,7 @@
       "rebound_50s": 0,
       "contested_possessions": 4.67,
       "uncontested_possessions": 8.67,
-      "meters_gained": 195,
+      "meters_gained": 195.67,
       "free_kicks_for": 1.33
     },
     {
@@ -5272,7 +5272,7 @@
       "name": "Ethan Read",
       "team": "Gold Coast",
       "games": 2,
-      "number": 93,
+      "number": 92,
       "disposals": 12.5,
       "kicks": 7,
       "handballs": 5.5,
@@ -5481,7 +5481,7 @@
       "name": "Jason Horne-Francis",
       "team": "Port Adelaide",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 12,
       "kicks": 8,
       "handballs": 4,
@@ -5595,7 +5595,7 @@
       "name": "James Trezise",
       "team": "Richmond",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 12,
       "kicks": 5,
       "handballs": 7,
@@ -5702,7 +5702,7 @@
       "rebound_50s": 0.33,
       "contested_possessions": 3,
       "uncontested_possessions": 7.67,
-      "meters_gained": 187.33,
+      "meters_gained": 186.67,
       "free_kicks_for": 0.33
     },
     {
@@ -6070,7 +6070,7 @@
       "name": "Sam Wicks",
       "team": "Sydney",
       "games": 3,
-      "number": 93,
+      "number": 92,
       "disposals": 10.67,
       "kicks": 5.33,
       "handballs": 5.33,
@@ -6355,7 +6355,7 @@
       "name": "Lachy Dovaston",
       "team": "North Melbourne",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 10,
       "kicks": 8,
       "handballs": 2,
@@ -7590,7 +7590,7 @@
       "name": "Arthur Jones",
       "team": "Western Bulldogs",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 7,
       "kicks": 2,
       "handballs": 5,
@@ -7647,7 +7647,7 @@
       "name": "Hudson O'Keeffe",
       "team": "Carlton",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 7,
       "kicks": 3,
       "handballs": 4,
@@ -7742,7 +7742,7 @@
       "name": "Josaia Delana",
       "team": "GWS",
       "games": 2,
-      "number": 93,
+      "number": 92,
       "disposals": 6.5,
       "kicks": 3,
       "handballs": 3.5,
@@ -8160,7 +8160,7 @@
       "name": "Archie May",
       "team": "Essendon",
       "games": 1,
-      "number": 93,
+      "number": 92,
       "disposals": 3,
       "kicks": 3,
       "handballs": 0,

@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-03-19T11:55:16.412Z",
+  "generatedAt": "2026-03-19T12:16:26.563Z",
   "source": "footywire.com",
   "sourcePage": "ft_team_rankings?year=2026&type=ta",
   "teamCount": 18,
@@ -150,7 +150,7 @@
         "CG": 51.3,
         "R50": 38.7,
         "AF": 1686.3,
-        "SC": 1748.7
+        "SC": 1754
       }
     },
     {
@@ -277,10 +277,10 @@
         "FF": 17.7,
         "FA": 23,
         "CL": 33.3,
-        "CG": 66,
+        "CG": 65.7,
         "R50": 39,
         "AF": 1497,
-        "SC": 1655.7
+        "SC": 1658.3
       }
     },
     {
