@@ -39,6 +39,8 @@ export interface AflOddsCache {
   nextUpdate: string;
 }
 
+const AFL_PROPS_GAME_CUTOFF_GRACE_MS = 15 * 60 * 1000; // hide games shortly after scheduled start
+
 // The Odds API v4 response types
 interface OddsApiOutcome {
   name: string;
@@ -316,4 +318,15 @@ export function getNextAflGameFromGames(
     homeTeam: game.homeTeam,
     awayTeam: game.awayTeam,
   };
+}
+
+/** Props are considered eligible only for upcoming games (plus a short start-time grace period). */
+export function isAflGamePropsEligible(game: AflGameOdds, nowMs = Date.now()): boolean {
+  const t = Date.parse(game.commenceTime);
+  if (!Number.isFinite(t)) return true;
+  return t >= nowMs - AFL_PROPS_GAME_CUTOFF_GRACE_MS;
+}
+
+export function filterAflPropsEligibleGames(games: AflGameOdds[], nowMs = Date.now()): AflGameOdds[] {
+  return (games ?? []).filter((g) => isAflGamePropsEligible(g, nowMs));
 }

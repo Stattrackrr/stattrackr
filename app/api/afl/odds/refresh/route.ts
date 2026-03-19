@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
+import { filterAflPropsEligibleGames, refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
 import { runAflPropsStatsWarm } from '@/lib/aflPropsStatsWarm';
 import {
@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Await props refresh so we can return player list in response (like NBA workflow logs). DvP + stats warm run in background.
-    const ppResult = await refreshAflPlayerPropsCache(result.games, {
+    const propsEligibleGames = filterAflPropsEligibleGames(result.games ?? []);
+    const ppResult = await refreshAflPlayerPropsCache(propsEligibleGames, {
       requireAllGames: true,
       atomicSwap: true,
     });
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
           eventsFailed: ppResult.eventsFailed,
           failedGameIds: ppResult.failedGameIds ?? [],
           keysCleared: ppResult.keysCleared ?? 0,
+          propsEligibleGames: propsEligibleGames.length,
           playersWithProps: ppResult.playersWithProps,
           playerPropsOk: false,
           playerPropsError: ppResult.error ?? 'AFL player props refresh returned no updates',
@@ -179,6 +181,7 @@ export async function GET(request: NextRequest) {
       eventsFailed: ppResult.eventsFailed,
       failedGameIds: ppResult.failedGameIds ?? [],
       keysCleared: ppResult.keysCleared ?? 0,
+      propsEligibleGames: propsEligibleGames.length,
       playersWithProps: ppResult.playersWithProps,
       playerNames: ppResult.playerNames ?? [],
       playerPropsOk: ppResult.success,

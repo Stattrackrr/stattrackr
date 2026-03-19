@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, listAflPlayerPropsFromCacheWithGames, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
-import { getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
+import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
@@ -50,11 +50,12 @@ export async function GET(request: Request) {
     const canonical = await refreshAflOddsData({ skipWrite: true });
     if (canonical.success && canonical.games?.length) {
       usedCanonicalGames = true;
-      result = await listAflPlayerPropsFromCacheWithGames(canonical.games);
+      const eligibleGames = filterAflPropsEligibleGames(canonical.games);
+      result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
       if (result.props.length === 0 && result.games.length > 0) {
         void (async () => {
           try {
-            const pp = await refreshAflPlayerPropsCache(canonical.games!);
+            const pp = await refreshAflPlayerPropsCache(eligibleGames);
             if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
           } catch (e) {
             console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
@@ -64,6 +65,10 @@ export async function GET(request: Request) {
     } else {
       canonicalError = canonical.error ?? 'No games from Odds API';
       result = await listAflPlayerPropsFromCache();
+      if (result?.games?.length) {
+        const eligibleGames = filterAflPropsEligibleGames(result.games);
+        result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
+      }
     }
 
     if (!result || !result.games.length) {
@@ -71,7 +76,8 @@ export async function GET(request: Request) {
         try {
           const r = await refreshAflOddsData({ skipWrite: true });
           if (!r.success || !r.games?.length) return;
-          const pp = await refreshAflPlayerPropsCache(r.games);
+          const eligibleGames = filterAflPropsEligibleGames(r.games);
+          const pp = await refreshAflPlayerPropsCache(eligibleGames);
           if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
         } catch (e) {
           console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);

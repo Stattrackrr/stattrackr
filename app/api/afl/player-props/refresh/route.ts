@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
+import { filterAflPropsEligibleGames, getAflOddsCache } from '@/lib/refreshAflOdds';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,7 +20,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await refreshAflPlayerPropsCache(undefined, {
+    const odds = await getAflOddsCache();
+    const eligibleGames = filterAflPropsEligibleGames(odds?.games ?? []);
+    const result = await refreshAflPlayerPropsCache(eligibleGames, {
       requireAllGames: true,
       atomicSwap: true,
     });
