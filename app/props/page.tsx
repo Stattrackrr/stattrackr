@@ -495,7 +495,9 @@ export default function NBALandingPage() {
 
   const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
     const nextSet = new Set(nextGameIds);
-    if (!userModifiedAflGamesRef.current) {
+    // If the user hasn't modified yet (or the ref is empty during initial restore),
+    // just apply the incoming selection.
+    if (!userModifiedAflGamesRef.current || selectedAflGamesRef.current.size === 0) {
       selectedAflGamesRef.current = nextSet;
       setSelectedAflGames(nextSet);
       return;
