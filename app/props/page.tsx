@@ -3875,16 +3875,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   }, [router]);
 
   const toggleSportSelection = useCallback((sport: 'nba' | 'afl') => {
-    let nextMode: 'nba' | 'afl' | 'combined' = propsSport;
-    if (sport === 'nba') {
-      if (propsSport === 'afl') nextMode = 'combined';
-      else if (propsSport === 'combined') nextMode = 'afl';
-      else nextMode = 'nba';
-    } else {
-      if (propsSport === 'nba') nextMode = 'combined';
-      else if (propsSport === 'combined') nextMode = 'nba';
-      else nextMode = 'afl';
-    }
+    // Combined means "no explicit single-sport filter selected".
+    // Clicking an active sport toggles it off back to combined.
+    const nextMode: 'nba' | 'afl' | 'combined' = propsSport === sport ? 'combined' : sport;
     applySportMode(nextMode);
   }, [propsSport, applySportMode]);
 
@@ -4121,13 +4114,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               }}
             >
           <div className={`h-full pb-12 lg:pr-0 px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
-            {/* Sport toggle: NBA | AFL - above search; desktop: wider buttons */}
+            {/* Sport filter: default combined (none selected), select one for single-sport view */}
             <div className={`flex gap-1.5 mb-2 lg:gap-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <button
                 type="button"
                 onClick={() => toggleSportSelection('nba')}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
-                  propsSport === 'nba' || propsSport === 'combined'
+                  propsSport === 'nba'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
                     : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
@@ -4139,7 +4132,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 type="button"
                 onClick={() => toggleSportSelection('afl')}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
-                  propsSport === 'afl' || propsSport === 'combined'
+                  propsSport === 'afl'
                     ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
                     : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
