@@ -10,7 +10,7 @@ export default function TikTokPixel() {
   return (
     <Script
       id="tiktok-pixel"
-      strategy="beforeInteractive"
+      strategy="afterInteractive"
       dangerouslySetInnerHTML={{
         __html: `
 !function (w, d, t) {
