@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import RootLayoutClient from "./layout-client";
 import MetaPixel from "@/components/MetaPixel";
+import TikTokPixel from "../components/TikTokPixel";
 
 export const metadata: Metadata = {
   title: "StatTrackr - Advanced Sports Statistic Dashboard",
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Devtools disabled */}
       </head>
       <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]">
+        <TikTokPixel />
         <MetaPixel />
         {/* Capture password-reset hash before React so it survives; runs on first paint */}
         <script
