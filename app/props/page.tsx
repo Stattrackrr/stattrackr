@@ -983,10 +983,10 @@ export default function NBALandingPage() {
     fetchTodaysGames();
 
     // Preload AFL props in parallel so switching to AFL tab is instant (writes to sessionStorage only).
-    // Use enrich=false + force-cache for fastest warm response; detailed stats refresh when AFL tab opens.
+    // Use force-cache on enriched payload so DvP/L5/L10/H2H render immediately, then refresh for latest lines.
     (async () => {
       try {
-        const listRes = await fetch('/api/afl/player-props/list?enrich=false', { cache: 'force-cache' });
+        const listRes = await fetch('/api/afl/player-props/list', { cache: 'force-cache' });
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
@@ -1117,10 +1117,10 @@ export default function NBALandingPage() {
       mode: 'quick' | 'fresh' = 'fresh',
     ): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string }> => {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
-      // Quick mode: fastest cached payload for instant first click.
+      // Quick mode: cached enriched payload for instant first click with stats already populated.
       // Fresh mode: cache-busting request so lines update right after cron refreshes.
       const listUrl = mode === 'quick'
-        ? '/api/afl/player-props/list?enrich=false'
+        ? '/api/afl/player-props/list'
         : (
           debugStats
             ? `/api/afl/player-props/list?debugStats=1&cb=${Date.now()}`
