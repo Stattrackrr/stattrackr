@@ -489,23 +489,31 @@ export default function NBALandingPage() {
   const aflRetryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
+  const selectedAflGamesRef = useRef<Set<string>>(new Set());
   // If the user manually checks/unchecks games, don't let the async AFL list fetch overwrite their selection.
   const userModifiedAflGamesRef = useRef(false);
 
   const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
     const nextSet = new Set(nextGameIds);
     if (!userModifiedAflGamesRef.current) {
+      selectedAflGamesRef.current = nextSet;
       setSelectedAflGames(nextSet);
       return;
     }
     // Preserve user's current selection by intersecting with the newly loaded game list.
-    setSelectedAflGames((prev) => {
-      const out = new Set<string>();
-      for (const id of prev) {
-        if (nextSet.has(id)) out.add(id);
-      }
-      return out;
-    });
+    const out = new Set<string>();
+    for (const id of selectedAflGamesRef.current) {
+      if (nextSet.has(id)) out.add(id);
+    }
+    selectedAflGamesRef.current = out;
+    setSelectedAflGames(out);
+  }, []);
+
+  const getSelectedAflGameIdsForCache = useCallback((candidateGameIds: string[]) => {
+    const candidateSet = new Set(candidateGameIds);
+    const current = Array.from(selectedAflGamesRef.current);
+    const filtered = current.filter((id) => candidateSet.has(id));
+    return filtered.length > 0 ? filtered : candidateGameIds;
   }, []);
   /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
   const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
@@ -759,10 +767,12 @@ export default function NBALandingPage() {
             setAflProps(parsed.props);
             if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
               setAflGames(parsed.games);
-              const selectedIds =
-                Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0
-                  ? parsed.selectedGameIds
-                  : parsed.games.map((g: { gameId: string }) => g.gameId);
+              const hasSelectedFromCache =
+                Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0;
+              if (hasSelectedFromCache) userModifiedAflGamesRef.current = true;
+              const selectedIds = hasSelectedFromCache
+                ? parsed.selectedGameIds!
+                : parsed.games.map((g: { gameId: string }) => g.gameId);
               syncSelectedAflGames(selectedIds);
             }
             aflPropsFetchCompleteRef.current = true;
@@ -1155,7 +1165,7 @@ export default function NBALandingPage() {
           const toCache = {
             props: aggregated,
             games,
-            selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
+            selectedGameIds: getSelectedAflGameIdsForCache(games.length > 0 ? games.map((g) => g.gameId) : []),
             timestamp: Date.now(),
           };
           sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
@@ -1183,10 +1193,12 @@ export default function NBALandingPage() {
           setAflProps(parsed.props);
           if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
             setAflGames(parsed.games);
-            const selectedIds =
-              Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0
-                ? parsed.selectedGameIds
-                : parsed.games.map((g: { gameId: string }) => g.gameId);
+            const hasSelectedFromCache =
+              Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0;
+            if (hasSelectedFromCache) userModifiedAflGamesRef.current = true;
+            const selectedIds = hasSelectedFromCache
+              ? parsed.selectedGameIds!
+              : parsed.games.map((g: { gameId: string }) => g.gameId);
             syncSelectedAflGames(selectedIds);
           }
           aflPropsFetchCompleteRef.current = true;
@@ -1328,7 +1340,9 @@ export default function NBALandingPage() {
               sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
                 props: quickResult.aggregated,
                 games: quickResult.games,
-                selectedGameIds: quickResult.games.length > 0 ? quickResult.games.map((g) => g.gameId) : [],
+                selectedGameIds: getSelectedAflGameIdsForCache(
+                  quickResult.games.length > 0 ? quickResult.games.map((g) => g.gameId) : []
+                ),
                 timestamp: Date.now(),
               }));
             } catch {
@@ -1364,7 +1378,9 @@ export default function NBALandingPage() {
                 sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
                   props: retryAggregated,
                   games: retryGames,
-                  selectedGameIds: retryGames.length > 0 ? retryGames.map((g) => g.gameId) : [],
+                  selectedGameIds: getSelectedAflGameIdsForCache(
+                    retryGames.length > 0 ? retryGames.map((g) => g.gameId) : []
+                  ),
                   timestamp: Date.now(),
                 }));
               } catch {
@@ -1394,7 +1410,9 @@ export default function NBALandingPage() {
                     sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
                       props: res.aggregated,
                       games: res.games,
-                      selectedGameIds: res.games.length > 0 ? res.games.map((g) => g.gameId) : [],
+                      selectedGameIds: getSelectedAflGameIdsForCache(
+                        res.games.length > 0 ? res.games.map((g) => g.gameId) : []
+                      ),
                       timestamp: Date.now(),
                     }));
                   } catch {
@@ -1427,7 +1445,9 @@ export default function NBALandingPage() {
               const toCache = {
                 props: aggregated,
                 games,
-                selectedGameIds: games.length > 0 ? games.map((g) => g.gameId) : [],
+              selectedGameIds: getSelectedAflGameIdsForCache(
+                games.length > 0 ? games.map((g) => g.gameId) : []
+              ),
                 timestamp: Date.now(),
               };
               sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
@@ -3999,16 +4019,21 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       const next = new Set(prev);
       if (next.has(gameId)) next.delete(gameId);
       else next.add(gameId);
+      selectedAflGamesRef.current = next;
       return next;
     });
   };
   const selectAllAflGames = () => {
     userModifiedAflGamesRef.current = true;
-    setSelectedAflGames(new Set(aflGamesWithProps.map((g) => g.gameId)));
+    const next = new Set(aflGamesWithProps.map((g) => g.gameId));
+    selectedAflGamesRef.current = next;
+    setSelectedAflGames(next);
   };
   const clearAllAflGames = () => {
     userModifiedAflGamesRef.current = true;
-    setSelectedAflGames(new Set());
+    const next = new Set<string>();
+    selectedAflGamesRef.current = next;
+    setSelectedAflGames(next);
   };
 
   const getConfidenceColor = (confidence: string) => {
