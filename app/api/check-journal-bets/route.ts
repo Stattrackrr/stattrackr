@@ -4,6 +4,7 @@ import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { calculateUniversalBetResult } from '@/lib/betResultUtils';
+import { footywireNicknameToOfficial, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -166,6 +167,50 @@ function isParlayBet(bet: any): boolean {
   return hasParlayText || hasParlayLegs;
 }
 
+function normalizeAflTeamToken(value: string): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^vs\.?\s*/i, '')
+    .replace(/[^a-z0-9]+/g, '');
+}
+
+function buildAflTeamAliases(team: string): string[] {
+  const raw = String(team || '').trim();
+  if (!raw) return [];
+
+  const aliases = new Set<string>();
+  aliases.add(raw);
+
+  const nickname = opponentToFootywireTeam(raw);
+  if (nickname) aliases.add(nickname);
+
+  const officialFromRaw = footywireNicknameToOfficial(raw);
+  if (officialFromRaw) aliases.add(officialFromRaw);
+
+  if (nickname) {
+    const officialFromNickname = footywireNicknameToOfficial(nickname);
+    if (officialFromNickname) aliases.add(officialFromNickname);
+  }
+
+  return Array.from(aliases);
+}
+
+function aflOpponentMatches(gameOpponent: string, betOpponent: string): boolean {
+  const gameAliases = buildAflTeamAliases(gameOpponent).map(normalizeAflTeamToken).filter(Boolean);
+  const betAliases = buildAflTeamAliases(betOpponent).map(normalizeAflTeamToken).filter(Boolean);
+
+  if (gameAliases.length === 0 || betAliases.length === 0) return false;
+
+  for (const g of gameAliases) {
+    for (const b of betAliases) {
+      if (!g || !b) continue;
+      if (g === b || g.includes(b) || b.includes(g)) return true;
+    }
+  }
+  return false;
+}
+
 export async function GET(request: Request) {
   // Allow bypass in development for local testing
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -267,15 +312,6 @@ export async function GET(request: Request) {
     const parlayBets = allCandidates.filter((b) => isParlayBet(b));
 
     total = singleBets.length + parlayBets.length;
-
-    if (total === 0) {
-      return NextResponse.json({
-        message: 'No pending journal bets to check',
-        updated: 0,
-        total: 0,
-        scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
-      });
-    }
 
     // Group single bets by date to reduce games API calls
     const byDate = singleBets.reduce<Record<string, any[]>>((acc, bet) => {
@@ -728,6 +764,16 @@ export async function GET(request: Request) {
     }
 
     const aflSingleBets = aflCandidates.filter((b) => !isParlayBet(b));
+    const grandTotal = total + aflSingleBets.length;
+
+    if (grandTotal === 0) {
+      return NextResponse.json({
+        message: 'No pending journal bets to check',
+        updated: 0,
+        total: 0,
+        scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
+      });
+    }
     const baseUrl =
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
       process.env.NEXT_PUBLIC_APP_URL ||
@@ -758,18 +804,18 @@ export async function GET(request: Request) {
         if (!res.ok) continue;
         const data = await res.json();
         const games = Array.isArray(data?.games) ? data.games : [];
-        const betOpp = opponent.toLowerCase();
+        const betOpp = opponent;
         let game = games.find((g: any) => {
           const gDate = String(g?.date ?? g?.game_date ?? '').split('T')[0];
-          const gOpp = String(g?.opponent ?? '').trim().toLowerCase();
-          const oppMatch = gOpp === betOpp || gOpp.includes(betOpp) || betOpp.includes(gOpp);
+          const gOpp = String(g?.opponent ?? '').trim();
+          const oppMatch = aflOpponentMatches(gOpp, betOpp);
           if (gDate && gameDate) return gDate === gameDate && oppMatch;
           return false;
         });
         if (!game && games.length > 0) {
           game = games.find((g: any) => {
-            const gOpp = String(g?.opponent ?? '').trim().toLowerCase();
-            return gOpp === betOpp || gOpp.includes(betOpp) || betOpp.includes(gOpp);
+            const gOpp = String(g?.opponent ?? '').trim();
+            return aflOpponentMatches(gOpp, betOpp);
           });
         }
         if (!game) continue;
@@ -800,7 +846,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       message: 'Journal bet check completed',
       updated,
-      total: total + aflSingleBets.length,
+      total: grandTotal,
       scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
     });
   } catch (error: any) {
