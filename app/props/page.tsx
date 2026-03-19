@@ -480,8 +480,8 @@ export default function NBALandingPage() {
   // Odds format state - load from localStorage or default to 'american'
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
 
-  // Props page sport: NBA (default) | AFL | Combined — must init to 'nba' to avoid hydration mismatch; restore from URL in useEffect
-  const [propsSport, setPropsSport] = useState<'nba' | 'afl' | 'combined'>('nba');
+  // Props page sport: Combined (default) | NBA | AFL — restore explicit mode from URL when provided
+  const [propsSport, setPropsSport] = useState<'nba' | 'afl' | 'combined'>('combined');
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
@@ -563,12 +563,14 @@ export default function NBALandingPage() {
       setOddsFormat(savedFormat as 'american' | 'decimal');
     }
     
-    // Restore sport from URL so refresh keeps AFL tab when on /props?sport=afl
+    // Restore sport from URL when explicitly set; default launch stays combined mode.
     // Only set AFL loading true if we don't have cache (useLayoutEffect may have already restored cache and set loading false)
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const sportParam = url.searchParams.get('sport');
-      if (sportParam === 'afl') {
+      if (sportParam === 'nba') {
+        setPropsSport('nba');
+      } else if (sportParam === 'afl') {
         setPropsSport('afl');
         try {
           const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
@@ -635,8 +637,10 @@ export default function NBALandingPage() {
     const url = new URL(window.location.href);
     const sportParam = url.searchParams.get('sport');
 
-    // 1) Restore sport from URL so AFL cache read uses correct tab
-    if (sportParam === 'afl') {
+    // 1) Restore sport from URL when explicitly provided
+    if (sportParam === 'nba') {
+      setPropsSport('nba');
+    } else if (sportParam === 'afl') {
       setPropsSport('afl');
     } else if (sportParam === 'combined') {
       setPropsSport('combined');
@@ -721,8 +725,8 @@ export default function NBALandingPage() {
       }
     }
 
-    // 4) AFL cache when sport is AFL or Combined
-    if (sportParam === 'afl' || sportParam === 'combined') {
+    // 4) AFL cache when mode includes AFL (AFL/Combined, or default with no sport param)
+    if (sportParam === null || sportParam === 'afl' || sportParam === 'combined') {
       try {
         const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
         if (raw) {
@@ -3865,7 +3869,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         ? '/props?sport=afl'
         : nextMode === 'combined'
           ? '/props?sport=combined'
-          : '/props';
+          : '/props?sport=nba';
     const path = basePath + (testCode ? `${basePath.includes('?') ? '&' : '?'}test_event_code=${encodeURIComponent(testCode)}` : '');
     router.replace(path, { scroll: false });
   }, [router]);
