@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-03-21T11:41:07.660Z",
+  "generatedAt": "2026-03-21T12:38:06.449Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 444,
@@ -509,7 +509,7 @@
       "handballs": 14.5,
       "marks": 4,
       "goals": 1,
-      "tackles": 3.5,
+      "tackles": 4,
       "clearances": 3.5,
       "inside_50s": 1.5,
       "rebound_50s": 1,
@@ -661,7 +661,7 @@
       "handballs": 8.5,
       "marks": 4.5,
       "goals": 0.5,
-      "tackles": 5.5,
+      "tackles": 6,
       "clearances": 7,
       "inside_50s": 6,
       "rebound_50s": 1.5,
@@ -833,12 +833,12 @@
       "marks": 4.5,
       "goals": 0,
       "tackles": 1,
-      "clearances": 0,
+      "clearances": 0.5,
       "inside_50s": 2.5,
       "rebound_50s": 7,
-      "contested_possessions": 4,
+      "contested_possessions": 4.5,
       "uncontested_possessions": 13,
-      "meters_gained": 532.5,
+      "meters_gained": 531.5,
       "free_kicks_for": 0
     },
     {
@@ -1009,7 +1009,7 @@
       "rebound_50s": 5,
       "contested_possessions": 2,
       "uncontested_possessions": 17,
-      "meters_gained": 366,
+      "meters_gained": 368,
       "free_kicks_for": 1
     },
     {
@@ -1212,8 +1212,8 @@
       "handballs": 8.5,
       "marks": 3.5,
       "goals": 1,
-      "tackles": 2.5,
-      "clearances": 6,
+      "tackles": 2,
+      "clearances": 5.5,
       "inside_50s": 4,
       "rebound_50s": 0.5,
       "contested_possessions": 12,
@@ -1365,12 +1365,12 @@
       "marks": 7.5,
       "goals": 0.5,
       "tackles": 1,
-      "clearances": 6.5,
+      "clearances": 6,
       "inside_50s": 4,
       "rebound_50s": 1.5,
-      "contested_possessions": 14.5,
-      "uncontested_possessions": 8,
-      "meters_gained": 297,
+      "contested_possessions": 14,
+      "uncontested_possessions": 8.5,
+      "meters_gained": 299,
       "free_kicks_for": 2.5
     },
     {
@@ -1647,15 +1647,15 @@
       "disposals": 21.5,
       "kicks": 10.5,
       "handballs": 11,
-      "marks": 1.5,
+      "marks": 2,
       "goals": 1.5,
       "tackles": 3,
       "clearances": 2.5,
       "inside_50s": 2,
-      "rebound_50s": 1,
+      "rebound_50s": 1.5,
       "contested_possessions": 7.5,
       "uncontested_possessions": 13.5,
-      "meters_gained": 251.5,
+      "meters_gained": 255.5,
       "free_kicks_for": 1.5
     },
     {
@@ -1747,7 +1747,7 @@
       "tackles": 1,
       "clearances": 2,
       "inside_50s": 1,
-      "rebound_50s": 3,
+      "rebound_50s": 2.5,
       "contested_possessions": 8.5,
       "uncontested_possessions": 13,
       "meters_gained": 289.5,
@@ -2206,7 +2206,7 @@
       "rebound_50s": 1,
       "contested_possessions": 7,
       "uncontested_possessions": 12,
-      "meters_gained": 270,
+      "meters_gained": 264,
       "free_kicks_for": 1
     },
     {
@@ -2358,7 +2358,7 @@
       "rebound_50s": 6,
       "contested_possessions": 3,
       "uncontested_possessions": 13.5,
-      "meters_gained": 464.5,
+      "meters_gained": 463.5,
       "free_kicks_for": 1
     },
     {
@@ -2536,7 +2536,7 @@
       "name": "Cameron Mackenzie",
       "team": "Hawthorn",
       "games": 2,
-      "number": 22,
+      "number": 23,
       "disposals": 19,
       "kicks": 10.5,
       "handballs": 8.5,
@@ -2662,7 +2662,7 @@
       "rebound_50s": 5,
       "contested_possessions": 3.5,
       "uncontested_possessions": 11,
-      "meters_gained": 380,
+      "meters_gained": 385.5,
       "free_kicks_for": 0
     },
     {
@@ -2714,12 +2714,12 @@
       "marks": 6.5,
       "goals": 0,
       "tackles": 2.5,
-      "clearances": 1.5,
+      "clearances": 1,
       "inside_50s": 3.5,
       "rebound_50s": 3,
-      "contested_possessions": 3,
-      "uncontested_possessions": 14.5,
-      "meters_gained": 380.5,
+      "contested_possessions": 2.5,
+      "uncontested_possessions": 15,
+      "meters_gained": 389,
       "free_kicks_for": 0
     },
     {
@@ -3188,13 +3188,13 @@
       "handballs": 7.5,
       "marks": 1.5,
       "goals": 0.5,
-      "tackles": 2,
-      "clearances": 1,
+      "tackles": 2.5,
+      "clearances": 1.5,
       "inside_50s": 5.5,
       "rebound_50s": 0.5,
-      "contested_possessions": 5,
+      "contested_possessions": 5.5,
       "uncontested_possessions": 13.5,
-      "meters_gained": 256.5,
+      "meters_gained": 257.5,
       "free_kicks_for": 0
     },
     {
@@ -3429,7 +3429,7 @@
       "name": "Changkuoth Jiath",
       "team": "Melbourne",
       "games": 2,
-      "number": 32,
+      "number": 31,
       "disposals": 16.5,
       "kicks": 11.5,
       "handballs": 5,
@@ -3441,7 +3441,7 @@
       "rebound_50s": 4,
       "contested_possessions": 2.5,
       "uncontested_possessions": 12.5,
-      "meters_gained": 339,
+      "meters_gained": 338,
       "free_kicks_for": 0
     },
     {
@@ -3460,7 +3460,7 @@
       "rebound_50s": 1,
       "contested_possessions": 7,
       "uncontested_possessions": 10,
-      "meters_gained": 328,
+      "meters_gained": 346.5,
       "free_kicks_for": 0
     },
     {
@@ -3726,7 +3726,7 @@
       "rebound_50s": 0,
       "contested_possessions": 6,
       "uncontested_possessions": 10.5,
-      "meters_gained": 245,
+      "meters_gained": 251.5,
       "free_kicks_for": 0
     },
     {
@@ -3745,7 +3745,7 @@
       "rebound_50s": 4,
       "contested_possessions": 4.5,
       "uncontested_possessions": 8.5,
-      "meters_gained": 323.5,
+      "meters_gained": 323,
       "free_kicks_for": 0
     },
     {
@@ -3820,8 +3820,8 @@
       "inside_50s": 3.5,
       "rebound_50s": 3,
       "contested_possessions": 3,
-      "uncontested_possessions": 11.5,
-      "meters_gained": 375.5,
+      "uncontested_possessions": 12,
+      "meters_gained": 378,
       "free_kicks_for": 0
     },
     {
@@ -4068,7 +4068,7 @@
       "rebound_50s": 0,
       "contested_possessions": 8,
       "uncontested_possessions": 8.5,
-      "meters_gained": 185,
+      "meters_gained": 187,
       "free_kicks_for": 0
     },
     {
@@ -4182,7 +4182,7 @@
       "rebound_50s": 1.5,
       "contested_possessions": 5,
       "uncontested_possessions": 9,
-      "meters_gained": 292.5,
+      "meters_gained": 282.5,
       "free_kicks_for": 0.5
     },
     {
@@ -4588,20 +4588,20 @@
       "name": "Jake Lever",
       "team": "Melbourne",
       "games": 2,
-      "number": 21,
+      "number": 31,
       "disposals": 14,
       "kicks": 10.5,
       "handballs": 3.5,
-      "marks": 8,
+      "marks": 7.5,
       "goals": 0,
       "tackles": 2,
       "clearances": 0,
       "inside_50s": 0,
       "rebound_50s": 3.5,
       "contested_possessions": 4,
-      "uncontested_possessions": 9.5,
-      "meters_gained": 252,
-      "free_kicks_for": 0.5
+      "uncontested_possessions": 10,
+      "meters_gained": 266,
+      "free_kicks_for": 1
     },
     {
       "name": "Hugo Ralphsmith",
@@ -4885,7 +4885,7 @@
       "rebound_50s": 0.5,
       "contested_possessions": 6,
       "uncontested_possessions": 8,
-      "meters_gained": 266,
+      "meters_gained": 264,
       "free_kicks_for": 1.5
     },
     {
@@ -5303,7 +5303,7 @@
       "rebound_50s": 1,
       "contested_possessions": 4.5,
       "uncontested_possessions": 8.5,
-      "meters_gained": 250.5,
+      "meters_gained": 249,
       "free_kicks_for": 0.5
     },
     {
@@ -5348,7 +5348,7 @@
       "name": "Mark O'Connor",
       "team": "Geelong",
       "games": 2,
-      "number": 77,
+      "number": 78,
       "disposals": 12.5,
       "kicks": 6.5,
       "handballs": 6,
@@ -5374,7 +5374,7 @@
       "marks": 1.5,
       "goals": 1.5,
       "tackles": 1,
-      "clearances": 1.5,
+      "clearances": 2,
       "inside_50s": 2.5,
       "rebound_50s": 0,
       "contested_possessions": 6,
@@ -5588,7 +5588,7 @@
       "rebound_50s": 3,
       "contested_possessions": 3,
       "uncontested_possessions": 7.5,
-      "meters_gained": 246,
+      "meters_gained": 245,
       "free_kicks_for": 0.5
     },
     {
@@ -6120,7 +6120,7 @@
       "rebound_50s": 0.5,
       "contested_possessions": 3.5,
       "uncontested_possessions": 8.5,
-      "meters_gained": 290,
+      "meters_gained": 292,
       "free_kicks_for": 1
     },
     {
@@ -6887,7 +6887,7 @@
       "name": "Tom Sparrow",
       "team": "Melbourne",
       "games": 2,
-      "number": 22,
+      "number": 23,
       "disposals": 9.5,
       "kicks": 5.5,
       "handballs": 4,
@@ -7368,13 +7368,13 @@
       "handballs": 6,
       "marks": 2,
       "goals": 0,
-      "tackles": 1,
+      "tackles": 1.5,
       "clearances": 1,
       "inside_50s": 1,
       "rebound_50s": 0,
       "contested_possessions": 5,
       "uncontested_possessions": 3,
-      "meters_gained": 91.5,
+      "meters_gained": 90.5,
       "free_kicks_for": 0.5
     },
     {
@@ -7431,7 +7431,7 @@
       "rebound_50s": 0,
       "contested_possessions": 2,
       "uncontested_possessions": 6,
-      "meters_gained": 101,
+      "meters_gained": 100,
       "free_kicks_for": 1
     },
     {
@@ -7735,7 +7735,7 @@
       "rebound_50s": 0,
       "contested_possessions": 2.5,
       "uncontested_possessions": 4.5,
-      "meters_gained": 113.5,
+      "meters_gained": 111.5,
       "free_kicks_for": 0.5
     },
     {
@@ -7830,14 +7830,14 @@
       "rebound_50s": 0.5,
       "contested_possessions": 3.5,
       "uncontested_possessions": 4.5,
-      "meters_gained": 170.5,
+      "meters_gained": 166,
       "free_kicks_for": 0.5
     },
     {
       "name": "Maurice Rioli",
       "team": "Richmond",
       "games": 2,
-      "number": 77,
+      "number": 78,
       "disposals": 7,
       "kicks": 3.5,
       "handballs": 3.5,
