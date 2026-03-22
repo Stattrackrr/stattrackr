@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 const DEFAULT_NEXT = "/home";
@@ -21,16 +21,15 @@ function AuthCallbackLoading() {
  * Handles the redirect from Supabase after magic-link verification.
  * Supabase appends access_token and refresh_token to the URL hash.
  * We parse them, set the session, then redirect to /home (or the `next` param).
- * useSearchParams() must live in a component wrapped by Suspense.
+ * We read query params from window.location so this works safely in prerendered builds.
  */
 function AuthCallbackContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
 
   useEffect(() => {
     const run = async () => {
-      const next = searchParams.get("next") || DEFAULT_NEXT;
+      const next = new URLSearchParams(window.location.search).get("next") || DEFAULT_NEXT;
       const hash = typeof window !== "undefined" ? window.location.hash : "";
       const params = new URLSearchParams(hash.replace(/^#/, ""));
       const accessToken = params.get("access_token");
@@ -54,7 +53,7 @@ function AuthCallbackContent() {
       router.replace(next);
     };
     run();
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
