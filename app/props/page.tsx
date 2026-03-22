@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
+import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
+import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
 import { currentNbaSeason, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
@@ -3912,6 +3914,125 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       : combinedTotalPages;
   const activeCurrentPage = propsSport === 'nba' ? currentPageSafe : currentPage;
 
+  /** Club-site portraits for AFL props; bump version to invalidate client after resolver changes. */
+  const [aflPortraitExtras, setAflPortraitExtras] = useState<Record<string, string>>({});
+  const aflPortraitFetchedRef = useRef<Set<string>>(new Set());
+  /** True while current page has AFL names still awaiting /api/afl/player-portraits (avoids jersey # flash). */
+  const [aflPortraitBatchLoading, setAflPortraitBatchLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const k = 'st_afl_portrait_resolver_v';
+      const v = '7';
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(k) !== v) {
+        sessionStorage.setItem(k, v);
+        aflPortraitFetchedRef.current = new Set();
+        setAflPortraitExtras({});
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const aflPortraitFetchKey = useMemo(() => {
+    if (propsSport !== 'afl' && propsSport !== 'combined') return '';
+    const parts: string[] = [];
+    for (const prop of activePaginatedProps) {
+      const rowSport =
+        propsSport === 'combined'
+          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          : 'afl';
+      if (rowSport !== 'afl') continue;
+      parts.push(`${prop.playerName}\0${prop.team ?? ''}`);
+    }
+    return parts.sort().join('|');
+  }, [propsSport, activePaginatedProps]);
+
+  useLayoutEffect(() => {
+    if (propsSport !== 'afl' && propsSport !== 'combined') {
+      setAflPortraitBatchLoading(false);
+      return;
+    }
+    const pending = new Set<string>();
+    for (const prop of activePaginatedProps) {
+      const rowSport =
+        propsSport === 'combined'
+          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          : 'afl';
+      if (rowSport !== 'afl') continue;
+      const n = prop.playerName;
+      if (!n || pending.has(n)) continue;
+      if (aflPortraitFetchedRef.current.has(n)) continue;
+      if (getAflPlayerHeadshotUrl(n)) continue;
+      pending.add(n);
+    }
+    setAflPortraitBatchLoading(pending.size > 0);
+  }, [propsSport, activePaginatedProps, aflPortraitFetchKey]);
+
+  useEffect(() => {
+    if (!aflPortraitFetchKey) return;
+    const players: { name: string; team?: string; homeTeam?: string; awayTeam?: string }[] = [];
+    const seen = new Set<string>();
+    for (const prop of activePaginatedProps) {
+      const rowSport =
+        propsSport === 'combined'
+          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          : 'afl';
+      if (rowSport !== 'afl') continue;
+      const n = prop.playerName;
+      if (!n || seen.has(n)) continue;
+      seen.add(n);
+      if (aflPortraitFetchedRef.current.has(n)) continue;
+      if (getAflPlayerHeadshotUrl(n)) {
+        aflPortraitFetchedRef.current.add(n);
+        continue;
+      }
+      players.push({
+        name: n,
+        team: prop.team || undefined,
+        homeTeam: prop.homeTeam || undefined,
+        awayTeam: prop.awayTeam || undefined,
+      });
+    }
+    if (players.length === 0) {
+      setAflPortraitBatchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/afl/player-portraits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players }),
+    })
+      .then((r) => r.json())
+      .then((data: { portraits?: Record<string, string | null> }) => {
+        if (cancelled) return;
+        const portraits = data.portraits ?? {};
+        for (const p of players) {
+          aflPortraitFetchedRef.current.add(p.name);
+        }
+        setAflPortraitExtras((prev) => {
+          const next = { ...prev };
+          for (const [name, url] of Object.entries(portraits)) {
+            if (url) next[name] = url;
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        for (const p of players) {
+          aflPortraitFetchedRef.current.add(p.name);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAflPortraitBatchLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [aflPortraitFetchKey, propsSport, activePaginatedProps]);
+
   const applySportMode = useCallback((nextMode: 'nba' | 'afl' | 'combined') => {
     setPropsSport(nextMode);
     if (nextMode !== 'nba') {
@@ -5461,6 +5582,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
                             const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
+                            const aflHeadshotUrl =
+                              rowSport === 'afl'
+                                ? getAflPlayerHeadshotUrl(prop.playerName) ?? aflPortraitExtras[prop.playerName] ?? null
+                                : null;
+                            const aflAvatarPending =
+                              rowSport === 'afl' &&
+                              aflPortraitBatchLoading &&
+                              !getAflPlayerHeadshotUrl(prop.playerName) &&
+                              !aflPortraitExtras[prop.playerName] &&
+                              !aflPortraitFetchedRef.current.has(prop.playerName);
                             const displayProp = prop;
                             // Normalize team names to abbreviations for logo lookup
                             // Handle both full names and abbreviations
@@ -5598,20 +5729,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         }}
                                       />
                                     )}
-                                    {rowSport === 'afl' && (
-                                      <div
-                                        className="w-12 h-12 rounded-full flex-shrink-0 border-2 flex items-center justify-center font-semibold text-sm select-none bg-transparent"
-                                        style={{
-                                          borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
-                                          color: mounted && isDark ? '#a78bfa' : '#9333ea',
-                                        }}
-                                        aria-hidden
-                                      >
-                                        {aflPlayerNumbers[prop.playerName] != null
-                                          ? aflPlayerNumbers[prop.playerName]
-                                          : getAflInitials(prop.playerName)}
-                                      </div>
-                                    )}
+                                    {rowSport === 'afl' &&
+                                      (aflAvatarPending ? (
+                                        <div
+                                          className="w-12 h-12 rounded-full flex-shrink-0 border-2 animate-pulse bg-gray-200 dark:bg-gray-600"
+                                          style={{
+                                            borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
+                                          }}
+                                          aria-hidden
+                                        />
+                                      ) : (
+                                        <AflPropsPlayerAvatar
+                                          headshotUrl={aflHeadshotUrl}
+                                          jerseyNumber={
+                                            aflPlayerNumbers[prop.playerName] != null
+                                              ? aflPlayerNumbers[prop.playerName]!
+                                              : null
+                                          }
+                                          initials={getAflInitials(prop.playerName)}
+                                          isDark={isDark}
+                                          mounted={mounted}
+                                          size="md"
+                                        />
+                                      ))}
                                     <div>
                                       <div className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                         {prop.playerName}
@@ -6619,6 +6759,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
                           const headshotUrl = nbaId ? getPlayerHeadshotUrl(nbaId) : null;
+                          const aflHeadshotUrl =
+                            rowSport === 'afl'
+                              ? getAflPlayerHeadshotUrl(prop.playerName) ?? aflPortraitExtras[prop.playerName] ?? null
+                              : null;
+                          const aflAvatarPending =
+                            rowSport === 'afl' &&
+                            aflPortraitBatchLoading &&
+                            !getAflPlayerHeadshotUrl(prop.playerName) &&
+                            !aflPortraitExtras[prop.playerName] &&
+                            !aflPortraitFetchedRef.current.has(prop.playerName);
                           const normalizeTeam = (team: string): string => {
                             if (!team) return '';
                             if (team.length <= 3) return team.toUpperCase();
@@ -6787,18 +6937,28 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 {/* Player Name and Headshot Row */}
                                 <div className="flex items-center gap-2.5 mb-2">
                                   {rowSport === 'afl' ? (
-                                    <div
-                                      className="w-10 h-10 rounded-full flex-shrink-0 border-2 flex items-center justify-center font-semibold text-xs select-none bg-transparent"
-                                      style={{
-                                        borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
-                                        color: mounted && isDark ? '#a78bfa' : '#9333ea',
-                                      }}
-                                      aria-hidden
-                                    >
-                                      {aflPlayerNumbers[prop.playerName] != null
-                                        ? aflPlayerNumbers[prop.playerName]
-                                        : getAflInitials(prop.playerName)}
-                                    </div>
+                                    aflAvatarPending ? (
+                                      <div
+                                        className="w-10 h-10 rounded-full flex-shrink-0 border-2 animate-pulse bg-gray-200 dark:bg-gray-600"
+                                        style={{
+                                          borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb',
+                                        }}
+                                        aria-hidden
+                                      />
+                                    ) : (
+                                      <AflPropsPlayerAvatar
+                                        headshotUrl={aflHeadshotUrl}
+                                        jerseyNumber={
+                                          aflPlayerNumbers[prop.playerName] != null
+                                            ? aflPlayerNumbers[prop.playerName]!
+                                            : null
+                                        }
+                                        initials={getAflInitials(prop.playerName)}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="sm"
+                                      />
+                                    )
                                   ) : headshotUrl ? (
                                     <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 overflow-hidden relative" style={{ borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' }}>
                                       <Image

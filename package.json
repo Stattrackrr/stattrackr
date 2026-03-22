@@ -33,6 +33,7 @@
     "debug:afl:dvp": "node scripts/debug-afl-dvp-2026.js",
     "show:afl:dvp-by-team": "node scripts/show-afl-dvp-by-team.js",
     "test:afl:symbols": "node scripts/test-afl-symbol-players.js",
+    "test:afl:headshots": "npx tsx scripts/test-afl-club-headshots.ts",
     "test:afl:team-selections": "node scripts/test-footywire-team-selections.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
     "check:prediction-data": "node scripts/check-prediction-data-sources.mjs",

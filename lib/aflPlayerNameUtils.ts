@@ -2,30 +2,19 @@
  * Normalize AFL player names for consistent matching and cache keys.
  * Handles apostrophes (e.g. O'Brien), hyphens (Smith-Jones), "Surname, First" format,
  * and optional mapping from data/afl-player-name-fixes.json so stats resolve on the dashboard.
+ *
+ * Uses a bundled JSON import (no fs) so this module is safe in Client Components.
  */
 
-import path from 'path';
-import fs from 'fs';
+import nameFixesFile from '../data/afl-player-name-fixes.json';
 
 /** Apostrophe-like characters (ASCII, Unicode right single quote, etc.) → ASCII ' */
 const APOSTROPHE_LIKE = /[\u0027\u2018\u2019\u201B\u2032\u0060]/g;
 /** Hyphen/dash-like characters → ASCII - */
 const HYPHEN_LIKE = /[\u002D\u2010\u2011\u2012\u2013\u2014\u2212]/g;
 
-let nameFixesMap: Record<string, string> | null = null;
-
-function loadNameFixesMapping(): Record<string, string> {
-  if (nameFixesMap !== null) return nameFixesMap;
-  try {
-    const dataPath = path.join(process.cwd(), 'data', 'afl-player-name-fixes.json');
-    const raw = fs.readFileSync(dataPath, 'utf8');
-    const data = JSON.parse(raw) as { mapping?: Record<string, string> };
-    nameFixesMap = data?.mapping && typeof data.mapping === 'object' ? data.mapping : {};
-  } catch {
-    nameFixesMap = {};
-  }
-  return nameFixesMap;
-}
+type FixesFile = { mapping?: Record<string, string> };
+const NAME_FIXES: Record<string, string> = (nameFixesFile as FixesFile).mapping ?? {};
 
 /**
  * Resolve a player name to a canonical form for lookups (league stats, game logs, cache).
@@ -37,8 +26,7 @@ export function toCanonicalAflPlayerName(name: string): string {
   if (name == null || typeof name !== 'string') return '';
   const trimmed = name.trim();
   if (!trimmed) return '';
-  const mapping = loadNameFixesMapping();
-  const mapped = mapping[trimmed];
+  const mapped = NAME_FIXES[trimmed];
   if (mapped && typeof mapped === 'string') return mapped.trim();
   if (trimmed.includes(',')) {
     const parts = trimmed.split(',').map((p) => p.trim());
