@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, TrendingUp, BarChart3, PieChart, Database, User, Phone } from "lucide-react";
 import { StatTrackrLogoWithText } from "@/components/StatTrackrLogo";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 const HOME_ROUTE = "/home";
 
@@ -106,6 +107,9 @@ export default function LoginPage() {
         if (!res.ok) {
           throw new Error(json?.error || "Sign up failed");
         }
+        trackMetaEvent('Lead', {
+          registration_method: 'email_otp',
+        });
         setShowCheckEmail(true);
         setPendingEmail(email);
         setSuccess("");
@@ -188,12 +192,18 @@ export default function LoginPage() {
         return;
       }
       if (data.redirectUrl) {
+        trackMetaEvent('CompleteRegistration', {
+          registration_method: 'email_otp',
+        });
         if (remember) localStorage.setItem("stattrackr_remember_me", "true");
         else localStorage.removeItem("stattrackr_remember_me");
         window.location.href = data.redirectUrl;
         return;
       }
       if (data.signInRequired) {
+        trackMetaEvent('CompleteRegistration', {
+          registration_method: 'email_otp',
+        });
         setError("");
         setSuccess(data.message || "Email verified. Please sign in.");
         setShowCheckEmail(false);

@@ -1,13 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { TrackedBetsProvider } from "@/contexts/TrackedBetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import NavigationLoader from "@/components/NavigationLoader";
 import '@/lib/disableConsoleInProduction';
+import { trackMetaEvent, trackMetaPageView } from '@/lib/metaPixel';
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const didTrackInitialRoute = useRef(false);
+
   // Global error handlers
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -132,6 +138,42 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     // Warm AFL props list API so props page AFL tab loads fast when user switches to it
     fetch('/api/afl/player-props/list', { cache: 'no-store' }).catch(() => {});
   }, []);
+
+  // Fire Meta PageView on client-side route changes.
+  useEffect(() => {
+    const query = searchParams?.toString();
+    const pathWithQuery = query ? `${pathname}?${query}` : pathname;
+    if (!pathWithQuery) return;
+    if (!didTrackInitialRoute.current) {
+      didTrackInitialRoute.current = true;
+      return;
+    }
+    trackMetaPageView();
+  }, [pathname, searchParams]);
+
+  // Track successful Stripe return as a Purchase event.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (pathname !== '/props') return;
+    if (searchParams?.get('success') !== 'true') return;
+
+    const billing = searchParams.get('billing');
+    const valueByBilling: Record<string, number> = {
+      monthly: 9.99,
+      semiannual: 49.99,
+      annual: 89.99,
+    };
+    const value = billing ? valueByBilling[billing] : undefined;
+    const sessionId = searchParams.get('session_id') || 'unknown';
+    const dedupeKey = `meta_purchase_tracked_${sessionId}`;
+    if (sessionStorage.getItem(dedupeKey)) return;
+
+    const eventParams: Record<string, string | number | boolean> = { currency: 'USD' };
+    if (typeof value === 'number') eventParams.value = value;
+    if (billing) eventParams.billing_cycle = billing;
+    trackMetaEvent('Purchase', eventParams);
+    sessionStorage.setItem(dedupeKey, '1');
+  }, [pathname, searchParams]);
 
   return (
     <ThemeProvider>

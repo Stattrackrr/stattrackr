@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
+import { trackMetaEvent } from '@/lib/metaPixel';
 
 export default function PricingPage() {
   const router = useRouter();
@@ -226,8 +227,19 @@ export default function PricingPage() {
         semiannual: 'price_1SPPdVF0aO6V0EHj3DM4hFqS',
         annual: 'price_1SPPdvF0aO6V0EHjJAj8l0nO',
       };
+      const valueByBilling = {
+        monthly: 9.99,
+        semiannual: 49.99,
+        annual: 89.99,
+      };
       
       const priceId = priceIds[billingCycle];
+      trackMetaEvent('InitiateCheckout', {
+        currency: 'USD',
+        value: valueByBilling[billingCycle],
+        billing_cycle: billingCycle,
+        content_name: planName,
+      });
       
       const response = await fetch('/api/checkout', {
         method: 'POST',
