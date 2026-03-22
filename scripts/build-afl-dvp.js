@@ -310,6 +310,7 @@ function statList() {
     'goal_assists',
     'meters_gained',
     'percent_played',
+    'free_kicks_for',
     'free_kicks_against',
   ];
 }

@@ -52,6 +52,7 @@ export type AflGameFilterDataItem = {
   gameIndex: number;
   opponent: string;
   dvpRank: number | null;
+  dvpRankSource?: 'tipoff' | 'live' | null;
   opponentRank: number | null;
   tog: number | null;
 };

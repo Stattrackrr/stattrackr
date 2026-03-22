@@ -5,7 +5,7 @@ import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAf
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
-import { loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
+import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
@@ -13,6 +13,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /** List revalidates against The Odds API every request; avoid CDN/browser serving ended matchups as current. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
+
+/** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
+const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
 
 function hasOver(o: string) {
   return o != null && String(o).trim() !== '' && String(o) !== 'N/A';
@@ -93,8 +96,7 @@ export async function GET(request: Request) {
       })();
       const emptyCache = await getAflOddsCache();
       const noAflOdds = usedCanonicalGames === true;
-      const noOddsCopy =
-        'No odds at the moment. Bookmakers have not published AFL player lines for upcoming games yet, or the round may have finished. Check back closer to the next round.';
+      const noOddsCopy = AFL_USER_NO_ODDS;
       const staleOrErrorCopy =
         'No AFL games from Odds API right now. If odds should be live, wait for the next cron refresh or run /api/afl/odds/refresh.';
       const lastUpdated =
@@ -146,7 +148,10 @@ export async function GET(request: Request) {
         gamesCount: gamesCountEnrich,
         propsCount: propsCountEnrich,
         season: seasonEnrich,
-        ingestMessage: `Fetched ${propsCountEnrich} stats for ${seasonEnrich} season, ${gamesCountEnrich} games`,
+        ingestMessage:
+          propsCountEnrich === 0
+            ? AFL_USER_NO_ODDS
+            : `Fetched ${propsCountEnrich} stats for ${seasonEnrich} season, ${gamesCountEnrich} games`,
         _meta: {
           rowsFromList: rowsWithCanonical.length,
           enrich: false,
@@ -202,18 +207,13 @@ export async function GET(request: Request) {
       })
     );
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
-    // Always override DvP from 2025 position-aware lookup so matchup rank matches dashboard (e.g. DEF vs Swans #6)
+    // Always override DvP from position-aware lookup so matchup rank matches dashboard.
     const dvpMapsForOverride = await loadDvpMapsFromFiles(DVP_MATCHUP_SEASON);
     const seasonForPos = new Date().getFullYear();
     let positionMapForOverride = await getAflPlayerPositionMap(seasonForPos);
     if (positionMapForOverride.size === 0) positionMapForOverride = await getAflPlayerPositionMap(seasonForPos - 1);
-    const AFL_TEAMS_COUNT = 18;
     const getDvpOverride = (opponent: string, statType: string, position?: string | null) => {
-      const teamTotal = getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
-      if (teamTotal) return teamTotal;
-      const perPlayer = getDvpLookup(opponent, statType, dvpMapsForOverride, position);
-      if (!perPlayer) return null;
-      return { rank: AFL_TEAMS_COUNT + 1 - perPlayer.rank, value: perPlayer.value };
+      return getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
     };
     const teamMatchesOverride = (a: string, b: string) => {
       const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
@@ -276,7 +276,8 @@ export async function GET(request: Request) {
       propsCount,
       season,
       naSummary,
-      ingestMessage: `Fetched ${propsCount} stats for ${season} season, ${gamesCount} games`,
+      ingestMessage:
+        propsCount === 0 ? AFL_USER_NO_ODDS : `Fetched ${propsCount} stats for ${season} season, ${gamesCount} games`,
       _meta: {
         canonicalUsed: usedCanonicalGames,
         canonicalError: canonicalError ?? undefined,

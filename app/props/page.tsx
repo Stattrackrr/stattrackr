@@ -5114,12 +5114,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       ) : (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium max-w-lg">
-                            {aflIngestMessage ?? 'No odds at the moment'}
-                          </p>
-                          <p className="text-sm mt-2 max-w-md">
-                            {aflIngestMessage
-                              ? 'Check back closer to the next round, or use Try again after the next refresh.'
-                              : 'If you expected to see odds, try again in a moment.'}
+                            {aflIngestMessage ?? 'No odds available. Come back later.'}
                           </p>
                           <button
                             type="button"

@@ -177,11 +177,13 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   // Lookup per-game DvP rank and TOG % for this game (by original game index).
   let dvpRank: number | null = null;
+  let dvpRankSource: 'tipoff' | 'live' | null = null;
   let togPct: number | null = null;
   if (Array.isArray(perGameFilterData) && typeof point.sourceGameIndex === 'number') {
     const match = perGameFilterData.find((row) => row.gameIndex === point.sourceGameIndex);
     if (match) {
       dvpRank = match.dvpRank ?? null;
+      dvpRankSource = match.dvpRankSource ?? null;
       togPct = match.tog ?? null;
     }
   }
@@ -367,6 +369,18 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
                 </span>
               </div>
             ))}
+            {dvpRank != null && (
+              <div
+                style={{
+                  marginTop: '2px',
+                  fontSize: '11px',
+                  color: isDark ? '#c084fc' : '#7e22ce',
+                  fontWeight: 600,
+                }}
+              >
+                {dvpRankSource === 'tipoff' ? 'RANK AT TIPOFF' : 'RANK FROM CURRENT'}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -838,20 +852,24 @@ export function AflStatsChart({
         data = h2hData;
       }
     } else {
-      // L5/L10/L15/L20 = N most recent games (NBA approach: sort by date desc, take first N, then display chronological)
+      // L5/L10/L15/L20 = N most recent games.
+      // Use baseChartData rows directly so xKey/sourceGameIndex stay stable and
+      // advanced second-axis values (TOG/DvP/Opp ranks) can join correctly.
       const lastN = parseInt(selectedTimeframe.replace('last', ''), 10);
       if (Number.isFinite(lastN) && lastN > 0) {
-        const sortedNewestFirst = [...filteredGameLogs].sort((a, b) => {
-          const aDate = new Date(String(a.date ?? a.game_date ?? '')).getTime();
-          const bDate = new Date(String(b.date ?? b.game_date ?? '')).getTime();
-          if (Number.isFinite(aDate) && Number.isFinite(bDate)) return bDate - aDate;
-          const aSeason = effectiveSeason(a as Record<string, unknown>);
-          const bSeason = effectiveSeason(b as Record<string, unknown>);
+        const sortedNewestFirst = [...baseChartData].sort((a, b) => {
+          const aDate = new Date(a.gameDate || '').getTime();
+          const bDate = new Date(b.gameDate || '').getTime();
+          if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return bDate - aDate;
+          const aSeason = (a as { gameSeason?: number }).gameSeason ?? 0;
+          const bSeason = (b as { gameSeason?: number }).gameSeason ?? 0;
           if (aSeason !== bSeason) return bSeason - aSeason;
+          const aRound = parseRoundIndex(a.round);
+          const bRound = parseRoundIndex(b.round);
+          if (aRound !== bRound) return bRound - aRound;
           return 0;
         });
-        const nMostRecent = sortedNewestFirst.slice(0, lastN);
-        data = nMostRecent.map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
+        data = sortedNewestFirst.slice(0, lastN);
       } else {
         data = baseChartData;
       }

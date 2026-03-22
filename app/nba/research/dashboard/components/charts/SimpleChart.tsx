@@ -485,7 +485,12 @@ const SimpleChart = memo(function SimpleChart({
     const dataMax = Math.max(...values);
     
     // Special handling for rank filters: configurable team count (NBA=30, AFL=18).
-    if (selectedFilterForAxis === 'dvp_rank' || selectedFilterForAxis === 'opponent_rank') {
+    // AFL opponent-rank filters use keys like "rank_disposals", "rank_uncontested_possessions", etc.
+    const isRankFilter =
+      selectedFilterForAxis === 'dvp_rank' ||
+      selectedFilterForAxis === 'opponent_rank' ||
+      selectedFilterForAxis.startsWith('rank_');
+    if (isRankFilter) {
       const rankMax = Number.isFinite(secondaryRankAxisMax as number)
         ? Math.max(1, Math.round(secondaryRankAxisMax as number))
         : 30;
@@ -520,7 +525,7 @@ const SimpleChart = memo(function SimpleChart({
     const step = max / (tickCount - 1);
     const ticks = Array.from({ length: tickCount }, (_, i) => Math.round(min + step * i));
     return { domain: [min, max] as [number, number], ticks, dataMin, dataMax };
-  }, [secondAxisData, selectedFilterForAxis]);
+  }, [secondAxisData, selectedFilterForAxis, secondaryRankAxisMax]);
 
   const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
   const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;

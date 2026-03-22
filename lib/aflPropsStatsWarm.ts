@@ -6,7 +6,7 @@
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
-import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookup, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
+import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
@@ -107,13 +107,8 @@ export async function runAflPropsStatsWarm(
       const y = (b ?? '').trim().toLowerCase();
       return (x && y) && (x === y || x.includes(y) || y.includes(x));
     };
-    const AFL_TEAMS_COUNT = 18;
     const getDvp = (opponent: string, statType: string, position?: string | null) => {
-      const teamTotal = getDvpLookupTeamTotal(opponent, statType, dvpMaps, position);
-      if (teamTotal) return teamTotal;
-      const perPlayer = getDvpLookup(opponent, statType, dvpMaps, position);
-      if (!perPlayer) return null;
-      return { rank: AFL_TEAMS_COUNT + 1 - perPlayer.rank, value: perPlayer.value };
+      return getDvpLookupTeamTotal(opponent, statType, dvpMaps, position);
     };
     console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map:', playerTeamMap.size, 'position map:', positionMap.size);
 
