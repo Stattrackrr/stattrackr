@@ -48,22 +48,29 @@ export async function GET(request: Request) {
     let canonicalError: string | undefined;
     let usedCanonicalGames = false;
     const canonical = await refreshAflOddsData({ skipWrite: true });
-    if (canonical.success && canonical.games?.length) {
+    if (canonical.success) {
       usedCanonicalGames = true;
-      const eligibleGames = filterAflPropsEligibleGames(canonical.games);
-      result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
-      if (result.props.length === 0 && result.games.length > 0) {
-        void (async () => {
-          try {
-            const pp = await refreshAflPlayerPropsCache(eligibleGames);
-            if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
-          } catch (e) {
-            console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
-          }
-        })();
+      canonicalError = undefined;
+      const apiGames = canonical.games ?? [];
+      if (!apiGames.length) {
+        result = { props: [], games: [] };
+      } else {
+        const eligibleGames = filterAflPropsEligibleGames(apiGames);
+        result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
+        if (result.props.length === 0 && result.games.length > 0) {
+          void (async () => {
+            try {
+              const pp = await refreshAflPlayerPropsCache(eligibleGames);
+              if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
+            } catch (e) {
+              console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
+            }
+          })();
+        }
       }
     } else {
-      canonicalError = canonical.error ?? 'No games from Odds API';
+      usedCanonicalGames = false;
+      canonicalError = canonical.error ?? 'Odds API request failed';
       result = await listAflPlayerPropsFromCache();
       if (result?.games?.length) {
         const eligibleGames = filterAflPropsEligibleGames(result.games);
@@ -84,17 +91,29 @@ export async function GET(request: Request) {
         }
       })();
       const emptyCache = await getAflOddsCache();
+      const noAflOdds = usedCanonicalGames === true;
+      const noOddsCopy =
+        'No odds at the moment. Bookmakers have not published AFL player lines for upcoming games yet, or the round may have finished. Check back closer to the next round.';
+      const staleOrErrorCopy =
+        'No AFL games from Odds API right now. If odds should be live, wait for the next cron refresh or run /api/afl/odds/refresh.';
+      const lastUpdated =
+        emptyCache?.lastUpdated ??
+        (canonical.success && canonical.cachePayload ? canonical.cachePayload.lastUpdated : undefined);
+      const nextUpdate =
+        emptyCache?.nextUpdate ??
+        (canonical.success && canonical.cachePayload ? canonical.cachePayload.nextUpdate : undefined);
       return NextResponse.json({
         success: true,
         data: [],
         games: [],
-        lastUpdated: emptyCache?.lastUpdated ?? undefined,
-        nextUpdate: emptyCache?.nextUpdate ?? undefined,
+        lastUpdated,
+        nextUpdate,
         gamesCount: 0,
         propsCount: 0,
         season: new Date().getFullYear(),
-        ingestMessage: undefined,
-        message: 'No AFL games from Odds API. Run /api/afl/odds/refresh to populate props cache.',
+        ingestMessage: noAflOdds ? noOddsCopy : undefined,
+        message: noAflOdds ? noOddsCopy : staleOrErrorCopy,
+        noAflOdds,
         _meta: { canonicalError },
       }, {
         headers: {

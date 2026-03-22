@@ -261,14 +261,16 @@ export async function refreshAflPlayerPropsCache(
 
   let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
+    const cleared = await sharedCache.clearKeysByPrefix(`${AFL_PP_CACHE_KEY_PREFIX}:`);
     return {
-      success: false,
+      success: true,
       eventsRefreshed: 0,
       eventsAttempted: 0,
       eventsFailed: 0,
       playersWithProps: 0,
       playerNames: [],
-      error: 'No games in odds cache. Run game odds refresh first.',
+      failedGameIds: [],
+      keysCleared: cleared,
     };
   }
 

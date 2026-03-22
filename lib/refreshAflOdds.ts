@@ -3,8 +3,8 @@
  * Game odds (H2H, spreads, totals) are cached for 90 minutes (~30 API credits per refresh).
  * Cron runs every 90 min; 16/day × 30 ≈ 480 credits/day, ~14.4k/month.
  *
- * Cache policy: only write when we have non-empty data. If the run fails or returns empty,
- * we do not overwrite; old cache stays until next successful run (cache does not expire, only replaced – same as NBA).
+ * Cache policy: on a successful Odds API response we always persist the snapshot (including an empty game list)
+ * so the props workflow and UI can clear stale props when there are no upcoming lines. Failed requests still do not overwrite.
  */
 
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
@@ -232,8 +232,7 @@ export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Pro
       lastUpdated: now.toISOString(),
       nextUpdate: nextUpdate.toISOString(),
     };
-    // Only replace cache when we have data; never overwrite with empty (wait for TTL or next successful run).
-    if (games.length > 0 && !skipWrite) {
+    if (!skipWrite) {
       await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, cachePayload, AFL_ODDS_CACHE_TTL_SECONDS);
     }
 
@@ -257,9 +256,9 @@ export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Pro
   }
 }
 
-/** Write odds cache (used by cron only after props refresh succeeds so we never show new odds without props). */
+/** Write odds cache (cron: after props refresh so we do not show new matchups without a matching props snapshot). Empty `games` is valid when the API has no upcoming events. */
 export async function setAflOddsCache(payload: AflOddsCache): Promise<void> {
-  if (!payload?.games?.length) return;
+  if (!payload || !Array.isArray(payload.games)) return;
   await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, payload, AFL_ODDS_CACHE_TTL_SECONDS);
 }
 

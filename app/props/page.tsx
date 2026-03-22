@@ -1165,7 +1165,13 @@ export default function NBALandingPage() {
           dvpStatValue: a.dvpStatValue,
         };
         });
-        if (aggregated.length > 0 || games.length > 0) {
+        if (listData.noAflOdds === true) {
+          try {
+            sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
+          } catch {
+            // Ignore
+          }
+        } else if (aggregated.length > 0 || games.length > 0) {
           const toCache = {
             props: aggregated,
             games,
@@ -1221,7 +1227,7 @@ export default function NBALandingPage() {
     const doFetch = async (
       isRetry: boolean,
       mode: 'quick' | 'fresh' = 'fresh',
-    ): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string }> => {
+    ): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string; noAflOdds?: boolean }> => {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
       // Quick mode: cached enriched payload for instant first click with stats already populated.
       // Fresh mode: cache-busting request so lines update right after cron refreshes.
@@ -1233,7 +1239,7 @@ export default function NBALandingPage() {
             : `/api/afl/player-props/list?cb=${Date.now()}`
         );
       const listRes = await fetch(listUrl, { cache: mode === 'quick' ? 'force-cache' : 'no-store' });
-      if (cancelled) return { games: [], aggregated: [] };
+      if (cancelled) return { games: [], aggregated: [], noAflOdds: false };
       const listData = await listRes.json();
       if (mode === 'fresh') {
         if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
@@ -1322,6 +1328,7 @@ export default function NBALandingPage() {
         ingestMessage: typeof listData.ingestMessage === 'string' ? listData.ingestMessage : undefined,
         lastUpdated: typeof listData.lastUpdated === 'string' ? listData.lastUpdated : undefined,
         nextUpdate: typeof listData.nextUpdate === 'string' ? listData.nextUpdate : undefined,
+        noAflOdds: listData.noAflOdds === true,
       };
     };
     (async () => {
@@ -1357,6 +1364,24 @@ export default function NBALandingPage() {
 
         let result = await doFetch(false, 'fresh');
         if (cancelled) return;
+        if (result.noAflOdds) {
+          if (!cancelled) {
+            setAflGames([]);
+            setAflProps([]);
+            setAflIngestMessage(result.ingestMessage ?? null);
+            setAflLastUpdated(result.lastUpdated ?? null);
+            try {
+              sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
+            } catch {
+              // Ignore
+            }
+            userModifiedAflGamesRef.current = false;
+            syncSelectedAflGames([]);
+            aflPropsFetchCompleteRef.current = true;
+            setAflPropsLoading(false);
+          }
+          return;
+        }
         const { games, aggregated } = result;
         setAflGames(games);
         if (!cancelled) {
@@ -5179,8 +5204,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         </div>
                       ) : (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          <p className="text-lg font-medium">Odds will appear when the next round is available</p>
-                          <p className="text-sm mt-1">If you expected to see odds, try again in a moment.</p>
+                          <p className="text-lg font-medium max-w-lg">
+                            {aflIngestMessage ?? 'No odds at the moment'}
+                          </p>
+                          <p className="text-sm mt-2 max-w-md">
+                            {aflIngestMessage
+                              ? 'Check back closer to the next round, or use Try again after the next refresh.'
+                              : 'If you expected to see odds, try again in a moment.'}
+                          </p>
                           <button
                             type="button"
                             onClick={() => {
