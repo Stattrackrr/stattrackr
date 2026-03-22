@@ -288,23 +288,30 @@ export async function refreshAflPlayerPropsCache(
       try {
         const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
         const res = await fetch(url, { next: { revalidate: 0 } });
-        if (!res.ok) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
+        if (!res.ok) {
+          return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
+        }
         const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
         const bookmakers = data?.bookmakers ?? [];
-        if (!bookmakers.length) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
+        if (!bookmakers.length) {
+          return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
+        }
 
         const eventCache = buildEventCacheFromBookmakers(bookmakers);
         const names = Object.keys(eventCache);
-        if (names.length === 0) return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
+        if (names.length === 0) {
+          return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
+        }
         return {
           gameId: game.gameId,
-          events: 1,
+          events: 1 as const,
           players: names.length,
           names: names.map((n) => toDisplayName(n)),
           eventCache,
+          httpOk: true,
         };
       } catch {
-        return { gameId: game.gameId, events: 0, players: 0, names: [] as string[] };
+        return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
       }
     })
   );
@@ -319,6 +326,7 @@ export async function refreshAflPlayerPropsCache(
     players: number;
     names: string[];
     eventCache: EventPlayerPropsCache;
+    httpOk?: boolean;
   }>;
   for (const r of results) {
     if (r.events === 0) {
@@ -331,18 +339,34 @@ export async function refreshAflPlayerPropsCache(
   }
   const eventsAttempted = games.length;
   const eventsFailed = Math.max(0, eventsAttempted - eventsRefreshed);
+  const everyEventHttpOk = results.length > 0 && results.every((r) => r.httpOk === true);
 
-  if (eventsRefreshed === 0) {
+  if (eventsRefreshed === 0 && eventsAttempted > 0) {
+    if (!everyEventHttpOk) {
+      return {
+        success: false,
+        eventsRefreshed,
+        eventsAttempted,
+        eventsFailed,
+        playersWithProps,
+        playerNames,
+        failedGameIds,
+        keysCleared,
+        error:
+          'No AFL player props were refreshed from Odds API (one or more event requests failed HTTP or threw — check key, quota, or API status)',
+      };
+    }
+    // Game odds exist but no AU player markets returned yet (common between rounds / before books post lines).
+    const cleared = await sharedCache.clearKeysByPrefix(`${AFL_PP_CACHE_KEY_PREFIX}:`);
     return {
-      success: false,
-      eventsRefreshed,
+      success: true,
+      eventsRefreshed: 0,
       eventsAttempted,
-      eventsFailed,
-      playersWithProps,
-      playerNames,
+      eventsFailed: eventsAttempted,
+      playersWithProps: 0,
+      playerNames: [],
       failedGameIds,
-      keysCleared,
-      error: 'No AFL player props were refreshed from Odds API (0 events updated)',
+      keysCleared: cleared,
     };
   }
 

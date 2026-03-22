@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
       propsEligibleGames: propsEligibleGames.length,
       playersWithProps: ppResult.playersWithProps,
       playerNames: ppResult.playerNames ?? [],
-      playerPropsOk: ppResult.success,
+      playerPropsOk: ppResult.eventsRefreshed > 0,
       playerPropsError: ppResult.error,
       dvpBuildOk,
       statsWarmed,
@@ -191,9 +191,12 @@ export async function GET(request: NextRequest) {
       naSummaryHint: statsFailed != null && statsFailed > 0
         ? 'Call GET /api/afl/player-props/list?enrich=true&debugStats=1 for naSummary and naReasons (why props show N/A).'
         : undefined,
-      message: ppResult.playerNames?.length
-        ? `Odds updated. ${ppResult.playersWithProps} players, ${ppResult.eventsRefreshed} events. Stats warm: ${statsWarmed ?? '?'} warmed, ${statsFailed ?? 0} failed (N/A).`
-        : 'Odds cache updated. Props refresh + DvP + stats warm completed.',
+      message:
+        ppResult.eventsRefreshed > 0 && ppResult.playerNames?.length
+          ? `Odds updated. ${ppResult.playersWithProps} players, ${ppResult.eventsRefreshed} events. Stats warm: ${statsWarmed ?? '?'} warmed, ${statsFailed ?? 0} failed (N/A).`
+          : ppResult.eventsAttempted > 0 && ppResult.eventsRefreshed === 0
+            ? 'Odds updated; no player prop markets returned for any game yet (AU books may not have posted — props cache cleared). DvP + stats warm completed where applicable.'
+            : 'Odds cache updated. Props refresh + DvP + stats warm completed.',
     };
 
     return NextResponse.json(responsePayload);

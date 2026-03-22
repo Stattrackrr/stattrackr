@@ -11,7 +11,8 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-const AFL_LIST_CACHE_CONTROL = 'public, max-age=15, s-maxage=60, stale-while-revalidate=300';
+/** List revalidates against The Odds API every request; avoid CDN/browser serving ended matchups as current. */
+const AFL_LIST_CACHE_CONTROL = 'private, no-store';
 
 function hasOver(o: string) {
   return o != null && String(o).trim() !== '' && String(o) !== 'N/A';

@@ -760,32 +760,10 @@ export default function NBALandingPage() {
       }
     }
 
-    // 4) AFL cache when mode includes AFL (AFL/Combined, or default with no sport param)
+    // 4) AFL: do not paint props/games from sessionStorage before first paint — avoids flashing ended matchups until the list API returns.
     if (sportParam === null || sportParam === 'afl' || sportParam === 'combined') {
-      try {
-        const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { props?: PlayerProp[]; games?: AflGameForProps[]; selectedGameIds?: string[]; timestamp?: number };
-          const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
-          if (age < AFL_PROPS_CACHE_TTL_MS && Array.isArray(parsed?.props)) {
-            setAflProps(parsed.props);
-            if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
-              setAflGames(parsed.games);
-              const hasSelectedFromCache =
-                Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0;
-              if (hasSelectedFromCache) userModifiedAflGamesRef.current = true;
-              const selectedIds = hasSelectedFromCache
-                ? parsed.selectedGameIds!
-                : parsed.games.map((g: { gameId: string }) => g.gameId);
-              syncSelectedAflGames(selectedIds);
-            }
-            aflPropsFetchCompleteRef.current = true;
-            setAflPropsLoading(false);
-          }
-        }
-      } catch {
-        // ignore
-      }
+      aflPropsFetchCompleteRef.current = false;
+      setAflPropsLoading(true);
       // 5) AFL team logos cache for instant logo-only matchup rendering
       try {
         const logosRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
@@ -1082,11 +1060,10 @@ export default function NBALandingPage() {
 
     fetchTodaysGames();
 
-    // Preload AFL props in parallel so switching to AFL tab is instant (writes to sessionStorage only).
-    // Use force-cache on enriched payload so DvP/L5/L10/H2H render immediately, then refresh for latest lines.
+    // Preload AFL list in background for sessionStorage (filter persistence only — UI never paints from this before a fresh fetch).
     (async () => {
       try {
-        const listRes = await fetch('/api/afl/player-props/list', { cache: 'force-cache' });
+        const listRes = await fetch(`/api/afl/player-props/list?cb=${Date.now()}`, { cache: 'no-store' });
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
@@ -1186,65 +1163,24 @@ export default function NBALandingPage() {
     })();
   }, []);
 
-  // Fetch AFL games + player props list when sport is AFL. Restore from sessionStorage first so returning from dashboard is instant (stale-while-revalidate).
-  // Never replace existing props with empty: if we have props (from cache or prior fetch) and the API returns empty, keep showing them.
-  // When API returns empty and we had no cache, retry once after 2s (transient/cache expiry) before showing empty state.
+  // Fetch AFL games + player props when sport is AFL or combined. No sessionStorage paint: list API + no-store are source of truth (avoids stale Swans v Hawks after a game).
+  // When API returns empty and we never got props this run, retry once after 2s (transient) before empty / delayed retries.
   useEffect(() => {
     if (propsSport !== 'afl' && propsSport !== 'combined') return;
     let cancelled = false;
-    let hadCache = false;
-    let hadCacheWithProps = false;
-    try {
-      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(AFL_PROPS_CACHE_KEY) : null;
-      if (raw) {
-        const parsed = JSON.parse(raw) as { props?: PlayerProp[]; games?: AflGameForProps[]; selectedGameIds?: string[]; timestamp?: number };
-        const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
-        if (age < AFL_PROPS_CACHE_TTL_MS && Array.isArray(parsed?.props)) {
-          setAflProps(parsed.props);
-          if (Array.isArray(parsed?.games) && parsed.games.length > 0) {
-            setAflGames(parsed.games);
-            const hasSelectedFromCache =
-              Array.isArray(parsed.selectedGameIds) && parsed.selectedGameIds.length > 0;
-            if (hasSelectedFromCache) userModifiedAflGamesRef.current = true;
-            const selectedIds = hasSelectedFromCache
-              ? parsed.selectedGameIds!
-              : parsed.games.map((g: { gameId: string }) => g.gameId);
-            syncSelectedAflGames(selectedIds);
-          }
-          aflPropsFetchCompleteRef.current = true;
-          setAflPropsLoading(false);
-          hadCache = true;
-          hadCacheWithProps = parsed.props.length > 0;
-        }
-      }
-    } catch {
-      // Ignore cache read errors
-    }
-    if (!hadCache) {
-      aflPropsFetchCompleteRef.current = false;
-      setAflPropsLoading(true);
-    }
-    const doFetch = async (
-      isRetry: boolean,
-      mode: 'quick' | 'fresh' = 'fresh',
-    ): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string; noAflOdds?: boolean }> => {
+    let hadNonEmptyFresh = false;
+    aflPropsFetchCompleteRef.current = false;
+    setAflPropsLoading(true);
+    const doFetch = async (): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string; noAflOdds?: boolean }> => {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
-      // Quick mode: cached enriched payload for instant first click with stats already populated.
-      // Fresh mode: cache-busting request so lines update right after cron refreshes.
-      const listUrl = mode === 'quick'
-        ? '/api/afl/player-props/list'
-        : (
-          debugStats
-            ? `/api/afl/player-props/list?debugStats=1&cb=${Date.now()}`
-            : `/api/afl/player-props/list?cb=${Date.now()}`
-        );
-      const listRes = await fetch(listUrl, { cache: mode === 'quick' ? 'force-cache' : 'no-store' });
+      const listUrl = debugStats
+        ? `/api/afl/player-props/list?debugStats=1&cb=${Date.now()}`
+        : `/api/afl/player-props/list?cb=${Date.now()}`;
+      const listRes = await fetch(listUrl, { cache: 'no-store' });
       if (cancelled) return { games: [], aggregated: [], noAflOdds: false };
       const listData = await listRes.json();
-      if (mode === 'fresh') {
-        if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
-        if (!cancelled && !debugStats) setAflListDebugMeta(null);
-      }
+      if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
+      if (!cancelled && !debugStats) setAflListDebugMeta(null);
       const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
       const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
       const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
@@ -1333,36 +1269,7 @@ export default function NBALandingPage() {
     };
     (async () => {
       try {
-        if (!hadCacheWithProps) {
-          const quickResult = await doFetch(false, 'quick');
-          if (cancelled) return;
-          if (quickResult.games.length > 0) {
-            setAflGames(quickResult.games);
-            syncSelectedAflGames(quickResult.games.map((g) => g.gameId));
-          }
-          if (quickResult.aggregated.length > 0) {
-            setAflProps(quickResult.aggregated);
-            setAflIngestMessage(quickResult.ingestMessage ?? null);
-            setAflLastUpdated(quickResult.lastUpdated ?? null);
-            aflPropsFetchCompleteRef.current = true;
-            setAflPropsLoading(false);
-            hadCacheWithProps = true;
-            try {
-              sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
-                props: quickResult.aggregated,
-                games: quickResult.games,
-                selectedGameIds: getSelectedAflGameIdsForCache(
-                  quickResult.games.length > 0 ? quickResult.games.map((g) => g.gameId) : []
-                ),
-                timestamp: Date.now(),
-              }));
-            } catch {
-              // Ignore
-            }
-          }
-        }
-
-        let result = await doFetch(false, 'fresh');
+        let result = await doFetch();
         if (cancelled) return;
         if (result.noAflOdds) {
           if (!cancelled) {
@@ -1388,16 +1295,18 @@ export default function NBALandingPage() {
           setAflIngestMessage(result.ingestMessage ?? null);
           setAflLastUpdated(result.lastUpdated ?? null);
         }
-        // Retry once when empty and we had no cache (transient failure or cache expiry)
-        if (aggregated.length === 0 && !hadCacheWithProps && !cancelled) {
+        if (aggregated.length > 0) hadNonEmptyFresh = true;
+
+        // Retry once when empty and we never got props this run (transient failure or cache expiry)
+        if (aggregated.length === 0 && !hadNonEmptyFresh && !cancelled) {
           await new Promise((r) => setTimeout(r, 2000));
           if (cancelled) return;
-          result = await doFetch(true);
+          result = await doFetch();
           if (cancelled) return;
           const retryGames = result.games;
           const retryAggregated = result.aggregated;
           setAflGames(retryGames);
-          if (retryAggregated.length > 0 || !hadCacheWithProps) {
+          if (retryAggregated.length > 0 || !hadNonEmptyFresh) {
             setAflProps(retryAggregated);
             if (retryGames.length > 0) syncSelectedAflGames(retryGames.map((g) => g.gameId));
             if (!cancelled) {
@@ -1425,7 +1334,7 @@ export default function NBALandingPage() {
             delays.forEach((delay) => {
               const t = setTimeout(async () => {
                 if (cancelled) return;
-                const res = await doFetch(true);
+                const res = await doFetch();
                 if (cancelled) return;
                   if (res.aggregated.length > 0) {
                     setAflGames(res.games);
@@ -1461,8 +1370,8 @@ export default function NBALandingPage() {
           }
           return;
         }
-        // Never replace existing props with empty: if we had props (from cache) and API returned empty, keep showing them
-        if (aggregated.length > 0 || !hadCacheWithProps) {
+        // If we already showed props this run and API returns empty without noAflOdds, keep prior rows (transient blip).
+        if (aggregated.length > 0 || !hadNonEmptyFresh) {
           setAflProps(aggregated);
           if (games.length > 0) {
             syncSelectedAflGames(games.map((g) => g.gameId));
@@ -1489,7 +1398,7 @@ export default function NBALandingPage() {
           syncSelectedAflGames(games.map((g) => g.gameId));
         }
       } catch (e) {
-        if (!cancelled && !hadCacheWithProps) {
+        if (!cancelled && !hadNonEmptyFresh) {
           setAflGames([]);
           setAflProps([]);
         }
