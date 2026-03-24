@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import React, { useEffect, useState, useMemo, Suspense, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
@@ -83,6 +84,8 @@ type Bet = {
   sport: string;
   market: string | null;
   selection: string;
+  player_name?: string | null;
+  team?: string | null;
   stake: number;
   currency: string;
   odds: number;
@@ -267,6 +270,73 @@ function formatStatType(statType: string | null | undefined): string {
   return statMap[statType.toLowerCase()] || statType.toUpperCase();
 }
 
+function getSelectionParts(selection: string) {
+  const cleaned = selection.trim();
+  const m = cleaned.match(/^(.*?)\s+(over|under)\s+(\d+(?:\.\d+)?)\s+(.+)$/i);
+  if (!m) {
+    return { playerName: cleaned, marketLine: '' };
+  }
+  return {
+    playerName: m[1].trim(),
+    marketLine: `${m[2].toLowerCase()} ${m[3]} ${m[4].trim().toLowerCase()}`.trim(),
+  };
+}
+
+function getBetTitleAndMarketLine(bet: Bet, isParlay: boolean, legCount: number) {
+  if (isParlay) {
+    return {
+      title: `${legCount || 1} Leg Parlay`,
+      marketLine: bet.market || 'parlay',
+    };
+  }
+
+  const selectionParts = getSelectionParts(bet.selection || '');
+  const title = (bet.player_name || selectionParts.playerName || bet.selection || 'Bet').trim();
+
+  if (bet.over_under && bet.line !== null && bet.line !== undefined) {
+    const statLabel = (bet.stat_type || selectionParts.marketLine.split(' ').slice(2).join(' ') || 'market')
+      .toString()
+      .toLowerCase();
+    return {
+      title,
+      marketLine: `${bet.over_under.toLowerCase()} ${bet.line} ${statLabel}`.trim(),
+    };
+  }
+
+  return {
+    title,
+    marketLine: selectionParts.marketLine || (bet.market || 'market').toLowerCase(),
+  };
+}
+
+function getMatchupLine(bet: Bet) {
+  const team = (bet.team || '').trim();
+  const opponent = (bet.opponent || '').trim();
+  if (team && opponent) return `${team} vs ${opponent}`;
+  if (opponent) return `${bet.sport} vs ${opponent}`;
+  if (team) return team;
+  return bet.sport;
+}
+
+function stripDemoTag(value: string | null | undefined): string | null | undefined {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/\s*\[demo\]\s*/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function normalizeDemoLabels(bet: Bet): Bet {
+  const normalizedSelection = stripDemoTag(bet.selection);
+  const normalizedMarket = stripDemoTag(bet.market);
+
+  return {
+    ...bet,
+    selection: normalizedSelection || bet.selection,
+    market: normalizedMarket === '' ? null : normalizedMarket ?? bet.market,
+  };
+}
+
 function JournalContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -296,7 +366,7 @@ function JournalContent() {
         .range(bets.length, bets.length + BATCH_SIZE - 1);
 
       if (moreBets && moreBets.length > 0) {
-        setBets(prev => [...prev, ...moreBets]);
+        setBets(prev => [...prev, ...moreBets.map(normalizeDemoLabels)]);
         setHasMoreBets((count || 0) > bets.length + moreBets.length);
       } else {
         setHasMoreBets(false);
@@ -431,7 +501,27 @@ function JournalContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [showTimeframeDropdown, setShowTimeframeDropdown] = useState(false);
+  const [timeframeDropdownPosition, setTimeframeDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const updateTimeframeDropdownPosition = () => {
+    if (!timeframeDropdownRef.current || typeof window === 'undefined') return;
+    const button = timeframeDropdownRef.current.querySelector('[data-timeframe-button]') as HTMLElement | null;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 160; // Tailwind w-40
+    const viewportPadding = 8;
+    const left = Math.max(
+      viewportPadding,
+      Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding)
+    );
+
+    setTimeframeDropdownPosition({
+      top: rect.bottom + 8,
+      left,
+    });
+  };
+
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -590,6 +680,7 @@ function JournalContent() {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(target) &&
+          !target.closest('[data-timeframe-menu]') &&
           !target.closest('[data-timeframe-button]')) {
         setShowTimeframeDropdown(false);
       }
@@ -606,6 +697,20 @@ function JournalContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!showTimeframeDropdown) return;
+
+    updateTimeframeDropdownPosition();
+    const closeOnViewportChange = () => setShowTimeframeDropdown(false);
+
+    window.addEventListener('resize', closeOnViewportChange);
+    window.addEventListener('scroll', closeOnViewportChange, true);
+    return () => {
+      window.removeEventListener('resize', closeOnViewportChange);
+      window.removeEventListener('scroll', closeOnViewportChange, true);
+    };
+  }, [showTimeframeDropdown]);
   
   // Screen size detection and responsive sidebar logic
   useEffect(() => {
@@ -838,7 +943,7 @@ function JournalContent() {
           setBets([]);
           setHasMoreBets(false);
         } else {
-          setBets(data || []);
+          setBets((data || []).map(normalizeDemoLabels));
           // Check if there are more bets to load
           setHasMoreBets((count || 0) > BATCH_SIZE);
         }
@@ -892,7 +997,7 @@ function JournalContent() {
               .limit(BATCH_SIZE);
             
             if (!error && data && isMounted) {
-              setBets(data || []);
+              setBets((data || []).map(normalizeDemoLabels));
             }
           }
         } catch (error) {
@@ -1290,17 +1395,32 @@ function JournalContent() {
     return data;
   }, [filteredBets, currency]);
 
-  // Calculate X-axis ticks for max 10 ticks
+  // Calculate X-axis ticks using dynamic major steps (1, 2, 5, 10, ...)
   const xAxisTicks = useMemo(() => {
-    if (chartData.length <= 10) {
-      return chartData.map(d => d.bet);
-    }
     const maxBet = chartData[chartData.length - 1]?.bet || 0;
-    const tickCount = 10;
-    const step = maxBet / (tickCount - 1);
+    if (maxBet <= 12) {
+      return Array.from({ length: maxBet + 1 }, (_, i) => i);
+    }
+
+    const targetTickCount = 10;
+    const roughStep = maxBet / (targetTickCount - 1);
+
+    // Round to a readable axis interval.
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+    let niceNormalized = 1;
+    if (normalized <= 1) niceNormalized = 1;
+    else if (normalized <= 2) niceNormalized = 2;
+    else if (normalized <= 5) niceNormalized = 5;
+    else niceNormalized = 10;
+    const step = niceNormalized * magnitude;
+
     const ticks: number[] = [];
-    for (let i = 0; i < tickCount; i++) {
-      ticks.push(Math.round(i * step));
+    for (let value = 0; value <= maxBet; value += step) {
+      ticks.push(value);
+    }
+    if (ticks[ticks.length - 1] !== maxBet) {
+      ticks.push(maxBet);
     }
     return ticks;
   }, [chartData]);
@@ -1676,14 +1796,14 @@ function JournalContent() {
           height: 'calc(100vh - 16px)',
           overflowY: 'auto',
           overflowX: 'hidden',
-          zIndex: 0,
+          zIndex: 20,
           transition: 'left 0.3s ease, right 0.3s ease'
         }}
       >
             {/* Full-width container spanning from left sidebar to right sidebar */}
             <div className="w-full bg-slate-50 dark:bg-[#0a1929] rounded-xl border border-slate-200 dark:border-gray-700 flex flex-col min-w-0 overflow-hidden relative z-10">
              {/* Top half - StatTrackr logo and filters */}
-             <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4">
+             <div className="flex-1 px-2 md:px-3 lg:px-4 pt-2 pb-3 md:pb-4 relative z-40 overflow-visible">
                <div className="flex flex-wrap items-center gap-2 md:gap-3 lg:gap-4">
                  <div className="flex items-center gap-2 md:gap-3">
                    <StatTrackrLogo className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
@@ -1695,7 +1815,7 @@ function JournalContent() {
                    <select
                      value={currency}
                      onChange={(e) => setCurrency(e.target.value as typeof currency)}
-                     className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
+                    className="h-7 md:h-8 px-1.5 md:px-2 rounded-lg text-xs md:text-sm bg-purple-600 text-white border-none focus:ring-2 focus:ring-purple-500 focus:outline-none font-medium"
                      disabled={viewMode === 'units'}
                    >
                      <option value="USD">USD</option>
@@ -1713,7 +1833,7 @@ function JournalContent() {
                        onClick={() => setViewMode('money')}
                        className={`px-2 md:px-3 py-1 text-xs md:text-sm font-medium transition-colors ${
                          viewMode === 'money'
-                           ? 'bg-emerald-600 text-white'
+                          ? 'bg-purple-600 text-white'
                            : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
                        }`}
                      >
@@ -1732,7 +1852,7 @@ function JournalContent() {
                        }}
                        className={`px-2 md:px-3 py-1 text-xs md:text-sm font-medium transition-colors ${
                          viewMode === 'units'
-                           ? 'bg-emerald-600 text-white'
+                          ? 'bg-purple-600 text-white'
                            : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
                        }`}
                      >
@@ -1776,7 +1896,12 @@ function JournalContent() {
                   <div className="relative ml-auto z-40" ref={timeframeDropdownRef}>
                      <button
                        data-timeframe-button
-                       onClick={() => setShowTimeframeDropdown((prev) => !prev)}
+                       onClick={() => {
+                         if (!showTimeframeDropdown) {
+                           updateTimeframeDropdownPosition();
+                         }
+                         setShowTimeframeDropdown((prev) => !prev);
+                       }}
                       className="relative z-40 inline-flex items-center gap-1.5 md:gap-2 rounded-xl border border-slate-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] px-3 md:px-4 py-1.5 text-xs md:text-sm font-medium text-slate-600 dark:text-white hover:bg-slate-50 dark:hover:bg-[#0f1f35] transition-colors"
                      >
                        <span className="hidden sm:inline">Timeframe</span>
@@ -1785,35 +1910,44 @@ function JournalContent() {
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                        </svg>
                      </button>
-                     
-                     {showTimeframeDropdown && (
-                       <div className="absolute right-0 mt-2 w-40 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#0a1929] shadow-lg z-50 overflow-hidden">
-                         {(['all', 'daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => (
-                           <button
-                             key={range}
-                             onClick={() => {
-                               setDateRange(range);
-                               setShowTimeframeDropdown(false);
-                             }}
-                             className={`w-full text-left px-4 py-2 text-xs md:text-sm capitalize transition-colors ${
-                               dateRange === range
-                                 ? 'bg-purple-600/10 text-purple-600 dark:text-purple-300'
-                                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-700'
-                             }`}
-                           >
-                             {range}
-                           </button>
-                         ))}
-                       </div>
-                     )}
                    </div>
                  </div>
+                {showTimeframeDropdown && timeframeDropdownPosition && typeof window !== 'undefined' &&
+                  createPortal(
+                    <div
+                      data-timeframe-menu
+                      className="w-40 rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-[#0a1929] shadow-lg z-[120] overflow-hidden"
+                      style={{
+                        position: 'fixed',
+                        top: timeframeDropdownPosition.top,
+                        left: timeframeDropdownPosition.left,
+                      }}
+                    >
+                      {(['all', 'daily', 'weekly', 'monthly', 'yearly'] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => {
+                            setDateRange(range);
+                            setShowTimeframeDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-xs md:text-sm capitalize transition-colors ${
+                            dateRange === range
+                              ? 'bg-purple-600/10 text-purple-600 dark:text-purple-300'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>,
+                    document.body
+                  )}
                  
                </div>
              </div>
               
               {/* Bottom half - 6 stat containers */}
-              <div className="h-1/2 flex border-t border-slate-200 dark:border-gray-700/50 gap-1.5 md:gap-2 lg:gap-3 pb-2 md:pb-2.5 lg:pb-3 px-2 md:px-2.5 lg:px-3 py-1">
+             <div className="h-1/2 flex border-t border-slate-200 dark:border-gray-700/50 gap-1.5 md:gap-2 lg:gap-3 pb-2 md:pb-2.5 lg:pb-3 px-2 md:px-2.5 lg:px-3 py-1 relative z-10">
                 {/* Bankroll - Only show in units mode, placed first */}
                 {viewMode === 'units' && currentBankroll !== null && (
                   <div className="flex-1 bg-white dark:bg-[#0a1929] rounded-lg border border-slate-300 dark:border-gray-600 flex flex-col items-center justify-center py-1.5 md:py-2 px-1 md:px-1.5 lg:px-2">
@@ -1916,6 +2050,8 @@ function JournalContent() {
                           label={{ value: 'Number of Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
                           tick={{ fill: isDark ? '#ffffff' : '#000000' }}
                           ticks={xAxisTicks}
+                          interval={0}
+                          minTickGap={0}
                         />
                         <YAxis 
                           stroke={isDark ? '#ffffff' : '#000000'}
@@ -2275,16 +2411,13 @@ function JournalContent() {
                   ) : (
                     filteredBets.slice(betHistoryPage * 20, (betHistoryPage + 1) * 20).map((bet) => {
                       const convertedStake = convertCurrency(bet.stake, bet.currency, currency);
+                      const stakeDisplay = viewMode === 'units'
+                        ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
+                        : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`;
                       const profit = bet.result === 'win' 
                         ? convertedStake * (bet.odds - 1) 
                         : bet.result === 'loss' 
                         ? -convertedStake 
-                        : 0;
-                      // Calculate return amount: win = stake * odds, loss = 0, void = stake
-                      const returnAmount = bet.result === 'win' 
-                        ? convertedStake * bet.odds 
-                        : bet.result === 'void' 
-                        ? convertedStake 
                         : 0;
                       const betDate = new Date(bet.date);
                       const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -2306,6 +2439,8 @@ function JournalContent() {
                       })) : parsedLegs;
                       // Use structured legs count first, then parsed, then market fallback
                       const legCount = structuredLegs.length || parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
+                      const { title: betTitle, marketLine } = getBetTitleAndMarketLine(bet, isParlay, legCount);
+                      const matchupLine = getMatchupLine(bet);
 
                       // Determine bet state: pending (blue), live (orange), or final (green/red)
                       // A bet can be live but already determined (win/loss) if outcome was determined early
@@ -2331,19 +2466,7 @@ function JournalContent() {
                             ? 'bg-gray-50 dark:bg-[#050d1a]/20 border-gray-500 dark:border-gray-400'
                             : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
                         }`}>
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[9px] md:text-[10px] font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                            {(isFinal || isLiveButDetermined) && (
-                              <span className={`text-[9px] md:text-[10px] font-bold ${
-                                bet.result === 'win' 
-                                  ? 'text-green-600 dark:text-green-400'
-                                  : bet.result === 'void'
-                                  ? 'text-gray-600 dark:text-gray-400'
-                                  : 'text-red-600 dark:text-red-400'
-                              }`}>
-                                {bet.result === 'void' ? 'VOID' : `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`}
-                              </span>
-                            )}
+                          <div className="flex items-center justify-end mb-0.5">
                             {isPending && (
                               <span className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400">PENDING</span>
                             )}
@@ -2359,8 +2482,11 @@ function JournalContent() {
                           </div>
                           {isParlay && parlayLegs.length > 0 ? (
                             <>
-                              <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5">
-                                {legCount} leg Parlay
+                              <div className="text-[10px] md:text-xs font-semibold text-white mb-0.5 break-words">
+                                {betTitle} @ {formatOdds(bet.odds, oddsFormat)}
+                              </div>
+                              <div className="text-[9px] md:text-[10px] text-white mb-0.5 break-words">
+                                {marketLine} • Stake: {stakeDisplay}
                               </div>
                               <div className="text-[9px] md:text-[10px] text-slate-700 dark:text-slate-300 space-y-0.5">
                                 {parlayLegs.map((leg, index) => {
@@ -2406,26 +2532,17 @@ function JournalContent() {
                               </div>
                             </>
                           ) : (
-                            <div className="text-[10px] md:text-xs font-semibold text-slate-900 dark:text-white mb-0.5 break-words">{bet.selection}</div>
+                            <>
+                              <div className="text-[10px] md:text-xs font-semibold text-white mb-0.5 break-words">
+                                {betTitle} @ {formatOdds(bet.odds, oddsFormat)}
+                              </div>
+                              <div className="text-[9px] md:text-[10px] text-white mb-0.5 break-words">
+                                {marketLine} • Stake: {stakeDisplay}
+                              </div>
+                            </>
                           )}
-                          <div className="flex items-center justify-between text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400 flex-wrap gap-1">
-                            <span className="break-words">
-                              Stake: {viewMode === 'units' 
-                                ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
-                                : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`
-                              }
-                            </span>
-                            <div className="flex flex-col items-end">
-                              <span className="whitespace-nowrap">Odds: {formatOdds(bet.odds, oddsFormat)}</span>
-                            </div>
-                          </div>
-                          {(bet.market || bet.opponent) && (
-                            <div className="mt-0.5 text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400 break-words">
-                              {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
-                            </div>
-                          )}
-                          <div className="mt-0.5 text-[9px] md:text-[10px] text-purple-600 dark:text-purple-400">
-                            Bookmaker: <span className="font-medium">{formatBookmakerDisplay(bet.bookmaker, bet.result === 'void', isParlay)}</span>
+                          <div className="mt-0.5 text-[9px] md:text-[10px] text-slate-600 dark:text-slate-400 break-words">
+                            {matchupLine} • {dateStr}
                           </div>
                           {isLive && !isParlay && bet.player_id && bet.game_date && bet.stat_type && bet.line && bet.over_under && (
                             <LiveStatsIndicator
@@ -2454,9 +2571,19 @@ function JournalContent() {
                           )}
                           {!isPending && (bet.result === 'win' || bet.result === 'loss' || bet.result === 'void') && (
                             <div className="mt-0.5 flex justify-end">
-                              <span className="text-[9px] md:text-[10px] text-white dark:text-white font-semibold">
-                                Returned: {formatValue(returnAmount)}
-                              </span>
+                              {bet.result === 'win' ? (
+                                <span className="text-[9px] md:text-[10px] text-green-700 dark:text-green-300 font-semibold">
+                                  +{currency} ${Math.abs(profit).toFixed(2)}
+                                </span>
+                              ) : bet.result === 'loss' ? (
+                                <span className="text-[9px] md:text-[10px] text-red-700 dark:text-red-300 font-semibold">
+                                  -{currency} ${Math.abs(profit).toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] md:text-[10px] text-slate-700 dark:text-slate-300 font-semibold">
+                                  VOID
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -2502,7 +2629,7 @@ function JournalContent() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as typeof currency)}
-                className="h-8 px-3 rounded-lg text-sm bg-emerald-600 text-white border-none focus:ring-2 focus:ring-emerald-400 focus:outline-none font-medium"
+                className="h-8 px-3 rounded-lg text-sm bg-purple-600 text-white border-none focus:ring-2 focus:ring-purple-500 focus:outline-none font-medium"
                 disabled={viewMode === 'units'}
               >
                 <option value="USD">USD</option>
@@ -2520,7 +2647,7 @@ function JournalContent() {
                   onClick={() => setViewMode('money')}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'money'
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-purple-600 text-white'
                       : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
                   }`}
                 >
@@ -2536,7 +2663,7 @@ function JournalContent() {
                   }}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'units'
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-purple-600 text-white'
                       : 'bg-white dark:bg-[#0a1929] text-slate-700 dark:text-white hover:bg-gray-100 dark:hover:bg-[#0f1f35]'
                   }`}
                 >
@@ -2712,6 +2839,8 @@ function JournalContent() {
                   label={{ value: 'Bets', position: 'insideBottom', offset: -5, fill: isDark ? '#ffffff' : '#000000' }}
                   tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 10 }}
                   ticks={xAxisTicks}
+                  interval={0}
+                  minTickGap={0}
                 />
                 <YAxis 
                   stroke={isDark ? '#ffffff' : '#000000'}
@@ -3126,18 +3255,14 @@ function JournalContent() {
               filteredBets.slice(betHistoryPage * 20, (betHistoryPage + 1) * 20).map((bet) => {
                 // Convert bet amounts to selected currency
                 const convertedStake = convertCurrency(bet.stake, bet.currency, currency);
+                const stakeDisplay = viewMode === 'units'
+                  ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
+                  : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`;
                 const profit = bet.result === 'win' 
                   ? convertedStake * (bet.odds - 1) 
                   : bet.result === 'loss' 
                   ? -convertedStake 
                   : 0;
-                // Calculate return amount: win = stake * odds, loss = 0, void = stake
-                const returnAmount = bet.result === 'win' 
-                  ? convertedStake * bet.odds 
-                  : bet.result === 'void' 
-                  ? convertedStake 
-                  : 0;
-                
                 // Check if this is a parlay
                 const isParlay = Boolean(bet.market && bet.market.toLowerCase().startsWith('parlay'));
                 // SPORTSBOOK-STANDARD: Use structured parlay_legs data first (most reliable)
@@ -3155,6 +3280,8 @@ function JournalContent() {
                 })) : parsedLegs;
                 // Use structured legs count first, then parsed, then market fallback
                 const legCount = structuredLegs.length || parlayLegs.length || (bet.market ? parseInt(bet.market.match(/\d+/)?.[0] || '0') : 0);
+                const { title: betTitle, marketLine } = getBetTitleAndMarketLine(bet, isParlay, legCount);
+                const matchupLine = getMatchupLine(bet);
                 
                 const betDate = new Date(bet.date);
                 const dateStr = betDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -3183,21 +3310,7 @@ function JournalContent() {
                       ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-500 dark:border-gray-400'
                       : 'bg-red-50 dark:bg-red-900/20 border-red-500 dark:border-red-400'
                   }`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{dateStr}</span>
-                      {(isFinal || isLiveButDetermined) && (
-                        <span className={`text-xs font-bold ${
-                          bet.result === 'win' 
-                            ? 'text-green-600 dark:text-green-400'
-                            : bet.result === 'void'
-                            ? 'text-gray-600 dark:text-gray-400'
-                            : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          {bet.result === 'void' ? 'VOID' : 
-                            `${profit >= 0 ? '+' : ''}${currency} $${Math.abs(profit).toFixed(2)}`
-                          }
-                        </span>
-                      )}
+                    <div className="flex items-center justify-end mb-1">
                       {isPending && (
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PENDING</span>
                       )}
@@ -3213,8 +3326,11 @@ function JournalContent() {
                     </div>
                     {isParlay && parlayLegs.length > 0 ? (
                       <>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
-                          {legCount} leg Parlay
+                        <div className="text-sm font-semibold text-white mb-1">
+                          {betTitle} @ {formatOdds(bet.odds, oddsFormat)}
+                        </div>
+                        <div className="text-xs text-white mb-1 break-words">
+                          {marketLine} • Stake: {stakeDisplay}
                         </div>
                         <div className="text-xs text-slate-700 dark:text-slate-300 space-y-0.5 mb-1">
                           {parlayLegs.map((leg, index) => {
@@ -3260,24 +3376,18 @@ function JournalContent() {
                         </div>
                       </>
                     ) : (
-                      <div className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{bet.selection}</div>
+                      <>
+                        <div className="text-sm font-semibold text-white mb-1 break-words">
+                          {betTitle} @ {formatOdds(bet.odds, oddsFormat)}
+                        </div>
+                        <div className="text-xs text-white mb-1 break-words">
+                          {marketLine} • Stake: {stakeDisplay}
+                        </div>
+                      </>
                     )}
-                    <div className="flex items-center justify-between text-xs text-purple-600 dark:text-purple-400">
-                      <span>
-                        Stake: {viewMode === 'units' 
-                          ? `${convertToUnits(convertedStake).toFixed(2)} units ${bet.currency !== currency ? `(${currency} $${convertedStake.toFixed(2)})` : ''}`
-                          : `${currency} $${convertedStake.toFixed(2)} ${bet.currency !== currency ? `(${bet.currency} $${bet.stake.toFixed(2)})` : ''}`
-                        }
-                      </span>
-                      <div className="flex flex-col items-end">
-                        <span>Odds: {formatOdds(bet.odds, oddsFormat)}</span>
-                      </div>
+                    <div className="mt-1 text-xs text-slate-600 dark:text-slate-400 break-words">
+                      {matchupLine} • {dateStr}
                     </div>
-                    {(bet.market || bet.opponent) && (
-                      <div className="mt-1 text-xs text-purple-600 dark:text-purple-400">
-                        {bet.sport}{bet.market && ` • ${bet.market}`}{bet.opponent && ` • vs ${bet.opponent}`}
-                      </div>
-                    )}
                     {isLive && !isParlay && bet.player_id && bet.game_date && bet.stat_type && bet.line && bet.over_under && (
                       <LiveStatsIndicator
                         playerId={bet.player_id}
@@ -3305,9 +3415,17 @@ function JournalContent() {
                     )}
                     {!isPending && (bet.result === 'win' || bet.result === 'loss' || bet.result === 'void') && (
                       <div className="mt-1 flex justify-end">
-                        <span className="text-xs text-white dark:text-white font-semibold">
-                          Returned: {formatValue(returnAmount)}
-                        </span>
+                        {bet.result === 'win' ? (
+                          <span className="text-xs text-green-700 dark:text-green-300 font-semibold">
+                            +{currency} ${Math.abs(profit).toFixed(2)}
+                          </span>
+                        ) : bet.result === 'loss' ? (
+                          <span className="text-xs text-red-700 dark:text-red-300 font-semibold">
+                            -{currency} ${Math.abs(profit).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-700 dark:text-slate-300 font-semibold">VOID</span>
+                        )}
                       </div>
                     )}
                   </div>
