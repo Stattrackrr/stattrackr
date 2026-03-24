@@ -11,6 +11,7 @@ import {
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_FIXTURE_TTL = 1000 * 60 * 30; // 30 min
 const footyWireFixtureCache = new Map<number, { expiresAt: number; matches: FootyWireMatch[] }>();
+const AFL_EASTERN_TIME_ZONE = 'Australia/Melbourne';
 
 /** Cache "game IDs that have props" so next-game API is fast after first request (avoids calling listAflPlayerPropsFromCache on every request). */
 const GAME_IDS_WITH_PROPS_TTL_MS = 1000 * 60 * 2; // 2 min
@@ -44,6 +45,52 @@ function htmlToText(v: string): string {
     .replace(/&nbsp;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getTimeZoneOffsetMs(timeZone: string, date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = dtf.formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value;
+  }
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour),
+    Number(map.minute),
+    Number(map.second),
+    0
+  );
+  return asUtc - date.getTime();
+}
+
+function localDateTimeToIso(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string
+): string {
+  let utcTs = Date.UTC(year, monthIndex, day, hour, minute, 0, 0);
+  for (let i = 0; i < 3; i += 1) {
+    const offsetMs = getTimeZoneOffsetMs(timeZone, new Date(utcTs));
+    const adjusted = Date.UTC(year, monthIndex, day, hour, minute, 0, 0) - offsetMs;
+    if (adjusted === utcTs) break;
+    utcTs = adjusted;
+  }
+  return new Date(utcTs).toISOString();
 }
 
 /** Fetch and parse FootyWire fixture (shows upcoming games; AFLTables often only after completion). */
@@ -105,22 +152,14 @@ async function fetchFootyWireFixture(season: number): Promise<FootyWireMatch[]> 
     const monthIndex = MONTH_ABBR[monthKey];
     if (monthIndex == null) return '';
     const hour24 = ampm.toLowerCase() === 'pm' ? (hour % 12) + 12 : hour % 12;
-    let utcHour = hour24 - 10;
-    let utcDay = day;
-    if (utcHour < 0) {
-      utcHour += 24;
-      utcDay -= 1;
-    }
-    const d = new Date(Date.UTC(season, monthIndex, utcDay, utcHour, min, 0, 0));
-    return d.toISOString();
+    return localDateTimeToIso(season, monthIndex, day, hour24, min, AFL_EASTERN_TIME_ZONE);
   }
 
   function dateOnlyToISO(season: number, day: number, monthKey: string): string {
     const monthIndex = MONTH_ABBR[monthKey];
     if (monthIndex == null) return '';
-    // Default bounce 7:25pm AEST -> 09:25 UTC
-    const d = new Date(Date.UTC(season, monthIndex, day, 9, 25, 0, 0));
-    return d.toISOString();
+    // Default bounce 7:25pm in AFL eastern local time (AEST/AEDT).
+    return localDateTimeToIso(season, monthIndex, day, 19, 25, AFL_EASTERN_TIME_ZONE);
   }
 
   // Assign links to rounds by position, then pair consecutive links (home, away); parse dates per match
