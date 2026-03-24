@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache, listAflPlayerPropsFromCacheWithGames, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
-import { getSharedCacheBackend } from '@/lib/sharedCache';
+import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
@@ -19,6 +19,8 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v1';
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 15 * 60;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
@@ -32,6 +34,7 @@ type AflEnrichContext = {
 
 let aflEnrichContextCache: { expiresAt: number; value: AflEnrichContext } | null = null;
 let aflEnrichContextInFlight: Promise<AflEnrichContext> | null = null;
+let aflEnrichedPayloadMemoryCache: { expiresAt: number; payload: Record<string, unknown> } | null = null;
 
 async function loadAflEnrichContext(): Promise<AflEnrichContext> {
   const seasonForTeam = new Date().getFullYear();
@@ -104,6 +107,29 @@ export async function GET(request: Request) {
     const hasCronAuth = !!envSecret && envSecret === providedSecret;
     const listCronSecret = hasCronAuth ? envSecret : undefined;
     const cacheOnly = !hasCronAuth;
+
+    if (!hasCronAuth && enrich && !debugStats) {
+      const now = Date.now();
+      if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
+        return NextResponse.json(aflEnrichedPayloadMemoryCache.payload, {
+          headers: {
+            'Cache-Control': AFL_LIST_CACHE_CONTROL,
+          },
+        });
+      }
+      const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
+      if (cachedPayload && typeof cachedPayload === 'object') {
+        aflEnrichedPayloadMemoryCache = {
+          payload: cachedPayload,
+          expiresAt: now + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+        };
+        return NextResponse.json(cachedPayload, {
+          headers: {
+            'Cache-Control': AFL_LIST_CACHE_CONTROL,
+          },
+        });
+      }
+    }
 
     // Single source of truth for cron/debug: get games from the Odds API.
     // Normal user requests are fast cache reads only.
@@ -517,6 +543,19 @@ export async function GET(request: Request) {
               : undefined,
       };
     }
+
+    if (enrich && !debugStats) {
+      aflEnrichedPayloadMemoryCache = {
+        payload,
+        expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+      };
+      await sharedCache.setJSON(
+        AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
+        payload,
+        AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
+      );
+    }
+
     return NextResponse.json(payload, {
       headers: {
         'Cache-Control': AFL_LIST_CACHE_CONTROL,

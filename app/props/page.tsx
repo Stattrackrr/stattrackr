@@ -1092,7 +1092,7 @@ export default function NBALandingPage() {
             if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
           }
         }
-        const listRes = await fetch(`/api/afl/player-props/list?cb=${Date.now()}`, { cache: 'no-store' });
+        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
         const listData = await listRes.json();
         const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
         const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
@@ -1209,8 +1209,8 @@ export default function NBALandingPage() {
       }
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
       const listUrl = debugStats
-        ? `/api/afl/player-props/list?debugStats=1&cb=${Date.now()}`
-        : `/api/afl/player-props/list?cb=${Date.now()}`;
+        ? '/api/afl/player-props/list?debugStats=1'
+        : '/api/afl/player-props/list';
       const requestPromise = (async () => {
         const listRes = await fetch(listUrl, { cache: 'no-store' });
         if (cancelled) return { games: [], aggregated: [], noAflOdds: false };
