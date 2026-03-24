@@ -59,28 +59,28 @@ function readLeaguePlayers(season: string): PlayerSeed[] {
   const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
   const data = readJsonFile<{ players?: Array<{ name?: string; team?: string }> }>(filePath);
   const rows = Array.isArray(data?.players) ? data.players : [];
-  return rows
-    .map((row) => {
-      const name = String(row?.name ?? '').trim();
-      if (!name) return null;
-      const team = String(row?.team ?? '').trim() || undefined;
-      return { name, team };
-    })
-    .filter((row): row is PlayerSeed => row != null);
+  const out: PlayerSeed[] = [];
+  for (const row of rows) {
+    const name = String(row?.name ?? '').trim();
+    if (!name) continue;
+    const team = String(row?.team ?? '').trim() || undefined;
+    out.push({ name, team });
+  }
+  return out;
 }
 
 function readRosterPlayers(season: string): PlayerSeed[] {
   const filePath = path.join(process.cwd(), 'data', `afl-roster-${season}.json`);
   const data = readJsonFile<{ players?: Array<{ name?: string; team?: string }> }>(filePath);
   const rows = Array.isArray(data?.players) ? data.players : [];
-  return rows
-    .map((row) => {
-      const name = String(row?.name ?? '').trim();
-      if (!name) return null;
-      const team = String(row?.team ?? '').trim() || undefined;
-      return { name, team };
-    })
-    .filter((row): row is PlayerSeed => row != null);
+  const out: PlayerSeed[] = [];
+  for (const row of rows) {
+    const name = String(row?.name ?? '').trim();
+    if (!name) continue;
+    const team = String(row?.team ?? '').trim() || undefined;
+    out.push({ name, team });
+  }
+  return out;
 }
 
 function resolveOfficialTeam(team?: string): string | undefined {
