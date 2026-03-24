@@ -53,6 +53,34 @@ export type TeamSelectionsRoundResponse = {
   error?: string;
 };
 
+function normalizePlayerKey(name: string): string {
+  return String(name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function hasCrossTeamOverlap(home: string[] | undefined, away: string[] | undefined): boolean {
+  const h = new Set((home ?? []).map(normalizePlayerKey).filter(Boolean));
+  if (h.size === 0) return false;
+  for (const n of away ?? []) {
+    const k = normalizePlayerKey(n);
+    if (k && h.has(k)) return true;
+  }
+  return false;
+}
+
+/** Detect obviously corrupt parsed lists (same player appears for both teams in bench sections). */
+function isLikelyCorruptBenchLists(match: TeamSelectionsResponse): boolean {
+  return (
+    hasCrossTeamOverlap(match.interchange?.home, match.interchange?.away) ||
+    hasCrossTeamOverlap(match.emergencies?.home, match.emergencies?.away) ||
+    hasCrossTeamOverlap(match.ins?.home, match.ins?.away) ||
+    hasCrossTeamOverlap(match.outs?.home, match.outs?.away)
+  );
+}
+
 let cached2026Lookup: Map<string, number> | null = null;
 
 function normalizeNameForLookup(name: string): string {
@@ -1270,42 +1298,49 @@ export async function GET(request: Request) {
     if (teamParam && data.matches?.length) {
       const found = findMatchByCanonicalTeam(data.matches, teamParam);
       if (found) {
+        if (isLikelyCorruptBenchLists(found)) {
+          // Ignore stale/corrupt cache and fetch fresh page below.
+        } else {
+          return NextResponse.json({
+            url: data.url,
+            title: data.title,
+            round_label: data.round_label,
+            matches: [found],
+            match: found.match,
+            home_team: found.home_team,
+            away_team: found.away_team,
+            positions: found.positions,
+            interchange: found.interchange,
+            ins: found.ins,
+            outs: found.outs,
+            emergencies: found.emergencies,
+            average_attributes: found.average_attributes,
+            total_players_by_games: found.total_players_by_games,
+            source: 'footywire.com',
+          });
+        }
+      } else {
+        // Requested team not in cache: return empty so client does not show wrong game
         return NextResponse.json({
-          url: data.url,
-          title: data.title,
-          round_label: data.round_label,
-          matches: [found],
-          match: found.match,
-          home_team: found.home_team,
-          away_team: found.away_team,
-          positions: found.positions,
-          interchange: found.interchange,
-          ins: found.ins,
-          outs: found.outs,
-          emergencies: found.emergencies,
-          average_attributes: found.average_attributes,
-          total_players_by_games: found.total_players_by_games,
+          ...data,
+          matches: [],
+          match: null,
+          home_team: null,
+          away_team: null,
+          positions: [],
+          interchange: { home: [], away: [] },
+          ins: { home: [], away: [] },
+          outs: { home: [], away: [] },
+          emergencies: { home: [], away: [] },
+          average_attributes: null,
+          total_players_by_games: null,
           source: 'footywire.com',
         });
       }
-      // Requested team not in cache: return empty so client does not show wrong game
-      return NextResponse.json({
-        ...data,
-        matches: [],
-        match: null,
-        home_team: null,
-        away_team: null,
-        positions: [],
-        interchange: { home: [], away: [] },
-        ins: { home: [], away: [] },
-        outs: { home: [], away: [] },
-        emergencies: { home: [], away: [] },
-        average_attributes: null,
-        total_players_by_games: null,
-        source: 'footywire.com',
-      });
+      // Found a team match in cache, but it's suspicious; fetch fresh below.
+    } else {
+      return NextResponse.json({ ...data, source: 'footywire.com' });
     }
-    return NextResponse.json({ ...data, source: 'footywire.com' });
   }
 
   try {
