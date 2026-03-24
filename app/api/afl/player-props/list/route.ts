@@ -11,10 +11,12 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-/** List revalidates against The Odds API every request; avoid CDN/browser serving ended matchups as current. */
+/** List is always dynamic/no-store; user path is strict cache-read for low latency. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
-const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 6;
-const MISS_COMPUTE_BG_LIMIT_NO_CRON = 30;
+// User-facing list endpoint must never block on live game-log fetches.
+// Miss healing is handled by cron/debug-auth paths, not by interactive page loads.
+const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
+const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
@@ -50,64 +52,74 @@ export async function GET(request: Request) {
     const listCronSecret = hasCronAuth ? envSecret : undefined;
     const cacheOnly = !hasCronAuth;
 
-    // Single source of truth: get games from the Odds API. Props come from cache keyed by gameId.
+    // Single source of truth for cron/debug: get games from the Odds API.
+    // Normal user requests are fast cache reads only.
     let result: { props: AflListPropRow[]; games: AflGameOdds[] } | null = null;
     let canonicalError: string | undefined;
     let usedCanonicalGames = false;
-    const canonical = await refreshAflOddsData({ skipWrite: true });
-    if (canonical.success) {
-      usedCanonicalGames = true;
-      canonicalError = undefined;
-      const apiGames = canonical.games ?? [];
-      if (!apiGames.length) {
-        result = { props: [], games: [] };
-      } else {
-        const eligibleGames = filterAflPropsEligibleGames(apiGames);
-        result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
-        if (result.props.length === 0 && result.games.length > 0) {
-          void (async () => {
-            try {
-              const pp = await refreshAflPlayerPropsCache(eligibleGames);
-              if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
-            } catch (e) {
-              console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
-            }
-          })();
-        }
-      }
-    } else {
+    if (!hasCronAuth) {
       usedCanonicalGames = false;
-      canonicalError = canonical.error ?? 'Odds API request failed';
       result = await listAflPlayerPropsFromCache();
       if (result?.games?.length) {
         const eligibleGames = filterAflPropsEligibleGames(result.games);
         result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
       }
+      // User path is strictly cache-read only to protect latency.
+      // Odds/props refresh is handled by cron and authenticated warm paths.
+    } else {
+      const canonical = await refreshAflOddsData({ skipWrite: true });
+      if (canonical.success) {
+        usedCanonicalGames = true;
+        canonicalError = undefined;
+        const apiGames = canonical.games ?? [];
+        if (!apiGames.length) {
+          result = { props: [], games: [] };
+        } else {
+          const eligibleGames = filterAflPropsEligibleGames(apiGames);
+          result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
+          if (result.props.length === 0 && result.games.length > 0) {
+            void (async () => {
+              try {
+                const pp = await refreshAflPlayerPropsCache(eligibleGames);
+                if (pp.eventsRefreshed > 0 && canonical.cachePayload) await setAflOddsCache(canonical.cachePayload);
+              } catch (e) {
+                console.warn('[AFL list] background props refresh failed:', e instanceof Error ? e.message : e);
+              }
+            })();
+          }
+        }
+      } else {
+        usedCanonicalGames = false;
+        canonicalError = canonical.error ?? 'Odds API request failed';
+        result = await listAflPlayerPropsFromCache();
+        if (result?.games?.length) {
+          const eligibleGames = filterAflPropsEligibleGames(result.games);
+          result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
+        }
+      }
     }
 
     if (!result || !result.games.length) {
-      void (async () => {
-        try {
-          const r = await refreshAflOddsData({ skipWrite: true });
-          if (!r.success || !r.games?.length) return;
-          const eligibleGames = filterAflPropsEligibleGames(r.games);
-          const pp = await refreshAflPlayerPropsCache(eligibleGames);
-          if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
-        } catch (e) {
-          console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
-        }
-      })();
+      if (hasCronAuth) {
+        void (async () => {
+          try {
+            const r = await refreshAflOddsData({ skipWrite: true });
+            if (!r.success || !r.games?.length) return;
+            const eligibleGames = filterAflPropsEligibleGames(r.games);
+            const pp = await refreshAflPlayerPropsCache(eligibleGames);
+            if (pp.eventsRefreshed > 0 && r.cachePayload) await setAflOddsCache(r.cachePayload);
+          } catch (e) {
+            console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
+          }
+        })();
+      }
       const emptyCache = await getAflOddsCache();
       const noAflOdds = usedCanonicalGames === true;
       const noOddsCopy = AFL_USER_NO_ODDS;
       const staleOrErrorCopy =
         'No AFL games from Odds API right now. If odds should be live, wait for the next cron refresh or run /api/afl/odds/refresh.';
-      const lastUpdated =
-        emptyCache?.lastUpdated ??
-        (canonical.success && canonical.cachePayload ? canonical.cachePayload.lastUpdated : undefined);
-      const nextUpdate =
-        emptyCache?.nextUpdate ??
-        (canonical.success && canonical.cachePayload ? canonical.cachePayload.nextUpdate : undefined);
+      const lastUpdated = emptyCache?.lastUpdated;
+      const nextUpdate = emptyCache?.nextUpdate;
       return NextResponse.json({
         success: true,
         data: [],
@@ -214,7 +226,7 @@ export async function GET(request: Request) {
     let missComputedSync = 0;
     let missComputeAttempted = 0;
     let missComputeBgScheduled = 0;
-    if (!hasCronAuth) {
+    if (!hasCronAuth && (MISS_COMPUTE_SYNC_LIMIT_NO_CRON > 0 || MISS_COMPUTE_BG_LIMIT_NO_CRON > 0)) {
       const missingParams = Array.from(uniqueCacheKeys)
         .filter((k) => !statsByKey.has(k))
         .map((k) => paramsByCacheKey.get(k))
