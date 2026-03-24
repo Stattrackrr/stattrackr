@@ -63,6 +63,11 @@ type AflHistoricalRankSnapshot = {
   snapshotDate: string;
   ranks: Record<string, number>;
 };
+type AflTeamRankingRow = {
+  rank: number | null;
+  team: string;
+  stats: Record<string, number | string | null>;
+};
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
 
 /** Client-safe: normalize name for matching (no fs). "Daicos, Nick" and "Nick Daicos" → same key. */
@@ -304,6 +309,7 @@ export default function AFLPage() {
   const [mainChartStat, setMainChartStat] = useState<string>('');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
+  const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
   useEffect(() => {
     setSupportingStatKind('tog');
@@ -343,6 +349,7 @@ export default function AFLPage() {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
   const [leaguePlayerStats, setLeaguePlayerStats] = useState<AflLeaguePlayerTeamRankRow[] | null>(null);
+  const [aflOpponentTeamAverages, setAflOpponentTeamAverages] = useState<AflTeamRankingRow[] | null>(null);
   const [season] = useState(() => {
     // Use 2026 for AFL fixture (FootyWire ft_match_list?year=2026) and season context
     return 2026;
@@ -408,6 +415,23 @@ export default function AFLPage() {
       })
       .catch(() => {
         if (!cancelled) setLeaguePlayerStats(null);
+      });
+    return () => { cancelled = true; };
+  }, [season]);
+
+  // Load opponent averages (OA) used by Player vs Team right column values/ranks.
+  useEffect(() => {
+    let cancelled = false;
+    const effectiveSeason = Math.min(season, 2026);
+    fetch(`/api/afl/team-rankings?season=${effectiveSeason}&type=oa`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled) return;
+        const teams = Array.isArray(json?.teams) ? (json.teams as AflTeamRankingRow[]) : [];
+        setAflOpponentTeamAverages(teams);
+      })
+      .catch(() => {
+        if (!cancelled) setAflOpponentTeamAverages(null);
       });
     return () => { cancelled = true; };
   }, [season]);
@@ -2003,13 +2027,12 @@ export default function AFLPage() {
     );
   };
 
-  const getOpponentSeasonAvg = (statCode: string): number | null => {
+  const getOpponentTeamStatsRow = (): AflTeamRankingRow | null => {
     const key = playerVsTeamOpponentKey();
-    const metric = ADVANCED_STAT_CODE_TO_DVP_METRIC[statCode] ?? 'disposals';
-    const values = aflFilterDataDvp?.metrics?.[metric]?.teamTotalValues;
-    if (!key || !values) return null;
+    const teams = aflOpponentTeamAverages;
+    if (!key || !teams?.length) return null;
     const normalize = (v: string) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const candidates = Array.from(
+    const targetCandidates = Array.from(
       new Set(
         [
           key,
@@ -2023,67 +2046,64 @@ export default function AFLPage() {
           .flatMap((v) => [v, normalize(v)])
       )
     );
-    let raw: number | undefined;
-    for (const c of candidates) {
-      const v = values[c];
-      if (v != null && Number.isFinite(Number(v))) {
-        raw = Number(v);
-        break;
-      }
+    const targetDisplay = normalize(toOfficialAflTeamDisplayName(key));
+    for (const row of teams) {
+      const rowCandidates = Array.from(
+        new Set(
+          [
+            row.team,
+            normalize(row.team),
+            rosterTeamToInjuryTeam(row.team),
+            opponentToOfficialTeamName(row.team),
+            toOfficialAflTeamDisplayName(row.team),
+            opponentToFootywireTeam(row.team),
+          ]
+            .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+            .flatMap((v) => [v, normalize(v)])
+        )
+      );
+      if (rowCandidates.some((c) => targetCandidates.includes(c))) return row;
+      if (normalize(toOfficialAflTeamDisplayName(row.team)) === targetDisplay) return row;
     }
-    if (!Number.isFinite(raw as number)) {
-      const wanted = normalize(toOfficialAflTeamDisplayName(key));
-      for (const [mapKey, mapVal] of Object.entries(values)) {
-        if (normalize(toOfficialAflTeamDisplayName(mapKey)) === wanted && Number.isFinite(Number(mapVal))) {
-          raw = Number(mapVal);
-          break;
-        }
-      }
-    }
-    const n = Number(raw);
+    return null;
+  };
+
+  const ADVANCED_STAT_CODE_TO_TEAM_RANKING_COLUMN: Record<string, string> = {
+    D: 'D',
+    K: 'K',
+    HB: 'HB',
+    UP: 'UP',
+    CP: 'CP',
+    FF: 'FF',
+    MG: 'MG',
+    G: 'G',
+  };
+
+  const getOpponentSeasonAvg = (statCode: string): number | null => {
+    const row = getOpponentTeamStatsRow();
+    if (!row) return null;
+    const col = ADVANCED_STAT_CODE_TO_TEAM_RANKING_COLUMN[statCode];
+    if (!col) return null;
+    const n = Number(row.stats?.[col]);
     if (!Number.isFinite(n)) return null;
     return Math.round(n * 10) / 10;
   };
 
   const getOpponentSeasonRank = (statCode: string): number | null => {
-    const key = playerVsTeamOpponentKey();
-    const metric = ADVANCED_STAT_CODE_TO_DVP_METRIC[statCode] ?? 'disposals';
-    const ranks = aflFilterDataDvp?.metrics?.[metric]?.teamTotalRanks;
-    if (!key || !ranks) return null;
-    const normalize = (v: string) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-    const candidates = Array.from(
-      new Set(
-        [
-          key,
-          normalize(key),
-          rosterTeamToInjuryTeam(key),
-          opponentToOfficialTeamName(key),
-          toOfficialAflTeamDisplayName(key),
-          opponentToFootywireTeam(key),
-        ]
-          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
-          .flatMap((v) => [v, normalize(v)])
-      )
-    );
-    let rawRank: number | undefined;
-    for (const c of candidates) {
-      const v = ranks[c];
-      if (v != null && Number.isFinite(Number(v))) {
-        rawRank = Number(v);
-        break;
-      }
-    }
-    if (!Number.isFinite(rawRank as number)) {
-      const wanted = normalize(toOfficialAflTeamDisplayName(key));
-      for (const [mapKey, mapVal] of Object.entries(ranks)) {
-        if (normalize(toOfficialAflTeamDisplayName(mapKey)) === wanted && Number.isFinite(Number(mapVal))) {
-          rawRank = Number(mapVal);
-          break;
-        }
-      }
-    }
-    const rank = Number(rawRank);
-    return Number.isFinite(rank) ? rank : null;
+    const row = getOpponentTeamStatsRow();
+    const teams = aflOpponentTeamAverages;
+    if (!row || !teams?.length) return null;
+    const col = ADVANCED_STAT_CODE_TO_TEAM_RANKING_COLUMN[statCode];
+    if (!col) return null;
+    const rowValue = Number(row.stats?.[col]);
+    if (!Number.isFinite(rowValue)) return null;
+    const statValues = teams
+      .map((t) => Number(t.stats?.[col]))
+      .filter((v) => Number.isFinite(v));
+    if (!statValues.length) return null;
+    // Opponent averages: lower value means tougher matchup, so rank ascending.
+    const below = statValues.filter((v) => v < rowValue).length;
+    return below + 1;
   };
 
   const renderOpponentTeamRank = (statCode: string) => {
@@ -2798,24 +2818,41 @@ export default function AFLPage() {
                               filteredTeams.length === 0 ? (
                                 <div className={`px-3 py-4 text-sm ${emptyText}`}>No teams match</div>
                               ) : (
-                                filteredTeams.map((team) => (
-                                  <button
-                                    key={team}
-                                    type="button"
-                                    onClick={() => {
-                                      setAflTeamFilter(team);
-                                      setSearchQuery(team);
-                                      setShowSearchDropdown(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2.5 text-sm border-b border-gray-200 dark:border-gray-600 last:border-0 ${
-                                      isDark
-                                        ? 'hover:bg-[#1e293b] text-gray-100'
-                                        : 'hover:bg-gray-100 text-gray-900'
-                                    }`}
-                                  >
-                                    <span className="font-medium">{team}</span>
-                                  </button>
-                                ))
+                                <div className="grid grid-cols-2 gap-1 p-1.5">
+                                  {filteredTeams.map((team) => (
+                                    <button
+                                      key={team}
+                                      type="button"
+                                      onClick={() => {
+                                        setAflTeamFilter(team);
+                                        setSearchQuery(team);
+                                        setShowSearchDropdown(false);
+                                      }}
+                                      className={`w-full text-left px-1.5 py-1 rounded-md text-xs ${
+                                        isDark
+                                          ? 'hover:bg-[#1e293b] text-gray-100 bg-[#0b2035]'
+                                          : 'hover:bg-gray-100 text-gray-900 bg-gray-50'
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-1.5 min-w-0">
+                                        {resolveTeamLogo(team, logoByTeam) ? (
+                                          <img
+                                            src={resolveTeamLogo(team, logoByTeam) ?? ''}
+                                            alt={team}
+                                            className="w-4 h-4 object-contain rounded-full bg-gray-900/10 flex-shrink-0"
+                                          />
+                                        ) : (
+                                          <span className={`inline-flex w-4 h-4 items-center justify-center rounded-full text-[9px] font-semibold flex-shrink-0 ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}>
+                                            {getTeamAbbrev(team).slice(0, 1)}
+                                          </span>
+                                        )}
+                                        <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-600'}`}>
+                                          {getTeamAbbrev(team)}
+                                        </span>
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
                               )
                             ) : filteredPlayers.length === 0 ? (
                               <div className={`px-3 py-4 text-sm ${emptyText}`}>
@@ -2995,15 +3032,93 @@ export default function AFLPage() {
                         slotRightOfControls={
                           <div className="flex items-center gap-1.5">
                             <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'} whitespace-nowrap`}>Team</span>
-                            <select
-                              value={aflTeamFilter}
-                              onChange={(e) => setAflTeamFilter(e.target.value)}
-                              className={`h-[32px] min-w-[120px] max-w-[160px] rounded-xl border px-2 py-1.5 text-xs font-medium bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500`}
-                            >
-                              {AFL_TEAM_FILTER_OPTIONS.map((team) => (
-                                <option key={team} value={team}>{team}</option>
-                              ))}
-                            </select>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setTeamFilterDropdownOpen((v) => !v)}
+                                className={`h-[32px] min-w-[116px] max-w-[152px] rounded-xl border px-2 py-1 text-xs font-medium bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 flex items-center justify-between gap-1.5`}
+                              >
+                                <span className="flex items-center gap-1.5 min-w-0">
+                                  {aflTeamFilter !== 'All' && resolveTeamLogo(aflTeamFilter, logoByTeam) ? (
+                                    <img
+                                      src={resolveTeamLogo(aflTeamFilter, logoByTeam) ?? ''}
+                                      alt={aflTeamFilter}
+                                      className="w-4 h-4 object-contain rounded-full bg-gray-900/10 flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <span className={`inline-flex w-4 h-4 items-center justify-center rounded-full text-[9px] font-semibold flex-shrink-0 ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}>
+                                      {aflTeamFilter === 'All' ? 'A' : getTeamAbbrev(aflTeamFilter).slice(0, 1)}
+                                    </span>
+                                  )}
+                                  <span className="truncate">
+                                    {aflTeamFilter === 'All' ? 'ALL' : getTeamAbbrev(aflTeamFilter)}
+                                  </span>
+                                </span>
+                                <svg className="w-3 h-3 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                              {teamFilterDropdownOpen && (
+                                <>
+                                  <div className={`absolute right-0 top-full mt-1 z-50 w-52 rounded-lg border shadow-lg ${isDark ? 'bg-[#0f172a] border-gray-600' : 'bg-white border-gray-200'}`}>
+                                    <div className="max-h-56 overflow-y-auto">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAflTeamFilter('All');
+                                          setTeamFilterDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-xs border-b border-gray-200 dark:border-gray-600 ${
+                                          isDark ? 'hover:bg-[#1e293b] text-gray-100' : 'hover:bg-gray-100 text-gray-900'
+                                        }`}
+                                      >
+                                        <span className="flex items-center gap-1.5">
+                                          <span className={`inline-flex w-4 h-4 items-center justify-center rounded-full text-[9px] font-semibold ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}>
+                                            A
+                                          </span>
+                                          <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-600'}`}>
+                                            ALL
+                                          </span>
+                                        </span>
+                                      </button>
+                                      <div className="grid grid-cols-2 gap-1 p-1.5">
+                                        {AFL_TEAM_FILTER_OPTIONS.filter((team) => team !== 'All').map((team) => (
+                                          <button
+                                            key={team}
+                                            type="button"
+                                            onClick={() => {
+                                              setAflTeamFilter(team);
+                                              setTeamFilterDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-1.5 py-1 rounded-md text-xs ${
+                                              isDark ? 'hover:bg-[#1e293b] text-gray-100 bg-[#0b2035]' : 'hover:bg-gray-100 text-gray-900 bg-gray-50'
+                                            }`}
+                                          >
+                                            <span className="flex items-center gap-1.5 min-w-0">
+                                              {resolveTeamLogo(team, logoByTeam) ? (
+                                                <img
+                                                  src={resolveTeamLogo(team, logoByTeam) ?? ''}
+                                                  alt={team}
+                                                  className="w-4 h-4 object-contain rounded-full bg-gray-900/10 flex-shrink-0"
+                                                />
+                                              ) : (
+                                                <span className={`inline-flex w-4 h-4 items-center justify-center rounded-full text-[9px] font-semibold flex-shrink-0 ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}>
+                                                  {getTeamAbbrev(team).slice(0, 1)}
+                                                </span>
+                                              )}
+                                              <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-600'}`}>
+                                                {getTeamAbbrev(team)}
+                                              </span>
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="fixed inset-0 z-40" onClick={() => setTeamFilterDropdownOpen(false)} />
+                                </>
+                              )}
+                            </div>
                           </div>
                         }
                         slotLeftOfLine={aflPropsMode === 'player' ? (

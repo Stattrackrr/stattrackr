@@ -18,6 +18,7 @@ const AFL_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
 const SEASON_OPTIONS = [2026, 2025] as const;
 const DVP_CACHE_TTL = 2 * 60 * 1000;
 const dvpBatchCache = new Map<string, { data: DvpBatchResponse; timestamp: number }>();
+const dvpBatchInFlight = new Map<string, Promise<DvpBatchResponse | null>>();
 
 type DvpBatchResponse = {
   success: boolean;
@@ -207,55 +208,15 @@ export default function AflDvpCard({
       const now = Date.now();
       const skipClientCache = process.env.NODE_ENV === 'development';
       const isFresh = !skipClientCache && cached && (now - cached.timestamp) < DVP_CACHE_TTL;
+      const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
+      const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
 
-      if (isFresh && cached) {
-        const opponents = cached.data.opponents || [];
-        setAllTeams(opponents);
-        const parentOpp = userChangedOpponentRef.current ? null : opponentTeamRef.current?.trim();
-        const parentKey = parentOpp ? findOpponentKey(parentOpp, opponents) : '';
-        // Apply parent's matchup (e.g. Power) as soon as we have the list so we never show Crows/Demons by default
-        if (parentKey && parentKey !== oppSel) setOppSel(parentKey);
-        const fallbackKey = findOpponentKey(targetOpp, opponents);
-        const oppKey = parentKey || fallbackKey;
-        if (!parentKey && oppKey && oppKey !== oppSel) {
-          const isDefaultFirst = !targetOpp && fallbackKey === (opponents[0] || '');
-          if (!isDefaultFirst) setOppSel(oppKey);
-        }
-        const statMap: Record<string, number | null> = {};
-        const rankMap: Record<string, number | null> = {};
-        for (const m of DVP_METRICS) {
-          const metric = cached.data.metrics?.[m.key];
-          const value = metric?.teamTotalValues?.[oppKey];
-          const rank = metric?.teamTotalRanks?.[oppKey];
-          statMap[m.key] = typeof value === 'number' ? value : null;
-          rankMap[m.key] = typeof rank === 'number' ? rank : null;
-        }
-        setPerStat(statMap);
-        setPerRank(rankMap);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
-        const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
-        const res = await fetch(
-          `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}${bust}`
-        );
-        const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
-        if (abort) return;
-        if (!res.ok || !data?.success) {
-          setError(data?.error || 'Unable to load DvP data.');
-          setLoading(false);
-          return;
-        }
-        dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+      const applyFromData = (data: DvpBatchResponse) => {
         const opponents = data.opponents || [];
         setAllTeams(opponents);
         const parentOpp = userChangedOpponentRef.current ? null : opponentTeamRef.current?.trim();
         const parentKey = parentOpp ? findOpponentKey(parentOpp, opponents) : '';
-        // Apply parent's matchup (e.g. Power) as soon as we have the list so we never show Crows/Demons by default
+        // Keep parent matchup aligned unless user manually changed opponent.
         if (parentKey && parentKey !== oppSel) setOppSel(parentKey);
         const fallbackKey = findOpponentKey(targetOpp, opponents);
         const oppKey = parentKey || fallbackKey;
@@ -274,8 +235,48 @@ export default function AflDvpCard({
         }
         setPerStat(statMap);
         setPerRank(rankMap);
+      };
+
+      if (isFresh && cached) {
+        applyFromData(cached.data);
+        setLoading(false);
+        return;
+      }
+
+      // Use stale cache immediately for instant UI, then refresh in background.
+      if (cached?.data) {
+        applyFromData(cached.data);
+      }
+
+      setLoading(true);
+      try {
+        let request = dvpBatchInFlight.get(cacheKey);
+        if (!request) {
+          request = fetch(
+            `/api/afl/dvp/batch?season=${selectedSeason}&position=${targetPos}&stats=${encodeURIComponent(statsCsv)}${bust}`
+          )
+            .then(async (res) => {
+              const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
+              if (!res.ok || !data?.success) return null;
+              return data as DvpBatchResponse;
+            })
+            .catch(() => null)
+            .finally(() => {
+              dvpBatchInFlight.delete(cacheKey);
+            });
+          dvpBatchInFlight.set(cacheKey, request);
+        }
+        const data = await request;
+        if (abort) return;
+        if (!data?.success) {
+          if (!cached?.data) setError('Unable to load DvP data.');
+          setLoading(false);
+          return;
+        }
+        dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+        applyFromData(data);
       } catch {
-        if (!abort) setError('Unable to load DvP data.');
+        if (!abort && !cached?.data) setError('Unable to load DvP data.');
       } finally {
         if (!abort) setLoading(false);
       }
@@ -283,6 +284,42 @@ export default function AflDvpCard({
     run();
     return () => { abort = true; };
   }, [oppSel, posSel, opponentTeam, selectedSeason]);
+
+  // Warm all positions in the background so switching position feels instant.
+  useEffect(() => {
+    let cancelled = false;
+    const skipClientCache = process.env.NODE_ENV === 'development';
+    const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
+    const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
+
+    const warm = async (position: (typeof AFL_POSITIONS)[number]) => {
+      const cacheKey = `${selectedSeason}:${position}`;
+      const cached = dvpBatchCache.get(cacheKey);
+      const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
+      if (isFresh || dvpBatchInFlight.has(cacheKey)) return;
+      const request = fetch(
+        `/api/afl/dvp/batch?season=${selectedSeason}&position=${position}&stats=${encodeURIComponent(statsCsv)}${bust}`
+      )
+        .then(async (res) => {
+          const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
+          if (!res.ok || !data?.success) return null;
+          return data as DvpBatchResponse;
+        })
+        .catch(() => null)
+        .finally(() => {
+          dvpBatchInFlight.delete(cacheKey);
+        });
+      dvpBatchInFlight.set(cacheKey, request);
+      const data = await request;
+      if (cancelled || !data?.success) return;
+      dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+    };
+
+    AFL_POSITIONS.forEach((p) => {
+      void warm(p);
+    });
+    return () => { cancelled = true; };
+  }, [selectedSeason]);
 
   const posLabel = posSel || 'Select Position';
   const teamCount = allTeams.length || 18;

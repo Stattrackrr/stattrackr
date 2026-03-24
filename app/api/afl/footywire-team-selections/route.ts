@@ -702,6 +702,99 @@ function parseInsOuts(html: string): { ins: { home: string[]; away: string[] }; 
   return { ins, outs };
 }
 
+type SideLists = {
+  interchange: string[];
+  emergencies: string[];
+  ins: string[];
+  outs: string[];
+};
+
+function uniqueKeepOrder(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of items) {
+    const n = item.trim();
+    if (!n) continue;
+    const k = n.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(n);
+  }
+  return out;
+}
+
+/** Parse one sidebar (single-team column) that contains Interchange / Emergencies / Ins / Outs. */
+function parseSideListColumn(sideHtml: string): SideLists {
+  const out: SideLists = { interchange: [], emergencies: [], ins: [], outs: [] };
+  const tables = extractTopLevelAndNestedTables(sideHtml);
+  const sources = tables.length > 0 ? tables : [sideHtml];
+
+  for (const src of sources) {
+    const rows = getTableRows(src);
+    let section: keyof SideLists | null = null;
+    for (const row of rows) {
+      if (row.length < 1) continue;
+      const cell = row[0] ?? '';
+      const label = htmlToText(cell).trim().toLowerCase().replace(/[:\s]+$/, '');
+      if (!label) continue;
+      if (label.includes('interchange')) {
+        section = 'interchange';
+        continue;
+      }
+      if (label.includes('emergenc')) {
+        section = 'emergencies';
+        continue;
+      }
+      if (label === 'ins' || label === 'in' || (label.startsWith('ins') && label.length <= 5)) {
+        section = 'ins';
+        continue;
+      }
+      if (label === 'outs' || label === 'out' || (label.startsWith('outs') && label.length <= 6)) {
+        section = 'outs';
+        continue;
+      }
+      if (!section) continue;
+      out[section].push(...cellToPlayerNames(cell));
+    }
+  }
+
+  return {
+    interchange: uniqueKeepOrder(out.interchange),
+    emergencies: uniqueKeepOrder(out.emergencies),
+    ins: uniqueKeepOrder(out.ins),
+    outs: uniqueKeepOrder(out.outs),
+  };
+}
+
+/**
+ * Parse left/right match sidebars directly.
+ * FootyWire often uses one single-team table per side (not a two-column combined table).
+ */
+function parseSideListsFromSegment(segmentHtml: string): {
+  interchange: { home: string[]; away: string[] };
+  emergencies: { home: string[]; away: string[] };
+  ins: { home: string[]; away: string[] };
+  outs: { home: string[]; away: string[] };
+} | null {
+  const sideBlocks: string[] = [];
+  const sideColRegex =
+    /<td[^>]*width\s*=\s*["']?18%["']?[^>]*>\s*(<table[\s\S]*?<\/table>)\s*<\/td>/gi;
+  let m: RegExpExecArray | null = null;
+  while ((m = sideColRegex.exec(segmentHtml)) !== null) {
+    sideBlocks.push(m[1]);
+  }
+  if (sideBlocks.length < 2) return null;
+
+  const left = parseSideListColumn(sideBlocks[0]);
+  const right = parseSideListColumn(sideBlocks[1]);
+  return {
+    interchange: { home: left.interchange, away: right.interchange },
+    emergencies: { home: left.emergencies, away: right.emergencies },
+    ins: { home: left.ins, away: right.ins },
+    outs: { home: left.outs, away: right.outs },
+  };
+}
+
 /** Parse interchange/emergencies by table columns: column 0 = home, column 1 = away (not "split list in half"). */
 function parseInterchangeEmergencies(html: string): {
   interchange: { home: string[]; away: string[] };
@@ -984,19 +1077,41 @@ function parseOneMatch(segmentHtml: string): TeamSelectionsResponse {
       }
     }
   }
-  const { interchange, emergencies } = parseInterchangeEmergencies(mainHtml);
+  const sideLists = parseSideListsFromSegment(segmentHtml);
+  let interchange = sideLists?.interchange ?? { home: [] as string[], away: [] as string[] };
+  let emergencies = sideLists?.emergencies ?? { home: [] as string[], away: [] as string[] };
+  let ins = sideLists?.ins ?? { home: [] as string[], away: [] as string[] };
+  let outs = sideLists?.outs ?? { home: [] as string[], away: [] as string[] };
+
+  if (interchange.home.length === 0 && interchange.away.length === 0) {
+    const parsed = parseInterchangeEmergencies(mainHtml);
+    interchange = parsed.interchange;
+    emergencies = parsed.emergencies;
+  }
   if (interchange.home.length === 0 && interchange.away.length === 0) {
     const fallback = parseInterchangeEmergencies(segmentHtml);
     interchange.home = fallback.interchange.home;
     interchange.away = fallback.interchange.away;
+    if (emergencies.home.length === 0 && emergencies.away.length === 0) {
+      emergencies.home = fallback.emergencies.home;
+      emergencies.away = fallback.emergencies.away;
+    }
   }
-  let { ins, outs } = parseInsOuts(mainHtml);
+  if (emergencies.home.length === 0 && emergencies.away.length === 0) {
+    const parsed = parseInterchangeEmergencies(mainHtml);
+    emergencies = parsed.emergencies;
+  }
+  if (ins.home.length === 0 && ins.away.length === 0 && outs.home.length === 0 && outs.away.length === 0) {
+    const parsedInsOuts = parseInsOuts(mainHtml);
+    ins = parsedInsOuts.ins;
+    outs = parsedInsOuts.outs;
+  }
   if (ins.home.length === 0 && ins.away.length === 0 && outs.home.length === 0 && outs.away.length === 0) {
     const fallbackInsOuts = parseInsOuts(segmentHtml);
     ins = fallbackInsOuts.ins;
     outs = fallbackInsOuts.outs;
   }
-  // Exclude from emergencies: (1) anyone in ins/outs, (2) anyone already in the main lineup (positions or interchange).
+  // Exclude from emergencies: anyone already in the main lineup (positions or interchange).
   // Match by normalized name or "one contains the other" so "J Rogers" matches "R J Rogers".
   const normalizeForDedup = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
   const nameMatchesList = (name: string, list: string[]): boolean => {
@@ -1016,12 +1131,10 @@ function parseOneMatch(segmentHtml: string): TeamSelectionsResponse {
   }
   const emergenciesFiltered = {
     home: emergencies.home.filter(
-      (name) =>
-        !nameMatchesList(name, [...ins.home, ...outs.home]) && !nameMatchesList(name, allLineupHome)
+      (name) => !nameMatchesList(name, allLineupHome)
     ),
     away: emergencies.away.filter(
-      (name) =>
-        !nameMatchesList(name, [...ins.away, ...outs.away]) && !nameMatchesList(name, allLineupAway)
+      (name) => !nameMatchesList(name, allLineupAway)
     ),
   };
   // If we didn't parse Ins from the page, infer ins from players we removed from emergencies because they're in the lineup (so they show in Ins & Outs)
