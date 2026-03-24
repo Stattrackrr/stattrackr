@@ -3853,20 +3853,49 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const aflPortraitFetchedRef = useRef<Set<string>>(new Set());
   /** True while current page has AFL names still awaiting /api/afl/player-portraits (avoids jersey # flash). */
   const [aflPortraitBatchLoading, setAflPortraitBatchLoading] = useState(false);
+  const AFL_PORTRAIT_RESOLVER_VERSION = '8';
+  const AFL_PORTRAIT_VERSION_KEY = 'st_afl_portrait_resolver_v';
+  const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v8';
+  const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
 
   useEffect(() => {
     try {
-      const k = 'st_afl_portrait_resolver_v';
-      const v = '7';
-      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(k) !== v) {
-        sessionStorage.setItem(k, v);
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AFL_PORTRAIT_VERSION_KEY) !== AFL_PORTRAIT_RESOLVER_VERSION) {
+        sessionStorage.setItem(AFL_PORTRAIT_VERSION_KEY, AFL_PORTRAIT_RESOLVER_VERSION);
+        sessionStorage.removeItem(AFL_PORTRAIT_EXTRAS_KEY);
         aflPortraitFetchedRef.current = new Set();
         setAflPortraitExtras({});
+        return;
+      }
+
+      const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AFL_PORTRAIT_EXTRAS_KEY) : null;
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      if (!parsed || typeof parsed !== 'object') return;
+      const next: Record<string, string> = {};
+      for (const [name, url] of Object.entries(parsed)) {
+        if (typeof name !== 'string' || !name.trim()) continue;
+        if (typeof url !== 'string' || !url.trim()) continue;
+        next[name] = url;
+      }
+      if (Object.keys(next).length > 0) {
+        setAflPortraitExtras(next);
+        aflPortraitFetchedRef.current = new Set(Object.keys(next));
       }
     } catch {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof sessionStorage === 'undefined') return;
+      if (Object.keys(aflPortraitExtras).length === 0) return;
+      sessionStorage.setItem(AFL_PORTRAIT_EXTRAS_KEY, JSON.stringify(aflPortraitExtras));
+    } catch {
+      /* ignore */
+    }
+  }, [aflPortraitExtras]);
 
   const aflPortraitFetchKey = useMemo(() => {
     if (propsSport !== 'afl' && propsSport !== 'combined') return '';
@@ -3933,35 +3962,42 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       return;
     }
     let cancelled = false;
-    fetch('/api/afl/player-portraits', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ players }),
-    })
-      .then((r) => r.json())
-      .then((data: { portraits?: Record<string, string | null> }) => {
-        if (cancelled) return;
-        const portraits = data.portraits ?? {};
-        for (const p of players) {
-          aflPortraitFetchedRef.current.add(p.name);
-        }
-        setAflPortraitExtras((prev) => {
-          const next = { ...prev };
-          for (const [name, url] of Object.entries(portraits)) {
-            if (url) next[name] = url;
+    const chunks: Array<{ name: string; team?: string; homeTeam?: string; awayTeam?: string }[]> = [];
+    for (let i = 0; i < players.length; i += AFL_PORTRAIT_FETCH_BATCH_SIZE) {
+      chunks.push(players.slice(i, i + AFL_PORTRAIT_FETCH_BATCH_SIZE));
+    }
+
+    void Promise.all(
+      chunks.map(async (batch) => {
+        try {
+          const r = await fetch('/api/afl/player-portraits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ players: batch }),
+          });
+          const data = (await r.json()) as { portraits?: Record<string, string | null> };
+          if (cancelled) return;
+          const portraits = data.portraits ?? {};
+          for (const p of batch) {
+            aflPortraitFetchedRef.current.add(p.name);
           }
-          return next;
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        for (const p of players) {
-          aflPortraitFetchedRef.current.add(p.name);
+          setAflPortraitExtras((prev) => {
+            const next = { ...prev };
+            for (const [name, url] of Object.entries(portraits)) {
+              if (url) next[name] = url;
+            }
+            return next;
+          });
+        } catch {
+          if (cancelled) return;
+          for (const p of batch) {
+            aflPortraitFetchedRef.current.add(p.name);
+          }
         }
       })
-      .finally(() => {
-        if (!cancelled) setAflPortraitBatchLoading(false);
-      });
+    ).finally(() => {
+      if (!cancelled) setAflPortraitBatchLoading(false);
+    });
     return () => {
       cancelled = true;
     };

@@ -3,6 +3,7 @@ import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
 import { fetchClubSitePortraitUrl } from '@/lib/aflClubPlayerPortrait';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import sharedCache from '@/lib/sharedCache';
 
 export const runtime = 'nodejs';
 
@@ -11,6 +12,8 @@ const MAX_PLAYERS = 48;
 const clubCache = new Map<string, { url: string | null; expiresAt: number }>();
 const CLUB_HIT_TTL_MS = 24 * 60 * 60 * 1000;
 const CLUB_MISS_TTL_MS = 25 * 60 * 1000;
+const CLUB_HIT_TTL_SECONDS = 24 * 60 * 60;
+const CLUB_MISS_TTL_SECONDS = 25 * 60;
 
 /** Bump when club URL shape changes (e.g. prefer ChampID over photo-resources) so stale CDN URLs are not reused. */
 const CLUB_PORTRAIT_CACHE_SCHEMA = 2;
@@ -41,9 +44,21 @@ async function clubPortraitCached(name: string, teamCandidate: string): Promise<
   const hit = clubCache.get(ck);
   if (hit && hit.expiresAt > Date.now()) return hit.url;
 
+  const shared = await sharedCache.getJSON<{ hasValue: true; url: string | null }>(`afl_portrait_v1:${ck}`);
+  if (shared?.hasValue === true) {
+    const ttl = shared.url ? CLUB_HIT_TTL_MS : CLUB_MISS_TTL_MS;
+    clubCache.set(ck, { url: shared.url, expiresAt: Date.now() + ttl });
+    return shared.url;
+  }
+
   const url = await fetchClubSitePortraitUrl(name, teamCandidate);
   const ttl = url ? CLUB_HIT_TTL_MS : CLUB_MISS_TTL_MS;
   clubCache.set(ck, { url, expiresAt: Date.now() + ttl });
+  await sharedCache.setJSON(
+    `afl_portrait_v1:${ck}`,
+    { hasValue: true as const, url },
+    url ? CLUB_HIT_TTL_SECONDS : CLUB_MISS_TTL_SECONDS
+  );
   return url;
 }
 

@@ -8,6 +8,7 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 const FETCH_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 StatTrackr/1';
+const FETCH_TIMEOUT_MS = 8000;
 
 /** NMFC lists players under `/teams/afl/players`; `/teams/afl/squad` 404s on some tenants. */
 const SQUAD_PATHS = ['/teams/afl', '/teams/afl/squad', '/teams/afl/players'] as const;
@@ -82,7 +83,7 @@ async function fetchText(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': FETCH_UA, Accept: 'text/html,application/xhtml+xml' },
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       cache: 'no-store',
     });
     if (!res.ok) return null;

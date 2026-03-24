@@ -170,6 +170,12 @@ const RELEVANT_MARKET_KEYS = new Set([
   'player_goal_scorer_anytime',
   'player_goals_scored_over',
 ]);
+const EVENT_FETCH_MAX_ATTEMPTS = 3;
+const EVENT_FETCH_RETRY_DELAY_MS = 400;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Collect all unique player names from outcomes (description or name) in the 4 markets. */
 function collectPlayerNames(bookmakers: OddsApiBookmaker[]): Set<string> {
@@ -285,34 +291,46 @@ export async function refreshAflPlayerPropsCache(
 
   const results = await Promise.all(
     games.map(async (game) => {
-      try {
-        const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
-        const res = await fetch(url, { next: { revalidate: 0 } });
-        if (!res.ok) {
+      const url = `${ODDS_API_BASE}/sports/${AFL_SPORT}/events/${game.gameId}/odds?regions=au&oddsFormat=american&markets=${encodeURIComponent(marketsParam)}&apiKey=${apiKeyEnc}`;
+      for (let attempt = 1; attempt <= EVENT_FETCH_MAX_ATTEMPTS; attempt++) {
+        try {
+          const res = await fetch(url, { next: { revalidate: 0 } });
+          if (!res.ok) {
+            if (attempt < EVENT_FETCH_MAX_ATTEMPTS) {
+              await delay(EVENT_FETCH_RETRY_DELAY_MS * attempt);
+              continue;
+            }
+            return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
+          }
+
+          const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
+          const bookmakers = data?.bookmakers ?? [];
+          if (!bookmakers.length) {
+            return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
+          }
+
+          const eventCache = buildEventCacheFromBookmakers(bookmakers);
+          const names = Object.keys(eventCache);
+          if (names.length === 0) {
+            return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
+          }
+          return {
+            gameId: game.gameId,
+            events: 1 as const,
+            players: names.length,
+            names: names.map((n) => toDisplayName(n)),
+            eventCache,
+            httpOk: true,
+          };
+        } catch {
+          if (attempt < EVENT_FETCH_MAX_ATTEMPTS) {
+            await delay(EVENT_FETCH_RETRY_DELAY_MS * attempt);
+            continue;
+          }
           return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
         }
-        const data = (await res.json()) as { bookmakers?: OddsApiBookmaker[] };
-        const bookmakers = data?.bookmakers ?? [];
-        if (!bookmakers.length) {
-          return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
-        }
-
-        const eventCache = buildEventCacheFromBookmakers(bookmakers);
-        const names = Object.keys(eventCache);
-        if (names.length === 0) {
-          return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: true };
-        }
-        return {
-          gameId: game.gameId,
-          events: 1 as const,
-          players: names.length,
-          names: names.map((n) => toDisplayName(n)),
-          eventCache,
-          httpOk: true,
-        };
-      } catch {
-        return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
       }
+      return { gameId: game.gameId, events: 0, players: 0, names: [] as string[], httpOk: false };
     })
   );
 
@@ -320,6 +338,7 @@ export async function refreshAflPlayerPropsCache(
   let playersWithProps = 0;
   const playerNames: string[] = [];
   const failedGameIds: string[] = [];
+  const httpFailedGameIds: string[] = [];
   const successfulResults = results.filter((r) => r.events === 1 && r.eventCache) as Array<{
     gameId: string;
     events: number;
@@ -331,6 +350,7 @@ export async function refreshAflPlayerPropsCache(
   for (const r of results) {
     if (r.events === 0) {
       failedGameIds.push(r.gameId);
+      if (r.httpOk === false) httpFailedGameIds.push(r.gameId);
       continue;
     }
     eventsRefreshed += r.events;
@@ -370,7 +390,7 @@ export async function refreshAflPlayerPropsCache(
     };
   }
 
-  if (requireAllGames && eventsRefreshed < eventsAttempted) {
+  if (requireAllGames && httpFailedGameIds.length > 0) {
     return {
       success: false,
       eventsRefreshed,
@@ -378,9 +398,9 @@ export async function refreshAflPlayerPropsCache(
       eventsFailed,
       playersWithProps,
       playerNames,
-      failedGameIds,
+      failedGameIds: httpFailedGameIds,
       keysCleared,
-      error: `Partial AFL props refresh: ${eventsRefreshed}/${eventsAttempted} events updated`,
+      error: `AFL props refresh had HTTP failures for ${httpFailedGameIds.length}/${eventsAttempted} events`,
     };
   }
 
