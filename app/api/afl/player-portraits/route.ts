@@ -3,11 +3,13 @@ import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
 import { fetchClubSitePortraitUrl } from '@/lib/aflClubPlayerPortrait';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import { getAflHeadshotsSeason, getAflSeasonHeadshotUrl, isAflSeasonHeadshotKnownMissing } from '@/lib/aflSeasonHeadshots';
 import sharedCache from '@/lib/sharedCache';
 
 export const runtime = 'nodejs';
 
 const MAX_PLAYERS = 48;
+const HEADSHOT_SEASON = getAflHeadshotsSeason();
 
 const clubCache = new Map<string, { url: string | null; expiresAt: number }>();
 const CLUB_HIT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -16,7 +18,7 @@ const CLUB_HIT_TTL_SECONDS = 24 * 60 * 60;
 const CLUB_MISS_TTL_SECONDS = 25 * 60;
 
 /** Bump when club URL shape changes (e.g. prefer ChampID over photo-resources) so stale CDN URLs are not reused. */
-const CLUB_PORTRAIT_CACHE_SCHEMA = 2;
+const CLUB_PORTRAIT_CACHE_SCHEMA = 3;
 
 function clubCacheKey(playerName: string, teamCandidate: string) {
   const team = toOfficialAflTeamDisplayName(teamCandidate.trim());
@@ -105,6 +107,15 @@ export async function POST(request: Request) {
       const manual = getAflPlayerHeadshotUrl(name);
       if (manual) {
         portraits[name] = manual;
+        return;
+      }
+      const seasonFile = getAflSeasonHeadshotUrl(name, HEADSHOT_SEASON);
+      if (seasonFile) {
+        portraits[name] = seasonFile;
+        return;
+      }
+      if (isAflSeasonHeadshotKnownMissing(name, HEADSHOT_SEASON)) {
+        portraits[name] = null;
         return;
       }
 

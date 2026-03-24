@@ -54,6 +54,11 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=512'
 
+      # Prefetch AFL player headshots for props page avatars (yearly cache file committed below).
+      - name: Prefetch AFL player headshots (2026)
+        run: |
+          npm run prefetch:afl:headshots -- --season=2026 --concurrency=10
+
       # Opponent Breakdown: team rankings (OA/TA) — 2026 + 2025 (single workflow)
       - name: Fetch team rankings (Opponent Breakdown) 2026 + 2025
         run: |
@@ -104,14 +109,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
+          git add data/afl-player-headshots-2026.json 2>/dev/null || true
           git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
-          for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json; do
+          for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json data/afl-player-headshots-*.json; do
             [ -f "$f" ] && git add "$f"
           done
           if git diff --staged --quiet; then
             echo "No changes to AFL data files"
           else
-            git commit -m "chore(data): update AFL 2026 league stats and team rankings [skip ci]"
+            git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
             git push
           fi
 

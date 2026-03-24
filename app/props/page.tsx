@@ -3851,12 +3851,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   /** Club-site portraits for AFL props; bump version to invalidate client after resolver changes. */
   const [aflPortraitExtras, setAflPortraitExtras] = useState<Record<string, string>>({});
   const aflPortraitFetchedRef = useRef<Set<string>>(new Set());
+  const aflPortraitMissUntilRef = useRef<Map<string, number>>(new Map());
   /** True while current page has AFL names still awaiting /api/afl/player-portraits (avoids jersey # flash). */
   const [aflPortraitBatchLoading, setAflPortraitBatchLoading] = useState(false);
-  const AFL_PORTRAIT_RESOLVER_VERSION = '8';
+  const AFL_PORTRAIT_RESOLVER_VERSION = '9';
   const AFL_PORTRAIT_VERSION_KEY = 'st_afl_portrait_resolver_v';
-  const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v8';
+  const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v9';
   const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
+  const AFL_PORTRAIT_RETRY_DELAY_MS = 2 * 60 * 1000;
 
   useEffect(() => {
     try {
@@ -3864,6 +3866,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         sessionStorage.setItem(AFL_PORTRAIT_VERSION_KEY, AFL_PORTRAIT_RESOLVER_VERSION);
         sessionStorage.removeItem(AFL_PORTRAIT_EXTRAS_KEY);
         aflPortraitFetchedRef.current = new Set();
+        aflPortraitMissUntilRef.current = new Map();
         setAflPortraitExtras({});
         return;
       }
@@ -3881,6 +3884,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       if (Object.keys(next).length > 0) {
         setAflPortraitExtras(next);
         aflPortraitFetchedRef.current = new Set(Object.keys(next));
+        aflPortraitMissUntilRef.current = new Map();
       }
     } catch {
       /* ignore */
@@ -3926,6 +3930,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       const n = prop.playerName;
       if (!n || pending.has(n)) continue;
       if (aflPortraitFetchedRef.current.has(n)) continue;
+      const missUntil = aflPortraitMissUntilRef.current.get(n) ?? 0;
+      if (missUntil > Date.now()) continue;
       if (getAflPlayerHeadshotUrl(n)) continue;
       pending.add(n);
     }
@@ -3946,6 +3952,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       if (!n || seen.has(n)) continue;
       seen.add(n);
       if (aflPortraitFetchedRef.current.has(n)) continue;
+      const missUntil = aflPortraitMissUntilRef.current.get(n) ?? 0;
+      if (missUntil > Date.now()) continue;
       if (getAflPlayerHeadshotUrl(n)) {
         aflPortraitFetchedRef.current.add(n);
         continue;
@@ -3979,7 +3987,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           if (cancelled) return;
           const portraits = data.portraits ?? {};
           for (const p of batch) {
-            aflPortraitFetchedRef.current.add(p.name);
+            const resolvedUrl = portraits[p.name];
+            if (resolvedUrl) {
+              aflPortraitFetchedRef.current.add(p.name);
+              aflPortraitMissUntilRef.current.delete(p.name);
+            } else {
+              aflPortraitMissUntilRef.current.set(p.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
+            }
           }
           setAflPortraitExtras((prev) => {
             const next = { ...prev };
@@ -3991,7 +4005,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         } catch {
           if (cancelled) return;
           for (const p of batch) {
-            aflPortraitFetchedRef.current.add(p.name);
+            aflPortraitMissUntilRef.current.set(p.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
           }
         }
       })
@@ -6103,11 +6117,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         <div className="text-sm font-semibold text-white leading-tight">
                                           #{displayProp.dvpRating}
                                         </div>
-                                        {displayProp.dvpStatValue !== null && displayProp.dvpStatValue !== undefined && (
-                                          <div className="text-xs font-medium text-white leading-tight">
-                                            {displayProp.dvpStatValue.toFixed(1)}
-                                          </div>
-                                        )}
                                       </div>
                                     </div>
                                   ) : propsSport === 'afl' ? (

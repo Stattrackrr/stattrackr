@@ -13,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /** List revalidates against The Odds API every request; avoid CDN/browser serving ended matchups as current. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
+const MISS_COMPUTE_LIMIT_NO_CRON = 60;
+const MISS_COMPUTE_CONCURRENCY = 6;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
@@ -206,6 +208,64 @@ export async function GET(request: Request) {
         }
       })
     );
+    // Self-heal path: if non-cron request still has cache misses (e.g. line moved since last warm),
+    // compute a bounded number of missing keys so top rows stop showing N/A.
+    let missComputed = 0;
+    let missComputeAttempted = 0;
+    if (!hasCronAuth) {
+      const missingParams = Array.from(uniqueCacheKeys)
+        .filter((k) => !statsByKey.has(k))
+        .map((k) => paramsByCacheKey.get(k))
+        .filter((v): v is { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number } => Boolean(v))
+        .slice(0, MISS_COMPUTE_LIMIT_NO_CRON);
+      missComputeAttempted = missingParams.length;
+      for (let i = 0; i < missingParams.length; i += MISS_COMPUTE_CONCURRENCY) {
+        const batch = missingParams.slice(i, i + MISS_COMPUTE_CONCURRENCY);
+        await Promise.all(
+          batch.map(async (p) => {
+            const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
+            let stats = await getAflPropStats(
+              p.playerName,
+              p.homeTeam,
+              p.awayTeam,
+              p.statType,
+              p.line,
+              baseUrl,
+              null,
+              false,
+              undefined,
+              resolvedTeam
+            );
+            if (!stats) {
+              stats = await getAflPropStats(
+                p.playerName,
+                p.awayTeam,
+                p.homeTeam,
+                p.statType,
+                p.line,
+                baseUrl,
+                null,
+                false,
+                undefined,
+                resolvedTeam
+              );
+            }
+            if (!stats) return;
+            missComputed++;
+            const key = getAflPropStatsCacheKey(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line);
+            const keyReverse = getAflPropStatsCacheKey(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line);
+            statsByKey.set(key, stats);
+            if (keyReverse !== key) statsByKey.set(keyReverse, stats);
+          })
+        );
+      }
+      if (missComputeAttempted > 0) {
+        console.log('[AFL list] miss-compute fallback', {
+          attempted: missComputeAttempted,
+          computed: missComputed,
+        });
+      }
+    }
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
     // Always override DvP from position-aware lookup so matchup rank matches dashboard.
     const dvpMapsForOverride = await loadDvpMapsFromFiles(DVP_MATCHUP_SEASON);
@@ -233,8 +293,10 @@ export async function GET(request: Request) {
             : r.awayTeam;
       const position = positionMapForOverride.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? undefined;
       const dvpLookupResult = getDvpOverride(opponent, r.statType, position);
-      const dvpRating = dvpLookupResult?.rank ?? stats?.dvpRating ?? null;
-      const dvpStatValue = dvpLookupResult?.value ?? stats?.dvpStatValue ?? null;
+      // Always use the live position-aware team-total DvP lookup (dashboard source of truth).
+      // Never fall back to cached prop-level DvP values, which can be stale after mapping changes.
+      const dvpRating = dvpLookupResult?.rank ?? null;
+      const dvpStatValue = dvpLookupResult?.value ?? null;
       const baseRow = {
         ...r,
         playerTeam: playerTeam ?? undefined,
@@ -344,6 +406,8 @@ export async function GET(request: Request) {
         uniqueCacheKeys: uniqueCacheKeys.size,
         cacheHits,
         cacheMisses,
+        missComputeAttempted: !hasCronAuth ? missComputeAttempted : undefined,
+        missComputed: !hasCronAuth ? missComputed : undefined,
         rowsWithStats: rowsWithStats.length,
         rowsNa: rowsNa.length,
         totalRows: rows.length,
