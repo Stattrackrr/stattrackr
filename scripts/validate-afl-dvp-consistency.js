@@ -118,6 +118,16 @@ async function getJson(url) {
   return res.json();
 }
 
+async function getJsonOptional(url, label) {
+  try {
+    return await getJson(url);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[warn] optional ${label} failed: ${message}`);
+    return null;
+  }
+}
+
 function buildPositionIndex(players) {
   const byExact = new Map();
   const byInitialSurnameTeam = new Map();
@@ -183,13 +193,13 @@ function findValueByTeam(values, teamName) {
 }
 
 async function validateOnce(baseUrl, season) {
-  const [listJson, fantasyJson, batchDEF, batchMID, batchFWD, batchRUC] = await Promise.all([
+  const [listJson, batchDEF, batchMID, batchFWD, batchRUC, fantasyJson] = await Promise.all([
     getJson(`${baseUrl}/api/afl/player-props/list?debugStats=1`),
-    getJson(`${baseUrl}/api/afl/fantasy-positions?season=${season}`),
     getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=DEF&stats=disposals,goals`),
     getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=MID&stats=disposals,goals`),
     getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=FWD&stats=disposals,goals`),
     getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=RUC&stats=disposals,goals`),
+    getJsonOptional(`${baseUrl}/api/afl/fantasy-positions?season=${season}`, 'fantasy-positions'),
   ]);
 
   const rows = Array.isArray(listJson?.data) ? listJson.data : [];
@@ -210,10 +220,24 @@ async function validateOnce(baseUrl, season) {
     const playerTeamRaw = String(row?.playerTeam || '');
     const home = String(row?.homeTeam || '');
     const away = String(row?.awayTeam || '');
+    const debugOpponentRaw = String(row?._dvpOpponent || '');
+    const debugOpponent = debugOpponentRaw.trim();
     const listedRank = Number(row?.dvpRating);
     if (!Number.isFinite(listedRank)) continue;
+    let playerTeamInferredFromDebug = '';
+    if (debugOpponent) {
+      const debugOppKey = canonicalTeamKey(debugOpponent);
+      const homeKey = canonicalTeamKey(home);
+      const awayKey = canonicalTeamKey(away);
+      if (debugOppKey && homeKey && awayKey) {
+        if (debugOppKey === homeKey) playerTeamInferredFromDebug = awayKey;
+        else if (debugOppKey === awayKey) playerTeamInferredFromDebug = homeKey;
+      }
+    }
     const playerTeam = playerTeamRaw.trim()
       ? canonicalTeamKey(playerTeamRaw)
+      : playerTeamInferredFromDebug
+        ? playerTeamInferredFromDebug
       : resolvePlayerTeam(player, home, away, posIndex);
     if (!playerTeam) {
       unresolvedTeam += 1;
@@ -237,10 +261,11 @@ async function validateOnce(baseUrl, season) {
       unresolved.push({ player, team: playerTeam, fallback: 'MID' });
     }
 
-    const opponent =
+    const opponent = debugOpponent || (
       playerTeam === canonicalTeamKey(home) ? away :
       playerTeam === canonicalTeamKey(away) ? home :
-      away;
+      away
+    );
 
     const metric = statType === 'goals_over' ? 'goals' : 'disposals';
     const payload = byPos[position] || byPos.MID;
