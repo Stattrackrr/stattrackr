@@ -298,7 +298,6 @@ const SESSION_STORAGE_MAX_SIZE = 4 * 1024 * 1024; // 4MB (conservative limit, mo
 const BATCH_DELAY_MS = 500;
 const ODDS_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
-const AFL_POPUP_DISMISSED_KEY = 'afl_launch_popup_dismissed_v1';
 const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
 const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   WSH: 'WAS',
@@ -310,7 +309,6 @@ const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   BRK: 'BKN',
   NY: 'NYK',
 };
-const AFL_NOTIFICATION_ID = 'afl-launch-update-2026';
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v2';
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
 const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
@@ -546,7 +544,6 @@ export default function NBALandingPage() {
   useEffect(() => {
     if (propsSport !== 'afl') userModifiedAflGamesRef.current = false;
   }, [propsSport]);
-  const [showAflComingSoonPopup, setShowAflComingSoonPopup] = useState(false);
 
   // Find player (not in props / no odds) modal: bottom-right on mobile, top-right on desktop
   const [findPlayerOpen, setFindPlayerOpen] = useState(false);
@@ -557,36 +554,15 @@ export default function NBALandingPage() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
-  const dismissAflComingSoonPopup = useCallback(() => {
-    setShowAflComingSoonPopup(false);
-    try {
-      localStorage.setItem(AFL_POPUP_DISMISSED_KEY, '1');
-      const existingRaw = localStorage.getItem(NOTIFICATION_STORAGE_KEY);
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      const hasAflNotification = Array.isArray(existing) && existing.some((n: any) => n?.id === AFL_NOTIFICATION_ID);
-      if (!hasAflNotification) {
-        const aflNotification = {
-          id: AFL_NOTIFICATION_ID,
-          title: 'AFL Launch Update',
-          content: 'AFL is launching soon and will be live before the season begins. We are building the most advanced AFL props and analytics experience on the market.',
-          date: new Date().toISOString(),
-          read: false,
-        };
-        const next = Array.isArray(existing) ? [aflNotification, ...existing] : [aflNotification];
-        localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(next));
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
-
   useEffect(() => {
     setMounted(true);
     try {
-      const dismissed = localStorage.getItem(AFL_POPUP_DISMISSED_KEY) === '1';
-      setShowAflComingSoonPopup(!dismissed);
+      // Notifications are disabled globally; clear any legacy entries.
+      localStorage.removeItem(NOTIFICATION_STORAGE_KEY);
+      localStorage.removeItem('stattrackr-popup-shown');
+      localStorage.removeItem('afl_launch_popup_dismissed_v1');
     } catch {
-      setShowAflComingSoonPopup(true);
+      // ignore storage errors
     }
     // Set dropdown container to document.body for portal rendering
     if (typeof document !== 'undefined') {
@@ -7740,43 +7716,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         }}
       />
 
-      {mounted && showAflComingSoonPopup && (
-        <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 px-4">
-          <div
-            className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
-              isDark ? 'bg-[#0a1929] border-gray-700' : 'bg-white border-gray-200'
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>🏉 AFL Launch Update</h3>
-                <p className={`mt-2 text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  AFL is launching soon and will be live before the season begins. 🚀 We are building the most advanced AFL props and analytics experience on the market. 📊
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={dismissAflComingSoonPopup}
-                className={`rounded p-1 transition-colors ${
-                  isDark ? 'text-gray-400 hover:bg-[#10243e] hover:text-gray-200' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                }`}
-                aria-label="Close AFL announcement"
-              >
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={dismissAflComingSoonPopup}
-              className="mt-4 w-full rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
