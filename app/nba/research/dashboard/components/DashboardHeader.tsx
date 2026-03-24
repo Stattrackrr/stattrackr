@@ -95,6 +95,16 @@ export function DashboardHeader({
   onNavigateBackToProps,
 }: DashboardHeaderProps) {
   const router = useRouter();
+  const navigateBackToProps = () => {
+    if (onNavigateBackToProps) onNavigateBackToProps();
+    try {
+      sessionStorage.removeItem('nba_dashboard_session_v1');
+      sessionStorage.removeItem('last_prop_click');
+      sessionStorage.removeItem('last_prop_url');
+    } catch {}
+    router.prefetch('/props');
+    router.push('/props');
+  };
 
   return (
     <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-1 sm:mr-2 md:mr-3 overflow-hidden">
@@ -135,15 +145,7 @@ export function DashboardHeader({
                 {/* Back button to player props page */}
                 {selectedPlayer && (
                   <button
-                    onClick={() => {
-                      if (onNavigateBackToProps) onNavigateBackToProps();
-                      try {
-                        sessionStorage.removeItem('nba_dashboard_session_v1');
-                        sessionStorage.removeItem('last_prop_click');
-                        sessionStorage.removeItem('last_prop_url');
-                      } catch {}
-                      window.location.href = '/props';
-                    }}
+                    onClick={navigateBackToProps}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
                     <svg 
@@ -368,15 +370,7 @@ export function DashboardHeader({
                 {/* Back button to player props page */}
                 {selectedPlayer && (
                   <button
-                    onClick={() => {
-                      if (onNavigateBackToProps) onNavigateBackToProps();
-                      try {
-                        sessionStorage.removeItem('nba_dashboard_session_v1');
-                        sessionStorage.removeItem('last_prop_click');
-                        sessionStorage.removeItem('last_prop_url');
-                      } catch {}
-                      window.location.href = '/props';
-                    }}
+                    onClick={navigateBackToProps}
                     className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
                     <svg 

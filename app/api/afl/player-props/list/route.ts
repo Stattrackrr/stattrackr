@@ -13,8 +13,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /** List revalidates against The Odds API every request; avoid CDN/browser serving ended matchups as current. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
-const MISS_COMPUTE_LIMIT_NO_CRON = 60;
-const MISS_COMPUTE_CONCURRENCY = 6;
+const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 6;
+const MISS_COMPUTE_BG_LIMIT_NO_CRON = 30;
+const MISS_COMPUTE_CONCURRENCY = 3;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
@@ -208,50 +209,68 @@ export async function GET(request: Request) {
         }
       })
     );
-    // Self-heal path: if non-cron request still has cache misses (e.g. line moved since last warm),
-    // compute a bounded number of missing keys so top rows stop showing N/A.
-    let missComputed = 0;
+    // Self-heal path: if non-cron request has cache misses (e.g. line moved since last warm),
+    // compute only a tiny synchronous subset to protect latency, then continue in background.
+    let missComputedSync = 0;
     let missComputeAttempted = 0;
+    let missComputeBgScheduled = 0;
     if (!hasCronAuth) {
       const missingParams = Array.from(uniqueCacheKeys)
         .filter((k) => !statsByKey.has(k))
         .map((k) => paramsByCacheKey.get(k))
-        .filter((v): v is { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number } => Boolean(v))
-        .slice(0, MISS_COMPUTE_LIMIT_NO_CRON);
+        .filter(
+          (v): v is { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number } =>
+            Boolean(v)
+        );
       missComputeAttempted = missingParams.length;
-      for (let i = 0; i < missingParams.length; i += MISS_COMPUTE_CONCURRENCY) {
-        const batch = missingParams.slice(i, i + MISS_COMPUTE_CONCURRENCY);
+      const syncParams = missingParams.slice(0, MISS_COMPUTE_SYNC_LIMIT_NO_CRON);
+      const bgParams = missingParams
+        .slice(MISS_COMPUTE_SYNC_LIMIT_NO_CRON, MISS_COMPUTE_SYNC_LIMIT_NO_CRON + MISS_COMPUTE_BG_LIMIT_NO_CRON);
+      missComputeBgScheduled = bgParams.length;
+      const computeOne = async (p: {
+        playerName: string;
+        homeTeam: string;
+        awayTeam: string;
+        statType: string;
+        line: number;
+      }) => {
+        const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
+        let stats = await getAflPropStats(
+          p.playerName,
+          p.homeTeam,
+          p.awayTeam,
+          p.statType,
+          p.line,
+          baseUrl,
+          null,
+          false,
+          undefined,
+          resolvedTeam
+        );
+        if (!stats) {
+          stats = await getAflPropStats(
+            p.playerName,
+            p.awayTeam,
+            p.homeTeam,
+            p.statType,
+            p.line,
+            baseUrl,
+            null,
+            false,
+            undefined,
+            resolvedTeam
+          );
+        }
+        return stats;
+      };
+
+      for (let i = 0; i < syncParams.length; i += MISS_COMPUTE_CONCURRENCY) {
+        const batch = syncParams.slice(i, i + MISS_COMPUTE_CONCURRENCY);
         await Promise.all(
           batch.map(async (p) => {
-            const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
-            let stats = await getAflPropStats(
-              p.playerName,
-              p.homeTeam,
-              p.awayTeam,
-              p.statType,
-              p.line,
-              baseUrl,
-              null,
-              false,
-              undefined,
-              resolvedTeam
-            );
-            if (!stats) {
-              stats = await getAflPropStats(
-                p.playerName,
-                p.awayTeam,
-                p.homeTeam,
-                p.statType,
-                p.line,
-                baseUrl,
-                null,
-                false,
-                undefined,
-                resolvedTeam
-              );
-            }
+            const stats = await computeOne(p);
             if (!stats) return;
-            missComputed++;
+            missComputedSync++;
             const key = getAflPropStatsCacheKey(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line);
             const keyReverse = getAflPropStatsCacheKey(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line);
             statsByKey.set(key, stats);
@@ -259,10 +278,21 @@ export async function GET(request: Request) {
           })
         );
       }
+
+      if (bgParams.length > 0) {
+        void (async () => {
+          for (let i = 0; i < bgParams.length; i += MISS_COMPUTE_CONCURRENCY) {
+            const batch = bgParams.slice(i, i + MISS_COMPUTE_CONCURRENCY);
+            await Promise.all(batch.map(async (p) => computeOne(p)));
+          }
+        })();
+      }
+
       if (missComputeAttempted > 0) {
         console.log('[AFL list] miss-compute fallback', {
           attempted: missComputeAttempted,
-          computed: missComputed,
+          computedSync: missComputedSync,
+          bgScheduled: missComputeBgScheduled,
         });
       }
     }
@@ -407,7 +437,8 @@ export async function GET(request: Request) {
         cacheHits,
         cacheMisses,
         missComputeAttempted: !hasCronAuth ? missComputeAttempted : undefined,
-        missComputed: !hasCronAuth ? missComputed : undefined,
+        missComputedSync: !hasCronAuth ? missComputedSync : undefined,
+        missComputeBgScheduled: !hasCronAuth ? missComputeBgScheduled : undefined,
         rowsWithStats: rowsWithStats.length,
         rowsNa: rowsNa.length,
         totalRows: rows.length,
