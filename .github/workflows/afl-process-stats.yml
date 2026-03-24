@@ -196,3 +196,10 @@ jobs:
             fi
             echo "✅ AFL props-stats warm completed"
           fi
+
+      # Guardrail: ensure list DvP ranks match DvP card source for all props rows.
+      # Fails workflow on any mismatch so regressions are caught before users see split ranks.
+      - name: Validate AFL DvP consistency across all props players
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          node scripts/validate-afl-dvp-consistency.js --season=2026 --attempts=3 --delay_ms=15000 --max_mismatches=0

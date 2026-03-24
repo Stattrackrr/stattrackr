@@ -7,7 +7,7 @@ import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
-import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,6 +35,22 @@ type AflEnrichContext = {
 let aflEnrichContextCache: { expiresAt: number; value: AflEnrichContext } | null = null;
 let aflEnrichContextInFlight: Promise<AflEnrichContext> | null = null;
 let aflEnrichedPayloadMemoryCache: { expiresAt: number; payload: Record<string, unknown> } | null = null;
+const FANTASY_POSITIONS_API_CACHE_TTL_MS = 5 * 60 * 1000;
+let fantasyPositionsApiCache:
+  | {
+      expiresAt: number;
+      byName: Map<string, string>;
+      byInitialSurnameTeam: Map<string, string>;
+    }
+  | null = null;
+let fantasyPositionsApiInFlight:
+  | Promise<{ byName: Map<string, string>; byInitialSurnameTeam: Map<string, string> }>
+  | null = null;
+
+function normalizeTeamKeyForPosition(team: string | null | undefined): string {
+  if (!team) return '';
+  return toOfficialAflTeamDisplayName(team).trim().toLowerCase();
+}
 
 async function loadAflEnrichContext(): Promise<AflEnrichContext> {
   const seasonForTeam = new Date().getFullYear();
@@ -76,6 +92,61 @@ async function getAflEnrichContext(): Promise<AflEnrichContext> {
       });
   }
   return aflEnrichContextInFlight;
+}
+
+async function getFantasyPositionsFromApi(
+  baseUrl: string,
+  season: number,
+  cronSecret?: string
+): Promise<{ byName: Map<string, string>; byInitialSurnameTeam: Map<string, string> }> {
+  const now = Date.now();
+  if (fantasyPositionsApiCache && fantasyPositionsApiCache.expiresAt > now) {
+    return {
+      byName: fantasyPositionsApiCache.byName,
+      byInitialSurnameTeam: fantasyPositionsApiCache.byInitialSurnameTeam,
+    };
+  }
+  if (!fantasyPositionsApiInFlight) {
+    fantasyPositionsApiInFlight = (async () => {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (cronSecret) {
+        headers.Authorization = `Bearer ${cronSecret}`;
+        headers['X-Cron-Secret'] = cronSecret;
+      }
+      const res = await fetch(`${baseUrl}/api/afl/fantasy-positions?season=${season}`, {
+        headers,
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`fantasy-positions HTTP ${res.status}`);
+      const json = (await res.json().catch(() => null)) as
+        | { players?: Array<{ name?: string; team?: string; position?: string }> }
+        | null;
+      const players = Array.isArray(json?.players) ? json.players : [];
+      const byName = new Map<string, string>();
+      const byInitialSurnameTeam = new Map<string, string>();
+      for (const p of players) {
+        const nameKey = normalizeAflPlayerNameForMatch(String(p?.name ?? ''));
+        const pos = String(p?.position ?? '').trim().toUpperCase();
+        const teamNorm = normalizeTeamKeyForPosition(String(p?.team ?? ''));
+        if (!nameKey || !pos) continue;
+        if (!byName.has(nameKey)) byName.set(nameKey, pos);
+        const parts = nameKey.split(' ').filter(Boolean);
+        if (parts.length >= 2 && teamNorm) {
+          const idx = `${parts[0].charAt(0)}|${parts[parts.length - 1]}|${teamNorm}`;
+          if (!byInitialSurnameTeam.has(idx)) byInitialSurnameTeam.set(idx, pos);
+        }
+      }
+      fantasyPositionsApiCache = {
+        expiresAt: Date.now() + FANTASY_POSITIONS_API_CACHE_TTL_MS,
+        byName,
+        byInitialSurnameTeam,
+      };
+      return { byName, byInitialSurnameTeam };
+    })().finally(() => {
+      fantasyPositionsApiInFlight = null;
+    });
+  }
+  return fantasyPositionsApiInFlight;
 }
 
 function hasOver(o: string) {
@@ -268,8 +339,106 @@ export async function GET(request: Request) {
     const enrichContext = await getAflEnrichContext();
     const playerTeamMap = enrichContext.playerTeamMap;
     const fantasyTeamMap = enrichContext.fantasyTeamMap;
-    const resolvePlayerTeam = (name: string) =>
-      playerTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? fantasyTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? null;
+    const seasonForPositions = new Date().getFullYear();
+    let fantasyPositionApiByName = new Map<string, string>();
+    let fantasyPositionApiByInitialSurnameTeam = new Map<string, string>();
+    try {
+      const fromApi = await getFantasyPositionsFromApi(baseUrl, seasonForPositions, listCronSecret);
+      fantasyPositionApiByName = fromApi.byName;
+      fantasyPositionApiByInitialSurnameTeam = fromApi.byInitialSurnameTeam;
+    } catch {
+      // Ignore API fallback failure; we'll use local enrich context map below.
+    }
+    const normalizeForCompare = (v: string | null | undefined) =>
+      String(v ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+    const normalizeNameLoose = (v: string) =>
+      normalizeAflPlayerNameForMatch(v).replace(/[^a-z0-9]/g, '');
+    const normalizeTeamForCompare = (team: string | null | undefined) =>
+      (team ? toOfficialAflTeamDisplayName(team).trim().toLowerCase() : '');
+    const teamByLooseName = new Map<string, string>();
+    const teamCandidatesByInitialSurname = new Map<string, string[]>();
+    const addTeamCandidate = (nameKey: string, team: string | null | undefined) => {
+      const t = String(team ?? '').trim();
+      if (!nameKey || !t) return;
+      const loose = nameKey.replace(/[^a-z0-9]/g, '');
+      if (loose && !teamByLooseName.has(loose)) teamByLooseName.set(loose, t);
+      const parts = nameKey.split(' ').filter(Boolean);
+      if (parts.length < 2) return;
+      const idx = `${parts[0].charAt(0)}|${parts[parts.length - 1]}`;
+      const arr = teamCandidatesByInitialSurname.get(idx) ?? [];
+      if (!arr.includes(t)) arr.push(t);
+      teamCandidatesByInitialSurname.set(idx, arr);
+    };
+    for (const [nameKey, t] of playerTeamMap.entries()) addTeamCandidate(nameKey, t);
+    for (const [nameKey, t] of fantasyTeamMap.entries()) addTeamCandidate(nameKey, t);
+    const resolvePlayerTeam = (name: string, homeTeam?: string, awayTeam?: string) => {
+      const normalized = normalizeAflPlayerNameForMatch(name);
+      const fromExact = playerTeamMap.get(normalized) ?? fantasyTeamMap.get(normalized);
+      if (fromExact) return fromExact;
+      const loose = normalizeNameLoose(name);
+      const fromLoose = teamByLooseName.get(loose);
+      if (fromLoose) return fromLoose;
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length >= 2) {
+        const idx = `${parts[0].charAt(0)}|${parts[parts.length - 1]}`;
+        const candidates = teamCandidatesByInitialSurname.get(idx) ?? [];
+        if (candidates.length === 1) return candidates[0];
+        if (candidates.length > 1 && homeTeam && awayTeam) {
+          const homeNorm = normalizeTeamForCompare(homeTeam);
+          const awayNorm = normalizeTeamForCompare(awayTeam);
+          const matched = candidates.find((c) => {
+            const n = normalizeTeamForCompare(c);
+            return n === homeNorm || n === awayNorm;
+          });
+          if (matched) return matched;
+        }
+      }
+      return null;
+    };
+    const positionMapForOverride = enrichContext.positionMap;
+    const positionCandidatesByInitialSurname = new Map<string, Array<{ nameKey: string; position: string }>>();
+    for (const [nameKey, pos] of positionMapForOverride.entries()) {
+      if (!nameKey || !pos) continue;
+      const parts = nameKey.split(' ').filter(Boolean);
+      if (parts.length < 2) continue;
+      const first = parts[0];
+      const last = parts[parts.length - 1];
+      if (!first || !last) continue;
+      const idxKey = `${first.charAt(0)}|${last}`;
+      const arr = positionCandidatesByInitialSurname.get(idxKey) ?? [];
+      arr.push({ nameKey, position: pos });
+      positionCandidatesByInitialSurname.set(idxKey, arr);
+    }
+    const resolvePositionForPlayer = (rawName: string, resolvedTeam: string | null | undefined): string | undefined => {
+      const normalized = normalizeAflPlayerNameForMatch(rawName);
+      const teamNorm = normalizeForCompare(String(resolvedTeam ?? ''));
+      const exact = fantasyPositionApiByName.get(normalized) ?? positionMapForOverride.get(normalized);
+      if (exact) return exact;
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length < 2) return undefined;
+      const first = parts[0];
+      const last = parts[parts.length - 1];
+      if (!first || !last) return undefined;
+      if (teamNorm) {
+        const idxWithTeam = `${first.charAt(0)}|${last}|${teamNorm}`;
+        const apiTeamPos = fantasyPositionApiByInitialSurnameTeam.get(idxWithTeam);
+        if (apiTeamPos) return apiTeamPos;
+      }
+      const idxKey = `${first.charAt(0)}|${last}`;
+      const candidates = positionCandidatesByInitialSurname.get(idxKey) ?? [];
+      if (candidates.length === 0) return undefined;
+      if (candidates.length === 1) return candidates[0].position;
+      const wantedTeam = normalizeTeamForCompare(resolvedTeam);
+      if (wantedTeam) {
+        for (const candidate of candidates) {
+          const teamFromFiles = playerTeamMap.get(candidate.nameKey);
+          const teamFromFantasy = fantasyTeamMap.get(candidate.nameKey);
+          const candidateTeam = normalizeTeamForCompare(teamFromFiles || teamFromFantasy || '');
+          if (candidateTeam && candidateTeam === wantedTeam) return candidate.position;
+        }
+      }
+      return candidates[0].position;
+    };
     const uniqueCacheKeys = new Set<string>();
     const paramsByCacheKey = new Map<string, { playerName: string; homeTeam: string; awayTeam: string; statType: string; line: number }>();
     for (const r of rows) {
@@ -390,28 +559,94 @@ export async function GET(request: Request) {
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
     // Always override DvP from position-aware lookup so matchup rank matches dashboard.
     const dvpMapsForOverride = enrichContext.dvpMaps;
-    const positionMapForOverride = enrichContext.positionMap;
+    type DvpBatchPayload = {
+      metrics?: Record<
+        string,
+        {
+          teamTotalRanks?: Record<string, number>;
+          teamTotalValues?: Record<string, number>;
+        }
+      >;
+    };
+    const dvpBatchByPosition = new Map<string, DvpBatchPayload>();
+    const loadDvpBatchForPosition = async (position: string): Promise<DvpBatchPayload | null> => {
+      const pos = ['DEF', 'MID', 'FWD', 'RUC'].includes(position) ? position : 'MID';
+      if (dvpBatchByPosition.has(pos)) return dvpBatchByPosition.get(pos) ?? null;
+      try {
+        const res = await fetch(
+          `${baseUrl}/api/afl/dvp/batch?season=${DVP_MATCHUP_SEASON}&position=${encodeURIComponent(pos)}&stats=disposals,goals`,
+          { cache: 'no-store' }
+        );
+        if (!res.ok) return null;
+        const json = (await res.json().catch(() => null)) as DvpBatchPayload | null;
+        if (!json || typeof json !== 'object') return null;
+        dvpBatchByPosition.set(pos, json);
+        return json;
+      } catch {
+        return null;
+      }
+    };
     const getDvpOverride = (opponent: string, statType: string, position?: string | null) => {
       return getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
+    };
+    const findTeamValue = (
+      values: Record<string, number> | undefined,
+      opponent: string
+    ): number | null => {
+      if (!values) return null;
+      const normalize = (v: string) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const candidates = Array.from(
+        new Set(
+          [
+            opponent,
+            toOfficialAflTeamDisplayName(opponent),
+            opponentToFootywireTeam(opponent),
+          ]
+            .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+            .flatMap((v) => [v, normalize(v)])
+        )
+      );
+      for (const c of candidates) {
+        const raw = values[c];
+        if (raw != null && Number.isFinite(Number(raw))) return Number(raw);
+      }
+      const wantedOfficial = normalize(toOfficialAflTeamDisplayName(opponent));
+      for (const [k, v] of Object.entries(values)) {
+        if (!Number.isFinite(Number(v))) continue;
+        if (normalize(toOfficialAflTeamDisplayName(k)) === wantedOfficial) return Number(v);
+      }
+      return null;
     };
     const teamMatchesOverride = (a: string, b: string) => {
       const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
-    const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rows.map((r) => {
-      const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
-      const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
-      const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
-      const playerTeam = resolvePlayerTeam(r.playerName);
+    const rowContexts = rows.map((r) => {
+      const playerTeam = resolvePlayerTeam(r.playerName, r.homeTeam, r.awayTeam);
       const opponent =
         playerTeam && teamMatchesOverride(playerTeam, r.homeTeam)
           ? r.awayTeam
           : playerTeam && teamMatchesOverride(playerTeam, r.awayTeam)
             ? r.homeTeam
             : r.awayTeam;
-      const position = positionMapForOverride.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? undefined;
-      const dvpLookupResult = getDvpOverride(opponent, r.statType, position);
+      const position = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
+      return { r, playerTeam, opponent, position };
+    });
+    const neededPositions = Array.from(new Set(rowContexts.map((ctx) => ctx.position).filter(Boolean)));
+    await Promise.all(neededPositions.map((pos) => loadDvpBatchForPosition(pos)));
+
+    const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(({ r, playerTeam, opponent, position }) => {
+      const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
+      const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
+      const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
+      const batch = dvpBatchByPosition.get(position || 'MID');
+      const metric = r.statType === 'goals_over' ? 'goals' : 'disposals';
+      const rankFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
+      const valueFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
+      const dvpLookupResult = rankFromBatch != null && valueFromBatch != null
+        ? { rank: rankFromBatch, value: valueFromBatch }
+        : getDvpOverride(opponent, r.statType, position);
       // Always use the live position-aware team-total DvP lookup (dashboard source of truth).
       // Never fall back to cached prop-level DvP values, which can be stale after mapping changes.
       const dvpRating = dvpLookupResult?.rank ?? null;
@@ -430,6 +665,7 @@ export async function GET(request: Request) {
         seasonHitRate: stats?.seasonHitRate,
         dvpRating,
         dvpStatValue,
+        ...(debugStats ? { _dvpPosition: position, _dvpOpponent: opponent } : {}),
       };
       return baseRow;
     });
