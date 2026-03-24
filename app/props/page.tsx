@@ -1077,19 +1077,19 @@ export default function NBALandingPage() {
 
     fetchTodaysGames();
 
-    // Preload AFL list in background for sessionStorage (skip on direct AFL opens when cache already exists).
+    // Preload AFL list in background for sessionStorage only on NBA-first loads.
+    // Combined/AFL already run the main AFL fetch effect; a second preload just duplicates heavy list work.
     (async () => {
       try {
         if (typeof window !== 'undefined') {
           const sportParam = new URL(window.location.href).searchParams.get('sport');
-          if (sportParam === 'afl') {
-            const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
-            if (raw) {
-              const parsed = JSON.parse(raw) as { timestamp?: number; props?: unknown[]; games?: unknown[] };
-              const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
-              const hasData = (Array.isArray(parsed?.props) && parsed.props.length > 0) || (Array.isArray(parsed?.games) && parsed.games.length > 0);
-              if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
-            }
+          if (sportParam !== 'nba') return;
+          const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { timestamp?: number; props?: unknown[]; games?: unknown[] };
+            const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+            const hasData = (Array.isArray(parsed?.props) && parsed.props.length > 0) || (Array.isArray(parsed?.games) && parsed.games.length > 0);
+            if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
           }
         }
         const listRes = await fetch(`/api/afl/player-props/list?cb=${Date.now()}`, { cache: 'no-store' });

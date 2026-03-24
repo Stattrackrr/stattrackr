@@ -5,7 +5,7 @@ import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAf
 import { getSharedCacheBackend } from '@/lib/sharedCache';
 import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
-import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
+import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
@@ -18,9 +18,62 @@ const AFL_LIST_CACHE_CONTROL = 'private, no-store';
 const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
+const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
+
+type AflEnrichContext = {
+  playerTeamMap: Map<string, string>;
+  fantasyTeamMap: Map<string, string>;
+  positionMap: Map<string, string>;
+  dvpMaps: DvpMaps;
+};
+
+let aflEnrichContextCache: { expiresAt: number; value: AflEnrichContext } | null = null;
+let aflEnrichContextInFlight: Promise<AflEnrichContext> | null = null;
+
+async function loadAflEnrichContext(): Promise<AflEnrichContext> {
+  const seasonForTeam = new Date().getFullYear();
+  const seasonForPos = new Date().getFullYear();
+  const [
+    playerTeamMap,
+    fantasyTeamMap,
+    dvpMaps,
+    positionMapCurrent,
+    positionMapPrev,
+  ] = await Promise.all([
+    getAflPlayerTeamMapFromFiles(),
+    getAflPlayerTeamMapFromFantasy(seasonForTeam),
+    loadDvpMapsFromFiles(DVP_MATCHUP_SEASON),
+    getAflPlayerPositionMap(seasonForPos),
+    getAflPlayerPositionMap(seasonForPos - 1),
+  ]);
+  return {
+    playerTeamMap,
+    fantasyTeamMap,
+    positionMap: positionMapCurrent.size > 0 ? positionMapCurrent : positionMapPrev,
+    dvpMaps,
+  };
+}
+
+async function getAflEnrichContext(): Promise<AflEnrichContext> {
+  const now = Date.now();
+  if (aflEnrichContextCache && aflEnrichContextCache.expiresAt > now) {
+    return aflEnrichContextCache.value;
+  }
+  if (!aflEnrichContextInFlight) {
+    aflEnrichContextInFlight = loadAflEnrichContext()
+      .then((value) => {
+        aflEnrichContextCache = { value, expiresAt: Date.now() + AFL_ENRICH_CONTEXT_TTL_MS };
+        return value;
+      })
+      .finally(() => {
+        aflEnrichContextInFlight = null;
+      });
+  }
+  return aflEnrichContextInFlight;
+}
 
 function hasOver(o: string) {
   return o != null && String(o).trim() !== '' && String(o) !== 'N/A';
@@ -186,9 +239,9 @@ export async function GET(request: Request) {
         : process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : 'http://localhost:3000';
-    let playerTeamMap = await getAflPlayerTeamMapFromFiles();
-    const seasonForTeam = new Date().getFullYear();
-    const fantasyTeamMap = await getAflPlayerTeamMapFromFantasy(seasonForTeam);
+    const enrichContext = await getAflEnrichContext();
+    const playerTeamMap = enrichContext.playerTeamMap;
+    const fantasyTeamMap = enrichContext.fantasyTeamMap;
     const resolvePlayerTeam = (name: string) =>
       playerTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? fantasyTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? null;
     const uniqueCacheKeys = new Set<string>();
@@ -310,10 +363,8 @@ export async function GET(request: Request) {
     }
     // Without cron auth, list is cache-only; rows without cached stats show N/A. With cron auth we compute on miss (e.g. workflow N/A report).
     // Always override DvP from position-aware lookup so matchup rank matches dashboard.
-    const dvpMapsForOverride = await loadDvpMapsFromFiles(DVP_MATCHUP_SEASON);
-    const seasonForPos = new Date().getFullYear();
-    let positionMapForOverride = await getAflPlayerPositionMap(seasonForPos);
-    if (positionMapForOverride.size === 0) positionMapForOverride = await getAflPlayerPositionMap(seasonForPos - 1);
+    const dvpMapsForOverride = enrichContext.dvpMaps;
+    const positionMapForOverride = enrichContext.positionMap;
     const getDvpOverride = (opponent: string, statType: string, position?: string | null) => {
       return getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
     };
