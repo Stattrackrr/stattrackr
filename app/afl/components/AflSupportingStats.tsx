@@ -658,7 +658,7 @@ export function AflSupportingStats({
           />
         </div>
       )}
-      <div className="w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0">
+      <div className="w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={timeframe} data={chartData} margin={margin} barCategoryGap="5%">
             <XAxis
