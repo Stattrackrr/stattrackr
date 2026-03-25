@@ -363,7 +363,7 @@ export default function PricingPage() {
             <div className="border-t border-white/10 py-2">
               <button
                 onClick={async () => {
-                  await supabase.auth.signOut();
+                  await supabase.auth.signOut({ scope: 'local' });
                   setShowProfileMenu(false);
                   router.push('/login');
                 }}
@@ -454,7 +454,7 @@ export default function PricingPage() {
               <button
                 onClick={async () => {
                   setShowProfileDropdown(false);
-                  await supabase.auth.signOut();
+                  await supabase.auth.signOut({ scope: 'local' });
                   router.push('/');
                 }}
                 className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"

@@ -4320,7 +4320,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               isPro={isPro}
               onSubscriptionClick={() => router.push('/subscription')}
               onSignOutClick={async () => {
-                await supabase.auth.signOut();
+                await supabase.auth.signOut({ scope: 'local' });
                 router.push('/');
               }}
               onProfileUpdated={({ username: u, avatar_url: a }) => {
@@ -7700,7 +7700,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
         onSubscription={() => router.push('/subscription')}
         onLogout={async () => {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           router.push('/');
         }}
         theme={theme}

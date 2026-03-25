@@ -2612,7 +2612,7 @@ export default function AFLPage() {
               userEmail={userEmail}
               isPro={isPro}
               onSubscriptionClick={() => router.push('/subscription')}
-              onSignOutClick={async () => { await supabase.auth.signOut(); router.push('/'); }}
+              onSignOutClick={async () => { await supabase.auth.signOut({ scope: 'local' }); router.push('/'); }}
               onProfileUpdated={({ username: u, avatar_url: a }) => { if (u !== undefined) setUsername(u ?? null); if (a !== undefined) setAvatarUrl(a ?? null); }}
             />
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 min-h-0">
@@ -3958,7 +3958,7 @@ export default function AFLPage() {
         onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
         onSubscription={() => router.push('/subscription')}
         onLogout={async () => {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           router.push('/');
         }}
         theme={theme}

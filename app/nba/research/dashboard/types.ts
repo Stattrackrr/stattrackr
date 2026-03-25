@@ -36,13 +36,6 @@ export interface OfficialOddsCardProps {
   oddsFormat: OddsFormat;
   books: BookRow[];
   fmtOdds: (odds: string) => string;
-  lineMovementEnabled: boolean;
-  lineMovementData?: {
-    openingLine: { line: number; bookmaker: string; timestamp: string } | null;
-    currentLine: { line: number; bookmaker: string; timestamp: string } | null;
-    impliedOdds: number | null;
-    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
-  } | null;
   selectedStat?: string;
   calculatedImpliedOdds?: {
     overImpliedProb: number | null;

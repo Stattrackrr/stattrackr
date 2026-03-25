@@ -57,8 +57,6 @@ const ChartContainer = memo(function ChartContainer({
   loadingTeammateGames,
   clearTeammateFilter,
   hitRateStats,
-  lineMovementEnabled,
-  intradayMovements,
   secondAxisData,
       selectedFilterForAxis,
       onSelectFilterForAxis,
@@ -191,8 +189,6 @@ className="chart-container-no-focus relative z-10 bg-white dark:bg-[#0a1929] rou
         setTeammateFilterName={setTeammateFilterName}
         loadingTeammateGames={loadingTeammateGames}
         clearTeammateFilter={clearTeammateFilter}
-        lineMovementEnabled={lineMovementEnabled}
-        intradayMovements={intradayMovements}
         hitRateStats={hitRateStats}
         selectedPlayer={selectedPlayer}
         isLoading={isLoading}

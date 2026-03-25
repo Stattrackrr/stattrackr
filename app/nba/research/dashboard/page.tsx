@@ -51,7 +51,7 @@ import { HomeAwaySelect, OverRatePill } from './components/ui';
 import ChartControls from './components/ChartControls';
 import ChartContainer from './components/ChartContainer';
 import PlayerBoxScore from './components/PlayerBoxScore';
-import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS, LINE_MOVEMENT_ENABLED } from './constants';
+import { CHART_CONFIG, SECOND_AXIS_FILTER_OPTIONS, PLAYER_STAT_OPTIONS, TEAM_STAT_OPTIONS, PLACEHOLDER_BOOK_ROWS } from './constants';
 import { updateBettingLinePosition, getUnifiedTooltipStyle } from './utils/chartUtils';
 import { AltLineItem, partitionAltLineItems, cloneBookRow, mergeBookRowsByBaseName, getBookRowKey, americanToDecimal, normalizeAmerican } from './utils/oddsUtils';
 import { calculateAvailableBookmakers } from './utils/bookmakerUtils';
@@ -124,7 +124,6 @@ import { useProfileMenuClose } from './hooks/useProfileMenuClose';
 import { useOddsFormat } from './hooks/useOddsFormat';
 import { useCountdownTimer } from './hooks/useCountdownTimer';
 import { useSubscriptionCheck } from './hooks/useSubscriptionCheck';
-import { useLineMovement } from './hooks/useLineMovement';
 import { useStatUrlSync } from './hooks/useStatUrlSync';
 import { useOddsCalculations } from './hooks/useOddsCalculations';
 import { useTeamGameFetching } from './hooks/useTeamGameFetching';
@@ -446,18 +445,6 @@ export function NBADashboardContent() {
     fetchTodaysGames,
   } = useTodaysGamesFetching();
 
-  
-  // Line movement fetching - extracted to useLineMovement hook
-  useLineMovement({
-    propsMode,
-    selectedPlayer,
-    selectedTeam,
-    opponentTeam,
-    selectedStat,
-    todaysGames,
-    setLineMovementData,
-    setLineMovementLoading,
-  });
   
   // Odds fetching - extracted to useOddsFetching hook
   useOddsFetching({
@@ -1049,7 +1036,6 @@ export function NBADashboardContent() {
     primaryMarketLine,
     calculatedImpliedOdds,
   } = useOddsDerivedData({
-    mergedLineMovementData,
     oddsSnapshots,
     marketKey,
     intradayMovements,
@@ -1231,8 +1217,6 @@ export function NBADashboardContent() {
               loadingTeammateGames={loadingTeammateGames}
       clearTeammateFilter={clearTeammateFilter}
       hitRateStats={hitRateStats}
-      lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-      intradayMovements={intradayMovementsFinal}
       secondAxisData={secondAxisData}
       selectedFilterForAxis={selectedFilterForAxis}
       onSelectFilterForAxis={handleSelectFilterForAxis}
@@ -1291,7 +1275,6 @@ export function NBADashboardContent() {
                   oddsFormat={oddsFormat}
               realOddsData={realOddsData}
                   fmtOdds={fmtOdds}
-              mergedLineMovementData={mergedLineMovementData}
                   selectedStat={selectedStat}
                   calculatedImpliedOdds={calculatedImpliedOdds}
                   selectedBookmakerName={selectedBookmakerName}
@@ -1329,7 +1312,6 @@ export function NBADashboardContent() {
                     oddsFormat={oddsFormat}
               realOddsData={realOddsData}
                     fmtOdds={fmtOdds}
-              mergedLineMovementData={mergedLineMovementData}
                     selectedStat={selectedStat}
                     calculatedImpliedOdds={calculatedImpliedOdds}
                     selectedBookmakerName={selectedBookmakerName}

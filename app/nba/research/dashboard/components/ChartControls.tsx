@@ -238,8 +238,6 @@ const ChartControls = function ChartControls({
   setTeammateFilterName,
   loadingTeammateGames,
   clearTeammateFilter,
-  lineMovementEnabled,
-  intradayMovements,
   selectedFilterForAxis,
   onSelectFilterForAxis,
   hitRateStats,
@@ -255,9 +253,6 @@ const ChartControls = function ChartControls({
   
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [isSplitsOpen, setIsSplitsOpen] = useState(false);
-  const latestMovement = lineMovementEnabled && intradayMovements && intradayMovements.length > 0
-    ? intradayMovements[0]
-    : null;
   // Track the latest in-progress line while the user is holding +/-
   const transientLineRef = useRef<number | null>(null);
   const holdDelayRef = useRef<any>(null);

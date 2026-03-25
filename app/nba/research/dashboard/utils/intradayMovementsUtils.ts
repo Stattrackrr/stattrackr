@@ -1,4 +1,3 @@
-import { LINE_MOVEMENT_ENABLED } from '../constants';
 import { filterByMarket, OddsSnapshot } from '@/lib/odds';
 
 export interface LineMovementData {
@@ -23,9 +22,6 @@ export function processIntradayMovements(
   oddsSnapshots: OddsSnapshot[],
   marketKey: string
 ): IntradayMovement[] {
-  if (!LINE_MOVEMENT_ENABLED) {
-    return [];
-  }
   if (lineMovementData) {
     const { lineMovement = [], openingLine, currentLine } = lineMovementData;
 

@@ -31,8 +31,8 @@ const supabaseAdmin = createClient(
 // Store all odds data in a single cache entry (versioned to avoid old The Odds API cache)
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 
-// Temporary flag to disable line movement + odds snapshots (reduces Supabase size)
-const LINE_MOVEMENT_ENABLED = process.env.ENABLE_LINE_MOVEMENT === 'true';
+// Line movement feature has been removed.
+const LINE_MOVEMENT_ENABLED = false;
 
 const PICKEM_BOOKMAKERS = [
   'draftkings pick6',

@@ -15,8 +15,6 @@ export const OfficialOddsCard = memo(function OfficialOddsCard({
   oddsFormat,
   books,
   fmtOdds,
-  lineMovementEnabled,
-  lineMovementData,
   selectedStat,
   calculatedImpliedOdds,
   selectedBookmakerName,

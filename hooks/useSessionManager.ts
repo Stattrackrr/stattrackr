@@ -51,7 +51,7 @@ export function useSessionManager() {
 
   // Function to manually sign out
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     // Cleanup is handled by the auth state change listener above
   };
 

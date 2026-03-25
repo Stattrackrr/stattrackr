@@ -299,10 +299,3 @@ export const SECOND_AXIS_FILTER_OPTIONS = [
   { key: 'dvp_rank', label: 'Opp DvP Rank' },
 ];
 
-export const LINE_MOVEMENT_ENABLED = process.env.NEXT_PUBLIC_ENABLE_LINE_MOVEMENT === 'true';
-
-
-
-
-
-

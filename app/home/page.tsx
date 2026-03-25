@@ -467,7 +467,7 @@ export default function HomePage() {
                             </p>
                             <button
                               onClick={async () => {
-                                await supabase.auth.signOut();
+                                await supabase.auth.signOut({ scope: 'local' });
                                 setShowProfileMenu(false);
                                 router.push('/home');
                               }}
@@ -505,7 +505,7 @@ export default function HomePage() {
                             </p>
                             <button
                               onClick={async () => {
-                                await supabase.auth.signOut();
+                                await supabase.auth.signOut({ scope: 'local' });
                                 setShowProfileMenu(false);
                                 router.push('/home');
                               }}

@@ -7,7 +7,6 @@ import PlayerBoxScore from './PlayerBoxScore';
 import { NBAPlayer, BallDontLieStats, BookRow, DerivedOdds, MovementRow, MatchupInfo, OddsFormat } from '../types';
 import { currentNbaSeason } from '../utils/playerUtils';
 import { getEspnLogoUrl } from '../utils/teamUtils';
-import { LINE_MOVEMENT_ENABLED } from '../constants';
 
 // Lazy load heavy components
 const ShotChart = lazy(() => import('../ShotChart').then(mod => ({ default: mod.default })));
@@ -36,12 +35,6 @@ interface DashboardMobileContentProps {
   oddsFormat: OddsFormat;
   realOddsData: BookRow[];
   fmtOdds: (odds: string) => string;
-  mergedLineMovementData: {
-    openingLine: { line: number; bookmaker: string; timestamp: string } | null;
-    currentLine: { line: number; bookmaker: string; timestamp: string } | null;
-    impliedOdds: number | null;
-    lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
-  } | null;
   selectedStat: string;
   calculatedImpliedOdds: {
     overImpliedProb: number | null;
@@ -89,7 +82,6 @@ export function DashboardMobileContent({
   oddsFormat,
   realOddsData,
   fmtOdds,
-  mergedLineMovementData,
   selectedStat,
   calculatedImpliedOdds,
   selectedBookmakerName,
@@ -187,8 +179,6 @@ export function DashboardMobileContent({
                 oddsFormat={oddsFormat}
                 books={realOddsData}
                 fmtOdds={fmtOdds}
-                lineMovementEnabled={LINE_MOVEMENT_ENABLED}
-                lineMovementData={mergedLineMovementData}
                 selectedStat={selectedStat}
                 calculatedImpliedOdds={calculatedImpliedOdds}
                 selectedBookmakerName={selectedBookmakerName}
@@ -201,7 +191,7 @@ export function DashboardMobileContent({
             )}
           </div>
         );
-      }, [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, mergedLineMovementData, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
+      }, [isDark, derivedOdds, intradayMovementsFinal, selectedTeam, gamePropsTeam, propsMode, opponentTeam, selectedTeamLogoUrl, opponentTeamLogoUrl, matchupInfo, oddsFormat, realOddsData, fmtOdds, selectedStat, calculatedImpliedOdds, selectedBookmakerName, selectedBookmakerLine, selectedPlayer, primaryMarketLine, bettingLine])}
 
       {/* 7. Best Odds Container (Mobile) - Matchup Odds */}
       <BestOddsTable

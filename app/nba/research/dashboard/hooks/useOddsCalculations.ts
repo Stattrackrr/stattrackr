@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { LINE_MOVEMENT_ENABLED } from '../constants';
 import { getBookRowKey } from '../utils/oddsUtils';
 import { BookRow } from '../types';
 
@@ -26,9 +25,9 @@ export function useOddsCalculations({
   realOddsData,
   selectedStat,
 }: UseOddsCalculationsParams) {
-  // Merge line movement data with live odds to get accurate current line
+  // Merge historical opening line with live odds current line (when available).
   const mergedLineMovementData = useMemo(() => {
-    if (!LINE_MOVEMENT_ENABLED || !lineMovementData) return null;
+    if (!lineMovementData) return null;
     
     // Map selected stat to bookmaker property
     const statToBookKey: Record<string, string> = {

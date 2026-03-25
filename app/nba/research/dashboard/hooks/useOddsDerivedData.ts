@@ -1,26 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { LINE_MOVEMENT_ENABLED } from '../constants';
 import { filterByMarket, deriveOpeningCurrentMovement, OddsSnapshot } from '@/lib/odds';
-import { processIntradayMovementsFinal } from '../utils/intradayMovementsFinalUtils';
 import { calculateSelectedBookmakerData } from '../utils/bookmakerUtils';
 import { calculatePrimaryMarketLine } from '../utils/primaryMarketLineUtils';
 import { calculateImpliedOdds } from '../utils/calculatedImpliedOddsUtils';
 import { BookRow } from '../types';
 
-export interface LineMovementData {
-  openingLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
-  currentLine: { line: number; bookmaker: string; timestamp: string; overOdds?: number; underOdds?: number } | null;
-  impliedOdds: number | null;
-  overImpliedProb?: number | null;
-  underImpliedProb?: number | null;
-  isOverFavorable: boolean | null;
-  lineMovement: Array<{ bookmaker: string; line: number; change: number; timestamp: string }>;
-}
-
 export interface UseOddsDerivedDataParams {
-  mergedLineMovementData: LineMovementData | null;
   oddsSnapshots: OddsSnapshot[];
   marketKey: string;
   intradayMovements: any;
@@ -29,7 +16,6 @@ export interface UseOddsDerivedDataParams {
 }
 
 export function useOddsDerivedData({
-  mergedLineMovementData,
   oddsSnapshots,
   marketKey,
   intradayMovements,
@@ -37,27 +23,15 @@ export function useOddsDerivedData({
   selectedStat,
 }: UseOddsDerivedDataParams) {
   const derivedOdds = useMemo(() => {
-    if (LINE_MOVEMENT_ENABLED && mergedLineMovementData) {
-      return {
-        openingLine: mergedLineMovementData.openingLine?.line ?? null,
-        currentLine: mergedLineMovementData.currentLine?.line ?? null,
-      };
-    }
-    // Fallback to old snapshot logic for team mode
+    // Derive opening/current directly from odds snapshots.
     const filtered = filterByMarket(oddsSnapshots, marketKey);
     return deriveOpeningCurrentMovement(filtered);
-  }, [mergedLineMovementData, oddsSnapshots, marketKey]);
+  }, [oddsSnapshots, marketKey]);
 
-  // Update intraday movements to use merged data for accurate current line
+  // Keep intraday movements as already-processed rows.
   const intradayMovementsFinal = useMemo(() => {
-    return processIntradayMovementsFinal({
-      mergedLineMovementData,
-      realOddsData,
-      selectedStat,
-      intradayMovements,
-      LINE_MOVEMENT_ENABLED,
-    });
-  }, [mergedLineMovementData, intradayMovements, realOddsData, selectedStat]);
+    return intradayMovements;
+  }, [intradayMovements]);
 
   // Extract FanDuel's line and odds for selected stat
   const selectedBookmakerData = useMemo(() => {

@@ -29,6 +29,40 @@ if (supabaseUrl && supabaseServiceKey) {
   }
 }
 
+// Hot in-memory cache to reduce repeated Supabase reads across
+// rapid successive requests on the same warm instance.
+const HOT_CACHE_TTL_MS = 30 * 1000;
+type HotCacheEntry = { expiresAtMs: number; value: any };
+const hotCache = new Map<string, HotCacheEntry>();
+
+// Deduplicate concurrent reads for the same key so we only issue one DB call.
+const inflightReads = new Map<string, Promise<any | null>>();
+
+// Avoid repeated identical upserts in short windows.
+const RECENT_WRITE_TTL_MS = 2 * 60 * 1000;
+type RecentWriteEntry = { expiresAtMs: number; hash: string };
+const recentWrites = new Map<string, RecentWriteEntry>();
+
+function cleanObjectForHash(value: any): any {
+  if (!value || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(cleanObjectForHash);
+  const clone: Record<string, any> = {};
+  for (const [k, v] of Object.entries(value)) {
+    // Ignore runtime metadata injected on reads.
+    if (k === '__cache_metadata') continue;
+    clone[k] = cleanObjectForHash(v);
+  }
+  return clone;
+}
+
+function stableHash(value: any): string {
+  try {
+    return JSON.stringify(cleanObjectForHash(value));
+  } catch {
+    return String(value);
+  }
+}
+
 export interface NBACacheEntry {
   cache_key: string;
   cache_type: string;
@@ -70,6 +104,18 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
 
   const restTimeoutMs = Math.max(3000, options.restTimeoutMs ?? 5000);
   const jsTimeoutMs = Math.max(3000, options.jsTimeoutMs ?? 5000);
+
+  const hotHit = hotCache.get(cacheKey);
+  if (hotHit && hotHit.expiresAtMs > Date.now()) {
+    return hotHit.value as T;
+  }
+
+  const inflight = inflightReads.get(cacheKey);
+  if (inflight) {
+    return (await inflight) as T | null;
+  }
+
+  const readPromise = (async (): Promise<T | null> => {
 
   // In production, if Supabase is consistently slow, we'll skip it after first timeout
   // This prevents blocking the entire request
@@ -135,6 +181,10 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
           };
         }
         
+        hotCache.set(cacheKey, {
+          expiresAtMs: Date.now() + HOT_CACHE_TTL_MS,
+          value: cacheEntry.data,
+        });
         return cacheEntry.data as T;
       } catch (restError: any) {
         // REST API error, fall through to JS client as fallback
@@ -225,10 +275,22 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
       };
     }
 
+    hotCache.set(cacheKey, {
+      expiresAtMs: Date.now() + HOT_CACHE_TTL_MS,
+      value: dataToReturn,
+    });
     return dataToReturn;
   } catch (error: any) {
     // Fail gracefully - return null so in-memory cache can be used
     return null;
+  }
+  })();
+
+  inflightReads.set(cacheKey, readPromise);
+  try {
+    return await readPromise;
+  } finally {
+    inflightReads.delete(cacheKey);
   }
 }
 
@@ -248,6 +310,13 @@ export async function setNBACache(
   }
 
   try {
+    const hash = stableHash(data);
+    const recent = recentWrites.get(cacheKey);
+    const nowMs = Date.now();
+    if (recent && recent.expiresAtMs > nowMs && recent.hash === hash) {
+      return true;
+    }
+
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
 
@@ -270,6 +339,15 @@ export async function setNBACache(
     if (error) {
       return false;
     }
+
+    recentWrites.set(cacheKey, {
+      expiresAtMs: nowMs + RECENT_WRITE_TTL_MS,
+      hash,
+    });
+    hotCache.set(cacheKey, {
+      expiresAtMs: nowMs + HOT_CACHE_TTL_MS,
+      value: data,
+    });
     return true;
   } catch (error: any) {
     // Fail gracefully - in-memory cache will still work
@@ -291,6 +369,11 @@ export async function deleteNBACache(cacheKey: string): Promise<boolean> {
       .delete()
       .eq('cache_key', cacheKey);
 
+    if (!error) {
+      hotCache.delete(cacheKey);
+      inflightReads.delete(cacheKey);
+      recentWrites.delete(cacheKey);
+    }
     return !error;
   } catch (error) {
     return false;

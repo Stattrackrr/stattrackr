@@ -116,49 +116,6 @@ export async function cleanupFinishedGameSnapshots() {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Now clean up line_movement_latest for games that no longer have snapshots
-    // We'll delete entries older than cutoff
-    console.log('📊 Cleaning up line_movement_latest...');
-    const { error: latestError, count: latestCount } = await supabaseAdmin
-      .from('line_movement_latest')
-      .delete({ count: 'exact' })
-      .lt('updated_at', cutoffISO);
-
-    if (latestError) {
-      console.error('⚠️ Error deleting line_movement_latest:', latestError);
-    } else {
-      console.log(`✅ Deleted ${latestCount || 0} line_movement_latest entries`);
-    }
-
-    // Clean up line_movement_events older than cutoff
-    // Check if it has a timestamp column (recorded_at or created_at)
-    console.log('📊 Cleaning up line_movement_events...');
-    try {
-      // Try to delete by recorded_at if it exists
-      const { error: eventsError, count: eventsCount } = await supabaseAdmin
-        .from('line_movement_events')
-        .delete({ count: 'exact' })
-        .lt('recorded_at', cutoffISO);
-
-      if (eventsError) {
-        // If recorded_at doesn't exist, try created_at
-        const { error: eventsError2, count: eventsCount2 } = await supabaseAdmin
-          .from('line_movement_events')
-          .delete({ count: 'exact' })
-          .lt('created_at', cutoffISO);
-
-        if (eventsError2) {
-          console.log('⚠️ line_movement_events table may not have timestamp columns, skipping cleanup');
-        } else {
-          console.log(`✅ Deleted ${eventsCount2 || 0} line_movement_events entries`);
-        }
-      } else {
-        console.log(`✅ Deleted ${eventsCount || 0} line_movement_events entries`);
-      }
-    } catch (error) {
-      console.log('⚠️ Error cleaning up line_movement_events:', error);
-    }
-
     const elapsed = Date.now() - startTime;
     console.log(`✅ Cleanup complete! Deleted ${totalDeleted} snapshots in ${elapsed}ms`);
 

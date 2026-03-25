@@ -66,8 +66,6 @@ const ChartContainer = memo(function ChartContainer({
   loadingTeammateGames,
   clearTeammateFilter,
   hitRateStats,
-  lineMovementEnabled,
-  intradayMovements,
   secondAxisData,
   selectedFilterForAxis,
   onSelectFilterForAxis,
@@ -201,8 +199,6 @@ const ChartContainer = memo(function ChartContainer({
         setTeammateFilterName={setTeammateFilterName}
         loadingTeammateGames={loadingTeammateGames}
         clearTeammateFilter={clearTeammateFilter}
-        lineMovementEnabled={lineMovementEnabled}
-        intradayMovements={intradayMovements}
         hitRateStats={hitRateStats}
         selectedPlayer={selectedPlayer}
         isLoading={isLoading}
