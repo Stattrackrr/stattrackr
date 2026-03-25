@@ -464,7 +464,9 @@ export default function AFLPage() {
       if (aflPropsMode === 'player' && aflPlayerPropsBooks.length) {
         const col = CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat];
         if (!col) return;
-        setAflCurrentLineValue(value);
+        setAflCurrentLineValue((prev) => (
+          prev != null && Number.isFinite(prev) && Math.abs(prev - value) < tol ? prev : value
+        ));
         if (mainChartStat === 'disposals') {
           for (let idx = 0; idx < aflPlayerPropsBooks.length; idx++) {
             const book = aflPlayerPropsBooks[idx];
@@ -473,8 +475,8 @@ export default function AFLPage() {
               if (!lineStr || lineStr === 'N/A') continue;
               const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
               if (Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol) {
-                setSelectedAflBookIndex(idx);
-                setSelectedAflDisposalsColumn(c);
+                if (idx !== selectedAflBookIndex) setSelectedAflBookIndex(idx);
+                if (c !== selectedAflDisposalsColumn) setSelectedAflDisposalsColumn(c);
                 return;
               }
             }
@@ -489,7 +491,7 @@ export default function AFLPage() {
               return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
             });
             if (hasLine) {
-              setSelectedAflBookIndex(idx);
+              if (idx !== selectedAflBookIndex) setSelectedAflBookIndex(idx);
               return;
             }
           }
@@ -501,25 +503,27 @@ export default function AFLPage() {
           const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
           return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
         });
-        if (idx >= 0) setSelectedAflBookIndex(idx);
+        if (idx >= 0 && idx !== selectedAflBookIndex) setSelectedAflBookIndex(idx);
         return;
       }
 
       if (aflPropsMode === 'team' && aflOddsBooks.length && (mainChartStat === 'spread' || mainChartStat === 'total_points')) {
-        setAflGameLineValue(value);
+        setAflGameLineValue((prev) => (
+          prev != null && Number.isFinite(prev) && Math.abs(prev - value) < tol ? prev : value
+        ));
         const idx = aflOddsBooks.findIndex((book) => {
           const lineStr = mainChartStat === 'spread' ? book.Spread?.line : book.Total?.line;
           if (!lineStr || lineStr === 'N/A') return false;
           const lineNum = parseFloat(String(lineStr).replace(/[^0-9.-]/g, ''));
           return Number.isFinite(lineNum) && Math.abs(lineNum - value) < tol;
         });
-        if (idx >= 0) setSelectedAflBookIndex(idx);
+        if (idx >= 0 && idx !== selectedAflBookIndex) setSelectedAflBookIndex(idx);
       }
       // total_goals: bookmaker "Total" is total points, not goals — don't sync line or book
     };
     window.addEventListener('transient-line', onTransientLine);
     return () => window.removeEventListener('transient-line', onTransientLine);
-  }, [aflPropsMode, mainChartStat, aflPlayerPropsBooks, aflOddsBooks]);
+  }, [aflPropsMode, mainChartStat, aflPlayerPropsBooks, aflOddsBooks, selectedAflBookIndex, selectedAflDisposalsColumn]);
 
   // Effective player-prop column: for disposals use selected O/U vs Over-only; for goals use GoalsOver (with Anytime 0.5); else chart stat mapping
   const effectivePlayerPropColumn = mainChartStat === 'disposals'

@@ -662,7 +662,7 @@ export function AflStatsChart({
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
-  const lineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
   const selectedStat = selectedStatProp ?? internalSelectedStat;
@@ -1055,7 +1055,7 @@ export function AflStatsChart({
 
   useEffect(() => {
     return () => {
-      if (lineDebounceRef.current) clearTimeout(lineDebounceRef.current);
+      if (lineSyncDebounceRef.current) clearTimeout(lineSyncDebounceRef.current);
     };
   }, []);
 
@@ -1196,12 +1196,24 @@ export function AflStatsChart({
               const raw = Number((e.target as HTMLInputElement).value);
               if (!Number.isFinite(raw)) return;
               const next = normalizeLineValue(raw);
+              // Keep chart movement immediate; debounce expensive parent sync work.
+              setLineValue(next);
+              if (lineSyncDebounceRef.current) clearTimeout(lineSyncDebounceRef.current);
+              lineSyncDebounceRef.current = setTimeout(() => {
+                emitTransientLine(next);
+                lineSyncDebounceRef.current = null;
+              }, 120);
+            }}
+            onBlur={(e) => {
+              const raw = Number((e.target as HTMLInputElement).value);
+              if (!Number.isFinite(raw)) return;
+              const next = normalizeLineValue(raw);
+              setLineValue(next);
+              if (lineSyncDebounceRef.current) {
+                clearTimeout(lineSyncDebounceRef.current);
+                lineSyncDebounceRef.current = null;
+              }
               emitTransientLine(next);
-              if (lineDebounceRef.current) clearTimeout(lineDebounceRef.current);
-              lineDebounceRef.current = setTimeout(() => {
-                setLineValue(next);
-                lineDebounceRef.current = null;
-              }, 300);
             }}
             className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             aria-label={`Set line value for ${selectedStatLabel}`}
