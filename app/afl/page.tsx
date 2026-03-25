@@ -2477,8 +2477,9 @@ export default function AFLPage() {
   // Use prefetch from sessionStorage (props page) so opponent shows immediately and no re-render when API returns same data.
   useEffect(() => {
     const name = selectedPlayer?.name;
+    const nameTrimmed = typeof name === 'string' ? name.trim() : '';
     const team = teamContextTeam;
-    if ((!team || !team.trim()) && (!name || typeof name !== 'string' || !name.trim())) {
+    if ((!team || !team.trim()) && !nameTrimmed) {
       setNextGameOpponent(null);
       setNextGameTipoff(null);
       setNextGameId(null);
@@ -2518,7 +2519,7 @@ export default function AFLPage() {
     if (resolvedTeam) {
       params.set('team', resolvedTeam);
     } else {
-      params.set('player_name', name.trim());
+      params.set('player_name', nameTrimmed);
     }
     if (lastRound) params.set('last_round', lastRound);
     fetch(`/api/afl/next-game?${params}`)
