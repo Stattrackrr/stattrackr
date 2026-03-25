@@ -74,8 +74,15 @@ export default function HomePage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [loadingBrandReady, setLoadingBrandReady] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (loadingBrandReady) return;
+    const t = setTimeout(() => setLoadingBrandReady(true), 700);
+    return () => clearTimeout(t);
+  }, [loadingBrandReady]);
 
   // On mobile viewport: hide Desktop/Mobile toggle and always show mobile mock (lg = 1024)
   const effectiveView = isMobileViewport ? 'mobile' : deviceView;
@@ -390,8 +397,8 @@ export default function HomePage() {
   if (isCheckingSubscription) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <StatTrackrLogo className="w-20 h-20" />
+        <div className={`flex flex-col items-center gap-3 transition-opacity duration-150 ${loadingBrandReady ? 'opacity-100' : 'opacity-0'}`}>
+          <StatTrackrLogo className="w-20 h-20" onReady={() => setLoadingBrandReady(true)} />
           <span className="font-bold text-4xl text-white">StatTrackr</span>
         </div>
       </div>
@@ -402,8 +409,8 @@ export default function HomePage() {
   if (user && hasPremium) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <StatTrackrLogo className="w-20 h-20" />
+        <div className={`flex flex-col items-center gap-3 transition-opacity duration-150 ${loadingBrandReady ? 'opacity-100' : 'opacity-0'}`}>
+          <StatTrackrLogo className="w-20 h-20" onReady={() => setLoadingBrandReady(true)} />
           <span className="font-bold text-4xl text-white">StatTrackr</span>
         </div>
       </div>

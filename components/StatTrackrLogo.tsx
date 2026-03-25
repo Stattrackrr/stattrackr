@@ -3,7 +3,17 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-export function StatTrackrLogo({ className = "w-16 h-16" }: { className?: string }) {
+export function StatTrackrLogo({
+  className = "w-16 h-16",
+  onReady,
+}: {
+  className?: string;
+  onReady?: () => void;
+}) {
+  const handleReady = () => {
+    if (typeof onReady === 'function') onReady();
+  };
+
   return (
     <div className={`${className} relative flex-shrink-0 overflow-visible`}>
       <Image
@@ -14,6 +24,8 @@ export function StatTrackrLogo({ className = "w-16 h-16" }: { className?: string
         className="w-full h-full object-contain"
         priority
         unoptimized
+        onLoad={handleReady}
+        onError={handleReady}
       />
     </div>
   );

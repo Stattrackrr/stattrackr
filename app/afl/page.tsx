@@ -963,8 +963,10 @@ export default function AFLPage() {
   useEffect(() => {
     if (!subscriptionChecked || !isPro || bootReady) return;
     const waitingForUrlPlayer = loadingPlayerFromUrl;
+    // Keep first paint fast on desktop: block on core player stats only.
+    // Player props can continue loading inside the page after initial render.
     const waitingForSelectedPlayerData =
-      !!selectedPlayer && aflPropsMode === 'player' && (statsLoadingForPlayer || aflPlayerPropsLoading);
+      !!selectedPlayer && aflPropsMode === 'player' && statsLoadingForPlayer;
     if (!waitingForUrlPlayer && !waitingForSelectedPlayerData) {
       setBootReady(true);
     } else if (bootDeadlinePassed) {
@@ -979,7 +981,6 @@ export default function AFLPage() {
     selectedPlayer,
     aflPropsMode,
     statsLoadingForPlayer,
-    aflPlayerPropsLoading,
   ]);
 
   useEffect(() => {
