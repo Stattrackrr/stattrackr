@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ProfileDropdown, SettingsDropdown, ProfileAvatar } from './index';
 
 interface MobileBottomNavigationProps {
@@ -53,20 +53,39 @@ export function MobileBottomNavigation({
   setOddsFormat,
 }: MobileBottomNavigationProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const prefetchProps = () => {
     router.prefetch('/props');
     void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
   };
 
-  const journalButtonClasses = `flex flex-col items-center justify-center gap-1 transition-all duration-300 ${
-    !hasPremium
-      ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-      : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
-  }`;
+  const isPropsActive = pathname?.startsWith('/props');
+  const isJournalActive = pathname?.startsWith('/journal');
+  const isProfileActive = showProfileDropdown;
+  const isSettingsActive = showSettingsDropdown;
+
+  const navButtonClass = (active: boolean, disabled = false) =>
+    `group flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-200 ${
+      disabled
+        ? 'text-purple-400/45 dark:text-purple-400/40 cursor-not-allowed'
+        : active
+          ? 'text-purple-600 dark:text-purple-200 bg-purple-500/15 dark:bg-purple-500/20 shadow-[0_0_0_1px_rgba(168,85,247,0.45)]'
+          : 'text-purple-600/85 dark:text-purple-300/85 hover:bg-purple-500/8 dark:hover:bg-purple-500/12'
+    }`;
+
+  const iconChipClass = (active: boolean, disabled = false) =>
+    `w-[30px] h-[30px] rounded-full flex items-center justify-center transition-all duration-200 ${
+      disabled
+        ? 'opacity-70'
+        : active
+          ? 'scale-105'
+          : 'scale-100'
+    }`;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1929] border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
+    <div className="lg:hidden fixed bottom-2 left-0 right-0 z-50 pb-safe flex justify-center px-3 pointer-events-none">
+      <div className="relative w-full max-w-[460px] pointer-events-auto">
       {/* Profile Dropdown Menu - Shows above bottom nav */}
       {showProfileDropdown && (
         <ProfileDropdown
@@ -92,7 +111,8 @@ export function MobileBottomNavigation({
       )}
       
       {/* Mobile Navigation */}
-      <div className="grid grid-cols-4 h-16 lg:hidden">
+      <div className="relative grid grid-cols-4 h-14 lg:hidden rounded-full border border-white/40 dark:border-white/25 bg-white/20 dark:bg-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-hidden px-1">
+        <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
         {/* Props */}
         <button
           onTouchStart={prefetchProps}
@@ -100,14 +120,17 @@ export function MobileBottomNavigation({
             prefetchProps();
             router.push('/props');
           }}
-          className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
+          className={navButtonClass(!!isPropsActive)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" strokeWidth={2} />
-            <circle cx="12" cy="12" r="6" strokeWidth={2} />
-            <circle cx="12" cy="12" r="2" strokeWidth={2} />
-          </svg>
-          <span className="text-xs font-medium">Props</span>
+          <span className={iconChipClass(!!isPropsActive)}>
+            <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V10" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V6" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16v-4" />
+            </svg>
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Props</span>
         </button>
         
         {/* Journal */}
@@ -124,42 +147,51 @@ export function MobileBottomNavigation({
             }
             router.push('/journal');
           }}
-          className={journalButtonClasses}
+          className={navButtonClass(!!isJournalActive, !hasPremium)}
         >
-          {!hasPremium ? (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          )}
-          <span className="text-xs font-medium">Journal</span>
+          <span className={iconChipClass(!!isJournalActive, !hasPremium)}>
+            {!hasPremium ? (
+              <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4.5h8a2 2 0 012 2V19l-6-3-6 3V6.5a2 2 0 012-2z" />
+              </svg>
+            )}
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Journal</span>
         </button>
         
         {/* Profile */}
         <button
           data-profile-button
           onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-          className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          className={navButtonClass(isProfileActive)}
         >
-          <ProfileAvatar username={username} userEmail={userEmail} avatarUrl={avatarUrl} />
-          <span className="text-xs font-medium">Profile</span>
+          <span className={iconChipClass(isProfileActive)}>
+            <span className="scale-100">
+              <ProfileAvatar username={username} userEmail={userEmail} avatarUrl={avatarUrl} />
+            </span>
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Profile</span>
         </button>
         
         {/* Settings */}
         <button
           data-settings-button
           onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-          className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+          className={navButtonClass(isSettingsActive)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="text-xs font-medium">Settings</span>
+          <span className={iconChipClass(isSettingsActive)}>
+            <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </span>
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Settings</span>
         </button>
+      </div>
       </div>
     </div>
   );

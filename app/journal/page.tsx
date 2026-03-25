@@ -17,6 +17,7 @@ import { generateInsights, type Insight } from '@/components/RightSidebar';
 import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
 import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3, Minus, X } from 'lucide-react';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
+import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 
 export default function JournalPage() {
   return (
@@ -524,6 +525,7 @@ function JournalContent() {
 
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const journalDropdownRef = useRef<HTMLDivElement>(null);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const prevModalStateRef = useRef(false);
@@ -3949,129 +3951,28 @@ function JournalContent() {
         </div>
       )}
       
-      {/* Mobile Bottom Navigation - Always visible on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1929] border-t border-gray-200 dark:border-gray-700 z-50 safe-bottom">
-        {/* Profile Dropdown Menu - Shows above bottom nav */}
-        {showProfileDropdown && (
-          <div ref={profileDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowProfileDropdown(false);
-                  handleSubscriptionClick();
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Subscription
-              </button>
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-              <button
-                onClick={() => {
-                  setShowProfileDropdown(false);
-                  handleSignOutClick();
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Settings Dropdown Menu - Shows above bottom nav */}
-        {showSettingsDropdown && (
-          <div ref={settingsDropdownRef} className="absolute bottom-full left-0 right-0 mb-1 mx-3">
-            <div className="bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={() => {
-                  setShowSettingsDropdown(false);
-                  setShowMobileSettings(true);
-                }}
-                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Open Settings
-              </button>
-            </div>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-4 h-16">
-          {/* Props */}
-          <button
-            data-props-button
-            onClick={() => router.push('/props')}
-            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" strokeWidth={2} />
-              <circle cx="12" cy="12" r="6" strokeWidth={2} />
-              <circle cx="12" cy="12" r="2" strokeWidth={2} />
-            </svg>
-            <span className="text-xs font-medium">Props</span>
-          </button>
-          
-          {/* Journal */}
-          <button
-            data-journal-button
-            onClick={() => router.push('/journal')}
-            className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <span className="text-xs font-medium">Journal</span>
-          </button>
-          
-          {/* Settings */}
-          <button
-            data-settings-button
-            onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span className="text-xs font-medium">Settings</span>
-          </button>
-          
-          {/* Profile */}
-          <button
-            data-profile-button
-            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-          >
-            {(() => {
-              const displayName = username || userEmail || 'Profile';
-              const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
-              const getAvatarColor = (name: string): string => {
-                let hash = 0;
-                for (let i = 0; i < name.length; i++) {
-                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
-                }
-                const hue = Math.abs(hash) % 360;
-                const saturation = 65 + (Math.abs(hash) % 20);
-                const lightness = 45 + (Math.abs(hash) % 15);
-                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-              };
-              const avatarColor = !avatarUrl ? getAvatarColor(displayName) : undefined;
-              return (
-                <div 
-                  className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs font-semibold text-white"
-                  style={avatarColor ? { backgroundColor: avatarColor } : { backgroundColor: 'rgb(243, 244, 246)' }}
-                >
-                  {avatarUrl ? (
-                    <img src={avatarUrl ?? undefined} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <span className="flex items-center justify-center w-full h-full">{fallbackInitial}</span>
-                  )}
-                </div>
-              );
-            })()}
-            <span className="text-xs font-medium">Profile</span>
-          </button>
-        </div>
-      </div>
+      {/* Mobile Bottom Navigation - Shared with NBA/AFL/Props */}
+      <MobileBottomNavigation
+        hasPremium={hasProAccess ?? true}
+        username={username}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        showJournalDropdown={false}
+        showProfileDropdown={showProfileDropdown}
+        showSettingsDropdown={showSettingsDropdown}
+        setShowJournalDropdown={() => {}}
+        setShowProfileDropdown={setShowProfileDropdown}
+        setShowSettingsDropdown={setShowSettingsDropdown}
+        profileDropdownRef={profileDropdownRef}
+        journalDropdownRef={journalDropdownRef}
+        settingsDropdownRef={settingsDropdownRef}
+        onSubscription={handleSubscriptionClick}
+        onLogout={handleSignOutClick}
+        theme={theme}
+        oddsFormat={oddsFormat}
+        setTheme={setTheme}
+        setOddsFormat={setOddsFormat}
+      />
       
       {/* Mobile Settings Modal */}
       {showMobileSettings && (
