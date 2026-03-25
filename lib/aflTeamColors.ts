@@ -5,7 +5,7 @@ import { getAflCanonicalTeamKeyLower } from './aflTeamCanonical';
  * Keys are lowercase canonical keys (same as aflTeamCanonical).
  */
 const TEAM_COLORS: Record<string, string> = {
-  adelaide: '#002B5C',       // Crows navy
+  adelaide: '#B35A00',       // Crows dark orange
   brisbane: '#A30044',       // Lions maroon
   carlton: '#011F3C',        // Blues navy
   collingwood: '#000000',    // Magpies black
@@ -15,18 +15,18 @@ const TEAM_COLORS: Record<string, string> = {
   'gold coast': '#E31837',   // Suns red
   gws: '#F47920',            // Giants orange
   hawthorn: '#4D2004',       // Hawks brown
-  melbourne: '#0D0D0D',      // Demons navy/black
-  'north melbourne': '#003A70', // Kangaroos blue
+  melbourne: '#0A1026',      // Demons very dark navy
+  'north melbourne': '#5DA9E9', // Kangaroos light blue
   'port adelaide': '#00B4B4',   // Power teal
   richmond: '#FFD100',       // Tigers yellow (primary)
-  'st kilda': '#E31837',     // Saints red
-  sydney: '#E31837',        // Swans red
-  'west coast': '#002A5B',  // Eagles blue
-  'western bulldogs': '#E31837', // Bulldogs red
+  'st kilda': '#8B0000',     // Saints dark red
+  sydney: '#FF6B6B',         // Swans light red
+  'west coast': '#B8860B',   // Eagles dark yellow
+  'western bulldogs': '#0B3D91', // Bulldogs dark blue
 };
 
-/** Lighten a hex color toward white for a brighter on-screen look (blend ~70% original + 30% white). */
-function brighten(hex: string, amount = 0.28): string {
+/** Lighten a hex color slightly for UI readability while preserving chosen team shades. */
+function brighten(hex: string, amount = 0.12): string {
   const h = hex.replace(/^#/, '');
   if (h.length !== 6) return hex;
   const r = parseInt(h.slice(0, 2), 16);
