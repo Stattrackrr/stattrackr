@@ -368,6 +368,8 @@ export default function AFLPage() {
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
   const [aflPlayerPropsLoading, setAflPlayerPropsLoading] = useState(false);
   const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
+  const [bootReady, setBootReady] = useState(false);
+  const [bootDeadlinePassed, setBootDeadlinePassed] = useState(false);
   const lastPlayerPropsKeyRef = useRef<string | null>(null);
   const ignoreNextTransientLineRef = useRef(false);
   const lastAutoLineContextRef = useRef<string | null>(null);
@@ -377,6 +379,7 @@ export default function AFLPage() {
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
+  const matchupPlayerKeyRef = useRef<string>('');
   const nextGameFromFetchRef = useRef<{ opponent: string | null; tipoff: Date | null }>({ opponent: null, tipoff: null });
   const [logoByTeam, setLogoByTeam] = useState<Record<string, string>>({});
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({ sidebarOpen });
@@ -934,6 +937,50 @@ export default function AFLPage() {
       router.replace('/home#pricing');
     }
   }, [subscriptionChecked, isPro, router]);
+
+  // Prevent stale opponent flicker when switching players:
+  // immediately clear prior player's matchup context before next-game resolves.
+  useEffect(() => {
+    const key = `${String(selectedPlayer?.name ?? '').trim().toLowerCase()}|${String(selectedPlayer?.team ?? '').trim().toLowerCase()}`;
+    if (key === matchupPlayerKeyRef.current) return;
+    matchupPlayerKeyRef.current = key;
+    if (!selectedPlayer) return;
+    setNextGameOpponent(null);
+    setNextGameTipoff(null);
+    setNextGameId(null);
+    setIsGameInProgress(false);
+    nextGameFromFetchRef.current = { opponent: null, tipoff: null };
+  }, [selectedPlayer?.name, selectedPlayer?.team]);
+
+  // Keep the initial full-page loader visible until player data is ready
+  // (same "instant once visible" feel as mobile), with a safety timeout.
+  useEffect(() => {
+    if (!subscriptionChecked || !isPro || bootReady) return;
+    const t = setTimeout(() => setBootDeadlinePassed(true), 10000);
+    return () => clearTimeout(t);
+  }, [subscriptionChecked, isPro, bootReady]);
+
+  useEffect(() => {
+    if (!subscriptionChecked || !isPro || bootReady) return;
+    const waitingForUrlPlayer = loadingPlayerFromUrl;
+    const waitingForSelectedPlayerData =
+      !!selectedPlayer && aflPropsMode === 'player' && (statsLoadingForPlayer || aflPlayerPropsLoading);
+    if (!waitingForUrlPlayer && !waitingForSelectedPlayerData) {
+      setBootReady(true);
+    } else if (bootDeadlinePassed) {
+      setBootReady(true);
+    }
+  }, [
+    subscriptionChecked,
+    isPro,
+    bootReady,
+    bootDeadlinePassed,
+    loadingPlayerFromUrl,
+    selectedPlayer,
+    aflPropsMode,
+    statsLoadingForPlayer,
+    aflPlayerPropsLoading,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2408,11 +2455,11 @@ export default function AFLPage() {
       : (selectedPlayer?.team
           ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
           : null);
-  // Matchup opponent for DVP / Opponent Breakdown: next game when loaded, else URL last_opponent (e.g. from props) so both cards show Kangaroos not Demons.
-  const matchupOpponent = displayOpponent ?? (selectedPlayer && typeof (selectedPlayer as Record<string, unknown>).last_opponent === 'string' ? (selectedPlayer as Record<string, unknown>).last_opponent as string : null) ?? null;
+  // Matchup opponent for DVP / Opponent Breakdown: use next-game opponent only (avoid stale last-game opponent flashes).
+  const matchupOpponent = displayOpponent ?? null;
 
   // Paywall: show loading until subscription checked; non-pro users are redirected to home
-  if (!subscriptionChecked || !isPro) {
+  if (!subscriptionChecked || !isPro || !bootReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#050d1a]">
         <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
@@ -3405,8 +3452,10 @@ export default function AFLPage() {
                     </div>
                     <div className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
                       <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Stat</span>
-                      <span className="col-span-2 text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-1">Player</span>
-                      <span className="col-span-2 text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Opp</span>
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-0">Player</span>
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
+                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Opp</span>
                       <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Stat</span>
                     </div>
                     <div className="space-y-0.5 text-sm">
