@@ -7,6 +7,7 @@ import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { AflStatsChart, type AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
 import { AflInjuriesCard } from '@/app/afl/components/AflInjuriesCard';
 import AflOpponentBreakdownCard from '@/app/afl/components/AflOpponentBreakdownCard';
+import AflTeamMatchupCard from '@/app/afl/components/AflTeamMatchupCard';
 import { DEFAULT_AFL_GAME_FILTERS, type AflGameFiltersState, type AflGameFilterDataItem } from '@/app/afl/components/AflGameFilters';
 import { AflTeamSelectionsCard } from '@/app/afl/components/AflTeamSelectionsCard';
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
@@ -119,7 +120,7 @@ type PersistedAflPageState = {
   selectedPlayer: AflPlayerRecord | null;
   aflPropsMode: 'player' | 'team';
   aflTeamFilter?: string;
-  aflRightTab: 'breakdown' | 'dvp';
+  aflRightTab: 'breakdown' | 'dvp' | 'team_matchup';
   aflChartTimeframe: AflChartTimeframe;
   withWithoutMode: 'with' | 'without';
   aflGameFilters?: AflGameFiltersState | null;
@@ -300,9 +301,9 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
-  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'dvp'>('dvp');
+  const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'dvp' | 'team_matchup'>('dvp');
   /** Tracks which right tabs have been opened so we keep their content mounted (no re-render on tab switch). */
-  const [aflRightTabsVisited, setAflRightTabsVisited] = useState<Set<'breakdown' | 'dvp'>>(() => new Set(['dvp']));
+  const [aflRightTabsVisited, setAflRightTabsVisited] = useState<Set<'breakdown' | 'dvp' | 'team_matchup'>>(() => new Set(['dvp']));
   const [aflPropsMode, setAflPropsMode] = useState<'player' | 'team'>('player');
   const [aflTeamFilter, setAflTeamFilter] = useState<string>('All');
   const [aflChartTimeframe, setAflChartTimeframe] = useState<AflChartTimeframe>('last10');
@@ -809,7 +810,7 @@ export default function AFLPage() {
         const validTeams = new Set(['All', ...Object.values(ROSTER_TEAM_TO_INJURY_TEAM)]);
         if (validTeams.has(parsed.aflTeamFilter)) setAflTeamFilter(parsed.aflTeamFilter);
       }
-      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown') {
+      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'team_matchup') {
         setAflRightTab(parsed.aflRightTab);
       }
       const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
@@ -3440,12 +3441,44 @@ export default function AFLPage() {
                           >
                             Opponent Breakdown
                           </button>
+                          <button
+                            onClick={() => {
+                              setAflRightTab('team_matchup');
+                              setAflRightTabsVisited((prev) => new Set(prev).add('team_matchup'));
+                            }}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'team_matchup'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Team Matchup
+                          </button>
                         </>
                       )}
                       {aflPropsMode === 'team' && (
-                        <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                          Opponent Breakdown
-                        </h3>
+                        <>
+                          <button
+                            onClick={() => setAflRightTab('breakdown')}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'breakdown'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Opponent Breakdown
+                          </button>
+                          <button
+                            onClick={() => setAflRightTab('team_matchup')}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              aflRightTab === 'team_matchup'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            Team Matchup
+                          </button>
+                        </>
                       )}
                     </div>
                     {(showEmptyShell || showStatsLoadingShell) && aflPropsMode === 'player' ? (
@@ -3482,6 +3515,16 @@ export default function AFLPage() {
                                   ? (selectedPlayer.position as 'DEF' | 'MID' | 'FWD' | 'RUC')
                                   : undefined
                               }
+                            />
+                          </div>
+                        )}
+                        {((aflPropsMode === 'team' && aflRightTab === 'team_matchup') || (aflPropsMode === 'player' && aflRightTabsVisited.has('team_matchup'))) && (
+                          <div className={aflRightTab === 'team_matchup' ? 'flex flex-col min-h-0' : 'hidden'}>
+                            <AflTeamMatchupCard
+                              isDark={!!mounted && isDark}
+                              season={season}
+                              teamName={selectedHeaderTeamName}
+                              opponentName={matchupOpponent}
                             />
                           </div>
                         )}
@@ -3749,6 +3792,19 @@ export default function AFLPage() {
                         >
                           Opponent Breakdown
                         </button>
+                        <button
+                          onClick={() => {
+                            setAflRightTab('team_matchup');
+                            setAflRightTabsVisited((prev) => new Set(prev).add('team_matchup'));
+                          }}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            aflRightTab === 'team_matchup'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Team Matchup
+                        </button>
                       </div>
                       <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
                         {((aflPropsMode === 'team' && aflRightTab === 'breakdown') || (aflPropsMode === 'player' && aflRightTabsVisited.has('breakdown'))) && (
@@ -3779,6 +3835,16 @@ export default function AFLPage() {
                                   ? (selectedPlayer.position as 'DEF' | 'MID' | 'FWD' | 'RUC')
                                   : undefined
                               }
+                            />
+                          </div>
+                        )}
+                        {((aflPropsMode === 'team' && aflRightTab === 'team_matchup') || (aflPropsMode === 'player' && aflRightTabsVisited.has('team_matchup'))) && (
+                          <div className={aflRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'}>
+                            <AflTeamMatchupCard
+                              isDark={!!mounted && isDark}
+                              season={season}
+                              teamName={selectedHeaderTeamName}
+                              opponentName={matchupOpponent}
                             />
                           </div>
                         )}
