@@ -214,12 +214,11 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
 
   if (isGameInProgress) {
     return (
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg border"
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl border-2"
         style={{
-          background: '#22c55e',
-          borderColor: '#22c55e',
-          borderWidth: '1px',
-          boxShadow: '0 0 8px #22c55e60, 0 0 4px #22c55e40',
+          background: 'linear-gradient(145deg, #22c55e, #16a34a)',
+          borderColor: '#4ade80',
+          boxShadow: '0 0 14px #22c55e80, 0 0 7px #16a34a55, inset 0 1px 0 #86efac55',
         }}>
         <span className="text-xs font-semibold text-white">LIVE</span>
       </div>
@@ -232,17 +231,36 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
     );
   }
 
-  const tipoffColor = isBeyond24h ? '#ef4444' : '#6366f1';
+  const isUrgent = countdown.hours === 0 && countdown.minutes < 30;
+  const palette = isUrgent
+    ? {
+        top: '#f97316',
+        bottom: '#ef4444',
+        border: '#fdba74',
+        glow: '#f97316',
+      }
+    : isBeyond24h
+      ? {
+          top: '#1e293b',
+          bottom: '#334155',
+          border: '#64748b',
+          glow: '#475569',
+        }
+      : {
+          top: '#7c3aed',
+          bottom: '#2563eb',
+          border: '#a78bfa',
+          glow: '#7c3aed',
+        };
 
   return (
-    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
+    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2"
       style={{
-        background: `linear-gradient(to top, ${tipoffColor}, ${tipoffColor}00)`,
-        borderColor: tipoffColor,
-        borderWidth: '1px',
-        boxShadow: `0 0 8px ${tipoffColor}60, 0 0 4px ${tipoffColor}40`,
+        background: `linear-gradient(145deg, ${palette.top}, ${palette.bottom})`,
+        borderColor: palette.border,
+        boxShadow: `0 0 14px ${palette.glow}75, 0 0 7px ${palette.glow}55, inset 0 1px 0 #ffffff2a`,
       }}>
-      <div className="text-[10px] text-white mb-0.5">Tipoff</div>
+      <div className="text-[10px] text-white/90 mb-0.5 tracking-wide">Tipoff</div>
       <div className="text-xs font-mono font-semibold text-white">
         {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
       </div>
@@ -6844,27 +6862,27 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box - darker on mobile/dark mode
                             if (!isStreak && (!hitRate || hitRate.total === 0)) {
                               return {
-                                background: mounted && isDark ? '#1f2937' : '#f3f4f6',
-                                borderColor: mounted && isDark ? '#374151' : '#d1d5db',
+                                background: mounted && isDark ? '#13243a' : '#f3f4f6',
+                                borderColor: mounted && isDark ? '#314766' : '#d1d5db',
                                 borderWidth: '2px',
                                 boxShadow: 'none',
                               };
                             }
                             
-                            let bgColor = mounted && isDark ? '#1f2937' : '#f9fafb';
-                            let borderColor = mounted && isDark ? '#374151' : '#e5e7eb';
+                            let bgColor = mounted && isDark ? '#13243a' : '#f9fafb';
+                            let borderColor = mounted && isDark ? '#314766' : '#e5e7eb';
                             let glowColor: string | null = null;
                             
                             if (isStreak) {
                               const streakValue = prop.streak ?? 0;
                               if (streakValue === 0) {
-                                bgColor = '#B03A3A'; // red
+                                bgColor = '#ef4444'; // red
                                 borderColor = '#ef4444';
                                 glowColor = '#ef4444';
                               } else if (streakValue === 1) {
-                                bgColor = '#E88A3B'; // orange
-                                borderColor = '#f97316';
-                                glowColor = '#f97316';
+                                bgColor = '#f59e0b'; // amber
+                                borderColor = '#f59e0b';
+                                glowColor = '#f59e0b';
                               } else {
                                 bgColor = '#22c55e'; // green
                                 borderColor = '#22c55e';
@@ -6873,13 +6891,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             } else if (hitRate) {
                               const percent = (hitRate.hits / hitRate.total) * 100;
                               if (percent < 30) {
-                                bgColor = '#B03A3A'; // red
+                                bgColor = '#ef4444'; // red
                                 borderColor = '#ef4444';
                                 glowColor = '#ef4444';
                               } else if (percent < 70) {
-                                bgColor = '#E88A3B'; // orange
-                                borderColor = '#f97316';
-                                glowColor = '#f97316';
+                                bgColor = '#f59e0b'; // amber
+                                borderColor = '#f59e0b';
+                                glowColor = '#f59e0b';
                               } else {
                                 bgColor = '#22c55e'; // green
                                 borderColor = '#22c55e';
@@ -6888,12 +6906,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }
                             
                             return {
-                              background: bgColor !== (mounted && isDark ? '#1f2937' : '#f9fafb')
+                              background: bgColor !== (mounted && isDark ? '#13243a' : '#f9fafb')
                                 ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
                                 : bgColor,
                               borderColor: borderColor,
                               borderWidth: '1px',
-                              boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
+                              boxShadow: glowColor ? `0 0 12px ${glowColor}75, 0 0 6px ${glowColor}55` : 'none',
                             };
                           };
                           
@@ -6914,7 +6932,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div
                               key={idx}
                               className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
-                                mounted && isDark ? 'bg-[#0b1a2b] border-[#22324d]' : 'bg-white border-gray-200'
+                                mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] to-[#10253f] border-[#2a3e62]' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
                                 if (navigatingRef.current) return;
@@ -7111,8 +7129,46 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               
                               {/* Statistics Grid */}
                               <div className={`grid grid-cols-6 gap-1 px-1 py-2.5 rounded-2xl mb-3.5 w-full border ${
-                                mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-50 border-gray-200'
+                                mounted && isDark ? 'bg-[#0a1830] border-[#2a3e62]' : 'bg-gray-50 border-gray-200'
                               }`}>
+                                {/* DvP */}
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
+                                  if (prop.dvpRating === null || prop.dvpRating === undefined) {
+                                    return { background: mounted && isDark ? '#13243a' : '#f9fafb', borderColor: mounted && isDark ? '#314766' : '#e5e7eb' };
+                                  }
+                                  let bgColor = mounted && isDark ? '#13243a' : '#f9fafb';
+                                  let borderColor = mounted && isDark ? '#314766' : '#e5e7eb';
+                                  let glowColor: string | null = null;
+                                  const isAflDvp = rowSport === 'afl';
+                                  const easyMin = isAflDvp ? 13 : 21;
+                                  const hardMax = isAflDvp ? 6 : 10;
+                                  if (prop.dvpRating >= easyMin) {
+                                    bgColor = '#22c55e';
+                                    borderColor = '#22c55e';
+                                    glowColor = '#22c55e';
+                                  } else if (prop.dvpRating > hardMax) {
+                                    bgColor = '#f59e0b';
+                                    borderColor = '#f59e0b';
+                                    glowColor = '#f59e0b';
+                                  } else {
+                                    bgColor = '#ef4444';
+                                    borderColor = '#ef4444';
+                                    glowColor = '#ef4444';
+                                  }
+                            return {
+                              background: bgColor !== (mounted && isDark ? '#13243a' : '#f9fafb')
+                                ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
+                                : bgColor,
+                              borderColor: borderColor,
+                              borderWidth: '2px',
+                              boxShadow: glowColor ? `0 0 12px ${glowColor}75, 0 0 6px ${glowColor}55` : 'none',
+                            };
+                                })()}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
+                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? `#${prop.dvpRating}` : 'N/A'}
+                                  </div>
+                                </div>
                                 {/* L5 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>L5</div>
@@ -7169,44 +7225,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   </div>
                                 </div>
                                 
-                                {/* DvP */}
-                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
-                                  if (prop.dvpRating === null || prop.dvpRating === undefined) {
-                                    return { background: mounted && isDark ? '#374151' : '#f9fafb', borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' };
-                                  }
-                                  let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
-                                  let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
-                                  let glowColor: string | null = null;
-                                  const isAflDvp = rowSport === 'afl';
-                                  const easyMin = isAflDvp ? 13 : 21;
-                                  const hardMax = isAflDvp ? 6 : 10;
-                                  if (prop.dvpRating >= easyMin) {
-                                    bgColor = '#22c55e';
-                                    borderColor = '#22c55e';
-                                    glowColor = '#22c55e';
-                                  } else if (prop.dvpRating > hardMax) {
-                                    bgColor = '#f97316';
-                                    borderColor = '#f97316';
-                                    glowColor = '#f97316';
-                                  } else {
-                                    bgColor = '#ef4444';
-                                    borderColor = '#ef4444';
-                                    glowColor = '#ef4444';
-                                  }
-                            return {
-                              background: bgColor !== (mounted && isDark ? '#374151' : '#f9fafb')
-                                ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
-                                : bgColor,
-                              borderColor: borderColor,
-                              borderWidth: '2px',
-                              boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
-                            };
-                                })()}>
-                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>DvP</div>
-                                  <div className={`text-sm font-bold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
-                                    {prop.dvpRating !== null && prop.dvpRating !== undefined ? `#${prop.dvpRating}` : 'N/A'}
-                                  </div>
-                                </div>
                               </div>
                               
                               {/* Bookmaker Odds Section - Horizontally Scrollable */}
