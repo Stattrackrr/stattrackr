@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 /**
  * Global navigation loading bar for App Router transitions.
@@ -9,8 +9,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
  */
 export default function NavigationLoader() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const routeKey = useMemo(() => `${pathname ?? ''}?${searchParams?.toString() ?? ''}`, [pathname, searchParams]);
 
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -77,7 +75,7 @@ export default function NavigationLoader() {
   useEffect(() => {
     stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeKey]);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
