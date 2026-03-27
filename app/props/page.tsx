@@ -4358,14 +4358,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             >
           <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Sport filter: default combined (none selected), select one for single-sport view */}
-            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-[#081427] border-[#1f2a44]' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] border-[#352f57]' : 'bg-gray-50 border-gray-200'}`}>
               <button
                 type="button"
                 onClick={() => toggleSportSelection('nba')}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
                   propsSport === 'nba'
                     ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#0b1a2b] text-gray-300 border-[#26354f] hover:bg-[#10233a]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="NBA"
               >
@@ -4377,7 +4377,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
                   propsSport === 'afl'
                     ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#0b1a2b] text-gray-300 border-[#26354f] hover:bg-[#10233a]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="AFL"
               >
@@ -4396,7 +4396,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     placeholder="Search for a player..."
                     className={`px-4 py-3.5 pl-12 rounded-xl border shadow-sm ${
                       mounted && isDark 
-                        ? 'bg-[#0b1a2b] border-[#26354f] text-white placeholder-gray-400' 
+                        ? 'bg-[#111b33] border-[#463e6b] text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500/80 focus:border-purple-500`}
                     style={{ boxSizing: 'border-box', width: '100%' }}
@@ -5099,7 +5099,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             {/* Player Props Section */}
             <div className={`h-[calc(100%-160px)] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
-                mounted && isDark ? 'bg-[#050d1a] border-[#1f2a44]' : 'bg-white border-gray-200'
+                mounted && isDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
               } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
                 <h2 className={`text-[2rem] lg:text-2xl font-extrabold tracking-tight mb-3 ${
                   mounted && isDark ? 'text-white' : 'text-gray-900'
@@ -6862,15 +6862,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             // If no hitRate data (null/undefined) or no valid data (total === 0) and not streak, return grey box - darker on mobile/dark mode
                             if (!isStreak && (!hitRate || hitRate.total === 0)) {
                               return {
-                                background: mounted && isDark ? '#13243a' : '#f3f4f6',
-                                borderColor: mounted && isDark ? '#314766' : '#d1d5db',
+                                background: mounted && isDark ? '#1a2140' : '#f3f4f6',
+                                borderColor: mounted && isDark ? '#4d4a73' : '#d1d5db',
                                 borderWidth: '2px',
                                 boxShadow: 'none',
                               };
                             }
                             
-                            let bgColor = mounted && isDark ? '#13243a' : '#f9fafb';
-                            let borderColor = mounted && isDark ? '#314766' : '#e5e7eb';
+                            let bgColor = mounted && isDark ? '#1a2140' : '#f9fafb';
+                            let borderColor = mounted && isDark ? '#4d4a73' : '#e5e7eb';
                             let glowColor: string | null = null;
                             
                             if (isStreak) {
@@ -6906,7 +6906,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             }
                             
                             return {
-                              background: bgColor !== (mounted && isDark ? '#13243a' : '#f9fafb')
+                              background: bgColor !== (mounted && isDark ? '#1a2140' : '#f9fafb')
                                 ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
                                 : bgColor,
                               borderColor: borderColor,
@@ -6932,7 +6932,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div
                               key={idx}
                               className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
-                                mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] to-[#10253f] border-[#2a3e62]' : 'bg-white border-gray-200'
+                                mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
                                 if (navigatingRef.current) return;
@@ -7129,15 +7129,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               
                               {/* Statistics Grid */}
                               <div className={`grid grid-cols-6 gap-1 px-1 py-2.5 rounded-2xl mb-3.5 w-full border ${
-                                mounted && isDark ? 'bg-[#0a1830] border-[#2a3e62]' : 'bg-gray-50 border-gray-200'
+                                mounted && isDark ? 'bg-[#0f1a34] border-[#4a3f74]' : 'bg-gray-50 border-gray-200'
                               }`}>
                                 {/* DvP */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={(() => {
                                   if (prop.dvpRating === null || prop.dvpRating === undefined) {
-                                    return { background: mounted && isDark ? '#13243a' : '#f9fafb', borderColor: mounted && isDark ? '#314766' : '#e5e7eb' };
+                                    return { background: mounted && isDark ? '#1a2140' : '#f9fafb', borderColor: mounted && isDark ? '#4d4a73' : '#e5e7eb' };
                                   }
-                                  let bgColor = mounted && isDark ? '#13243a' : '#f9fafb';
-                                  let borderColor = mounted && isDark ? '#314766' : '#e5e7eb';
+                                  let bgColor = mounted && isDark ? '#1a2140' : '#f9fafb';
+                                  let borderColor = mounted && isDark ? '#4d4a73' : '#e5e7eb';
                                   let glowColor: string | null = null;
                                   const isAflDvp = rowSport === 'afl';
                                   const easyMin = isAflDvp ? 13 : 21;
@@ -7156,7 +7156,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     glowColor = '#ef4444';
                                   }
                             return {
-                              background: bgColor !== (mounted && isDark ? '#13243a' : '#f9fafb')
+                              background: bgColor !== (mounted && isDark ? '#1a2140' : '#f9fafb')
                                 ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
                                 : bgColor,
                               borderColor: borderColor,
