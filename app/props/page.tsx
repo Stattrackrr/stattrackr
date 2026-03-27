@@ -4331,23 +4331,23 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
             {/* Main Content Area - Top Player Props */}
             <div 
-              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
+              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 pt-1 lg:pt-0 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
               style={{
                 scrollbarGutter: 'stable',
                 paddingLeft: 0,
                 paddingRight: 0,
               }}
             >
-          <div className={`h-full pb-12 lg:pr-0 px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Sport filter: default combined (none selected), select one for single-sport view */}
-            <div className={`flex gap-1.5 mb-2 lg:gap-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-[#081427] border-[#1f2a44]' : 'bg-gray-50 border-gray-200'}`}>
               <button
                 type="button"
                 onClick={() => toggleSportSelection('nba')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
                   propsSport === 'nba'
-                    ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : mounted && isDark ? 'bg-[#0b1a2b] text-gray-300 border-[#26354f] hover:bg-[#10233a]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="NBA"
               >
@@ -4356,10 +4356,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               <button
                 type="button"
                 onClick={() => toggleSportSelection('afl')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-center ${
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
                   propsSport === 'afl'
-                    ? mounted && isDark ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#0a1929] text-gray-400 border-gray-600 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : mounted && isDark ? 'bg-[#0b1a2b] text-gray-300 border-[#26354f] hover:bg-[#10233a]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="AFL"
               >
@@ -4368,7 +4368,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             </div>
 
             {/* Search Bar */}
-            <div className={`mb-2 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+            <div className={`mb-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
                 <div className="relative" style={{ width: '100%', boxSizing: 'border-box' }}>
                   <input
@@ -4376,11 +4376,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for a player..."
-                    className={`px-4 py-3 pl-12 rounded-lg border ${
+                    className={`px-4 py-3.5 pl-12 rounded-xl border shadow-sm ${
                       mounted && isDark 
-                        ? 'bg-[#0a1929] border-gray-700 text-white placeholder-gray-400' 
+                        ? 'bg-[#0b1a2b] border-[#26354f] text-white placeholder-gray-400' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                    } focus:outline-none focus:ring-2 focus:ring-purple-500/80 focus:border-purple-500`}
                     style={{ boxSizing: 'border-box', width: '100%' }}
                   />
                   <svg
@@ -5080,10 +5080,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
             {/* Player Props Section */}
             <div className={`h-[calc(100%-160px)] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
-              <div className={`rounded-lg w-full pr-4 lg:pr-2 ${
-                mounted && isDark ? 'bg-[#050d1a]' : 'bg-white'
-              } shadow-sm`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
-                <h2 className={`text-2xl font-bold mb-2 ${
+              <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
+                mounted && isDark ? 'bg-[#050d1a] border-[#1f2a44]' : 'bg-white border-gray-200'
+              } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
+                <h2 className={`text-[2rem] lg:text-2xl font-extrabold tracking-tight mb-3 ${
                   mounted && isDark ? 'text-white' : 'text-gray-900'
                 }`} style={{ marginTop: 0, paddingTop: 0 }}>
                   Top Player Props
@@ -6566,9 +6566,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                       
                       {/* Mobile Column Sort Filters - Scrollable row above player props */}
+                      {!isCombinedMode && (
                       <div className="lg:hidden mb-4 w-full px-0.5">
                         <div 
-                          className="overflow-x-auto mobile-filter-scroll"
+                          className="overflow-x-auto mobile-filter-scroll rounded-2xl px-0.5 py-1.5"
                           style={{ 
                             scrollbarWidth: 'thin',
                             scrollbarColor: mounted && isDark ? '#4b5563 #1f2937' : '#9ca3af #f3f4f6',
@@ -6580,7 +6581,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* IP Sort */}
                             <button
                               onClick={() => handleColumnSort('ip')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.ip !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6609,7 +6610,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* DvP Sort */}
                             <button
                               onClick={() => handleColumnSort('dvp')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.dvp !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6638,7 +6639,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* L5 Sort */}
                             <button
                               onClick={() => handleColumnSort('l5')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.l5 !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6667,7 +6668,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* L10 Sort */}
                             <button
                               onClick={() => handleColumnSort('l10')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.l10 !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6696,7 +6697,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* H2H Sort */}
                             <button
                               onClick={() => handleColumnSort('h2h')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.h2h !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6725,7 +6726,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* Season Sort */}
                             <button
                               onClick={() => handleColumnSort('season')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.season !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6754,7 +6755,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             {/* Streak Sort */}
                             <button
                               onClick={() => handleColumnSort('streak')}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
                                 columnSort.streak !== 'none'
                                   ? mounted && isDark
                                     ? 'bg-purple-600 border-purple-500 text-white'
@@ -6782,9 +6783,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           </div>
                         </div>
                       </div>
+                      )}
                       
                       {/* Mobile Card View - Hidden on desktop */}
-                      <div className={`lg:hidden space-y-4 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+                      <div className={`lg:hidden space-y-4.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
                         {activePaginatedProps.map((prop, idx) => {
                           const rowSport = propsSport === 'combined'
                             ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
@@ -6911,8 +6913,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           return (
                             <div
                               key={idx}
-                              className={`relative rounded-xl border-2 pl-3 pr-4 py-3.5 ${isCombinedMode ? 'pt-8' : ''} ${
-                                mounted && isDark ? 'bg-[#0a1929] border-gray-900' : 'bg-white border-gray-200'
+                              className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+                                mounted && isDark ? 'bg-[#0b1a2b] border-[#22324d]' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
                                 if (navigatingRef.current) return;
@@ -7108,8 +7110,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </div>
                               
                               {/* Statistics Grid */}
-                              <div className={`grid grid-cols-6 gap-0.5 px-0 py-2.5 rounded-xl mb-3 w-full ${
-                                mounted && isDark ? 'bg-gray-900/80' : 'bg-gray-50'
+                              <div className={`grid grid-cols-6 gap-1 px-1 py-2.5 rounded-2xl mb-3.5 w-full border ${
+                                mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-50 border-gray-200'
                               }`}>
                                 {/* L5 */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.last5HitRate)}>
@@ -7248,8 +7250,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         return (
                                           <div
                                             key={idx}
-                                            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border-2 flex-shrink-0 ${
-                                              mounted && isDark ? 'bg-[#0a1929] border-gray-800' : 'bg-gray-100 border-gray-300'
+                                            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border flex-shrink-0 ${
+                                              mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
                                           >
@@ -7284,8 +7286,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               e.stopPropagation();
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
-                                            className={`flex items-center justify-center px-1 py-1.5 rounded-lg border-2 flex-shrink-0 relative ${
-                                              mounted && isDark ? 'bg-[#0a1929] border-gray-800 hover:bg-[#0d1f35]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
+                                            className={`flex items-center justify-center px-1 py-1.5 rounded-xl border flex-shrink-0 relative ${
+                                              mounted && isDark ? 'bg-[#081427] border-[#22324d] hover:bg-[#10233a]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                                             }`}
                                             style={{ minWidth: '40px' }}
                                           >
@@ -7307,9 +7309,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               />
                                               {/* Popup content - centered on mobile */}
                                               <div
-                                                className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-lg border shadow-2xl p-4 w-[90vw] max-w-md ${
+                                                className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] rounded-2xl border shadow-2xl p-4 w-[90vw] max-w-md ${
                                                   mounted && isDark
-                                                    ? 'bg-[#0a1929] border-gray-800'
+                                                    ? 'bg-[#0b1a2b] border-[#22324d]'
                                                     : 'bg-white border-gray-300'
                                                 }`}
                                                 style={{
@@ -7543,6 +7545,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       </div>
 
       {/* Find player (not in props / no odds): bottom-right mobile, top-right desktop */}
+      {propsSport !== 'combined' && (
       <button
         type="button"
         onClick={() => {
@@ -7562,6 +7565,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </button>
+      )}
 
       {/* Find player modal */}
       {findPlayerOpen && (
