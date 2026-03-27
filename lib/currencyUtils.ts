@@ -52,7 +52,14 @@ export function americanToDecimal(american: number): number {
 }
 
 // Format odds based on user preference
-export function formatOdds(decimal: number, format: 'american' | 'decimal'): string {
+export function formatOdds(
+  decimal: number | null | undefined,
+  format: 'american' | 'decimal'
+): string {
+  if (decimal == null || !Number.isFinite(decimal) || decimal <= 1) {
+    return '--';
+  }
+
   if (format === 'american') {
     return decimalToAmerican(decimal);
   }

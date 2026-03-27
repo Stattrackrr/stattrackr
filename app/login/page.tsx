@@ -310,7 +310,7 @@ export default function LoginPage() {
               isDark={true}
             />
             <p className="text-xl text-gray-400 mb-8">
-              Advanced NBA research and analytics platform
+              Advanced NBA and AFL research and analytics platform
             </p>
           </div>
 
@@ -318,19 +318,19 @@ export default function LoginPage() {
             <div className="bg-[#0a1929] rounded-xl p-6 border border-gray-800">
               <TrendingUp className="w-8 h-8 text-purple-400 mb-3" />
               <h3 className="font-semibold mb-2 text-gray-100">Performance Analytics</h3>
-              <p className="text-sm text-gray-500">Track performance metrics, success rates, and trends</p>
+              <p className="text-sm text-gray-500">Track hit rates, performance metrics, and trends across NBA and AFL</p>
             </div>
             
             <div className="bg-[#0a1929] rounded-xl p-6 border border-gray-800">
               <BarChart3 className="w-8 h-8 text-purple-400 mb-3" />
-              <h3 className="font-semibold mb-2 text-gray-100">NBA Player Statistics</h3>
-              <p className="text-sm text-gray-500">Research player performance and game statistics</p>
+              <h3 className="font-semibold mb-2 text-gray-100">NBA & AFL Player Statistics</h3>
+              <p className="text-sm text-gray-500">Research player performance, matchups, and game stats</p>
             </div>
             
             <div className="bg-[#0a1929] rounded-xl p-6 border border-gray-800">
               <PieChart className="w-8 h-8 text-purple-400 mb-3" />
-              <h3 className="font-semibold mb-2 text-gray-100">Statistical Analysis</h3>
-              <p className="text-sm text-gray-500">Analyze by category and identify trends</p>
+              <h3 className="font-semibold mb-2 text-gray-100">Sport-Specific Analysis</h3>
+              <p className="text-sm text-gray-500">Analyze by stat category, opponent, and recent form</p>
             </div>
             
             <div className="bg-[#0a1929] rounded-xl p-6 border border-gray-800">
@@ -354,7 +354,7 @@ export default function LoginPage() {
                   isDark={true}
                 />
               </div>
-              <p className="text-gray-500">Advanced NBA research and analytics</p>
+              <p className="text-gray-500">Advanced NBA and AFL research and analytics</p>
             </div>
 
             {/* Form Header */}
