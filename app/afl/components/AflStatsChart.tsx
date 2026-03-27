@@ -1150,7 +1150,11 @@ export function AflStatsChart({
   }
 
   return (
-    <div className="h-full w-full px-2 sm:px-3 md:px-4 pt-3 pb-2 flex flex-col">
+    <div
+      className={`h-full w-full pt-3 pb-2 flex flex-col ${
+        showAdvancedFilters ? 'px-0 sm:px-0 md:px-1' : 'px-0 sm:px-1 md:px-2'
+      }`}
+    >
       <div className="mb-4 sm:mb-5 md:mb-4 mt-0 w-full max-w-full">
         <div
           className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar"
@@ -1186,7 +1190,7 @@ export function AflStatsChart({
             : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
         }`}
       >
-        <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-2 sm:ml-6">
+        <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
           {slotLeftOfLine}
           <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
           <input
@@ -1359,7 +1363,7 @@ export function AflStatsChart({
               );
               return (
                 <>
-                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-12">{slider}</div>
+                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-2">{slider}</div>
                 </>
               );
             })()}
@@ -1442,6 +1446,12 @@ export function AflStatsChart({
             averageOverlayLowerOnMobile={true}
             averageOverlayLower={showAdvancedFilters}
             averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
+            desktopChartLeftInset={24}
+            desktopChartRightInset={showAdvancedFilters ? 2 : 8}
+            desktopChartRightInsetWithSecondAxis={showAdvancedFilters ? 28 : 64}
+            desktopChartRightMargin={showAdvancedFilters ? 2 : 8}
+            desktopChartRightMarginWithSecondAxis={showAdvancedFilters ? 0 : 4}
+            yAxisWidth={26}
           />
         )}
       </div>

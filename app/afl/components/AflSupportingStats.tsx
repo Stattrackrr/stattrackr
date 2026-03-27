@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
+import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 function toNumericValue(v: unknown): number | null {
   if (v == null) return null;
@@ -34,7 +35,12 @@ function parseRoundIndex(round: unknown): number {
 }
 
 /** Apply same timeframe filter as AflStatsChart so bars match the main chart. */
-function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTimeframe, season?: number): T[] {
+function applyTimeframe<T extends BaseRow>(
+  baseData: T[],
+  timeframe: AflChartTimeframe,
+  season?: number,
+  nextOpponent?: string | null
+): T[] {
   if (!baseData.length) return [];
   if (timeframe === 'thisseason' && season != null) {
     return baseData.filter((row) => (row.gameSeason ?? season) === season) as T[];
@@ -44,9 +50,17 @@ function applyTimeframe<T extends BaseRow>(baseData: T[], timeframe: AflChartTim
   }
   if (timeframe === 'thisseason' || timeframe === 'lastseason') return baseData;
   if (timeframe === 'h2h') {
-    const latestOpponent = baseData[baseData.length - 1]?.opponent;
-    if (!latestOpponent) return baseData;
-    const h2h = baseData.filter((row) => row.opponent === latestOpponent);
+    // Match AflStatsChart: prefer upcoming opponent when provided; otherwise fallback to latest game's opponent.
+    const targetOpponent = nextOpponent?.trim() || baseData[baseData.length - 1]?.opponent;
+    if (!targetOpponent) return baseData;
+    const resolveOpp = (opp: string | undefined) =>
+      opp ? (opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim()) : '';
+    const targetOfficial = resolveOpp(targetOpponent);
+    const h2h = baseData.filter((row) => {
+      const rowOpp = row.opponent;
+      if (!rowOpp || typeof rowOpp !== 'string') return false;
+      return resolveOpp(rowOpp) === targetOfficial || rowOpp.trim() === targetOpponent;
+    });
     return (h2h.length ? h2h : baseData) as T[];
   }
   const lastN = parseInt(timeframe.replace('last', ''), 10);
@@ -158,20 +172,24 @@ interface AflSupportingStatsProps {
   gameLogs: Array<Record<string, unknown>>;
   timeframe: AflChartTimeframe;
   season?: number;
+  nextOpponent?: string | null;
   mainChartStat?: string;
   supportingStatKind: SupportingStatKind;
   onSupportingStatKindChange: (kind: SupportingStatKind) => void;
   isDark: boolean;
+  alignRightTight?: boolean;
 }
 
 export function AflSupportingStats({
   gameLogs,
   timeframe,
   season = 2026,
+  nextOpponent = null,
   mainChartStat,
   supportingStatKind,
   onSupportingStatKindChange,
   isDark,
+  alignRightTight = false,
 }: AflSupportingStatsProps) {
   const showDisposalsToggle = mainChartStat === 'disposals';
   const showGoalsToggle = mainChartStat === 'goals';
@@ -203,6 +221,7 @@ export function AflSupportingStats({
         ? DISPOSALS_TOGGLE_OPTIONS
         : DEFAULT_TOGGLE_OPTIONS;
   const showSupportingToggle = true;
+  const toggleRailPaddingClass = alignRightTight ? 'pl-3 pr-4 sm:pl-4 sm:pr-6' : 'px-3 sm:px-4';
 
   // All games (2025 + 2026) sorted oldest → newest (newest on the right)
   const baseData = useMemo(() => {
@@ -312,10 +331,10 @@ export function AflSupportingStats({
   }, [gameLogs, supportingStatKind, season]);
 
   const chartData = useMemo(() => {
-    const data = applyTimeframe(baseData, timeframe, season) as (BaseRow & { value: number; isPercent: boolean; gameDate: string })[];
+    const data = applyTimeframe(baseData, timeframe, season, nextOpponent) as (BaseRow & { value: number; isPercent: boolean; gameDate: string })[];
     // Ensure unique keys per bar so Recharts doesn't merge (e.g. same game_number across seasons)
     return data.map((row, idx) => ({ ...row, key: `supporting-${idx}`, xKey: `supporting-${idx}` }));
-  }, [baseData, timeframe, season]);
+  }, [baseData, timeframe, season, nextOpponent]);
 
   const baseDataAll = useMemo(() => {
     if (!Array.isArray(gameLogs) || gameLogs.length === 0) return [];
@@ -372,8 +391,8 @@ export function AflSupportingStats({
   }, [gameLogs, season]);
 
   const filteredAll = useMemo(
-    () => applyTimeframe(baseDataAll, timeframe, season),
-    [baseDataAll, timeframe, season]
+    () => applyTimeframe(baseDataAll, timeframe, season, nextOpponent),
+    [baseDataAll, timeframe, season, nextOpponent]
   );
 
   const averagesByStat = useMemo(() => {
@@ -588,7 +607,7 @@ export function AflSupportingStats({
       <div className="flex flex-col gap-3 min-w-0">
         {showSupportingToggle && (
           <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 min-w-0 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
-            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar px-3 sm:px-4" style={{ scrollbarWidth: 'thin' }}>
+            <div className={`w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar ${toggleRailPaddingClass}`} style={{ scrollbarWidth: 'thin' }}>
               <div className="flex flex-nowrap gap-2 justify-start min-w-min pb-1">
                 {supportingOptions.map((o) => (
                   <button
@@ -627,7 +646,7 @@ export function AflSupportingStats({
     <div className="flex flex-col gap-3 min-w-0">
       {showSupportingToggle && (
         <div className={`sticky top-0 z-10 flex flex-col -mt-1 pt-1 pb-2 min-w-0 ${isDark ? 'bg-[#0a1929]' : 'bg-white'}`}>
-          <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar px-3 sm:px-4" style={{ scrollbarWidth: 'thin' }}>
+          <div className={`w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar ${toggleRailPaddingClass}`} style={{ scrollbarWidth: 'thin' }}>
             <div className="flex flex-nowrap gap-2 justify-start min-w-min pb-1">
               {supportingOptions.map((o) => (
                 <button
@@ -658,7 +677,7 @@ export function AflSupportingStats({
           />
         </div>
       )}
-      <div className="w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none">
+      <div className={`w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none ${alignRightTight ? 'lg:pr-6 xl:pr-7' : ''}`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart key={timeframe} data={chartData} margin={margin} barCategoryGap="5%">
             <XAxis

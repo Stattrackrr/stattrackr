@@ -52,6 +52,18 @@ interface SimpleChartProps {
   averageOverlayLowerExtra?: boolean;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
+  /** Optional desktop left inset for plotted area + overlays. */
+  desktopChartLeftInset?: number;
+  /** Optional desktop right inset for plotted area + overlays (single axis). */
+  desktopChartRightInset?: number;
+  /** Optional desktop right inset for plotted area + overlays when second axis is shown. */
+  desktopChartRightInsetWithSecondAxis?: number;
+  /** Optional desktop right margin for recharts canvas (single axis). */
+  desktopChartRightMargin?: number;
+  /** Optional desktop right margin for recharts canvas when second axis is shown. */
+  desktopChartRightMarginWithSecondAxis?: number;
+  /** Optional Y-axis width for the primary axis on desktop. */
+  yAxisWidth?: number;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -84,6 +96,12 @@ const SimpleChart = memo(function SimpleChart({
   averageOverlayLower = false,
   averageOverlayLowerExtra = false,
   secondaryRankAxisMax,
+  desktopChartLeftInset = 32,
+  desktopChartRightInset = 14,
+  desktopChartRightInsetWithSecondAxis = 77,
+  desktopChartRightMargin = 14,
+  desktopChartRightMarginWithSecondAxis = 5,
+  yAxisWidth = 32,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -608,11 +626,19 @@ const SimpleChart = memo(function SimpleChart({
         (container as HTMLElement).style.right = '0px';
       } else {
         // Desktop margins
-        (container as HTMLElement).style.left = '32px';
-        (container as HTMLElement).style.right = hasSecondAxis ? '77px' : '14px';
+        (container as HTMLElement).style.left = `${desktopChartLeftInset}px`;
+        (container as HTMLElement).style.right = hasSecondAxis
+          ? `${desktopChartRightInsetWithSecondAxis}px`
+          : `${desktopChartRightInset}px`;
       }
     }
-  }, [isMobile, hasSecondAxis]);
+  }, [
+    isMobile,
+    hasSecondAxis,
+    desktopChartLeftInset,
+    desktopChartRightInset,
+    desktopChartRightInsetWithSecondAxis,
+  ]);
 
   // Update container margin when second axis or mobile state changes
   useEffect(() => {
@@ -887,8 +913,8 @@ const SimpleChart = memo(function SimpleChart({
         <div
           className="absolute pointer-events-none"
           style={{
-            left: isMobile ? '0px' : '32px',
-            right: isMobile ? '0px' : '14px',
+            left: isMobile ? '0px' : `${desktopChartLeftInset}px`,
+            right: isMobile ? '0px' : `${desktopChartRightInset}px`,
             top: '22px',
             bottom: '57px',
             zIndex: 5,
@@ -912,8 +938,8 @@ const SimpleChart = memo(function SimpleChart({
         id="simple-chart-betting-line-container"
         className="absolute pointer-events-none"
         style={{
-          left: isMobile ? '0px' : '32px', // Full width on mobile, yAxis width on desktop
-          right: isMobile ? '0px' : '14px', // Full width on mobile, updated via DOM when second axis changes on desktop
+          left: isMobile ? '0px' : `${desktopChartLeftInset}px`, // Full width on mobile, yAxis width on desktop
+          right: isMobile ? '0px' : `${desktopChartRightInset}px`, // Full width on mobile, updated via DOM when second axis changes on desktop
           top: isMobile ? '44px' : '22px',   // Match chart margin.top (mobile 44, desktop 22)
           bottom: isMobile ? '59px' : '57px', // Match chart margin.bottom (19) + XAxis height (40) so overlay = bar area only
           zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
@@ -944,7 +970,7 @@ const SimpleChart = memo(function SimpleChart({
             data={mergedChartData}
             margin={{ 
               top: isMobile ? 44 : 22,
-              right: isMobile ? 0 : (hasSecondAxis ? 5 : 14), 
+              right: isMobile ? 0 : (hasSecondAxis ? desktopChartRightMarginWithSecondAxis : desktopChartRightMargin), 
               left: 0, 
               bottom: 19 
             }}
@@ -969,7 +995,7 @@ const SimpleChart = memo(function SimpleChart({
               tickFormatter={yAxisTickFormatter ?? ((v: number) => String(Math.round(v)))}
               axisLine={false}
               tickLine={false}
-              width={32}
+              width={yAxisWidth}
               hide={isMobile}
             />
             {hasSecondAxis && secondAxisConfig && (

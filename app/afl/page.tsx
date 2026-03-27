@@ -3116,7 +3116,11 @@ export default function AFLPage() {
                 </div>
                 {/* 3. Chart container - AFL stats line (bar chart by stat) */}
                 <div
-                  className={`chart-container-no-focus relative z-10 rounded-lg shadow-sm p-0 sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0 border h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${
+                  className={`chart-container-no-focus relative z-10 rounded-lg shadow-sm p-0 border h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${
+                    showAdvancedFilters
+                      ? 'sm:pt-0 sm:pr-0 sm:pb-0 sm:pl-0 md:pt-1 md:pr-0 md:pb-0 md:pl-0 lg:pt-2 lg:pr-0 lg:pb-0 lg:pl-0'
+                      : 'sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0'
+                  } ${
                     showEmptyShell
                       ? 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
                       : 'bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700'
@@ -3389,7 +3393,11 @@ export default function AFLPage() {
                 </div>
                 {/* 4. Supporting stats - no gap, flush with chart; hidden in Game Props (mobile shows Opponent Breakdown only below) */}
                 {aflPropsMode === 'player' && (
-                  <div className="w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 border border-gray-200 dark:border-gray-700">
+                  <div
+                    className={`w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm mt-0 py-3 sm:py-4 md:py-4 px-0 border border-gray-200 dark:border-gray-700 ${
+                      showAdvancedFilters ? 'lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-7' : 'lg:px-3 xl:px-4'
+                    }`}
+                  >
                     {showEmptyShell ? (
                       <div className="min-h-[220px]" />
                     ) : showStatsLoadingShell ? (
@@ -3404,17 +3412,23 @@ export default function AFLPage() {
                       </div>
                     ) : (
                       <>
-                        <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        <h3
+                          className={`text-sm font-semibold mb-1 ${
+                            showAdvancedFilters ? 'pl-3 pr-4 sm:pl-4 sm:pr-6' : 'px-3 sm:px-4'
+                          } ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
+                        >
                           Supporting stats
                         </h3>
                         <AflSupportingStats
                           gameLogs={chartGameLogsForPlayer}
                           timeframe={aflChartTimeframe}
                           season={season}
+                          nextOpponent={displayOpponent}
                           mainChartStat={mainChartStat}
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}
                           isDark={!!mounted && isDark}
+                          alignRightTight={showAdvancedFilters}
                         />
                         <div className="hidden lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                           <AflTeamSelectionsCard
