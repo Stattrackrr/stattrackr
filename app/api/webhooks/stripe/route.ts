@@ -23,6 +23,20 @@ if (!supabaseServiceKey) {
 // Create Supabase admin client (bypasses RLS)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+const TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT = process.env.TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT;
+
+function getTrialImmediateCancelCutoffMs(): number | null {
+  if (!TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT) return null;
+  const parsedMs = Date.parse(TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT);
+  if (Number.isNaN(parsedMs)) {
+    console.warn(
+      `Invalid TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT value: ${TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT}`
+    );
+    return null;
+  }
+  return parsedMs;
+}
+
 function isPushoverConfigured(): boolean {
   return Boolean(process.env.PUSHOVER_TOKEN && process.env.PUSHOVER_USER_KEY);
 }
@@ -262,7 +276,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Find user by customer ID
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, email, has_used_trial')
+    .select('id, email, has_used_trial, trial_used_at')
     .eq('stripe_customer_id', customerId)
     .single();
 
@@ -289,9 +303,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   // Business rule: when a free trial is canceled, remove access immediately.
   // Paid subscriptions still keep access until period end via Stripe's normal flow.
+  const cutoffMs = getTrialImmediateCancelCutoffMs();
+  const trialUsedAtMs = profile.trial_used_at ? Date.parse(profile.trial_used_at) : NaN;
+  const trialStartMs = Number.isNaN(trialUsedAtMs) ? subscription.created * 1000 : trialUsedAtMs;
+  const isNewTrialForImmediateCancel = cutoffMs === null || trialStartMs >= cutoffMs;
   const isCanceledFreeTrial =
     subscription.status === 'trialing' &&
-    subscription.cancel_at_period_end === true;
+    subscription.cancel_at_period_end === true &&
+    isNewTrialForImmediateCancel;
 
   if (isCanceledFreeTrial) {
     updateData.subscription_status = 'canceled';
@@ -321,7 +340,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     console.error('Error updating subscription:', error);
   } else {
     console.log(
-      `Subscription updated for user ${profile.id}: status=${updateData.subscription_status}, tier=${updateData.subscription_tier}, trialCanceled=${isCanceledFreeTrial}`
+      `Subscription updated for user ${profile.id}: status=${updateData.subscription_status}, tier=${updateData.subscription_tier}, trialCanceled=${isCanceledFreeTrial}, newTrialForImmediateCancel=${isNewTrialForImmediateCancel}`
     );
   }
 }

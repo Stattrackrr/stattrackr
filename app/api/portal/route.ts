@@ -5,6 +5,20 @@ import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
+const TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT = process.env.TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT;
+
+function getTrialImmediateCancelCutoffMs(): number | null {
+  if (!TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT) return null;
+  const parsedMs = Date.parse(TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT);
+  if (Number.isNaN(parsedMs)) {
+    console.warn(
+      `Invalid TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT value: ${TRIAL_IMMEDIATE_CANCEL_EFFECTIVE_AT}`
+    );
+    return null;
+  }
+  return parsedMs;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting (even with auth, prevent abuse)
@@ -34,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Get Stripe customer ID and status from profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_customer_id, subscription_status')
+      .select('stripe_customer_id, subscription_status, trial_used_at')
       .eq('id', user.id)
       .single();
 
@@ -50,12 +64,37 @@ export async function GET(request: NextRequest) {
 
     // Create Stripe Customer Portal session
     const stripe = getStripe();
-    const isTrialing = profile.subscription_status === 'trialing';
+    let isTrialing = profile.subscription_status === 'trialing';
+    let stripeTrialCreatedMs: number | null = null;
     const trialConfigId = process.env.STRIPE_PORTAL_CONFIG_TRIAL;
     const paidConfigId = process.env.STRIPE_PORTAL_CONFIG_PAID;
-    const selectedConfigId = isTrialing ? trialConfigId : paidConfigId;
+    // Prefer Stripe as source-of-truth to avoid stale DB status routing.
+    try {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: profile.stripe_customer_id,
+        status: 'all',
+        limit: 10,
+      });
+      const trialingSubscriptions = subscriptions.data.filter((sub) => sub.status === 'trialing');
+      const hasTrialingSubscription = trialingSubscriptions.length > 0;
+      isTrialing = hasTrialingSubscription;
+      if (hasTrialingSubscription) {
+        stripeTrialCreatedMs = Math.max(...trialingSubscriptions.map((sub) => sub.created * 1000));
+      }
+    } catch (statusError: any) {
+      console.warn('Portal - Could not confirm trial status from Stripe, using profile status', {
+        code: statusError?.code,
+        type: statusError?.type,
+      });
+    }
+    const cutoffMs = getTrialImmediateCancelCutoffMs();
+    const trialUsedAtMs = profile.trial_used_at ? Date.parse(profile.trial_used_at) : NaN;
+    const trialStartMs = Number.isNaN(trialUsedAtMs) ? stripeTrialCreatedMs : trialUsedAtMs;
+    const isNewTrialForImmediateCancel =
+      isTrialing && (cutoffMs === null || (trialStartMs !== null && trialStartMs >= cutoffMs));
+    const selectedConfigId = isNewTrialForImmediateCancel ? trialConfigId : paidConfigId;
 
-    if (isTrialing && !trialConfigId) {
+    if (isNewTrialForImmediateCancel && !trialConfigId) {
       console.warn('Portal - Trial user without STRIPE_PORTAL_CONFIG_TRIAL, falling back to default portal config');
     }
 
@@ -87,6 +126,7 @@ export async function GET(request: NextRequest) {
     console.log('Portal - Redirecting to Stripe portal:', {
       url: portalSession.url,
       isTrialing,
+      isNewTrialForImmediateCancel,
       usesCustomConfig: Boolean(selectedConfigId),
     });
     return NextResponse.redirect(portalSession.url);
