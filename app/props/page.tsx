@@ -4221,13 +4221,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   };
 
 
-  // Paywall: show loading until subscription is checked; non-pro users are redirected when cache has loaded
-  if (!subscriptionChecked || !isPro) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'}`}>
-        <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    );
+  // Avoid full-screen blocking loader when navigating back from dashboards.
+  // Let page skeletons render immediately; redirect non-pro users once checks finish.
+  if (subscriptionChecked && !isPro) {
+    return null;
   }
 
   return (
@@ -4358,7 +4355,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             >
           <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Sport filter: default combined (none selected), select one for single-sport view */}
-            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] border-[#352f57]' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] lg:bg-none lg:bg-[#050d1a] border-[#352f57] lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
               <button
                 type="button"
                 onClick={() => toggleSportSelection('nba')}
@@ -5711,6 +5708,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   setNavigatingToPlayer(true);
                                   if (rowSport === 'afl') {
                                     const team = prop.team || '';
+                                    const opponent = prop.opponent || '';
+                                    const currentSeason = new Date().getFullYear();
+
+                                    // Warm key AFL endpoints before navigating so player mode can render faster.
+                                    const prefetchUrls = [
+                                      `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
+                                      `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
+                                      `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
+                                      `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
+                                    ];
+                                    prefetchUrls.forEach((url) => {
+                                      fetch(url, { cache: 'default' }).catch(() => {
+                                        // Ignore prefetch errors - navigation should still continue.
+                                      });
+                                    });
+
                                     if (team) {
                                       fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
                                         .then((r) => r.json())
@@ -5720,9 +5733,55 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               team,
                                               next_opponent: d?.next_opponent ?? null,
                                               next_game_tipoff: d?.next_game_tipoff ?? null,
+                                              next_game_id: d?.next_game_id ?? d?.game_id ?? null,
                                               fetchedAt: Date.now(),
                                             }));
                                           } catch {}
+                                          const gameId = d?.game_id ?? d?.gameId ?? null;
+                                          if (gameId) {
+                                            fetch(`/api/afl/odds?game_id=${encodeURIComponent(String(gameId))}`, { cache: 'default' }).catch(() => {});
+                                          } else if (team && opponent) {
+                                            fetch(`/api/afl/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`, { cache: 'default' }).catch(() => {});
+                                          }
+                                          const prefetchOpponent =
+                                            (typeof d?.next_opponent === 'string' && d.next_opponent.trim())
+                                              ? d.next_opponent.trim()
+                                              : opponent;
+                                          const prefetchTipoff =
+                                            typeof d?.next_game_tipoff === 'string' && d.next_game_tipoff
+                                              ? d.next_game_tipoff
+                                              : '';
+                                          const prefetchDate =
+                                            prefetchTipoff && Number.isFinite(new Date(prefetchTipoff).getTime())
+                                              ? new Date(prefetchTipoff).toISOString().split('T')[0]
+                                              : '';
+                                          const teamOpp = [
+                                            `team=${encodeURIComponent(team)}`,
+                                            prefetchOpponent ? `opponent=${encodeURIComponent(prefetchOpponent)}` : '',
+                                            prefetchDate ? `game_date=${encodeURIComponent(prefetchDate)}` : '',
+                                            gameId ? `event_id=${encodeURIComponent(String(gameId))}` : '',
+                                          ].filter(Boolean).join('&');
+                                          if (teamOpp) {
+                                            fetch(`/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1&${teamOpp}`, { cache: 'default' })
+                                              .then(async (res) => {
+                                                if (!res.ok) return null;
+                                                return await res.json();
+                                              })
+                                              .then((data) => {
+                                                if (!data?.all || typeof data.all !== 'object') return;
+                                                try {
+                                                  sessionStorage.setItem('afl_player_props_prefetch', JSON.stringify({
+                                                    player: prop.playerName,
+                                                    team,
+                                                    all: data.all,
+                                                    fetchedAt: Date.now(),
+                                                  }));
+                                                } catch {
+                                                  // Ignore session write failures.
+                                                }
+                                              })
+                                              .catch(() => {});
+                                          }
                                         })
                                         .catch(() => {});
                                     }
@@ -5731,7 +5790,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     q.set('name', prop.playerName);
                                     if (prop.team) q.set('team', prop.team);
                                     if (prop.opponent) q.set('opponent', prop.opponent);
-                                    router.push(`/afl?${q.toString()}`);
+
+                                    // Show loading bar briefly so transition is intentional and prefetch has head start.
+                                    setTimeout(() => {
+                                      router.push(`/afl?${q.toString()}`);
+                                    }, 200);
                                     setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                     return;
                                   }
@@ -6940,6 +7003,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 setNavigatingToPlayer(true);
                                 if (rowSport === 'afl') {
                                   const team = prop.team || '';
+                                  const opponent = prop.opponent || '';
+                                  const currentSeason = new Date().getFullYear();
+
+                                  // Warm key AFL endpoints before navigating so player mode can render faster.
+                                  const prefetchUrls = [
+                                    `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
+                                    `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
+                                    `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
+                                    `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
+                                  ];
+                                  prefetchUrls.forEach((url) => {
+                                    fetch(url, { cache: 'default' }).catch(() => {
+                                      // Ignore prefetch errors - navigation should still continue.
+                                    });
+                                  });
+
                                   if (team) {
                                     fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
                                       .then((r) => r.json())
@@ -6949,9 +7028,55 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                             team,
                                             next_opponent: d?.next_opponent ?? null,
                                             next_game_tipoff: d?.next_game_tipoff ?? null,
+                                            next_game_id: d?.next_game_id ?? d?.game_id ?? null,
                                             fetchedAt: Date.now(),
                                           }));
                                         } catch {}
+                                        const gameId = d?.game_id ?? d?.gameId ?? null;
+                                        if (gameId) {
+                                          fetch(`/api/afl/odds?game_id=${encodeURIComponent(String(gameId))}`, { cache: 'default' }).catch(() => {});
+                                        } else if (team && opponent) {
+                                          fetch(`/api/afl/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`, { cache: 'default' }).catch(() => {});
+                                        }
+                                        const prefetchOpponent =
+                                          (typeof d?.next_opponent === 'string' && d.next_opponent.trim())
+                                            ? d.next_opponent.trim()
+                                            : opponent;
+                                        const prefetchTipoff =
+                                          typeof d?.next_game_tipoff === 'string' && d.next_game_tipoff
+                                            ? d.next_game_tipoff
+                                            : '';
+                                        const prefetchDate =
+                                          prefetchTipoff && Number.isFinite(new Date(prefetchTipoff).getTime())
+                                            ? new Date(prefetchTipoff).toISOString().split('T')[0]
+                                            : '';
+                                        const teamOpp = [
+                                          `team=${encodeURIComponent(team)}`,
+                                          prefetchOpponent ? `opponent=${encodeURIComponent(prefetchOpponent)}` : '',
+                                          prefetchDate ? `game_date=${encodeURIComponent(prefetchDate)}` : '',
+                                          gameId ? `event_id=${encodeURIComponent(String(gameId))}` : '',
+                                        ].filter(Boolean).join('&');
+                                        if (teamOpp) {
+                                          fetch(`/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1&${teamOpp}`, { cache: 'default' })
+                                            .then(async (res) => {
+                                              if (!res.ok) return null;
+                                              return await res.json();
+                                            })
+                                            .then((data) => {
+                                              if (!data?.all || typeof data.all !== 'object') return;
+                                              try {
+                                                sessionStorage.setItem('afl_player_props_prefetch', JSON.stringify({
+                                                  player: prop.playerName,
+                                                  team,
+                                                  all: data.all,
+                                                  fetchedAt: Date.now(),
+                                                }));
+                                              } catch {
+                                                // Ignore session write failures.
+                                              }
+                                            })
+                                            .catch(() => {});
+                                        }
                                       })
                                       .catch(() => {});
                                   }
@@ -6960,7 +7085,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   q.set('name', prop.playerName);
                                   if (prop.team) q.set('team', prop.team);
                                   if (prop.opponent) q.set('opponent', prop.opponent);
-                                  router.push(`/afl?${q.toString()}`);
+
+                                  // Show loading bar briefly so transition is intentional and prefetch has head start.
+                                  setTimeout(() => {
+                                    router.push(`/afl?${q.toString()}`);
+                                  }, 200);
                                   setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                                   return;
                                 }

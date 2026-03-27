@@ -1077,35 +1077,37 @@ export function AflStatsChart({
     <AflXAxisTick data={chartData} logoByTeam={chartLogoByTeam} isDark={isDark} />
   ), [chartData, chartLogoByTeam, isDark]);
 
-  if (isLoading) {
-    return (
-      <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
-        <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
-          {[...Array(20)].map((_, idx) => {
-            const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
-            const height = heights[idx] || 48;
-            return (
+  const chartLoadingSkeleton = (
+    <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+      <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+        {[...Array(20)].map((_, idx) => {
+          const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+          const height = heights[idx] || 48;
+          return (
+            <div
+              key={idx}
+              className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+              style={{ height: '100%' }}
+            >
               <div
-                key={idx}
-                className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
-                style={{ height: '100%' }}
-              >
-                <div
-                  className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
-                  style={{
-                    height: `${height}%`,
-                    animationDelay: `${idx * 0.08}s`,
-                    minHeight: '30px',
-                    transition: 'height 0.3s ease',
-                    minWidth: '28px',
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
+                className={`w-full rounded-t animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                style={{
+                  height: `${height}%`,
+                  animationDelay: `${idx * 0.08}s`,
+                  minHeight: '30px',
+                  transition: 'height 0.3s ease',
+                  minWidth: '28px',
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
-    );
+    </div>
+  );
+
+  if (isLoading) {
+    return chartLoadingSkeleton;
   }
 
   if (!logsForStatOptions.length) {
@@ -1132,6 +1134,9 @@ export function AflStatsChart({
   }
 
   if (hasSelectedPlayer && (!availableStats.length || !selectedStat)) {
+    if (!apiErrorHint) {
+      return chartLoadingSkeleton;
+    }
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">No game stat data for this player this season</p>

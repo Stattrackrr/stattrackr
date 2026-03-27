@@ -1239,6 +1239,67 @@ export default function AFLPage() {
       noPrice?: number;
     };
 
+    const buildBooksFromAll = (all: Record<string, PropItem[]>): AflBookRow[] => {
+      const bookMap = new Map<string, AflBookRow>();
+      AFL_PLAYER_PROP_FETCH.forEach((config) => {
+        const props = Array.isArray(all[config.stat]) ? (all[config.stat] as PropItem[]) : [];
+        const col = config.column;
+        for (const p of props) {
+          const name = (p.bookmaker || '').trim() || 'Unknown';
+          let row = bookMap.get(name);
+          if (!row) {
+            row = { name, H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' } };
+            bookMap.set(name, row);
+          }
+          const lineStr = p.line != null ? String(p.line) : 'N/A';
+          if (config.type === 'ou') {
+            const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+            const under = typeof p.underPrice === 'number' ? toAmerican(p.underPrice) : 'N/A';
+            (row as unknown as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
+          } else if (config.type === 'over') {
+            const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
+            (row as unknown as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
+          } else if (config.type === 'yesno') {
+            const yes = typeof p.yesPrice === 'number' ? toAmerican(p.yesPrice) : 'N/A';
+            const no = typeof p.noPrice === 'number' ? toAmerican(p.noPrice) : 'N/A';
+            (row as unknown as Record<string, AflPropYesNo>)[col] = { yes, no };
+          }
+        }
+      });
+      return Array.from(bookMap.values());
+    };
+
+    // Hydrate instantly from props-page prefetch cache so bookmaker line appears with chart.
+    try {
+      const raw = sessionStorage.getItem('afl_player_props_prefetch');
+      if (raw) {
+        const prefetched = JSON.parse(raw) as {
+          player?: string;
+          team?: string;
+          all?: Record<string, PropItem[]>;
+          fetchedAt?: number;
+        };
+        const normalize = (v: unknown) => String(v ?? '').trim().toLowerCase();
+        const ageMs = Number.isFinite(prefetched?.fetchedAt) ? Date.now() - Number(prefetched.fetchedAt) : Infinity;
+        const playerMatches = normalize(prefetched?.player) === normalize(playerName);
+        const teamMatches = (() => {
+          const cachedTeam = normalize(prefetched?.team);
+          const rawTeam = normalize(teamRaw);
+          const mappedTeam = normalize(teamForProps);
+          return !!cachedTeam && (cachedTeam === rawTeam || cachedTeam === mappedTeam || rawTeam.includes(cachedTeam) || cachedTeam.includes(rawTeam));
+        })();
+        if (ageMs < 120000 && playerMatches && teamMatches && prefetched?.all && typeof prefetched.all === 'object') {
+          const prefetchedBooks = buildBooksFromAll(prefetched.all);
+          if (prefetchedBooks.length > 0) {
+            setAflPlayerPropsBooks((prev) => (prev.length ? mergePlayerPropsBooks(prev, prefetchedBooks) : prefetchedBooks));
+            lastPlayerPropsKeyRef.current = playerKey;
+          }
+        }
+      }
+    } catch {
+      // Ignore malformed prefetch cache.
+    }
+
     const opponentFromState = aflOddsOpponent;
     const gameDateFromState = aflOddsGameDate;
     const gameIdFromState = nextGameId ?? '';
@@ -1299,33 +1360,17 @@ export default function AFLPage() {
         if (cancelled || !payload) return;
         const { data } = payload as { ok: boolean; data: { all?: Record<string, PropItem[]> } };
         const all = data?.all != null && typeof data.all === 'object' ? data.all : {};
-        const bookMap = new Map<string, AflBookRow>();
-        AFL_PLAYER_PROP_FETCH.forEach((config) => {
-          const props = Array.isArray(all[config.stat]) ? (all[config.stat] as PropItem[]) : [];
-          const col = config.column;
-          for (const p of props) {
-            const name = (p.bookmaker || '').trim() || 'Unknown';
-            let row = bookMap.get(name);
-            if (!row) {
-              row = { name, H2H: { home: 'N/A', away: 'N/A' }, Spread: { line: 'N/A', over: 'N/A', under: 'N/A' }, Total: { line: 'N/A', over: 'N/A', under: 'N/A' } };
-              bookMap.set(name, row);
-            }
-            const lineStr = p.line != null ? String(p.line) : 'N/A';
-            if (config.type === 'ou') {
-              const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
-              const under = typeof p.underPrice === 'number' ? toAmerican(p.underPrice) : 'N/A';
-              (row as unknown as Record<string, AflPropLine>)[col] = { line: lineStr, over, under };
-            } else if (config.type === 'over') {
-              const over = typeof p.overPrice === 'number' ? toAmerican(p.overPrice) : 'N/A';
-              (row as unknown as Record<string, AflPropOverOnly>)[col] = { line: lineStr, over };
-            } else if (config.type === 'yesno') {
-              const yes = typeof p.yesPrice === 'number' ? toAmerican(p.yesPrice) : 'N/A';
-              const no = typeof p.noPrice === 'number' ? toAmerican(p.noPrice) : 'N/A';
-              (row as unknown as Record<string, AflPropYesNo>)[col] = { yes, no };
-            }
-          }
-        });
-        const nextBooks = Array.from(bookMap.values());
+        const nextBooks = buildBooksFromAll(all);
+        try {
+          sessionStorage.setItem('afl_player_props_prefetch', JSON.stringify({
+            player: playerName,
+            team: teamRaw,
+            all,
+            fetchedAt: Date.now(),
+          }));
+        } catch {
+          // Ignore sessionStorage write failures.
+        }
         lastPlayerPropsKeyRef.current = playerKey;
         setAflPlayerPropsBooks(nextBooks);
       })
@@ -1593,6 +1638,7 @@ export default function AFLPage() {
 
     let cancelled = false;
     setStatsLoadingForPlayer(true);
+    const searchStartedAtMs = Date.now();
     const currentYear = season;
     const prevYear = currentYear - 1;
     // Cache only: cron warms cache every 2h; dashboard never hits FootyWire
@@ -1664,7 +1710,12 @@ export default function AFLPage() {
         setSelectedPlayerGameLogs(games);
         setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
         if (games.length === 0) {
-          setLastStatsError('No game logs found for this player/season');
+          const elapsedMs = Date.now() - searchStartedAtMs;
+          if (elapsedMs >= 7000) {
+            setLastStatsError('No game logs found for this player/season');
+          } else {
+            setLastStatsError(null);
+          }
           setStatsLoadingForPlayer(false);
           return;
         }
@@ -1741,7 +1792,12 @@ export default function AFLPage() {
         }
       } catch (e) {
         if (!cancelled) {
-          setLastStatsError(e instanceof Error ? e.message : 'Failed to load game logs');
+          const elapsedMs = Date.now() - searchStartedAtMs;
+          if (elapsedMs >= 7000) {
+            setLastStatsError(e instanceof Error ? e.message : 'Failed to load game logs');
+          } else {
+            setLastStatsError(null);
+          }
           setSelectedPlayerGameLogs([]);
         }
       } finally {
@@ -2495,15 +2551,17 @@ export default function AFLPage() {
     try {
       const prefetchRaw = typeof window !== 'undefined' ? sessionStorage.getItem('afl_next_game_prefetch') : null;
       if (prefetchRaw && resolvedTeam) {
-        const prefetch = JSON.parse(prefetchRaw) as { team?: string; next_opponent?: string; next_game_tipoff?: string; fetchedAt?: number };
+        const prefetch = JSON.parse(prefetchRaw) as { team?: string; next_opponent?: string; next_game_tipoff?: string; next_game_id?: string; fetchedAt?: number };
         const prefetchTeamNorm = teamNorm(prefetch.team ?? '');
         if (prefetchTeamNorm && (teamNorm(resolvedTeam) === prefetchTeamNorm || teamNorm(resolvedTeam).includes(prefetchTeamNorm) || prefetchTeamNorm.includes(teamNorm(resolvedTeam)))) {
           const age = prefetch.fetchedAt != null ? Date.now() - prefetch.fetchedAt : 99999;
           if (age < 60000) {
             const opp = typeof prefetch.next_opponent === 'string' && prefetch.next_opponent ? prefetch.next_opponent : null;
             const tipoff = prefetch.next_game_tipoff && typeof prefetch.next_game_tipoff === 'string' ? new Date(prefetch.next_game_tipoff) : null;
+            const gameId = typeof prefetch.next_game_id === 'string' && prefetch.next_game_id ? prefetch.next_game_id : null;
             setNextGameOpponent(opp);
             setNextGameTipoff(tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null);
+            if (gameId) setNextGameId(gameId);
             nextGameFromFetchRef.current = { opponent: opp, tipoff };
           }
         }
@@ -2585,15 +2643,6 @@ export default function AFLPage() {
       : null;
   // Matchup opponent for DVP / Opponent Breakdown: use next-game opponent only (avoid stale last-game opponent flashes).
   const matchupOpponent = displayOpponent ?? null;
-
-  // Paywall: show loading until subscription checked; non-pro users are redirected to home
-  if (!subscriptionChecked || !isPro || !bootReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#050d1a]">
-        <div className="w-10 h-10 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
