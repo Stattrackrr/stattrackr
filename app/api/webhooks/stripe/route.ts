@@ -287,6 +287,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     stripe_subscription_id: subscription.id,
   };
 
+  // Business rule: when a free trial is canceled, remove access immediately.
+  // Paid subscriptions still keep access until period end via Stripe's normal flow.
+  const isCanceledFreeTrial =
+    subscription.status === 'trialing' &&
+    subscription.cancel_at_period_end === true;
+
+  if (isCanceledFreeTrial) {
+    updateData.subscription_status = 'canceled';
+    updateData.subscription_tier = 'free';
+    updateData.subscription_current_period_end = new Date().toISOString();
+  }
+
   // Mark trial as used if subscription has a trial and hasn't been marked yet
   if (hasTrial && !profile.has_used_trial) {
     updateData.has_used_trial = true;
@@ -308,7 +320,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (error) {
     console.error('Error updating subscription:', error);
   } else {
-    console.log(`Subscription updated for user ${profile.id}: status=${subscription.status}, tier=${tier}`);
+    console.log(
+      `Subscription updated for user ${profile.id}: status=${updateData.subscription_status}, tier=${updateData.subscription_tier}, trialCanceled=${isCanceledFreeTrial}`
+    );
   }
 }
 

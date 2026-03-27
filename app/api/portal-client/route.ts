@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get Stripe customer ID from profile
+    // Get Stripe customer ID and status from profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, subscription_status')
       .eq('id', user.id)
       .single();
 
@@ -46,18 +46,58 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe Customer Portal session
     const stripe = getStripe();
-    try {
-      const portalSession = await stripe.billingPortal.sessions.create({
-        customer: profile.stripe_customer_id,
-        return_url: `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/home`,
-      });
+    const isTrialing = profile.subscription_status === 'trialing';
+    const trialConfigId = process.env.STRIPE_PORTAL_CONFIG_TRIAL;
+    const paidConfigId = process.env.STRIPE_PORTAL_CONFIG_PAID;
+    const selectedConfigId = isTrialing ? trialConfigId : paidConfigId;
+    const returnUrl = `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/home`;
 
-      console.log('Portal Client - Created session:', portalSession.id);
+    try {
+
+      if (isTrialing && !trialConfigId) {
+        console.warn('Portal Client - Trial user without STRIPE_PORTAL_CONFIG_TRIAL, falling back to default portal config');
+      }
+
+      let portalSession;
+      try {
+        portalSession = await stripe.billingPortal.sessions.create({
+          customer: profile.stripe_customer_id,
+          return_url: returnUrl,
+          ...(selectedConfigId ? { configuration: selectedConfigId } : {}),
+        });
+      } catch (stripeError: any) {
+        const isConfigError = stripeError?.param === 'configuration';
+        if (selectedConfigId && isConfigError) {
+          console.warn('Portal Client - Invalid configuration ID, retrying with Stripe default config', {
+            selectedConfigId,
+            code: stripeError?.code,
+            type: stripeError?.type,
+          });
+          portalSession = await stripe.billingPortal.sessions.create({
+            customer: profile.stripe_customer_id,
+            return_url: returnUrl,
+          });
+        } else {
+          throw stripeError;
+        }
+      }
+
+      console.log('Portal Client - Created session:', {
+        sessionId: portalSession.id,
+        isTrialing,
+        usesCustomConfig: Boolean(selectedConfigId),
+      });
 
       return NextResponse.json({ url: portalSession.url });
     } catch (stripeError: any) {
       // If customer doesn't exist in Stripe (e.g., switching from test to live mode)
-      if (stripeError.code === 'resource_missing') {
+      // Do not treat missing configuration as missing customer.
+      const isMissingCustomer =
+        stripeError.code === 'resource_missing' &&
+        (stripeError.param === 'customer' ||
+          String(stripeError.message || '').toLowerCase().includes('no such customer'));
+
+      if (isMissingCustomer) {
         console.log('Invalid Stripe customer ID, clearing from profile');
         // Clear the invalid customer ID
         await supabaseAdmin

@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
     const user = session.user;
     console.log('Portal - User found:', user.id);
 
-    // Get Stripe customer ID from profile
+    // Get Stripe customer ID and status from profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, subscription_status')
       .eq('id', user.id)
       .single();
 
@@ -50,12 +50,45 @@ export async function GET(request: NextRequest) {
 
     // Create Stripe Customer Portal session
     const stripe = getStripe();
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
-      return_url: `${request.headers.get('origin')}/subscription`,
-    });
+    const isTrialing = profile.subscription_status === 'trialing';
+    const trialConfigId = process.env.STRIPE_PORTAL_CONFIG_TRIAL;
+    const paidConfigId = process.env.STRIPE_PORTAL_CONFIG_PAID;
+    const selectedConfigId = isTrialing ? trialConfigId : paidConfigId;
 
-    console.log('Portal - Redirecting to Stripe portal:', portalSession.url);
+    if (isTrialing && !trialConfigId) {
+      console.warn('Portal - Trial user without STRIPE_PORTAL_CONFIG_TRIAL, falling back to default portal config');
+    }
+
+    const returnUrl = `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/subscription`;
+    let portalSession;
+    try {
+      portalSession = await stripe.billingPortal.sessions.create({
+        customer: profile.stripe_customer_id,
+        return_url: returnUrl,
+        ...(selectedConfigId ? { configuration: selectedConfigId } : {}),
+      });
+    } catch (stripeError: any) {
+      const isConfigError = stripeError?.param === 'configuration';
+      if (selectedConfigId && isConfigError) {
+        console.warn('Portal - Invalid configuration ID, retrying with Stripe default config', {
+          selectedConfigId,
+          code: stripeError?.code,
+          type: stripeError?.type,
+        });
+        portalSession = await stripe.billingPortal.sessions.create({
+          customer: profile.stripe_customer_id,
+          return_url: returnUrl,
+        });
+      } else {
+        throw stripeError;
+      }
+    }
+
+    console.log('Portal - Redirecting to Stripe portal:', {
+      url: portalSession.url,
+      isTrialing,
+      usesCustomConfig: Boolean(selectedConfigId),
+    });
     return NextResponse.redirect(portalSession.url);
   } catch (error: any) {
     console.error('Portal error:', error);
