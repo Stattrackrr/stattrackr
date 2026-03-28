@@ -211,6 +211,46 @@ function aflOpponentMatches(gameOpponent: string, betOpponent: string): boolean 
   return false;
 }
 
+function findAflPlayerGame(games: any[], gameDate: string, opponent: string): any | null {
+  if (!Array.isArray(games) || games.length === 0) return null;
+
+  const targetDate = String(gameDate || '').split('T')[0];
+  const targetOpponent = String(opponent || '').trim();
+
+  const byDate = targetDate
+    ? games.filter((g: any) => String(g?.date ?? g?.game_date ?? '').split('T')[0] === targetDate)
+    : [];
+
+  // Best case: exact date + opponent alias match.
+  if (byDate.length > 0 && targetOpponent) {
+    const dateAndOpponent = byDate.find((g: any) =>
+      aflOpponentMatches(String(g?.opponent ?? '').trim(), targetOpponent)
+    );
+    if (dateAndOpponent) return dateAndOpponent;
+  }
+
+  // If player has exactly one game on that date, trust date as authoritative.
+  if (byDate.length === 1) {
+    return byDate[0];
+  }
+
+  // Fallback: opponent-only alias match (used when source date is missing).
+  if (targetOpponent) {
+    const byOpponent = games.filter((g: any) =>
+      aflOpponentMatches(String(g?.opponent ?? '').trim(), targetOpponent)
+    );
+    if (byOpponent.length === 1) return byOpponent[0];
+    if (byOpponent.length > 1 && targetDate) {
+      const exactDateWithinOpp = byOpponent.find(
+        (g: any) => String(g?.date ?? g?.game_date ?? '').split('T')[0] === targetDate
+      );
+      if (exactDateWithinOpp) return exactDateWithinOpp;
+    }
+  }
+
+  return null;
+}
+
 export async function GET(request: Request) {
   // Allow bypass in development for local testing
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -804,20 +844,7 @@ export async function GET(request: Request) {
         if (!res.ok) continue;
         const data = await res.json();
         const games = Array.isArray(data?.games) ? data.games : [];
-        const betOpp = opponent;
-        let game = games.find((g: any) => {
-          const gDate = String(g?.date ?? g?.game_date ?? '').split('T')[0];
-          const gOpp = String(g?.opponent ?? '').trim();
-          const oppMatch = aflOpponentMatches(gOpp, betOpp);
-          if (gDate && gameDate) return gDate === gameDate && oppMatch;
-          return false;
-        });
-        if (!game && games.length > 0) {
-          game = games.find((g: any) => {
-            const gOpp = String(g?.opponent ?? '').trim();
-            return aflOpponentMatches(gOpp, betOpp);
-          });
-        }
+        const game = findAflPlayerGame(games, gameDate, opponent);
         if (!game) continue;
 
         const raw = (game as any)[statType];
