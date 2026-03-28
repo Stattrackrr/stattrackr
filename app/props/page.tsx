@@ -923,65 +923,6 @@ export default function NBALandingPage() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, []);
 
-  // Helper to render donut chart wheel (hollow, green on left, red on right)
-  const renderWheel = (overPercent: number, underPercent: number, size = 52) => {
-    const radius = size / 2 - 10; // Inner radius for donut (hollow center)
-    const circumference = 2 * Math.PI * radius;
-    const overLength = circumference * (overPercent / 100);
-    const underLength = circumference * (underPercent / 100);
-    
-    return (
-      <div className="flex items-center justify-center">
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-          {/* Background circle (full circle, light gray) */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={mounted && isDark ? "#374151" : "#e5e7eb"}
-            strokeWidth="12"
-          />
-          {/* Under (red, right side) - draw first so it's on the right */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="12"
-            strokeDasharray={`${underLength} ${circumference}`}
-            strokeDashoffset={-overLength}
-            strokeLinecap="round"
-          />
-          {/* Over (green, left side) - draw second so it's on the left */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="12"
-            strokeDasharray={`${overLength} ${circumference}`}
-            strokeDashoffset={0}
-            strokeLinecap="round"
-          />
-          {/* Center text - counter-rotate to keep it upright */}
-          <text
-            x={size / 2}
-            y={size / 2}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            transform={`rotate(90 ${size / 2} ${size / 2})`}
-            className={`text-xs font-semibold ${mounted && isDark ? 'fill-white' : 'fill-gray-900'}`}
-          >
-            {Math.max(overPercent, underPercent).toFixed(1)}%
-          </text>
-        </svg>
-      </div>
-    );
-  };
-
   // Get user info and subscription status
   useEffect(() => {
     let isMounted = true;
@@ -7297,11 +7238,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
                                           : (prop.bookmakerLines || []);
                                         const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
-                                        const hasImplied = overProb !== null && overProb !== undefined && underProb !== null && underProb !== undefined;
-
-                                        if (rowSport === 'afl' && hasImplied) {
-                                          return renderWheel(overProb, underProb, 46);
-                                        }
 
                                         return (
                                           <>
