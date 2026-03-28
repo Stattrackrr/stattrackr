@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-03-28T08:34:09.842Z",
+  "generatedAt": "2026-03-28T10:27:28.302Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 466,
@@ -855,7 +855,7 @@
       "clearances": 3.33,
       "inside_50s": 2.67,
       "rebound_50s": 1.33,
-      "contested_possessions": 6,
+      "contested_possessions": 5.67,
       "uncontested_possessions": 19,
       "meters_gained": 436.33,
       "free_kicks_for": 0.67
@@ -1672,7 +1672,7 @@
       "clearances": 4,
       "inside_50s": 3,
       "rebound_50s": 0.67,
-      "contested_possessions": 10.33,
+      "contested_possessions": 10,
       "uncontested_possessions": 11.33,
       "meters_gained": 189.33,
       "free_kicks_for": 1
@@ -2700,7 +2700,7 @@
       "rebound_50s": 3.67,
       "contested_possessions": 3.33,
       "uncontested_possessions": 13,
-      "meters_gained": 366,
+      "meters_gained": 366.33,
       "free_kicks_for": 0
     },
     {
@@ -3274,25 +3274,6 @@
       "free_kicks_for": 2.33
     },
     {
-      "name": "Matt Johnson",
-      "team": "Fremantle",
-      "games": 3,
-      "number": 74,
-      "disposals": 17,
-      "kicks": 7.33,
-      "handballs": 9.67,
-      "marks": 1.67,
-      "goals": 0.67,
-      "tackles": 3,
-      "clearances": 1.67,
-      "inside_50s": 3.33,
-      "rebound_50s": 0.67,
-      "contested_possessions": 5.67,
-      "uncontested_possessions": 11.33,
-      "meters_gained": 305.33,
-      "free_kicks_for": 0
-    },
-    {
       "name": "Bruce Reville",
       "team": "Brisbane",
       "games": 3,
@@ -3578,6 +3559,25 @@
       "free_kicks_for": 0.33
     },
     {
+      "name": "Matt Johnson",
+      "team": "Fremantle",
+      "games": 3,
+      "number": 74,
+      "disposals": 16.67,
+      "kicks": 7,
+      "handballs": 9.67,
+      "marks": 1.67,
+      "goals": 0.67,
+      "tackles": 2.67,
+      "clearances": 1.67,
+      "inside_50s": 3.33,
+      "rebound_50s": 0.67,
+      "contested_possessions": 5.67,
+      "uncontested_possessions": 11,
+      "meters_gained": 305.33,
+      "free_kicks_for": 0
+    },
+    {
       "name": "Shaun Mannagh",
       "team": "Geelong",
       "games": 3,
@@ -3764,7 +3764,7 @@
       "rebound_50s": 1.33,
       "contested_possessions": 7.33,
       "uncontested_possessions": 9,
-      "meters_gained": 404.67,
+      "meters_gained": 404.33,
       "free_kicks_for": 1.33
     },
     {
@@ -4575,7 +4575,7 @@
       "handballs": 5,
       "marks": 5.33,
       "goals": 0,
-      "tackles": 0.67,
+      "tackles": 1,
       "clearances": 0.33,
       "inside_50s": 0,
       "rebound_50s": 4.33,
@@ -7868,7 +7868,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5.33,
       "uncontested_possessions": 2.33,
-      "meters_gained": 108.67,
+      "meters_gained": 108.33,
       "free_kicks_for": 0.67
     },
     {
