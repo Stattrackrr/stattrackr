@@ -306,6 +306,8 @@ function findAflPlayerGame(games: any[], gameDate: string, opponent: string): an
 }
 
 export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const debugMode = requestUrl.searchParams.get('debug') === '1';
   // Allow bypass in development for local testing
   const isDevelopment = process.env.NODE_ENV === 'development';
   const bypassAuth = isDevelopment && request.headers.get('x-bypass-auth') === 'true';
@@ -1007,6 +1009,13 @@ export async function GET(request: Request) {
 
     const aflSingleBets = aflCandidates.filter((b) => !isParlayBet(b));
     const grandTotal = total + aflSingleBets.length;
+    const aflDebug = {
+      candidates: aflSingleBets.length,
+      attempted: 0,
+      matched: 0,
+      updatesFailed: 0,
+      updateErrors: [] as string[],
+    };
 
     if (grandTotal === 0) {
       return NextResponse.json({
@@ -1036,17 +1045,21 @@ export async function GET(request: Request) {
 
         if (AFL_STAT_TYPES.includes(statType)) {
           if (!playerName || !Number.isFinite(line)) continue;
+          aflDebug.attempted++;
           const games = await fetchAflPlayerLogs(season, playerName, team);
           const game = findAflPlayerGame(games, gameDate, opponent);
           if (!game) continue;
+          aflDebug.matched++;
           const raw = (game as any)[statType];
           const val = typeof raw === 'number' && Number.isFinite(raw) ? raw : Number(raw);
           if (!Number.isFinite(val)) continue;
           actualValue = val;
           result = calculateUniversalBetResult(actualValue, line, overUnder, statType);
         } else if (statType === 'moneyline') {
+          aflDebug.attempted++;
           const teamWon = await resolveAflMoneylineWin(season, gameDate, team, opponent);
           if (teamWon == null) continue;
+          aflDebug.matched++;
           actualValue = teamWon ? 1 : 0;
           result = teamWon ? 'win' : 'loss';
         } else {
@@ -1064,7 +1077,14 @@ export async function GET(request: Request) {
           .in('status', ['pending', 'live'])
           .eq('result', 'pending');
 
-        if (!updateErr) updated++;
+        if (!updateErr) {
+          updated++;
+        } else {
+          aflDebug.updatesFailed++;
+          if (aflDebug.updateErrors.length < 10) {
+            aflDebug.updateErrors.push(`${bet.id}: ${updateErr.message}`);
+          }
+        }
       } catch {
         // Skip this bet on error (e.g. API not reachable)
       }
@@ -1075,6 +1095,7 @@ export async function GET(request: Request) {
       updated,
       total: grandTotal,
       scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
+      ...(debugMode ? { aflDebug } : {}),
     });
   } catch (error: any) {
     console.error('[check-journal-bets] Error:', error);
