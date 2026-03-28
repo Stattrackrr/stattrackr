@@ -370,11 +370,16 @@ export async function GET(request: Request) {
     let hasMore = true;
     let updated = 0;
     let total = 0;
-    const baseUrl =
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      'http://localhost:3000';
+    const candidateBaseUrls = [
+      process.env.NEXT_PUBLIC_APP_URL,
+      process.env.APP_URL,
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+      'https://stattrackr.co',
+      'http://localhost:3000',
+    ]
+      .map((u) => String(u || '').trim().replace(/\/+$/, ''))
+      .filter(Boolean);
+    const baseUrl = candidateBaseUrls[0] || 'http://localhost:3000';
     const cronSecret = process.env.CRON_SECRET || '';
     const aflRosterCache = new Map<string, string[]>();
     const aflPlayerLogsCache = new Map<string, any[]>();
@@ -400,15 +405,24 @@ export async function GET(request: Request) {
         team: teamName,
         force_fetch: '1',
       });
-      const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, {
-        cache: 'no-store',
-        headers: cronHeaders,
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      const games = Array.isArray(data?.games) ? data.games : [];
-      aflPlayerLogsCache.set(cacheKey, games);
-      return games;
+      for (const apiBase of candidateBaseUrls) {
+        try {
+          const res = await fetch(`${apiBase}/api/afl/player-game-logs?${params}`, {
+            cache: 'no-store',
+            headers: cronHeaders,
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          const games = Array.isArray(data?.games) ? data.games : [];
+          if (games.length > 0) {
+            aflPlayerLogsCache.set(cacheKey, games);
+            return games;
+          }
+        } catch {
+          // try next base URL
+        }
+      }
+      return [];
     };
 
     const resolveAflMoneylineWin = async (
@@ -423,17 +437,27 @@ export async function GET(request: Request) {
       let playerNames = aflRosterCache.get(teamKey) ?? [];
       if (playerNames.length === 0) {
         const params = new URLSearchParams({ team: teamKey, limit: '12' });
-        const rosterRes = await fetch(`${baseUrl}/api/afl/players?${params}`, {
-          cache: 'no-store',
-          headers: cronHeaders,
-        });
-        if (!rosterRes.ok) return null;
-        const rosterJson = await rosterRes.json();
-        playerNames = Array.isArray(rosterJson?.players)
-          ? rosterJson.players
-              .map((p: any) => String(p?.name || '').trim())
-              .filter(Boolean)
-          : [];
+        let fetched: string[] = [];
+        for (const apiBase of candidateBaseUrls) {
+          try {
+            const rosterRes = await fetch(`${apiBase}/api/afl/players?${params}`, {
+              cache: 'no-store',
+              headers: cronHeaders,
+            });
+            if (!rosterRes.ok) continue;
+            const rosterJson = await rosterRes.json();
+            fetched = Array.isArray(rosterJson?.players)
+              ? rosterJson.players
+                  .map((p: any) => String(p?.name || '').trim())
+                  .filter(Boolean)
+              : [];
+            if (fetched.length > 0) break;
+          } catch {
+            // try next base URL
+          }
+        }
+        if (fetched.length === 0) return null;
+        playerNames = fetched;
         aflRosterCache.set(teamKey, playerNames);
       }
 
