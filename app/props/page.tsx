@@ -73,6 +73,59 @@ interface PlayerProp {
   awayTeam?: string;
 }
 
+function medianValue(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+function getConsensusImpliedProbabilities(
+  prop: PlayerProp,
+  linesOverride?: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>
+): { overProb: number | null; underProb: number | null } {
+  const sourceLines = Array.isArray(linesOverride) && linesOverride.length > 0
+    ? linesOverride
+    : (Array.isArray(prop.bookmakerLines) ? prop.bookmakerLines : []);
+
+  const overValues: number[] = [];
+  const underValues: number[] = [];
+  for (const line of sourceLines) {
+    const implied = calculateImpliedProbabilities(line.overOdds, line.underOdds);
+    if (implied) {
+      overValues.push(implied.overImpliedProb);
+      underValues.push(implied.underImpliedProb);
+      continue;
+    }
+    const overAmerican = parseAmericanOdds(line.overOdds);
+    const underAmerican = parseAmericanOdds(line.underOdds);
+    if (overAmerican !== null && underAmerican !== null) {
+      overValues.push(americanToImpliedProb(overAmerican));
+      underValues.push(americanToImpliedProb(underAmerican));
+    }
+  }
+
+  const medianOver = medianValue(overValues);
+  const medianUnder = medianValue(underValues);
+  if (medianOver !== null && medianUnder !== null) {
+    return { overProb: medianOver, underProb: medianUnder };
+  }
+
+  // Fallback to row-level odds fields when no bookmaker lines are usable.
+  const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
+  const overAmerican = parseAmericanOdds(prop.overOdds);
+  const underAmerican = parseAmericanOdds(prop.underOdds);
+  let overProb: number | null = implied ? implied.overImpliedProb : (overAmerican !== null ? americanToImpliedProb(overAmerican) : null);
+  let underProb: number | null = implied ? implied.underImpliedProb : (underAmerican !== null ? americanToImpliedProb(underAmerican) : null);
+  if (overProb === null && underProb === null) {
+    overProb = prop.impliedOverProb ?? null;
+    underProb = prop.impliedUnderProb ?? null;
+  }
+  return { overProb, underProb };
+}
+
 /** AFL game from list API (for props page games filter). */
 interface AflGameForProps {
   gameId: string;
@@ -871,14 +924,14 @@ export default function NBALandingPage() {
   }, []);
 
   // Helper to render donut chart wheel (hollow, green on left, red on right)
-  const renderWheel = (overPercent: number, underPercent: number, label: string, size = 80) => {
+  const renderWheel = (overPercent: number, underPercent: number, size = 52) => {
     const radius = size / 2 - 10; // Inner radius for donut (hollow center)
     const circumference = 2 * Math.PI * radius;
     const overLength = circumference * (overPercent / 100);
     const underLength = circumference * (underPercent / 100);
     
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex items-center justify-center">
         <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
           {/* Background circle (full circle, light gray) */}
           <circle
@@ -925,9 +978,6 @@ export default function NBALandingPage() {
             {Math.max(overPercent, underPercent).toFixed(1)}%
           </text>
         </svg>
-        <div className={`text-[10px] mt-1 font-medium ${mounted && isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-          {label}
-        </div>
       </div>
     );
   };
@@ -3274,7 +3324,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
         else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
         else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
-        else if (column === 'ip') { aVal = a.impliedOverProb ?? null; bVal = b.impliedOverProb ?? null; }
+        else if (column === 'ip') {
+          aVal = getConsensusImpliedProbabilities(a).overProb;
+          bVal = getConsensusImpliedProbabilities(b).overProb;
+        }
         if (aVal === null && bVal === null) return 0;
         if (aVal === null) return 1;
         if (bVal === null) return -1;
@@ -3310,8 +3363,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const bR = bDvp ?? 999;
         if (aR !== bR) return aR - bR;
       }
-      const aP = Math.max(a.overProb ?? 0, a.underProb ?? 0);
-      const bP = Math.max(b.overProb ?? 0, b.underProb ?? 0);
+      const aConsensus = getConsensusImpliedProbabilities(a);
+      const bConsensus = getConsensusImpliedProbabilities(b);
+      const aP = Math.max(aConsensus.overProb ?? 0, aConsensus.underProb ?? 0);
+      const bP = Math.max(bConsensus.overProb ?? 0, bConsensus.underProb ?? 0);
       return bP - aP;
     };
 
@@ -3360,7 +3415,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
         else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
         else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
-        else if (column === 'ip') { aVal = a.impliedOverProb ?? null; bVal = b.impliedOverProb ?? null; }
+        else if (column === 'ip') {
+          aVal = getConsensusImpliedProbabilities(a).overProb;
+          bVal = getConsensusImpliedProbabilities(b).overProb;
+        }
         if (aVal === null && bVal === null) return 0;
         if (aVal === null) return 1;
         if (bVal === null) return -1;
@@ -3393,8 +3451,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const bR = bDvp ?? 999;
         if (aR !== bR) return aR - bR;
       }
-      const aP = Math.max(a.overProb ?? 0, a.underProb ?? 0);
-      const bP = Math.max(b.overProb ?? 0, b.underProb ?? 0);
+      const aConsensus = getConsensusImpliedProbabilities(a);
+      const bConsensus = getConsensusImpliedProbabilities(b);
+      const aP = Math.max(aConsensus.overProb ?? 0, aConsensus.underProb ?? 0);
+      const bP = Math.max(bConsensus.overProb ?? 0, bConsensus.underProb ?? 0);
       return bP - aP;
     });
     return out;
@@ -3665,8 +3725,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           
           case 'ip':
             // Sort by bookmaker implied over probability (highest = best)
-            aValue = a.impliedOverProb ?? null;
-            bValue = b.impliedOverProb ?? null;
+            aValue = getConsensusImpliedProbabilities(a).overProb;
+            bValue = getConsensusImpliedProbabilities(b).overProb;
             break;
           
           case 'l10':
@@ -3732,9 +3792,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const bRank = bDvp ?? 999;
         if (aRank !== bRank) return aRank - bRank;
       }
-      // Use implied probabilities for sorting
-      const aProb = Math.max(a.overProb, a.underProb);
-      const bProb = Math.max(b.overProb, b.underProb);
+      // Use consensus implied probabilities for sorting (median across books)
+      const aConsensus = getConsensusImpliedProbabilities(a);
+      const bConsensus = getConsensusImpliedProbabilities(b);
+      const aProb = Math.max(aConsensus.overProb ?? 0, aConsensus.underProb ?? 0);
+      const bProb = Math.max(bConsensus.overProb ?? 0, bConsensus.underProb ?? 0);
       return bProb - aProb;
     });
   }, [uniquePlayerProps, propLineSort, columnSort]);
@@ -6184,15 +6246,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                       <div className="flex flex-col gap-0.5">
                                         {(() => {
-                                          const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
-                                          const overAmerican = parseAmericanOdds(prop.overOdds);
-                                          const underAmerican = parseAmericanOdds(prop.underOdds);
-                                          let overProb: number | null = implied ? implied.overImpliedProb : (overAmerican !== null ? americanToImpliedProb(overAmerican) : null);
-                                          let underProb: number | null = implied ? implied.underImpliedProb : (underAmerican !== null ? americanToImpliedProb(underAmerican) : null);
-                                          if (overProb === null && underProb === null) {
-                                            overProb = prop.impliedOverProb ?? null;
-                                            underProb = prop.impliedUnderProb ?? null;
-                                          }
+                                          const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
+                                            ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                            : (prop.bookmakerLines || []);
+                                          const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
                                           return (
                                             <>
                                               <div className={`text-sm font-semibold ${overProb != null ? (overProb >= (underProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
@@ -7236,10 +7293,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     <div className="flex flex-col items-center justify-center rounded-lg border-2 px-3 py-2" style={getStatBoxStyle(null)}>
                                       <div className={`text-[10px] font-semibold mb-1 ${mounted && isDark ? 'text-gray-500 sm:text-gray-300' : 'text-gray-600 sm:text-gray-700'}`}>Books</div>
                                       {(() => {
-                                        // Calculate implied probabilities on-the-fly from odds
-                                        const implied = calculateImpliedProbabilities(prop.overOdds, prop.underOdds);
-                                        const overProb = implied ? implied.overImpliedProb : (prop.impliedOverProb ?? null);
-                                        const underProb = implied ? implied.underImpliedProb : (prop.impliedUnderProb ?? null);
+                                        const filteredLines = !isCombinedMode && selectedBookmakers.size > 0
+                                          ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
+                                          : (prop.bookmakerLines || []);
+                                        const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
+                                        const hasImplied = overProb !== null && overProb !== undefined && underProb !== null && underProb !== undefined;
+
+                                        if (rowSport === 'afl' && hasImplied) {
+                                          return renderWheel(overProb, underProb, 46);
+                                        }
+
                                         return (
                                           <>
                                             <div className={`text-xs font-bold ${mounted && isDark ? 'text-green-500 sm:text-green-400' : 'text-green-600'}`}>

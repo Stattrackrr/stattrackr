@@ -6,6 +6,7 @@ import MetaPixel from "@/components/MetaPixel";
 import TikTokPixel from "../components/TikTokPixel";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://stattrackr.co"),
   title: "StatTrackr - Advanced Sports Statistic Dashboard",
   description: "Advanced sports statistic dashboard for NBA and AFL. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   keywords: [

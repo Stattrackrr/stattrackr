@@ -877,7 +877,13 @@ export default function AddToJournalModal({
           const params = new URLSearchParams();
           params.set('player', playerName);
           params.set('stat', mappedStat);
-          // In parlay mode we do not always know the exact matchup; rely on cache event matching.
+          // AFL cache is event-scoped; include matchup context so event_id can be resolved.
+          const aflTeam = selectedGame?.homeTeam || team?.trim();
+          const aflOpponent = selectedGame?.awayTeam || opponent?.trim();
+          const aflGameDate = selectedGame?.gameDate || gameDate?.trim();
+          if (aflTeam) params.set('team', aflTeam);
+          if (aflOpponent) params.set('opponent', aflOpponent);
+          if (aflGameDate) params.set('game_date', aflGameDate);
           playerPropsUrl = `/api/afl/player-props?${params.toString()}`;
         } else {
           playerPropsUrl = `/api/player-props?player=${encodeURIComponent(playerName)}&stat=${encodeURIComponent(stat)}`;
@@ -925,7 +931,7 @@ export default function AddToJournalModal({
     };
 
     fetchPlayerOdds();
-  }, [isParlayMode, isOpen, selectedPlayer, playerStatType, sport]);
+  }, [isParlayMode, isOpen, selectedPlayer, playerStatType, sport, selectedGame, team, opponent, gameDate]);
 
   // Convert odds to decimal for parlay calculation
   const toDecimalOdds = (odds: number, format: 'american' | 'decimal'): number => {

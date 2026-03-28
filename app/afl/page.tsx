@@ -16,6 +16,8 @@ import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
+import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
+import { ImpliedOddsWheel } from '@/app/nba/research/dashboard/components/odds/ImpliedOddsWheel';
 
 /** Map chart stat to Best Odds player-prop column for the line selector in player mode. Use O/U columns (e.g. Disposals) where available so Over and Under both appear. */
 const CHART_STAT_TO_PLAYER_PROP_COLUMN: Partial<Record<string, keyof Pick<AflBookRow, 'Disposals' | 'DisposalsOver' | 'AnytimeGoalScorer' | 'GoalsOver' | 'MarksOver' | 'TacklesOver'>>> = {
@@ -553,6 +555,136 @@ export default function AFLPage() {
   const effectivePlayerPropColumn = mainChartStat === 'disposals'
     ? selectedAflDisposalsColumn
     : (CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat] ?? null);
+
+  const dashboardImpliedOdds = useMemo(() => {
+    const toLineNumber = (line: string | number | null | undefined): number | null => {
+      if (line == null) return null;
+      const n = parseFloat(String(line).replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    const isSameLine = (a: number | null, b: number | null, tol = 0.01): boolean => {
+      if (a == null || b == null) return false;
+      return Math.abs(a - b) < tol;
+    };
+    const median = (values: number[]): number => {
+      const sorted = [...values].sort((x, y) => x - y);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+    };
+
+    const validImplied: Array<{ over: number; under: number }> = [];
+
+    if (aflPropsMode === 'player') {
+      const selectedBook = aflPlayerPropsBooks[selectedAflBookIndex];
+      if (!selectedBook) return null;
+
+      const playerColumn = mainChartStat === 'disposals'
+        ? selectedAflDisposalsColumn
+        : (CHART_STAT_TO_PLAYER_PROP_COLUMN[mainChartStat] ?? null);
+      if (!playerColumn) return null;
+
+      const selectedBookLine =
+        playerColumn === 'GoalsOver'
+          ? toLineNumber(getGoalsMarketLineOver(selectedBook)?.line)
+          : toLineNumber((selectedBook[playerColumn] as { line?: string } | undefined)?.line);
+      const targetLine = playerColumn === 'AnytimeGoalScorer'
+        ? null
+        : (aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue) ? aflCurrentLineValue : selectedBookLine);
+
+      for (const book of aflPlayerPropsBooks) {
+        let overOdds: string | number | null = null;
+        let underOdds: string | number | null = null;
+
+        if (playerColumn === 'GoalsOver') {
+          const goalsLines = getGoalsMarketLines(book);
+          const matchedGoalsLine = targetLine != null
+            ? goalsLines.find((x) => isSameLine(toLineNumber(x.line), targetLine))
+            : (getGoalsMarketLineOver(book) ?? null);
+          if (!matchedGoalsLine) continue;
+          overOdds = matchedGoalsLine.over ?? null;
+          underOdds = book.AnytimeGoalScorer?.no ?? null;
+        } else if (playerColumn === 'AnytimeGoalScorer') {
+          overOdds = book.AnytimeGoalScorer?.yes ?? null;
+          underOdds = book.AnytimeGoalScorer?.no ?? null;
+        } else {
+          const market = book[playerColumn] as { line?: string; over?: string; under?: string } | undefined;
+          if (!market) continue;
+          if (targetLine != null && !isSameLine(toLineNumber(market.line), targetLine)) continue;
+          overOdds = market.over ?? null;
+          underOdds = market.under ?? null;
+        }
+
+        const implied = calculateImpliedProbabilities(overOdds, underOdds);
+        if (implied) {
+          validImplied.push({
+            over: implied.overImpliedProb,
+            under: implied.underImpliedProb,
+          });
+        }
+      }
+    } else if (aflPropsMode === 'team') {
+      const selectedBook = aflOddsBooks[selectedAflBookIndex];
+      if (!selectedBook) return null;
+
+      const selectedBookLine =
+        mainChartStat === 'spread'
+          ? toLineNumber(selectedBook.Spread?.line)
+          : mainChartStat === 'total_points'
+            ? toLineNumber(selectedBook.Total?.line)
+            : null;
+      const targetLine =
+        mainChartStat === 'spread' || mainChartStat === 'total_points'
+          ? (aflGameLineValue != null && Number.isFinite(aflGameLineValue) ? aflGameLineValue : selectedBookLine)
+          : null;
+
+      for (const book of aflOddsBooks) {
+        let overOdds: string | number | null = null;
+        let underOdds: string | number | null = null;
+
+        if (mainChartStat === 'moneyline') {
+          overOdds = book.H2H?.home ?? null;
+          underOdds = book.H2H?.away ?? null;
+        } else if (mainChartStat === 'spread') {
+          if (targetLine != null && !isSameLine(toLineNumber(book.Spread?.line), targetLine)) continue;
+          overOdds = book.Spread?.over ?? null;
+          underOdds = book.Spread?.under ?? null;
+        } else if (mainChartStat === 'total_points') {
+          if (targetLine != null && !isSameLine(toLineNumber(book.Total?.line), targetLine)) continue;
+          overOdds = book.Total?.over ?? null;
+          underOdds = book.Total?.under ?? null;
+        } else {
+          return null;
+        }
+
+        const implied = calculateImpliedProbabilities(overOdds, underOdds);
+        if (implied) {
+          validImplied.push({
+            over: implied.overImpliedProb,
+            under: implied.underImpliedProb,
+          });
+        }
+      }
+    } else {
+      return null;
+    }
+
+    if (!validImplied.length) return null;
+    return {
+      overImpliedProb: median(validImplied.map((v) => v.over)),
+      underImpliedProb: median(validImplied.map((v) => v.under)),
+    };
+  }, [
+    aflPropsMode,
+    aflPlayerPropsBooks,
+    aflOddsBooks,
+    selectedAflBookIndex,
+    mainChartStat,
+    selectedAflDisposalsColumn,
+    aflCurrentLineValue,
+    aflGameLineValue,
+  ]);
 
   // When stat changes: pick a book that has data for the new stat (switch if current doesn't), set line from that book, and ignore the next transient-line so chart's stat-average emit doesn't overwrite. For disposals, prefer O/U then Over-only.
   useEffect(() => {
@@ -2700,8 +2832,8 @@ export default function AFLPage() {
                   </p>
                 </div>
                 {/* 2. Header - same layout as NBA DashboardHeader: left (player/select), middle (matchup), bottom (Journal) */}
-                <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible" ref={searchDropdownRef}>
-                  <div className="flex flex-col gap-2 lg:gap-3">
+                <div className="relative z-[60] bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2.5 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 w-full min-w-0 flex-shrink-0 mr-0 overflow-visible" ref={searchDropdownRef}>
+                  <div className="flex flex-col gap-1.5 lg:gap-3">
                     {/* Desktop: one row - player info (left) | team vs opponent (center) | spacer (right) */}
                     <div className="hidden lg:flex items-center flex-1">
                       <div className="flex-1 min-w-0">
@@ -2847,10 +2979,20 @@ export default function AFLPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0" aria-hidden />
+                      <div className="flex-1 min-w-0 flex justify-end">
+                        {aflPropsMode === 'player' && dashboardImpliedOdds && (
+                          <div className="flex-shrink-0">
+                            <ImpliedOddsWheel
+                              isDark={!!mounted && isDark}
+                              calculatedImpliedOdds={dashboardImpliedOdds}
+                              size={100}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {/* Mobile: Row 1 = Back + Player name | Tipoff (top right); Row 2 = Team/position | Team vs Opponent */}
-                    <div className="lg:hidden flex flex-col gap-1">
+                    <div className="lg:hidden flex flex-col gap-0.5">
                       <div className="flex items-start justify-between gap-2 w-full">
                         <div className="flex-shrink-0 min-w-0">
                           {selectedPlayer ? (
@@ -2865,7 +3007,7 @@ export default function AFLPage() {
                                   setNavigatingToProps(true);
                                   router.push('/props?sport=afl');
                                 }}
-                                className="flex items-center gap-1.5 mb-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                className="flex items-center gap-1.5 mb-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                               >
                                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -2900,31 +3042,17 @@ export default function AFLPage() {
                             </div>
                           )}
                         </div>
-                        {/* Mobile: tipoff in top right, faint box, stays inside container */}
-                        {teamContextTeam && displayOpponent && (
-                          <div className="flex-shrink-0 min-w-0 max-w-[45%] overflow-hidden">
-                            <div className={`rounded-lg border px-2 py-1.5 text-right ${
-                              isDark
-                                ? 'bg-gray-800/40 border-gray-600/60'
-                                : 'bg-gray-100/80 border-gray-300/70'
-                            }`}>
-                              {countdown && !isGameInProgress ? (
-                                <div className="flex flex-col items-end">
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Bounce in</div>
-                                  <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
-                                    {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
-                                  </div>
-                                </div>
-                              ) : isGameInProgress ? (
-                                <div className="text-xs font-semibold text-green-600 dark:text-green-400">LIVE</div>
-                              ) : nextGameTipoff ? (
-                                <div className="text-[10px] text-gray-500 dark:text-gray-400">Game time passed</div>
-                              ) : null}
-                            </div>
+                        {aflPropsMode === 'player' && dashboardImpliedOdds && (
+                          <div className="flex-shrink-0 ml-3">
+                            <ImpliedOddsWheel
+                              isDark={!!mounted && isDark}
+                              calculatedImpliedOdds={dashboardImpliedOdds}
+                              size={85}
+                            />
                           </div>
                         )}
                       </div>
-                      <div className="lg:hidden flex items-center justify-between gap-2">
+                      <div className="lg:hidden flex items-center justify-between gap-1.5">
                         <div className="flex-shrink-0 min-w-0">
                           {selectedPlayer ? (
                             <div>
@@ -2986,6 +3114,22 @@ export default function AFLPage() {
                                       )}
                                     </div>
                                   </div>
+                                  {displayOpponent && countdown && !isGameInProgress ? (
+                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                      <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
+                                      <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                                        {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                      </div>
+                                    </div>
+                                  ) : displayOpponent && isGameInProgress ? (
+                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                      <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                                    </div>
+                                  ) : displayOpponent && nextGameTipoff ? (
+                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                      <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                                    </div>
+                                  ) : null}
                                 </div>
                               );
                             })()
@@ -3073,7 +3217,7 @@ export default function AFLPage() {
                     )}
                     {/* Journal button - same as NBA: open AddToJournalModal, disabled when game in progress */}
                     {teamContextTeam && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—' && nextGameTipoff && (
-                      <div className="flex gap-2 px-0">
+                      <div className="flex gap-2 px-0 pt-0.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -3086,7 +3230,7 @@ export default function AFLPage() {
                             }
                           }}
                           disabled={isGameInProgress || !isPro}
-                          className={`flex-1 px-2 py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                          className={`flex-1 px-2 py-1 sm:py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
                             isGameInProgress || !isPro
                               ? 'bg-gray-400 cursor-not-allowed opacity-50'
                               : 'bg-purple-600 hover:bg-purple-700'

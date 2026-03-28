@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Don't redirect webhook endpoints - Stripe needs them to work without redirects
   if (request.nextUrl.pathname.startsWith('/api/webhooks/')) {
     return NextResponse.next();
@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "upgrade-insecure-requests",
+    'upgrade-insecure-requests',
   ].join('; ');
 
   response.headers.set('Content-Security-Policy', csp);
