@@ -1470,7 +1470,7 @@ export default function AddToJournalModal({
 
         const parlayBetPayload = {
           date: parlaySelections[0].gameDate, // Use first selection's date
-          sport: 'NBA',
+          sport: sport === 'afl' ? 'AFL' : 'NBA',
           market,
           selection,
           stake: parlayStake,

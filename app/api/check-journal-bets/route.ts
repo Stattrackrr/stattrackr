@@ -26,6 +26,16 @@ const GAME_TOTAL_STAT_TYPES = [
   'q3_total',
   'q4_total',
 ];
+const AFL_STAT_TYPES = [
+  'disposals',
+  'kicks',
+  'handballs',
+  'marks',
+  'goals',
+  'behinds',
+  'tackles',
+  'clearances',
+];
 
 function isGameFinal(game: any): boolean {
   const rawStatus = String(game?.status || '');
@@ -66,6 +76,20 @@ function parseMinutesToNumber(min: any): number {
   }
   const asNum = Number(s);
   return Number.isFinite(asNum) ? asNum : 0;
+}
+
+function parseAflResultScores(resultText: string): { team: number; opponent: number } | null {
+  const m = String(resultText || '').match(/(\d+)\s*-\s*(\d+)/);
+  if (!m) return null;
+  const team = Number(m[1]);
+  const opponent = Number(m[2]);
+  if (!Number.isFinite(team) || !Number.isFinite(opponent)) return null;
+  return { team, opponent };
+}
+
+function isLikelyAflTeamName(teamName: string): boolean {
+  if (!teamName) return false;
+  return Boolean(opponentToFootywireTeam(teamName) || footywireNicknameToOfficial(teamName));
 }
 
 function getPlayerActualValue(stats: any, statType: string): number | null {
@@ -211,6 +235,13 @@ function aflOpponentMatches(gameOpponent: string, betOpponent: string): boolean 
   return false;
 }
 
+function parseAflDateOnlyMs(value: string): number | null {
+  const dateOnly = String(value || '').split('T')[0];
+  if (!dateOnly) return null;
+  const ms = Date.parse(`${dateOnly}T00:00:00Z`);
+  return Number.isNaN(ms) ? null : ms;
+}
+
 function findAflPlayerGame(games: any[], gameDate: string, opponent: string): any | null {
   if (!Array.isArray(games) || games.length === 0) return null;
 
@@ -229,6 +260,22 @@ function findAflPlayerGame(games: any[], gameDate: string, opponent: string): an
     if (dateAndOpponent) return dateAndOpponent;
   }
 
+  // Timezone tolerance: allow +/- 1 day date drift from source parsing.
+  const targetMs = parseAflDateOnlyMs(targetDate);
+  if (targetMs != null) {
+    const byNearbyDate = games.filter((g: any) => {
+      const gameMs = parseAflDateOnlyMs(String(g?.date ?? g?.game_date ?? ''));
+      return gameMs != null && Math.abs(gameMs - targetMs) <= 24 * 60 * 60 * 1000;
+    });
+    if (byNearbyDate.length > 0 && targetOpponent) {
+      const nearbyAndOpponent = byNearbyDate.find((g: any) =>
+        aflOpponentMatches(String(g?.opponent ?? '').trim(), targetOpponent)
+      );
+      if (nearbyAndOpponent) return nearbyAndOpponent;
+    }
+    if (byNearbyDate.length === 1) return byNearbyDate[0];
+  }
+
   // If player has exactly one game on that date, trust date as authoritative.
   if (byDate.length === 1) {
     return byDate[0];
@@ -245,6 +292,13 @@ function findAflPlayerGame(games: any[], gameDate: string, opponent: string): an
         (g: any) => String(g?.date ?? g?.game_date ?? '').split('T')[0] === targetDate
       );
       if (exactDateWithinOpp) return exactDateWithinOpp;
+      if (targetMs != null) {
+        const nearestWithinOneDay = byOpponent.find((g: any) => {
+          const gameMs = parseAflDateOnlyMs(String(g?.date ?? g?.game_date ?? ''));
+          return gameMs != null && Math.abs(gameMs - targetMs) <= 24 * 60 * 60 * 1000;
+        });
+        if (nearestWithinOneDay) return nearestWithinOneDay;
+      }
     }
   }
 
@@ -316,6 +370,85 @@ export async function GET(request: Request) {
     let hasMore = true;
     let updated = 0;
     let total = 0;
+    const baseUrl =
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.APP_URL ||
+      'http://localhost:3000';
+    const cronSecret = process.env.CRON_SECRET || '';
+    const aflRosterCache = new Map<string, string[]>();
+    const aflPlayerLogsCache = new Map<string, any[]>();
+
+    const cronHeaders: Record<string, string> = {};
+    if (cronSecret) {
+      cronHeaders.authorization = `Bearer ${cronSecret}`;
+      cronHeaders['x-cron-secret'] = cronSecret;
+    }
+
+    const fetchAflPlayerLogs = async (
+      season: number,
+      playerName: string,
+      teamName: string
+    ): Promise<any[]> => {
+      const cacheKey = `${season}|${playerName}|${teamName}`;
+      const cached = aflPlayerLogsCache.get(cacheKey);
+      if (cached) return cached;
+
+      const params = new URLSearchParams({
+        season: String(season),
+        player_name: playerName,
+        team: teamName,
+        force_fetch: '1',
+      });
+      const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, {
+        cache: 'no-store',
+        headers: cronHeaders,
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const games = Array.isArray(data?.games) ? data.games : [];
+      aflPlayerLogsCache.set(cacheKey, games);
+      return games;
+    };
+
+    const resolveAflMoneylineWin = async (
+      season: number,
+      gameDate: string,
+      teamName: string,
+      opponentName: string
+    ): Promise<boolean | null> => {
+      const teamKey = String(teamName || '').trim();
+      if (!teamKey || !opponentName || !gameDate) return null;
+
+      let playerNames = aflRosterCache.get(teamKey) ?? [];
+      if (playerNames.length === 0) {
+        const params = new URLSearchParams({ team: teamKey, limit: '12' });
+        const rosterRes = await fetch(`${baseUrl}/api/afl/players?${params}`, {
+          cache: 'no-store',
+          headers: cronHeaders,
+        });
+        if (!rosterRes.ok) return null;
+        const rosterJson = await rosterRes.json();
+        playerNames = Array.isArray(rosterJson?.players)
+          ? rosterJson.players
+              .map((p: any) => String(p?.name || '').trim())
+              .filter(Boolean)
+          : [];
+        aflRosterCache.set(teamKey, playerNames);
+      }
+
+      for (const candidate of playerNames.slice(0, 6)) {
+        const games = await fetchAflPlayerLogs(season, candidate, teamKey);
+        const game = findAflPlayerGame(games, gameDate, opponentName);
+        if (!game) continue;
+        const scores = parseAflResultScores(String(game?.result || ''));
+        if (!scores) continue;
+        if (scores.team === scores.opponent) return null;
+        return scores.team > scores.opponent;
+      }
+
+      return null;
+    };
 
     // Resolve NBA bets that are still pending/live.
     const allCandidates: any[] = [];
@@ -588,6 +721,52 @@ export async function GET(request: Request) {
 
           if (!statType) continue;
 
+          const legGameDate = String(leg?.gameDate || bet.game_date || bet.date || '').split('T')[0];
+          const legSeason = Number.parseInt(legGameDate.slice(0, 4), 10);
+          const likelyAflLeg =
+            AFL_STAT_TYPES.includes(statType) ||
+            (statType === 'moneyline' &&
+              isLikelyAflTeamName(String(leg?.team || '')) &&
+              isLikelyAflTeamName(String(leg?.opponent || '')));
+
+          if (likelyAflLeg && Number.isFinite(legSeason)) {
+            if (AFL_STAT_TYPES.includes(statType)) {
+              const playerName = String(leg?.playerName || '').trim();
+              const teamName = String(leg?.team || '').trim();
+              const oppName = String(leg?.opponent || '').trim();
+              if (!playerName || !teamName || !oppName) continue;
+              if (overUnder !== 'over' && overUnder !== 'under') continue;
+              if (!Number.isFinite(line)) continue;
+
+              const aflGames = await fetchAflPlayerLogs(legSeason, playerName, teamName);
+              const aflGame = findAflPlayerGame(aflGames, legGameDate, oppName);
+              if (!aflGame) continue;
+
+              const raw = (aflGame as any)[statType];
+              const actualValue = typeof raw === 'number' && Number.isFinite(raw) ? raw : Number(raw);
+              if (!Number.isFinite(actualValue)) continue;
+
+              const legResult = calculateUniversalBetResult(actualValue, line, overUnder, statType);
+              leg.void = false;
+              leg.won = legResult === 'win';
+              leg.actualValue = actualValue;
+              continue;
+            }
+
+            if (statType === 'moneyline') {
+              const teamName = String(leg?.team || '').trim();
+              const oppName = String(leg?.opponent || '').trim();
+              if (!teamName || !oppName || !legGameDate) continue;
+
+              const teamWon = await resolveAflMoneylineWin(legSeason, legGameDate, teamName, oppName);
+              if (teamWon == null) continue;
+              leg.void = false;
+              leg.won = teamWon;
+              leg.actualValue = teamWon ? 1 : 0;
+              continue;
+            }
+          }
+
           const game = findGameForBet(games, {
             team: leg.team,
             opponent: leg.opponent,
@@ -775,7 +954,6 @@ export async function GET(request: Request) {
     }
 
     // --- AFL single-bet resolution ---
-    const AFL_STAT_TYPES = ['disposals', 'kicks', 'handballs', 'marks', 'goals', 'behinds', 'tackles', 'clearances'];
     let aflOffset = 0;
     let aflHasMore = true;
     const aflCandidates: any[] = [];
@@ -814,13 +992,6 @@ export async function GET(request: Request) {
         scope: userId ? 'user' : isCron ? 'cron' : 'unknown',
       });
     }
-    const baseUrl =
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.APP_URL ||
-      'http://localhost:3000';
-    const cronSecret = process.env.CRON_SECRET || '';
-
     for (const bet of aflSingleBets) {
       const gameDate = String(bet?.game_date ?? '').split('T')[0];
       const playerName = String(bet?.player_name ?? '').trim();
@@ -830,38 +1001,33 @@ export async function GET(request: Request) {
       const overUnder = bet?.over_under === 'under' ? 'under' : 'over';
       const line = typeof bet?.line === 'number' ? bet.line : Number(bet?.line);
 
-      if (!gameDate || !playerName || !team || !AFL_STAT_TYPES.includes(statType) || !Number.isFinite(line)) continue;
+      if (!gameDate || !team) continue;
 
       const season = parseInt(gameDate.slice(0, 4), 10);
       if (!Number.isFinite(season)) continue;
 
       try {
-        const params = new URLSearchParams({
-          season: String(season),
-          player_name: playerName,
-          team,
-          force_fetch: '1',
-        });
-        const headers: Record<string, string> = {};
-        if (cronSecret) {
-          headers.authorization = `Bearer ${cronSecret}`;
-          headers['x-cron-secret'] = cronSecret;
+        let actualValue: number | null = null;
+        let result: 'win' | 'loss' | 'void' | null = null;
+
+        if (AFL_STAT_TYPES.includes(statType)) {
+          if (!playerName || !Number.isFinite(line)) continue;
+          const games = await fetchAflPlayerLogs(season, playerName, team);
+          const game = findAflPlayerGame(games, gameDate, opponent);
+          if (!game) continue;
+          const raw = (game as any)[statType];
+          const val = typeof raw === 'number' && Number.isFinite(raw) ? raw : Number(raw);
+          if (!Number.isFinite(val)) continue;
+          actualValue = val;
+          result = calculateUniversalBetResult(actualValue, line, overUnder, statType);
+        } else if (statType === 'moneyline') {
+          const teamWon = await resolveAflMoneylineWin(season, gameDate, team, opponent);
+          if (teamWon == null) continue;
+          actualValue = teamWon ? 1 : 0;
+          result = teamWon ? 'win' : 'loss';
+        } else {
+          continue;
         }
-        const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, {
-          cache: 'no-store',
-          headers,
-        });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const games = Array.isArray(data?.games) ? data.games : [];
-        const game = findAflPlayerGame(games, gameDate, opponent);
-        if (!game) continue;
-
-        const raw = (game as any)[statType];
-        const actualValue = typeof raw === 'number' && Number.isFinite(raw) ? raw : Number(raw);
-        if (!Number.isFinite(actualValue)) continue;
-
-        const result = calculateUniversalBetResult(actualValue, line, overUnder, statType);
 
         const { error: updateErr } = await supabaseAdmin
           .from('bets')
