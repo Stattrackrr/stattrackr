@@ -819,6 +819,7 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.APP_URL ||
       'http://localhost:3000';
+    const cronSecret = process.env.CRON_SECRET || '';
 
     for (const bet of aflSingleBets) {
       const gameDate = String(bet?.game_date ?? '').split('T')[0];
@@ -839,8 +840,17 @@ export async function GET(request: Request) {
           season: String(season),
           player_name: playerName,
           team,
+          force_fetch: '1',
         });
-        const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, { cache: 'no-store' });
+        const headers: Record<string, string> = {};
+        if (cronSecret) {
+          headers.authorization = `Bearer ${cronSecret}`;
+          headers['x-cron-secret'] = cronSecret;
+        }
+        const res = await fetch(`${baseUrl}/api/afl/player-game-logs?${params}`, {
+          cache: 'no-store',
+          headers,
+        });
         if (!res.ok) continue;
         const data = await res.json();
         const games = Array.isArray(data?.games) ? data.games : [];
