@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root { --brand-bg: #ffffff; --brand-fg: #0b1220; }
-.dark { --brand-bg: #0b1220; --brand-fg: #ffffff; }
+.dark { --brand-bg: #050d1a; --brand-fg: #ffffff; }
 
 @supports (padding: max(0px)) {
   .pt-safe {
