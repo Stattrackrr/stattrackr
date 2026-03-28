@@ -5098,7 +5098,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
                 mounted && isDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
               } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
-                <h2 className={`text-[2rem] lg:text-2xl font-extrabold tracking-tight mb-3 ${
+                <h2 className={`text-[1.75rem] lg:text-2xl text-center lg:text-left font-extrabold tracking-tight mb-3 ${
                   mounted && isDark ? 'text-white' : 'text-gray-900'
                 }`} style={{ marginTop: 0, paddingTop: 0 }}>
                   Top Player Props

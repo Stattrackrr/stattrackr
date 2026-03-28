@@ -6,7 +6,7 @@ export default function ReadMePage() {
       <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
         <h1 className="text-2xl font-semibold">Add StatTrackr To Your Home Screen</h1>
         <p className="mt-3 text-slate-300">
-          Pin Stattrackr to your phone home screen so it opens like an app.
+          Add StatTrackr to your home screen so it opens and functions like an app.
         </p>
 
         <div className="mt-6 space-y-6 text-sm text-slate-200">

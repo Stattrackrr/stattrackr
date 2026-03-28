@@ -28,6 +28,12 @@ export const metadata: Metadata = {
     "performance analytics"
   ],
   manifest: "/manifest.json",
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "StatTrackr",
+    "apple-mobile-web-app-title": "StatTrackr",
+  },
   icons: {
     icon: [
       { url: "/images/transparent-photo.png?v=20260302", sizes: "48x48", type: "image/png" },
