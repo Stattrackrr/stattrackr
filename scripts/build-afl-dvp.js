@@ -375,10 +375,25 @@ function toRoundedTotals(acc) {
   return totals;
 }
 
+function averageHitoutsPerGame(games) {
+  if (!Array.isArray(games) || games.length === 0) return 0;
+  let sum = 0;
+  for (const g of games) sum += safeNumber(g?.hitouts);
+  return sum / games.length;
+}
+
+function resolveDvpPosition(primaryPosition, games) {
+  const pos = String(primaryPosition || '').trim().toUpperCase();
+  if (pos === 'RUC') return 'RUC';
+  // Fantasy tables often list dual-role rucks as FWD/MID. Promote true rucks using production.
+  if (averageHitoutsPerGame(games) >= 10) return 'RUC';
+  return pos;
+}
+
 async function main() {
   const season = parseInt(getArg('season', '2025'), 10) || 2025;
   const baseUrl = getArg('base-url', process.env.AFL_DVP_BASE_URL || 'http://localhost:3000');
-  const concurrency = Math.max(1, parseInt(getArg('concurrency', '6'), 10) || 6);
+  const concurrency = Math.max(1, parseInt(getArg('concurrency', '50'), 10) || 50);
   const delayMs = Math.max(0, parseInt(getArg('delay-ms', '40'), 10) || 40);
   const playerLimit = Math.max(0, parseInt(getArg('player-limit', '0'), 10) || 0);
 
@@ -427,7 +442,7 @@ async function main() {
   let checked = 0;
   const fetched = await mapWithConcurrency(players, concurrency, async (player) => {
     const fullTeam = FANTASY_TEAM_TO_FULL[player.team] || player.team;
-    const url = `${baseUrl}/api/afl/player-game-logs?season=${encodeURIComponent(String(season))}&player_name=${encodeURIComponent(player.name)}&team=${encodeURIComponent(fullTeam)}`;
+    const url = `${baseUrl}/api/afl/player-game-logs?season=${encodeURIComponent(String(season))}&player_name=${encodeURIComponent(player.name)}&team=${encodeURIComponent(fullTeam)}&strict_season=1`;
     const res = await fetchJson(url, { headers: appHeaders });
     if (delayMs > 0) await sleep(delayMs);
     checked += 1;
@@ -463,7 +478,8 @@ async function main() {
   const opponentGameKeys = new Map();
 
   for (const row of valid) {
-    const pos = row.position;
+    const pos = resolveDvpPosition(row.position, row.games);
+    if (!pos) continue;
     if (!byPosition.has(pos)) byPosition.set(pos, createAccumulator());
     const posAcc = byPosition.get(pos);
 

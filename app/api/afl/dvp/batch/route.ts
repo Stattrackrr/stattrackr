@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const DEFAULT_SEASON = 2026;
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
-const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v2';
+const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v5';
 const DVP_BATCH_CACHE_TTL_SECONDS = 60 * 30; // 30 min – so updated DvP (team totals) is reflected sooner
 
 type DvpRow = {
@@ -54,9 +54,11 @@ function isValidOpponent(opponent: string): boolean {
   return true;
 }
 
-async function readDvpFile(season: number): Promise<DvpFileShape> {
-  const cached = await getAflDvpPayloadFromCache(season);
-  if (cached?.rows) return cached as DvpFileShape;
+async function readDvpFile(season: number, skipPayloadCache = false): Promise<DvpFileShape> {
+  if (!skipPayloadCache) {
+    const cached = await getAflDvpPayloadFromCache(season);
+    if (cached?.rows) return cached as DvpFileShape;
+  }
   const file = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
   const raw = await fs.readFile(file, 'utf8');
   return JSON.parse(raw) as DvpFileShape;
@@ -119,7 +121,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const data = await readDvpFile(season);
+    const skipPayloadCache = skipCache || process.env.NODE_ENV === 'development';
+    const data = await readDvpFile(season, skipPayloadCache);
     const allRows = Array.isArray(data.rows) ? data.rows : [];
     const rows = allRows.filter((r) => r.position === position && isValidOpponent(r.opponent));
     const oa = await readOaFile(season);
@@ -155,6 +158,8 @@ export async function GET(req: NextRequest) {
         ranks: Record<string, number>;
         teamTotalValues: Record<string, number>;
         teamTotalRanks: Record<string, number>;
+        rawTeamTotalValues: Record<string, number>;
+        rawTeamTotalRanks: Record<string, number>;
         samples: Record<string, number>;
         teamGames: Record<string, number>;
       }
@@ -181,7 +186,12 @@ export async function GET(req: NextRequest) {
           if (r.totals && typeof r.totals[stat] === 'number') {
             tv = Math.round((r.totals[stat] / tg) * 100) / 100;
           } else if (Number.isFinite(pv) && ss > 0) {
-            tv = Math.round((pv * (ss / tg)) * 100) / 100;
+            // Sparse position coverage can make (sampleSize / teamGames) < 1 even for roles
+            // that must exist every game (e.g. rucks), which collapses team totals unrealistically.
+            const estimatedPlayersPerGame = ss / tg;
+            const minPlayersPerGame = 0.75;
+            const boundedPlayersPerGame = Math.max(minPlayersPerGame, estimatedPlayersPerGame);
+            tv = Math.round((pv * boundedPlayersPerGame) * 100) / 100;
           }
         }
         if (Number.isFinite(tv)) {
@@ -204,6 +214,8 @@ export async function GET(req: NextRequest) {
       sortedTeamTotals.forEach(([team], idx) => {
         teamTotalRanks[team] = idx + 1;
       });
+      const rawTeamTotalValues = { ...teamTotalValues };
+      const rawTeamTotalRanks = { ...teamTotalRanks };
 
       // Calibrate team totals to OA team-level totals so position sums align with Opponent Breakdown.
       const oaCode = STAT_TO_OA_CODE[stat];
@@ -238,7 +250,16 @@ export async function GET(req: NextRequest) {
         Object.assign(teamTotalRanks, recalibratedRanks);
       }
 
-      metrics[stat] = { values, ranks, teamTotalValues, teamTotalRanks, samples, teamGames };
+      metrics[stat] = {
+        values,
+        ranks,
+        teamTotalValues,
+        teamTotalRanks,
+        rawTeamTotalValues,
+        rawTeamTotalRanks,
+        samples,
+        teamGames,
+      };
     }
 
     const opponents = [...new Set(rows.map((r) => r.opponent))].sort((a, b) => a.localeCompare(b));

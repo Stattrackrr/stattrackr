@@ -17,6 +17,7 @@ const DVP_METRICS = [
 const AFL_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
 const SEASON_OPTIONS = [2026, 2025] as const;
 const DVP_CACHE_TTL = 2 * 60 * 1000;
+const DVP_CLIENT_CACHE_VERSION = 'v2';
 const dvpBatchCache = new Map<string, { data: DvpBatchResponse; timestamp: number }>();
 const dvpBatchInFlight = new Map<string, Promise<DvpBatchResponse | null>>();
 
@@ -28,6 +29,8 @@ type DvpBatchResponse = {
     ranks: Record<string, number>;
     teamTotalValues?: Record<string, number>;
     teamTotalRanks?: Record<string, number>;
+    rawTeamTotalValues?: Record<string, number>;
+    rawTeamTotalRanks?: Record<string, number>;
     samples?: Record<string, number>;
     teamGames?: Record<string, number>;
   }>;
@@ -203,7 +206,7 @@ export default function AflDvpCard({
         return;
       }
 
-      const cacheKey = `${selectedSeason}:${targetPos}`;
+      const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:${selectedSeason}:${targetPos}`;
       const cached = dvpBatchCache.get(cacheKey);
       const now = Date.now();
       const skipClientCache = process.env.NODE_ENV === 'development';
@@ -293,7 +296,7 @@ export default function AflDvpCard({
     const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
 
     const warm = async (position: (typeof AFL_POSITIONS)[number]) => {
-      const cacheKey = `${selectedSeason}:${position}`;
+      const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:${selectedSeason}:${position}`;
       const cached = dvpBatchCache.get(cacheKey);
       const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
       if (isFresh || dvpBatchInFlight.has(cacheKey)) return;
