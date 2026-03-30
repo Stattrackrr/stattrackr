@@ -54,12 +54,17 @@ export default memo(function AflXAxisTick({
   data,
   logoByTeam,
   isDark,
+  hideLogo,
 }: any) {
   const [logoError, setLogoError] = useState(false);
 
   const dataPoint = data?.find((d: any) => d.xKey === payload.value);
   const teamName = dataPoint?.tickLabel || payload.value;
   const logoUrl = resolveLogo(String(teamName ?? ''), logoByTeam);
+
+  if (hideLogo) {
+    return <g transform={`translate(${x},${y})`} />;
+  }
 
   if (!logoUrl || logoError) {
     return (
@@ -102,4 +107,5 @@ export default memo(function AflXAxisTick({
   && prev.payload?.value === next.payload?.value
   && prev.logoByTeam === next.logoByTeam
   && prev.isDark === next.isDark
+  && prev.hideLogo === next.hideLogo
 ));

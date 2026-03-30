@@ -19,6 +19,7 @@ type AflAdvancedFilterKey =
   | 'rank_kicks'
   | 'rank_free_kicks_for'
   | null;
+type AflSplitResultFilter = 'all' | 'wins' | 'losses';
 const AFL_ADVANCED_OPPONENT_RANK_FILTERS: Array<{
   key: Exclude<AflAdvancedFilterKey, 'dvp_rank' | 'tog' | null>;
   label: string;
@@ -110,7 +111,7 @@ const STATS_HIDDEN = new Set([
   'hitouts',
   'meters_gained',
 ]);
-const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'] as const;
+const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 
 interface AflChartTooltipProps {
   active?: boolean;
@@ -164,7 +165,7 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as
-    | { round?: string; opponent?: string; result?: string; value?: number; gameDate?: string; sourceGameIndex?: number | null }
+    | { round?: string; opponent?: string; result?: string; value?: number; gameDate?: string; sourceGameIndex?: number | null; venue?: string }
     | undefined;
   if (!point) return null;
 
@@ -330,6 +331,22 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
         {selectedStatLabel}: {formattedValue}
       </div>
 
+      {point.venue && (
+        <div
+          style={{
+            marginBottom: '8px',
+            fontSize: '12px',
+            color: labelColor,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>Venue</span>
+          <span style={{ color: tooltipText, fontWeight: 600 }}>{point.venue}</span>
+        </div>
+      )}
+
       {/* AFL-specific extra info: DvP rank + TOG (NBA-style rows) */}
       {(dvpRank != null || togPct != null) && (() => {
         const rows: Array<{ label: string; value: string }> = [];
@@ -420,6 +437,108 @@ function normalizeLogoUrl(url: string): string {
   const raw = String(url || '').trim();
   if (!raw) return '';
   return raw.replace(/^http:\/\//i, 'https://');
+}
+
+const AFL_ALL_VENUES = [
+  'Adelaide Oval',
+  'Accor Stadium',
+  'Barossa Park',
+  'Blundstone Arena',
+  "Cazaly's Stadium",
+  'ENGIE Stadium',
+  'GMHBA Stadium',
+  'Gabba',
+  'MCG',
+  'Manuka Oval',
+  'Marvel Stadium',
+  'Mars Stadium',
+  'Norwood Oval',
+  'Optus Stadium',
+  'People First Stadium',
+  'SCG',
+  'Summit Sports and Recreation Park',
+  'TIO Stadium',
+  'TIO Traeger Park',
+  'UTAS Stadium',
+] as const;
+
+const AFL_VENUE_ALIAS_MAP: Record<string, string> = {
+  adelaideoval: 'Adelaide Oval',
+  accorstadium: 'Accor Stadium',
+  stadiumaustralia: 'Accor Stadium',
+  olympicstadium: 'Accor Stadium',
+  barossapark: 'Barossa Park',
+  lyndochrecreationpark: 'Barossa Park',
+  blundstonearena: 'Blundstone Arena',
+  belleriveoval: 'Blundstone Arena',
+  cazalysstadium: "Cazaly's Stadium",
+  engiestadium: 'ENGIE Stadium',
+  sydneyshowgroundstadium: 'ENGIE Stadium',
+  giantsstadium: 'ENGIE Stadium',
+  showgroundstadium: 'ENGIE Stadium',
+  gmhbastadium: 'GMHBA Stadium',
+  kardiniapark: 'GMHBA Stadium',
+  gabba: 'Gabba',
+  thegabba: 'Gabba',
+  mcg: 'MCG',
+  melbournecricketground: 'MCG',
+  manukaoval: 'Manuka Oval',
+  marvelstadium: 'Marvel Stadium',
+  docklandsstadium: 'Marvel Stadium',
+  etihadstadium: 'Marvel Stadium',
+  telstradome: 'Marvel Stadium',
+  marsstadium: 'Mars Stadium',
+  eurekastadium: 'Mars Stadium',
+  eurekapark: 'Mars Stadium',
+  norwoodoval: 'Norwood Oval',
+  coopersstadium: 'Norwood Oval',
+  optusstadium: 'Optus Stadium',
+  perthstadium: 'Optus Stadium',
+  peoplefirststadium: 'People First Stadium',
+  metriconstadium: 'People First Stadium',
+  carrara: 'People First Stadium',
+  scg: 'SCG',
+  sydneycricketground: 'SCG',
+  summitsportsandrecreationpark: 'Summit Sports and Recreation Park',
+  mtbarker: 'Summit Sports and Recreation Park',
+  tiostadium: 'TIO Stadium',
+  tiotraegerpark: 'TIO Traeger Park',
+  traegerpark: 'TIO Traeger Park',
+  utasstadium: 'UTAS Stadium',
+  universityoftasmaniastadium: 'UTAS Stadium',
+  yorkpark: 'UTAS Stadium',
+};
+
+function canonicalizeAflVenue(rawVenue: string): string {
+  const trimmed = String(rawVenue || '').trim();
+  if (!trimmed) return '';
+  const key = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (AFL_VENUE_ALIAS_MAP[key]) return AFL_VENUE_ALIAS_MAP[key];
+  const direct = AFL_ALL_VENUES.find((venue) => venue.toLowerCase() === trimmed.toLowerCase());
+  return direct ?? trimmed;
+}
+
+function extractVenueFromGameLog(game: Record<string, unknown>): string {
+  const candidates = [
+    game.venue,
+    game.ground,
+    game.stadium,
+    game.location,
+    game.match_venue,
+    game.game_venue,
+  ];
+  for (const value of candidates) {
+    if (typeof value === 'string' && value.trim()) return canonicalizeAflVenue(value);
+  }
+  return '';
+}
+
+function getGameOutcome(resultRaw: unknown): 'wins' | 'losses' | null {
+  const result = String(resultRaw ?? '').trim().toLowerCase();
+  if (!result) return null;
+  if (result.startsWith('w') || result.includes('win') || result.includes('won')) return 'wins';
+  if (result.startsWith('l') || result.includes('loss') || result.includes('lost')) return 'losses';
+  return null;
 }
 
 function parseRoundIndex(round: unknown): number {
@@ -661,7 +780,12 @@ export function AflStatsChart({
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  const [showSplitsFilters, setShowSplitsFilters] = useState(false);
+  const [splitResultFilter, setSplitResultFilter] = useState<AflSplitResultFilter>('all');
+  const [splitVenueFilter, setSplitVenueFilter] = useState<string>('all');
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const venueDropdownRef = useRef<HTMLDivElement>(null);
+  const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
@@ -758,6 +882,50 @@ export function AflStatsChart({
     });
   }, [gameLogs, teammateFilterName, teammateGameKeys, withWithoutMode, resolveGameSeason]);
 
+  const venueOptions = useMemo(() => [...AFL_ALL_VENUES], []);
+  const venueCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const game of filteredGameLogs) {
+      if (splitResultFilter !== 'all') {
+        const outcome = getGameOutcome((game as Record<string, unknown>).result);
+        if (outcome !== splitResultFilter) continue;
+      }
+      const venue = extractVenueFromGameLog(game as Record<string, unknown>);
+      if (!venue) continue;
+      counts.set(venue, (counts.get(venue) ?? 0) + 1);
+    }
+    return counts;
+  }, [filteredGameLogs, splitResultFilter]);
+  const visibleVenueOptions = useMemo(
+    () => venueOptions.filter((venue) => (venueCounts.get(venue) ?? 0) > 0),
+    [venueOptions, venueCounts]
+  );
+  const totalVenueGames = useMemo(
+    () => Array.from(venueCounts.values()).reduce((sum, n) => sum + n, 0),
+    [venueCounts]
+  );
+
+  useEffect(() => {
+    if (splitVenueFilter === 'all') return;
+    if (!(visibleVenueOptions as readonly string[]).includes(splitVenueFilter)) {
+      setSplitVenueFilter('all');
+    }
+  }, [splitVenueFilter, visibleVenueOptions]);
+
+  const splitFilteredGameLogs = useMemo(() => {
+    return filteredGameLogs.filter((g) => {
+      if (splitResultFilter !== 'all') {
+        const outcome = getGameOutcome(g.result);
+        if (outcome !== splitResultFilter) return false;
+      }
+      if (splitVenueFilter !== 'all') {
+        const venue = extractVenueFromGameLog(g as Record<string, unknown>);
+        if (venue !== splitVenueFilter) return false;
+      }
+      return true;
+    });
+  }, [filteredGameLogs, splitResultFilter, splitVenueFilter]);
+
   const effectiveSeason = useCallback((g: Record<string, unknown>) => {
     const s = (g as { season?: number }).season;
     if (typeof s === 'number' && Number.isFinite(s)) return s;
@@ -780,6 +948,7 @@ export function AflStatsChart({
     const opponent = String(g.opponent ?? '-');
     const result = String(g.result ?? '-');
     const gameDate = String(g.date ?? g.game_date ?? '');
+    const venue = extractVenueFromGameLog(g);
     const value = toNumericValue(g[selectedStat]) ?? 0;
     const key = `${gameNum}-${round}-${opponent}-${idx}`;
     const gameSeason = effectiveSeason(g);
@@ -795,6 +964,7 @@ export function AflStatsChart({
       value,
       gameId: key,
       gameDate,
+      venue,
       gameSeason,
       sourceGameIndex,
       game: { id: key, date: gameDate, home_team: { abbreviation: opponent.toUpperCase() }, visitor_team: { abbreviation: opponent.toUpperCase() } },
@@ -803,7 +973,7 @@ export function AflStatsChart({
 
   const baseChartData = useMemo(() => {
     if (!selectedStat) return [];
-    return [...filteredGameLogs]
+    return [...splitFilteredGameLogs]
       .sort((a, b) => {
         const aSeason = effectiveSeason(a as Record<string, unknown>);
         const bSeason = effectiveSeason(b as Record<string, unknown>);
@@ -822,19 +992,18 @@ export function AflStatsChart({
         return 0;
       })
       .map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
-  }, [filteredGameLogs, selectedStat, effectiveSeason, gameToChartRow]);
+  }, [splitFilteredGameLogs, selectedStat, effectiveSeason, gameToChartRow]);
 
   const chartData = useMemo(() => {
     if (!baseChartData.length) return [];
 
-    const thisSeasonYear = season;
-    const lastSeasonYear = season - 1;
-
     let data: typeof baseChartData;
-    if (selectedTimeframe === 'thisseason') {
-      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === thisSeasonYear);
-    } else if (selectedTimeframe === 'lastseason') {
-      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === lastSeasonYear);
+    if (selectedTimeframe === 'season2026') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2026);
+    } else if (selectedTimeframe === 'season2025') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2025);
+    } else if (selectedTimeframe === 'season2024') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2024);
     } else if (selectedTimeframe === 'h2h') {
       // Use upcoming opponent when provided; otherwise fall back to last game's opponent
       const targetOpponent = nextOpponent?.trim() || baseChartData[baseChartData.length - 1]?.opponent;
@@ -1038,15 +1207,20 @@ export function AflStatsChart({
     last10: 'L10',
     last15: 'L15',
     last20: 'L20',
+    last50: 'L50',
     h2h: 'H2H',
-    lastseason: 'Last Season',
-    thisseason: 'This Season',
+    season2026: '2026',
+    season2025: '2025',
+    season2024: '2024',
   };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(e.target as Node)) {
         setIsTimeframeDropdownOpen(false);
+      }
+      if (venueDropdownRef.current && !venueDropdownRef.current.contains(e.target as Node)) {
+        setIsVenueDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -1074,8 +1248,13 @@ export function AflStatsChart({
   }, [isDark, selectedStatLabel, playerPositionForFilters, perGameFilterData]);
 
   const aflXAxisTick = useMemo(() => (
-    <AflXAxisTick data={chartData} logoByTeam={chartLogoByTeam} isDark={isDark} />
-  ), [chartData, chartLogoByTeam, isDark]);
+    <AflXAxisTick
+      data={chartData}
+      logoByTeam={chartLogoByTeam}
+      isDark={isDark}
+      hideLogo={selectedTimeframe === 'last50'}
+    />
+  ), [chartData, chartLogoByTeam, isDark, selectedTimeframe]);
 
   const chartLoadingSkeleton = (
     <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
@@ -1278,6 +1457,13 @@ export function AflStatsChart({
               Advanced
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setShowSplitsFilters((prev) => !prev)}
+            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative ${showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
+          >
+            Splits
+          </button>
           {slotRightOfControls != null && (
             <div className="ml-auto flex items-center flex-shrink-0">
               {slotRightOfControls}
@@ -1285,6 +1471,90 @@ export function AflStatsChart({
           )}
         </div>
       </div>
+
+      {showSplitsFilters && (
+        <div className="mb-2 px-2">
+          <div className={`rounded-lg border p-2 sm:p-3 ${isDark ? 'bg-[#0a1929] border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Result</span>
+              {([
+                { key: 'all', label: 'All' },
+                { key: 'wins', label: 'Wins' },
+                { key: 'losses', label: 'Losses' },
+              ] as const).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setSplitResultFilter(option.key)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    splitResultFilter === option.key
+                      ? 'bg-purple-600 text-white border-purple-400/30'
+                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+
+              <span className={`ml-1 text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Venue</span>
+              <div className="relative" ref={venueDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsVenueDropdownOpen((prev) => !prev)}
+                  className="w-44 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <span className="truncate">
+                    {splitVenueFilter === 'all'
+                      ? `All venues (${totalVenueGames})`
+                      : `${splitVenueFilter} (${venueCounts.get(splitVenueFilter) ?? 0})`}
+                  </span>
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isVenueDropdownOpen && (
+                  <>
+                    <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSplitVenueFilter('all');
+                          setIsVenueDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                          splitVenueFilter === 'all'
+                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {`All venues (${totalVenueGames})`}
+                      </button>
+                      {visibleVenueOptions.map((venue, index) => (
+                        <button
+                          key={venue}
+                          type="button"
+                          onClick={() => {
+                            setSplitVenueFilter(venue);
+                            setIsVenueDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                            splitVenueFilter === venue
+                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                              : 'text-gray-900 dark:text-white'
+                          } ${index === visibleVenueOptions.length - 1 ? 'rounded-b-lg' : ''}`}
+                        >
+                          {`${venue} (${venueCounts.get(venue) ?? 0})`}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsVenueDropdownOpen(false)} aria-hidden />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAdvancedFilters && (
         <>
@@ -1419,6 +1689,10 @@ export function AflStatsChart({
         {chartData.length === 0 && selectedTimeframe === 'h2h' ? (
           <div className="h-full w-full flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">No recent H2H found</p>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="h-full w-full flex items-center justify-center p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
           </div>
         ) : gameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
           <div className="h-full w-full flex items-center justify-center p-4">

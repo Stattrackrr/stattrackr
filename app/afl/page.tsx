@@ -102,7 +102,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v1';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v3';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -263,6 +263,27 @@ function parseAflGoalsFromResult(resultRaw: unknown): { team: number; opponent: 
   if (gb.length >= 2) {
     return { team: gb[gb.length - 2], opponent: gb[gb.length - 1] };
   }
+  return null;
+}
+
+function buildAflGameIdentityKey(game: Record<string, unknown>): string {
+  const season = Number(game.season);
+  const seasonPart = Number.isFinite(season) ? String(season) : '';
+  const round = String(game.round ?? '').trim().toUpperCase();
+  const opponent = String(game.opponent ?? '').trim().toLowerCase();
+  const result = String(game.result ?? '').trim().toLowerCase();
+  const date = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
+  return [seasonPart, round, opponent, date, result].join('|');
+}
+
+const VALID_AFL_TIMEFRAMES = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
+
+function normalizeAflTimeframe(value: unknown): AflChartTimeframe | null {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (!raw) return null;
+  if (raw === 'thisseason') return 'season2026';
+  if (raw === 'lastseason') return 'season2025';
+  if ((VALID_AFL_TIMEFRAMES as readonly string[]).includes(raw)) return raw as AflChartTimeframe;
   return null;
 }
 
@@ -827,12 +848,12 @@ export default function AFLPage() {
     const statParam = url.searchParams.get('stat')?.trim();
     const tfParam = url.searchParams.get('tf')?.trim();
     const lineParam = url.searchParams.get('line')?.trim();
-    const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
     if (statParam && ['disposals', 'goals', 'marks', 'tackles', 'kicks', 'handballs', 'tog', 'inside_50s', 'uncontested', 'uncontested_possessions', 'meters_gained', 'free_kicks_against'].includes(statParam)) {
       setMainChartStat(statParam);
     }
-    if (tfParam && validTimeframes.includes(tfParam as AflChartTimeframe)) {
-      setAflChartTimeframe(tfParam as AflChartTimeframe);
+    const normalizedTf = normalizeAflTimeframe(tfParam);
+    if (normalizedTf) {
+      setAflChartTimeframe(normalizedTf);
     }
     if (lineParam) {
       const n = parseFloat(lineParam);
@@ -945,9 +966,9 @@ export default function AFLPage() {
       if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'team_matchup') {
         setAflRightTab(parsed.aflRightTab);
       }
-      const validTimeframes: AflChartTimeframe[] = ['last5', 'last10', 'last15', 'last20', 'h2h', 'lastseason', 'thisseason'];
-      if (parsed.aflChartTimeframe && validTimeframes.includes(parsed.aflChartTimeframe)) {
-        setAflChartTimeframe(parsed.aflChartTimeframe);
+      const normalizedPersistedTf = normalizeAflTimeframe(parsed.aflChartTimeframe);
+      if (normalizedPersistedTf) {
+        setAflChartTimeframe(normalizedPersistedTf);
       }
       if (parsed.withWithoutMode === 'with' || parsed.withWithoutMode === 'without') {
         setWithWithoutMode(parsed.withWithoutMode);
@@ -1614,7 +1635,7 @@ export default function AFLPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Prefetch game logs for both 2026 and 2025 and merge (same as main fetch) so we never show only 2026 for players who played Round 0.
+  // Prefetch game logs for current + previous two seasons (e.g. 2026/2025/2024) and merge.
   const prefetchPlayerLogs = useCallback((player: AflPlayerRecord) => {
     const name = String(player?.name ?? '').trim();
     if (!name) return;
@@ -1627,14 +1648,17 @@ export default function AFLPage() {
     const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(name)}${teamQuery}&include_both=1`;
     const currentYear = season;
     const prevYear = currentYear - 1;
+    const olderYear = currentYear - 2;
     const fetchOpts = { cache: 'no-store' as RequestCache };
     Promise.all([
       fetch(`${baseUrl}&season=${currentYear}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
+      fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then((r) => r.json()),
     ])
-      .then(([dataCurrent, dataPrev]) => {
+      .then(([dataCurrent, dataPrev, dataOlder]) => {
         let gamesCurrent = Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
         const gamesPrev = Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const gamesOlder = Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
         const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
@@ -1642,10 +1666,11 @@ export default function AFLPage() {
         let qCurrent = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : gamesCurrent;
         if (is2026ResponseActually2025) qCurrent = [];
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
-        const games = [...gamesCurrent, ...gamesPrev];
-        const gamesWithQuarters = [...qCurrent, ...qPrev];
+        const qOlder = Array.isArray(dataOlder?.gamesWithQuarters) ? (dataOlder.gamesWithQuarters as Record<string, unknown>[]) : gamesOlder;
+        const games = [...gamesCurrent, ...gamesPrev, ...gamesOlder];
+        const gamesWithQuarters = [...qCurrent, ...qPrev, ...qOlder];
         if (games.length === 0) return;
-        const data = gamesCurrent.length > 0 ? dataCurrent : dataPrev;
+        const data = gamesCurrent.length > 0 ? dataCurrent : (gamesPrev.length > 0 ? dataPrev : dataOlder);
         const latest = games[0];
         const numericKeys = new Set<string>();
         const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
@@ -1773,6 +1798,7 @@ export default function AFLPage() {
     const searchStartedAtMs = Date.now();
     const currentYear = season;
     const prevYear = currentYear - 1;
+    const olderYear = currentYear - 2;
     // Cache only: cron warms cache every 2h; dashboard never hits FootyWire
     const forceFetchCurrent = '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
@@ -1803,7 +1829,7 @@ export default function AFLPage() {
     };
     (async () => {
       try {
-        // Fetch 2026 and 2025 in parallel; show first response that has games so UI isn't stuck ~10s for slow 2025.
+        // Fetch current + previous two seasons in parallel.
         const p1 = fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
           if (!cancelled) {
@@ -1820,12 +1846,18 @@ export default function AFLPage() {
           }
           return { ok: res.ok, data: d };
         });
-        const [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
+        const p3 = fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then(async (res) => {
+          const d = (await res.json()) as Record<string, unknown>;
+          return { ok: res.ok, data: d };
+        });
+        const [resultCurrent, resultPrev, resultOlder] = await Promise.all([p1, p2, p3]);
         if (cancelled) return;
         dataCurrent = resultCurrent.data;
         dataPrev = resultPrev.data;
+        const dataOlder = resultOlder.data;
         let gamesCurrent = resultCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
         const gamesPrev = resultPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const gamesOlder = resultOlder.ok && Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
         const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
@@ -1835,10 +1867,11 @@ export default function AFLPage() {
         let qCurrent = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : gamesCurrent;
         if (is2026ResponseActually2025) qCurrent = [];
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
-        // Merge: current season first (most recent), then previous so chart/L5/season use both years.
-        const games = [...gamesCurrent, ...gamesPrev];
-        const gamesWithQuarters = [...qCurrent, ...qPrev];
-        const data = gamesCurrent.length > 0 ? dataCurrent : dataPrev;
+        const qOlder = Array.isArray(dataOlder?.gamesWithQuarters) ? (dataOlder.gamesWithQuarters as Record<string, unknown>[]) : gamesOlder;
+        // Merge: current season first, then older seasons (e.g. 2026/2025/2024).
+        const games = [...gamesCurrent, ...gamesPrev, ...gamesOlder];
+        const gamesWithQuarters = [...qCurrent, ...qPrev, ...qOlder];
+        const data = gamesCurrent.length > 0 ? dataCurrent : (gamesPrev.length > 0 ? dataPrev : dataOlder);
         setSelectedPlayerGameLogs(games);
         setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
         if (games.length === 0) {
@@ -2023,11 +2056,12 @@ export default function AFLPage() {
         }
 
         const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(repPlayerName)}&team=${encodeURIComponent(selectedTeam)}&include_both=1`;
-        const [curRes, prevRes] = await Promise.all([
+        const [curRes, prevRes, olderRes] = await Promise.all([
           fetch(`${baseUrl}&season=${season}`, { cache: 'no-store' }),
           fetch(`${baseUrl}&season=${season - 1}`, { cache: 'no-store' }),
+          fetch(`${baseUrl}&season=${season - 2}`, { cache: 'no-store' }),
         ]);
-        const [curJson, prevJson] = await Promise.all([curRes.json(), prevRes.json()]);
+        const [curJson, prevJson, olderJson] = await Promise.all([curRes.json(), prevRes.json(), olderRes.json()]);
 
         const curLogs = curRes.ok
           ? (Array.isArray(curJson?.gamesWithQuarters) ? (curJson.gamesWithQuarters as AflGameLogRecord[]) : (Array.isArray(curJson?.games) ? (curJson.games as AflGameLogRecord[]) : []))
@@ -2035,8 +2069,11 @@ export default function AFLPage() {
         const prevLogs = prevRes.ok
           ? (Array.isArray(prevJson?.gamesWithQuarters) ? (prevJson.gamesWithQuarters as AflGameLogRecord[]) : (Array.isArray(prevJson?.games) ? (prevJson.games as AflGameLogRecord[]) : []))
           : [];
+        const olderLogs = olderRes.ok
+          ? (Array.isArray(olderJson?.gamesWithQuarters) ? (olderJson.gamesWithQuarters as AflGameLogRecord[]) : (Array.isArray(olderJson?.games) ? (olderJson.games as AflGameLogRecord[]) : []))
+          : [];
 
-        if (!cancelled) setTeamModeSelectedTeamLogs([...curLogs, ...prevLogs]);
+        if (!cancelled) setTeamModeSelectedTeamLogs([...curLogs, ...prevLogs, ...olderLogs]);
       } catch {
         if (!cancelled) setTeamModeSelectedTeamLogs([]);
       }
@@ -2211,10 +2248,39 @@ export default function AFLPage() {
     selectedAdvancedDvpMetric,
   ]);
 
+  // Chart primarily uses selectedPlayerGameLogs; enrich those rows with venue from
+  // gamesWithQuarters so Splits > Venue can filter reliably.
+  const selectedPlayerGameLogsForChart = useMemo(() => {
+    if (!selectedPlayerGameLogs.length) return selectedPlayerGameLogs;
+    if (!selectedPlayerGameLogsWithQuarters.length) return selectedPlayerGameLogs;
+
+    const venueByKey = new Map<string, string>();
+    for (const game of selectedPlayerGameLogsWithQuarters) {
+      const row = game as Record<string, unknown>;
+      const venueRaw = row.venue ?? row.ground ?? row.stadium ?? row.location;
+      const venue = typeof venueRaw === 'string' ? venueRaw.trim() : '';
+      if (!venue) continue;
+      const key = buildAflGameIdentityKey(row);
+      if (!key) continue;
+      if (!venueByKey.has(key)) venueByKey.set(key, venue);
+    }
+
+    return selectedPlayerGameLogs.map((game) => {
+      const row = game as Record<string, unknown>;
+      const existingVenueRaw = row.venue ?? row.ground ?? row.stadium ?? row.location;
+      const existingVenue = typeof existingVenueRaw === 'string' ? existingVenueRaw.trim() : '';
+      if (existingVenue) return game;
+      const key = buildAflGameIdentityKey(row);
+      const matchedVenue = venueByKey.get(key);
+      if (!matchedVenue) return game;
+      return { ...row, venue: matchedVenue } as AflGameLogRecord;
+    });
+  }, [selectedPlayerGameLogs, selectedPlayerGameLogsWithQuarters]);
+
   // Per-game filter data for the current player's games (DVP rank, opponent rank, TOG).
   // Rank source is DvP only (snapshots first, then latest DvP batch), no OA/stale derived fallbacks.
   const perGameFilterData = useMemo((): AflGameFilterDataItem[] | null => {
-    if (!selectedPlayerGameLogs.length) return null;
+    if (!selectedPlayerGameLogsForChart.length) return null;
     const dvp = aflFilterDataDvp;
     const metric = selectedAdvancedDvpMetric;
     const opponentMetric = selectedAdvancedOpponentMetric;
@@ -2272,7 +2338,7 @@ export default function AFLPage() {
       return null;
     };
 
-    return selectedPlayerGameLogs.map((g, gameIndex) => {
+    return selectedPlayerGameLogsForChart.map((g, gameIndex) => {
       const oppRaw = String((g as Record<string, unknown>)?.opponent ?? '').trim();
       const oppFooty = opponentToFootywireTeam(oppRaw) || oppRaw;
       const oppOfficial = opponentToOfficialTeamName(oppRaw) || oppRaw;
@@ -2310,7 +2376,7 @@ export default function AFLPage() {
       return { gameIndex, opponent: oppRaw, dvpRank, dvpRankSource, opponentRank, tog };
     });
   }, [
-    selectedPlayerGameLogs,
+    selectedPlayerGameLogsForChart,
     aflFilterDataDvp,
     selectedAdvancedDvpMetric,
     selectedAdvancedOpponentMetric,
@@ -2323,12 +2389,12 @@ export default function AFLPage() {
     const withSourceIndex = (logs: AflGameLogRecord[]) =>
       logs.map((g, i) => ({ ...(g as Record<string, unknown>), __aflGameIndex: i }));
 
-    if (aflPropsMode !== 'player' || !perGameFilterData?.length) return withSourceIndex(selectedPlayerGameLogs);
+    if (aflPropsMode !== 'player' || !perGameFilterData?.length) return withSourceIndex(selectedPlayerGameLogsForChart);
     const f = aflGameFilters;
     const hasDvp = f.dvpRankMin != null || f.dvpRankMax != null;
     const hasOpp = f.opponentRankMin != null || f.opponentRankMax != null;
     const hasTog = f.togMin != null || f.togMax != null;
-    if (!hasDvp && !hasOpp && !hasTog) return withSourceIndex(selectedPlayerGameLogs);
+    if (!hasDvp && !hasOpp && !hasTog) return withSourceIndex(selectedPlayerGameLogsForChart);
 
     // When a filter is active, only include games that have that filter's data AND are in range. Exclude games missing data so the chart actually updates (e.g. DVP filter only shows games with DVP rank in range).
     const indices = new Set(
@@ -2353,11 +2419,11 @@ export default function AFLPage() {
         })
         .map((row) => row.gameIndex)
     );
-    const filtered = selectedPlayerGameLogs
+    const filtered = selectedPlayerGameLogsForChart
       .map((g, i) => ({ ...(g as Record<string, unknown>), __aflGameIndex: i }))
       .filter((g) => indices.has(Number((g as Record<string, unknown>).__aflGameIndex)));
     return filtered;
-  }, [aflPropsMode, selectedPlayerGameLogs, perGameFilterData, aflGameFilters]);
+  }, [aflPropsMode, selectedPlayerGameLogsForChart, perGameFilterData, aflGameFilters]);
 
   const getCurrentSeasonAvg = (statKey: string): number | null => {
     if (!selectedPlayerGameLogs.length) return null;
@@ -3305,7 +3371,7 @@ export default function AFLPage() {
                       <AflStatsChart
                         stats={selectedPlayer ?? {}}
                         gameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : chartGameLogsForPlayer}
-                        allGameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : selectedPlayerGameLogs}
+                        allGameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : selectedPlayerGameLogsForChart}
                         isDark={!!mounted && isDark}
                         logoByTeam={logoByTeam}
                         isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}

@@ -42,13 +42,15 @@ function applyTimeframe<T extends BaseRow>(
   nextOpponent?: string | null
 ): T[] {
   if (!baseData.length) return [];
-  if (timeframe === 'thisseason' && season != null) {
-    return baseData.filter((row) => (row.gameSeason ?? season) === season) as T[];
+  if (timeframe === 'season2026') {
+    return baseData.filter((row) => row.gameSeason === 2026) as T[];
   }
-  if (timeframe === 'lastseason' && season != null) {
-    return baseData.filter((row) => (row.gameSeason ?? season - 1) === season - 1) as T[];
+  if (timeframe === 'season2025') {
+    return baseData.filter((row) => row.gameSeason === 2025) as T[];
   }
-  if (timeframe === 'thisseason' || timeframe === 'lastseason') return baseData;
+  if (timeframe === 'season2024') {
+    return baseData.filter((row) => row.gameSeason === 2024) as T[];
+  }
   if (timeframe === 'h2h') {
     // Match AflStatsChart: prefer upcoming opponent when provided; otherwise fallback to latest game's opponent.
     const targetOpponent = nextOpponent?.trim() || baseData[baseData.length - 1]?.opponent;

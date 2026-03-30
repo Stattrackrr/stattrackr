@@ -90,7 +90,7 @@ async function fetchFootyWireGameLogsWithTeamFallback(
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const FOOTYWIRE_SCHEMA_VERSION = 'v6';
+const FOOTYWIRE_SCHEMA_VERSION = 'v7';
 
 /** 2026 Round 0 (opening round) opponent overrides when FootyWire has wrong/missing opponent. */
 const R0_2026_OPPONENT_OVERRIDES: Record<string, string> = {
@@ -110,6 +110,7 @@ type FootyWireMatchQuarterRow = {
 
 type FootyWireMatchQuarterRows = {
   rows: FootyWireMatchQuarterRow[];
+  venue: string | null;
 };
 
 type GameLogRow = {
@@ -117,6 +118,7 @@ type GameLogRow = {
   game_number: number;
   opponent: string;
   round: string;
+  venue?: string;
   /** Game date YYYY-MM-DD when available (e.g. from FootyWire Date column); used for journal resolution. */
   date?: string;
   result: string;
@@ -702,6 +704,59 @@ function parseGoalsFromGoalsBehinds(cellText: string): number | null {
   return Number.isFinite(goals) ? goals : null;
 }
 
+const AFL_VENUE_DETECTION: Array<{ canonical: string; needles: string[] }> = [
+  { canonical: 'Adelaide Oval', needles: ['adelaide oval'] },
+  { canonical: 'Accor Stadium', needles: ['accor stadium', 'stadium australia', 'olympic stadium'] },
+  { canonical: 'Barossa Park', needles: ['barossa park', 'lyndoch recreation park'] },
+  { canonical: 'Blundstone Arena', needles: ['blundstone arena', 'bellerive oval'] },
+  { canonical: "Cazaly's Stadium", needles: ["cazaly's stadium", 'cazalys stadium'] },
+  { canonical: 'ENGIE Stadium', needles: ['engie stadium', 'giants stadium', 'sydney showground stadium', 'showground stadium'] },
+  { canonical: 'GMHBA Stadium', needles: ['gmhba stadium', 'kardinia park'] },
+  { canonical: 'Gabba', needles: ['the gabba', 'gabba'] },
+  { canonical: 'MCG', needles: ['melbourne cricket ground', 'mcg'] },
+  { canonical: 'Manuka Oval', needles: ['manuka oval'] },
+  { canonical: 'Marvel Stadium', needles: ['marvel stadium', 'docklands stadium', 'etihad stadium', 'telstra dome'] },
+  { canonical: 'Mars Stadium', needles: ['mars stadium', 'eureka stadium', 'eureka park'] },
+  { canonical: 'Norwood Oval', needles: ['norwood oval', 'coopers stadium'] },
+  { canonical: 'Optus Stadium', needles: ['optus stadium', 'perth stadium'] },
+  { canonical: 'People First Stadium', needles: ['people first stadium', 'metricon stadium', 'carrara'] },
+  { canonical: 'SCG', needles: ['sydney cricket ground', 'scg'] },
+  { canonical: 'Summit Sports and Recreation Park', needles: ['summit sports and recreation park', 'mt barker'] },
+  { canonical: 'TIO Stadium', needles: ['tio stadium'] },
+  { canonical: 'TIO Traeger Park', needles: ['tio traeger park', 'traeger park'] },
+  { canonical: 'UTAS Stadium', needles: ['utas stadium', 'university of tasmania stadium', 'york park'] },
+];
+
+function matchVenueFromText(textRaw: string): string | null {
+  const text = String(textRaw || '').toLowerCase();
+  if (!text) return null;
+  for (const venue of AFL_VENUE_DETECTION) {
+    if (venue.needles.some((needle) => text.includes(needle))) {
+      return venue.canonical;
+    }
+  }
+  return null;
+}
+
+function detectVenueFromMatchHtml(html: string): string | null {
+  const titleText = htmlToText((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '')).trim();
+  const metaDescriptionText = htmlToText((html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1] || '')).trim();
+  const focused = `${titleText} ${metaDescriptionText}`.toLowerCase();
+
+  // Most reliable source: title/meta often contain "at <VENUE> Round/Final ...".
+  const atVenueMatch = focused.match(/\bat\s+(.+?)\s+(?:round\s*\d+|opening\s*round|qualifying\s*final|elimination\s*final|semi\s*final|preliminary\s*final|grand\s*final|r\d+)\b/i);
+  if (atVenueMatch?.[1]) {
+    const fromClause = matchVenueFromText(atVenueMatch[1]);
+    if (fromClause) return fromClause;
+  }
+
+  const fromFocused = matchVenueFromText(focused);
+  if (fromFocused) return fromFocused;
+
+  const fullText = htmlToText(html);
+  return matchVenueFromText(fullText);
+}
+
 function parseFootyWireMatchQuarterRows(html: string): FootyWireMatchQuarterRows | null {
   const tableMatch = html.match(/<table[^>]*id=["']matchscoretable["'][^>]*>([\s\S]*?)<\/table>/i);
   if (!tableMatch?.[1]) return null;
@@ -756,7 +811,7 @@ function parseFootyWireMatchQuarterRows(html: string): FootyWireMatchQuarterRows
 
   const valid = parsed.filter((r) => r.cumulative != null).slice(0, 2);
   if (valid.length < 2) return null;
-  return { rows: valid };
+  return { rows: valid, venue: detectVenueFromMatchHtml(html) };
 }
 
 async function fetchFootyWireMatchQuarterRows(matchId: number): Promise<FootyWireMatchQuarterRows | null> {
@@ -793,6 +848,7 @@ async function fetchFootyWireQuarterSplitForResult(
   'team_q1' | 'team_q2' | 'team_q3' | 'team_q4' | 'opponent_q1' | 'opponent_q2' | 'opponent_q3' | 'opponent_q4' | 'team_goals' | 'opponent_goals'
   | 'team_goal_q1' | 'team_goal_q2' | 'team_goal_q3' | 'team_goal_q4'
   | 'opponent_goal_q1' | 'opponent_goal_q2' | 'opponent_goal_q3' | 'opponent_goal_q4'
+  | 'venue'
 > | null> {
   const scores = parseResultScores(resultLabel);
   if (!scores) return null;
@@ -847,6 +903,7 @@ async function fetchFootyWireQuarterSplitForResult(
     opponent_goal_q2: oppGoalQ?.[1],
     opponent_goal_q3: oppGoalQ?.[2],
     opponent_goal_q4: oppGoalQ?.[3],
+    venue: parsed.venue ?? undefined,
   };
 }
 
@@ -1126,8 +1183,8 @@ export async function GET(request: NextRequest) {
       cachedDisposalsLookWrong(baseGames as { disposals?: number }[]);
     const cachedSeason = cachedBase?.season ?? (baseGames?.[0] as { season?: number } | undefined)?.season;
     const skipCacheStale2025 = season === 2026 && cachedSeason === 2025;
-    // 2025: only serve from cache, never fetch (historical data cannot change)
-    if (season === 2025) {
+    // 2025: serve from cache by default; allow explicit force_fetch warm backfills.
+    if (season === 2025 && !forceFetch) {
       if (cachedBase && hasBaseGames && !skipCacheWrongData) {
         const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
         return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
@@ -1136,7 +1193,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(empty, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss' } });
     }
     // Warm request: skip Redis so we always fetch live 2026 from FootyWire
-    if (cachedBase && hasBaseGames && !skipCacheWrongData && !skipCacheStale2025 && !isWarmRequest) {
+    if (cachedBase && hasBaseGames && !skipCacheWrongData && !skipCacheStale2025 && !isWarmRequest && !forceFetch) {
       const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
@@ -1262,8 +1319,8 @@ export async function GET(request: NextRequest) {
   const skipCacheForSymbolSingle = nameHasSymbol(effectivePlayerName);
   const cachedSeasonSingle = cachedResponse?.season ?? (cachedGamesTyped?.[0] as { season?: number } | undefined)?.season;
   const skipCacheStale2025Single = season === 2026 && cachedSeasonSingle === 2025;
-  // 2025: only serve from cache, never fetch
-  if (season === 2025) {
+  // 2025: serve from cache by default; allow explicit force_fetch warm backfills.
+  if (season === 2025 && !forceFetch) {
     if (cachedResponse && Array.isArray(cachedGames) && cachedGames.length > 0 && !skipCacheWrongDataSingle && !skipCacheForSymbolSingle) {
       return NextResponse.json({ ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) }, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
@@ -1278,7 +1335,8 @@ export async function GET(request: NextRequest) {
     !skipCacheWrongDataSingle &&
     !skipCacheForSymbolSingle &&
     !skipCacheStale2025Single &&
-    !isWarmRequest
+    !isWarmRequest &&
+    !forceFetch
   ) {
     const cachedPayload = { ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) };
     return NextResponse.json(cachedPayload, {
