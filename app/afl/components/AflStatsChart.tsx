@@ -596,6 +596,8 @@ interface AflStatsChartProps {
   nextOpponent?: string | null;
   /** In team (game props) mode, chart is for this team vs various opponents. Used for Team dropdown + H2H. */
   gamePropsTeam?: string | null;
+  /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
+  uiResetToken?: string | number;
 }
 
 export function AflStatsChart({
@@ -626,6 +628,7 @@ export function AflStatsChart({
   externalLineValue = null,
   nextOpponent = null,
   gamePropsTeam = null,
+  uiResetToken,
 }: AflStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -911,6 +914,19 @@ export function AflStatsChart({
       setSplitVenueFilter('all');
     }
   }, [splitVenueFilter, visibleVenueOptions]);
+
+  useEffect(() => {
+    setShowSplitsFilters(false);
+    setIsVenueDropdownOpen(false);
+    setSplitResultFilter('all');
+    setSplitVenueFilter('all');
+    setIsTimeframeDropdownOpen(false);
+    setSelectedAdvancedFilter(null);
+    if (showAdvancedFilters && setShowAdvancedFilters) {
+      setShowAdvancedFilters(false);
+    }
+    resetAdvancedRanges();
+  }, [uiResetToken]);
 
   const splitFilteredGameLogs = useMemo(() => {
     return filteredGameLogs.filter((g) => {
@@ -1364,14 +1380,13 @@ export function AflStatsChart({
       {/* One row: Line input + Timeframe dropdown next to each other */}
       <div
         className={`space-y-2 sm:space-y-3 md:space-y-4 ${
-          showAdvancedFilters
+          showAdvancedFilters || showSplitsFilters
             ? 'mb-1 sm:mb-2 md:mb-2 lg:mb-3'
             : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
         }`}
       >
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
           {slotLeftOfLine}
-          <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Line</span>
           <input
             id="betting-line-input"
             key={`line-${selectedStat}`}
@@ -1410,16 +1425,16 @@ export function AflStatsChart({
             <button
               type="button"
               onClick={() => setIsTimeframeDropdownOpen(!isTimeframeDropdownOpen)}
-              className="w-20 sm:w-24 md:w-28 lg:w-32 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               <span className="truncate">{timeframeLabels[selectedTimeframe] || 'L10'}</span>
-              <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             {isTimeframeDropdownOpen && (
               <>
-                <div className="absolute top-full right-0 mt-1 w-20 sm:w-24 md:w-28 lg:w-32 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className="absolute top-full right-0 mt-1 w-20 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                   {TIMEFRAME_OPTIONS.map((tf) => (
                     <button
                       key={tf}
@@ -1428,7 +1443,7 @@ export function AflStatsChart({
                         setSelectedTimeframe(tf);
                         setIsTimeframeDropdownOpen(false);
                       }}
-                      className={`w-full px-2 sm:px-2 md:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
+                      className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
                         selectedTimeframe === tf
                           ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                           : 'text-gray-900 dark:text-white'
@@ -1460,12 +1475,12 @@ export function AflStatsChart({
           <button
             type="button"
             onClick={() => setShowSplitsFilters((prev) => !prev)}
-            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative ${showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
+            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative lg:ml-auto ${showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
           >
             Splits
           </button>
           {slotRightOfControls != null && (
-            <div className="ml-auto flex items-center flex-shrink-0">
+            <div className="flex items-center flex-shrink-0">
               {slotRightOfControls}
             </div>
           )}
@@ -1473,55 +1488,54 @@ export function AflStatsChart({
       </div>
 
       {showSplitsFilters && (
-        <div className="mb-2 px-2">
-          <div className={`rounded-lg border p-2 sm:p-3 ${isDark ? 'bg-[#0a1929] border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Result</span>
-              {([
-                { key: 'all', label: 'All' },
-                { key: 'wins', label: 'Wins' },
-                { key: 'losses', label: 'Losses' },
-              ] as const).map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setSplitResultFilter(option.key)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                    splitResultFilter === option.key
-                      ? 'bg-purple-600 text-white border-purple-400/30'
-                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+        <div className="mb-2 px-2 lg:-mt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Result</span>
+            {([
+              { key: 'all', label: 'All' },
+              { key: 'wins', label: 'Wins' },
+              { key: 'losses', label: 'Losses' },
+            ] as const).map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setSplitResultFilter(option.key)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  splitResultFilter === option.key
+                    ? 'bg-purple-600 text-white border-purple-400/30'
+                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
 
-              <span className={`ml-1 text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Venue</span>
+            <div className="flex items-center gap-1.5 w-full lg:w-auto lg:ml-auto">
               <div className="relative" ref={venueDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsVenueDropdownOpen((prev) => !prev)}
-                  className="w-44 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="w-32 sm:w-36 md:w-40 lg:w-40 px-2 py-1.5 sm:px-2 sm:py-1.5 md:px-3 md:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-xs sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <span className="truncate">
                     {splitVenueFilter === 'all'
                       ? `All venues (${totalVenueGames})`
                       : `${splitVenueFilter} (${venueCounts.get(splitVenueFilter) ?? 0})`}
                   </span>
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {isVenueDropdownOpen && (
                   <>
-                    <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div className="absolute top-full right-0 mt-1 w-44 sm:w-48 md:w-52 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                       <button
                         type="button"
                         onClick={() => {
                           setSplitVenueFilter('all');
                           setIsVenueDropdownOpen(false);
                         }}
-                        className={`w-full px-3 py-2 text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                        className={`w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
                           splitVenueFilter === 'all'
                             ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                             : 'text-gray-900 dark:text-white'
@@ -1537,7 +1551,7 @@ export function AflStatsChart({
                             setSplitVenueFilter(venue);
                             setIsVenueDropdownOpen(false);
                           }}
-                          className={`w-full px-3 py-2 text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                          className={`w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
                             splitVenueFilter === venue
                               ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
                               : 'text-gray-900 dark:text-white'
