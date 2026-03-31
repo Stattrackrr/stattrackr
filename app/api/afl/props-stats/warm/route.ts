@@ -28,6 +28,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: result.error, warmed: 0 }, { status: 500 });
   }
 
+  // Rebuild enriched list payload after stats warm so props page doesn't keep stale H2H/L5/L10 values.
+  try {
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (cronSecret) {
+      headers.Authorization = `Bearer ${cronSecret}`;
+      headers['X-Cron-Secret'] = cronSecret;
+    }
+    await fetch(`${baseUrl}/api/afl/player-props/list?enrich=true`, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+  } catch {
+    // Ignore prewarm errors; the warm result above is still valid.
+  }
+
   const message =
     (result.total ?? 0) < 50
       ? 'Run /api/afl/odds/refresh first so the props cache has all games (aim for eventsRefreshed = gamesCount). Use ?useList=1 to warm the exact rows the list API returns.'

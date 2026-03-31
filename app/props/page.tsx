@@ -388,7 +388,7 @@ const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   BRK: 'BKN',
   NY: 'NYK',
 };
-const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v2';
+const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
 const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
 const AFL_TEAM_LOGOS_CACHE_TS_KEY = 'afl_team_logos_cache_ts_v1';
