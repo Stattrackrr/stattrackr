@@ -275,7 +275,7 @@ function TipoffCountdown({
 
   if (isGameInProgress) {
     return (
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl border-2"
+      <div className="inline-flex items-center justify-center w-[84px] h-16 rounded-xl border-2"
         style={{
           background: 'linear-gradient(145deg, #22c55e, #16a34a)',
           borderColor: '#4ade80',
@@ -315,7 +315,7 @@ function TipoffCountdown({
         };
 
   return (
-    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2"
+    <div className="inline-flex flex-col items-center justify-center w-[84px] h-16 px-1.5 rounded-xl border-2"
       style={{
         background: `linear-gradient(145deg, ${palette.top}, ${palette.bottom})`,
         borderColor: palette.border,
