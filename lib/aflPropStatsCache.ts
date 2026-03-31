@@ -63,19 +63,32 @@ export function computeAflPropStatsFromGames(
   games: Record<string, unknown>[],
   statType: string,
   opponent: string,
-  line: number
+  line: number,
+  targetSeason?: number
 ): Omit<AflPropStatsPayload, 'dvpRating' | 'dvpStatValue'> {
   const propOpponentOfficial = resolveOpponentForH2H(opponent);
-  const gamesWithValue: { value: number; opponent: string }[] = [];
+  const gamesWithValue: { value: number; opponent: string; season: number | null }[] = [];
   for (const g of games) {
     const v = getStatValue(g, statType);
     const opp = (g.opponent as string) || '';
-    if (v !== null) gamesWithValue.push({ value: v, opponent: opp });
+    const seasonRaw = g.season;
+    const seasonFromField =
+      typeof seasonRaw === 'number' && Number.isFinite(seasonRaw)
+        ? seasonRaw
+        : typeof seasonRaw === 'string' && /^\d{4}$/.test(seasonRaw)
+          ? Number(seasonRaw)
+          : null;
+    const dateRaw = String((g.date ?? g.game_date ?? '') as string).trim();
+    const seasonFromDate = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? Number(dateRaw.slice(0, 4)) : null;
+    const season = seasonFromField ?? seasonFromDate;
+    if (v !== null) gamesWithValue.push({ value: v, opponent: opp, season });
   }
   // API returns games most-recent first (FootyWire table order). Use first N = last N games.
   const last5 = gamesWithValue.slice(0, 5).map((x) => x.value);
   const last10 = gamesWithValue.slice(0, 10).map((x) => x.value);
-  const seasonValues = gamesWithValue.map((x) => x.value);
+  const seasonValues = targetSeason != null
+    ? gamesWithValue.filter((x) => x.season === targetSeason).map((x) => x.value)
+    : gamesWithValue.map((x) => x.value);
   // H2H: match by official name (same as dashboard) so "Kangaroos" / "North Melbourne" / "North Melbourne Kangaroos" all match, and we never match "Melbourne" when we want "North Melbourne"
   const h2hValues = gamesWithValue
     .filter((x) => {
@@ -203,7 +216,7 @@ export async function getAflPropStats(
     debugOut.fromCache = false;
     debugOut.gamesCount = games.length;
   }
-  const stats = computeAflPropStatsFromGames(games, statType, opponent, line);
+  const stats = computeAflPropStatsFromGames(games, statType, opponent, line, currentSeason);
   const payload: AflPropStatsPayload = {
     ...stats,
     dvpRating: dvpLookup?.rank ?? null,
