@@ -20,7 +20,9 @@ const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v1';
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 15 * 60;
+// Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
+// AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';

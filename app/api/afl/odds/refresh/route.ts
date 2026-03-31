@@ -164,6 +164,27 @@ export async function GET(request: NextRequest) {
           statsWarmError = e instanceof Error ? e.message : String(e);
           console.warn('[AFL cron] Props-stats warm failed:', statsWarmError);
         }
+
+        // Prime the fully enriched AFL props list cache so first user load is instant.
+        try {
+          const headers: Record<string, string> = { Accept: 'application/json' };
+          if (cronSecret) {
+            headers.Authorization = `Bearer ${cronSecret}`;
+            headers['X-Cron-Secret'] = cronSecret;
+          }
+          const prewarmRes = await fetch(`${warmBaseUrl}/api/afl/player-props/list?enrich=true`, {
+            method: 'GET',
+            headers,
+            cache: 'no-store',
+          });
+          if (!prewarmRes.ok) {
+            console.warn('[AFL cron] Enriched list prewarm failed HTTP', prewarmRes.status);
+          } else {
+            console.log('[AFL cron] Enriched list prewarm done');
+          }
+        } catch (e) {
+          console.warn('[AFL cron] Enriched list prewarm failed:', e instanceof Error ? e.message : e);
+        }
       }
     } catch (e) {
       console.warn('[AFL cron] DvP/warm error:', e instanceof Error ? e.message : String(e));
