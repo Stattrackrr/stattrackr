@@ -8,6 +8,7 @@ import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/a
 import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,9 +21,14 @@ const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v1';
+const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v1';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES = Math.max(
+  1,
+  Math.ceil(AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS / 60)
+);
 
 /** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
 const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
@@ -185,6 +191,22 @@ export async function GET(request: Request) {
       const now = Date.now();
       if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
         return NextResponse.json(aflEnrichedPayloadMemoryCache.payload, {
+          headers: {
+            'Cache-Control': AFL_LIST_CACHE_CONTROL,
+          },
+        });
+      }
+      const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
+        restTimeoutMs: 4000,
+        jsTimeoutMs: 4000,
+        quiet: true,
+      });
+      if (supabasePayload && typeof supabasePayload === 'object') {
+        aflEnrichedPayloadMemoryCache = {
+          payload: supabasePayload,
+          expiresAt: now + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+        };
+        return NextResponse.json(supabasePayload, {
           headers: {
             'Cache-Control': AFL_LIST_CACHE_CONTROL,
           },
@@ -787,11 +809,20 @@ export async function GET(request: Request) {
         payload,
         expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
       };
-      await sharedCache.setJSON(
-        AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
-        payload,
-        AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
-      );
+      await Promise.allSettled([
+        sharedCache.setJSON(
+          AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
+          payload,
+          AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
+        ),
+        setNBACache(
+          AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
+          'afl-player-props-list-enriched',
+          payload,
+          AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES,
+          true
+        ),
+      ]);
     }
 
     return NextResponse.json(payload, {
