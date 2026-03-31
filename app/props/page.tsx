@@ -135,7 +135,15 @@ interface AflGameForProps {
 }
 
 // Tipoff Countdown Component
-function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean }) {
+function TipoffCountdown({
+  game,
+  isDark,
+  label = 'Tipoff',
+}: {
+  game: Game | null;
+  isDark: boolean;
+  label?: string;
+}) {
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [isBeyond24h, setIsBeyond24h] = useState(false);
@@ -313,7 +321,7 @@ function TipoffCountdown({ game, isDark }: { game: Game | null; isDark: boolean 
         borderColor: palette.border,
         boxShadow: `0 0 14px ${palette.glow}75, 0 0 7px ${palette.glow}55, inset 0 1px 0 #ffffff2a`,
       }}>
-      <div className="text-[10px] text-white/90 mb-0.5 tracking-wide">Tipoff</div>
+      <div className="text-[10px] text-white/90 mb-0.5 tracking-wide">{label}</div>
       <div className="text-xs font-mono font-semibold text-white">
         {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
       </div>
@@ -5137,7 +5145,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Tipoff</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
+                                {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -5281,7 +5291,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Tipoff</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
+                                {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -5627,7 +5639,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </div>
                               </div>
                             </th>
-                            <th className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Tipoff</th>
+                            <th className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
+                              {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -6634,6 +6648,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   <TipoffCountdown
                                     game={getTipoffGameForRow(prop, rowSport)}
                                     isDark={mounted && isDark}
+                                    label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'}
                                   />
                                 </td>
                                 
@@ -7531,16 +7546,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       )}
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
-                                    <div className="flex items-center justify-center flex-shrink-0">
-                                      <TipoffCountdown game={game} isDark={mounted && isDark} />
+                                    <div className="flex items-center justify-center flex-shrink-0 pr-1">
+                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
                                     </div>
                                   </div>
                                 );
                               })()}
                               {/* Tipoff Countdown - Show if no bookmakers */}
                               {(!prop.bookmakerLines || prop.bookmakerLines.length === 0) && (
-                                <div className="flex items-center justify-start">
-                                  <TipoffCountdown game={game} isDark={mounted && isDark} />
+                                <div className="flex items-center justify-start pr-1">
+                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
                                 </div>
                               )}
                             </div>
