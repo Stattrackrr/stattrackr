@@ -179,7 +179,8 @@ export async function getAflPropStats(
   }
   const currentSeason = new Date().getFullYear();
   const prevSeason = currentSeason - 1;
-  // Fetch both current and previous season so we have 2025 + 2026 stats (most recent first).
+  const olderSeason = currentSeason - 2;
+  // Fetch current + previous two seasons (e.g. 2026/2025/2024) for better H2H depth.
   const fetchForSeason = async (season: number): Promise<Record<string, unknown>[]> => {
     let list: Record<string, unknown>[] = [];
     if (resolvedPlayerTeam?.trim()) {
@@ -189,12 +190,13 @@ export async function getAflPropStats(
     if (list.length === 0) list = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
     return list;
   };
-  const [gamesCurrent, gamesPrev] = await Promise.all([
+  const [gamesCurrent, gamesPrev, gamesOlder] = await Promise.all([
     fetchForSeason(currentSeason),
     fetchForSeason(prevSeason),
+    fetchForSeason(olderSeason),
   ]);
-  // Merge: current season first (most recent), then previous season so L5/L10/season use both years.
-  const games = [...gamesCurrent, ...gamesPrev];
+  // Merge newest to oldest so L5/L10 still use recent form, with 2024 available for deeper H2H.
+  const games = [...gamesCurrent, ...gamesPrev, ...gamesOlder];
   if (debugOut) {
     debugOut.fromCache = false;
     debugOut.gamesCount = games.length;

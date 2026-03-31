@@ -13,9 +13,9 @@ on:
         required: false
         default: '0'
       seasons:
-        description: 'Seasons to warm for player logs (default 2026)'
+        description: 'Seasons to warm for player logs (default 2026,2025,2024)'
         required: false
-        default: '2026'
+        default: '2026,2025,2024'
 
 concurrency:
   group: afl-process-stats
@@ -139,7 +139,7 @@ jobs:
           npm run warm:afl:player-logs
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
-          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026' }}
+          AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025,2024' }}
           AFL_WARM_CONCURRENCY: '24'
           AFL_WARM_MAX_FAILURES: '100'
 
