@@ -8,7 +8,9 @@ import { opponentToOfficialTeamName, rosterTeamToInjuryTeam, canonicalTeamForSta
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
-const CACHE_PREFIX = 'afl_prop_stats_v1';
+// Bump schema version when stats computation inputs change (e.g. adding 2024 season)
+// so stale entries from older logic are not reused.
+const CACHE_PREFIX = 'afl_prop_stats_v2';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
