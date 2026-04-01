@@ -745,11 +745,15 @@ const SimpleChart = memo(function SimpleChart({
     const tfLabel = (selectedTimeframe && tfLabels[selectedTimeframe]) || '';
     // Hit rate: % of games over the line in selected timeframe
     let hitRate: number | null = null;
+    let hitCount: number | null = null;
+    let totalGames: number | null = null;
     if (Number.isFinite(bettingLine) && validEntries.length > 0) {
       const overCount = validEntries.filter(({ value }) => (isSpreadLikeStat ? value <= bettingLine : value > bettingLine)).length;
+      hitCount = overCount;
+      totalGames = validEntries.length;
       hitRate = Math.round((overCount / validEntries.length) * 100);
     }
-    return { formatted, tfLabel, hitRate };
+    return { formatted, tfLabel, hitRate, hitCount, totalGames };
   }, [chartData, selectedStat, selectedTimeframe, bettingLine, isSpreadLikeStat]);
 
   // Loading state
@@ -836,6 +840,14 @@ const SimpleChart = memo(function SimpleChart({
               <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
                 Hit: <span className="font-semibold">{averageDisplay.hitRate}%</span>
               </span>
+              {averageDisplay.hitCount != null && averageDisplay.totalGames != null && (
+                <>
+                  <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>|</span>
+                  <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                    <span className="font-semibold">{averageDisplay.hitCount}/{averageDisplay.totalGames}</span>
+                  </span>
+                </>
+              )}
             </>
           )}
         </div>
