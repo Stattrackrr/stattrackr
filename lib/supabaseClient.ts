@@ -22,6 +22,8 @@ const TAB_NAMESPACE_LIST_KEY = 'stattrackr_tab_namespaces'
 const MAX_TAB_SESSIONS = 10
 const PERSISTENT_STORAGE_KEY = 'sb-auth-token'
 const SESSION_STORAGE_KEY = 'sb-session-token'
+const AFL_PAGE_STATE_KEY = 'aflPageState:v1'
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:'
 
 type StorageAdapter = {
   getItem: (key: string) => string | null
@@ -29,9 +31,93 @@ type StorageAdapter = {
   removeItem: (key: string) => void
 }
 
-const createNamespacedStorage = (storage: Storage, namespace: string): StorageAdapter => ({
+function isQuotaExceededError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const maybeDom = error as DOMException
+  return maybeDom.name === 'QuotaExceededError' || maybeDom.code === 22 || maybeDom.code === 1014
+}
+
+function bestEffortPruneForAuthWrite(currentNamespace: string, aggressive = false) {
+  if (!isBrowser) return
+
+  // First remove auth/session remnants from other tabs.
+  const namespaces = getRegisteredNamespaces()
+  const stale = namespaces.filter((ns) => ns && ns !== currentNamespace)
+  for (const ns of stale) {
+    cleanupNamespace(ns)
+  }
+  try {
+    window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify([currentNamespace]))
+  } catch {
+    // ignore
+  }
+
+  // Then remove the largest non-critical local AFL caches.
+  const keysToRemove: string[] = []
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i)
+    if (!key) continue
+    if (key.startsWith(AFL_PLAYER_LOGS_CACHE_PREFIX) || key === AFL_PAGE_STATE_KEY) {
+      keysToRemove.push(key)
+    }
+  }
+  for (const key of keysToRemove) {
+    try {
+      window.localStorage.removeItem(key)
+    } catch {
+      // ignore
+    }
+  }
+
+  // Last-resort fallback: clear session-style UI cache keys if still full.
+  if (aggressive) {
+    const extraPrefixes = ['nba_filters_', 'journal-']
+    const extraKeys: string[] = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key) continue
+      if (extraPrefixes.some((prefix) => key.startsWith(prefix))) extraKeys.push(key)
+    }
+    for (const key of extraKeys) {
+      try {
+        window.localStorage.removeItem(key)
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
+function setLocalStorageWithQuotaRecovery(namespace: string, key: string, value: string) {
+  const targetKey = `${namespace}:${key}`
+  try {
+    window.localStorage.setItem(targetKey, value)
+    return
+  } catch (error) {
+    if (!isQuotaExceededError(error)) throw error
+  }
+
+  bestEffortPruneForAuthWrite(namespace, false)
+  try {
+    window.localStorage.setItem(targetKey, value)
+    return
+  } catch (error) {
+    if (!isQuotaExceededError(error)) throw error
+  }
+
+  bestEffortPruneForAuthWrite(namespace, true)
+  window.localStorage.setItem(targetKey, value)
+}
+
+const createNamespacedStorage = (storage: Storage, namespace: string, recoverQuota = false): StorageAdapter => ({
   getItem: (key: string) => storage.getItem(`${namespace}:${key}`),
-  setItem: (key: string, value: string) => storage.setItem(`${namespace}:${key}`, value),
+  setItem: (key: string, value: string) => {
+    if (recoverQuota && isBrowser && storage === window.localStorage) {
+      setLocalStorageWithQuotaRecovery(namespace, key, value)
+      return
+    }
+    storage.setItem(`${namespace}:${key}`, value)
+  },
   removeItem: (key: string) => storage.removeItem(`${namespace}:${key}`),
 })
 
@@ -58,7 +144,11 @@ const getRegisteredNamespaces = (): string[] => {
 
 const persistNamespaces = (namespaces: string[]) => {
   if (!isBrowser) return
-  window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify(namespaces))
+  try {
+    window.localStorage.setItem(TAB_NAMESPACE_LIST_KEY, JSON.stringify(namespaces))
+  } catch {
+    // If quota is exceeded here, keep going; auth storage has its own recovery path.
+  }
 }
 
 const registerNamespace = (namespace: string): string[] => {
@@ -100,10 +190,18 @@ const copySessionFromNamespace = (source: string, target: string) => {
   const persistent = window.localStorage.getItem(`${source}:${PERSISTENT_STORAGE_KEY}`)
   const sessionOnly = window.localStorage.getItem(`${source}:${SESSION_STORAGE_KEY}`)
   if (persistent !== null && !window.localStorage.getItem(`${target}:${PERSISTENT_STORAGE_KEY}`)) {
-    window.localStorage.setItem(`${target}:${PERSISTENT_STORAGE_KEY}`, persistent)
+    try {
+      setLocalStorageWithQuotaRecovery(target, PERSISTENT_STORAGE_KEY, persistent)
+    } catch {
+      // ignore; target tab can still proceed to login if token copy fails
+    }
   }
   if (sessionOnly !== null && !window.localStorage.getItem(`${target}:${SESSION_STORAGE_KEY}`)) {
-    window.localStorage.setItem(`${target}:${SESSION_STORAGE_KEY}`, sessionOnly)
+    try {
+      setLocalStorageWithQuotaRecovery(target, SESSION_STORAGE_KEY, sessionOnly)
+    } catch {
+      // ignore; target tab can still proceed to login if token copy fails
+    }
   }
 }
 
@@ -120,7 +218,7 @@ if (isBrowser) {
 }
 
 const persistentStorage = isBrowser
-  ? createNamespacedStorage(window.localStorage, tabNamespace)
+  ? createNamespacedStorage(window.localStorage, tabNamespace, true)
   : undefined
 
 const sessionOnlyStorage = isBrowser
