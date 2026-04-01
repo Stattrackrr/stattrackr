@@ -276,6 +276,66 @@ function buildAflGameIdentityKey(game: Record<string, unknown>): string {
   return [seasonPart, round, opponent, date, result].join('|');
 }
 
+function dedupeAflGames<T extends Record<string, unknown>>(games: T[]): T[] {
+  if (!Array.isArray(games) || games.length <= 1) return games;
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+  for (const game of games) {
+    const datePart = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
+    const monthDayPart = datePart.length >= 10 ? datePart.slice(5, 10) : '';
+    const opponentPart = String(game.opponent ?? '').trim().toLowerCase();
+    const resultPart = String(game.result ?? '').trim().toLowerCase();
+    const roundPart = String(game.round ?? '').trim().toUpperCase();
+    const gameNumberPart = String(game.game_number ?? '').trim();
+    const seasonPart = String(game.season ?? '').trim();
+    const disposalsPart = String(game.disposals ?? '').trim();
+    const kicksPart = String(game.kicks ?? '').trim();
+    const handballsPart = String(game.handballs ?? '').trim();
+    const goalsPart = String(game.goals ?? '').trim();
+    const marksPart = String(game.marks ?? '').trim();
+    const identityKey = buildAflGameIdentityKey(game);
+    const crossSeasonCloneKey =
+      monthDayPart && opponentPart
+        ? [
+            monthDayPart,
+            roundPart,
+            opponentPart,
+            resultPart,
+            disposalsPart,
+            kicksPart,
+            handballsPart,
+            goalsPart,
+            marksPart,
+          ].join('|')
+        : '';
+    const dateKey = datePart ? [datePart, opponentPart].join('|') : '';
+    const roundOpponentKey = roundPart && opponentPart ? [roundPart, opponentPart].join('|') : '';
+    const fallbackKey = [
+      seasonPart,
+      gameNumberPart,
+      roundPart,
+      opponentPart,
+      datePart,
+    ].join('|');
+    // Prefer season-agnostic date identity first so duplicate fallback payloads
+    // from different season endpoints collapse to one game row.
+    const key =
+      crossSeasonCloneKey ||
+      dateKey ||
+      roundOpponentKey ||
+      (identityKey !== '||||' ? identityKey : '') ||
+      fallbackKey;
+    if (!key) {
+      deduped.push(game);
+      continue;
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(game);
+  }
+  return deduped;
+}
+
 const VALID_AFL_TIMEFRAMES = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 
 function normalizeAflTimeframe(value: unknown): AflChartTimeframe | null {
@@ -1681,8 +1741,8 @@ export default function AFLPage() {
         if (is2026ResponseActually2025) qCurrent = [];
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
         const qOlder = Array.isArray(dataOlder?.gamesWithQuarters) ? (dataOlder.gamesWithQuarters as Record<string, unknown>[]) : gamesOlder;
-        const games = [...gamesCurrent, ...gamesPrev, ...gamesOlder];
-        const gamesWithQuarters = [...qCurrent, ...qPrev, ...qOlder];
+        const games = dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]);
+        const gamesWithQuarters = dedupeAflGames([...qCurrent, ...qPrev, ...qOlder]);
         if (games.length === 0) return;
         const data = gamesCurrent.length > 0 ? dataCurrent : (gamesPrev.length > 0 ? dataPrev : dataOlder);
         const latest = games[0];
@@ -1752,8 +1812,10 @@ export default function AFLPage() {
       const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
       if (prefetched && (season !== 2026 || has2026InGames(prefetched.games)) && cacheOkFor2026(prefetched.games)) {
         prefetchedLogsRef.current.delete(logsCacheKey);
-        setSelectedPlayerGameLogs(prefetched.games);
-        setSelectedPlayerGameLogsWithQuarters(prefetched.gamesWithQuarters);
+        setSelectedPlayerGameLogs(dedupeAflGames(prefetched.games as Record<string, unknown>[]) as AflGameLogRecord[]);
+        setSelectedPlayerGameLogsWithQuarters(
+          dedupeAflGames(prefetched.gamesWithQuarters as Record<string, unknown>[]) as AflGameLogRecord[]
+        );
         if (Object.keys(prefetched.mergedStats).length) {
           setSelectedPlayer((prev) => (prev ? ({ ...prev, ...prefetched.mergedStats } as AflPlayerRecord) : prev));
           playerStatsCacheRef.current.set(cacheKey, prefetched.mergedStats as AflPlayerRecord);
@@ -1783,8 +1845,12 @@ export default function AFLPage() {
           const has2026 = season !== 2026 || has2026InGames(gamesTyped);
           const bothSeasonsOk = cacheOkFor2026(gamesTyped);
           if (isFresh && gamesOk && has2026 && bothSeasonsOk) {
-            setSelectedPlayerGameLogs(parsed.games);
-            setSelectedPlayerGameLogsWithQuarters(Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []);
+            setSelectedPlayerGameLogs(dedupeAflGames(parsed.games as Record<string, unknown>[]) as AflGameLogRecord[]);
+            setSelectedPlayerGameLogsWithQuarters(
+              dedupeAflGames(
+                (Array.isArray(parsed.gamesWithQuarters) ? parsed.gamesWithQuarters : []) as Record<string, unknown>[]
+              ) as AflGameLogRecord[]
+            );
             if (parsed.mergedStats && typeof parsed.mergedStats === 'object') {
               setSelectedPlayer((prev) => (prev ? { ...prev, ...parsed.mergedStats } : prev));
               playerStatsCacheRef.current.set(cacheKey, parsed.mergedStats);
@@ -1883,8 +1949,8 @@ export default function AFLPage() {
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
         const qOlder = Array.isArray(dataOlder?.gamesWithQuarters) ? (dataOlder.gamesWithQuarters as Record<string, unknown>[]) : gamesOlder;
         // Merge: current season first, then older seasons (e.g. 2026/2025/2024).
-        const games = [...gamesCurrent, ...gamesPrev, ...gamesOlder];
-        const gamesWithQuarters = [...qCurrent, ...qPrev, ...qOlder];
+        const games = dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]);
+        const gamesWithQuarters = dedupeAflGames([...qCurrent, ...qPrev, ...qOlder]);
         const data = gamesCurrent.length > 0 ? dataCurrent : (gamesPrev.length > 0 ? dataPrev : dataOlder);
         setSelectedPlayerGameLogs(games);
         setSelectedPlayerGameLogsWithQuarters(gamesWithQuarters);
@@ -2269,7 +2335,8 @@ export default function AFLPage() {
   // gamesWithQuarters so Splits > Venue can filter reliably.
   const selectedPlayerGameLogsForChart = useMemo(() => {
     if (!selectedPlayerGameLogs.length) return selectedPlayerGameLogs;
-    if (!selectedPlayerGameLogsWithQuarters.length) return selectedPlayerGameLogs;
+    const dedupedBaseLogs = dedupeAflGames(selectedPlayerGameLogs as Record<string, unknown>[]) as AflGameLogRecord[];
+    if (!selectedPlayerGameLogsWithQuarters.length) return dedupedBaseLogs;
 
     const venueByKey = new Map<string, string>();
     for (const game of selectedPlayerGameLogsWithQuarters) {
@@ -2282,7 +2349,7 @@ export default function AFLPage() {
       if (!venueByKey.has(key)) venueByKey.set(key, venue);
     }
 
-    return selectedPlayerGameLogs.map((game) => {
+    return dedupedBaseLogs.map((game) => {
       const row = game as Record<string, unknown>;
       const existingVenueRaw = row.venue ?? row.ground ?? row.stadium ?? row.location;
       const existingVenue = typeof existingVenueRaw === 'string' ? existingVenueRaw.trim() : '';
