@@ -7460,16 +7460,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => {
-                                              if (rowSport !== 'afl') {
-                                                e.stopPropagation();
-                                                return;
-                                              }
-                                              e.preventDefault();
                                               e.stopPropagation();
-                                              if (navigatingRef.current) return;
-                                              navigatingRef.current = true;
-                                              setNavigatingToPlayer(true);
-                                              navigateToAflPlayer(bookmaker.line, bookmaker.bookmaker);
                                             }}
                                           >
                                             {bookmakerInfo?.logoUrl && (
