@@ -5691,6 +5691,120 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             const opponentAbbr = normalizeTeam(prop.opponent);
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                             const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
+                            const normalizeAflStatForDashboard = (stat: string): string => {
+                              const value = String(stat || '').trim().toLowerCase();
+                              if (!value) return 'disposals';
+                              if (value === 'disposals' || value === 'disposals_over') return 'disposals';
+                              if (value === 'goals_over' || value === 'anytime_goal_scorer') return 'goals';
+                              if (value === 'marks') return 'marks';
+                              if (value === 'tackles') return 'tackles';
+                              if (value === 'kicks') return 'kicks';
+                              if (value === 'handballs') return 'handballs';
+                              if (value === 'tog') return 'tog';
+                              if (value === 'inside_50s') return 'inside_50s';
+                              if (value === 'uncontested' || value === 'uncontested_possessions') return 'uncontested_possessions';
+                              if (value === 'meters_gained') return 'meters_gained';
+                              if (value === 'free_kicks_against') return 'free_kicks_against';
+                              return 'disposals';
+                            };
+                            const navigateToAflPlayer = (lineValue?: number, bookmakerName?: string) => {
+                              const team = prop.team || '';
+                              const opponent = prop.opponent || '';
+                              const currentSeason = new Date().getFullYear();
+
+                              // Warm key AFL endpoints before navigating so player mode can render faster.
+                              const prefetchUrls = [
+                                `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
+                                `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
+                                `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
+                                `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
+                              ];
+                              prefetchUrls.forEach((url) => {
+                                fetch(url, { cache: 'default' }).catch(() => {
+                                  // Ignore prefetch errors - navigation should still continue.
+                                });
+                              });
+
+                              if (team) {
+                                fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
+                                  .then((r) => r.json())
+                                  .then((d) => {
+                                    try {
+                                      sessionStorage.setItem('afl_next_game_prefetch', JSON.stringify({
+                                        team,
+                                        next_opponent: d?.next_opponent ?? null,
+                                        next_game_tipoff: d?.next_game_tipoff ?? null,
+                                        next_game_id: d?.next_game_id ?? d?.game_id ?? null,
+                                        fetchedAt: Date.now(),
+                                      }));
+                                    } catch {}
+                                    const gameId = d?.game_id ?? d?.gameId ?? null;
+                                    if (gameId) {
+                                      fetch(`/api/afl/odds?game_id=${encodeURIComponent(String(gameId))}`, { cache: 'default' }).catch(() => {});
+                                    } else if (team && opponent) {
+                                      fetch(`/api/afl/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`, { cache: 'default' }).catch(() => {});
+                                    }
+                                    const prefetchOpponent =
+                                      (typeof d?.next_opponent === 'string' && d.next_opponent.trim())
+                                        ? d.next_opponent.trim()
+                                        : opponent;
+                                    const prefetchTipoff =
+                                      typeof d?.next_game_tipoff === 'string' && d.next_game_tipoff
+                                        ? d.next_game_tipoff
+                                        : '';
+                                    const prefetchDate =
+                                      prefetchTipoff && Number.isFinite(new Date(prefetchTipoff).getTime())
+                                        ? new Date(prefetchTipoff).toISOString().split('T')[0]
+                                        : '';
+                                    const teamOpp = [
+                                      `team=${encodeURIComponent(team)}`,
+                                      prefetchOpponent ? `opponent=${encodeURIComponent(prefetchOpponent)}` : '',
+                                      prefetchDate ? `game_date=${encodeURIComponent(prefetchDate)}` : '',
+                                      gameId ? `event_id=${encodeURIComponent(String(gameId))}` : '',
+                                    ].filter(Boolean).join('&');
+                                    if (teamOpp) {
+                                      fetch(`/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1&${teamOpp}`, { cache: 'default' })
+                                        .then(async (res) => {
+                                          if (!res.ok) return null;
+                                          return await res.json();
+                                        })
+                                        .then((data) => {
+                                          if (!data?.all || typeof data.all !== 'object') return;
+                                          try {
+                                            sessionStorage.setItem('afl_player_props_prefetch', JSON.stringify({
+                                              player: prop.playerName,
+                                              team,
+                                              all: data.all,
+                                              fetchedAt: Date.now(),
+                                            }));
+                                          } catch {
+                                            // Ignore session write failures.
+                                          }
+                                        })
+                                        .catch(() => {});
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }
+                              const q = new URLSearchParams();
+                              q.set('mode', 'player');
+                              q.set('name', prop.playerName);
+                              if (prop.team) q.set('team', prop.team);
+                              if (prop.opponent) q.set('opponent', prop.opponent);
+                              q.set('stat', normalizeAflStatForDashboard(prop.statType));
+                              const selectedLine = (typeof lineValue === 'number' && Number.isFinite(lineValue))
+                                ? lineValue
+                                : (Number.isFinite(prop.line) ? prop.line : null);
+                              if (selectedLine != null) q.set('line', String(selectedLine));
+                              const selectedBook = String(bookmakerName || prop.bookmaker || '').trim();
+                              if (selectedBook) q.set('bookmaker', selectedBook);
+
+                              // Show loading bar briefly so transition is intentional and prefetch has head start.
+                              setTimeout(() => {
+                                router.push(`/afl?${q.toString()}`);
+                              }, 200);
+                              setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                            };
                             return (
                               <tr
                                 key={idx}
@@ -5724,95 +5838,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
                                   if (rowSport === 'afl') {
-                                    const team = prop.team || '';
-                                    const opponent = prop.opponent || '';
-                                    const currentSeason = new Date().getFullYear();
-
-                                    // Warm key AFL endpoints before navigating so player mode can render faster.
-                                    const prefetchUrls = [
-                                      `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                      `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
-                                      `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
-                                      `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
-                                    ];
-                                    prefetchUrls.forEach((url) => {
-                                      fetch(url, { cache: 'default' }).catch(() => {
-                                        // Ignore prefetch errors - navigation should still continue.
-                                      });
-                                    });
-
-                                    if (team) {
-                                      fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
-                                        .then((r) => r.json())
-                                        .then((d) => {
-                                          try {
-                                            sessionStorage.setItem('afl_next_game_prefetch', JSON.stringify({
-                                              team,
-                                              next_opponent: d?.next_opponent ?? null,
-                                              next_game_tipoff: d?.next_game_tipoff ?? null,
-                                              next_game_id: d?.next_game_id ?? d?.game_id ?? null,
-                                              fetchedAt: Date.now(),
-                                            }));
-                                          } catch {}
-                                          const gameId = d?.game_id ?? d?.gameId ?? null;
-                                          if (gameId) {
-                                            fetch(`/api/afl/odds?game_id=${encodeURIComponent(String(gameId))}`, { cache: 'default' }).catch(() => {});
-                                          } else if (team && opponent) {
-                                            fetch(`/api/afl/odds?team=${encodeURIComponent(team)}&opponent=${encodeURIComponent(opponent)}`, { cache: 'default' }).catch(() => {});
-                                          }
-                                          const prefetchOpponent =
-                                            (typeof d?.next_opponent === 'string' && d.next_opponent.trim())
-                                              ? d.next_opponent.trim()
-                                              : opponent;
-                                          const prefetchTipoff =
-                                            typeof d?.next_game_tipoff === 'string' && d.next_game_tipoff
-                                              ? d.next_game_tipoff
-                                              : '';
-                                          const prefetchDate =
-                                            prefetchTipoff && Number.isFinite(new Date(prefetchTipoff).getTime())
-                                              ? new Date(prefetchTipoff).toISOString().split('T')[0]
-                                              : '';
-                                          const teamOpp = [
-                                            `team=${encodeURIComponent(team)}`,
-                                            prefetchOpponent ? `opponent=${encodeURIComponent(prefetchOpponent)}` : '',
-                                            prefetchDate ? `game_date=${encodeURIComponent(prefetchDate)}` : '',
-                                            gameId ? `event_id=${encodeURIComponent(String(gameId))}` : '',
-                                          ].filter(Boolean).join('&');
-                                          if (teamOpp) {
-                                            fetch(`/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1&${teamOpp}`, { cache: 'default' })
-                                              .then(async (res) => {
-                                                if (!res.ok) return null;
-                                                return await res.json();
-                                              })
-                                              .then((data) => {
-                                                if (!data?.all || typeof data.all !== 'object') return;
-                                                try {
-                                                  sessionStorage.setItem('afl_player_props_prefetch', JSON.stringify({
-                                                    player: prop.playerName,
-                                                    team,
-                                                    all: data.all,
-                                                    fetchedAt: Date.now(),
-                                                  }));
-                                                } catch {
-                                                  // Ignore session write failures.
-                                                }
-                                              })
-                                              .catch(() => {});
-                                          }
-                                        })
-                                        .catch(() => {});
-                                    }
-                                    const q = new URLSearchParams();
-                                    q.set('mode', 'player');
-                                    q.set('name', prop.playerName);
-                                    if (prop.team) q.set('team', prop.team);
-                                    if (prop.opponent) q.set('opponent', prop.opponent);
-
-                                    // Show loading bar briefly so transition is intentional and prefetch has head start.
-                                    setTimeout(() => {
-                                      router.push(`/afl?${q.toString()}`);
-                                    }, 200);
-                                    setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                    navigateToAflPlayer();
                                     return;
                                   }
                                   const clickData = {
@@ -6000,7 +6026,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       mounted && isDark
                                                         ? 'bg-[#0a1929] border-gray-700 hover:bg-[#0d1f35]'
                                                         : 'bg-white border-gray-300 hover:bg-gray-50'
-                                                    }`}>
+                                                    }`}
+                                                    onClick={(e) => {
+                                                      if (rowSport !== 'afl') return;
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      if (navigatingRef.current) return;
+                                                      navigatingRef.current = true;
+                                                      setNavigatingToPlayer(true);
+                                                      navigateToAflPlayer(line.line, line.bookmaker);
+                                                    }}>
                                                       {bookmakerInfo?.logoUrl && (
                                                         <img
                                                           src={bookmakerInfo.logoUrl}
@@ -6117,6 +6152,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                     ? 'bg-[#0a1929] border-gray-700'
                                                                     : 'bg-gray-800 border-gray-500'
                                                                 }`}
+                                                                onClick={(e) => {
+                                                                  if (rowSport !== 'afl') return;
+                                                                  e.preventDefault();
+                                                                  e.stopPropagation();
+                                                                  if (navigatingRef.current) return;
+                                                                  navigatingRef.current = true;
+                                                                  setNavigatingToPlayer(true);
+                                                                  setOpenPopup(null);
+                                                                  navigateToAflPlayer(line.line, line.bookmaker);
+                                                                }}
                                                               >
                                                                 {bookmakerInfo?.logoUrl && (
                                                                   <img
@@ -7414,7 +7459,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                             className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border flex-shrink-0 ${
                                               mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-100 border-gray-300'
                                             }`}
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                              if (rowSport !== 'afl') {
+                                                e.stopPropagation();
+                                                return;
+                                              }
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              if (navigatingRef.current) return;
+                                              navigatingRef.current = true;
+                                              setNavigatingToPlayer(true);
+                                              navigateToAflPlayer(bookmaker.line, bookmaker.bookmaker);
+                                            }}
                                           >
                                             {bookmakerInfo?.logoUrl && (
                                               <img

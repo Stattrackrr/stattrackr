@@ -490,6 +490,8 @@ export default function AFLPage() {
   const lastPlayerPropsKeyRef = useRef<string | null>(null);
   const ignoreNextTransientLineRef = useRef(false);
   const lastAutoLineContextRef = useRef<string | null>(null);
+  const preferredAflBookmakerRef = useRef<string | null>(null);
+  const hasIncomingAflBookOrLineRef = useRef(false);
   const [teamModeSelectedTeamLogs, setTeamModeSelectedTeamLogs] = useState<AflGameLogRecord[]>([]);
   /** Short delay before showing chart so odds have time to load and auto-select inline with chart. */
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
@@ -560,16 +562,33 @@ export default function AFLPage() {
     return () => { cancelled = true; };
   }, [season]);
 
-  // Prefer PointsBet as the selected book when in player mode so the line selector shows PointsBet + O/U, not Fanatics/other
+  // Resolve incoming URL bookmaker/line preference first; otherwise keep PointsBet as default behavior.
   useEffect(() => {
     if (aflPropsMode !== 'player' || !aflPlayerPropsBooks.length) return;
+    const normalizeBook = (value: unknown) => String(value ?? '').trim().toLowerCase().replace(/\s+/g, '');
+    const preferredBook = preferredAflBookmakerRef.current;
+    if (preferredBook) {
+      const preferredNorm = normalizeBook(preferredBook);
+      const preferredIndex = aflPlayerPropsBooks.findIndex((b) => {
+        const bookNorm = normalizeBook(b.name);
+        return bookNorm === preferredNorm || bookNorm.includes(preferredNorm) || preferredNorm.includes(bookNorm);
+      });
+      if (preferredIndex >= 0) {
+        if (preferredIndex !== selectedAflBookIndex) {
+          setSelectedAflBookIndex(preferredIndex);
+        }
+        preferredAflBookmakerRef.current = null;
+        return;
+      }
+    }
+    if (hasIncomingAflBookOrLineRef.current) return;
     const pointsBetIndex = aflPlayerPropsBooks.findIndex(
       (b) => b.name && String(b.name).toLowerCase().includes('pointsbet')
     );
-    if (pointsBetIndex >= 0) {
+    if (pointsBetIndex >= 0 && pointsBetIndex !== selectedAflBookIndex) {
       setSelectedAflBookIndex(pointsBetIndex);
     }
-  }, [aflPropsMode, aflPlayerPropsBooks]);
+  }, [aflPropsMode, aflPlayerPropsBooks, selectedAflBookIndex]);
 
   // When user changes the line input (transient-line), find a book that has that line and switch to it; skip if we just switched stat. Same logic for player props (disposals/goals/other) and game props (spread/total).
   useEffect(() => {
@@ -922,6 +941,8 @@ export default function AFLPage() {
     const statParam = url.searchParams.get('stat')?.trim();
     const tfParam = url.searchParams.get('tf')?.trim();
     const lineParam = url.searchParams.get('line')?.trim();
+    const bookmakerParam = url.searchParams.get('bookmaker')?.trim();
+    if (bookmakerParam) preferredAflBookmakerRef.current = bookmakerParam;
     if (statParam && ['disposals', 'goals', 'marks', 'tackles', 'kicks', 'handballs', 'tog', 'inside_50s', 'uncontested', 'uncontested_possessions', 'meters_gained', 'free_kicks_against'].includes(statParam)) {
       setMainChartStat(statParam);
     }
@@ -931,8 +952,12 @@ export default function AFLPage() {
     }
     if (lineParam) {
       const n = parseFloat(lineParam);
-      if (Number.isFinite(n)) setAflCurrentLineValue(n);
+      if (Number.isFinite(n)) {
+        hasIncomingAflBookOrLineRef.current = true;
+        setAflCurrentLineValue(n);
+      }
     }
+    if (bookmakerParam) hasIncomingAflBookOrLineRef.current = true;
   }, []);
 
   // When landing with ?player=Name (e.g. from props Find player), show name from URL immediately, then merge API record without replacing so game-logs effect doesn't re-run.
