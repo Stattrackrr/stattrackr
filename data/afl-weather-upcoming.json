@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-04-03T13:39:22.416Z",
+  "generatedAt": "2026-04-03T16:01:07.047Z",
   "source": "open-meteo.com",
-  "gameSource": "odds-api-live",
+  "gameSource": "props-list-fallback",
   "games": [
     {
       "gameId": "66e919cb4f0310e993566d0e145b4edc",
@@ -9,9 +9,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-04-04T05:15:00Z",
       "weather": {
-        "temperatureC": 20.5,
+        "temperatureC": 20,
         "precipitationMm": 0,
-        "windKmh": 14.8
+        "windKmh": 15.3
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-04-04T08:35:00Z",
       "weather": {
-        "temperatureC": 22.4,
+        "temperatureC": 22.3,
         "precipitationMm": 0,
-        "windKmh": 15.5
+        "windKmh": 22.2
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-04-05T05:15:00Z",
       "weather": {
-        "temperatureC": 25.6,
+        "temperatureC": 25.5,
         "precipitationMm": 0,
-        "windKmh": 11.4
+        "windKmh": 12.5
       }
     },
     {
@@ -44,7 +44,7 @@
       "weather": {
         "temperatureC": 21.9,
         "precipitationMm": 0,
-        "windKmh": 3.4
+        "windKmh": 4.4
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-04-06T05:15:00Z",
       "weather": {
-        "temperatureC": 18.5,
+        "temperatureC": 23.1,
         "precipitationMm": 0,
-        "windKmh": 16.3
+        "windKmh": 17
       }
     }
   ],
