@@ -17,6 +17,7 @@ import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/component
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
+import { getBookmakerInfo } from '@/lib/bookmakers';
 import { ImpliedOddsWheel } from '@/app/nba/research/dashboard/components/odds/ImpliedOddsWheel';
 
 /** Map chart stat to Best Odds player-prop column for the line selector in player mode. Use O/U columns (e.g. Disposals) where available so Over and Under both appear. */
@@ -70,6 +71,32 @@ type AflTeamRankingRow = {
   rank: number | null;
   team: string;
   stats: Record<string, number | string | null>;
+};
+type AflDisposalsModelProjection = {
+  expectedDisposals: number;
+  sigma: number;
+  pOver: number;
+  pUnder: number;
+  marketPOver: number | null;
+  edgeVsMarket: number | null;
+  modelVersion: string | null;
+  scoredAt: string | null;
+};
+type AflDisposalsPastLineRow = {
+  snapshotKey?: string;
+  gameDate?: string;
+  bookmaker?: string;
+  line?: number;
+  modelExpectedDisposals?: number | null;
+  actualDisposals?: number | null;
+  actualTog?: number | null;
+  differenceLine?: number | null;
+  resultColor?: 'green' | 'red' | null;
+};
+type AflNextGameWeather = {
+  temperatureC: number | null;
+  precipitationMm: number | null;
+  windKmh: number | null;
 };
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1';
 
@@ -229,6 +256,30 @@ function toFiniteNumber(value: unknown): number | null {
     return Number.isFinite(n) ? n : null;
   }
   return null;
+}
+
+function classifyWindLabel(windKmh: number | null): 'Light' | 'Moderate' | 'Heavy' | 'N/A' {
+  if (windKmh == null || !Number.isFinite(windKmh)) return 'N/A';
+  if (windKmh < 12) return 'Light';
+  if (windKmh < 24) return 'Moderate';
+  return 'Heavy';
+}
+
+function classifyRainLabel(precipitationMm: number | null): 'None' | 'Light' | 'Moderate' | 'Heavy' | 'N/A' {
+  if (precipitationMm == null || !Number.isFinite(precipitationMm)) return 'N/A';
+  if (precipitationMm <= 0.05) return 'None';
+  if (precipitationMm < 2) return 'Light';
+  if (precipitationMm < 6) return 'Moderate';
+  return 'Heavy';
+}
+
+function formatPastLineDate(value: string | null | undefined): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '—';
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return raw;
+  const yy = match[1].slice(-2);
+  return `${match[3]}/${match[2]}/${yy}`;
 }
 
 function parseAflScoresFromResult(resultRaw: unknown): { team: number; opponent: number } | null {
@@ -394,6 +445,7 @@ export default function AFLPage() {
   const [mainChartStat, setMainChartStat] = useState<string>('');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
+  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<'comparison' | 'prediction'>('comparison');
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
   useEffect(() => {
@@ -447,6 +499,7 @@ export default function AFLPage() {
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [nextGameId, setNextGameId] = useState<string | null>(null);
+  const [nextGameWeather, setNextGameWeather] = useState<AflNextGameWeather | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [navigatingToProps, setNavigatingToProps] = useState(false);
@@ -483,6 +536,14 @@ export default function AFLPage() {
   /** Game props (team mode): current line from chart input; used so line selector hides bookmaker when it doesn't match. */
   const [aflGameLineValue, setAflGameLineValue] = useState<number | null>(null);
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
+  const [aflDisposalsModelProjection, setAflDisposalsModelProjection] = useState<AflDisposalsModelProjection | null>(null);
+  const [aflDisposalsModelLoading, setAflDisposalsModelLoading] = useState(false);
+  const [aflDisposalsPastLines, setAflDisposalsPastLines] = useState<AflDisposalsPastLineRow[]>([]);
+  const [aflDisposalsPastLinesLoading, setAflDisposalsPastLinesLoading] = useState(false);
+  const aflDisposalsPastLinesCompleted = useMemo(
+    () => aflDisposalsPastLines.filter((row) => typeof row.actualDisposals === 'number'),
+    [aflDisposalsPastLines]
+  );
   const [aflPlayerPropsLoading, setAflPlayerPropsLoading] = useState(false);
   const [aflPlayerPropsRefetchKey, setAflPlayerPropsRefetchKey] = useState(0);
   const [bootReady, setBootReady] = useState(false);
@@ -1634,6 +1695,105 @@ export default function AFLPage() {
       });
     return () => { cancelled = true; };
   }, [aflPropsMode, selectedPlayer?.name, selectedPlayer?.team, selectedPlayer?.last_round, season, aflPlayerPropsRefetchKey, aflOddsOpponent, aflOddsGameDate, nextGameId, nextGameOpponent, nextGameTipoff]);
+
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || mainChartStat !== 'disposals' || !selectedPlayer?.name || !aflOddsHomeTeam || !aflOddsAwayTeam) {
+      setAflDisposalsModelProjection(null);
+      setAflDisposalsModelLoading(false);
+      return;
+    }
+
+    const selectedBook = aflPlayerPropsBooks[selectedAflBookIndex];
+    const fallbackLine = (() => {
+      if (!selectedBook) return null;
+      const market = selectedBook[selectedAflDisposalsColumn] as { line?: string } | undefined;
+      if (!market?.line || market.line === 'N/A') return null;
+      const n = parseFloat(String(market.line).replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    })();
+    const lineToUse = aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue) ? aflCurrentLineValue : fallbackLine;
+    if (lineToUse == null) {
+      setAflDisposalsModelProjection(null);
+      setAflDisposalsModelLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAflDisposalsModelLoading(true);
+    const params = new URLSearchParams({
+      playerName: String(selectedPlayer.name),
+      homeTeam: aflOddsHomeTeam,
+      awayTeam: aflOddsAwayTeam,
+      line: String(lineToUse),
+    });
+
+    fetch(`/api/afl/model/disposals?${params.toString()}`, { cache: 'no-store' })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (cancelled) return;
+        const projection = payload?.projection;
+        if (
+          projection &&
+          typeof projection.expectedDisposals === 'number' &&
+          typeof projection.pOver === 'number' &&
+          typeof projection.pUnder === 'number'
+        ) {
+          setAflDisposalsModelProjection(projection as AflDisposalsModelProjection);
+        } else {
+          setAflDisposalsModelProjection(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAflDisposalsModelProjection(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAflDisposalsModelLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    aflPropsMode,
+    mainChartStat,
+    selectedPlayer?.name,
+    aflOddsHomeTeam,
+    aflOddsAwayTeam,
+    aflCurrentLineValue,
+    selectedAflBookIndex,
+    selectedAflDisposalsColumn,
+    aflPlayerPropsBooks,
+  ]);
+
+  useEffect(() => {
+    if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
+      setAflDisposalsPastLines([]);
+      setAflDisposalsPastLinesLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setAflDisposalsPastLinesLoading(true);
+    const params = new URLSearchParams({
+      playerName: String(selectedPlayer.name),
+      limit: '20',
+    });
+    fetch(`/api/afl/model/disposals/history?${params.toString()}`, { cache: 'no-store' })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (cancelled) return;
+        const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+        setAflDisposalsPastLines(rows as AflDisposalsPastLineRow[]);
+      })
+      .catch(() => {
+        if (!cancelled) setAflDisposalsPastLines([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAflDisposalsPastLinesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [aflPropsMode, selectedPlayer?.name, aflDisposalsModelProjection?.scoredAt]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
@@ -2853,6 +3013,7 @@ export default function AFLPage() {
       setNextGameOpponent(null);
       setNextGameTipoff(null);
       setNextGameId(null);
+      setNextGameWeather(null);
       nextGameFromFetchRef.current = { opponent: null, tipoff: null };
       setIsGameInProgress(false);
       return;
@@ -2902,7 +3063,17 @@ export default function AFLPage() {
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
         const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
         const gameId = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : null;
+        const weatherRaw = data?.next_game_weather as Record<string, unknown> | null | undefined;
         setNextGameId(gameId);
+        setNextGameWeather(
+          weatherRaw
+            ? {
+                temperatureC: toFiniteNumber(weatherRaw.temperatureC),
+                precipitationMm: toFiniteNumber(weatherRaw.precipitationMm),
+                windKmh: toFiniteNumber(weatherRaw.windKmh),
+              }
+            : null
+        );
         const prev = nextGameFromFetchRef.current;
         if (prev.opponent !== opp || (prev.tipoff?.getTime() !== tipoffValid?.getTime())) {
           setNextGameOpponent(opp);
@@ -2918,6 +3089,7 @@ export default function AFLPage() {
           setNextGameOpponent(null);
           setNextGameTipoff(null);
           setNextGameId(null);
+          setNextGameWeather(null);
           nextGameFromFetchRef.current = { opponent: null, tipoff: null };
         }
       });
@@ -2956,6 +3128,17 @@ export default function AFLPage() {
       : null;
   // Matchup opponent for DVP / Opponent Breakdown: use next-game opponent only (avoid stale last-game opponent flashes).
   const matchupOpponent = displayOpponent ?? null;
+  const nextGameWeatherSummary = useMemo(() => {
+    if (!nextGameWeather) return null;
+    const wind = toFiniteNumber(nextGameWeather.windKmh);
+    const rain = toFiniteNumber(nextGameWeather.precipitationMm);
+    const temp = toFiniteNumber(nextGameWeather.temperatureC);
+    return {
+      windLabel: classifyWindLabel(wind),
+      rainLabel: classifyRainLabel(rain),
+      tempLabel: temp == null ? 'N/A' : `${temp.toFixed(1)}C`,
+    };
+  }, [nextGameWeather]);
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -3095,61 +3278,68 @@ export default function AFLPage() {
                           const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
                           const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
                           return (
-                            <div className="flex items-center gap-1.5 xl:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1.5 xl:px-3 xl:py-2 min-w-0 flex-shrink overflow-hidden">
-                              <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
-                                {teamLogo ? (
-                                  <img
-                                    src={teamLogo}
-                                    alt={teamFull}
-                                    className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
-                                    style={{
-                                      filter: isDark
-                                        ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
-                                        : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
-                                    }}
-                                  />
-                                ) : null}
-                                <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">{teamFull}</span>
-                              </div>
-                              {displayOpponent && countdown && !isGameInProgress ? (
-                                <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
-                                  <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
-                                  <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
-                                    {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                            <div className="flex flex-col items-center gap-1.5 min-w-0 flex-shrink">
+                              <div className="flex items-center gap-1.5 xl:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1.5 xl:px-3 xl:py-2 min-w-0 flex-shrink overflow-hidden">
+                                <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
+                                  {teamLogo ? (
+                                    <img
+                                      src={teamLogo}
+                                      alt={teamFull}
+                                      className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
+                                      style={{
+                                        filter: isDark
+                                          ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
+                                          : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
+                                      }}
+                                    />
+                                  ) : null}
+                                  <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">{teamFull}</span>
+                                </div>
+                                {displayOpponent && countdown && !isGameInProgress ? (
+                                  <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
+                                    <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
+                                    <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+                                      {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                    </div>
                                   </div>
-                                </div>
-                              ) : displayOpponent && isGameInProgress ? (
-                                <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-                                  <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
-                                </div>
-                              ) : displayOpponent && nextGameTipoff ? (
-                                <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-                                  <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
-                                </div>
-                              ) : (
-                                <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">VS</span>
-                              )}
-                              <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
-                                {displayOpponent && opponentFull !== '—' ? (
-                                  <>
-                                    {opponentLogo ? (
-                                      <img
-                                        src={opponentLogo}
-                                        alt={opponentFull}
-                                        className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
-                                        style={{
-                                          filter: isDark
-                                            ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
-                                            : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
-                                        }}
-                                      />
-                                    ) : null}
-                                    <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">{opponentFull}</span>
-                                  </>
+                                ) : displayOpponent && isGameInProgress ? (
+                                  <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+                                    <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                                  </div>
+                                ) : displayOpponent && nextGameTipoff ? (
+                                  <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+                                    <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                                  </div>
                                 ) : (
-                                  <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">—</span>
+                                  <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">VS</span>
                                 )}
+                                <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
+                                  {displayOpponent && opponentFull !== '—' ? (
+                                    <>
+                                      {opponentLogo ? (
+                                        <img
+                                          src={opponentLogo}
+                                          alt={opponentFull}
+                                          className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
+                                          style={{
+                                            filter: isDark
+                                              ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))'
+                                              : 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))',
+                                          }}
+                                        />
+                                      ) : null}
+                                      <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">{opponentFull}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">—</span>
+                                  )}
+                                </div>
                               </div>
+                              {displayOpponent && nextGameWeatherSummary ? (
+                                <div className="text-[10px] xl:text-xs text-gray-600 dark:text-gray-300">
+                                  Wind: {nextGameWeatherSummary.windLabel} | Rain: {nextGameWeatherSummary.rainLabel} | Temp: {nextGameWeatherSummary.tempLabel}
+                                </div>
+                              ) : null}
                             </div>
                           );
                         })() : loadingPlayerFromUrl ? (
@@ -3273,42 +3463,49 @@ export default function AFLPage() {
                               const teamAbbr = getTeamAbbrev(teamFull);
                               const opponentAbbr = opponentFull !== '—' ? getTeamAbbrev(opponentFull) : '—';
                               return (
-                                <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
-                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      {teamLogo ? (
-                                        <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
-                                      ) : null}
-                                      <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamAbbr}</span>
-                                    </div>
-                                    <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      {displayOpponent && opponentFull !== '—' ? (
-                                        <>
-                                          {opponentLogo ? (
-                                            <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
-                                          ) : null}
-                                          <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentAbbr}</span>
-                                        </>
-                                      ) : (
-                                        <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {displayOpponent && countdown && !isGameInProgress ? (
-                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                      <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
-                                      <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                                        {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                <div className="flex flex-col items-end gap-1 min-w-0">
+                                  <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
+                                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                      <div className="flex items-center gap-1 min-w-0">
+                                        {teamLogo ? (
+                                          <img src={teamLogo} alt={teamFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                        ) : null}
+                                        <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{teamAbbr}</span>
+                                      </div>
+                                      <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs flex-shrink-0">VS</span>
+                                      <div className="flex items-center gap-1 min-w-0">
+                                        {displayOpponent && opponentFull !== '—' ? (
+                                          <>
+                                            {opponentLogo ? (
+                                              <img src={opponentLogo} alt={opponentFull} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" style={{ filter: isDark ? 'drop-shadow(0 0 1px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1px rgba(15,23,42,0.45))' }} />
+                                            ) : null}
+                                            <span className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">{opponentAbbr}</span>
+                                          </>
+                                        ) : (
+                                          <span className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm truncate">—</span>
+                                        )}
                                       </div>
                                     </div>
-                                  ) : displayOpponent && isGameInProgress ? (
-                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                      <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
-                                    </div>
-                                  ) : displayOpponent && nextGameTipoff ? (
-                                    <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                      <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                                    {displayOpponent && countdown && !isGameInProgress ? (
+                                      <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                        <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">Bounce in</div>
+                                        <div className="text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                                          {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+                                        </div>
+                                      </div>
+                                    ) : displayOpponent && isGameInProgress ? (
+                                      <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                        <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                                      </div>
+                                    ) : displayOpponent && nextGameTipoff ? (
+                                      <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
+                                        <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">Game time passed</div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                  {displayOpponent && nextGameWeatherSummary ? (
+                                    <div className="text-[10px] text-gray-600 dark:text-gray-300 text-right">
+                                      Wind: {nextGameWeatherSummary.windLabel} | Rain: {nextGameWeatherSummary.rainLabel} | Temp: {nextGameWeatherSummary.tempLabel}
                                     </div>
                                   ) : null}
                                 </div>
@@ -3799,7 +3996,7 @@ export default function AFLPage() {
                 {/* 4.5. DVP | Opponent Breakdown - mobile only; same container for Player and Game Props (desktop uses right panel) */}
                 {(aflPropsMode === 'player' || aflPropsMode === 'team') && (
                   <div className="lg:hidden w-full min-w-0 flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-3 sm:p-4 md:p-4 border border-gray-200 dark:border-gray-700 max-h-[60vh] min-h-0">
-                    <div className="flex gap-2 sm:gap-2 mb-3 flex-shrink-0">
+                    <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
                       {aflPropsMode === 'player' && (
                         <>
                           <button
@@ -3928,80 +4125,218 @@ export default function AFLPage() {
                 )}
                 {/* 4.52. Player vs Team - mobile */}
                 {aflPropsMode === 'player' && (
-                  <div className="lg:hidden w-full min-w-0 rounded-lg shadow-sm px-3 sm:px-4 py-2.5 sm:py-3 border bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-center mb-2">
-                      <h3 className="text-base font-semibold text-gray-900 dark:text-white">Player vs Team</h3>
+                  <div className="lg:hidden w-full min-w-0 rounded-lg shadow-sm px-2 sm:px-2.5 py-2.5 sm:py-3 border bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700">
+                    <div className="flex gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('comparison')}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'comparison'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Player vs Team
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('prediction')}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'prediction'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Prediction Model
+                      </button>
                     </div>
-                    <div className="flex justify-center mb-2">
-                      <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                        <button
-                          type="button"
-                          onClick={() => setPlayerVsRankScope('team')}
-                          className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                            playerVsRankScope === 'team'
-                              ? 'bg-purple-600 text-white'
-                              : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          vs Team
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPlayerVsRankScope('league')}
-                          className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                            playerVsRankScope === 'league'
-                              ? 'bg-purple-600 text-white'
-                              : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          vs League
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
-                      </span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white text-right">
-                        {aflTeamFilter !== 'All' && aflTeamFilter
-                          ? aflTeamFilter
-                          : (matchupOpponent || 'Select opponent')}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Stat</span>
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-0">Player</span>
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Opp</span>
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Stat</span>
-                    </div>
-                    <div className="space-y-0.5 text-sm">
-                      {playerVsTeamRows.map((row) => {
-                        const playerValue = renderPlayerSeasonValue(row.playerStatKey);
-                        const opponentValue = renderOpponentSeasonValue(row.opponentStatCode);
-                        const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
-                        const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
-                        return (
-                          <div key={`m-${row.label}`} className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] items-center gap-x-1.5 min-w-0">
-                            <span className="text-gray-700 dark:text-gray-200 truncate pr-1">{row.label}</span>
-                            <span className="font-semibold text-gray-900 dark:text-white justify-self-end text-right tabular-nums whitespace-nowrap">
-                              {playerValue ?? '—'}
-                            </span>
-                            <span className="justify-self-start whitespace-nowrap">
-                              {playerRank ?? <span className="inline-block w-[3.5ch]" />}
-                            </span>
-                            <span className="justify-self-end whitespace-nowrap">
-                              {opponentRank ?? <span className="inline-block w-[3.5ch]" />}
-                            </span>
-                            <span className="font-semibold text-gray-900 dark:text-white justify-self-start text-left tabular-nums whitespace-nowrap">
-                              {opponentValue ?? '—'}
-                            </span>
-                            <span className="text-gray-700 dark:text-gray-200 truncate pl-1 text-right">{row.label}</span>
+                    {playerVsContainerTab === 'comparison' ? (
+                      <>
+                        <div className="flex justify-center mb-2">
+                          <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                            <button
+                              type="button"
+                              onClick={() => setPlayerVsRankScope('team')}
+                              className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                                playerVsRankScope === 'team'
+                                  ? 'bg-purple-600 text-white'
+                                  : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                              }`}
+                            >
+                              vs Team
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPlayerVsRankScope('league')}
+                              className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                                playerVsRankScope === 'league'
+                                  ? 'bg-purple-600 text-white'
+                                  : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                              }`}
+                            >
+                              vs League
+                            </button>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white text-right">
+                            {aflTeamFilter !== 'All' && aflTeamFilter
+                              ? aflTeamFilter
+                              : (matchupOpponent || 'Select opponent')}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Stat</span>
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-0">Player</span>
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Opp</span>
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Stat</span>
+                        </div>
+                        <div className="space-y-0.5 text-sm">
+                          {playerVsTeamRows.map((row) => {
+                            const playerValue = renderPlayerSeasonValue(row.playerStatKey);
+                            const opponentValue = renderOpponentSeasonValue(row.opponentStatCode);
+                            const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
+                            const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
+                            return (
+                              <div key={`m-${row.label}`} className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] items-center gap-x-1.5 min-w-0">
+                                <span className="text-gray-700 dark:text-gray-200 truncate pr-1">{row.label}</span>
+                                <span className="font-semibold text-gray-900 dark:text-white justify-self-end text-right tabular-nums whitespace-nowrap">
+                                  {playerValue ?? '—'}
+                                </span>
+                                <span className="justify-self-start whitespace-nowrap">
+                                  {playerRank ?? <span className="inline-block w-[3.5ch]" />}
+                                </span>
+                                <span className="justify-self-end whitespace-nowrap">
+                                  {opponentRank ?? <span className="inline-block w-[3.5ch]" />}
+                                </span>
+                                <span className="font-semibold text-gray-900 dark:text-white justify-self-start text-left tabular-nums whitespace-nowrap">
+                                  {opponentValue ?? '—'}
+                                </span>
+                                <span className="text-gray-700 dark:text-gray-200 truncate pl-1 text-right">{row.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <div className="mb-1.5">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                      </div>
+                        {aflDisposalsModelProjection ? (
+                        <div className="space-y-2 text-sm text-center">
+                            <div className="text-gray-600 dark:text-gray-300">
+                            Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-300">
+                              Edge:{' '}
+                            <span className={`font-bold ${
+                                aflDisposalsModelProjection.edgeVsMarket == null
+                                  ? 'text-gray-900 dark:text-white'
+                                  : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                    ? 'text-green-500'
+                                    : 'text-red-500'
+                              }`}>
+                                {aflDisposalsModelProjection.edgeVsMarket == null
+                                  ? '—'
+                                  : `${aflDisposalsModelProjection.edgeVsMarket >= 0 ? '+' : ''}${(aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                            No model projection available.
+                          </div>
+                        )}
+                        <div className="mt-3">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white mb-1.5">
+                            From Past Lines
+                          </div>
+                          {aflDisposalsPastLinesLoading ? (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Loading history...</div>
+                          ) : aflDisposalsPastLinesCompleted.length === 0 ? (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">No completed games yet.</div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full text-sm">
+                                <thead>
+                                  <tr className="text-left text-gray-700 dark:text-white border-b border-gray-200 dark:border-gray-700">
+                                    <th className="py-1 pr-2 font-semibold">Date</th>
+                                    <th className="py-1 pr-2 font-semibold">Book</th>
+                                    <th className="py-1 pr-2 font-semibold">Model</th>
+                                    <th className="py-1 pr-2 font-semibold">Ended</th>
+                                    <th className="py-1 pr-2 font-semibold">Diff</th>
+                                    <th className="py-1 font-semibold">TOG</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {aflDisposalsPastLinesCompleted.map((row, idx) => {
+                                    const bookmakerInfo = getBookmakerInfo(String(row.bookmaker ?? ''));
+                                    return (
+                                      <tr key={`${row.snapshotKey ?? 'row'}-${idx}`} className="border-b border-gray-100 dark:border-gray-800/60">
+                                        <td className="py-1 pr-2 text-gray-700 dark:text-gray-200">{formatPastLineDate(row.gameDate)}</td>
+                                        <td className="py-1 pr-2">
+                                          {bookmakerInfo.logoUrl ? (
+                                            <>
+                                              <img
+                                                src={bookmakerInfo.logoUrl}
+                                                alt={bookmakerInfo.name}
+                                                className="w-5 h-5 rounded object-contain"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                  const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                  if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                              />
+                                              <span
+                                                className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                                style={{ backgroundColor: bookmakerInfo.color }}
+                                              >
+                                                {bookmakerInfo.logo}
+                                              </span>
+                                            </>
+                                          ) : (
+                                            <span
+                                              className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
+                                              style={{ backgroundColor: bookmakerInfo.color }}
+                                            >
+                                              {bookmakerInfo.logo}
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
+                                          {typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals.toFixed(1) : '—'}
+                                        </td>
+                                        <td className={`py-1 pr-2 tabular-nums ${
+                                          row.resultColor === 'green'
+                                            ? 'text-green-500'
+                                            : row.resultColor === 'red'
+                                              ? 'text-red-500'
+                                              : 'text-gray-900 dark:text-white'
+                                        }`}>
+                                          {typeof row.actualDisposals === 'number' ? row.actualDisposals.toFixed(1) : '—'}
+                                        </td>
+                                        <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
+                                          {typeof row.differenceLine === 'number' ? `${row.differenceLine >= 0 ? '+' : ''}${row.differenceLine.toFixed(1)}` : '—'}
+                                        </td>
+                                        <td className="py-1 text-gray-900 dark:text-white tabular-nums">
+                                          {typeof row.actualTog === 'number' ? `${row.actualTog.toFixed(1)}%` : '—'}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* 4.55. Lineups - mobile only; same as desktop lineup, under DVP/opp breakdown. Game Props: use odds game so lineup matches. */}
@@ -4148,7 +4483,7 @@ export default function AFLPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex gap-1.5 xl:gap-2 mb-2 xl:mb-3">
+                      <div className="flex gap-1.5 xl:gap-2 mb-2">
                         {aflPropsMode === 'player' && (
                           <button
                             onClick={() => {
@@ -4246,89 +4581,225 @@ export default function AFLPage() {
                     </>
                   )}
                 </div>
-                {/* Player vs Team – compare player season averages vs selected opponent (player mode only) */}
+                {/* Player vs Team - desktop right panel */}
                 {aflPropsMode === 'player' && (
-                <div className="hidden lg:block rounded-lg shadow-sm px-2 xl:px-3 py-1.5 xl:py-2 border w-full min-w-0 bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700 mt-0">
-                  <div className="flex items-center justify-center mb-2">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="hidden lg:block rounded-lg shadow-sm px-1.5 xl:px-2 py-1.5 xl:py-2 border w-full min-w-0 bg-white dark:bg-[#0a1929] border-gray-200 dark:border-gray-700 mt-0">
+                  <div className="flex gap-1.5 xl:gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setPlayerVsContainerTab('comparison')}
+                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                        playerVsContainerTab === 'comparison'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
                       Player vs Team
-                    </h3>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlayerVsContainerTab('prediction')}
+                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                        playerVsContainerTab === 'prediction'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      Prediction Model
+                    </button>
                   </div>
-                  <div className="flex justify-center mb-2">
-                    <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsRankScope('team')}
-                        className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                          playerVsRankScope === 'team'
-                            ? 'bg-purple-600 text-white'
-                            : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        vs Team
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsRankScope('league')}
-                        className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                          playerVsRankScope === 'league'
-                            ? 'bg-purple-600 text-white'
-                            : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        vs League
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-start mb-1">
-                    <div className="flex-1 flex items-start justify-start pr-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
-                      </span>
-                    </div>
-                    <div className="flex-1 flex items-start justify-end pl-3">
-                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-right truncate">
-                        {aflTeamFilter !== 'All' && aflTeamFilter
-                          ? aflTeamFilter
-                          : (matchupOpponent || 'Select opponent')}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-xs sm:text-sm min-w-0">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] gap-x-1 xl:gap-x-2 mb-1">
-                      <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Player season avg</span>
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                      <span className="hidden xl:block text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Opponent team avg</span>
-                    </div>
-                    <div className="space-y-0.5">
-                      {playerVsTeamRows.map((row) => {
-                        const playerValue = renderPlayerSeasonValue(row.playerStatKey);
-                        const opponentValue = renderOpponentSeasonValue(row.opponentStatCode);
-                        const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
-                        const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
-                        return (
-                        <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] items-center gap-x-1 xl:gap-x-2 min-w-0">
-                          <span className="text-gray-700 dark:text-gray-200 text-left whitespace-nowrap truncate pr-1">{row.label}</span>
-                          <span className="font-semibold text-gray-900 dark:text-white justify-self-end w-[5ch] xl:w-[6ch] text-right tabular-nums whitespace-nowrap">
-                            {playerValue ?? '—'}
-                          </span>
-                          <span className="justify-self-start whitespace-nowrap">
-                            {playerRank ?? <span className="inline-block w-[3.5ch] xl:w-[4ch]" />}
-                          </span>
-                          <span className="justify-self-end whitespace-nowrap">
-                            {opponentRank ?? <span className="inline-block w-[3.5ch] xl:w-[4ch]" />}
-                          </span>
-                          <span className="font-semibold text-gray-900 dark:text-white justify-self-start w-[6ch] xl:w-[7ch] text-left tabular-nums whitespace-nowrap">
-                            {opponentValue ?? '—'}
-                          </span>
-                          <span className="hidden xl:block text-gray-700 dark:text-gray-200 text-right whitespace-nowrap truncate pl-1">{row.label}</span>
+                  {playerVsContainerTab === 'comparison' ? (
+                    <>
+                      <div className="flex justify-center mb-2">
+                        <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                          <button
+                            type="button"
+                            onClick={() => setPlayerVsRankScope('team')}
+                            className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                              playerVsRankScope === 'team'
+                                ? 'bg-purple-600 text-white'
+                                : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            vs Team
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPlayerVsRankScope('league')}
+                            className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                              playerVsRankScope === 'league'
+                                ? 'bg-purple-600 text-white'
+                                : isDark ? 'bg-transparent text-gray-400 hover:text-gray-200' : 'bg-transparent text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            vs League
+                          </button>
                         </div>
-                      )})}
+                      </div>
+                      <div className="flex items-start mb-1">
+                        <div className="flex-1 flex items-start justify-start pr-3">
+                          <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {selectedPlayer?.name ? String(selectedPlayer.name) : 'Select a player'}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex items-start justify-end pl-3">
+                          <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-right truncate">
+                            {aflTeamFilter !== 'All' && aflTeamFilter
+                              ? aflTeamFilter
+                              : (matchupOpponent || 'Select opponent')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs sm:text-sm min-w-0">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] gap-x-1 xl:gap-x-2 mb-1">
+                          <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Player season avg</span>
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                          <span className="hidden xl:block text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right">Opponent team avg</span>
+                        </div>
+                        <div className="space-y-0.5">
+                          {playerVsTeamRows.map((row) => {
+                            const playerValue = renderPlayerSeasonValue(row.playerStatKey);
+                            const opponentValue = renderOpponentSeasonValue(row.opponentStatCode);
+                            const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
+                            const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
+                            return (
+                            <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] items-center gap-x-1 xl:gap-x-2 min-w-0">
+                              <span className="text-gray-700 dark:text-gray-200 text-left whitespace-nowrap truncate pr-1">{row.label}</span>
+                              <span className="font-semibold text-gray-900 dark:text-white justify-self-end w-[5ch] xl:w-[6ch] text-right tabular-nums whitespace-nowrap">
+                                {playerValue ?? '—'}
+                              </span>
+                              <span className="justify-self-start whitespace-nowrap">
+                                {playerRank ?? <span className="inline-block w-[3.5ch] xl:w-[4ch]" />}
+                              </span>
+                              <span className="justify-self-end whitespace-nowrap">
+                                {opponentRank ?? <span className="inline-block w-[3.5ch] xl:w-[4ch]" />}
+                              </span>
+                              <span className="font-semibold text-gray-900 dark:text-white justify-self-start w-[6ch] xl:w-[7ch] text-left tabular-nums whitespace-nowrap">
+                                {opponentValue ?? '—'}
+                              </span>
+                              <span className="hidden xl:block text-gray-700 dark:text-gray-200 text-right whitespace-nowrap truncate pl-1">{row.label}</span>
+                            </div>
+                          )})}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <div className="mb-1.5">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                      </div>
+                      {aflDisposalsModelProjection ? (
+                        <div className="space-y-2 text-sm text-center">
+                          <div className="text-gray-600 dark:text-gray-300">
+                            Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-300">
+                            Edge:{' '}
+                              <span className={`font-bold ${
+                              aflDisposalsModelProjection.edgeVsMarket == null
+                                ? 'text-gray-900 dark:text-white'
+                                : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                  ? 'text-green-500'
+                                  : 'text-red-500'
+                            }`}>
+                              {aflDisposalsModelProjection.edgeVsMarket == null
+                                ? '—'
+                                : `${aflDisposalsModelProjection.edgeVsMarket >= 0 ? '+' : ''}${(aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          No model projection available.
+                        </div>
+                      )}
+                      <div className="mt-3">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white mb-1.5">
+                          From Past Lines
+                        </div>
+                        {aflDisposalsPastLinesLoading ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Loading history...</div>
+                        ) : aflDisposalsPastLinesCompleted.length === 0 ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">No completed games yet.</div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-gray-700 dark:text-white border-b border-gray-200 dark:border-gray-700">
+                                  <th className="py-1 pr-2 font-semibold">Date</th>
+                                  <th className="py-1 pr-2 font-semibold">Book</th>
+                                  <th className="py-1 pr-2 font-semibold">Model</th>
+                                  <th className="py-1 pr-2 font-semibold">Ended</th>
+                                  <th className="py-1 pr-2 font-semibold">Diff</th>
+                                  <th className="py-1 font-semibold">TOG</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {aflDisposalsPastLinesCompleted.map((row, idx) => {
+                                  const bookmakerInfo = getBookmakerInfo(String(row.bookmaker ?? ''));
+                                  return (
+                                    <tr key={`${row.snapshotKey ?? 'row'}-${idx}`} className="border-b border-gray-100 dark:border-gray-800/60">
+                                      <td className="py-1 pr-2 text-gray-700 dark:text-gray-200">{formatPastLineDate(row.gameDate)}</td>
+                                      <td className="py-1 pr-2">
+                                        {bookmakerInfo.logoUrl ? (
+                                          <>
+                                            <img
+                                              src={bookmakerInfo.logoUrl}
+                                              alt={bookmakerInfo.name}
+                                              className="w-5 h-5 rounded object-contain"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                if (fallback) fallback.style.display = 'flex';
+                                              }}
+                                            />
+                                            <span
+                                              className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                              style={{ backgroundColor: bookmakerInfo.color }}
+                                            >
+                                              {bookmakerInfo.logo}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span
+                                            className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
+                                            style={{ backgroundColor: bookmakerInfo.color }}
+                                          >
+                                            {bookmakerInfo.logo}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
+                                        {typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals.toFixed(1) : '—'}
+                                      </td>
+                                      <td className={`py-1 pr-2 tabular-nums ${
+                                        row.resultColor === 'green'
+                                          ? 'text-green-500'
+                                          : row.resultColor === 'red'
+                                            ? 'text-red-500'
+                                            : 'text-gray-900 dark:text-white'
+                                      }`}>
+                                        {typeof row.actualDisposals === 'number' ? row.actualDisposals.toFixed(1) : '—'}
+                                      </td>
+                                      <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
+                                        {typeof row.differenceLine === 'number' ? `${row.differenceLine >= 0 ? '+' : ''}${row.differenceLine.toFixed(1)}` : '—'}
+                                      </td>
+                                      <td className="py-1 text-gray-900 dark:text-white tabular-nums">
+                                        {typeof row.actualTog === 'number' ? `${row.actualTog.toFixed(1)}%` : '—'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 )}
                 {/* Injuries - desktop right panel */}

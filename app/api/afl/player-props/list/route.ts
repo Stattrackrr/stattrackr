@@ -9,6 +9,7 @@ import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type D
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
+import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -675,6 +676,15 @@ export async function GET(request: Request) {
       // Never fall back to cached prop-level DvP values, which can be stale after mapping changes.
       const dvpRating = dvpLookupResult?.rank ?? null;
       const dvpStatValue = dvpLookupResult?.value ?? null;
+      const disposalsModel =
+        r.statType === 'disposals' && typeof r.line === 'number'
+          ? getAflDisposalsProjection({
+              playerName: r.playerName,
+              homeTeam: r.homeTeam,
+              awayTeam: r.awayTeam,
+              line: r.line,
+            })
+          : null;
       const baseRow = {
         ...r,
         playerTeam: playerTeam ?? undefined,
@@ -689,6 +699,14 @@ export async function GET(request: Request) {
         seasonHitRate: stats?.seasonHitRate,
         dvpRating,
         dvpStatValue,
+        expectedDisposals: disposalsModel?.expectedDisposals ?? null,
+        modelSigma: disposalsModel?.sigma ?? null,
+        modelPOver: disposalsModel?.pOver ?? null,
+        modelPUnder: disposalsModel?.pUnder ?? null,
+        modelMarketPOver: disposalsModel?.marketPOver ?? null,
+        modelEdgeVsMarket: disposalsModel?.edgeVsMarket ?? null,
+        modelVersion: disposalsModel?.modelVersion ?? null,
+        modelScoredAt: disposalsModel?.scoredAt ?? null,
         ...(debugStats ? { _dvpPosition: position, _dvpOpponent: opponent } : {}),
       };
       return baseRow;
@@ -699,6 +717,7 @@ export async function GET(request: Request) {
     const season = new Date().getFullYear();
     const gamesCount = gamesPayload.length;
     const propsCount = enrichedRows.length;
+    const disposalsModelMeta = getAflDisposalsProjectionPayloadMeta();
 
     const naSummary = {
       totalProps: enrichedRows.length,
@@ -722,6 +741,9 @@ export async function GET(request: Request) {
       _meta: {
         canonicalUsed: usedCanonicalGames,
         canonicalError: canonicalError ?? undefined,
+        disposalsModelVersion: disposalsModelMeta.modelVersion,
+        disposalsModelGeneratedAt: disposalsModelMeta.generatedAt,
+        disposalsModelRows: disposalsModelMeta.count,
       },
     };
     if (debugStats) {

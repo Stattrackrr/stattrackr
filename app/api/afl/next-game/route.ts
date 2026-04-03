@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
 import { getAflOddsCache, getNextAflGameFromGames, refreshAflOddsData } from '@/lib/refreshAflOdds';
 import { getPlayerTeamForSeason } from '@/lib/aflPlayerTeamResolver';
+import fs from 'fs';
+import path from 'path';
 import {
   rosterTeamToInjuryTeam,
   opponentToFootywireTeam,
@@ -16,6 +18,20 @@ const AFL_EASTERN_TIME_ZONE = 'Australia/Melbourne';
 /** Cache "game IDs that have props" so next-game API is fast after first request (avoids calling listAflPlayerPropsFromCache on every request). */
 const GAME_IDS_WITH_PROPS_TTL_MS = 1000 * 60 * 2; // 2 min
 const gameIdsWithPropsCache = new Map<number, { expiresAt: number; gameIds: Set<string> }>();
+const NEXT_GAME_WEATHER_TTL_MS = 1000 * 60 * 5;
+let nextGameWeatherCache:
+  | {
+      expiresAt: number;
+      byGameId: Map<string, NextGameWeatherContext>;
+      byMatch: Map<string, NextGameWeatherContext>;
+    }
+  | null = null;
+
+type NextGameWeatherContext = {
+  temperatureC: number | null;
+  precipitationMm: number | null;
+  windKmh: number | null;
+};
 
 async function getGameIdsWithProps(season: number): Promise<Set<string>> {
   const cached = gameIdsWithPropsCache.get(season);
@@ -36,6 +52,90 @@ async function getGameIdsWithProps(season: number): Promise<Set<string>> {
 }
 
 type FootyWireMatch = { round: string; home: string; away: string; tipoff_iso?: string };
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const n = Number.parseFloat(value.trim());
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function teamKey(value: string): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function buildMatchKey(homeTeam: string, awayTeam: string, commenceTime: string): string {
+  const datePart = String(commenceTime ?? '').slice(0, 10);
+  return `${teamKey(homeTeam)}|${teamKey(awayTeam)}|${datePart}`;
+}
+
+function loadNextGameWeatherMaps(): {
+  byGameId: Map<string, NextGameWeatherContext>;
+  byMatch: Map<string, NextGameWeatherContext>;
+} {
+  if (nextGameWeatherCache && nextGameWeatherCache.expiresAt > Date.now()) {
+    return {
+      byGameId: nextGameWeatherCache.byGameId,
+      byMatch: nextGameWeatherCache.byMatch,
+    };
+  }
+
+  const byGameId = new Map<string, NextGameWeatherContext>();
+  const byMatch = new Map<string, NextGameWeatherContext>();
+  try {
+    const weatherPath = path.join(process.cwd(), 'data', 'afl-weather-upcoming.json');
+    if (fs.existsSync(weatherPath)) {
+      const raw = fs.readFileSync(weatherPath, 'utf8');
+      const parsed = JSON.parse(raw) as { games?: Array<Record<string, unknown>> } | null;
+      const games = Array.isArray(parsed?.games) ? parsed.games : [];
+      for (const g of games) {
+        const w = (g?.weather ?? {}) as Record<string, unknown>;
+        const weather: NextGameWeatherContext = {
+          temperatureC: toFiniteNumber(w.temperatureC),
+          precipitationMm: toFiniteNumber(w.precipitationMm),
+          windKmh: toFiniteNumber(w.windKmh),
+        };
+        const gid = String(g?.gameId ?? '').trim();
+        const home = String(g?.homeTeam ?? '').trim();
+        const away = String(g?.awayTeam ?? '').trim();
+        const commence = String(g?.commenceTime ?? '').trim();
+        if (gid) byGameId.set(gid, weather);
+        if (home && away && commence) {
+          byMatch.set(buildMatchKey(home, away, commence), weather);
+        }
+      }
+    }
+  } catch {
+    // Ignore weather read errors to keep next-game endpoint resilient.
+  }
+
+  nextGameWeatherCache = {
+    expiresAt: Date.now() + NEXT_GAME_WEATHER_TTL_MS,
+    byGameId,
+    byMatch,
+  };
+  return { byGameId, byMatch };
+}
+
+function resolveNextGameWeather(
+  gameId: string | null | undefined,
+  homeTeam: string,
+  awayTeam: string,
+  commenceTime: string
+): NextGameWeatherContext | null {
+  const { byGameId, byMatch } = loadNextGameWeatherMaps();
+  const gid = String(gameId ?? '').trim();
+  if (gid && byGameId.has(gid)) return byGameId.get(gid) ?? null;
+  const key = buildMatchKey(homeTeam, awayTeam, commenceTime);
+  if (byMatch.has(key)) return byMatch.get(key) ?? null;
+  const reverseKey = buildMatchKey(awayTeam, homeTeam, commenceTime);
+  return byMatch.get(reverseKey) ?? null;
+}
 
 function htmlToText(v: string): string {
   return v
@@ -401,6 +501,7 @@ export async function GET(request: NextRequest) {
         next_opponent: null,
         next_round: null,
         next_game_tipoff: null,
+        next_game_weather: null,
         match_url: null,
         source,
       });
@@ -428,6 +529,12 @@ export async function GET(request: NextRequest) {
         }
       }
       if (nextFromOdds) {
+        const nextGameWeather = resolveNextGameWeather(
+          nextFromOdds.gameId ?? null,
+          nextFromOdds.homeTeam,
+          nextFromOdds.awayTeam,
+          nextFromOdds.commenceTime
+        );
         return NextResponse.json({
           season,
           team: teamFull,
@@ -435,6 +542,7 @@ export async function GET(request: NextRequest) {
           next_round: null,
           next_game_tipoff: nextFromOdds.commenceTime,
           next_game_id: nextFromOdds.gameId ?? null,
+          next_game_weather: nextGameWeather,
           match_url: null,
           source: gamesForNext.length ? 'odds_cache' : 'odds_api',
         });
@@ -444,6 +552,12 @@ export async function GET(request: NextRequest) {
       if (canonical.success && canonical.games?.length) {
         const nextFromOdds = getNextAflGameFromGames(canonical.games, teamFull);
         if (nextFromOdds) {
+          const nextGameWeather = resolveNextGameWeather(
+            nextFromOdds.gameId ?? null,
+            nextFromOdds.homeTeam,
+            nextFromOdds.awayTeam,
+            nextFromOdds.commenceTime
+          );
           return NextResponse.json({
             season,
             team: teamFull,
@@ -451,6 +565,7 @@ export async function GET(request: NextRequest) {
             next_round: null,
             next_game_tipoff: nextFromOdds.commenceTime,
             next_game_id: nextFromOdds.gameId ?? null,
+            next_game_weather: nextGameWeather,
             match_url: null,
             source: 'odds_api',
           });
@@ -484,6 +599,12 @@ export async function GET(request: NextRequest) {
           next_round: nextMatch.round,
           next_game_tipoff: nextMatch.tipoff_iso ?? null,
           next_game_id: nextGameId,
+          next_game_weather: resolveNextGameWeather(
+            nextGameId,
+            footywireNicknameToOfficial(nextMatch.home) || nextMatch.home,
+            footywireNicknameToOfficial(nextMatch.away) || nextMatch.away,
+            nextMatch.tipoff_iso ?? ''
+          ),
           match_url: null,
           source: 'footywire.com',
         };

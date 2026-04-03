@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-04-03T12:59:46Z",
+  "rows": 12807,
+  "seasons": [
+    2026,
+    2025,
+    2024
+  ],
+  "featureColumns": [
+    "roll3_mean",
+    "roll5_mean",
+    "roll10_mean",
+    "roll5_std",
+    "roll10_std",
+    "lag1",
+    "games_history",
+    "tog_roll5_mean",
+    "cp_roll5_mean",
+    "up_roll5_mean",
+    "cl_roll5_mean",
+    "i50_roll5_mean",
+    "mg_roll5_mean",
+    "rest_days",
+    "opp_allow_disposals"
+  ],
+  "datasetCsvPath": "C:\\Users\\nduar\\stattrackr\\data\\afl-model\\datasets\\afl-disposals-train-20260403-125946.csv"
+}

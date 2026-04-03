@@ -1,0 +1,11 @@
+{
+  "version": "afl-disp-20260403-130319",
+  "createdAt": "2026-04-03T13:03:19Z",
+  "modelType": "baseline",
+  "metrics": {
+    "baseline": {
+      "mae": 4.201219137742856,
+      "rmse": 5.336444111533824
+    }
+  }
+}

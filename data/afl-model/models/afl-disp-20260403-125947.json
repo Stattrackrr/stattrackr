@@ -1,0 +1,33 @@
+{
+  "version": "afl-disp-20260403-125947",
+  "createdAt": "2026-04-03T12:59:47Z",
+  "datasetPath": "C:\\Users\\nduar\\stattrackr\\data\\afl-model\\datasets\\afl-disposals-train-20260403-125946.csv",
+  "featureColumns": [
+    "roll3_mean",
+    "roll5_mean",
+    "roll10_mean",
+    "roll5_std",
+    "roll10_std",
+    "lag1",
+    "games_history",
+    "tog_roll5_mean",
+    "cp_roll5_mean",
+    "up_roll5_mean",
+    "cl_roll5_mean",
+    "i50_roll5_mean",
+    "mg_roll5_mean",
+    "rest_days",
+    "opp_allow_disposals"
+  ],
+  "modelType": "baseline",
+  "modelPicklePath": null,
+  "residualStd": 5.336840737622754,
+  "metrics": {
+    "baseline": {
+      "mae": 4.201219989420907,
+      "rmse": 5.336840737622754
+    }
+  },
+  "validationRows": 2562,
+  "trainRows": 10245
+}

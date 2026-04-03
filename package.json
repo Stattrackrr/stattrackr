@@ -33,6 +33,8 @@
     "test:afl:2025-2026-logs:all": "node scripts/test-afl-2025-2026-logs.js --all",
     "debug:afl:dvp": "node scripts/debug-afl-dvp-2026.js",
     "show:afl:dvp-by-team": "node scripts/show-afl-dvp-by-team.js",
+    "fetch:afl:dfs-usage": "node scripts/fetch-afl-dfs-usage.js",
+    "fetch:afl:weather-context": "node scripts/fetch-afl-weather-context.js",
     "test:afl:symbols": "node scripts/test-afl-symbol-players.js",
     "test:afl:headshots": "npx tsx scripts/test-afl-club-headshots.ts",
     "test:afl:team-selections": "node scripts/test-footywire-team-selections.js",
@@ -42,7 +44,11 @@
     "gh:workflows": "gh workflow list",
     "gh:logs": "gh run list --workflow=process-player-props.yml --limit 5",
     "gh:view": "gh run view --log",
-    "demo:afl:journal": "node scripts/rebuild-afl-demo-journal-bets.js --apply"
+    "demo:afl:journal": "node scripts/rebuild-afl-demo-journal-bets.js --apply",
+    "afl:model:dataset": "python scripts/afl_model/build_dataset.py",
+    "afl:model:train": "python scripts/afl_model/train_disposals_model.py",
+    "afl:model:score": "python scripts/afl_model/score_upcoming.py",
+    "afl:model:run": "python scripts/afl_model/build_dataset.py && python scripts/afl_model/train_disposals_model.py && python scripts/afl_model/score_upcoming.py"
   },
   "dependencies": {
     "@stripe/stripe-js": "^8.2.0",
