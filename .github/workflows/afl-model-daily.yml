@@ -50,6 +50,8 @@ jobs:
           fi
 
       - name: Refresh AFL model context files
+        env:
+          BASE_URL: ${{ secrets.PROD_URL }}
         run: |
           npm run fetch:afl:dfs-usage
           npm run fetch:afl:weather-context
