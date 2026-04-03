@@ -1,0 +1,75 @@
+name: AFL Model Daily
+
+on:
+  schedule:
+    # 11:00 UTC = 9:00 PM AEST (UTC+10)
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: afl-model-daily
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Brisbane
+
+jobs:
+  run_afl_model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install scikit-learn
+
+      - name: Validate required secret
+        run: |
+          if [ -z "${{ secrets.PROD_URL }}" ]; then
+            echo "Missing required secret: PROD_URL"
+            exit 1
+          fi
+
+      - name: Refresh AFL model context files
+        run: |
+          npm run fetch:afl:dfs-usage
+          npm run fetch:afl:weather-context
+
+      - name: Build, train, and score AFL model
+        run: |
+          python scripts/afl_model/build_dataset.py --base-url "${{ secrets.PROD_URL }}"
+          python scripts/afl_model/train_disposals_model.py
+          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}"
+
+      - name: Commit and push model outputs if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/afl-model 2>/dev/null || true
+          git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
+          git add data/afl-dfs-usage-*.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No AFL model output changes"
+          else
+            git commit -m "chore(data): daily AFL model refresh [skip ci]"
+            git push
+          fi
