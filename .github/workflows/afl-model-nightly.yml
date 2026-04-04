@@ -1,22 +1,22 @@
-name: AFL Model Daily
+name: AFL Model Nightly Training
 
 on:
   schedule:
-    # 11:00 UTC = 9:00 PM AEST (UTC+10)
-    - cron: "0 11 * * *"
+    # 16:30 UTC = 2:30 AM AEST (UTC+10), run only Thu/Fri/Sat/Sun/Mon
+    - cron: "30 16 * * 0,1,4,5,6"
   workflow_dispatch:
 
 concurrency:
-  group: afl-model-daily
+  group: afl-model-nightly
   cancel-in-progress: false
 
 env:
   TZ: Australia/Brisbane
 
 jobs:
-  run_afl_model:
+  run_afl_model_nightly:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       contents: write
     steps:
@@ -56,14 +56,14 @@ jobs:
           npm run fetch:afl:dfs-usage
           npm run fetch:afl:weather-context
 
-      - name: Build, train, and score AFL model
+      - name: Nightly candidate training and evaluation
         run: |
           python scripts/afl_model/build_dataset.py --base-url "${{ secrets.PROD_URL }}"
-          python scripts/afl_model/train_disposals_model.py --candidate-only
+          python scripts/afl_model/train_disposals_model.py --candidate-only --importance-max-rows 2500 --drop-candidate-lookback 16 --drop-candidate-min-runs 6 --calibration-min-samples 140 --cv-folds 5 --tune-depth deep
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-candidate-model.json" --latest-output-path "data/afl-model/latest-candidate-disposals-projections.json"
-          python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
+          python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
 
-      - name: Commit and push model outputs if changed
+      - name: Commit and push nightly model outputs if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -71,8 +71,11 @@ jobs:
           git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
           git add data/afl-dfs-usage-*.json 2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "No AFL model output changes"
+            echo "No nightly AFL model output changes"
           else
-            git commit -m "chore(data): daily AFL model refresh [skip ci]"
+            git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
             git push
           fi
+
+
+

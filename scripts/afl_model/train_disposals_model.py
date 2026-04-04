@@ -16,7 +16,7 @@ import math
 import os
 import pickle
 import random
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from common import MODEL_DIR, ensure_dir, now_iso, slug_time
 from build_dataset import FEATURE_COLUMNS
@@ -75,6 +75,251 @@ def parse_xy(rows: List[dict]) -> Tuple[List[List[float]], List[float]]:
         X.append([to_float(r.get(c, 0.0), 0.0) for c in FEATURE_COLUMNS])
         y.append(to_float(r.get("target_disposals", 0.0), 0.0))
     return X, y
+
+
+def time_series_splits(n_rows: int, folds: int) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
+    folds = max(1, int(folds))
+    if n_rows < 120:
+        split = max(30, int(n_rows * 0.8))
+        if split >= n_rows:
+            split = max(20, n_rows - 1)
+        return [((0, split), (split, n_rows))]
+    min_train = max(50, int(n_rows * 0.5))
+    remaining = max(1, n_rows - min_train)
+    window = max(20, remaining // (folds + 1))
+    out: List[Tuple[Tuple[int, int], Tuple[int, int]]] = []
+    train_end = min_train
+    for _ in range(folds):
+        val_end = min(n_rows, train_end + window)
+        if val_end - train_end < 10:
+            break
+        out.append(((0, train_end), (train_end, val_end)))
+        train_end = val_end
+        if train_end >= n_rows - 10:
+            break
+    if not out:
+        split = max(30, int(n_rows * 0.8))
+        if split >= n_rows:
+            split = max(20, n_rows - 1)
+        out = [((0, split), (split, n_rows))]
+    return out
+
+
+def evaluate_grid_candidate(
+    X: List[List[float]],
+    y: List[float],
+    splits: List[Tuple[Tuple[int, int], Tuple[int, int]]],
+    param_grid: List[Dict[str, Any]],
+    builder,
+) -> Tuple[Dict[str, Any], Dict[str, float]]:
+    best_params = param_grid[0]
+    best_score = float("inf")
+    best_metrics = {"mae": float("inf"), "rmse": float("inf")}
+    for params in param_grid:
+        maes: List[float] = []
+        rmses: List[float] = []
+        failed = False
+        for (tr_s, tr_e), (va_s, va_e) in splits:
+            x_tr = X[tr_s:tr_e]
+            y_tr = y[tr_s:tr_e]
+            x_va = X[va_s:va_e]
+            y_va = y[va_s:va_e]
+            if not x_tr or not x_va:
+                continue
+            try:
+                model = builder(params)
+                model.fit(x_tr, y_tr)
+                pred = [float(v) for v in model.predict(x_va)]
+            except Exception:
+                failed = True
+                break
+            maes.append(mae(y_va, pred))
+            rmses.append(rmse(y_va, pred))
+        if failed or not maes:
+            continue
+        avg_mae = sum(maes) / len(maes)
+        avg_rmse = sum(rmses) / len(rmses)
+        if avg_mae < best_score:
+            best_score = avg_mae
+            best_params = params
+            best_metrics = {"mae": avg_mae, "rmse": avg_rmse}
+    return best_params, best_metrics
+
+
+def normal_cdf(x: float) -> float:
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+
+def clamp_prob(p: float) -> float:
+    return max(1e-6, min(1.0 - 1e-6, float(p)))
+
+
+def log_loss(y_true: List[int], y_prob: List[float]) -> float:
+    if not y_true:
+        return 0.0
+    total = 0.0
+    for y, p in zip(y_true, y_prob):
+        pp = clamp_prob(p)
+        total += -(y * math.log(pp) + (1 - y) * math.log(1.0 - pp))
+    return total / len(y_true)
+
+
+def brier_score(y_true: List[int], y_prob: List[float]) -> float:
+    if not y_true:
+        return 0.0
+    return sum((float(y) - float(p)) ** 2 for y, p in zip(y_true, y_prob)) / len(y_true)
+
+
+def normalize_name(value: str) -> str:
+    return (
+        str(value or "")
+        .strip()
+        .lower()
+        .replace("-", " ")
+    )
+
+
+def week_key_from_date_str(value: str) -> str:
+    raw = str(value or "").strip()
+    if len(raw) < 10:
+        return ""
+    try:
+        from datetime import date
+        d = date.fromisoformat(raw[:10])
+        iso = d.isocalendar()
+        return f"{iso.year}-W{iso.week:02d}"
+    except Exception:
+        return ""
+
+
+def build_snapshot_key(player_name: str, commence_time: str) -> str:
+    wk = week_key_from_date_str(commence_time)
+    name = normalize_name(player_name)
+    if not name or not wk:
+        return ""
+    return f"{name}|{wk}"
+
+
+def read_json_file(path: str):
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return None
+
+
+def load_settled_calibration_rows(max_projection_files: int = 160) -> List[dict]:
+    history_path = os.path.join(MODEL_DIR, "history", "disposals-line-history.json")
+    history_payload = read_json_file(history_path) or {}
+    history_rows = history_payload.get("rows", []) if isinstance(history_payload, dict) else []
+    if not isinstance(history_rows, list):
+        history_rows = []
+    actual_by_snapshot: Dict[str, dict] = {}
+    for row in history_rows:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("snapshotKey") or "").strip()
+        actual = row.get("actualDisposals")
+        line = row.get("line")
+        try:
+            actual_f = float(actual)
+            line_f = float(line)
+        except Exception:
+            continue
+        if not math.isfinite(actual_f) or not math.isfinite(line_f):
+            continue
+        actual_by_snapshot[key] = {
+            "actualDisposals": actual_f,
+            "line": line_f,
+        }
+    if not actual_by_snapshot:
+        return []
+
+    projections_dir = os.path.join(MODEL_DIR, "projections")
+    if not os.path.exists(projections_dir):
+        return []
+    projection_files = [
+        f
+        for f in os.listdir(projections_dir)
+        if f.startswith("disposals-projections-") and f.endswith(".json")
+    ]
+    projection_files.sort(reverse=True)
+    projection_files = projection_files[: max(1, max_projection_files)]
+
+    selected: Dict[str, dict] = {}
+    for fn in projection_files:
+        payload = read_json_file(os.path.join(projections_dir, fn))
+        rows = payload.get("rows", []) if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            feat = row.get("featureSnapshot")
+            if not isinstance(feat, dict):
+                continue
+            key = build_snapshot_key(str(row.get("playerName") or ""), str(row.get("commenceTime") or ""))
+            if not key or key in selected:
+                continue
+            if key not in actual_by_snapshot:
+                continue
+            line = row.get("line")
+            try:
+                line_f = float(line)
+            except Exception:
+                continue
+            if not math.isfinite(line_f):
+                continue
+            selected[key] = {
+                "snapshotKey": key,
+                "line": line_f,
+                "featureSnapshot": feat,
+                "sigma": row.get("sigma"),
+            }
+    out: List[dict] = []
+    for key, base in selected.items():
+        actual = actual_by_snapshot.get(key)
+        if not actual:
+            continue
+        out.append(
+            {
+                "snapshotKey": key,
+                "line": float(base["line"]),
+                "actualDisposals": float(actual["actualDisposals"]),
+                "featureSnapshot": dict(base["featureSnapshot"]),
+                "sigma": base.get("sigma"),
+            }
+        )
+    return out
+
+
+def fit_platt_calibrator(raw_probs: List[float], outcomes: List[int]) -> Tuple[float, float]:
+    a = 1.0
+    b = 0.0
+    lr = 0.05
+    n = max(1, len(raw_probs))
+    for _ in range(900):
+        grad_a = 0.0
+        grad_b = 0.0
+        for p, y in zip(raw_probs, outcomes):
+            s = math.log(clamp_prob(p) / (1.0 - clamp_prob(p)))
+            z = a * s + b
+            pred = 1.0 / (1.0 + math.exp(-z))
+            diff = pred - float(y)
+            grad_a += diff * s
+            grad_b += diff
+        a -= lr * (grad_a / n)
+        b -= lr * (grad_b / n)
+        lr *= 0.999
+    return float(a), float(b)
+
+
+def calibrate_prob_platt(p: float, a: float, b: float) -> float:
+    s = math.log(clamp_prob(p) / (1.0 - clamp_prob(p)))
+    z = (a * s) + b
+    return 1.0 / (1.0 + math.exp(-z))
 
 
 def permutation_feature_importance(
@@ -205,6 +450,10 @@ def main() -> None:
     parser.add_argument("--importance-max-rows", type=int, default=1200)
     parser.add_argument("--drop-candidate-lookback", type=int, default=8)
     parser.add_argument("--drop-candidate-min-runs", type=int, default=5)
+    parser.add_argument("--candidate-only", action="store_true")
+    parser.add_argument("--calibration-min-samples", type=int, default=100)
+    parser.add_argument("--cv-folds", type=int, default=3)
+    parser.add_argument("--tune-depth", choices=["standard", "deep"], default="standard")
     args = parser.parse_args()
 
     dataset_path = args.dataset.strip() or latest_dataset_path()
@@ -233,45 +482,131 @@ def main() -> None:
     val_pred = baseline_val_pred
     selected_predict_fn = lambda data: [baseline_predict_vector(v) for v in data]
 
-    # Optional sklearn models.
+    # Optional sklearn models + walk-forward tuning.
     try:
         from sklearn.ensemble import HistGradientBoostingRegressor
+        from sklearn.ensemble import RandomForestRegressor
         from sklearn.linear_model import Ridge
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import StandardScaler
 
-        ridge = Pipeline(
-            steps=[
-                ("scaler", StandardScaler()),
-                ("model", Ridge(alpha=1.0, random_state=42)),
-            ]
+        splits = time_series_splits(len(X_train), int(args.cv_folds))
+        deep_mode = str(args.tune_depth) == "deep"
+
+        ridge_grid = (
+            [{"alpha": x} for x in (0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0)]
+            if deep_mode
+            else [{"alpha": x} for x in (0.5, 1.0, 2.0, 4.0)]
         )
+
+        def build_ridge(params: Dict[str, Any]):
+            return Pipeline(
+                steps=[
+                    ("scaler", StandardScaler()),
+                    ("model", Ridge(alpha=float(params.get("alpha", 1.0)), random_state=42)),
+                ]
+            )
+
+        ridge_best_params, ridge_cv_metrics = evaluate_grid_candidate(
+            X_train, y_train, splits, ridge_grid, build_ridge
+        )
+        ridge = build_ridge(ridge_best_params)
         ridge.fit(X_train, y_train)
         ridge_pred = [float(x) for x in ridge.predict(X_val)]
-        ridge_metrics = {"mae": mae(y_val, ridge_pred), "rmse": rmse(y_val, ridge_pred)}
+        ridge_metrics = {
+            "mae": mae(y_val, ridge_pred),
+            "rmse": rmse(y_val, ridge_pred),
+            "cv_mae": ridge_cv_metrics["mae"],
+            "cv_rmse": ridge_cv_metrics["rmse"],
+            "bestParams": ridge_best_params,
+        }
 
-        hgb = HistGradientBoostingRegressor(
-            random_state=42,
-            max_depth=5,
-            learning_rate=0.05,
-            max_iter=250,
-            min_samples_leaf=20,
+        if deep_mode:
+            hgb_grid = [
+                {"max_depth": d, "learning_rate": lr, "max_iter": mi, "min_samples_leaf": msl}
+                for d in (4, 5, 6)
+                for lr in (0.03, 0.05, 0.08)
+                for mi in (220, 320)
+                for msl in (12, 20, 30)
+            ]
+        else:
+            hgb_grid = [
+                {"max_depth": 5, "learning_rate": 0.05, "max_iter": 250, "min_samples_leaf": 20},
+                {"max_depth": 4, "learning_rate": 0.05, "max_iter": 220, "min_samples_leaf": 20},
+            ]
+
+        def build_hgb(params: Dict[str, Any]):
+            return HistGradientBoostingRegressor(
+                random_state=42,
+                max_depth=int(params.get("max_depth", 5)),
+                learning_rate=float(params.get("learning_rate", 0.05)),
+                max_iter=int(params.get("max_iter", 250)),
+                min_samples_leaf=int(params.get("min_samples_leaf", 20)),
+            )
+
+        hgb_best_params, hgb_cv_metrics = evaluate_grid_candidate(
+            X_train, y_train, splits, hgb_grid, build_hgb
         )
+        hgb = build_hgb(hgb_best_params)
         hgb.fit(X_train, y_train)
         hgb_pred = [float(x) for x in hgb.predict(X_val)]
-        hgb_metrics = {"mae": mae(y_val, hgb_pred), "rmse": rmse(y_val, hgb_pred)}
+        hgb_metrics = {
+            "mae": mae(y_val, hgb_pred),
+            "rmse": rmse(y_val, hgb_pred),
+            "cv_mae": hgb_cv_metrics["mae"],
+            "cv_rmse": hgb_cv_metrics["rmse"],
+            "bestParams": hgb_best_params,
+        }
+
+        rf_metrics = None
+        rf = None
+        rf_pred: List[float] = []
+        if deep_mode:
+            rf_grid = [
+                {"n_estimators": n, "max_depth": md, "min_samples_leaf": msl}
+                for n in (300, 500)
+                for md in (8, 12, None)
+                for msl in (1, 3, 6)
+            ]
+
+            def build_rf(params: Dict[str, Any]):
+                return RandomForestRegressor(
+                    random_state=42,
+                    n_estimators=int(params.get("n_estimators", 300)),
+                    max_depth=None if params.get("max_depth") is None else int(params.get("max_depth")),
+                    min_samples_leaf=int(params.get("min_samples_leaf", 1)),
+                    n_jobs=-1,
+                )
+
+            rf_best_params, rf_cv_metrics = evaluate_grid_candidate(
+                X_train, y_train, splits, rf_grid, build_rf
+            )
+            rf = build_rf(rf_best_params)
+            rf.fit(X_train, y_train)
+            rf_pred = [float(x) for x in rf.predict(X_val)]
+            rf_metrics = {
+                "mae": mae(y_val, rf_pred),
+                "rmse": rmse(y_val, rf_pred),
+                "cv_mae": rf_cv_metrics["mae"],
+                "cv_rmse": rf_cv_metrics["rmse"],
+                "bestParams": rf_best_params,
+            }
 
         candidates = [
             ("baseline", baseline_metrics["mae"], None, baseline_val_pred),
             ("ridge", ridge_metrics["mae"], ridge, ridge_pred),
             ("hgb", hgb_metrics["mae"], hgb, hgb_pred),
         ]
+        if rf is not None and rf_metrics is not None:
+            candidates.append(("rf", rf_metrics["mae"], rf, rf_pred))
         candidates.sort(key=lambda x: x[1])
         model_choice, _, model_obj, val_pred = candidates[0]
         if model_choice == "ridge":
             selected_predict_fn = lambda data: [float(x) for x in ridge.predict(data)]
         elif model_choice == "hgb":
             selected_predict_fn = lambda data: [float(x) for x in hgb.predict(data)]
+        elif model_choice == "rf" and rf is not None:
+            selected_predict_fn = lambda data: [float(x) for x in rf.predict(data)]
         else:
             selected_predict_fn = lambda data: [baseline_predict_vector(v) for v in data]
 
@@ -279,6 +614,7 @@ def main() -> None:
             "baseline": baseline_metrics,
             "ridge": ridge_metrics,
             "hgb": hgb_metrics,
+            **({"rf": rf_metrics} if rf_metrics is not None else {}),
         }
     except Exception:
         metrics_extra = {"baseline": baseline_metrics}
@@ -312,6 +648,91 @@ def main() -> None:
         min_consecutive_negative=max(2, int(args.drop_candidate_min_runs)),
     )
 
+    def predict_expected(feature_map: Dict[str, float]) -> float:
+        if model_choice == "baseline" or model_obj is None:
+            return max(0.0, baseline_predict_row(feature_map))
+        vec = [[float(feature_map.get(c, 0.0)) for c in FEATURE_COLUMNS]]
+        return max(0.0, float(model_obj.predict(vec)[0]))
+
+    settled_rows = load_settled_calibration_rows()
+    calibration_payload = {
+        "createdAt": now_iso(),
+        "modelVersion": version,
+        "method": "identity",
+        "sampleCount": 0,
+        "metricsBefore": {},
+        "metricsAfter": {},
+    }
+    if len(settled_rows) >= max(20, int(args.calibration_min_samples)):
+        y_true: List[int] = []
+        p_raw: List[float] = []
+        for row in settled_rows:
+            line = float(row.get("line", 0.0))
+            actual = float(row.get("actualDisposals", 0.0))
+            if not math.isfinite(line) or not math.isfinite(actual) or abs(actual - line) < 1e-9:
+                continue
+            feat_raw = row.get("featureSnapshot")
+            if not isinstance(feat_raw, dict):
+                continue
+            feat = {c: float(feat_raw.get(c, 0.0)) for c in FEATURE_COLUMNS}
+            expected = predict_expected(feat)
+            sigma_row = row.get("sigma")
+            try:
+                sigma = float(sigma_row)
+            except Exception:
+                sigma = residual_std
+            sigma = max(2.0, sigma if math.isfinite(sigma) else residual_std)
+            prob_over = 1.0 - normal_cdf((line - expected) / sigma if sigma > 0 else 0.0)
+            p_raw.append(clamp_prob(prob_over))
+            y_true.append(1 if actual > line else 0)
+
+        if len(y_true) >= max(20, int(args.calibration_min_samples)):
+            try:
+                from sklearn.isotonic import IsotonicRegression
+
+                iso = IsotonicRegression(out_of_bounds="clip")
+                y_iso = [float(x) for x in iso.fit_transform(p_raw, y_true)]
+                calibration_payload = {
+                    "createdAt": now_iso(),
+                    "modelVersion": version,
+                    "method": "isotonic",
+                    "sampleCount": len(y_true),
+                    "xThresholds": [float(x) for x in iso.X_thresholds_],
+                    "yThresholds": [float(y) for y in iso.y_thresholds_],
+                    "metricsBefore": {
+                        "brier": round(brier_score(y_true, p_raw), 6),
+                        "logLoss": round(log_loss(y_true, p_raw), 6),
+                    },
+                    "metricsAfter": {
+                        "brier": round(brier_score(y_true, y_iso), 6),
+                        "logLoss": round(log_loss(y_true, y_iso), 6),
+                    },
+                }
+            except Exception:
+                a, b = fit_platt_calibrator(p_raw, y_true)
+                y_cal = [calibrate_prob_platt(p, a, b) for p in p_raw]
+                calibration_payload = {
+                    "createdAt": now_iso(),
+                    "modelVersion": version,
+                    "method": "platt",
+                    "sampleCount": len(y_true),
+                    "a": round(a, 8),
+                    "b": round(b, 8),
+                    "metricsBefore": {
+                        "brier": round(brier_score(y_true, p_raw), 6),
+                        "logLoss": round(log_loss(y_true, p_raw), 6),
+                    },
+                    "metricsAfter": {
+                        "brier": round(brier_score(y_true, y_cal), 6),
+                        "logLoss": round(log_loss(y_true, y_cal), 6),
+                    },
+                }
+
+    calibration_rel = os.path.join("models", f"{version}.calibration.json").replace("\\", "/")
+    calibration_abs = os.path.join(MODEL_DIR, calibration_rel.replace("/", os.sep))
+    with open(calibration_abs, "w", encoding="utf-8") as f:
+        json.dump(calibration_payload, f, indent=2)
+
     artifact = {
         "version": version,
         "createdAt": now_iso(),
@@ -326,15 +747,28 @@ def main() -> None:
         "validationRows": len(val_rows),
         "trainRows": len(train_rows),
         "importanceRowsUsed": len(X_imp),
+        "calibrationPath": calibration_rel,
+        "calibrationMethod": calibration_payload.get("method"),
+        "calibrationSampleCount": calibration_payload.get("sampleCount"),
     }
 
     artifact_path = os.path.join(models_dir, f"{version}.json")
     latest_path = os.path.join(models_dir, "latest-model.json")
+    latest_candidate_path = os.path.join(models_dir, "latest-candidate-model.json")
     metrics_path = os.path.join(models_dir, f"{version}.metrics.json")
+    latest_calibration_path = os.path.join(models_dir, "latest-calibration.json")
+    latest_candidate_calibration_path = os.path.join(models_dir, "latest-candidate-calibration.json")
     with open(artifact_path, "w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=2)
-    with open(latest_path, "w", encoding="utf-8") as f:
+    with open(latest_candidate_path, "w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=2)
+    with open(latest_candidate_calibration_path, "w", encoding="utf-8") as f:
+        json.dump(calibration_payload, f, indent=2)
+    if not args.candidate_only:
+        with open(latest_path, "w", encoding="utf-8") as f:
+            json.dump(artifact, f, indent=2)
+        with open(latest_calibration_path, "w", encoding="utf-8") as f:
+            json.dump(calibration_payload, f, indent=2)
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -347,6 +781,7 @@ def main() -> None:
             indent=2,
         )
     print(f"Trained model: {version} ({model_choice})")
+    print(f"Calibration: {calibration_payload.get('method')} ({calibration_payload.get('sampleCount', 0)} samples)")
 
 
 if __name__ == "__main__":

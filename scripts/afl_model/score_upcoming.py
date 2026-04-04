@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import bisect
 import concurrent.futures
 import json
 import math
@@ -59,6 +60,70 @@ def model_predict(artifact: dict, model_obj, feature_map: Dict[str, float]) -> f
     vec = [[feature_map[c] for c in FEATURE_COLUMNS]]
     pred = model_obj.predict(vec)[0]
     return max(0.0, float(pred))
+
+
+def clamp_prob(p: float) -> float:
+    return max(1e-6, min(1.0 - 1e-6, float(p)))
+
+
+def load_calibration_for_artifact(artifact: dict) -> dict:
+    rel = str(artifact.get("calibrationPath") or "").strip()
+    if rel:
+        abs_path = os.path.join(MODEL_DIR, rel.replace("/", os.sep))
+        if os.path.exists(abs_path):
+            try:
+                return read_json(abs_path)
+            except Exception:
+                pass
+    for fallback in ("latest-calibration.json", "latest-candidate-calibration.json"):
+        abs_path = os.path.join(MODEL_DIR, "models", fallback)
+        if not os.path.exists(abs_path):
+            continue
+        try:
+            payload = read_json(abs_path)
+            target_version = str(payload.get("modelVersion") or "").strip()
+            if not target_version or target_version == str(artifact.get("version") or ""):
+                return payload
+        except Exception:
+            continue
+    return {"method": "identity"}
+
+
+def apply_calibration(prob: float, calibration: dict) -> float:
+    method = str(calibration.get("method") or "identity").strip().lower()
+    p = clamp_prob(prob)
+    if method == "platt":
+        try:
+            a = float(calibration.get("a"))
+            b = float(calibration.get("b"))
+            s = math.log(p / (1.0 - p))
+            return clamp_prob(1.0 / (1.0 + math.exp(-((a * s) + b))))
+        except Exception:
+            return p
+    if method == "isotonic":
+        x_vals = calibration.get("xThresholds")
+        y_vals = calibration.get("yThresholds")
+        if not isinstance(x_vals, list) or not isinstance(y_vals, list):
+            return p
+        if len(x_vals) != len(y_vals) or len(x_vals) < 2:
+            return p
+        try:
+            x = [float(v) for v in x_vals]
+            y = [clamp_prob(float(v)) for v in y_vals]
+        except Exception:
+            return p
+        if p <= x[0]:
+            return y[0]
+        if p >= x[-1]:
+            return y[-1]
+        idx = bisect.bisect_left(x, p)
+        x0, x1 = x[idx - 1], x[idx]
+        y0, y1 = y[idx - 1], y[idx]
+        if abs(x1 - x0) < 1e-12:
+            return y0
+        ratio = (p - x0) / (x1 - x0)
+        return clamp_prob(y0 + (ratio * (y1 - y0)))
+    return p
 
 
 def build_feature_map(
@@ -483,6 +548,8 @@ def upsert_line_history(existing_rows: List[dict], lowest_rows: List[dict]) -> L
                     "opponentTeam": row.get("opponentTeam"),
                     "bookmaker": row.get("bookmaker"),
                     "line": round(line, 2),
+                    "overOdds": row.get("overOdds"),
+                    "underOdds": row.get("underOdds"),
                     "modelExpectedDisposals": round(float(to_float(row.get("expectedDisposals")) or 0.0), 2),
                     "modelEdge": round(float(to_float(row.get("edgeVsMarket")) or 0.0), 4) if row.get("edgeVsMarket") is not None else None,
                 }
@@ -564,12 +631,17 @@ def main() -> None:
     parser.add_argument("--season", type=int, default=2026)
     parser.add_argument("--concurrency", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=50)
+    parser.add_argument("--latest-output-path", default="")
+    parser.add_argument("--min-edge", type=float, default=0.045)
+    parser.add_argument("--min-confidence", type=float, default=0.57)
+    parser.add_argument("--max-abs-weather-adjustment", type=float, default=2.2)
     args = parser.parse_args()
 
     artifact_path = args.artifact.strip() or latest_artifact_path()
     with open(artifact_path, "r", encoding="utf-8") as f:
         artifact = json.load(f)
     model_obj = load_model_object(artifact)
+    calibration = load_calibration_for_artifact(artifact)
     residual_std = max(2.0, parse_float(artifact.get("residualStd"), 6.0))
 
     list_url = f"{args.base_url.rstrip('/')}/api/afl/player-props/list?enrich=false"
@@ -713,7 +785,8 @@ def main() -> None:
         sigma = max(2.0, (residual_std * 0.7) + ((player_std or residual_std) * 0.3))
 
         z = (line - expected) / sigma if sigma > 0 else 0.0
-        p_over = 1.0 - normal_cdf(z)
+        p_over_raw = 1.0 - normal_cdf(z)
+        p_over = apply_calibration(p_over_raw, calibration)
         p_under = 1.0 - p_over
 
         market_over, market_under = novig_probs(str(r.get("overOdds") or ""), str(r.get("underOdds") or ""))
@@ -727,10 +800,45 @@ def main() -> None:
             market_blend_applied_shift = max(-market_blend_max_shift, min(market_blend_max_shift, raw_shift))
             expected = expected + market_blend_applied_shift
             z = (line - expected) / sigma if sigma > 0 else 0.0
-            p_over = 1.0 - normal_cdf(z)
+            p_over_raw = 1.0 - normal_cdf(z)
+            p_over = apply_calibration(p_over_raw, calibration)
             p_under = 1.0 - p_over
 
         edge_over = (p_over - market_over) if market_over is not None else None
+        edge_under = (p_under - market_under) if market_under is not None else None
+
+        best_side = None
+        best_edge = None
+        best_prob = None
+        if edge_over is not None and edge_under is not None:
+            if edge_over >= edge_under:
+                best_side = "OVER"
+                best_edge = float(edge_over)
+                best_prob = float(p_over)
+            else:
+                best_side = "UNDER"
+                best_edge = float(edge_under)
+                best_prob = float(p_under)
+        elif edge_over is not None:
+            best_side = "OVER"
+            best_edge = float(edge_over)
+            best_prob = float(p_over)
+        elif edge_under is not None:
+            best_side = "UNDER"
+            best_edge = float(edge_under)
+            best_prob = float(p_under)
+
+        recommendation_reasons: List[str] = []
+        if best_side is None or best_edge is None or best_prob is None:
+            recommendation_reasons.append("no_market_pair")
+        else:
+            if best_edge < float(args.min_edge):
+                recommendation_reasons.append("edge_below_threshold")
+            if best_prob < float(args.min_confidence):
+                recommendation_reasons.append("confidence_below_threshold")
+        if abs(float(wx_adj)) > float(args.max_abs_weather_adjustment):
+            recommendation_reasons.append("weather_high_variance")
+        should_publish = len(recommendation_reasons) == 0
 
         out_rows.append(
             {
@@ -753,11 +861,25 @@ def main() -> None:
                 "marketBlendShift": round(market_blend_applied_shift, 2),
                 "expectedDisposals": round(expected, 2),
                 "sigma": round(sigma, 2),
+                "pOverRaw": round(p_over_raw, 4),
+                "pUnderRaw": round(1.0 - p_over_raw, 4),
                 "pOver": round(p_over, 4),
                 "pUnder": round(p_under, 4),
                 "marketPOver": round(market_over, 4) if market_over is not None else None,
                 "marketPUnder": round(market_under, 4) if market_under is not None else None,
                 "edgeVsMarket": round(edge_over, 4) if edge_over is not None else None,
+                "edgeVsMarketUnder": round(edge_under, 4) if edge_under is not None else None,
+                "recommendedSide": best_side,
+                "recommendedEdge": round(best_edge, 4) if best_edge is not None else None,
+                "recommendedProb": round(best_prob, 4) if best_prob is not None else None,
+                "isRecommendedPick": bool(should_publish),
+                "recommendationReasons": recommendation_reasons,
+                "selectionPolicy": {
+                    "minEdge": float(args.min_edge),
+                    "minConfidence": float(args.min_confidence),
+                    "maxAbsWeatherAdjustment": float(args.max_abs_weather_adjustment),
+                },
+                "calibrationMethod": calibration.get("method", "identity"),
                 "weatherContext": wx_weather if isinstance(wx_weather, dict) else None,
                 "featureSnapshot": {k: round(float(v), 4) for k, v in feat.items()},
             }
@@ -782,7 +904,7 @@ def main() -> None:
         "count": len(out_rows),
     }
     versioned_path = os.path.join(projections_dir, f"disposals-projections-{ts}.json")
-    latest_path = os.path.join(MODEL_DIR, "latest-disposals-projections.json")
+    latest_path = args.latest_output_path.strip() or os.path.join(MODEL_DIR, "latest-disposals-projections.json")
     write_json(versioned_path, out)
     write_json(latest_path, out)
     print(f"Scored projections: {versioned_path} ({len(out_rows)} rows)")

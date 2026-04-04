@@ -1984,6 +1984,7 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || footywireNicknameToOfficial(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
+    const shouldBypassClientLogsCache = season === new Date().getFullYear();
     const has2026InGames = (g: { season?: unknown }[]) =>
       Array.isArray(g) && g.some((x) => (x?.season as number) === 2026);
     const has2025InGames = (g: { season?: unknown; date?: string; game_date?: string }[]) =>
@@ -1993,7 +1994,7 @@ export default function AFLPage() {
       season !== 2026 || (has2026InGames(games) && has2025InGames(games));
     // Symbol-name players: never use prefetched or localStorage — always fetch fresh.
     const isSymbolPlayer = playerNameHasSymbol(String(playerName));
-    if (!isSymbolPlayer) {
+    if (!isSymbolPlayer && !shouldBypassClientLogsCache) {
       const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
       if (prefetched && (season !== 2026 || has2026InGames(prefetched.games)) && cacheOkFor2026(prefetched.games)) {
         prefetchedLogsRef.current.delete(logsCacheKey);
@@ -2019,7 +2020,7 @@ export default function AFLPage() {
         // Ignore.
       }
     }
-    if (!isSymbolPlayer) {
+    if (!isSymbolPlayer && !shouldBypassClientLogsCache) {
       try {
         const raw = localStorage.getItem(logsCacheKey);
         if (raw) {
@@ -2064,8 +2065,9 @@ export default function AFLPage() {
     const currentYear = season;
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
-    // Cache only: cron warms cache every 2h; dashboard never hits FootyWire
-    const forceFetchCurrent = '';
+    // Always refresh current-season logs live so charts pick up finished games promptly.
+    // Keep older seasons cached for speed.
+    const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     let dataCurrent: Record<string, unknown> | null = null;
     let dataPrev: Record<string, unknown> | null = null;
@@ -2317,8 +2319,9 @@ export default function AFLPage() {
         }
 
         const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(repPlayerName)}&team=${encodeURIComponent(selectedTeam)}&include_both=1`;
+        const forceFetchCurrentTeam = season === new Date().getFullYear() ? '&force_fetch=1' : '';
         const [curRes, prevRes, olderRes] = await Promise.all([
-          fetch(`${baseUrl}&season=${season}`, { cache: 'no-store' }),
+          fetch(`${baseUrl}&season=${season}${forceFetchCurrentTeam}`, { cache: 'no-store' }),
           fetch(`${baseUrl}&season=${season - 1}`, { cache: 'no-store' }),
           fetch(`${baseUrl}&season=${season - 2}`, { cache: 'no-store' }),
         ]);

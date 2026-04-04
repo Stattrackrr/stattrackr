@@ -1128,6 +1128,8 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization') ?? '';
   const xCron = request.headers.get('x-cron-secret') ?? '';
   const isWarmRequest = !!(cronSecret && (authHeader === `Bearer ${cronSecret}` || xCron === cronSecret));
+  // force_fetch should bypass both Redis and in-memory FootyWire caches.
+  const skipMemoryCache = isWarmRequest || forceFetch;
   const cacheOnly = cacheEnabled && !isWarmRequest && !forceFetch; // Cache-only: no FootyWire on miss. force_fetch=1 allows test scripts to hit FootyWire.
   const currentYear = new Date().getFullYear();
   const allowFetchOnMiss = season === currentYear || season === currentYear - 1; // Dashboard and props need both 2025 + 2026; allow fetch so we never return empty for current/prev season.
@@ -1230,10 +1232,10 @@ export async function GET(request: NextRequest) {
     const teamsForSeason = teamsToTry.length > 0 ? teamsToTry : (teamFull ? [teamFull] : []);
     const [fwBase, fwQuarters] = await Promise.all([
       teamsForSeason.length > 0
-        ? fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, false, isWarmRequest)
+        ? fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, false, skipMemoryCache)
         : null,
       teamsForSeason.length > 0
-        ? fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, true, isWarmRequest)
+        ? fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, true, skipMemoryCache)
         : null,
     ]);
     // 2026 often has no games until the season starts. Serve 2025 from cache only (never fetch 2025).
@@ -1256,8 +1258,8 @@ export async function GET(request: NextRequest) {
         const teamsFor2025 = getTeamsToTryForSeason(2025, effectivePlayerName, teamParam);
         const teamsFor2025List = teamsFor2025.length > 0 ? teamsFor2025 : (teamFull ? [teamFull] : []);
         const [fetched2025Base, fetched2025Q] = await Promise.all([
-          teamsFor2025List.length > 0 ? fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, false, false) : null,
-          teamsFor2025List.length > 0 ? fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, true, false) : null,
+          teamsFor2025List.length > 0 ? fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, false, skipMemoryCache) : null,
+          teamsFor2025List.length > 0 ? fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, true, skipMemoryCache) : null,
         ]);
         fw2025Base = fetched2025Base;
         fw2025Q = fetched2025Q;
@@ -1378,8 +1380,8 @@ export async function GET(request: NextRequest) {
   }
   try {
     let fw = teamsForSeason.length > 0
-      ? await fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, includeQuarterEnrichment, isWarmRequest)
-      : await (teamForFootyWire ? fetchFootyWireGameLogs(teamForFootyWire, effectivePlayerName, season, includeQuarterEnrichment, isWarmRequest) : Promise.resolve(null));
+      ? await fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, includeQuarterEnrichment, skipMemoryCache)
+      : await (teamForFootyWire ? fetchFootyWireGameLogs(teamForFootyWire, effectivePlayerName, season, includeQuarterEnrichment, skipMemoryCache) : Promise.resolve(null));
     // 2026 empty: serve 2025 from cache only (never fetch 2025)
     if (season === 2026 && !strictSeason && (!fw || fw.games.length === 0) && cacheEnabled) {
       const teamFor2025Fallback = getPlayerTeamForSeason(2025, effectivePlayerName);
@@ -1395,7 +1397,7 @@ export async function GET(request: NextRequest) {
     if (season === 2026 && !strictSeason && (!fw || fw.games.length === 0) && !cacheEnabled) {
       const teamsFor2025 = getTeamsToTryForSeason(2025, effectivePlayerName, teamParam);
       const teamsFor2025List = teamsFor2025.length > 0 ? teamsFor2025 : (teamFull ? [teamFull] : []);
-      const fw2025 = teamsFor2025List.length > 0 ? await fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, includeQuarterEnrichment, false) : null;
+      const fw2025 = teamsFor2025List.length > 0 ? await fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, includeQuarterEnrichment, skipMemoryCache) : null;
       if (fw2025 && fw2025.games.length > 0) fw = fw2025;
     }
     if (fw && fw.games.length > 0) {

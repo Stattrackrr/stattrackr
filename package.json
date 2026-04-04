@@ -47,7 +47,11 @@
     "demo:afl:journal": "node scripts/rebuild-afl-demo-journal-bets.js --apply",
     "afl:model:dataset": "python scripts/afl_model/build_dataset.py",
     "afl:model:train": "python scripts/afl_model/train_disposals_model.py",
+    "afl:model:train:candidate": "python scripts/afl_model/train_disposals_model.py --candidate-only",
     "afl:model:score": "python scripts/afl_model/score_upcoming.py",
+    "afl:model:score:candidate": "python scripts/afl_model/score_upcoming.py --artifact data/afl-model/models/latest-candidate-model.json --latest-output-path data/afl-model/latest-candidate-disposals-projections.json",
+    "afl:model:evaluate": "python scripts/afl_model/evaluate_closed_loop.py --candidate-artifact data/afl-model/models/latest-candidate-model.json --current-artifact data/afl-model/models/latest-model.json --candidate-projections data/afl-model/latest-candidate-disposals-projections.json",
+    "afl:model:test-local": "powershell -ExecutionPolicy Bypass -File scripts/afl_model/test-local-training-loop.ps1",
     "afl:model:run": "python scripts/afl_model/build_dataset.py && python scripts/afl_model/train_disposals_model.py && python scripts/afl_model/score_upcoming.py"
   },
   "dependencies": {
