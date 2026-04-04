@@ -74,8 +74,18 @@ jobs:
             echo "No nightly AFL model output changes"
           else
             git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
-            git push
+            pushed=0
+            for i in 1 2 3; do
+              git pull --rebase origin master && git push origin master && pushed=1 && break
+              echo "Push attempt $i failed, retrying..."
+              sleep 5
+            done
+            if [ "$pushed" -ne 1 ]; then
+              echo "Failed to push after retries"
+              exit 1
+            fi
           fi
+
 
 
 
