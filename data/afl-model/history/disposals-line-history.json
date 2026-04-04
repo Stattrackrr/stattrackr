@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-04-03T16:01:18Z",
+  "generatedAt": "2026-04-04T11:26:56Z",
   "count": 104,
   "rows": [
     {
       "snapshotKey": "cameron mackenzie|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Cameron Mackenzie",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -15,15 +15,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "modelExpectedDisposals": 13.65,
-      "modelEdge": -0.344
+      "modelExpectedDisposals": 13.81,
+      "modelEdge": -0.3276
     },
     {
       "snapshotKey": "tanner bruhn|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Tanner Bruhn",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -31,15 +31,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 18.33,
-      "modelEdge": -0.279
+      "modelExpectedDisposals": 18.61,
+      "modelEdge": -0.2633
     },
     {
       "snapshotKey": "lawson humphries|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Lawson Humphries",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -47,15 +47,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "modelExpectedDisposals": 14.27,
-      "modelEdge": -0.1759
+      "modelExpectedDisposals": 14.64,
+      "modelEdge": -0.1423
     },
     {
       "snapshotKey": "jack scrimshaw|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Jack Scrimshaw",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -63,15 +63,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 16.57,
-      "modelEdge": -0.1536
+      "modelExpectedDisposals": 16.42,
+      "modelEdge": -0.1647
     },
     {
       "snapshotKey": "dylan moore|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Dylan Moore",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -79,15 +79,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 18.47,
-      "modelEdge": -0.1642
+      "modelExpectedDisposals": 17.34,
+      "modelEdge": -0.2327
     },
     {
       "snapshotKey": "conor nash|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Conor Nash",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -95,15 +95,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.21,
-      "modelEdge": -0.1802
+      "modelExpectedDisposals": 16.96,
+      "modelEdge": -0.1981
     },
     {
       "snapshotKey": "max holmes|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Max Holmes",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -111,15 +111,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 27.5,
-      "modelExpectedDisposals": 25.97,
-      "modelEdge": -0.1163
+      "modelExpectedDisposals": 25.36,
+      "modelEdge": -0.1714
     },
     {
       "snapshotKey": "jack ginnivan|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Jack Ginnivan",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -127,15 +127,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.76,
-      "modelEdge": -0.1361
+      "modelExpectedDisposals": 16.78,
+      "modelEdge": -0.2061
     },
     {
       "snapshotKey": "tom atkins|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Tom Atkins",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -143,15 +143,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 17.82,
-      "modelEdge": -0.2134
+      "modelExpectedDisposals": 17.78,
+      "modelEdge": -0.2166
     },
     {
       "snapshotKey": "gryan miers|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Gryan Miers",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -159,15 +159,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 24.5,
-      "modelExpectedDisposals": 21.56,
-      "modelEdge": -0.2292
+      "modelExpectedDisposals": 20.75,
+      "modelEdge": -0.2814
     },
     {
       "snapshotKey": "karl amon|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Karl Amon",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -175,15 +175,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 22.32,
-      "modelEdge": -0.0143
+      "modelExpectedDisposals": 21.45,
+      "modelEdge": -0.0846
     },
     {
       "snapshotKey": "jarman impey|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Jarman Impey",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -191,15 +191,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 18.87,
-      "modelEdge": -0.0624
+      "modelExpectedDisposals": 18.27,
+      "modelEdge": -0.102
     },
     {
       "snapshotKey": "josh ward|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Josh Ward",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -207,15 +207,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 19.85,
-      "modelEdge": -0.1279
+      "modelExpectedDisposals": 19.22,
+      "modelEdge": -0.1735
     },
     {
       "snapshotKey": "ollie dempsey|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Ollie Dempsey",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -223,15 +223,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "modelExpectedDisposals": 16.94,
-      "modelEdge": 0.0452
+      "modelExpectedDisposals": 17.13,
+      "modelEdge": 0.0553
     },
     {
       "snapshotKey": "james sicily|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "James Sicily",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -239,15 +239,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 20.75,
-      "modelEdge": -0.0606
+      "modelExpectedDisposals": 19.76,
+      "modelEdge": -0.139
     },
     {
       "snapshotKey": "connor macdonald|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Connor Macdonald",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -255,15 +255,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.5,
-      "modelEdge": -0.1577
+      "modelExpectedDisposals": 17.34,
+      "modelEdge": -0.1693
     },
     {
       "snapshotKey": "thomas stewart|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Thomas Stewart",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -271,15 +271,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 20.89,
-      "modelEdge": -0.1215
+      "modelExpectedDisposals": 20.79,
+      "modelEdge": -0.1289
     },
     {
       "snapshotKey": "shaun mannagh|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Shaun Mannagh",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -287,15 +287,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "modelExpectedDisposals": 16.06,
-      "modelEdge": -0.1169
+      "modelExpectedDisposals": 16.38,
+      "modelEdge": -0.0852
     },
     {
       "snapshotKey": "massimo d ambrosio|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Massimo D Ambrosio",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -303,15 +303,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 19.45,
-      "modelEdge": 0.1398
+      "modelExpectedDisposals": 17.44,
+      "modelEdge": -0.0046
     },
     {
       "snapshotKey": "joshua weddle|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Joshua Weddle",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -319,15 +319,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 16.31,
-      "modelEdge": -0.0165
+      "modelExpectedDisposals": 15.89,
+      "modelEdge": -0.0517
     },
     {
       "snapshotKey": "bailey smith|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Bailey Smith",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -335,8 +335,8 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 30.5,
-      "modelExpectedDisposals": 28.95,
-      "modelEdge": -0.1187
+      "modelExpectedDisposals": 27.93,
+      "modelEdge": -0.1916
     },
     {
       "snapshotKey": "jai newcombe|2026-W15",
@@ -356,10 +356,10 @@
     },
     {
       "snapshotKey": "mark blicavs|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Mark Blicavs",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -367,15 +367,15 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 16.25,
-      "modelEdge": -0.0217
+      "modelExpectedDisposals": 16.68,
+      "modelEdge": 0.0155
     },
     {
       "snapshotKey": "josh battle|2026-W15",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
-      "commenceTime": "2026-04-06T05:15:00Z",
+      "commenceTime": "2026-04-06T05:15:36Z",
       "playerName": "Josh Battle",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Geelong Cats",
@@ -383,12 +383,12 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 18.7,
-      "modelEdge": 0.0203
+      "modelExpectedDisposals": 18.8,
+      "modelEdge": 0.0304
     },
     {
       "snapshotKey": "matthew kennedy|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -399,15 +399,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 26.5,
-      "modelExpectedDisposals": 12.6,
-      "modelEdge": -0.4993
+      "modelExpectedDisposals": 11.89,
+      "modelEdge": -0.4996
     },
     {
       "snapshotKey": "john noble|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "John Noble",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -415,8 +415,8 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 24.5,
-      "modelExpectedDisposals": 21.79,
-      "modelEdge": -0.2572
+      "modelExpectedDisposals": 21.93,
+      "modelEdge": -0.2466
     },
     {
       "snapshotKey": "darcy parish|2026-W14",
@@ -436,7 +436,7 @@
     },
     {
       "snapshotKey": "xavier duursma|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -447,15 +447,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 19.32,
-      "modelEdge": 0.2208
+      "modelExpectedDisposals": 19.05,
+      "modelEdge": 0.2022
     },
     {
       "snapshotKey": "caleb windsor|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Caleb Windsor",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -463,15 +463,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 17.22,
-      "modelEdge": -0.2388
+      "modelExpectedDisposals": 16.9,
+      "modelEdge": -0.2585
     },
     {
       "snapshotKey": "touk miller|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Touk Miller",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -479,12 +479,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 26.5,
-      "modelExpectedDisposals": 23.67,
-      "modelEdge": -0.2259
+      "modelExpectedDisposals": 23.53,
+      "modelEdge": -0.2378
     },
     {
       "snapshotKey": "timothy english|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -495,15 +495,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 16.95,
-      "modelEdge": -0.2382
+      "modelExpectedDisposals": 17.11,
+      "modelEdge": -0.2233
     },
     {
       "snapshotKey": "wil powell|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Wil Powell",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -511,31 +511,31 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 18.48,
-      "modelEdge": -0.1262
+      "modelExpectedDisposals": 17.06,
+      "modelEdge": -0.1857
     },
     {
       "snapshotKey": "daniel turner|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Daniel Turner",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
       "playerTeam": "Melbourne Demons",
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
-      "line": 15.5,
-      "modelExpectedDisposals": 12.64,
-      "modelEdge": -0.2001
+      "line": 14.5,
+      "modelExpectedDisposals": 12.1,
+      "modelEdge": -0.2057
     },
     {
       "snapshotKey": "sam clohesy|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Sam Clohesy",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -543,12 +543,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 14.1,
-      "modelEdge": -0.2656
+      "modelExpectedDisposals": 14.9,
+      "modelEdge": -0.2106
     },
     {
       "snapshotKey": "jye caldwell|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -559,15 +559,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 23.9,
-      "modelEdge": 0.1085
+      "modelExpectedDisposals": 24.21,
+      "modelEdge": 0.131
     },
     {
       "snapshotKey": "daniel rioli|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Daniel Rioli",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -575,12 +575,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 16.42,
-      "modelEdge": -0.1598
+      "modelExpectedDisposals": 16.49,
+      "modelEdge": -0.1546
     },
     {
       "snapshotKey": "bailey dale|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -591,12 +591,12 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "modelExpectedDisposals": 26.4,
-      "modelEdge": 0.0636
+      "modelExpectedDisposals": 26.93,
+      "modelEdge": 0.1003
     },
     {
       "snapshotKey": "lachie jaques|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -607,12 +607,12 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 21.49,
-      "modelEdge": 0.2085
+      "modelExpectedDisposals": 21.77,
+      "modelEdge": 0.2351
     },
     {
       "snapshotKey": "connor budarick|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -623,12 +623,12 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
-      "modelExpectedDisposals": 24.14,
-      "modelEdge": 0.0598
+      "modelExpectedDisposals": 23.83,
+      "modelEdge": 0.0314
     },
     {
       "snapshotKey": "andrew mcgrath|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -639,12 +639,12 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 22.14,
-      "modelEdge": 0.0493
+      "modelExpectedDisposals": 22.84,
+      "modelEdge": 0.1031
     },
     {
       "snapshotKey": "ed richards|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -655,15 +655,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 27.5,
-      "modelExpectedDisposals": 27.59,
-      "modelEdge": 0.0074
+      "modelExpectedDisposals": 28.43,
+      "modelEdge": 0.075
     },
     {
       "snapshotKey": "christian salem|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Christian Salem",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -671,12 +671,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 22.36,
-      "modelEdge": -0.0104
+      "modelExpectedDisposals": 23.84,
+      "modelEdge": 0.0782
     },
     {
       "snapshotKey": "ryley sanders|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -687,28 +687,28 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 18.79,
-      "modelEdge": -0.1324
+      "modelExpectedDisposals": 19.58,
+      "modelEdge": -0.072
     },
     {
       "snapshotKey": "noah anderson|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Noah Anderson",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
       "playerTeam": "Melbourne Demons",
       "opponentTeam": "Gold Coast Suns",
-      "bookmaker": "SportsBet",
+      "bookmaker": "PointsBet (AU)",
       "line": 28.5,
-      "modelExpectedDisposals": 28.76,
-      "modelEdge": -0.0071
+      "modelExpectedDisposals": 27.54,
+      "modelEdge": -0.081
     },
     {
       "snapshotKey": "jaxon prior|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -719,12 +719,12 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 17.3,
-      "modelEdge": 0.0664
+      "modelExpectedDisposals": 17.83,
+      "modelEdge": 0.1095
     },
     {
       "snapshotKey": "zak johnson|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -735,15 +735,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 16.71,
-      "modelEdge": -0.0562
+      "modelExpectedDisposals": 16.23,
+      "modelEdge": -0.0895
     },
     {
       "snapshotKey": "xavier lindsay|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Xavier Lindsay",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -751,15 +751,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 14.25,
-      "modelEdge": -0.2302
+      "modelExpectedDisposals": 14.36,
+      "modelEdge": -0.2321
     },
     {
       "snapshotKey": "matt rowell|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Matt Rowell",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -767,15 +767,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "modelExpectedDisposals": 24.12,
-      "modelEdge": -0.1031
+      "modelExpectedDisposals": 24.31,
+      "modelEdge": -0.0892
     },
     {
       "snapshotKey": "kysaiah pickett|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Kysaiah Pickett",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -783,12 +783,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 22.5,
-      "modelExpectedDisposals": 20.83,
-      "modelEdge": -0.1104
+      "modelExpectedDisposals": 20.68,
+      "modelEdge": -0.1179
     },
     {
       "snapshotKey": "sam durham|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -799,15 +799,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 22.02,
-      "modelEdge": 0.0419
+      "modelExpectedDisposals": 22.41,
+      "modelEdge": 0.0738
     },
     {
       "snapshotKey": "joel jeffrey|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Joel Jeffrey",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -815,15 +815,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 21.05,
-      "modelEdge": -0.1091
+      "modelExpectedDisposals": 20.18,
+      "modelEdge": -0.171
     },
     {
       "snapshotKey": "tom sparrow|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Tom Sparrow",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -831,12 +831,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.46,
-      "modelEdge": -0.1587
+      "modelExpectedDisposals": 17.96,
+      "modelEdge": -0.1209
     },
     {
       "snapshotKey": "joel freijah|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -847,15 +847,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 21.23,
-      "modelEdge": 0.0593
+      "modelExpectedDisposals": 20.32,
+      "modelEdge": -0.0144
     },
     {
       "snapshotKey": "bodhi uwland|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Bodhi Uwland",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -863,8 +863,8 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 19.67,
-      "modelEdge": -0.061
+      "modelExpectedDisposals": 18.71,
+      "modelEdge": -0.1481
     },
     {
       "snapshotKey": "archie roberts|2026-W14",
@@ -884,7 +884,7 @@
     },
     {
       "snapshotKey": "zachary merrett|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -895,15 +895,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 26.5,
-      "modelExpectedDisposals": 25.48,
-      "modelEdge": -0.0758
+      "modelExpectedDisposals": 25.46,
+      "modelEdge": -0.0774
     },
     {
       "snapshotKey": "ed langdon|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Ed Langdon",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -911,12 +911,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.71,
-      "modelEdge": -0.0594
+      "modelExpectedDisposals": 15.69,
+      "modelEdge": -0.0615
     },
     {
       "snapshotKey": "bailey williams|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -927,15 +927,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 19.45,
-      "modelEdge": -0.0215
+      "modelExpectedDisposals": 19.9,
+      "modelEdge": 0.0049
     },
     {
       "snapshotKey": "harvey langford|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Harvey Langford",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -943,12 +943,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.44,
-      "modelEdge": -0.0818
+      "modelExpectedDisposals": 15.8,
+      "modelEdge": -0.0546
     },
     {
       "snapshotKey": "marcus bontempelli|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -959,15 +959,15 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 28.5,
-      "modelExpectedDisposals": 28.66,
-      "modelEdge": 0.012
+      "modelExpectedDisposals": 27.43,
+      "modelEdge": -0.0802
     },
     {
       "snapshotKey": "kade chandler|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Kade Chandler",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -975,12 +975,12 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "modelExpectedDisposals": 14.74,
-      "modelEdge": -0.0363
+      "modelExpectedDisposals": 14.63,
+      "modelEdge": -0.0513
     },
     {
       "snapshotKey": "lachlan bramble|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -990,16 +990,16 @@
       "playerTeam": "Western Bulldogs",
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
-      "line": 17.5,
-      "modelExpectedDisposals": 18.09,
-      "modelEdge": 0.0566
+      "line": 16.5,
+      "modelExpectedDisposals": 16.91,
+      "modelEdge": 0.0033
     },
     {
       "snapshotKey": "max gawn|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Max Gawn",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -1007,15 +1007,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 17.6,
-      "modelEdge": -0.0726
+      "modelExpectedDisposals": 18.45,
+      "modelEdge": -0.0037
     },
     {
       "snapshotKey": "mac andrew|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Mac Andrew",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -1023,15 +1023,15 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 16.09,
-      "modelEdge": -0.0123
+      "modelExpectedDisposals": 15.41,
+      "modelEdge": -0.087
     },
     {
       "snapshotKey": "jack steele|2026-W14",
-      "capturedAt": "2026-04-03T16:01:18Z",
+      "capturedAt": "2026-04-04T11:26:56Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
-      "commenceTime": "2026-04-05T05:15:00Z",
+      "commenceTime": "2026-04-05T05:15:02Z",
       "playerName": "Jack Steele",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Gold Coast Suns",
@@ -1039,8 +1039,8 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
-      "modelExpectedDisposals": 23.16,
-      "modelEdge": -0.0371
+      "modelExpectedDisposals": 24.53,
+      "modelEdge": 0.0854
     },
     {
       "snapshotKey": "kane mcauliffe|2026-W14",
