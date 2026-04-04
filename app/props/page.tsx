@@ -202,11 +202,6 @@ function TipoffCountdown({
             const baseDate = new Date(gameDateStr);
             const tipoff = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, minute, 0);
             
-            // If this time has already passed, assume it's for tomorrow
-            if (tipoff.getTime() <= now) {
-              tipoff.setDate(tipoff.getDate() + 1);
-            }
-            
             tipoffDate = tipoff;
           } else {
             // No time in status, use date with 7:30 PM local time
@@ -214,9 +209,6 @@ function TipoffCountdown({
             if (dateStr) {
               const localDate = new Date(dateStr);
               localDate.setHours(19, 30, 0, 0); // 7:30 PM local
-              if (localDate.getTime() <= now) {
-                localDate.setDate(localDate.getDate() + 1);
-              }
               tipoffDate = localDate;
             }
           }
@@ -230,9 +222,6 @@ function TipoffCountdown({
       if (dateStr) {
         const localDate = new Date(dateStr);
         localDate.setHours(19, 30, 0, 0); // 7:30 PM local
-        if (localDate.getTime() <= now) {
-          localDate.setDate(localDate.getDate() + 1);
-        }
         tipoffDate = localDate;
       }
     }
@@ -582,20 +571,22 @@ export default function NBALandingPage() {
 
   const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
     const nextSet = new Set(nextGameIds);
-    // If the user hasn't modified yet (or the ref is empty during initial restore),
-    // just apply the incoming selection.
-    if (!userModifiedAflGamesRef.current || selectedAflGamesRef.current.size === 0) {
+    // First AFL load with no prior selection: default to all current games.
+    if (!userModifiedAflGamesRef.current && selectedAflGamesRef.current.size === 0) {
       selectedAflGamesRef.current = nextSet;
       setSelectedAflGames(nextSet);
       return;
     }
-    // Preserve user's current selection by intersecting with the newly loaded game list.
+    // Preserve restored/user-selected games by intersecting with the new game list.
     const out = new Set<string>();
     for (const id of selectedAflGamesRef.current) {
       if (nextSet.has(id)) out.add(id);
     }
-    selectedAflGamesRef.current = out;
-    setSelectedAflGames(out);
+    // If a restored selection becomes invalid (new slate/no overlap), fall back to all.
+    // Keep empty when the user intentionally cleared all games.
+    const nextSelection = out.size === 0 && !userModifiedAflGamesRef.current ? nextSet : out;
+    selectedAflGamesRef.current = nextSelection;
+    setSelectedAflGames(nextSelection);
   }, []);
 
   const getSelectedAflGameIdsForCache = useCallback((candidateGameIds: string[]) => {
@@ -5130,7 +5121,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (propsLoading || aflPropsLoading))) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
-                      <div className="hidden lg:block overflow-x-auto">
+                      <div className="hidden 2xl:block overflow-x-auto">
                         <table className="w-full">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
@@ -5197,7 +5188,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           </tbody>
                         </table>
                       </div>
-                      <div className={`lg:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
+                      <div className={`2xl:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
                         {[...Array(5)].map((_, idx) => (
                           <div
                             key={idx}
@@ -5276,7 +5267,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     ) : (
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
-                      <div className="hidden lg:block overflow-x-auto">
+                      <div className="hidden 2xl:block overflow-x-auto">
                         <table className="w-full">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
@@ -5345,7 +5336,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                       
                       {/* Mobile Skeleton - Hidden on desktop */}
-                      <div className={`lg:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
+                      <div className={`2xl:hidden space-y-4 ${isDark ? 'bg-[#050d1a]' : ''}`}>
                         {[...Array(5)].map((_, idx) => (
                           <div
                             key={idx}
@@ -5395,7 +5386,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   ) : activeFilteredCount > 0 ? (
                     <>
                       {/* Desktop Table View - Hidden on mobile */}
-                      <div className="hidden lg:block overflow-x-auto">
+                      <div className="hidden 2xl:block overflow-x-auto">
                         <table className="w-full">
                         <thead>
                           <tr className={`border-b ${mounted && isDark ? 'border-gray-900' : 'border-gray-200'}`}>
@@ -6046,7 +6037,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                           }}
                                                         />
                                                       )}
-                                                      <div className={`text-xs flex flex-col gap-0.5 ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
+                                                      <div className={`flex items-center gap-1 whitespace-nowrap ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                                         {(() => {
                                                           // Format odds based on user preference; show — for N/A
                                                           const formatOddsValue = (oddsStr: string): string => {
@@ -6062,8 +6053,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                           };
                                                           return (
                                                             <>
-                                                              <span className={mounted && isDark ? 'text-green-400' : 'text-green-600'}>O {formatOddsValue(line.overOdds)}</span>
-                                                              <span className={mounted && isDark ? 'text-red-400' : 'text-red-600'}>U {formatOddsValue(line.underOdds)}</span>
+                                                              <span className={`${mounted && isDark ? 'text-green-400' : 'text-green-600'} text-[10px] 2xl:text-xs`}>O {formatOddsValue(line.overOdds)}</span>
+                                                              <span className={`${mounted && isDark ? 'text-gray-500' : 'text-gray-400'} text-[10px] 2xl:text-xs`}>|</span>
+                                                              <span className={`${mounted && isDark ? 'text-red-400' : 'text-red-600'} text-[10px] 2xl:text-xs`}>U {formatOddsValue(line.underOdds)}</span>
                                                             </>
                                                           );
                                                         })()}
@@ -6173,7 +6165,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                     }}
                                                                   />
                                                                 )}
-                                                                <div className={`text-xs flex flex-col gap-0.5 text-white`}>
+                                                                <div className="flex items-center gap-1 whitespace-nowrap text-white">
                                                                   {(() => {
                                                                     // Format odds based on user preference; show — for N/A
                                                                     const formatOddsValue = (oddsStr: string): string => {
@@ -6189,8 +6181,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                     };
                                                                     return (
                                                                       <>
-                                                                        <span className="text-green-400 font-medium">O {formatOddsValue(line.overOdds)}</span>
-                                                                        <span className="text-red-400 font-medium">U {formatOddsValue(line.underOdds)}</span>
+                                                                        <span className="text-green-400 font-medium text-[10px] 2xl:text-xs">O {formatOddsValue(line.overOdds)}</span>
+                                                                        <span className="text-gray-500 text-[10px] 2xl:text-xs">|</span>
+                                                                        <span className="text-red-400 font-medium text-[10px] 2xl:text-xs">U {formatOddsValue(line.underOdds)}</span>
                                                                       </>
                                                                     );
                                                                   })()}
@@ -6706,7 +6699,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       
                       {/* Mobile Column Sort Filters - Scrollable row above player props */}
                       {!isCombinedMode && (
-                      <div className="lg:hidden mb-4 w-full px-0.5">
+                      <div className="2xl:hidden mb-4 w-full px-0.5">
                         <div 
                           className="overflow-x-auto mobile-filter-scroll rounded-2xl px-0.5 py-1.5"
                           style={{ 
@@ -6925,7 +6918,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       )}
                       
                       {/* Mobile Card View - Hidden on desktop */}
-                      <div className={`lg:hidden space-y-4.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+                      <div className={`2xl:hidden space-y-4.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
                         {activePaginatedProps.map((prop, idx) => {
                           const rowSport = propsSport === 'combined'
                             ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
@@ -7447,8 +7440,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 const isPopupOpen = openPopup === expandKey;
                                 
                                 return (
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="flex gap-2 flex-1">
+                                  <div className="flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
+                                    <div className="flex flex-col gap-2 flex-1 sm:flex-row sm:flex-wrap">
                                       {/* First 2 bookmakers */}
                                       {firstTwoBookmakers.map((bookmaker, idx) => {
                                         const bookmakerKey = bookmaker.bookmaker?.toLowerCase() || '';
@@ -7474,10 +7467,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                 }}
                                               />
                                             )}
-                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                            <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
                                               <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '11px' }}>
                                                 O {formatOddsValue(bookmaker.overOdds)}
                                               </span>
+                                              <span className={mounted && isDark ? 'text-gray-500' : 'text-gray-400'} style={{ fontSize: '11px' }}>|</span>
                                               <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '11px' }}>
                                                 U {formatOddsValue(bookmaker.underOdds)}
                                               </span>
@@ -7593,7 +7587,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       )}
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
-                                    <div className="flex items-center justify-center flex-shrink-0 pr-1">
+                                    <div className="flex items-center justify-start sm:justify-center flex-shrink-0 pr-1">
                                       <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
                                     </div>
                                   </div>
