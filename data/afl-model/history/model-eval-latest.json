@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-04-04T15:38:00Z",
+  "sampleCount": 0,
+  "candidateArtifactPath": "data/afl-model/models/latest-candidate-model.json",
+  "candidateFallbackToCurrent": false,
+  "guardrails": {
+    "minSamples": 100,
+    "minBrierImprovement": 0.01,
+    "maxLogLossIncrease": 0.005,
+    "maxHitRateDrop": 0.015
+  },
+  "checks": {
+    "sampleCountOk": false,
+    "brierOk": false,
+    "logLossOk": true,
+    "hitRateOk": true,
+    "freezeInactive": true
+  },
+  "deltas": {
+    "brierImprovement": 0.0,
+    "logLossChange": 0.0,
+    "hitRateDelta": 0.0
+  },
+  "decision": {
+    "pass": false,
+    "promoted": false,
+    "freezeActive": false,
+    "freezeFailStreak": 0,
+    "promotionInfo": {
+      "promoted": "false"
+    }
+  },
+  "candidate": {
+    "name": "candidate",
+    "sampleCount": 0,
+    "hitRate": 0.0,
+    "brierScore": 0.0,
+    "logLoss": 0.0,
+    "mae": 0.0,
+    "avgClvLite": 0.0,
+    "positiveClvRate": 0.0,
+    "clvSampleCount": 0,
+    "calibrationBins": [],
+    "calibrationMethod": "identity",
+    "modelVersion": "afl-disp-20260404-153754"
+  },
+  "current": {
+    "name": "current",
+    "sampleCount": 0,
+    "hitRate": 0.0,
+    "brierScore": 0.0,
+    "logLoss": 0.0,
+    "mae": 0.0,
+    "avgClvLite": 0.0,
+    "positiveClvRate": 0.0,
+    "clvSampleCount": 0,
+    "calibrationBins": [],
+    "calibrationMethod": "identity",
+    "modelVersion": "afl-disp-20260404-112652"
+  },
+  "reasonSummary": {
+    "lossTypeCounts": [],
+    "winFeatureAverages": {
+      "delta_disp_3v10": 0.0,
+      "delta_tog_3v10": 0.0,
+      "opp_role_disp_index": 0.0,
+      "opp_allow_disposals": 0.0,
+      "rest_days": 0.0
+    },
+    "lossFeatureAverages": {
+      "delta_disp_3v10": 0.0,
+      "delta_tog_3v10": 0.0,
+      "opp_role_disp_index": 0.0,
+      "opp_allow_disposals": 0.0,
+      "rest_days": 0.0
+    },
+    "topWins": [],
+    "topLosses": []
+  }
+}

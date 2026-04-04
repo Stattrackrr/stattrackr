@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2026-04-04T15:38:00Z",
+  "modelVersion": "afl-disp-20260404-153754",
+  "sampleCount": 0,
+  "guardrailsPass": false,
+  "promoted": false,
+  "candidateMetrics": {
+    "name": "candidate",
+    "sampleCount": 0,
+    "hitRate": 0.0,
+    "brierScore": 0.0,
+    "logLoss": 0.0,
+    "mae": 0.0,
+    "avgClvLite": 0.0,
+    "positiveClvRate": 0.0,
+    "clvSampleCount": 0,
+    "calibrationBins": [],
+    "calibrationMethod": "identity",
+    "modelVersion": "afl-disp-20260404-153754"
+  },
+  "currentMetrics": {
+    "name": "current",
+    "sampleCount": 0,
+    "hitRate": 0.0,
+    "brierScore": 0.0,
+    "logLoss": 0.0,
+    "mae": 0.0,
+    "avgClvLite": 0.0,
+    "positiveClvRate": 0.0,
+    "clvSampleCount": 0,
+    "calibrationBins": [],
+    "calibrationMethod": "identity",
+    "modelVersion": "afl-disp-20260404-112652"
+  },
+  "deltas": {
+    "brierImprovement": 0.0,
+    "logLossChange": 0.0,
+    "hitRateDelta": 0.0
+  },
+  "confidenceBuckets": [],
+  "edgeBuckets": [],
+  "topLossTypes": []
+}

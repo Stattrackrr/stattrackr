@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-04T11:26:56Z",
+  "generatedAt": "2026-04-04T15:37:59Z",
   "count": 104,
   "rows": [
     {
       "snapshotKey": "cameron mackenzie|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -15,12 +15,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "modelExpectedDisposals": 13.81,
-      "modelEdge": -0.3276
+      "modelExpectedDisposals": 14.63,
+      "modelEdge": -0.2816,
+      "overOdds": "-118",
+      "underOdds": "-114"
     },
     {
       "snapshotKey": "tanner bruhn|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -31,12 +33,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 18.61,
-      "modelEdge": -0.2633
+      "modelExpectedDisposals": 18.34,
+      "modelEdge": -0.2775,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "lawson humphries|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -47,12 +51,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "modelExpectedDisposals": 14.64,
-      "modelEdge": -0.1423
+      "modelExpectedDisposals": 15.71,
+      "modelEdge": -0.0576,
+      "overOdds": "-112",
+      "underOdds": "-119"
     },
     {
       "snapshotKey": "jack scrimshaw|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -63,12 +69,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 16.42,
-      "modelEdge": -0.1647
+      "modelExpectedDisposals": 16.65,
+      "modelEdge": -0.1468,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "dylan moore|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -79,12 +87,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 17.34,
-      "modelEdge": -0.2327
+      "modelExpectedDisposals": 19.14,
+      "modelEdge": -0.1048,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "conor nash|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -95,12 +105,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 16.96,
-      "modelEdge": -0.1981
+      "modelExpectedDisposals": 18.37,
+      "modelEdge": -0.0908,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "max holmes|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -111,12 +123,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 27.5,
-      "modelExpectedDisposals": 25.36,
-      "modelEdge": -0.1714
+      "modelExpectedDisposals": 26.72,
+      "modelEdge": -0.0681,
+      "overOdds": "-119",
+      "underOdds": "-112"
     },
     {
       "snapshotKey": "jack ginnivan|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -127,12 +141,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 16.78,
-      "modelEdge": -0.2061
+      "modelExpectedDisposals": 18.25,
+      "modelEdge": -0.0978,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "tom atkins|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -143,12 +159,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 17.78,
-      "modelEdge": -0.2166
+      "modelExpectedDisposals": 19.2,
+      "modelEdge": -0.1075,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "gryan miers|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -159,12 +177,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 24.5,
-      "modelExpectedDisposals": 20.75,
-      "modelEdge": -0.2814
+      "modelExpectedDisposals": 23.49,
+      "modelEdge": -0.0822,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "karl amon|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -175,12 +195,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 21.45,
-      "modelEdge": -0.0846
+      "modelExpectedDisposals": 22.92,
+      "modelEdge": 0.0336,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "jarman impey|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -191,12 +213,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 18.27,
-      "modelEdge": -0.102
+      "modelExpectedDisposals": 19.04,
+      "modelEdge": -0.0404,
+      "overOdds": "-118",
+      "underOdds": "-114"
     },
     {
       "snapshotKey": "josh ward|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -207,12 +231,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 19.22,
-      "modelEdge": -0.1735
+      "modelExpectedDisposals": 21.09,
+      "modelEdge": -0.0321,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "ollie dempsey|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -223,12 +249,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "modelExpectedDisposals": 17.13,
-      "modelEdge": 0.0553
+      "modelExpectedDisposals": 17.17,
+      "modelEdge": 0.0588,
+      "overOdds": "-114",
+      "underOdds": "-118"
     },
     {
       "snapshotKey": "james sicily|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -239,12 +267,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 19.76,
-      "modelEdge": -0.139
+      "modelExpectedDisposals": 20.85,
+      "modelEdge": -0.0522,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "connor macdonald|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -255,12 +285,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.34,
-      "modelEdge": -0.1693
+      "modelExpectedDisposals": 19.32,
+      "modelEdge": -0.0148,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "thomas stewart|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -271,12 +303,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 20.79,
-      "modelEdge": -0.1289
+      "modelExpectedDisposals": 20.61,
+      "modelEdge": -0.141,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "shaun mannagh|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -287,12 +321,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "modelExpectedDisposals": 16.38,
-      "modelEdge": -0.0852
+      "modelExpectedDisposals": 17.81,
+      "modelEdge": 0.033,
+      "overOdds": "-112",
+      "underOdds": "-119"
     },
     {
       "snapshotKey": "massimo d ambrosio|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -303,12 +339,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 17.44,
-      "modelEdge": -0.0046
+      "modelExpectedDisposals": 18.89,
+      "modelEdge": 0.1002,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "joshua weddle|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -319,12 +357,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.89,
-      "modelEdge": -0.0517
+      "modelExpectedDisposals": 16.47,
+      "modelEdge": -0.0027,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "bailey smith|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -335,8 +375,10 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 30.5,
-      "modelExpectedDisposals": 27.93,
-      "modelEdge": -0.1916
+      "modelExpectedDisposals": 29.1,
+      "modelEdge": -0.1074,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "jai newcombe|2026-W15",
@@ -356,7 +398,7 @@
     },
     {
       "snapshotKey": "mark blicavs|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -367,12 +409,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 16.68,
-      "modelEdge": 0.0155
+      "modelExpectedDisposals": 16.77,
+      "modelEdge": 0.0232,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "josh battle|2026-W15",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W15",
       "gameDate": "2026-04-06",
       "commenceTime": "2026-04-06T05:15:36Z",
@@ -383,12 +427,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 18.8,
-      "modelEdge": 0.0304
+      "modelExpectedDisposals": 18.94,
+      "modelEdge": 0.0443,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "matthew kennedy|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -399,12 +445,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 26.5,
-      "modelExpectedDisposals": 11.89,
-      "modelEdge": -0.4996
+      "modelExpectedDisposals": 12.58,
+      "modelEdge": -0.4993,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "john noble|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -415,8 +463,10 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 24.5,
-      "modelExpectedDisposals": 21.93,
-      "modelEdge": -0.2466
+      "modelExpectedDisposals": 22.34,
+      "modelEdge": -0.2152,
+      "overOdds": "-132",
+      "underOdds": "-101"
     },
     {
       "snapshotKey": "darcy parish|2026-W14",
@@ -436,7 +486,7 @@
     },
     {
       "snapshotKey": "xavier duursma|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -447,12 +497,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 19.05,
-      "modelEdge": 0.2022
+      "modelExpectedDisposals": 18.41,
+      "modelEdge": 0.1533,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "caleb windsor|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -463,12 +515,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 16.9,
-      "modelEdge": -0.2585
+      "modelExpectedDisposals": 17.41,
+      "modelEdge": -0.2261,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "touk miller|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -479,12 +533,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 26.5,
-      "modelExpectedDisposals": 23.53,
-      "modelEdge": -0.2378
+      "modelExpectedDisposals": 23.85,
+      "modelEdge": -0.2132,
+      "overOdds": "-122",
+      "underOdds": "-110"
     },
     {
       "snapshotKey": "timothy english|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -495,12 +551,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 17.11,
-      "modelEdge": -0.2233
+      "modelExpectedDisposals": 17.43,
+      "modelEdge": -0.1982,
+      "overOdds": "-128",
+      "underOdds": "-104"
     },
     {
       "snapshotKey": "wil powell|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -511,12 +569,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 17.06,
-      "modelEdge": -0.1857
+      "modelExpectedDisposals": 17.99,
+      "modelEdge": -0.1136,
+      "overOdds": "-110",
+      "underOdds": "-122"
     },
     {
       "snapshotKey": "daniel turner|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -527,12 +587,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "modelExpectedDisposals": 12.1,
-      "modelEdge": -0.2057
+      "modelExpectedDisposals": 12.19,
+      "modelEdge": -0.1984,
+      "overOdds": "-122",
+      "underOdds": "-110"
     },
     {
       "snapshotKey": "sam clohesy|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -543,12 +605,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 14.9,
-      "modelEdge": -0.2106
+      "modelExpectedDisposals": 15.95,
+      "modelEdge": -0.1288,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "jye caldwell|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -559,12 +623,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 24.21,
-      "modelEdge": 0.131
+      "modelExpectedDisposals": 25.67,
+      "modelEdge": 0.2318,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "daniel rioli|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -575,12 +641,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 16.49,
-      "modelEdge": -0.1546
+      "modelExpectedDisposals": 16.54,
+      "modelEdge": -0.1508,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "bailey dale|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -591,12 +659,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "modelExpectedDisposals": 26.93,
-      "modelEdge": 0.1003
+      "modelExpectedDisposals": 26.98,
+      "modelEdge": 0.1033,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "lachie jaques|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -607,12 +677,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 21.77,
-      "modelEdge": 0.2351
+      "modelExpectedDisposals": 21.84,
+      "modelEdge": 0.2294,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "connor budarick|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -623,12 +695,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
-      "modelExpectedDisposals": 23.83,
-      "modelEdge": 0.0314
+      "modelExpectedDisposals": 25.25,
+      "modelEdge": 0.16,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "andrew mcgrath|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -639,12 +713,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 22.84,
-      "modelEdge": 0.1031
+      "modelExpectedDisposals": 23.87,
+      "modelEdge": 0.177,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "ed richards|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -655,12 +731,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 27.5,
-      "modelExpectedDisposals": 28.43,
-      "modelEdge": 0.075
+      "modelExpectedDisposals": 28.82,
+      "modelEdge": 0.1051,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "christian salem|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -671,12 +749,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 23.84,
-      "modelEdge": 0.0782
+      "modelExpectedDisposals": 23.88,
+      "modelEdge": 0.092,
+      "overOdds": "-120",
+      "underOdds": "-111"
     },
     {
       "snapshotKey": "ryley sanders|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -687,12 +767,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 19.58,
-      "modelEdge": -0.072
+      "modelExpectedDisposals": 18.81,
+      "modelEdge": -0.1299,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "noah anderson|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -703,12 +785,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 28.5,
-      "modelExpectedDisposals": 27.54,
-      "modelEdge": -0.081
+      "modelExpectedDisposals": 27.92,
+      "modelEdge": -0.0527,
+      "overOdds": "-120",
+      "underOdds": "-111"
     },
     {
       "snapshotKey": "jaxon prior|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -719,12 +803,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 17.83,
-      "modelEdge": 0.1095
+      "modelExpectedDisposals": 17.27,
+      "modelEdge": 0.0632,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "zak johnson|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -735,12 +821,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 16.23,
-      "modelEdge": -0.0895
+      "modelExpectedDisposals": 16.15,
+      "modelEdge": -0.0947,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "xavier lindsay|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -751,12 +839,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "modelExpectedDisposals": 14.36,
-      "modelEdge": -0.2321
+      "modelExpectedDisposals": 14.44,
+      "modelEdge": -0.226,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "matt rowell|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -767,12 +857,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "modelExpectedDisposals": 24.31,
-      "modelEdge": -0.0892
+      "modelExpectedDisposals": 24.41,
+      "modelEdge": -0.0815,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "kysaiah pickett|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -783,12 +875,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 22.5,
-      "modelExpectedDisposals": 20.68,
-      "modelEdge": -0.1179
+      "modelExpectedDisposals": 21.31,
+      "modelEdge": -0.0752,
+      "overOdds": "-109",
+      "underOdds": "-123"
     },
     {
       "snapshotKey": "sam durham|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -799,12 +893,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "modelExpectedDisposals": 22.41,
-      "modelEdge": 0.0738
+      "modelExpectedDisposals": 22.97,
+      "modelEdge": 0.1171,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "joel jeffrey|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -815,12 +911,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "modelExpectedDisposals": 20.18,
-      "modelEdge": -0.171
+      "modelExpectedDisposals": 21.41,
+      "modelEdge": -0.0821,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "tom sparrow|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -831,12 +929,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "modelExpectedDisposals": 17.96,
-      "modelEdge": -0.1209
+      "modelExpectedDisposals": 17.51,
+      "modelEdge": -0.1545,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "joel freijah|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -847,12 +947,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 20.32,
-      "modelEdge": -0.0144
+      "modelExpectedDisposals": 21.22,
+      "modelEdge": 0.0585,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "bodhi uwland|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -863,8 +965,10 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "modelExpectedDisposals": 18.71,
-      "modelEdge": -0.1481
+      "modelExpectedDisposals": 19.4,
+      "modelEdge": -0.0921,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "archie roberts|2026-W14",
@@ -884,7 +988,7 @@
     },
     {
       "snapshotKey": "zachary merrett|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -895,12 +999,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 26.5,
-      "modelExpectedDisposals": 25.46,
-      "modelEdge": -0.0774
+      "modelExpectedDisposals": 26.3,
+      "modelEdge": -0.015,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "ed langdon|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -911,12 +1017,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.69,
-      "modelEdge": -0.0615
+      "modelExpectedDisposals": 15.33,
+      "modelEdge": -0.067,
+      "overOdds": "-105",
+      "underOdds": "-125"
     },
     {
       "snapshotKey": "bailey williams|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -927,12 +1035,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "modelExpectedDisposals": 19.9,
-      "modelEdge": 0.0049
+      "modelExpectedDisposals": 20.79,
+      "modelEdge": 0.0778,
+      "overOdds": "-130",
+      "underOdds": "-102"
     },
     {
       "snapshotKey": "harvey langford|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -943,12 +1053,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.8,
-      "modelEdge": -0.0546
+      "modelExpectedDisposals": 16.1,
+      "modelEdge": -0.0312,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "marcus bontempelli|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -959,12 +1071,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "PointsBet (AU)",
       "line": 28.5,
-      "modelExpectedDisposals": 27.43,
-      "modelEdge": -0.0802
+      "modelExpectedDisposals": 29.31,
+      "modelEdge": 0.0606,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "kade chandler|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -975,12 +1089,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "modelExpectedDisposals": 14.63,
-      "modelEdge": -0.0513
+      "modelExpectedDisposals": 14.96,
+      "modelEdge": -0.0262,
+      "overOdds": "-106",
+      "underOdds": "-125"
     },
     {
       "snapshotKey": "lachlan bramble|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T09:20:55Z",
@@ -991,12 +1107,14 @@
       "opponentTeam": "Essendon Bombers",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "modelExpectedDisposals": 16.91,
-      "modelEdge": 0.0033
+      "modelExpectedDisposals": 16.83,
+      "modelEdge": -0.0031,
+      "overOdds": "-132",
+      "underOdds": "-102"
     },
     {
       "snapshotKey": "max gawn|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -1007,12 +1125,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "modelExpectedDisposals": 18.45,
-      "modelEdge": -0.0037
+      "modelExpectedDisposals": 20.3,
+      "modelEdge": 0.1421,
+      "overOdds": "-115",
+      "underOdds": "-115"
     },
     {
       "snapshotKey": "mac andrew|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -1023,12 +1143,14 @@
       "opponentTeam": "Gold Coast Suns",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "modelExpectedDisposals": 15.41,
-      "modelEdge": -0.087
+      "modelExpectedDisposals": 16.34,
+      "modelEdge": -0.0037,
+      "overOdds": "-111",
+      "underOdds": "-120"
     },
     {
       "snapshotKey": "jack steele|2026-W14",
-      "capturedAt": "2026-04-04T11:26:56Z",
+      "capturedAt": "2026-04-04T15:37:59Z",
       "weekKey": "2026-W14",
       "gameDate": "2026-04-05",
       "commenceTime": "2026-04-05T05:15:02Z",
@@ -1037,10 +1159,12 @@
       "awayTeam": "Gold Coast Suns",
       "playerTeam": "Melbourne Demons",
       "opponentTeam": "Gold Coast Suns",
-      "bookmaker": "PointsBet (AU)",
-      "line": 23.5,
-      "modelExpectedDisposals": 24.53,
-      "modelEdge": 0.0854
+      "bookmaker": "SportsBet",
+      "line": 22.5,
+      "modelExpectedDisposals": 23.96,
+      "modelEdge": 0.0856,
+      "overOdds": "-133",
+      "underOdds": "+100"
     },
     {
       "snapshotKey": "kane mcauliffe|2026-W14",
