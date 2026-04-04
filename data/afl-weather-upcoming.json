@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-04T15:37:45.742Z",
+  "generatedAt": "2026-04-04T16:59:14.523Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-04-05T05:15:02Z",
       "weather": {
-        "temperatureC": 25.2,
+        "temperatureC": 25.4,
         "precipitationMm": 0,
-        "windKmh": 12.2
+        "windKmh": 12.8
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-04-05T09:20:55Z",
       "weather": {
-        "temperatureC": 21.8,
+        "temperatureC": 22,
         "precipitationMm": 0,
-        "windKmh": 3.6
+        "windKmh": 3.2
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-04-06T05:15:36Z",
       "weather": {
-        "temperatureC": 23.4,
+        "temperatureC": 26.3,
         "precipitationMm": 0,
-        "windKmh": 17.4
+        "windKmh": 15.5
       }
     }
   ],

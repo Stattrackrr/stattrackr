@@ -1,7 +1,7 @@
 # AFL Disposals Model Card
 
-- Generated: 2026-04-04T15:38:00Z
-- Model: afl-disp-20260404-153754
+- Generated: 2026-04-04T17:15:09Z
+- Model: afl-disp-20260404-171459
 - Sample count: 0
 - Guardrails pass: False
 - Promoted: False

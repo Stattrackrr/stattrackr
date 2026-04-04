@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-04T15:38:00Z",
+  "generatedAt": "2026-04-04T17:15:09Z",
   "sampleCount": 0,
   "candidateArtifactPath": "data/afl-model/models/latest-candidate-model.json",
   "candidateFallbackToCurrent": false,
@@ -25,7 +25,7 @@
     "pass": false,
     "promoted": false,
     "freezeActive": false,
-    "freezeFailStreak": 0,
+    "freezeFailStreak": 1,
     "promotionInfo": {
       "promoted": "false"
     }
@@ -42,7 +42,7 @@
     "clvSampleCount": 0,
     "calibrationBins": [],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260404-153754"
+    "modelVersion": "afl-disp-20260404-171459"
   },
   "current": {
     "name": "current",

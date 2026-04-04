@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-04T15:38:00Z",
-  "modelVersion": "afl-disp-20260404-153754",
+  "generatedAt": "2026-04-04T17:15:09Z",
+  "modelVersion": "afl-disp-20260404-171459",
   "sampleCount": 0,
   "guardrailsPass": false,
   "promoted": false,
@@ -16,7 +16,7 @@
     "clvSampleCount": 0,
     "calibrationBins": [],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260404-153754"
+    "modelVersion": "afl-disp-20260404-171459"
   },
   "currentMetrics": {
     "name": "current",
