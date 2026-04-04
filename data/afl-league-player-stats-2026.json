@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-04T08:36:17.234Z",
+  "generatedAt": "2026-04-04T10:28:30.993Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 495,
@@ -152,8 +152,8 @@
       "clearances": 7,
       "inside_50s": 6,
       "rebound_50s": 0.5,
-      "contested_possessions": 11,
-      "uncontested_possessions": 17.5,
+      "contested_possessions": 11.25,
+      "uncontested_possessions": 17.25,
       "meters_gained": 524.25,
       "free_kicks_for": 2.5
     },
@@ -1788,7 +1788,7 @@
       "rebound_50s": 5,
       "contested_possessions": 3.5,
       "uncontested_possessions": 14,
-      "meters_gained": 416,
+      "meters_gained": 418.5,
       "free_kicks_for": 0.5
     },
     {
@@ -2377,7 +2377,7 @@
       "rebound_50s": 1.67,
       "contested_possessions": 5.33,
       "uncontested_possessions": 13.67,
-      "meters_gained": 297,
+      "meters_gained": 295.67,
       "free_kicks_for": 1
     },
     {
@@ -2574,7 +2574,7 @@
       "name": "Cameron Mackenzie",
       "team": "Hawthorn",
       "games": 2,
-      "number": 26,
+      "number": 27,
       "disposals": 19,
       "kicks": 10.5,
       "handballs": 8.5,
@@ -2714,7 +2714,7 @@
       "marks": 6,
       "goals": 1.5,
       "tackles": 2.75,
-      "clearances": 2.5,
+      "clearances": 2.75,
       "inside_50s": 4.25,
       "rebound_50s": 0.5,
       "contested_possessions": 7.5,
@@ -2884,7 +2884,7 @@
       "handballs": 10,
       "marks": 2.25,
       "goals": 0.5,
-      "tackles": 5.5,
+      "tackles": 5.75,
       "clearances": 5,
       "inside_50s": 3.5,
       "rebound_50s": 0.25,
@@ -3080,7 +3080,7 @@
       "rebound_50s": 2.75,
       "contested_possessions": 6.5,
       "uncontested_possessions": 11,
-      "meters_gained": 240.5,
+      "meters_gained": 241.5,
       "free_kicks_for": 0.5
     },
     {
@@ -3574,7 +3574,7 @@
       "rebound_50s": 0.75,
       "contested_possessions": 4.75,
       "uncontested_possessions": 12,
-      "meters_gained": 221.25,
+      "meters_gained": 223,
       "free_kicks_for": 0.25
     },
     {
@@ -5189,7 +5189,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 2.5,
       "uncontested_possessions": 11,
-      "meters_gained": 245,
+      "meters_gained": 247,
       "free_kicks_for": 0.5
     },
     {
@@ -5246,7 +5246,7 @@
       "rebound_50s": 1.67,
       "contested_possessions": 9.33,
       "uncontested_possessions": 5.33,
-      "meters_gained": 187,
+      "meters_gained": 185.67,
       "free_kicks_for": 2.67
     },
     {
@@ -6329,7 +6329,7 @@
       "rebound_50s": 1,
       "contested_possessions": 4,
       "uncontested_possessions": 7.33,
-      "meters_gained": 238.67,
+      "meters_gained": 236.67,
       "free_kicks_for": 1
     },
     {
@@ -6685,7 +6685,7 @@
       "marks": 5.67,
       "goals": 0,
       "tackles": 1,
-      "clearances": 0.67,
+      "clearances": 0.33,
       "inside_50s": 0.67,
       "rebound_50s": 1.67,
       "contested_possessions": 2,
@@ -7286,7 +7286,7 @@
       "name": "Lachlan Blakiston",
       "team": "Essendon",
       "games": 3,
-      "number": 91,
+      "number": 92,
       "disposals": 10,
       "kicks": 5,
       "handballs": 5,
@@ -8305,7 +8305,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3,
       "uncontested_possessions": 5.75,
-      "meters_gained": 116,
+      "meters_gained": 114.25,
       "free_kicks_for": 0.5
     },
     {
