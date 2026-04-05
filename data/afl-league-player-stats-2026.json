@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-05T12:45:52.740Z",
+  "generatedAt": "2026-04-05T16:31:15.504Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 507,
@@ -1104,7 +1104,7 @@
       "rebound_50s": 4.75,
       "contested_possessions": 5,
       "uncontested_possessions": 15.5,
-      "meters_gained": 410,
+      "meters_gained": 407.25,
       "free_kicks_for": 1.5
     },
     {
@@ -1522,7 +1522,7 @@
       "rebound_50s": 3.5,
       "contested_possessions": 5.5,
       "uncontested_possessions": 14,
-      "meters_gained": 271.5,
+      "meters_gained": 271.75,
       "free_kicks_for": 0.75
     },
     {
@@ -1750,7 +1750,7 @@
       "rebound_50s": 3.5,
       "contested_possessions": 3.25,
       "uncontested_possessions": 12,
-      "meters_gained": 322,
+      "meters_gained": 327.25,
       "free_kicks_for": 0.25
     },
     {
@@ -2599,7 +2599,7 @@
       "handballs": 11.25,
       "marks": 2.5,
       "goals": 0.75,
-      "tackles": 4.25,
+      "tackles": 4.5,
       "clearances": 3.5,
       "inside_50s": 3.25,
       "rebound_50s": 2.5,
@@ -2631,7 +2631,7 @@
       "name": "Caleb Windsor",
       "team": "Melbourne",
       "games": 4,
-      "number": 50,
+      "number": 51,
       "disposals": 18.75,
       "kicks": 10.75,
       "handballs": 8,
@@ -3992,7 +3992,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3,
       "uncontested_possessions": 13,
-      "meters_gained": 221,
+      "meters_gained": 214,
       "free_kicks_for": 0
     },
     {
@@ -5151,7 +5151,7 @@
       "rebound_50s": 0.75,
       "contested_possessions": 3.5,
       "uncontested_possessions": 9.75,
-      "meters_gained": 239.25,
+      "meters_gained": 239,
       "free_kicks_for": 0
     },
     {
@@ -6994,7 +6994,7 @@
       "rebound_50s": 0,
       "contested_possessions": 4,
       "uncontested_possessions": 6.5,
-      "meters_gained": 220.25,
+      "meters_gained": 219.5,
       "free_kicks_for": 1.75
     },
     {
@@ -7704,7 +7704,7 @@
       "name": "Matthew Flynn",
       "team": "West Coast",
       "games": 4,
-      "number": 50,
+      "number": 51,
       "disposals": 9.75,
       "kicks": 4,
       "handballs": 5.75,
