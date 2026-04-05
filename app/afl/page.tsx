@@ -4014,13 +4014,6 @@ export default function AFLPage() {
                             }`}
                           >
                             DVP
-                            <span
-                              className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
-                                isDark ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                              }`}
-                            >
-                              90% accuracy
-                            </span>
                           </button>
                           <button
                             onClick={() => {
@@ -4144,13 +4137,16 @@ export default function AFLPage() {
                       <button
                         type="button"
                         onClick={() => setPlayerVsContainerTab('prediction')}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
+                        className={`relative flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
                           playerVsContainerTab === 'prediction'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
                         Prediction Model
+                        <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
+                          BETA
+                        </span>
                       </button>
                     </div>
                     {playerVsContainerTab === 'comparison' ? (
@@ -4228,8 +4224,24 @@ export default function AFLPage() {
                       </>
                     ) : (
                       <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <div className="mb-1.5">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                        <div className="text-[11px] text-gray-600 dark:text-gray-300">
+                          Best Side:{' '}
+                          <span className={`font-bold ${
+                            aflDisposalsModelProjection?.edgeVsMarket == null
+                              ? 'text-gray-900 dark:text-white'
+                              : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                ? 'text-green-500'
+                                : 'text-red-500'
+                          }`}>
+                            {aflDisposalsModelProjection?.edgeVsMarket == null
+                              ? '—'
+                              : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                ? 'Over'
+                                : 'Under'}
+                          </span>
+                        </div>
                       </div>
                         {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
@@ -4237,17 +4249,25 @@ export default function AFLPage() {
                             Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                             </div>
                             <div className="text-gray-600 dark:text-gray-300">
-                              Edge:{' '}
+                              Market Prob (Under):{' '}
+                              <span className="font-bold text-gray-900 dark:text-white">
+                                {aflDisposalsModelProjection.marketPOver == null
+                                  ? '—'
+                                  : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
+                              </span>
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-300">
+                              Under Edge:{' '}
                             <span className={`font-bold ${
                                 aflDisposalsModelProjection.edgeVsMarket == null
                                   ? 'text-gray-900 dark:text-white'
-                                  : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                  : aflDisposalsModelProjection.edgeVsMarket <= 0
                                     ? 'text-green-500'
                                     : 'text-red-500'
                               }`}>
                                 {aflDisposalsModelProjection.edgeVsMarket == null
                                   ? '—'
-                                  : `${aflDisposalsModelProjection.edgeVsMarket >= 0 ? '+' : ''}${(aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                                  : `${aflDisposalsModelProjection.edgeVsMarket <= 0 ? '+' : ''}${(-aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
                               </span>
                             </div>
                           </div>
@@ -4500,15 +4520,6 @@ export default function AFLPage() {
                             }`}
                           >
                             DVP
-                            <span
-                              className={`absolute -top-1.5 -right-1.5 h-5 min-w-[72px] px-1.5 rounded-full border text-[9px] leading-4 font-bold flex items-center justify-center whitespace-nowrap ${
-                                isDark
-                                  ? 'bg-emerald-900 border-emerald-500/60 text-emerald-100'
-                                  : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                              }`}
-                            >
-                              90% accuracy
-                            </span>
                           </button>
                         )}
                         <button
@@ -4602,13 +4613,16 @@ export default function AFLPage() {
                     <button
                       type="button"
                       onClick={() => setPlayerVsContainerTab('prediction')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                      className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                         playerVsContainerTab === 'prediction'
                           ? 'bg-purple-600 text-white border-purple-600'
                           : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                       }`}
                     >
                       Prediction Model
+                      <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
+                        BETA
+                      </span>
                     </button>
                   </div>
                   {playerVsContainerTab === 'comparison' ? (
@@ -4691,8 +4705,24 @@ export default function AFLPage() {
                     </>
                   ) : (
                     <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <div className="mb-1.5">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                        <div className="text-[11px] text-gray-600 dark:text-gray-300">
+                          Best Side:{' '}
+                          <span className={`font-bold ${
+                            aflDisposalsModelProjection?.edgeVsMarket == null
+                              ? 'text-gray-900 dark:text-white'
+                              : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                ? 'text-green-500'
+                                : 'text-red-500'
+                          }`}>
+                            {aflDisposalsModelProjection?.edgeVsMarket == null
+                              ? '—'
+                              : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                ? 'Over'
+                                : 'Under'}
+                          </span>
+                        </div>
                       </div>
                       {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
@@ -4700,17 +4730,25 @@ export default function AFLPage() {
                             Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                           </div>
                           <div className="text-gray-600 dark:text-gray-300">
-                            Edge:{' '}
+                            Market Prob (Under):{' '}
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {aflDisposalsModelProjection.marketPOver == null
+                                ? '—'
+                                : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
+                            </span>
+                          </div>
+                          <div className="text-gray-600 dark:text-gray-300">
+                            Under Edge:{' '}
                               <span className={`font-bold ${
                               aflDisposalsModelProjection.edgeVsMarket == null
                                 ? 'text-gray-900 dark:text-white'
-                                : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                : aflDisposalsModelProjection.edgeVsMarket <= 0
                                   ? 'text-green-500'
                                   : 'text-red-500'
                             }`}>
                               {aflDisposalsModelProjection.edgeVsMarket == null
                                 ? '—'
-                                : `${aflDisposalsModelProjection.edgeVsMarket >= 0 ? '+' : ''}${(aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                                : `${aflDisposalsModelProjection.edgeVsMarket <= 0 ? '+' : ''}${(-aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
                             </span>
                           </div>
                         </div>
