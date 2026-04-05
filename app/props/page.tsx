@@ -7440,8 +7440,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 const isPopupOpen = openPopup === expandKey;
                                 
                                 return (
-                                  <div className="flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
-                                    <div className="flex flex-col gap-2 flex-1 sm:flex-row sm:flex-wrap">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex flex-col gap-2 min-w-0">
                                       {/* First 2 bookmakers */}
                                       {firstTwoBookmakers.map((bookmaker, idx) => {
                                         const bookmakerKey = bookmaker.bookmaker?.toLowerCase() || '';
@@ -7449,7 +7449,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         return (
                                           <div
                                             key={idx}
-                                            className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border flex-shrink-0 ${
+                                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border flex-shrink-0 ${
                                               mounted && isDark ? 'bg-[#081427] border-[#22324d]' : 'bg-gray-100 border-gray-300'
                                             }`}
                                             onClick={(e) => {
@@ -7461,18 +7461,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                 src={bookmakerInfo.logoUrl}
                                                 alt={bookmakerInfo.name}
                                                 className="object-contain rounded flex-shrink-0"
-                                                style={{ width: '20px', height: '20px' }}
+                                                style={{ width: '22px', height: '22px' }}
                                                 onError={(e) => {
                                                   (e.target as HTMLImageElement).style.display = 'none';
                                                 }}
                                               />
                                             )}
                                             <div className="flex items-center gap-1.5 min-w-0 whitespace-nowrap">
-                                              <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '11px' }}>
+                                              <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '12px' }}>
                                                 O {formatOddsValue(bookmaker.overOdds)}
                                               </span>
                                               <span className={mounted && isDark ? 'text-gray-500' : 'text-gray-400'} style={{ fontSize: '11px' }}>|</span>
-                                              <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '11px' }}>
+                                              <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '12px' }}>
                                                 U {formatOddsValue(bookmaker.underOdds)}
                                               </span>
                                             </div>
@@ -7488,10 +7488,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               e.stopPropagation();
                                               setOpenPopup(openPopup === expandKey ? null : expandKey);
                                             }}
-                                            className={`flex items-center justify-center px-1 py-1.5 rounded-xl border flex-shrink-0 relative ${
+                                            className={`flex items-center justify-center px-2 py-1.5 rounded-lg border flex-shrink-0 relative ${
                                               mounted && isDark ? 'bg-[#081427] border-[#22324d] hover:bg-[#10233a]' : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                                             }`}
-                                            style={{ minWidth: '40px' }}
+                                            style={{ minWidth: '36px' }}
                                           >
                                             <span className={`text-xs font-bold ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>
                                               +{remainingCount}
@@ -7587,7 +7587,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       )}
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
-                                    <div className="flex items-center justify-start sm:justify-center flex-shrink-0 pr-1">
+                                    <div className="flex items-start justify-center flex-shrink-0 pr-1 pt-0.5">
                                       <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
                                     </div>
                                   </div>
