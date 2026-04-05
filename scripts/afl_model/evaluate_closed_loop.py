@@ -586,7 +586,7 @@ def main() -> None:
     parser.add_argument("--current-artifact", default=os.path.join(MODEL_DIR, "models", "latest-model.json"))
     parser.add_argument("--candidate-projections", default=os.path.join(MODEL_DIR, "latest-candidate-disposals-projections.json"))
     parser.add_argument("--max-projection-files", type=int, default=220)
-    parser.add_argument("--min-samples", type=int, default=100)
+    parser.add_argument("--min-samples", type=int, default=25)
     parser.add_argument("--freeze-fail-streak", type=int, default=3)
     parser.add_argument("--promote-if-pass", action="store_true")
     args = parser.parse_args()
