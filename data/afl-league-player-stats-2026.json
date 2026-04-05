@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-05T08:37:49.680Z",
+  "generatedAt": "2026-04-05T10:28:33.978Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 504,
@@ -420,7 +420,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 7,
       "uncontested_possessions": 19.75,
-      "meters_gained": 415.25,
+      "meters_gained": 408.75,
       "free_kicks_for": 0
     },
     {
@@ -629,7 +629,7 @@
       "rebound_50s": 2.25,
       "contested_possessions": 9,
       "uncontested_possessions": 16.5,
-      "meters_gained": 491.5,
+      "meters_gained": 490,
       "free_kicks_for": 1.25
     },
     {
@@ -2775,8 +2775,8 @@
       "inside_50s": 3,
       "rebound_50s": 3,
       "contested_possessions": 2.5,
-      "uncontested_possessions": 16.25,
-      "meters_gained": 297.25,
+      "uncontested_possessions": 16,
+      "meters_gained": 303,
       "free_kicks_for": 0.75
     },
     {
@@ -5117,25 +5117,6 @@
       "free_kicks_for": 0.25
     },
     {
-      "name": "Harry Sharp",
-      "team": "Melbourne",
-      "games": 4,
-      "number": 69,
-      "disposals": 13.75,
-      "kicks": 8,
-      "handballs": 5.75,
-      "marks": 2.75,
-      "goals": 1.25,
-      "tackles": 3.5,
-      "clearances": 1.75,
-      "inside_50s": 4,
-      "rebound_50s": 0.25,
-      "contested_possessions": 4.75,
-      "uncontested_possessions": 9,
-      "meters_gained": 297.75,
-      "free_kicks_for": 1
-    },
-    {
       "name": "Jack Lukosius",
       "team": "Port Adelaide",
       "games": 3,
@@ -5172,6 +5153,25 @@
       "uncontested_possessions": 10,
       "meters_gained": 179,
       "free_kicks_for": 0.25
+    },
+    {
+      "name": "Harry Sharp",
+      "team": "Melbourne",
+      "games": 4,
+      "number": 69,
+      "disposals": 13.5,
+      "kicks": 8,
+      "handballs": 5.5,
+      "marks": 2.75,
+      "goals": 1.25,
+      "tackles": 3.5,
+      "clearances": 1.75,
+      "inside_50s": 4,
+      "rebound_50s": 0.25,
+      "contested_possessions": 4.75,
+      "uncontested_possessions": 8.75,
+      "meters_gained": 296.75,
+      "free_kicks_for": 1
     },
     {
       "name": "Patrick Voss",
@@ -5323,7 +5323,7 @@
       "contested_possessions": 5.25,
       "uncontested_possessions": 8,
       "meters_gained": 160.25,
-      "free_kicks_for": 0
+      "free_kicks_for": 0.25
     },
     {
       "name": "Harry McKay",
@@ -5485,15 +5485,15 @@
       "disposals": 13,
       "kicks": 7.5,
       "handballs": 5.5,
-      "marks": 2,
+      "marks": 2.25,
       "goals": 0.5,
       "tackles": 0.5,
       "clearances": 0.5,
       "inside_50s": 2.5,
       "rebound_50s": 1,
       "contested_possessions": 3.75,
-      "uncontested_possessions": 9.5,
-      "meters_gained": 262.25,
+      "uncontested_possessions": 9.75,
+      "meters_gained": 267.25,
       "free_kicks_for": 1
     },
     {
@@ -6238,6 +6238,25 @@
       "free_kicks_for": 1
     },
     {
+      "name": "Bailey Laurie",
+      "team": "Melbourne",
+      "games": 1,
+      "number": null,
+      "disposals": 12,
+      "kicks": 7,
+      "handballs": 5,
+      "marks": 0,
+      "goals": 0,
+      "tackles": 2,
+      "clearances": 2,
+      "inside_50s": 3,
+      "rebound_50s": 1,
+      "contested_possessions": 4,
+      "uncontested_possessions": 8,
+      "meters_gained": 296,
+      "free_kicks_for": 0
+    },
+    {
       "name": "Rhyan Mansell",
       "team": "Richmond",
       "games": 1,
@@ -6882,25 +6901,6 @@
       "uncontested_possessions": 6,
       "meters_gained": 194,
       "free_kicks_for": 2
-    },
-    {
-      "name": "Bailey Laurie",
-      "team": "Melbourne",
-      "games": 1,
-      "number": null,
-      "disposals": 11,
-      "kicks": 7,
-      "handballs": 4,
-      "marks": 0,
-      "goals": 0,
-      "tackles": 2,
-      "clearances": 2,
-      "inside_50s": 3,
-      "rebound_50s": 1,
-      "contested_possessions": 4,
-      "uncontested_possessions": 7,
-      "meters_gained": 292,
-      "free_kicks_for": 0
     },
     {
       "name": "Jake Melksham",
