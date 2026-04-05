@@ -561,11 +561,81 @@ def upsert_line_history(existing_rows: List[dict], lowest_rows: List[dict]) -> L
     return merged
 
 
+def _settle_fetch_logs(
+    base_url: str,
+    seasons: List[int],
+    player: str,
+    team_candidates: List[str],
+    force_fetch: bool = False,
+) -> List[dict]:
+    games: List[dict] = []
+    seen_team: set[str] = set()
+    for team in team_candidates:
+        team_name = str(team or "").strip()
+        if not team_name:
+            continue
+        team_key = normalize_team(team_name)
+        if team_key in seen_team:
+            continue
+        seen_team.add(team_key)
+        for season in seasons:
+            try:
+                games.extend(
+                    fetch_player_logs(
+                        base_url,
+                        season,
+                        player,
+                        team_name,
+                        use_disk_cache=True,
+                        cache_ttl_minutes=720,
+                        force_fetch=force_fetch,
+                    )
+                )
+            except Exception:
+                pass
+    return games
+
+
+def _resolve_settled_game_match(row: dict, games: List[dict]) -> Optional[dict]:
+    game_date = parse_date(str(row.get("gameDate") or ""))
+    if game_date is None:
+        return None
+    target_opp = canonical_team_key(str(row.get("opponentTeam") or ""))
+    best: Optional[dict] = None
+    best_rank: Optional[tuple] = None
+    for g in games:
+        if not isinstance(g, dict):
+            continue
+        g_date = parse_date(str(g.get("date") or g.get("game_date") or ""))
+        if g_date is None:
+            continue
+        day_delta = abs((g_date - game_date).days)
+        if day_delta > 1:
+            continue
+        g_opp = canonical_team_key(str(g.get("opponent") or ""))
+        opp_match = bool(target_opp and g_opp and g_opp == target_opp)
+        # Prefer exact opponent + exact date, then close-by date fallback.
+        rank = (0 if opp_match else 1, day_delta)
+        if best_rank is None or rank < best_rank:
+            best = g
+            best_rank = rank
+    return best
+
+
 def enrich_line_history_actuals(rows: List[dict], base_url: str) -> List[dict]:
     if not rows:
         return rows
     logs_cache: Dict[str, List[dict]] = {}
     today = parse_date(now_iso()[:10])
+    completed_game_keys = {
+        (
+            str(r.get("gameDate") or ""),
+            str(r.get("homeTeam") or ""),
+            str(r.get("awayTeam") or ""),
+        )
+        for r in rows
+        if r.get("actualDisposals") is not None
+    }
     for row in rows:
         if row.get("actualDisposals") is not None:
             continue
@@ -573,42 +643,62 @@ def enrich_line_history_actuals(rows: List[dict], base_url: str) -> List[dict]:
         if game_date is None or (today is not None and game_date > today):
             continue
         player = str(row.get("playerName") or "").strip()
-        player_team = str(row.get("playerTeam") or "").strip()
-        if not player or not player_team:
+        if not player:
             continue
-        cache_key = f"{normalize_name(player)}|{normalize_team(player_team)}"
+        team_candidates = [
+            str(row.get("playerTeam") or "").strip(),
+            str(row.get("homeTeam") or "").strip(),
+            str(row.get("awayTeam") or "").strip(),
+        ]
+        seasons = []
+        if game_date is not None:
+            seasons.append(game_date.year)
+            seasons.append(game_date.year - 1)
+        seasons.extend([date.today().year, date.today().year - 1])
+        seen = set()
+        deduped_seasons = []
+        for season in seasons:
+            if season in seen:
+                continue
+            seen.add(season)
+            deduped_seasons.append(season)
+        cache_key = normalize_name(player)
         games = logs_cache.get(cache_key)
         if games is None:
-            seasons = []
-            if game_date is not None:
-                seasons.append(game_date.year)
-                seasons.append(game_date.year - 1)
-            seasons.extend([date.today().year, date.today().year - 1])
-            seen = set()
-            games = []
-            for season in seasons:
-                if season in seen:
-                    continue
-                seen.add(season)
-                try:
-                    games.extend(fetch_player_logs(base_url, season, player, player_team))
-                except Exception:
-                    pass
+            games = _settle_fetch_logs(base_url, deduped_seasons, player, team_candidates, force_fetch=False)
             logs_cache[cache_key] = games
 
-        target_opp = normalize_team(str(row.get("opponentTeam") or ""))
-        matched = None
-        for g in games:
-            g_date = parse_date(str(g.get("date") or g.get("game_date") or ""))
-            if g_date != game_date:
-                continue
-            if target_opp:
-                g_opp = normalize_team(str(g.get("opponent") or ""))
-                if g_opp and g_opp != target_opp:
-                    continue
-            matched = g
-            break
+        matched = _resolve_settled_game_match(row, games)
+        if matched is None and games:
+            # If cached logs exist but did not match, one fresh pull can resolve stale rows after completed games.
+            refreshed = _settle_fetch_logs(base_url, deduped_seasons, player, team_candidates, force_fetch=True)
+            if refreshed:
+                logs_cache[cache_key] = refreshed
+                games = refreshed
+                matched = _resolve_settled_game_match(row, games)
         if matched is None:
+            game_key = (
+                str(row.get("gameDate") or ""),
+                str(row.get("homeTeam") or ""),
+                str(row.get("awayTeam") or ""),
+            )
+            # If this game is already clearly completed (other rows settled) and we still
+            # cannot match this player log, treat as void so it does not stay pending forever.
+            if game_key in completed_game_keys:
+                line = to_float(row.get("line"))
+                if line is not None:
+                    model_expected = to_float(row.get("modelExpectedDisposals"))
+                    row["actualDisposals"] = round(float(line), 2)
+                    row["actualTog"] = None
+                    row["differenceLine"] = 0.0
+                    row["differenceModel"] = (
+                        round(float(line) - float(model_expected), 2) if model_expected is not None else None
+                    )
+                    row["resultColor"] = "gray"
+                    row["isVoid"] = True
+                    row["voidReason"] = "no_player_log_after_game_complete"
+                    row["settledAt"] = now_iso()
+                    completed_game_keys.add(game_key)
             continue
         actual_disp = to_float(matched.get("disposals"))
         if actual_disp is None:
@@ -621,6 +711,15 @@ def enrich_line_history_actuals(rows: List[dict], base_url: str) -> List[dict]:
         row["differenceLine"] = round(float(actual_disp) - line, 2)
         row["differenceModel"] = round(float(actual_disp) - float(model_expected), 2) if model_expected is not None else None
         row["resultColor"] = "green" if float(actual_disp) >= line else "red"
+        row["isVoid"] = False
+        row["voidReason"] = None
+        row["settledAt"] = now_iso()
+        game_key = (
+            str(row.get("gameDate") or ""),
+            str(row.get("homeTeam") or ""),
+            str(row.get("awayTeam") or ""),
+        )
+        completed_game_keys.add(game_key)
     return rows
 
 

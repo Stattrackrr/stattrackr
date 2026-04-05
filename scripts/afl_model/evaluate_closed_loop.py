@@ -167,6 +167,8 @@ def load_settled_samples(max_projection_files: int) -> List[dict]:
     for row in history_rows:
         if not isinstance(row, dict):
             continue
+        if row.get("isVoid") is True:
+            continue
         key = str(row.get("snapshotKey") or "").strip()
         try:
             actual = float(row.get("actualDisposals"))

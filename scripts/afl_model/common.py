@@ -500,9 +500,10 @@ def fetch_player_logs(
     include_quarters: bool = False,
     use_disk_cache: bool = True,
     cache_ttl_minutes: int = 720,
+    force_fetch: bool = False,
 ) -> List[dict]:
     cache_path = ""
-    if use_disk_cache:
+    if use_disk_cache and not force_fetch:
         key_name = normalize_name(player_name).replace(" ", "_")
         key_team = normalize_team(team)
         cache_dir = os.path.join(MODEL_DIR, "cache", "player-logs")
@@ -528,6 +529,7 @@ def fetch_player_logs(
         "team": team,
         "strict_season": "true",
         "include_quarters": "true" if include_quarters else "false",
+        "force_fetch": "1" if force_fetch else "0",
     }
     url = f"{base_url.rstrip('/')}/api/afl/player-game-logs?{urllib.parse.urlencode(params)}"
     payload = get_json(url)
