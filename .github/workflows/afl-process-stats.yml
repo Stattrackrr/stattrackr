@@ -35,10 +35,12 @@ jobs:
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -118,7 +120,16 @@ jobs:
             echo "No changes to AFL data files"
           else
             git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
-            git push
+            pushed=0
+            for i in 1 2 3; do
+              git pull --rebase origin master && git push origin master && pushed=1 && break
+              echo "Push attempt $i failed, retrying..."
+              sleep 5
+            done
+            if [ "$pushed" -ne 1 ]; then
+              echo "Failed to push after retries"
+              exit 1
+            fi
           fi
 
       - name: Check PROD_URL and CRON_SECRET
