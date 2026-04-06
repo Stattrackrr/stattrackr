@@ -735,7 +735,97 @@ def _projection_game_key(row: dict) -> str:
     )
 
 
-def assign_top3_game_ranks(rows: List[dict]) -> None:
+def _to_recommended_side(row: dict) -> str:
+    side = str(row.get("recommendedSide") or "").strip().upper()
+    if side in {"OVER", "UNDER"}:
+        return side
+    return ""
+
+
+def _pick_unique_players_sorted(candidates: List[dict], limit: int) -> List[dict]:
+    seen_players: set[str] = set()
+    picked: List[dict] = []
+    for row in candidates:
+        player_key = normalize_name(str(row.get("playerName") or ""))
+        if not player_key or player_key in seen_players:
+            continue
+        seen_players.add(player_key)
+        picked.append(row)
+        if len(picked) >= limit:
+            break
+    return picked
+
+
+def _apply_side_balance_to_ranked_candidates(
+    candidates: List[dict], selected: List[dict], max_same_side: int, opposite_edge_tolerance: float
+) -> List[dict]:
+    # Keep deterministic ordering while reducing over-concentration to one side for user-facing top picks.
+    if len(selected) < 3 or max_same_side < 1:
+        return selected
+
+    side_counts: Dict[str, int] = {"OVER": 0, "UNDER": 0}
+    for row in selected:
+        side = _to_recommended_side(row)
+        if side:
+            side_counts[side] += 1
+
+    dominant_side = ""
+    if side_counts["OVER"] > max_same_side:
+        dominant_side = "OVER"
+    elif side_counts["UNDER"] > max_same_side:
+        dominant_side = "UNDER"
+    if not dominant_side:
+        return selected
+
+    opposite_side = "UNDER" if dominant_side == "OVER" else "OVER"
+    selected_keys = {str(r.get("projectionKey") or "") for r in selected}
+
+    dominant_indexes = [idx for idx, row in enumerate(selected) if _to_recommended_side(row) == dominant_side]
+    if not dominant_indexes:
+        return selected
+    weakest_dom_idx = dominant_indexes[-1]
+    weakest_dom_row = selected[weakest_dom_idx]
+    weakest_dom_edge = to_float(weakest_dom_row.get("recommendedEdge"))
+    if weakest_dom_edge is None:
+        return selected
+
+    best_opposite_candidate = None
+    for row in candidates:
+        row_key = str(row.get("projectionKey") or "")
+        if row_key in selected_keys:
+            continue
+        if _to_recommended_side(row) != opposite_side:
+            continue
+        best_opposite_candidate = row
+        break
+
+    if best_opposite_candidate is None:
+        return selected
+
+    opp_edge = to_float(best_opposite_candidate.get("recommendedEdge"))
+    if opp_edge is None:
+        return selected
+    if opp_edge + float(opposite_edge_tolerance) < weakest_dom_edge:
+        return selected
+
+    replaced_keys = set(selected_keys)
+    replaced_keys.discard(str(weakest_dom_row.get("projectionKey") or ""))
+    replaced_keys.add(str(best_opposite_candidate.get("projectionKey") or ""))
+
+    # Preserve deterministic ranking order using original candidate order.
+    out: List[dict] = []
+    for row in candidates:
+        row_key = str(row.get("projectionKey") or "")
+        if row_key in replaced_keys:
+            out.append(row)
+        if len(out) >= 3:
+            break
+    return out
+
+
+def assign_top3_game_ranks(
+    rows: List[dict], max_same_side: int = 2, opposite_edge_tolerance: float = 0.02
+) -> None:
     by_game: Dict[str, List[dict]] = {}
     for row in rows:
         game_key = _projection_game_key(row)
@@ -766,24 +856,25 @@ def assign_top3_game_ranks(rows: List[dict]) -> None:
         )
 
         # One player max per game for user-facing top picks.
+        selected = _pick_unique_players_sorted(candidates, limit=3)
+        selected = _apply_side_balance_to_ranked_candidates(
+            candidates,
+            selected,
+            max_same_side=max_same_side,
+            opposite_edge_tolerance=opposite_edge_tolerance,
+        )
         rank_by_player: Dict[str, int] = {}
-        ranked_player_keys: List[str] = []
-        for row in candidates:
+        for idx, row in enumerate(selected, start=1):
             player_key = normalize_name(str(row.get("playerName") or ""))
-            if not player_key or player_key in rank_by_player:
-                continue
-            rank = len(ranked_player_keys) + 1
-            rank_by_player[player_key] = rank
-            ranked_player_keys.append(player_key)
-            if len(ranked_player_keys) >= 3:
-                break
+            if player_key and player_key not in rank_by_player:
+                rank_by_player[player_key] = idx
 
         for row in game_rows:
             player_key = normalize_name(str(row.get("playerName") or ""))
             rank = rank_by_player.get(player_key)
             row["recommendedPlayerRankInGame"] = rank if rank is not None else None
             row["isTop3PickInGame"] = bool(rank is not None and rank <= 3)
-            row["top3RankingVersion"] = "edge_prob_player_deterministic_v1"
+            row["top3RankingVersion"] = "edge_prob_player_deterministic_side_balance_v2"
 
 
 def main() -> None:
@@ -797,6 +888,10 @@ def main() -> None:
     parser.add_argument("--min-edge", type=float, default=0.045)
     parser.add_argument("--min-confidence", type=float, default=0.57)
     parser.add_argument("--max-abs-weather-adjustment", type=float, default=2.2)
+    parser.add_argument("--prob-market-blend-weight", type=float, default=0.18)
+    parser.add_argument("--prob-market-blend-max-shift", type=float, default=0.09)
+    parser.add_argument("--top3-max-same-side", type=int, default=2)
+    parser.add_argument("--top3-opposite-edge-tolerance", type=float, default=0.02)
     args = parser.parse_args()
 
     artifact_path = args.artifact.strip() or latest_artifact_path()
@@ -950,6 +1045,8 @@ def main() -> None:
         p_over_raw = 1.0 - normal_cdf(z)
         p_over = apply_calibration(p_over_raw, calibration)
         p_under = 1.0 - p_over
+        p_over_calibrated = p_over
+        p_under_calibrated = p_under
 
         market_over, market_under = novig_probs(str(r.get("overOdds") or ""), str(r.get("underOdds") or ""))
         market_expected = market_implied_expected(line, sigma, market_over)
@@ -964,6 +1061,18 @@ def main() -> None:
             z = (line - expected) / sigma if sigma > 0 else 0.0
             p_over_raw = 1.0 - normal_cdf(z)
             p_over = apply_calibration(p_over_raw, calibration)
+            p_under = 1.0 - p_over
+            p_over_calibrated = p_over
+            p_under_calibrated = p_under
+
+        # Phase 2: blend calibrated model probability toward market to reduce one-sided slates.
+        prob_market_blend_weight = float(args.prob_market_blend_weight) if market_over is not None else 0.0
+        prob_market_blend_max_shift = max(0.0, float(args.prob_market_blend_max_shift))
+        prob_market_blend_shift = 0.0
+        if market_over is not None and prob_market_blend_weight > 0.0:
+            raw_prob_shift = prob_market_blend_weight * (float(market_over) - float(p_over))
+            prob_market_blend_shift = max(-prob_market_blend_max_shift, min(prob_market_blend_max_shift, raw_prob_shift))
+            p_over = max(0.02, min(0.98, float(p_over) + prob_market_blend_shift))
             p_under = 1.0 - p_over
 
         edge_over = (p_over - market_over) if market_over is not None else None
@@ -1025,10 +1134,14 @@ def main() -> None:
                 "sigma": round(sigma, 2),
                 "pOverRaw": round(p_over_raw, 4),
                 "pUnderRaw": round(1.0 - p_over_raw, 4),
+                "pOverCalibrated": round(p_over_calibrated, 4),
+                "pUnderCalibrated": round(p_under_calibrated, 4),
                 "pOver": round(p_over, 4),
                 "pUnder": round(p_under, 4),
                 "marketPOver": round(market_over, 4) if market_over is not None else None,
                 "marketPUnder": round(market_under, 4) if market_under is not None else None,
+                "probMarketBlendWeight": round(prob_market_blend_weight, 3),
+                "probMarketBlendShift": round(prob_market_blend_shift, 4),
                 "edgeVsMarket": round(edge_over, 4) if edge_over is not None else None,
                 "edgeVsMarketUnder": round(edge_under, 4) if edge_under is not None else None,
                 "recommendedSide": best_side,
@@ -1040,6 +1153,12 @@ def main() -> None:
                     "minEdge": float(args.min_edge),
                     "minConfidence": float(args.min_confidence),
                     "maxAbsWeatherAdjustment": float(args.max_abs_weather_adjustment),
+                    "probMarketBlendWeight": float(args.prob_market_blend_weight),
+                    "probMarketBlendMaxShift": float(args.prob_market_blend_max_shift),
+                },
+                "top3Policy": {
+                    "maxSameSide": int(args.top3_max_same_side),
+                    "oppositeEdgeTolerance": float(args.top3_opposite_edge_tolerance),
                 },
                 "calibrationMethod": calibration.get("method", "identity"),
                 "weatherContext": wx_weather if isinstance(wx_weather, dict) else None,
@@ -1048,7 +1167,11 @@ def main() -> None:
         )
 
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
-    assign_top3_game_ranks(out_rows)
+    assign_top3_game_ranks(
+        out_rows,
+        max_same_side=max(1, int(args.top3_max_same_side)),
+        opposite_edge_tolerance=max(0.0, float(args.top3_opposite_edge_tolerance)),
+    )
     lowest_rows = select_lowest_line_rows(out_rows)
     existing_history = read_line_history()
     merged_history = upsert_line_history(existing_history, lowest_rows)
