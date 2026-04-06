@@ -62,6 +62,8 @@ jobs:
           python scripts/afl_model/train_disposals_model.py --candidate-only
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-candidate-model.json" --latest-output-path "data/afl-model/latest-candidate-disposals-projections.json"
           python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
+          # Always refresh live projections consumed by dashboard/top picks, even when candidate promotion is blocked.
+          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json"
 
       - name: Commit and push model outputs if changed
         run: |
