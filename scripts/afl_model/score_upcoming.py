@@ -17,7 +17,7 @@ import os
 import pickle
 import urllib.parse
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from common import (
     DATA_DIR,
@@ -35,6 +35,7 @@ from common import (
     parse_date,
     primary_home_venue_key,
     read_dfs_usage_by_player,
+    read_dfs_role_map_by_player,
     read_dvp_disposals_by_opponent_position,
     read_oa_team_stats_by_team,
     read_ta_team_stats_by_team,
@@ -304,6 +305,178 @@ def infer_role_bucket_from_games(games: List[dict]) -> str:
     if mi50 >= 0.8:
         return "FWD"
     return "MID"
+
+
+def role_feature_flags(role_bucket: str) -> Dict[str, float]:
+    role = str(role_bucket or "").strip().upper()
+    return {
+        "role_is_def": 1.0 if role == "DEF" else 0.0,
+        "role_is_mid": 1.0 if role == "MID" else 0.0,
+        "role_is_fwd": 1.0 if role == "FWD" else 0.0,
+        "role_is_ruc": 1.0 if role == "RUC" else 0.0,
+    }
+
+
+def dfs_role_group_key(role_group: str) -> str:
+    g = str(role_group or "").strip().lower()
+    if "key forward" in g:
+        return "key_fwd"
+    if "small/medium forward" in g or "general forward" in g:
+        return "gen_fwd"
+    if "inside midfielder" in g:
+        return "ins_mid"
+    if g == "ruck" or "ruck" in g:
+        return "ruck"
+    if "wing/attacking defender" in g or "wing defender" in g:
+        return "wng_def"
+    if "general defender" in g:
+        return "gen_def"
+    if "designated kicker" in g:
+        return "des_kck"
+    return "unclassified"
+
+
+def dfs_role_group_flags(role_group: str) -> Dict[str, float]:
+    key = dfs_role_group_key(role_group)
+    flags = {
+        "dfs_role_key_fwd": 0.0,
+        "dfs_role_gen_fwd": 0.0,
+        "dfs_role_ins_mid": 0.0,
+        "dfs_role_ruck": 0.0,
+        "dfs_role_wng_def": 0.0,
+        "dfs_role_gen_def": 0.0,
+        "dfs_role_des_kck": 0.0,
+        "dfs_role_unclassified": 0.0,
+    }
+    map_key_to_col = {
+        "key_fwd": "dfs_role_key_fwd",
+        "gen_fwd": "dfs_role_gen_fwd",
+        "ins_mid": "dfs_role_ins_mid",
+        "ruck": "dfs_role_ruck",
+        "wng_def": "dfs_role_wng_def",
+        "gen_def": "dfs_role_gen_def",
+        "des_kck": "dfs_role_des_kck",
+        "unclassified": "dfs_role_unclassified",
+    }
+    flags[map_key_to_col[key]] = 1.0
+    return flags
+
+
+def _matchup_key(team_a: str, team_b: str) -> str:
+    a = canonical_team_key(team_a)
+    b = canonical_team_key(team_b)
+    if not a or not b:
+        return ""
+    x, y = sorted([a, b])
+    return f"{x}|{y}"
+
+
+def _position_label_to_role_bucket(label: str, idx: int = -1) -> Optional[str]:
+    p = str(label or "").strip().upper()
+    if p in {"FB", "HB", "B"}:
+        return "DEF"
+    if p in {"C", "W", "MID"}:
+        return "MID"
+    if p in {"HF", "FF", "FWD"}:
+        return "FWD"
+    if p in {"FOL", "FOLL", "FOLLOWERS"}:
+        # FootyWire "Fol" row is usually [ruck-rover, ruck, rover].
+        if idx == 1:
+            return "RUC"
+        return "MID"
+    return None
+
+
+def _entry_player_name(entry: Any) -> str:
+    if isinstance(entry, dict):
+        return str(entry.get("name") or "").strip()
+    return str(entry or "").strip()
+
+
+def _build_footywire_match_role_lookup(payload: dict) -> Dict[str, Dict[str, Dict[str, str]]]:
+    """
+    Returns:
+      {
+        "<teamA|teamB>": {
+          "<team_key>": {
+            "<normalized_player_name>": "<role_bucket DEF|MID|FWD|RUC>"
+          }
+        }
+      }
+    """
+    matches = payload.get("matches")
+    if not isinstance(matches, list):
+        return {}
+
+    out: Dict[str, Dict[str, Dict[str, str]]] = {}
+    for match in matches:
+        if not isinstance(match, dict):
+            continue
+        home_team = str(match.get("home_team") or "").strip()
+        away_team = str(match.get("away_team") or "").strip()
+        home_key = canonical_team_key(home_team)
+        away_key = canonical_team_key(away_team)
+        mu_key = _matchup_key(home_team, away_team)
+        if not home_key or not away_key or not mu_key:
+            continue
+
+        team_map = out.setdefault(mu_key, {home_key: {}, away_key: {}})
+        positions = match.get("positions")
+        if not isinstance(positions, list):
+            continue
+
+        for row in positions:
+            if not isinstance(row, dict):
+                continue
+            pos_label = str(row.get("position") or "").strip()
+            home_players = row.get("home_players")
+            away_players = row.get("away_players")
+            if isinstance(home_players, list):
+                for idx, entry in enumerate(home_players):
+                    name = _entry_player_name(entry)
+                    if not name:
+                        continue
+                    role_bucket = _position_label_to_role_bucket(pos_label, idx=idx)
+                    if role_bucket:
+                        team_map[home_key][normalize_name(name)] = role_bucket
+            if isinstance(away_players, list):
+                for idx, entry in enumerate(away_players):
+                    name = _entry_player_name(entry)
+                    if not name:
+                        continue
+                    role_bucket = _position_label_to_role_bucket(pos_label, idx=idx)
+                    if role_bucket:
+                        team_map[away_key][normalize_name(name)] = role_bucket
+
+        # Interchange fallback: assign MID only when player has no role yet.
+        interchange = match.get("interchange")
+        if isinstance(interchange, dict):
+            inter_home = interchange.get("home")
+            inter_away = interchange.get("away")
+            if isinstance(inter_home, list):
+                for name in inter_home:
+                    nk = normalize_name(_entry_player_name(name))
+                    if nk and nk not in team_map[home_key]:
+                        team_map[home_key][nk] = "MID"
+            if isinstance(inter_away, list):
+                for name in inter_away:
+                    nk = normalize_name(_entry_player_name(name))
+                    if nk and nk not in team_map[away_key]:
+                        team_map[away_key][nk] = "MID"
+    return out
+
+
+def fetch_latest_footywire_roles(base_url: str) -> Dict[str, Dict[str, Dict[str, str]]]:
+    try:
+        url = f"{base_url.rstrip('/')}/api/afl/footywire-team-selections?refresh=1"
+        payload = get_json(url)
+        if isinstance(payload, dict) and str(payload.get("error") or "").strip():
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+        return _build_footywire_match_role_lookup(payload)
+    except Exception:
+        return {}
 
 
 def latest_artifact_path() -> str:
@@ -892,6 +1065,7 @@ def main() -> None:
     parser.add_argument("--prob-market-blend-max-shift", type=float, default=0.09)
     parser.add_argument("--top3-max-same-side", type=int, default=2)
     parser.add_argument("--top3-opposite-edge-tolerance", type=float, default=0.02)
+    parser.add_argument("--lineup-role-weight", type=float, default=0.7)
     args = parser.parse_args()
 
     artifact_path = args.artifact.strip() or latest_artifact_path()
@@ -913,6 +1087,8 @@ def main() -> None:
     dvp_by_opp_pos = read_dvp_disposals_by_opponent_position(args.season)
     if not dvp_by_opp_pos:
         dvp_by_opp_pos = read_dvp_disposals_by_opponent_position(args.season - 1)
+    footywire_roles_by_match = fetch_latest_footywire_roles(args.base_url)
+    dfs_role_map = read_dfs_role_map_by_player(args.season)
     dfs_usage_map = read_dfs_usage_by_player(args.season)
     weather_by_id, weather_by_match = load_weather_context()
     logs_cache: Dict[str, List[dict]] = {}
@@ -993,10 +1169,27 @@ def main() -> None:
 
         cache_key = f"{normalize_name(player)}|{normalize_team(player_team)}"
         games = logs_cache.get(cache_key) or []
-        role_bucket = infer_role_bucket_from_games(games)
+        recent_role_bucket = infer_role_bucket_from_games(games)
+        dfs_role_row = dfs_role_map.get(normalize_name(player), {}) or {}
+        dfs_role_bucket = str(dfs_role_row.get("role_bucket") or "").strip().upper()
+        dfs_role_group = str(dfs_role_row.get("role_group") or "").strip()
+        dfs_role_flags = dfs_role_group_flags(dfs_role_group)
+        matchup_roles = footywire_roles_by_match.get(_matchup_key(home, away), {})
+        lineup_role_bucket = matchup_roles.get(team_key, {}).get(normalize_name(player))
+        role_bucket = lineup_role_bucket or (dfs_role_bucket if dfs_role_bucket in {"DEF", "MID", "FWD", "RUC"} else recent_role_bucket)
         opp_role = dvp_by_opp_pos.get(opponent_key, {}).get(role_bucket, {})
         opp_role_disp_index = to_float(opp_role.get("index"))
         opp_role_disp_ppg = to_float(opp_role.get("ppg"))
+        role_lineup_weight = max(0.0, min(1.0, float(args.lineup_role_weight)))
+        if lineup_role_bucket:
+            recent_opp_role = dvp_by_opp_pos.get(opponent_key, {}).get(recent_role_bucket, {})
+            recent_idx = to_float(recent_opp_role.get("index"))
+            recent_ppg = to_float(recent_opp_role.get("ppg"))
+            if recent_idx is not None and opp_role_disp_index is not None:
+                opp_role_disp_index = (role_lineup_weight * opp_role_disp_index) + ((1.0 - role_lineup_weight) * recent_idx)
+            if recent_ppg is not None and opp_role_disp_ppg is not None:
+                opp_role_disp_ppg = (role_lineup_weight * opp_role_disp_ppg) + ((1.0 - role_lineup_weight) * recent_ppg)
+        role_flags = role_feature_flags(role_bucket)
 
         next_game_date = parse_date(str(r.get("commenceTime") or ""))
 
@@ -1026,6 +1219,20 @@ def main() -> None:
         feat["dfs_cba_pct"] = float(to_float(usage.get("cba_pct")) or 0.0)
         feat["dfs_kickins"] = float(to_float(usage.get("kickins")) or 0.0)
         feat["cba_momentum_proxy"] = (feat["dfs_cba_pct"] / 100.0) * float(feat.get("delta_cl_3v10") or 0.0)
+        feat["role_is_def"] = role_flags["role_is_def"]
+        feat["role_is_mid"] = role_flags["role_is_mid"]
+        feat["role_is_fwd"] = role_flags["role_is_fwd"]
+        feat["role_is_ruc"] = role_flags["role_is_ruc"]
+        feat["lineup_role_available"] = 1.0 if lineup_role_bucket else 0.0
+        feat["lineup_role_confidence"] = role_lineup_weight if lineup_role_bucket else 0.25
+        feat["dfs_role_key_fwd"] = dfs_role_flags["dfs_role_key_fwd"]
+        feat["dfs_role_gen_fwd"] = dfs_role_flags["dfs_role_gen_fwd"]
+        feat["dfs_role_ins_mid"] = dfs_role_flags["dfs_role_ins_mid"]
+        feat["dfs_role_ruck"] = dfs_role_flags["dfs_role_ruck"]
+        feat["dfs_role_wng_def"] = dfs_role_flags["dfs_role_wng_def"]
+        feat["dfs_role_gen_def"] = dfs_role_flags["dfs_role_gen_def"]
+        feat["dfs_role_des_kck"] = dfs_role_flags["dfs_role_des_kck"]
+        feat["dfs_role_unclassified"] = dfs_role_flags["dfs_role_unclassified"]
 
         raw_expected = model_predict(artifact, model_obj, feat)
         wx = None
@@ -1155,6 +1362,14 @@ def main() -> None:
                     "maxAbsWeatherAdjustment": float(args.max_abs_weather_adjustment),
                     "probMarketBlendWeight": float(args.prob_market_blend_weight),
                     "probMarketBlendMaxShift": float(args.prob_market_blend_max_shift),
+                },
+                "roleSignals": {
+                    "recentRoleBucket": recent_role_bucket,
+                    "dfsRoleBucket": dfs_role_bucket or None,
+                    "dfsRoleGroup": dfs_role_group or None,
+                    "lineupRoleBucket": lineup_role_bucket,
+                    "resolvedRoleBucket": role_bucket,
+                    "lineupRoleWeight": float(args.lineup_role_weight),
                 },
                 "top3Policy": {
                     "maxSameSide": int(args.top3_max_same_side),

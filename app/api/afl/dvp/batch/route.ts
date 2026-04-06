@@ -10,12 +10,14 @@ export const dynamic = 'force-dynamic';
 
 const DEFAULT_SEASON = 2026;
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
-const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v5';
+const VALID_DEPTH_ROLES = new Set(['key_fwd', 'gen_fwd', 'ins_mid', 'ruck', 'wng_def', 'gen_def', 'des_kck']);
+const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v9';
 const DVP_BATCH_CACHE_TTL_SECONDS = 60 * 30; // 30 min – so updated DvP (team totals) is reflected sooner
 
 type DvpRow = {
   opponent: string;
   position: string;
+  depthRole?: string;
   sampleSize: number;
   perPlayerGame: Record<string, number>;
   perTeamGame?: Record<string, number | null>;
@@ -54,7 +56,12 @@ function isValidOpponent(opponent: string): boolean {
   return true;
 }
 
-async function readDvpFile(season: number, skipPayloadCache = false): Promise<DvpFileShape> {
+async function readDvpFile(season: number, mode: 'basic' | 'depth', skipPayloadCache = false): Promise<DvpFileShape> {
+  if (mode === 'depth') {
+    const file = path.join(process.cwd(), 'data', `afl-dvp-depth-${season}.json`);
+    const raw = await fs.readFile(file, 'utf8');
+    return JSON.parse(raw) as DvpFileShape;
+  }
   if (!skipPayloadCache) {
     const cached = await getAflDvpPayloadFromCache(season);
     if (cached?.rows) return cached as DvpFileShape;
@@ -91,6 +98,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const season = parseIntSafe(searchParams.get('season'), DEFAULT_SEASON);
   const position = (searchParams.get('position') || '').trim().toUpperCase();
+  const mode = ((searchParams.get('mode') || 'basic').trim().toLowerCase() === 'depth' ? 'depth' : 'basic') as 'basic' | 'depth';
+  const depthRole = (searchParams.get('depthRole') || '').trim().toLowerCase();
+  const useDepthRuckForBasic = mode === 'basic' && position === 'RUC';
+  const effectiveMode: 'basic' | 'depth' = useDepthRuckForBasic ? 'depth' : mode;
+  const effectiveDepthRole = useDepthRuckForBasic ? 'ruck' : depthRole;
   const statsParam = (searchParams.get('stats') || '').trim();
 
   if (!VALID_POSITIONS.has(position)) {
@@ -99,10 +111,16 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
+  if (effectiveMode === 'depth' && !VALID_DEPTH_ROLES.has(effectiveDepthRole)) {
+    return NextResponse.json(
+      { success: false, error: `Unsupported depthRole '${effectiveDepthRole}'.` },
+      { status: 400 }
+    );
+  }
 
   const statsKey = (statsParam || '').trim() || 'all';
   const skipCache = searchParams.get('bust') === '1' || searchParams.get('nocache') === '1';
-  const cacheKey = `${DVP_BATCH_CACHE_PREFIX}:${season}:${position}:${statsKey}`;
+  const cacheKey = `${DVP_BATCH_CACHE_PREFIX}:${mode}:${season}:${position}:${effectiveDepthRole || 'none'}:${statsKey}`;
 
   try {
     if (!skipCache) {
@@ -122,9 +140,15 @@ export async function GET(req: NextRequest) {
     }
 
     const skipPayloadCache = skipCache || process.env.NODE_ENV === 'development';
-    const data = await readDvpFile(season, skipPayloadCache);
+    const data = await readDvpFile(season, effectiveMode, skipPayloadCache);
     const allRows = Array.isArray(data.rows) ? data.rows : [];
-    const rows = allRows.filter((r) => r.position === position && isValidOpponent(r.opponent));
+    const rows = allRows.filter((r) => {
+      if (!isValidOpponent(r.opponent)) return false;
+      if (effectiveMode === 'depth') {
+        return r.position === position && String(r.depthRole || '').trim().toLowerCase() === effectiveDepthRole;
+      }
+      return r.position === position && !r.depthRole;
+    });
     const oa = await readOaFile(season);
 
     if (rows.length === 0) {
@@ -178,11 +202,19 @@ export async function GET(req: NextRequest) {
           samples[r.opponent] = Number(r.sampleSize || 0);
         }
         let tv = Number(r.perTeamGame?.[stat] ?? NaN);
-        const disp = Number(r.perTeamGame?.disposals ?? NaN);
         const tg = Number(r.teamGames ?? 0);
         const ss = Number(r.sampleSize ?? 0);
+        if (effectiveMode === 'depth') {
+          // Depth should be per-game role total using observed DFS-mapped role coverage only.
+          const perPlayerVal = Number(r.perPlayerGame?.[stat] ?? NaN);
+          const observedPlayersPerGame = tg > 0 ? (ss / tg) : NaN;
+          tv = Number.isFinite(perPlayerVal)
+            ? Math.round((perPlayerVal * (Number.isFinite(observedPlayersPerGame) ? observedPlayersPerGame : 0)) * 100) / 100
+            : NaN;
+        }
+        const disp = Number(r.perTeamGame?.disposals ?? NaN);
         const pv = Number(r.perPlayerGame?.[stat] ?? NaN);
-        if (Number.isFinite(disp) && disp < MIN_DISPOSALS_TEAM && tg > 0) {
+        if (effectiveMode !== 'depth' && Number.isFinite(disp) && disp < MIN_DISPOSALS_TEAM && tg > 0) {
           if (r.totals && typeof r.totals[stat] === 'number') {
             tv = Math.round((r.totals[stat] / tg) * 100) / 100;
           } else if (Number.isFinite(pv) && ss > 0) {
@@ -219,7 +251,7 @@ export async function GET(req: NextRequest) {
 
       // Calibrate team totals to OA team-level totals so position sums align with Opponent Breakdown.
       const oaCode = STAT_TO_OA_CODE[stat];
-      if (oa && oaCode) {
+      if (effectiveMode !== 'depth' && oa && oaCode) {
         const sumByOpponent: Record<string, number> = {};
         for (const rAll of allRows) {
           if (!isValidOpponent(rAll.opponent)) continue;
@@ -268,7 +300,9 @@ export async function GET(req: NextRequest) {
       success: true as const,
       source: 'afl-dvp-file',
       season,
+      mode,
       position,
+      depthRole: effectiveMode === 'depth' ? effectiveDepthRole : null,
       generatedAt: data.generatedAt,
       opponents,
       metrics,
@@ -287,7 +321,9 @@ export async function GET(req: NextRequest) {
         success: false,
         error: missingFile ? `DVP file for season ${season} not found.` : 'Failed to read AFL DVP batch data.',
         details: message,
-        hint: `Run: npm run build:afl:dvp -- --season=${season}`,
+        hint: (effectiveMode === 'depth' || useDepthRuckForBasic)
+          ? `Run: npm run build:afl:dvp:depth -- --season=${season}`
+          : `Run: npm run build:afl:dvp -- --season=${season}`,
       },
       { status: missingFile ? 404 : 500 }
     );

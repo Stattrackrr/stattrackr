@@ -154,7 +154,20 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v3';
+function dfsRoleGroupToHeaderLabel(roleGroup: string | null | undefined): string | null {
+  const key = String(roleGroup || '').trim().toLowerCase();
+  if (!key) return null;
+  if (key === 'key forward') return 'KEY FWD';
+  if (key === 'small/medium forward') return 'GEN FWD';
+  if (key === 'inside midfielder') return 'INS MID';
+  if (key === 'ruck') return 'RUCK';
+  if (key === 'wing/attacking defender') return 'WNG DEF';
+  if (key === 'general defender') return 'GEN DEF';
+  if (key === 'designated kicker') return 'DES KCK';
+  return String(roleGroup).trim();
+}
+
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v4';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -370,22 +383,8 @@ function dedupeAflGames<T extends Record<string, unknown>>(games: T[]): T[] {
     const goalsPart = String(game.goals ?? '').trim();
     const marksPart = String(game.marks ?? '').trim();
     const identityKey = buildAflGameIdentityKey(game);
-    const crossSeasonCloneKey =
-      monthDayPart && opponentPart
-        ? [
-            monthDayPart,
-            roundPart,
-            opponentPart,
-            resultPart,
-            disposalsPart,
-            kicksPart,
-            handballsPart,
-            goalsPart,
-            marksPart,
-          ].join('|')
-        : '';
-    const dateKey = datePart ? [datePart, opponentPart].join('|') : '';
-    const roundOpponentKey = roundPart && opponentPart ? [roundPart, opponentPart].join('|') : '';
+    const dateKey = datePart ? [seasonPart, datePart, opponentPart].join('|') : '';
+    const roundOpponentKey = roundPart && opponentPart ? [seasonPart, roundPart, opponentPart].join('|') : '';
     const fallbackKey = [
       seasonPart,
       gameNumberPart,
@@ -393,10 +392,8 @@ function dedupeAflGames<T extends Record<string, unknown>>(games: T[]): T[] {
       opponentPart,
       datePart,
     ].join('|');
-    // Prefer season-agnostic date identity first so duplicate fallback payloads
-    // from different season endpoints collapse to one game row.
+    // Keep seasons isolated: never dedupe across seasons, only within same season.
     const key =
-      crossSeasonCloneKey ||
       dateKey ||
       roundOpponentKey ||
       (identityKey !== '||||' ? identityKey : '') ||
@@ -460,6 +457,7 @@ export default function AFLPage() {
   const [playersLoading, setPlayersLoading] = useState(false);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [lastStatsError, setLastStatsError] = useState<string | null>(null);
+  const [selectedPlayerDfsRole, setSelectedPlayerDfsRole] = useState<string | null>(null);
   const [aflRightTab, setAflRightTab] = useState<'breakdown' | 'dvp' | 'team_matchup'>('dvp');
   /** Tracks which right tabs have been opened so we keep their content mounted (no re-render on tab switch). */
   const [aflRightTabsVisited, setAflRightTabsVisited] = useState<Set<'breakdown' | 'dvp' | 'team_matchup'>>(() => new Set(['dvp']));
@@ -549,7 +547,7 @@ export default function AFLPage() {
   useEffect(() => {
     // Always clear open/active analysis UI when switching mode or changing player.
     setShowAdvancedFilters(false);
-    setAflRightTab('breakdown');
+    setAflRightTab(aflPropsMode === 'player' ? 'dvp' : 'breakdown');
     setAflChartTimeframe('last10');
     setAflGamePropsVsTeamFilter('All');
     setAflGameFilters((prev) => ({
@@ -1025,6 +1023,7 @@ export default function AFLPage() {
     };
     setSelectedPlayer(urlFallback);
     setAflPropsMode('player');
+    setAflRightTab('dvp');
     setLoadingPlayerFromUrl(false);
     // Team filter stays "All" until the user chooses; don't set from URL opponent so refresh shows full L10 not one opponent.
     const statParam = url.searchParams.get('stat')?.trim();
@@ -1064,6 +1063,7 @@ export default function AFLPage() {
     };
     setSelectedPlayer(urlFallback);
     setAflPropsMode('player');
+    setAflRightTab('dvp');
     setLoadingPlayerFromUrl(false);
     setSelectedPlayerGameLogs([]);
     setSelectedPlayerGameLogsWithQuarters([]);
@@ -1151,7 +1151,9 @@ export default function AFLPage() {
         const validTeams = new Set(['All', ...Object.values(ROSTER_TEAM_TO_INJURY_TEAM)]);
         if (validTeams.has(parsed.aflTeamFilter)) setAflTeamFilter(parsed.aflTeamFilter);
       }
-      if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'team_matchup') {
+      if (hasPlayerInUrl) {
+        setAflRightTab('dvp');
+      } else if (parsed.aflRightTab === 'dvp' || parsed.aflRightTab === 'breakdown' || parsed.aflRightTab === 'team_matchup') {
         setAflRightTab(parsed.aflRightTab);
       }
       const normalizedPersistedTf = normalizeAflTimeframe(parsed.aflChartTimeframe);
@@ -1199,6 +1201,7 @@ export default function AFLPage() {
       sessionStorage.removeItem('afl_player_from_props');
       setSelectedPlayer(record);
       setAflPropsMode('player');
+      setAflRightTab('dvp');
       setLoadingPlayerFromUrl(false);
       setSelectedPlayerGameLogs([]);
       setSelectedPlayerGameLogsWithQuarters([]);
@@ -2294,6 +2297,28 @@ export default function AFLPage() {
     return () => { cancelled = true; };
   }, [selectedPlayer?.name, selectedPlayer?.team, season]);
 
+  // Fetch DFS role label for top header context (e.g. MID - INS MID).
+  useEffect(() => {
+    const playerName = selectedPlayer?.name ? String(selectedPlayer.name).trim() : '';
+    if (aflPropsMode !== 'player' || !playerName) {
+      setSelectedPlayerDfsRole(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/afl/dfs-role?player=${encodeURIComponent(playerName)}`);
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        const label = dfsRoleGroupToHeaderLabel(typeof json?.roleGroup === 'string' ? json.roleGroup : null);
+        setSelectedPlayerDfsRole(label);
+      } catch {
+        if (!cancelled) setSelectedPlayerDfsRole(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedPlayer?.name, aflPropsMode]);
+
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {
     const playerName = selectedPlayer?.name;
@@ -3302,7 +3327,8 @@ export default function AFLPage() {
                             )}
                             {aflPropsMode === 'player' && selectedPlayer.position ? (
                               <div className="text-xs text-gray-600 dark:text-gray-400">
-                                Position: {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                                Position: {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
+                                {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
                               </div>
                             ) : null}
                             {aflPropsMode === 'player' && selectedPlayer.height ? (
@@ -3492,7 +3518,8 @@ export default function AFLPage() {
                               )}
                               {aflPropsMode === 'player' && selectedPlayer.position && (
                                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  {toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position)}
+                                  {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
+                                  {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
                                 </div>
                               )}
                               {aflPropsMode === 'player' && selectedPlayer.height && (

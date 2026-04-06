@@ -15,6 +15,15 @@ const DVP_METRICS = [
 ] as const;
 
 const AFL_POSITIONS = ['DEF', 'MID', 'FWD', 'RUC'] as const;
+const DEPTH_ROLE_OPTIONS = [
+  { key: 'key_fwd', label: 'KEY FWD', apiPosition: 'FWD' },
+  { key: 'gen_fwd', label: 'GEN FWD', apiPosition: 'FWD' },
+  { key: 'ins_mid', label: 'INS MID', apiPosition: 'MID' },
+  { key: 'ruck', label: 'RUCK', apiPosition: 'RUC' },
+  { key: 'wng_def', label: 'WNG DEF', apiPosition: 'DEF' },
+  { key: 'gen_def', label: 'GEN DEF', apiPosition: 'DEF' },
+  { key: 'des_kck', label: 'DES KCK', apiPosition: 'DEF' },
+] as const;
 const SEASON_OPTIONS = [2026, 2025] as const;
 const DVP_CACHE_TTL = 2 * 60 * 1000;
 const DVP_CLIENT_CACHE_VERSION = 'v2';
@@ -142,14 +151,47 @@ export default function AflDvpCard({
   /** Player's position from page (DEF/MID/FWD/RUC). When set, DvP uses this instead of defaulting to MID. */
   playerPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
 }) {
+  type PositionKey = (typeof AFL_POSITIONS)[number];
+  type DepthRoleKey = (typeof DEPTH_ROLE_OPTIONS)[number]['key'];
+  const DEPTH_ROLE_KEY_TO_API_POS: Record<DepthRoleKey, PositionKey> = {
+    key_fwd: 'FWD',
+    gen_fwd: 'FWD',
+    ins_mid: 'MID',
+    ruck: 'RUC',
+    wng_def: 'DEF',
+    gen_def: 'DEF',
+    des_kck: 'DEF',
+  };
   const [mounted, setMounted] = useState(false);
+  const [viewMode, setViewMode] = useState<'depth' | 'basic'>('depth');
   const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2026);
   const [loading, setLoading] = useState(false);
+  const [depthLoading, setDepthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [depthError, setDepthError] = useState<string | null>(null);
   const [perStat, setPerStat] = useState<Record<string, number | null>>({});
   const [perRank, setPerRank] = useState<Record<string, number | null>>({});
+  const [depthPerStat, setDepthPerStat] = useState<Record<DepthRoleKey, Record<string, number | null>>>({
+    key_fwd: {},
+    gen_fwd: {},
+    ins_mid: {},
+    ruck: {},
+    wng_def: {},
+    gen_def: {},
+    des_kck: {},
+  });
+  const [depthPerRank, setDepthPerRank] = useState<Record<DepthRoleKey, Record<string, number | null>>>({
+    key_fwd: {},
+    gen_fwd: {},
+    ins_mid: {},
+    ruck: {},
+    wng_def: {},
+    gen_def: {},
+    des_kck: {},
+  });
   const [allTeams, setAllTeams] = useState<string[]>([]);
   const [posSel, setPosSel] = useState<(typeof AFL_POSITIONS)[number] | null>(null);
+  const [depthPosSel, setDepthPosSel] = useState<DepthRoleKey>('ins_mid');
   const [oppSel, setOppSel] = useState<string>(opponentTeam || '');
   const [posOpen, setPosOpen] = useState(false);
   const [oppOpen, setOppOpen] = useState(false);
@@ -193,6 +235,15 @@ export default function AflDvpCard({
     })();
     return () => { cancelled = true; };
   }, [playerName, selectedSeason, playerPosition]);
+
+  useEffect(() => {
+    // Keep depth role picker aligned with resolved basic position.
+    if (!posSel) return;
+    if (posSel === 'RUC') setDepthPosSel('ruck');
+    else if (posSel === 'MID') setDepthPosSel('ins_mid');
+    else if (posSel === 'FWD') setDepthPosSel('gen_fwd');
+    else if (posSel === 'DEF') setDepthPosSel('wng_def');
+  }, [posSel]);
 
   useEffect(() => {
     let abort = false;
@@ -288,6 +339,114 @@ export default function AflDvpCard({
     return () => { abort = true; };
   }, [oppSel, posSel, opponentTeam, selectedSeason]);
 
+  useEffect(() => {
+    let abort = false;
+    const run = async () => {
+      if (viewMode !== 'depth') return;
+      setDepthError(null);
+      const targetOpp = oppSel || opponentTeam;
+      if (!targetOpp) {
+        setDepthPerStat({ key_fwd: {}, gen_fwd: {}, ins_mid: {}, ruck: {}, wng_def: {}, gen_def: {}, des_kck: {} });
+        setDepthPerRank({ key_fwd: {}, gen_fwd: {}, ins_mid: {}, ruck: {}, wng_def: {}, gen_def: {}, des_kck: {} });
+        return;
+      }
+      const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
+      const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
+      const skipClientCache = process.env.NODE_ENV === 'development';
+      setDepthLoading(true);
+
+      const nextDepthPerStat: Record<DepthRoleKey, Record<string, number | null>> = {
+        key_fwd: {},
+        gen_fwd: {},
+        ins_mid: {},
+        ruck: {},
+        wng_def: {},
+        gen_def: {},
+        des_kck: {},
+      };
+      const nextDepthPerRank: Record<DepthRoleKey, Record<string, number | null>> = {
+        key_fwd: {},
+        gen_fwd: {},
+        ins_mid: {},
+        ruck: {},
+        wng_def: {},
+        gen_def: {},
+        des_kck: {},
+      };
+
+      const byRoleData: Partial<Record<DepthRoleKey, DvpBatchResponse>> = {};
+
+      try {
+        for (const role of DEPTH_ROLE_OPTIONS) {
+          const position = DEPTH_ROLE_KEY_TO_API_POS[role.key];
+          const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:depth:${selectedSeason}:${position}:${role.key}`;
+          const cached = dvpBatchCache.get(cacheKey);
+          const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
+          let data: DvpBatchResponse | null = null;
+          if (isFresh && cached) {
+            data = cached.data;
+          } else {
+            let request = dvpBatchInFlight.get(cacheKey);
+            if (!request) {
+              request = fetch(
+                `/api/afl/dvp/batch?season=${selectedSeason}&mode=depth&position=${position}&depthRole=${role.key}&stats=${encodeURIComponent(statsCsv)}${bust}`
+              )
+                .then(async (res) => {
+                  const payload = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
+                  if (!res.ok || !payload?.success) return null;
+                  return payload as DvpBatchResponse;
+                })
+                .catch(() => null)
+                .finally(() => {
+                  dvpBatchInFlight.delete(cacheKey);
+                });
+              dvpBatchInFlight.set(cacheKey, request);
+            }
+            data = await request;
+            if (data?.success) dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+          }
+          if (abort) return;
+          if (data?.success) byRoleData[role.key] = data;
+        }
+
+        const firstData = DEPTH_ROLE_OPTIONS
+          .map((r) => byRoleData[r.key])
+          .find((d) => d?.success);
+        const opponents = firstData?.opponents || [];
+        if (opponents.length > 0) {
+          setAllTeams(opponents);
+          if (!userChangedOpponentRef.current) {
+            const parentOpp = opponentTeamRef.current?.trim();
+            const preferred = parentOpp ? findOpponentKey(parentOpp, opponents) : findOpponentKey(targetOpp, opponents);
+            if (preferred && preferred !== oppSel) setOppSel(preferred);
+          }
+        }
+
+        for (const role of DEPTH_ROLE_OPTIONS) {
+          const posData = byRoleData[role.key];
+          if (!posData?.success) continue;
+          const oppKey = findOpponentKey(targetOpp, posData.opponents || []);
+          for (const m of DVP_METRICS) {
+            const metric = posData.metrics?.[m.key];
+            const value = metric?.teamTotalValues?.[oppKey];
+            const rank = metric?.teamTotalRanks?.[oppKey];
+            nextDepthPerStat[role.key][m.key] = typeof value === 'number' ? value : null;
+            nextDepthPerRank[role.key][m.key] = typeof rank === 'number' ? rank : null;
+          }
+        }
+
+        setDepthPerStat(nextDepthPerStat);
+        setDepthPerRank(nextDepthPerRank);
+      } catch {
+        if (!abort) setDepthError('Unable to load depth DvP data.');
+      } finally {
+        if (!abort) setDepthLoading(false);
+      }
+    };
+    run();
+    return () => { abort = true; };
+  }, [oppSel, opponentTeam, selectedSeason, viewMode]);
+
   // Warm all positions in the background so switching position feels instant.
   useEffect(() => {
     let cancelled = false;
@@ -324,12 +483,56 @@ export default function AflDvpCard({
     return () => { cancelled = true; };
   }, [selectedSeason]);
 
-  const posLabel = posSel || 'Select Position';
+  const depthPosLabel = DEPTH_ROLE_OPTIONS.find((r) => r.key === depthPosSel)?.label || 'Select Position';
+  const posLabel = viewMode === 'depth' ? depthPosLabel : (posSel || 'Select Position');
   const teamCount = allTeams.length || 18;
   const fmt = (v?: number | null, isPercentage?: boolean) => {
     if (typeof v !== 'number' || !Number.isFinite(v)) return '';
     return isPercentage ? `${v.toFixed(1)}%` : v.toFixed(1);
   };
+  const rankStyles = (rank?: number | null) => {
+    if (rank == null || rank === 0) {
+      return {
+        borderColor: mounted && isDark ? 'border-slate-700' : 'border-slate-300',
+        badgeColor: mounted && isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600',
+      };
+    }
+    if (rank >= 16) {
+      return {
+        borderColor: mounted && isDark ? 'border-green-900' : 'border-green-800',
+        badgeColor: 'bg-green-800 text-green-50 dark:bg-green-900 dark:text-green-100',
+      };
+    }
+    if (rank >= 13) {
+      return {
+        borderColor: mounted && isDark ? 'border-green-800' : 'border-green-600',
+        badgeColor: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
+      };
+    }
+    if (rank >= 10) {
+      return {
+        borderColor: mounted && isDark ? 'border-orange-800' : 'border-orange-600',
+        badgeColor: 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100',
+      };
+    }
+    if (rank >= 7) {
+      return {
+        borderColor: mounted && isDark ? 'border-orange-900' : 'border-orange-700',
+        badgeColor: 'bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-200',
+      };
+    }
+    if (rank >= 4) {
+      return {
+        borderColor: mounted && isDark ? 'border-red-800' : 'border-red-600',
+        badgeColor: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100',
+      };
+    }
+    return {
+      borderColor: mounted && isDark ? 'border-red-900' : 'border-red-800',
+      badgeColor: 'bg-red-800 text-red-50 dark:bg-red-900 dark:text-red-100',
+    };
+  };
+  const depthHasData = DEPTH_ROLE_OPTIONS.some((r) => Object.keys(depthPerStat[r.key]).length > 0);
 
   if (!playerName) {
     return <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Select a player to view DvP.</div>;
@@ -339,23 +542,53 @@ export default function AflDvpCard({
     <div className="mb-4 sm:mb-6 w-full min-w-0">
       <div className="flex items-center justify-between gap-2 mb-2 sm:mb-2">
         <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Defense vs Position</h3>
-        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-          {SEASON_OPTIONS.map((y) => (
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
             <button
-              key={y}
               type="button"
-              onClick={() => setSelectedSeason(y)}
+              onClick={() => setViewMode('depth')}
               className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                selectedSeason === y
+                viewMode === 'depth'
                   ? 'bg-purple-600 text-white'
                   : mounted && isDark
                     ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
                     : 'bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
-              {y}
+              Depth
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setViewMode('basic')}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                viewMode === 'basic'
+                  ? 'bg-purple-600 text-white'
+                  : mounted && isDark
+                    ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Basic
+            </button>
+          </div>
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+            {SEASON_OPTIONS.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => setSelectedSeason(y)}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  selectedSeason === y
+                    ? 'bg-purple-600 text-white'
+                    : mounted && isDark
+                      ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className={`rounded-lg border ${mounted && isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'} w-full min-w-0`}>
@@ -364,7 +597,7 @@ export default function AflDvpCard({
             <div className={`text-[11px] font-semibold mb-2 ${mounted && isDark ? 'text-slate-200' : 'text-slate-800'}`}>Position</div>
             <button
               onClick={() => setPosOpen((o) => !o)}
-              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-sm font-bold ${mounted && isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} ${posSel ? 'bg-purple-600 border-purple-600 text-white' : ''}`}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-sm font-bold ${mounted && isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} ${posLabel !== 'Select Position' ? 'bg-purple-600 border-purple-600 text-white' : ''}`}
             >
               <span>{posLabel}</span>
               <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
@@ -372,15 +605,25 @@ export default function AflDvpCard({
             {posOpen && (
               <>
                 <div className={`absolute z-20 mt-1 left-2 right-2 rounded-md border shadow-lg overflow-hidden ${mounted && isDark ? 'bg-[#0a1929] border-gray-600' : 'bg-white border-gray-300'}`}>
-                  {AFL_POSITIONS.map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => { setPosSel(p); setPosOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm font-bold text-left ${posLabel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900')}`}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {viewMode === 'depth'
+                    ? DEPTH_ROLE_OPTIONS.map((role) => (
+                      <button
+                        key={role.key}
+                        onClick={() => { setDepthPosSel(role.key); setPosOpen(false); }}
+                        className={`w-full px-3 py-2 text-sm font-bold text-left ${depthPosSel === role.key ? 'bg-purple-600 text-white' : (mounted && isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900')}`}
+                      >
+                        {role.label}
+                      </button>
+                    ))
+                    : AFL_POSITIONS.map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => { setPosSel(p); setPosOpen(false); }}
+                        className={`w-full px-3 py-2 text-sm font-bold text-left ${posSel === p ? 'bg-purple-600 text-white' : (mounted && isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900')}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
                 </div>
                 <div className="fixed inset-0 z-10" onClick={() => setPosOpen(false)} />
               </>
@@ -423,7 +666,45 @@ export default function AflDvpCard({
           </div>
         </div>
 
-        {selectedSeason === 2026 && (error || (posSel && !loading && Object.keys(perStat).length === 0)) ? (
+        {viewMode === 'depth' ? (
+          depthError ? (
+            <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading depth DvP stats: {depthError}</div>
+          ) : depthLoading && !depthHasData ? (
+            <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
+              {DVP_METRICS.map((m, index) => (
+                <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${mounted && isDark ? 'border-slate-700' : 'border-slate-300'} px-3 py-2.5`}>
+                  <div className={`h-4 w-40 rounded animate-pulse ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} style={{ animationDelay: `${index * 0.08}s` }} />
+                </div>
+              ))}
+            </div>
+          ) : !depthHasData ? (
+            <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>No depth DvP data available yet.</div>
+          ) : (
+            <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
+              {DVP_METRICS.map((m) => (
+                <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${rankStyles(depthPerRank[depthPosSel]?.[m.key]).borderColor} px-3 py-2.5`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>{m.label}{depthPosLabel}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold ${mounted && isDark ? 'text-slate-100' : 'text-slate-900'} text-base sm:text-lg`}>
+                        {fmt(depthPerStat[depthPosSel]?.[m.key], m.isPercentage)}
+                      </span>
+                      <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${rankStyles(depthPerRank[depthPosSel]?.[m.key]).badgeColor}`}>
+                        {typeof depthPerRank[depthPosSel]?.[m.key] === 'number' && (depthPerRank[depthPosSel]?.[m.key] as number) > 0
+                          ? `#${depthPerRank[depthPosSel]?.[m.key]}`
+                          : depthPerRank[depthPosSel]?.[m.key] === 0
+                            ? 'N/A'
+                            : ''}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : selectedSeason === 2026 && (error || (posSel && !loading && Object.keys(perStat).length === 0)) ? (
           <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             2026 DvP will show once the AFL Process Stats workflow has run (builds DvP and caches it).
           </div>

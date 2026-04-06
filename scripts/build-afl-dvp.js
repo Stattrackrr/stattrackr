@@ -23,6 +23,30 @@ try {
 const fs = require('fs');
 const path = require('path');
 const AFL_TABLES_BASE = 'https://afltables.com';
+const DEPTH_ROLE_FALLBACK_BY_POSITION = {
+  DEF: 'gen_def',
+  MID: 'ins_mid',
+  FWD: 'gen_fwd',
+  RUC: 'ruck',
+};
+const DEPTH_ROLE_TO_POSITION = {
+  key_fwd: 'FWD',
+  gen_fwd: 'FWD',
+  ins_mid: 'MID',
+  ruck: 'RUC',
+  wng_def: 'DEF',
+  gen_def: 'DEF',
+  des_kck: 'DEF',
+};
+const DFS_ROLE_GROUP_TO_DEPTH_ROLE = {
+  'Key Forward': 'key_fwd',
+  'Small/Medium Forward': 'gen_fwd',
+  'Inside Midfielder': 'ins_mid',
+  Ruck: 'ruck',
+  'Wing/Attacking Defender': 'wng_def',
+  'General Defender': 'gen_def',
+  'Designated Kicker': 'des_kck',
+};
 
 function getArg(name, fallback) {
   const pref = `--${name}=`;
@@ -59,6 +83,90 @@ function normalizeText(s) {
     .replace(/[^a-z0-9]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizePlayerName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/-/g, ' ')
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const FIRST_NAME_VARIANTS = {
+  matt: ['matthew'],
+  matthew: ['matt'],
+  tom: ['thomas'],
+  thomas: ['tom'],
+  josh: ['joshua'],
+  joshua: ['josh'],
+  jack: ['jackson'],
+  jackson: ['jack'],
+  will: ['william'],
+  william: ['will'],
+  max: ['maxwell'],
+  maxwell: ['max'],
+};
+
+function extractLastName(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+function extractFirstInitial(name) {
+  const first = String(name || '').trim().split(/\s+/)[0] || '';
+  return first ? first[0].toLowerCase() : '';
+}
+
+function readLeaguePlayerNamesByTeam(season) {
+  const out = new Map();
+  try {
+    const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
+    if (!fs.existsSync(filePath)) return out;
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const json = JSON.parse(raw);
+    const players = Array.isArray(json?.players) ? json.players : [];
+    for (const p of players) {
+      const name = String(p?.name || '').trim();
+      const teamRaw = String(p?.team || '').trim();
+      if (!name || !teamRaw) continue;
+      const team = normalizeTeam(teamRaw);
+      if (!team) continue;
+      if (!out.has(team)) out.set(team, []);
+      out.get(team).push(name);
+    }
+  } catch {
+    // ignore
+  }
+  return out;
+}
+
+function buildPlayerNameCandidates(name, fullTeam, leaguePlayerNamesByTeam) {
+  const raw = String(name || '').trim().replace(/\s+/g, ' ');
+  if (!raw) return [];
+  const parts = raw.split(' ');
+  const first = String(parts[0] || '').toLowerCase();
+  const variants = FIRST_NAME_VARIANTS[first] || [];
+  const out = [raw];
+  for (const v of variants) {
+    const candidate = [v, ...parts.slice(1)].join(' ').trim();
+    if (candidate && !out.includes(candidate)) out.push(candidate);
+  }
+
+  const leagueNames = leaguePlayerNamesByTeam.get(fullTeam) || [];
+  const targetLast = extractLastName(raw);
+  const targetInitial = extractFirstInitial(raw);
+  if (targetLast && targetInitial && leagueNames.length > 0) {
+    for (const leagueName of leagueNames) {
+      const leagueLast = extractLastName(leagueName);
+      const leagueInitial = extractFirstInitial(leagueName);
+      if (leagueLast !== targetLast) continue;
+      if (leagueInitial !== targetInitial) continue;
+      if (!out.includes(leagueName)) out.push(leagueName);
+    }
+  }
+  return out;
 }
 
 function htmlToText(v) {
@@ -390,12 +498,43 @@ function resolveDvpPosition(primaryPosition, games) {
   return pos;
 }
 
+function readDfsDepthRoleMap(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const json = JSON.parse(raw);
+    const players = Array.isArray(json?.players) ? json.players : [];
+    const out = new Map();
+    for (const p of players) {
+      const key = normalizePlayerName(p?.name || p?.normalizedName || '');
+      if (!key) continue;
+      const group = String(p?.roleGroup || '').trim();
+      const role = DFS_ROLE_GROUP_TO_DEPTH_ROLE[group];
+      if (!role) continue;
+      out.set(key, role);
+    }
+    return out;
+  } catch {
+    return new Map();
+  }
+}
+
+function resolveDepthRole(playerName, basePosition, dfsDepthRoleByPlayer) {
+  const key = normalizePlayerName(playerName);
+  const mapped = key ? dfsDepthRoleByPlayer.get(key) : null;
+  if (mapped) return mapped;
+  return DEPTH_ROLE_FALLBACK_BY_POSITION[basePosition] || 'ins_mid';
+}
+
 async function main() {
   const season = parseInt(getArg('season', '2025'), 10) || 2025;
   const baseUrl = getArg('base-url', process.env.AFL_DVP_BASE_URL || 'http://localhost:3000');
   const concurrency = Math.max(1, parseInt(getArg('concurrency', '50'), 10) || 50);
   const delayMs = Math.max(0, parseInt(getArg('delay-ms', '40'), 10) || 40);
   const playerLimit = Math.max(0, parseInt(getArg('player-limit', '0'), 10) || 0);
+  const mode = String(getArg('mode', 'basic') || 'basic').trim().toLowerCase();
+  const isDepthMode = mode === 'depth';
+  const dfsRoleMapPath = path.resolve(process.cwd(), getArg('dfs-role-map', 'data/afl-dfs-role-map-latest.json'));
+  const dfsDepthRoleByPlayer = isDepthMode ? readDfsDepthRoleMap(dfsRoleMapPath) : new Map();
 
   console.log('AFL DVP Builder');
   console.log('='.repeat(50));
@@ -404,13 +543,21 @@ async function main() {
   console.log(`Concurrency: ${concurrency}`);
   console.log(`Delay (ms):  ${delayMs}`);
   console.log(`Player limit:${playerLimit > 0 ? playerLimit : 'none'}`);
+  console.log(`Mode:        ${isDepthMode ? 'depth' : 'basic'}`);
+  if (isDepthMode) {
+    console.log(`DFS role map:${dfsRoleMapPath} (${dfsDepthRoleByPlayer.size} mapped players)`);
+  }
   console.log('');
 
   const seasonTotalsNames = await fetchSeasonTotalsPlayers(season);
   const seasonTeamGameCounts = await fetchSeasonTeamGameCounts(season);
+  const leaguePlayerNamesByTeam = readLeaguePlayerNamesByTeam(season);
   console.log(`AFLTables season-total players: ${seasonTotalsNames.size}`);
   if (seasonTeamGameCounts.size > 0) {
     console.log(`AFLTables fixture teams found: ${seasonTeamGameCounts.size}`);
+  }
+  if (leaguePlayerNamesByTeam.size > 0) {
+    console.log(`League player teams loaded: ${leaguePlayerNamesByTeam.size}`);
   }
 
   const appHeaders = getAppRequestHeaders();
@@ -442,8 +589,17 @@ async function main() {
   let checked = 0;
   const fetched = await mapWithConcurrency(players, concurrency, async (player) => {
     const fullTeam = FANTASY_TEAM_TO_FULL[player.team] || player.team;
-    const url = `${baseUrl}/api/afl/player-game-logs?season=${encodeURIComponent(String(season))}&player_name=${encodeURIComponent(player.name)}&team=${encodeURIComponent(fullTeam)}&strict_season=1`;
-    const res = await fetchJson(url, { headers: appHeaders });
+    const nameCandidates = buildPlayerNameCandidates(player.name, fullTeam, leaguePlayerNamesByTeam);
+    let usedName = player.name;
+    let res = { ok: false, status: 0, body: null };
+    for (const candidateName of nameCandidates) {
+      const url = `${baseUrl}/api/afl/player-game-logs?season=${encodeURIComponent(String(season))}&player_name=${encodeURIComponent(candidateName)}&team=${encodeURIComponent(fullTeam)}&strict_season=1`;
+      const attempt = await fetchJson(url, { headers: appHeaders });
+      const games = Array.isArray(attempt.body?.games) ? attempt.body.games : [];
+      res = attempt;
+      usedName = candidateName;
+      if (attempt.ok && games.length > 0) break;
+    }
     if (delayMs > 0) await sleep(delayMs);
     checked += 1;
     if (checked % 50 === 0 || checked === players.length) {
@@ -453,6 +609,8 @@ async function main() {
     const games = Array.isArray(res.body?.games) ? res.body.games : [];
     return {
       ...player,
+      requestedName: player.name,
+      usedName,
       teamFull: fullTeam,
       ok: res.ok && games.length > 0,
       games,
@@ -476,12 +634,16 @@ async function main() {
   const byOpponentPosition = new Map();
   const byPosition = new Map();
   const opponentGameKeys = new Map();
+  const roleOpponentGameKeys = new Map();
 
   for (const row of valid) {
-    const pos = resolveDvpPosition(row.position, row.games);
-    if (!pos) continue;
-    if (!byPosition.has(pos)) byPosition.set(pos, createAccumulator());
-    const posAcc = byPosition.get(pos);
+    const basePos = resolveDvpPosition(row.position, row.games);
+    if (!basePos) continue;
+    const depthRole = isDepthMode ? resolveDepthRole(row.name, basePos, dfsDepthRoleByPlayer) : null;
+    const groupKey = isDepthMode ? depthRole : basePos;
+    if (!groupKey) continue;
+    if (!byPosition.has(groupKey)) byPosition.set(groupKey, createAccumulator());
+    const posAcc = byPosition.get(groupKey);
 
     for (const g of row.games) {
       const opp = normalizeTeam(g.opponent || '');
@@ -490,14 +652,17 @@ async function main() {
       if (!opponentGameKeys.has(opp)) opponentGameKeys.set(opp, new Set());
       opponentGameKeys.get(opp).add(gameKey);
 
-      const key = `${opp}|${pos}`;
+      const key = `${opp}|${groupKey}`;
       if (!byOpponentPosition.has(key)) {
         byOpponentPosition.set(key, {
           opponent: opp,
-          position: pos,
+          position: isDepthMode ? (DEPTH_ROLE_TO_POSITION[groupKey] || basePos) : basePos,
+          depthRole: isDepthMode ? groupKey : undefined,
           ...createAccumulator(),
         });
       }
+      if (!roleOpponentGameKeys.has(key)) roleOpponentGameKeys.set(key, new Set());
+      roleOpponentGameKeys.get(key).add(gameKey);
       const acc = byOpponentPosition.get(key);
       addGameToAccumulator(acc, g);
       addGameToAccumulator(posAcc, g);
@@ -505,8 +670,8 @@ async function main() {
   }
 
   const leagueBaseline = {};
-  for (const [pos, acc] of byPosition.entries()) {
-    leagueBaseline[pos] = {
+  for (const [posOrRole, acc] of byPosition.entries()) {
+    leagueBaseline[posOrRole] = {
       sampleSize: acc.sampleSize,
       perPlayerGame: toAverages(acc),
     };
@@ -520,7 +685,13 @@ async function main() {
     const perPlayerGame = toAverages(acc);
     const totals = toRoundedTotals(acc);
     const inferredGames = opponentGameKeys.has(acc.opponent) ? opponentGameKeys.get(acc.opponent).size : 0;
+    const roleKey = isDepthMode ? `${acc.opponent}|${acc.depthRole}` : `${acc.opponent}|${acc.position}`;
+    const inferredRoleGames = roleOpponentGameKeys.has(roleKey) ? roleOpponentGameKeys.get(roleKey).size : 0;
     let teamGames = seasonTeamGameCounts.get(acc.opponent) || inferredGames;
+    if (isDepthMode) {
+      // Depth per-game should use games where this exact DFS role appeared.
+      teamGames = inferredRoleGames || inferredGames;
+    }
     if (teamGames <= 0 || teamGames > MAX_SANE_TEAM_GAMES) teamGames = inferredGames;
     let perTeamGame = {};
     for (const stat of statList()) {
@@ -528,7 +699,7 @@ async function main() {
         ? Math.round((safeNumber(totals[stat]) / teamGames) * 100) / 100
         : null;
     }
-    if (inferredGames > 0 && (teamGames !== inferredGames || (perTeamGame.disposals != null && perTeamGame.disposals < MIN_DISPOSALS_TEAM_TOTAL))) {
+    if (!isDepthMode && inferredGames > 0 && (teamGames !== inferredGames || (perTeamGame.disposals != null && perTeamGame.disposals < MIN_DISPOSALS_TEAM_TOTAL))) {
       const useGames = inferredGames;
       const disp = perTeamGame.disposals;
       if (disp != null && disp < MIN_DISPOSALS_TEAM_TOTAL && useGames > 0) {
@@ -550,7 +721,9 @@ async function main() {
     rows.push({
       opponent: acc.opponent,
       position: acc.position,
+      depthRole: acc.depthRole,
       sampleSize: acc.sampleSize,
+      roleGames: isDepthMode ? inferredRoleGames : undefined,
       teamGames,
       totals,
       perPlayerGame,
@@ -566,7 +739,10 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     season,
-    source: 'afl fantasy positions + player-game-logs',
+    source: isDepthMode
+      ? 'afl fantasy positions + dfs role map + player-game-logs'
+      : 'afl fantasy positions + player-game-logs',
+    mode: isDepthMode ? 'depth' : 'basic',
     summary: {
       playerCount: players.length,
       withLogs: valid.length,
@@ -599,7 +775,7 @@ async function main() {
     ? path.resolve(process.cwd(), outputDir)
     : path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  const outPath = path.join(dataDir, `afl-dvp-${season}.json`);
+  const outPath = path.join(dataDir, isDepthMode ? `afl-dvp-depth-${season}.json` : `afl-dvp-${season}.json`);
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8');
 
   console.log('');

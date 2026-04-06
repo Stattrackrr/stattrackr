@@ -27,6 +27,7 @@ from common import (
     read_dvp_disposals_by_opponent_position,
     read_json,
     read_dfs_usage_by_player,
+    read_dfs_role_map_by_player,
     read_oa_team_stats_by_team,
     read_ta_team_stats_by_team,
     rolling,
@@ -89,6 +90,20 @@ FEATURE_COLUMNS = [
     "delta_up_3v10",
     "delta_cl_3v10",
     "cba_momentum_proxy",
+    "role_is_def",
+    "role_is_mid",
+    "role_is_fwd",
+    "role_is_ruc",
+    "lineup_role_available",
+    "lineup_role_confidence",
+    "dfs_role_key_fwd",
+    "dfs_role_gen_fwd",
+    "dfs_role_ins_mid",
+    "dfs_role_ruck",
+    "dfs_role_wng_def",
+    "dfs_role_gen_def",
+    "dfs_role_des_kck",
+    "dfs_role_unclassified",
 ]
 
 
@@ -168,6 +183,61 @@ def infer_role_bucket(history: List[dict]) -> str:
     return "MID"
 
 
+def role_feature_flags(role_bucket: str) -> Dict[str, float]:
+    role = str(role_bucket or "").strip().upper()
+    return {
+        "role_is_def": 1.0 if role == "DEF" else 0.0,
+        "role_is_mid": 1.0 if role == "MID" else 0.0,
+        "role_is_fwd": 1.0 if role == "FWD" else 0.0,
+        "role_is_ruc": 1.0 if role == "RUC" else 0.0,
+    }
+
+
+def dfs_role_group_key(role_group: str) -> str:
+    g = str(role_group or "").strip().lower()
+    if "key forward" in g:
+        return "key_fwd"
+    if "small/medium forward" in g or "general forward" in g:
+        return "gen_fwd"
+    if "inside midfielder" in g:
+        return "ins_mid"
+    if g == "ruck" or "ruck" in g:
+        return "ruck"
+    if "wing/attacking defender" in g or "wing defender" in g:
+        return "wng_def"
+    if "general defender" in g:
+        return "gen_def"
+    if "designated kicker" in g:
+        return "des_kck"
+    return "unclassified"
+
+
+def dfs_role_group_flags(role_group: str) -> Dict[str, float]:
+    key = dfs_role_group_key(role_group)
+    flags = {
+        "dfs_role_key_fwd": 0.0,
+        "dfs_role_gen_fwd": 0.0,
+        "dfs_role_ins_mid": 0.0,
+        "dfs_role_ruck": 0.0,
+        "dfs_role_wng_def": 0.0,
+        "dfs_role_gen_def": 0.0,
+        "dfs_role_des_kck": 0.0,
+        "dfs_role_unclassified": 0.0,
+    }
+    map_key_to_col = {
+        "key_fwd": "dfs_role_key_fwd",
+        "gen_fwd": "dfs_role_gen_fwd",
+        "ins_mid": "dfs_role_ins_mid",
+        "ruck": "dfs_role_ruck",
+        "wng_def": "dfs_role_wng_def",
+        "gen_def": "dfs_role_gen_def",
+        "des_kck": "dfs_role_des_kck",
+        "unclassified": "dfs_role_unclassified",
+    }
+    flags[map_key_to_col[key]] = 1.0
+    return flags
+
+
 def build_rows_for_player(
     player_name: str,
     team: str,
@@ -177,6 +247,7 @@ def build_rows_for_player(
     ta_stats_by_team: Dict[str, Dict[str, float]],
     dvp_by_opp_pos: Dict[str, Dict[str, Dict[str, float]]],
     dfs_usage_by_player: Dict[str, Dict[str, float]],
+    dfs_role_by_player: Dict[str, Dict[str, str]],
 ) -> List[dict]:
     rows: List[dict] = []
     if not games:
@@ -237,6 +308,10 @@ def build_rows_for_player(
         usage = dfs_usage_by_player.get(normalize_name(player_name), {})
         dfs_cba_pct = to_float(usage.get("cba_pct")) or 0.0
         dfs_kickins = to_float(usage.get("kickins")) or 0.0
+        dfs_role = dfs_role_by_player.get(normalize_name(player_name), {})
+        dfs_role_bucket = str(dfs_role.get("role_bucket") or "").strip().upper()
+        dfs_role_group = str(dfs_role.get("role_group") or "").strip()
+        dfs_role_flags = dfs_role_group_flags(dfs_role_group)
 
         venue_games = [
             x for x in history if canonical_venue_key(str(x.get("venue") or "")) == venue_key and venue_key
@@ -261,7 +336,8 @@ def build_rows_for_player(
                 games_since_low_tog = float(idx)
                 break
 
-        role_bucket = infer_role_bucket(history)
+        role_bucket = dfs_role_bucket if dfs_role_bucket in {"DEF", "MID", "FWD", "RUC"} else infer_role_bucket(history)
+        role_flags = role_feature_flags(role_bucket)
         opp_role = dvp_by_opp_pos.get(opponent_key, {}).get(role_bucket, {})
         opp_role_disp_index = to_float(opp_role.get("index"))
         opp_role_disp_ppg = to_float(opp_role.get("ppg"))
@@ -340,6 +416,21 @@ def build_rows_for_player(
             "delta_up_3v10": safe_feature(delta_up_3v10, 0.0),
             "delta_cl_3v10": safe_feature(delta_cl_3v10, 0.0),
             "cba_momentum_proxy": safe_feature(cba_momentum_proxy, 0.0),
+            "role_is_def": role_flags["role_is_def"],
+            "role_is_mid": role_flags["role_is_mid"],
+            "role_is_fwd": role_flags["role_is_fwd"],
+            "role_is_ruc": role_flags["role_is_ruc"],
+            # Historical training rows do not have confirmed lineup-role snapshots.
+            "lineup_role_available": 0.0,
+            "lineup_role_confidence": 0.25,
+            "dfs_role_key_fwd": dfs_role_flags["dfs_role_key_fwd"],
+            "dfs_role_gen_fwd": dfs_role_flags["dfs_role_gen_fwd"],
+            "dfs_role_ins_mid": dfs_role_flags["dfs_role_ins_mid"],
+            "dfs_role_ruck": dfs_role_flags["dfs_role_ruck"],
+            "dfs_role_wng_def": dfs_role_flags["dfs_role_wng_def"],
+            "dfs_role_gen_def": dfs_role_flags["dfs_role_gen_def"],
+            "dfs_role_des_kck": dfs_role_flags["dfs_role_des_kck"],
+            "dfs_role_unclassified": dfs_role_flags["dfs_role_unclassified"],
         }
         rows.append(row)
         history.append(g)
@@ -372,6 +463,7 @@ def main() -> None:
             season - 1
         )
     dfs_usage_maps = {season: read_dfs_usage_by_player(season) for season in seasons}
+    dfs_role_maps = {season: read_dfs_role_map_by_player(season) for season in seasons}
     out_rows: List[dict] = []
 
     tasks: List[Tuple[str, str, int]] = []
@@ -399,6 +491,7 @@ def main() -> None:
             ta_maps.get(season, {}),
             dvp_maps.get(season, {}),
             dfs_usage_maps.get(season, {}),
+            dfs_role_maps.get(season, {}),
         )
 
     for i in range(0, len(tasks), batch_size):

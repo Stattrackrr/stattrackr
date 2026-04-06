@@ -57,6 +57,7 @@ jobs:
           BASE_URL: ${{ secrets.PROD_URL }}
         run: |
           npm run fetch:afl:dfs-usage
+          npm run fetch:afl:dfs-role-map
           npm run fetch:afl:weather-context
 
       - name: Nightly candidate training and evaluation

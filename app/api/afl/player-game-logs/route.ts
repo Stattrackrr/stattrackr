@@ -469,6 +469,74 @@ function parseFootyWireGameLogTable(html: string): { headers: string[]; rows: Fo
   return result;
 }
 
+function inferRowYearFromHeaders(headers: string[], row: FootyWireTableRow): number | null {
+  const seasonCol = headers.findIndex((h) => /^Season$/i.test(h.trim()));
+  if (seasonCol >= 0 && row.cells[seasonCol] !== undefined) {
+    const y = parseInt(String(row.cells[seasonCol]).trim(), 10);
+    if (Number.isFinite(y)) return y;
+  }
+  const dateCol = headers.findIndex((h) => /^Date$/i.test(h.trim()) || /^Date\s+Played$/i.test(h.trim()));
+  if (dateCol >= 0 && row.cells[dateCol] !== undefined) {
+    const dateStr = String(row.cells[dateCol]).trim();
+    const fourDigit = dateStr.match(/\b(20\d{2})\b/);
+    if (fourDigit?.[1]) {
+      const y = parseInt(fourDigit[1], 10);
+      if (Number.isFinite(y)) return y;
+    }
+    const twoDigitTail = dateStr.match(/\b(\d{2})\b$/);
+    if (twoDigitTail?.[1]) {
+      const y = 2000 + parseInt(twoDigitTail[1], 10);
+      if (Number.isFinite(y)) return y;
+    }
+  }
+  return null;
+}
+
+function hasExplicitYearEvidenceForSeason(headers: string[], rows: FootyWireTableRow[], season: number): boolean {
+  for (const row of rows) {
+    const y = inferRowYearFromHeaders(headers, row);
+    if (y === season) return true;
+  }
+  return false;
+}
+
+function dateRangeLikelyMatchesSeason(rows: FootyWireTableRow[], season: number): boolean {
+  const inferredYears: number[] = [];
+  const inferredMonths: number[] = [];
+  for (const row of rows) {
+    const dateCell = row.cells.find((c) => /\d/.test(String(c || '')) && /[A-Za-z]/.test(String(c || '')));
+    const dateStr = String(dateCell || '').trim();
+    if (!dateStr) continue;
+    const y4 = dateStr.match(/\b(20\d{2})\b/);
+    if (y4?.[1]) {
+      inferredYears.push(parseInt(y4[1], 10));
+    } else {
+      const y2 = dateStr.match(/\b(\d{2})\b$/);
+      if (y2?.[1]) inferredYears.push(2000 + parseInt(y2[1], 10));
+    }
+    const monthMap: Record<string, number> = {
+      jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+      jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+    };
+    const m = dateStr.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/);
+    if (m?.[1] && monthMap[m[1]]) inferredMonths.push(monthMap[m[1]]);
+  }
+  if (inferredYears.length > 0) {
+    const minY = Math.min(...inferredYears);
+    const maxY = Math.max(...inferredYears);
+    return season >= minY && season <= maxY;
+  }
+  // AFL season months are mostly Mar-Sep; if rows show this shape and no explicit year, allow only current season.
+  if (inferredMonths.length > 0) {
+    const minM = Math.min(...inferredMonths);
+    const maxM = Math.max(...inferredMonths);
+    const likelyAflWindow = minM >= 2 && maxM <= 10;
+    if (!likelyAflWindow) return false;
+    return season === new Date().getFullYear();
+  }
+  return false;
+}
+
 function parseOneTableToRows(tableContent: string): { rows: FootyWireTableRow[]; headerIdx: number; dataRows: FootyWireTableRow[] } {
   const rows: FootyWireTableRow[] = [];
   const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -939,6 +1007,7 @@ async function fetchFootyWireGameLogs(
   includeQuarterEnrichment = false,
   skipMemoryCache = false
 ): Promise<{ games: GameLogRow[]; height: string | null; guernsey: number | null; player_name: string } | null> {
+  const currentYear = new Date().getFullYear();
   const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}|${teamName}|${playerName}|${season}|quarters:${includeQuarterEnrichment ? '1' : '0'}`;
   const cached = !skipMemoryCache ? footyWireCache.get(cacheKey) : undefined;
   if (cached && cached.expiresAt > Date.now()) {
@@ -971,6 +1040,7 @@ async function fetchFootyWireGameLogs(
   for (const playerSlug of slugsToTry) {
     const url = `${FOOTYWIRE_BASE}/afl/footy/pg-${teamSlug}--${playerSlug}?year=${season}`;
     const advUrl = `${url}&advv=Y`;
+    let usedNoYearFallback = false;
     let res = await fetch(url, fetchOpts);
     let advResInitial = await fetch(advUrl, fetchOpts);
     if (!res.ok) continue;
@@ -989,14 +1059,16 @@ async function fetchFootyWireGameLogs(
         }
       }
     }
-    // Fallback: if year filter returns empty table, try URL without year (FootyWire may serve full log only without ?year=)
-    if ((headers.length === 0 || rows.length === 0) && teamSlug && playerSlug) {
+    // Fallback: if year filter returns empty table, try URL without year only for current season.
+    // For older seasons this can fabricate cloned rows by restamping current-year games.
+    if (season === currentYear && (headers.length === 0 || rows.length === 0) && teamSlug && playerSlug) {
       const urlNoYear = `${FOOTYWIRE_BASE}/afl/footy/pg-${teamSlug}--${playerSlug}`;
       const resNoYear = await fetch(urlNoYear, fetchOpts);
       if (resNoYear.ok) {
         const htmlNoYear = await resNoYear.text();
         const parsed = parseFootyWireGameLogTable(htmlNoYear);
         if (parsed.headers.length > 0 && parsed.rows.length > 0) {
+          usedNoYearFallback = true;
           html = htmlNoYear;
           headers = parsed.headers;
           rows = parsed.rows.filter((r) => {
@@ -1008,15 +1080,31 @@ async function fetchFootyWireGameLogs(
             }
             if (dateCol >= 0 && r.cells[dateCol] !== undefined) {
               const dateStr = String(r.cells[dateCol]).trim();
-              const year = dateStr.length >= 4 ? parseInt(dateStr.slice(-4), 10) : NaN;
-              return Number.isFinite(year) && year === season;
+              const fourDigit = dateStr.match(/\b(20\d{2})\b/);
+              if (fourDigit?.[1]) {
+                const year = parseInt(fourDigit[1], 10);
+                return Number.isFinite(year) && year === season;
+              }
+              const twoDigitTail = dateStr.match(/\b(\d{2})\b$/);
+              if (twoDigitTail?.[1]) {
+                const year = 2000 + parseInt(twoDigitTail[1], 10);
+                return Number.isFinite(year) && year === season;
+              }
+              // No verifiable year in row date -> reject to avoid cross-season cloning.
+              return false;
             }
-            return true;
+            // No season/date column to verify row year -> reject no-year fallback rows.
+            return false;
           });
         }
       }
     }
     if (headers.length === 0 || rows.length === 0) continue;
+    const hasYearEvidence = hasExplicitYearEvidenceForSeason(headers, rows, season);
+    if (usedNoYearFallback && season !== currentYear && !hasYearEvidence && !dateRangeLikelyMatchesSeason(rows, season)) {
+      // Reject unverifiable rows for past seasons to avoid cloned cross-season data.
+      continue;
+    }
     const games: GameLogRow[] = rows.map((row, idx) => {
       const g = footyWireRowToGameLogRow(row.cells, headers, season);
       g.game_number = idx + 1;

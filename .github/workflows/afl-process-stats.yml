@@ -67,6 +67,14 @@ jobs:
           npm run fetch:footywire-team-rankings -- --season=2026
           npm run fetch:footywire-team-rankings -- --season=2025
 
+      # Build DvP files locally from latest player logs + DFS role map so both Basic and Depth stay current.
+      - name: Build AFL DvP files (Basic + Depth) 2026
+        run: |
+          npm run build:afl:dvp -- --season=2026 --base-url="${{ secrets.PROD_URL }}" --concurrency=16
+          npm run build:afl:dvp:depth -- --season=2026 --base-url="${{ secrets.PROD_URL }}" --concurrency=16
+        env:
+          NODE_OPTIONS: '--max-old-space-size=1024'
+
       # Guardrail: Player vs Team relies on these advanced fields.
       # - League player stats: UP/CP/MG/FF (player-side advanced rankings)
       # - Team rankings OA: UP/CP/MG (opponent-side advanced values/rankings)
@@ -113,6 +121,7 @@ jobs:
           git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
           git add data/afl-player-headshots-2026.json 2>/dev/null || true
           git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
+          git add data/afl-dvp-2026.json data/afl-dvp-depth-2026.json 2>/dev/null || true
           for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json data/afl-player-headshots-*.json; do
             [ -f "$f" ] && git add "$f"
           done

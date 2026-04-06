@@ -450,6 +450,50 @@ def read_dfs_usage_by_player(season: int) -> Dict[str, Dict[str, float]]:
     return out
 
 
+def map_dfs_position_group_to_role_bucket(group: str) -> Optional[str]:
+    g = str(group or "").strip().lower()
+    if not g:
+        return None
+    if "inside midfielder" in g:
+        return "MID"
+    if "ruck" in g:
+        return "RUC"
+    if "forward" in g:
+        return "FWD"
+    if "defender" in g or "kicker" in g:
+        return "DEF"
+    return None
+
+
+def read_dfs_role_map_by_player(season: int) -> Dict[str, Dict[str, str]]:
+    candidates = [
+        os.path.join(DATA_DIR, f"afl-dfs-role-map-{season}.json"),
+        os.path.join(DATA_DIR, "afl-dfs-role-map-latest.json"),
+    ]
+    payload = None
+    for path in candidates:
+        if os.path.exists(path):
+            payload = read_json(path)
+            break
+    if not payload:
+        return {}
+    out: Dict[str, Dict[str, str]] = {}
+    for p in payload.get("players", []) or []:
+        key = normalize_name(str(p.get("name", "")))
+        if not key:
+            continue
+        role_group = str(p.get("roleGroup", "")).strip()
+        role_bucket = str(p.get("roleBucket", "")).strip().upper()
+        if role_bucket not in {"DEF", "MID", "FWD", "RUC"}:
+            role_bucket = map_dfs_position_group_to_role_bucket(role_group) or ""
+        if role_bucket:
+            out[key] = {
+                "role_group": role_group,
+                "role_bucket": role_bucket,
+            }
+    return out
+
+
 def approx_team_match(target: str, teams_map: Dict[str, float]) -> Optional[float]:
     t = normalize_team(target)
     if not t:
