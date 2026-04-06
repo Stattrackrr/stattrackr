@@ -167,7 +167,7 @@ function dfsRoleGroupToHeaderLabel(roleGroup: string | null | undefined): string
   return String(roleGroup).trim();
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v4';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v5';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -2124,8 +2124,10 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     // Always refresh current-season logs live so charts pick up finished games promptly.
-    // Keep older seasons cached for speed.
+    // Also force-refresh 2025 while we backfill fantasy points from updated parser/fallbacks.
     const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
+    const forceFetchPrev = prevYear === 2025 ? '&force_fetch=1' : '';
+    const forceFetchOlder = olderYear === 2025 ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     let dataCurrent: Record<string, unknown> | null = null;
     let dataPrev: Record<string, unknown> | null = null;
@@ -2163,7 +2165,7 @@ export default function AFLPage() {
           }
           return { ok: res.ok, data: d };
         });
-        const p2 = fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then(async (res) => {
+        const p2 = fetch(`${baseUrl}&season=${prevYear}${forceFetchPrev}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
           if (!cancelled) {
             dataPrev = d;
@@ -2171,7 +2173,7 @@ export default function AFLPage() {
           }
           return { ok: res.ok, data: d };
         });
-        const p3 = fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then(async (res) => {
+        const p3 = fetch(`${baseUrl}&season=${olderYear}${forceFetchOlder}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
           return { ok: res.ok, data: d };
         });

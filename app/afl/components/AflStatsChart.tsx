@@ -74,6 +74,7 @@ const STAT_PRIORITY = [
   'q4_spread',
   'q4_total_goals',
   'percent_played',
+  'fantasy_points',
   'goals',
   'disposals',
   'marks',
@@ -413,6 +414,7 @@ function AflChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
 function formatStatLabel(key: string): string {
   if (key === 'percent_played') return 'TOG %';
+  if (key === 'fantasy_points') return 'Fantasy Points';
   return key
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')

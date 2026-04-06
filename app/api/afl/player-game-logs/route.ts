@@ -103,7 +103,7 @@ async function fetchFootyWireGameLogsWithTeamFallback(
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const FOOTYWIRE_SCHEMA_VERSION = 'v7';
+const FOOTYWIRE_SCHEMA_VERSION = 'v8';
 
 /** 2026 Round 0 (opening round) opponent overrides when FootyWire has wrong/missing opponent. */
 const R0_2026_OPPONENT_OVERRIDES: Record<string, string> = {
@@ -162,6 +162,7 @@ type GameLogRow = {
   one_percenters: number;
   bounces: number;
   goal_assists: number;
+  fantasy_points?: number | null;
   percent_played: number | null;
   effective_disposals: number;
   disposal_efficiency: number; // percentage 0–100
@@ -617,6 +618,7 @@ const COL_ALIASES: Record<string, string[]> = {
   FF: ['Free Kicks For', 'Frees For'],
   FA: ['Free Kicks Against', 'Frees Against'],
   GA: ['Goal Assists'],
+  AF: ['AFL Fantasy', 'Fantasy Points', 'Fantasy Pts', 'Dream Team', 'DT'],
   Date: ['Date Played'],
 };
 
@@ -701,6 +703,7 @@ function footyWireRowToGameLogRow(row: string[], headers: string[], season: numb
     one_percenters: 0,
     bounces: 0,
     goal_assists: num('GA'),
+    fantasy_points: num('AF') || null,
     percent_played: null,
     effective_disposals: 0,
     disposal_efficiency: 0,
@@ -721,6 +724,8 @@ function advNum(row: string[], headers: string[], name: string): number {
   if (i < 0 && name === 'CP') i = headers.findIndex((h) => /^CP$|Contested\s*Possessions?/i.test(h.trim()));
   if (i < 0 && name === 'UP') i = headers.findIndex((h) => /^UP$|Uncontested\s*Possessions?/i.test(h.trim()));
   if (i < 0 && name === 'ED') i = headers.findIndex((h) => /^ED$|Effective\s*Disposals?/i.test(h.trim()));
+  if (i < 0 && name === 'AF') i = headers.findIndex((h) => /^AF$|AFL\s*Fantasy|Fantasy\s*Points?|Dream\s*Team|^DT$/i.test(h.trim()));
+  if (i < 0 && name === 'DT') i = headers.findIndex((h) => /^DT$|Dream\s*Team|AFL\s*Fantasy|Fantasy\s*Points?/i.test(h.trim()));
   if (i < 0) return 0;
   const v = (row[i] ?? '').trim();
   const n = parseFloat(v);
@@ -743,6 +748,7 @@ function footyWireAdvancedRowToPartial(row: string[], headers: string[], season:
     intercepts: advNum(row, headers, 'ITC'),
     tackles_inside_50: advNum(row, headers, 'TI5'),
     score_involvements: advNum(row, headers, 'SI'),
+    fantasy_points: advNum(row, headers, 'AF') || advNum(row, headers, 'DT') || null,
   };
 }
 
@@ -753,6 +759,28 @@ function applyDisposalEfficiency(games: GameLogRow[]): void {
       const pct = (g.effective_disposals / g.disposals) * 100;
       g.disposal_efficiency = Math.ceil(pct);
     }
+  }
+}
+
+/**
+ * Backfill AFL Fantasy points when source table does not provide AF/DT.
+ * Formula mirrors standard AFL Fantasy scoring:
+ * K*3 + HB*2 + M*3 + T*4 + HO*1 + G*6 + B*1 + FF*1 + FA*-3
+ */
+function applyFantasyPointsFallback(games: GameLogRow[]): void {
+  for (const g of games) {
+    if (typeof g.fantasy_points === 'number' && Number.isFinite(g.fantasy_points) && g.fantasy_points > 0) continue;
+    const derived =
+      (g.kicks * 3) +
+      (g.handballs * 2) +
+      (g.marks * 3) +
+      (g.tackles * 4) +
+      (g.hitouts * 1) +
+      (g.goals * 6) +
+      (g.behinds * 1) +
+      (g.free_kicks_for * 1) +
+      (g.free_kicks_against * -3);
+    g.fantasy_points = Math.round(derived);
   }
 }
 
@@ -1144,6 +1172,7 @@ async function fetchFootyWireGameLogs(
       }
     }
     applyDisposalEfficiency(games);
+    applyFantasyPointsFallback(games);
     // Correct 2026 R0 opponent when FootyWire has wrong/missing data (e.g. Geelong vs Gold Coast)
     if (season === 2026) {
       const override = R0_2026_OPPONENT_OVERRIDES[teamName];
