@@ -2124,10 +2124,11 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     // Always refresh current-season logs live so charts pick up finished games promptly.
-    // Also force-refresh 2025 while we backfill fantasy points from updated parser/fallbacks.
+    // Also force-refresh 2025/2024 while we backfill fantasy points from updated parser/fallbacks.
     const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
-    const forceFetchPrev = prevYear === 2025 ? '&force_fetch=1' : '';
-    const forceFetchOlder = olderYear === 2025 ? '&force_fetch=1' : '';
+    const shouldForceRefreshHistoricSeason = (year: number) => year === 2025 || year === 2024;
+    const forceFetchPrev = shouldForceRefreshHistoricSeason(prevYear) ? '&force_fetch=1' : '';
+    const forceFetchOlder = shouldForceRefreshHistoricSeason(olderYear) ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     let dataCurrent: Record<string, unknown> | null = null;
     let dataPrev: Record<string, unknown> | null = null;
