@@ -55,10 +55,24 @@ HISTORY_DIR = os.path.join(MODEL_DIR, "history")
 LINE_HISTORY_PATH = os.path.join(HISTORY_DIR, "disposals-line-history.json")
 
 
+def artifact_feature_columns(artifact: dict, model_obj) -> List[str]:
+    cols = artifact.get("featureColumns")
+    if isinstance(cols, list):
+        cleaned = [str(c).strip() for c in cols if str(c).strip()]
+        if cleaned:
+            return cleaned
+    # Fallback for older artifacts that may not include explicit feature columns.
+    expected_n = getattr(model_obj, "n_features_in_", None)
+    if isinstance(expected_n, int) and expected_n > 0:
+        return FEATURE_COLUMNS[:expected_n]
+    return FEATURE_COLUMNS
+
+
 def model_predict(artifact: dict, model_obj, feature_map: Dict[str, float]) -> float:
     if artifact.get("modelType") == "baseline" or model_obj is None:
         return baseline_predict_row(feature_map)
-    vec = [[feature_map[c] for c in FEATURE_COLUMNS]]
+    feature_columns = artifact_feature_columns(artifact, model_obj)
+    vec = [[float(feature_map.get(c, 0.0)) for c in feature_columns]]
     pred = model_obj.predict(vec)[0]
     return max(0.0, float(pred))
 
