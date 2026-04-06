@@ -6,6 +6,12 @@ import { ROSTER_TEAM_TO_INJURY_TEAM } from '@/lib/aflTeamMapping';
 const AFL_TABLES_BASE = 'https://afltables.com';
 const STATS_BASE = `${AFL_TABLES_BASE}/afl/stats`;
 const TTL_MS = 1000 * 60 * 30; // 30 min
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
+const ROSTER_FILES: Record<number, string> = {
+  2026: 'afl-roster-2026.json',
+  2025: 'afl-roster-2025.json',
+  2024: 'afl-roster-2024.json',
+};
 
 type RosterRow = { name?: string; team?: string };
 
@@ -84,8 +90,9 @@ function parseSeasonTotalsPage(html: string, baseUrl: string): RosterRow[] {
 
 function readRosterFile(season: number): RosterRow[] {
   const dataDir = path.join(process.cwd(), 'data');
+  const seasonFile = ROSTER_FILES[season];
   const candidates = [
-    path.join(dataDir, `afl-roster-${season}.json`),
+    ...(seasonFile ? [path.join(dataDir, seasonFile)] : []),
     path.join(dataDir, 'afl-roster-2025.json'),
   ];
   for (const file of candidates) {
@@ -131,7 +138,10 @@ async function fetchLiveRoster(season: number): Promise<RosterRow[] | null> {
 export async function GET(request: NextRequest) {
   const team = request.nextUrl.searchParams.get('team')?.trim();
   const seasonRaw = request.nextUrl.searchParams.get('season')?.trim();
-  const season = seasonRaw && Number.isFinite(Number(seasonRaw)) ? parseInt(seasonRaw, 10) : new Date().getFullYear();
+  const requestedSeason = seasonRaw && Number.isFinite(Number(seasonRaw)) ? parseInt(seasonRaw, 10) : new Date().getFullYear();
+  const season = SUPPORTED_SEASONS.includes(requestedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? requestedSeason
+    : 2026;
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
   const now = Date.now();
 

@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
 export type LeaguePlayerStatRow = {
   name: string;
@@ -21,25 +22,29 @@ export type LeaguePlayerStatRow = {
 
 /** Read cached league player stats. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
 function readCachedLeaguePlayerStats(season: number): { season: number; players: LeaguePlayerStatRow[] } | null {
-  const files = [
-    path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`),
-  ];
-  for (const filePath of files) {
-    try {
-      const raw = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(raw) as { season?: number; players?: LeaguePlayerStatRow[] };
-      if (!data?.players?.length) continue;
-      return { season: data.season ?? season, players: data.players };
-    } catch {
-      /* try next file */
-    }
+  const dataDir = path.join(process.cwd(), 'data');
+  const readOne = (fileName: string) => {
+    const raw = fs.readFileSync(path.join(dataDir, fileName), 'utf8');
+    const data = JSON.parse(raw) as { season?: number; players?: LeaguePlayerStatRow[] };
+    if (!data?.players?.length) return null;
+    return { season: data.season ?? season, players: data.players };
+  };
+  try {
+    if (season === 2026) return readOne('afl-league-player-stats-2026.json');
+    if (season === 2025) return readOne('afl-league-player-stats-2025.json');
+    if (season === 2024) return readOne('afl-league-player-stats-2024.json');
+  } catch {
+    /* fall through */
   }
   return null;
 }
 
 export async function GET(request: NextRequest) {
   const seasonParam = request.nextUrl.searchParams.get('season');
-  const season = seasonParam ? parseInt(seasonParam, 10) : parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
+  const requestedSeason = seasonParam ? parseInt(seasonParam, 10) : parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
+  const season = SUPPORTED_SEASONS.includes(requestedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? requestedSeason
+    : 2026;
 
   const cached = readCachedLeaguePlayerStats(season);
   if (!cached) {

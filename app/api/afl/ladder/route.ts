@@ -5,6 +5,12 @@ import fs from 'fs';
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 const TTL_MS = 1000 * 60 * 30; // 30 min
 const FOOTYWIRE_LADDER_URL = 'https://www.footywire.com/afl/json/json-sort-stats-ladder.json';
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
+const LADDER_FILES: Record<number, string> = {
+  2026: 'afl-ladder-2026.json',
+  2025: 'afl-ladder-2025.json',
+  2024: 'afl-ladder-2024.json',
+};
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -139,9 +145,11 @@ function parseLadder(html: string): LadderRow[] {
 }
 
 function readCachedLadder(season: number): { season: number; teams: LadderRow[] } | null {
+  const seasonFile = LADDER_FILES[season];
+  const prevFile = LADDER_FILES[season - 1];
   const files = [
-    path.join(process.cwd(), 'data', `afl-ladder-${season}.json`),
-    path.join(process.cwd(), 'data', `afl-ladder-${season - 1}.json`),
+    ...(seasonFile ? [path.join(process.cwd(), 'data', seasonFile)] : []),
+    ...(prevFile ? [path.join(process.cwd(), 'data', prevFile)] : []),
   ];
   for (const filePath of files) {
     try {
@@ -198,7 +206,10 @@ async function fetchLiveLadder(season: number): Promise<{ season: number; teams:
 
 export async function GET(request: NextRequest) {
   const seasonParam = request.nextUrl.searchParams.get('season');
-  const season = seasonParam ? parseInt(seasonParam, 10) : parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
+  const requestedSeason = seasonParam ? parseInt(seasonParam, 10) : parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
+  const season = SUPPORTED_SEASONS.includes(requestedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? requestedSeason
+    : 2026;
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
   const now = Date.now();
 
