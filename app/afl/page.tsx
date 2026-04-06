@@ -79,8 +79,33 @@ type AflDisposalsModelProjection = {
   pUnder: number;
   marketPOver: number | null;
   edgeVsMarket: number | null;
+  edgeVsMarketUnder?: number | null;
+  recommendedSide?: 'OVER' | 'UNDER' | null;
+  recommendedEdge?: number | null;
+  recommendedProb?: number | null;
+  isRecommendedPick?: boolean;
+  isTop3PickInGame?: boolean;
+  recommendedPlayerRankInGame?: number | null;
+  gameKey?: string | null;
   modelVersion: string | null;
   scoredAt: string | null;
+};
+type AflTopGamePick = {
+  playerName: string;
+  bookmaker: string | null;
+  line: number | null;
+  expectedDisposals: number | null;
+  recommendedSide: 'OVER' | 'UNDER' | null;
+  recommendedEdge: number | null;
+  recommendedProb: number | null;
+  rank: number | null;
+};
+type AflTopPicksGameGroup = {
+  gameKey: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: string | null;
+  picks: AflTopGamePick[];
 };
 type AflDisposalsPastLineRow = {
   snapshotKey?: string;
@@ -538,6 +563,9 @@ export default function AFLPage() {
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
   const [aflDisposalsModelProjection, setAflDisposalsModelProjection] = useState<AflDisposalsModelProjection | null>(null);
   const [aflDisposalsModelLoading, setAflDisposalsModelLoading] = useState(false);
+  const [showAflTopPicksModal, setShowAflTopPicksModal] = useState(false);
+  const [aflTopPicksByGame, setAflTopPicksByGame] = useState<AflTopPicksGameGroup[]>([]);
+  const [aflTopPicksModalLoading, setAflTopPicksModalLoading] = useState(false);
   const [aflDisposalsPastLines, setAflDisposalsPastLines] = useState<AflDisposalsPastLineRow[]>([]);
   const [aflDisposalsPastLinesLoading, setAflDisposalsPastLinesLoading] = useState(false);
   const aflDisposalsPastLinesCompleted = useMemo(
@@ -1699,6 +1727,7 @@ export default function AFLPage() {
   useEffect(() => {
     if (aflPropsMode !== 'player' || mainChartStat !== 'disposals' || !selectedPlayer?.name || !aflOddsHomeTeam || !aflOddsAwayTeam) {
       setAflDisposalsModelProjection(null);
+      setShowAflTopPicksModal(false);
       setAflDisposalsModelLoading(false);
       return;
     }
@@ -1714,6 +1743,7 @@ export default function AFLPage() {
     const lineToUse = aflCurrentLineValue != null && Number.isFinite(aflCurrentLineValue) ? aflCurrentLineValue : fallbackLine;
     if (lineToUse == null) {
       setAflDisposalsModelProjection(null);
+      setShowAflTopPicksModal(false);
       setAflDisposalsModelLoading(false);
       return;
     }
@@ -1741,10 +1771,14 @@ export default function AFLPage() {
           setAflDisposalsModelProjection(projection as AflDisposalsModelProjection);
         } else {
           setAflDisposalsModelProjection(null);
+          setShowAflTopPicksModal(false);
         }
       })
       .catch(() => {
-        if (!cancelled) setAflDisposalsModelProjection(null);
+        if (!cancelled) {
+          setAflDisposalsModelProjection(null);
+          setShowAflTopPicksModal(false);
+        }
       })
       .finally(() => {
         if (!cancelled) setAflDisposalsModelLoading(false);
@@ -1764,6 +1798,27 @@ export default function AFLPage() {
     selectedAflDisposalsColumn,
     aflPlayerPropsBooks,
   ]);
+
+  useEffect(() => {
+    setShowAflTopPicksModal(false);
+  }, [selectedPlayer?.name, aflDisposalsModelProjection?.gameKey, aflCurrentLineValue]);
+
+  const openAflTopPicksModal = useCallback(() => {
+    setShowAflTopPicksModal(true);
+    setAflTopPicksModalLoading(true);
+    fetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        const groups = Array.isArray(payload?.groups) ? payload.groups : [];
+        setAflTopPicksByGame(groups as AflTopPicksGameGroup[]);
+      })
+      .catch(() => {
+        setAflTopPicksByGame([]);
+      })
+      .finally(() => {
+        setAflTopPicksModalLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
@@ -4249,26 +4304,49 @@ export default function AFLPage() {
                             Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                             </div>
                             <div className="text-gray-600 dark:text-gray-300">
-                              Market Prob (Under):{' '}
+                              Market Prob (Best Side):{' '}
                               <span className="font-bold text-gray-900 dark:text-white">
                                 {aflDisposalsModelProjection.marketPOver == null
                                   ? '—'
-                                  : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
+                                  : (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && (aflDisposalsModelProjection.edgeVsMarket ?? 0) >= 0))
+                                    ? `${(aflDisposalsModelProjection.marketPOver * 100).toFixed(1)}%`
+                                    : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
                               </span>
                             </div>
                             <div className="text-gray-600 dark:text-gray-300">
-                              Under Edge:{' '}
+                              Edge (Best Side):{' '}
                             <span className={`font-bold ${
                                 aflDisposalsModelProjection.edgeVsMarket == null
                                   ? 'text-gray-900 dark:text-white'
-                                  : aflDisposalsModelProjection.edgeVsMarket <= 0
+                                  : ((aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
+                                      ? (aflDisposalsModelProjection.edgeVsMarket >= 0)
+                                      : (-aflDisposalsModelProjection.edgeVsMarket >= 0))
                                     ? 'text-green-500'
                                     : 'text-red-500'
                               }`}>
                                 {aflDisposalsModelProjection.edgeVsMarket == null
                                   ? '—'
-                                  : `${aflDisposalsModelProjection.edgeVsMarket <= 0 ? '+' : ''}${(-aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                                  : (() => {
+                                      const bestEdge = (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
+                                        ? aflDisposalsModelProjection.edgeVsMarket
+                                        : -aflDisposalsModelProjection.edgeVsMarket;
+                                      return `${bestEdge >= 0 ? '+' : ''}${(bestEdge * 100).toFixed(1)}%`;
+                                    })()}
                               </span>
+                            </div>
+                            {aflDisposalsModelProjection.isTop3PickInGame === false && (
+                              <div className="text-xs text-amber-500 dark:text-amber-400">
+                                Not in top 3 picks for this game.
+                              </div>
+                            )}
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={openAflTopPicksModal}
+                                className="text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline"
+                              >
+                                View Top Picks
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -4300,48 +4378,63 @@ export default function AFLPage() {
                                 <tbody>
                                   {aflDisposalsPastLinesCompleted.map((row, idx) => {
                                     const bookmakerInfo = getBookmakerInfo(String(row.bookmaker ?? ''));
+                                    const lineValue = typeof row.line === 'number' ? row.line : null;
+                                    const modelValue = typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals : null;
+                                    const actualValue = typeof row.actualDisposals === 'number' ? row.actualDisposals : null;
+                                    const wonByModel = lineValue != null && modelValue != null && actualValue != null && (
+                                      (modelValue > lineValue && actualValue > lineValue) ||
+                                      (modelValue < lineValue && actualValue < lineValue)
+                                    );
+                                    const lostByModel = lineValue != null && modelValue != null && actualValue != null && (
+                                      (modelValue > lineValue && actualValue < lineValue) ||
+                                      (modelValue < lineValue && actualValue > lineValue)
+                                    );
+                                    const endedTextClass = wonByModel
+                                      ? 'text-green-500'
+                                      : lostByModel
+                                        ? 'text-red-500'
+                                        : 'text-gray-900 dark:text-white';
                                     return (
                                       <tr key={`${row.snapshotKey ?? 'row'}-${idx}`} className="border-b border-gray-100 dark:border-gray-800/60">
                                         <td className="py-1 pr-2 text-gray-700 dark:text-gray-200">{formatPastLineDate(row.gameDate)}</td>
                                         <td className="py-1 pr-2">
-                                          {bookmakerInfo.logoUrl ? (
-                                            <>
-                                              <img
-                                                src={bookmakerInfo.logoUrl}
-                                                alt={bookmakerInfo.name}
-                                                className="w-5 h-5 rounded object-contain"
-                                                onError={(e) => {
-                                                  (e.target as HTMLImageElement).style.display = 'none';
-                                                  const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                                  if (fallback) fallback.style.display = 'flex';
-                                                }}
-                                              />
+                                          <div className="flex items-center gap-1.5">
+                                            {bookmakerInfo.logoUrl ? (
+                                              <>
+                                                <img
+                                                  src={bookmakerInfo.logoUrl}
+                                                  alt={bookmakerInfo.name}
+                                                  className="w-5 h-5 rounded object-contain"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                    if (fallback) fallback.style.display = 'flex';
+                                                  }}
+                                                />
+                                                <span
+                                                  className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                                  style={{ backgroundColor: bookmakerInfo.color }}
+                                                >
+                                                  {bookmakerInfo.logo}
+                                                </span>
+                                              </>
+                                            ) : (
                                               <span
-                                                className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                                className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
                                                 style={{ backgroundColor: bookmakerInfo.color }}
                                               >
                                                 {bookmakerInfo.logo}
                                               </span>
-                                            </>
-                                          ) : (
-                                            <span
-                                              className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
-                                              style={{ backgroundColor: bookmakerInfo.color }}
-                                            >
-                                              {bookmakerInfo.logo}
+                                            )}
+                                            <span className="text-xs text-gray-900 dark:text-white tabular-nums">
+                                              {typeof row.line === 'number' ? row.line.toFixed(1) : '—'}
                                             </span>
-                                          )}
+                                          </div>
                                         </td>
                                         <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
                                           {typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals.toFixed(1) : '—'}
                                         </td>
-                                        <td className={`py-1 pr-2 tabular-nums ${
-                                          row.resultColor === 'green'
-                                            ? 'text-green-500'
-                                            : row.resultColor === 'red'
-                                              ? 'text-red-500'
-                                              : 'text-gray-900 dark:text-white'
-                                        }`}>
+                                        <td className={`py-1 pr-2 tabular-nums ${endedTextClass}`}>
                                           {typeof row.actualDisposals === 'number' ? row.actualDisposals.toFixed(1) : '—'}
                                         </td>
                                         <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
@@ -4730,26 +4823,49 @@ export default function AFLPage() {
                             Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                           </div>
                           <div className="text-gray-600 dark:text-gray-300">
-                            Market Prob (Under):{' '}
+                            Market Prob (Best Side):{' '}
                             <span className="font-bold text-gray-900 dark:text-white">
                               {aflDisposalsModelProjection.marketPOver == null
                                 ? '—'
-                                : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
+                                : (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && (aflDisposalsModelProjection.edgeVsMarket ?? 0) >= 0))
+                                  ? `${(aflDisposalsModelProjection.marketPOver * 100).toFixed(1)}%`
+                                  : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
                             </span>
                           </div>
                           <div className="text-gray-600 dark:text-gray-300">
-                            Under Edge:{' '}
+                            Edge (Best Side):{' '}
                               <span className={`font-bold ${
                               aflDisposalsModelProjection.edgeVsMarket == null
                                 ? 'text-gray-900 dark:text-white'
-                                : aflDisposalsModelProjection.edgeVsMarket <= 0
+                                : ((aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
+                                    ? (aflDisposalsModelProjection.edgeVsMarket >= 0)
+                                    : (-aflDisposalsModelProjection.edgeVsMarket >= 0))
                                   ? 'text-green-500'
                                   : 'text-red-500'
                             }`}>
                               {aflDisposalsModelProjection.edgeVsMarket == null
                                 ? '—'
-                                : `${aflDisposalsModelProjection.edgeVsMarket <= 0 ? '+' : ''}${(-aflDisposalsModelProjection.edgeVsMarket * 100).toFixed(1)}%`}
+                                : (() => {
+                                    const bestEdge = (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
+                                      ? aflDisposalsModelProjection.edgeVsMarket
+                                      : -aflDisposalsModelProjection.edgeVsMarket;
+                                    return `${bestEdge >= 0 ? '+' : ''}${(bestEdge * 100).toFixed(1)}%`;
+                                  })()}
                             </span>
+                          </div>
+                          {aflDisposalsModelProjection.isTop3PickInGame === false && (
+                            <div className="text-xs text-amber-500 dark:text-amber-400">
+                              Not in top 3 picks for this game.
+                            </div>
+                          )}
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={openAflTopPicksModal}
+                              className="text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline"
+                            >
+                              View Top Picks
+                            </button>
                           </div>
                         </div>
                       ) : (
@@ -4781,48 +4897,63 @@ export default function AFLPage() {
                               <tbody>
                                 {aflDisposalsPastLinesCompleted.map((row, idx) => {
                                   const bookmakerInfo = getBookmakerInfo(String(row.bookmaker ?? ''));
+                                  const lineValue = typeof row.line === 'number' ? row.line : null;
+                                  const modelValue = typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals : null;
+                                  const actualValue = typeof row.actualDisposals === 'number' ? row.actualDisposals : null;
+                                  const wonByModel = lineValue != null && modelValue != null && actualValue != null && (
+                                    (modelValue > lineValue && actualValue > lineValue) ||
+                                    (modelValue < lineValue && actualValue < lineValue)
+                                  );
+                                  const lostByModel = lineValue != null && modelValue != null && actualValue != null && (
+                                    (modelValue > lineValue && actualValue < lineValue) ||
+                                    (modelValue < lineValue && actualValue > lineValue)
+                                  );
+                                  const endedTextClass = wonByModel
+                                    ? 'text-green-500'
+                                    : lostByModel
+                                      ? 'text-red-500'
+                                      : 'text-gray-900 dark:text-white';
                                   return (
                                     <tr key={`${row.snapshotKey ?? 'row'}-${idx}`} className="border-b border-gray-100 dark:border-gray-800/60">
                                       <td className="py-1 pr-2 text-gray-700 dark:text-gray-200">{formatPastLineDate(row.gameDate)}</td>
                                       <td className="py-1 pr-2">
-                                        {bookmakerInfo.logoUrl ? (
-                                          <>
-                                            <img
-                                              src={bookmakerInfo.logoUrl}
-                                              alt={bookmakerInfo.name}
-                                              className="w-5 h-5 rounded object-contain"
-                                              onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                                if (fallback) fallback.style.display = 'flex';
-                                              }}
-                                            />
+                                        <div className="flex items-center gap-1.5">
+                                          {bookmakerInfo.logoUrl ? (
+                                            <>
+                                              <img
+                                                src={bookmakerInfo.logoUrl}
+                                                alt={bookmakerInfo.name}
+                                                className="w-5 h-5 rounded object-contain"
+                                                onError={(e) => {
+                                                  (e.target as HTMLImageElement).style.display = 'none';
+                                                  const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                  if (fallback) fallback.style.display = 'flex';
+                                                }}
+                                              />
+                                              <span
+                                                className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                                style={{ backgroundColor: bookmakerInfo.color }}
+                                              >
+                                                {bookmakerInfo.logo}
+                                              </span>
+                                            </>
+                                          ) : (
                                             <span
-                                              className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                              className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
                                               style={{ backgroundColor: bookmakerInfo.color }}
                                             >
                                               {bookmakerInfo.logo}
                                             </span>
-                                          </>
-                                        ) : (
-                                          <span
-                                            className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
-                                            style={{ backgroundColor: bookmakerInfo.color }}
-                                          >
-                                            {bookmakerInfo.logo}
+                                          )}
+                                          <span className="text-xs text-gray-900 dark:text-white tabular-nums">
+                                            {typeof row.line === 'number' ? row.line.toFixed(1) : '—'}
                                           </span>
-                                        )}
+                                        </div>
                                       </td>
                                       <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
                                         {typeof row.modelExpectedDisposals === 'number' ? row.modelExpectedDisposals.toFixed(1) : '—'}
                                       </td>
-                                      <td className={`py-1 pr-2 tabular-nums ${
-                                        row.resultColor === 'green'
-                                          ? 'text-green-500'
-                                          : row.resultColor === 'red'
-                                            ? 'text-red-500'
-                                            : 'text-gray-900 dark:text-white'
-                                      }`}>
+                                      <td className={`py-1 pr-2 tabular-nums ${endedTextClass}`}>
                                         {typeof row.actualDisposals === 'number' ? row.actualDisposals.toFixed(1) : '—'}
                                       </td>
                                       <td className="py-1 pr-2 text-gray-900 dark:text-white tabular-nums">
@@ -4896,6 +5027,126 @@ export default function AFLPage() {
           </div>
         </div>
       </div>
+      {showAflTopPicksModal && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowAflTopPicksModal(false)}
+        >
+          <div
+            className={`w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl border p-4 shadow-2xl ${
+              isDark ? 'bg-[#0b1a2c] border-gray-700' : 'bg-white border-gray-200'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Top Picks By Game</h3>
+              <button
+                type="button"
+                onClick={() => setShowAflTopPicksModal(false)}
+                className="text-xs font-semibold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Close
+              </button>
+            </div>
+            {aflTopPicksModalLoading ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Loading top picks...</div>
+            ) : aflTopPicksByGame.length === 0 ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">No ranked top picks available yet.</div>
+            ) : (
+              <div className={`max-h-[62vh] overflow-auto custom-scrollbar fade-scrollbar rounded-lg border ${
+                isDark ? 'border-gray-700' : 'border-gray-200'
+              }`}>
+                <table className="min-w-full text-xs">
+                  <thead className={`sticky top-0 z-10 ${isDark ? 'bg-[#0b1a2c]' : 'bg-white'}`}>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 text-left">
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Game</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">#</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Player</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Side</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Line</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Edge</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Book</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {aflTopPicksByGame.map((group, groupIdx) => {
+                      const homeLogo = resolveTeamLogo(group.homeTeam, logoByTeam);
+                      const awayLogo = resolveTeamLogo(group.awayTeam, logoByTeam);
+                      const groupStripeClass = groupIdx % 2 === 0
+                        ? (isDark ? 'bg-[#0b2138]' : 'bg-white')
+                        : (isDark ? 'bg-[#102a44]' : 'bg-gray-50');
+                      return group.picks.map((pick, idx) => {
+                        const bookmakerInfo = getBookmakerInfo(String(pick.bookmaker ?? ''));
+                        return (
+                        <tr key={`${group.gameKey}-${pick.rank ?? 0}-${pick.playerName}`} className={`${groupStripeClass} border-b border-gray-100 dark:border-gray-800/60`}>
+                          {idx === 0 ? (
+                            <td rowSpan={group.picks.length} className="px-2.5 py-2 align-middle">
+                              <div className="flex items-center justify-center gap-2">
+                                {homeLogo ? (
+                                  <img src={homeLogo} alt={group.homeTeam} className="h-6 w-6 rounded object-contain" />
+                                ) : (
+                                  <span className="h-6 w-6 rounded bg-gray-400/50" />
+                                )}
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">vs</span>
+                                {awayLogo ? (
+                                  <img src={awayLogo} alt={group.awayTeam} className="h-6 w-6 rounded object-contain" />
+                                ) : (
+                                  <span className="h-6 w-6 rounded bg-gray-400/50" />
+                                )}
+                              </div>
+                              <div className="mt-1.5 text-center text-[13px] font-semibold text-gray-700 dark:text-gray-300">
+                                {group.commenceTime ? formatPastLineDate(String(group.commenceTime).slice(0, 10)) : 'Game'}
+                              </div>
+                            </td>
+                          ) : null}
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">{pick.rank ?? '—'}</td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white">{pick.playerName}</td>
+                          <td className="px-2.5 py-2 text-gray-700 dark:text-gray-200">{pick.recommendedSide ?? '—'}</td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
+                            {pick.line != null ? pick.line.toFixed(1) : '—'}
+                          </td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
+                            {pick.recommendedEdge != null ? `${pick.recommendedEdge >= 0 ? '+' : ''}${(pick.recommendedEdge * 100).toFixed(1)}%` : '—'}
+                          </td>
+                          <td className="px-2.5 py-2">
+                            {bookmakerInfo.logoUrl ? (
+                              <>
+                                <img
+                                  src={bookmakerInfo.logoUrl}
+                                  alt={bookmakerInfo.name}
+                                  className="w-5 h-5 rounded object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                                <span
+                                  className="w-5 h-5 rounded hidden items-center justify-center text-[10px] font-semibold text-white"
+                                  style={{ backgroundColor: bookmakerInfo.color }}
+                                >
+                                  {bookmakerInfo.logo}
+                                </span>
+                              </>
+                            ) : (
+                              <span
+                                className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white"
+                                style={{ backgroundColor: bookmakerInfo.color }}
+                              >
+                                {bookmakerInfo.logo}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )});
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Journal modal - same as NBA: AddToJournalModal with player/team/opponent/gameDate */}
       {teamContextTeam && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—' && nextGameTipoff && (
         <Suspense fallback={null}>

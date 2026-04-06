@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
+import {
+  getAflDisposalsProjection,
+  getAflDisposalsProjectionPayloadMeta,
+  getAflDisposalsTopPicksForGame,
+} from '@/lib/aflDisposalsModel';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,14 +28,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       projection: null,
+      topPicks: [],
       modelVersion: meta.modelVersion,
       generatedAt: meta.generatedAt,
     });
   }
 
+  const topPicks = projection.gameKey ? getAflDisposalsTopPicksForGame(projection.gameKey, 3) : [];
+
   return NextResponse.json({
     success: true,
     projection,
+    topPicks,
     modelVersion: meta.modelVersion,
     generatedAt: meta.generatedAt,
   });

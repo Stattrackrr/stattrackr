@@ -498,6 +498,8 @@ def fetch_player_logs(
     player_name: str,
     team: str,
     include_quarters: bool = False,
+    include_both: bool = False,
+    strict_season: bool = True,
     use_disk_cache: bool = True,
     cache_ttl_minutes: int = 720,
     force_fetch: bool = False,
@@ -527,7 +529,8 @@ def fetch_player_logs(
         "season": str(season),
         "player_name": player_name,
         "team": team,
-        "strict_season": "true",
+        "strict_season": "true" if strict_season else "false",
+        "include_both": "true" if include_both else "false",
         "include_quarters": "true" if include_quarters else "false",
         "force_fetch": "1" if force_fetch else "0",
     }

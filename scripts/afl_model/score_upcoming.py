@@ -586,6 +586,8 @@ def _settle_fetch_logs(
                         season,
                         player,
                         team_name,
+                        include_both=True,
+                        strict_season=False,
                         use_disk_cache=True,
                         cache_ttl_minutes=720,
                         force_fetch=force_fetch,
@@ -721,6 +723,67 @@ def enrich_line_history_actuals(rows: List[dict], base_url: str) -> List[dict]:
         )
         completed_game_keys.add(game_key)
     return rows
+
+
+def _projection_game_key(row: dict) -> str:
+    return "|".join(
+        [
+            normalize_team(str(row.get("homeTeam") or "")),
+            normalize_team(str(row.get("awayTeam") or "")),
+            str(row.get("commenceTime") or "")[:10],
+        ]
+    )
+
+
+def assign_top3_game_ranks(rows: List[dict]) -> None:
+    by_game: Dict[str, List[dict]] = {}
+    for row in rows:
+        game_key = _projection_game_key(row)
+        row["gameKey"] = game_key
+        by_game.setdefault(game_key, []).append(row)
+
+    for game_key, game_rows in by_game.items():
+        candidates: List[dict] = []
+        for row in game_rows:
+            if not bool(row.get("isRecommendedPick")):
+                continue
+            edge = to_float(row.get("recommendedEdge"))
+            prob = to_float(row.get("recommendedProb"))
+            if edge is None or prob is None:
+                continue
+            candidates.append(row)
+
+        # Deterministic ordering: edge desc, prob desc, player name asc, bookmaker asc, line asc, projectionKey asc.
+        candidates.sort(
+            key=lambda r: (
+                -(to_float(r.get("recommendedEdge")) or -999.0),
+                -(to_float(r.get("recommendedProb")) or -999.0),
+                normalize_name(str(r.get("playerName") or "")),
+                normalize_name(str(r.get("bookmaker") or "")),
+                to_float(r.get("line")) or 0.0,
+                str(r.get("projectionKey") or ""),
+            )
+        )
+
+        # One player max per game for user-facing top picks.
+        rank_by_player: Dict[str, int] = {}
+        ranked_player_keys: List[str] = []
+        for row in candidates:
+            player_key = normalize_name(str(row.get("playerName") or ""))
+            if not player_key or player_key in rank_by_player:
+                continue
+            rank = len(ranked_player_keys) + 1
+            rank_by_player[player_key] = rank
+            ranked_player_keys.append(player_key)
+            if len(ranked_player_keys) >= 3:
+                break
+
+        for row in game_rows:
+            player_key = normalize_name(str(row.get("playerName") or ""))
+            rank = rank_by_player.get(player_key)
+            row["recommendedPlayerRankInGame"] = rank if rank is not None else None
+            row["isTop3PickInGame"] = bool(rank is not None and rank <= 3)
+            row["top3RankingVersion"] = "edge_prob_player_deterministic_v1"
 
 
 def main() -> None:
@@ -985,6 +1048,7 @@ def main() -> None:
         )
 
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
+    assign_top3_game_ranks(out_rows)
     lowest_rows = select_lowest_line_rows(out_rows)
     existing_history = read_line_history()
     merged_history = upsert_line_history(existing_history, lowest_rows)
