@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -76,7 +79,18 @@ jobs:
             git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
             pushed=0
             for i in 1 2 3; do
-              git pull --rebase origin master && git push origin master && pushed=1 && break
+              git fetch origin master
+              if ! git rebase -X theirs origin/master; then
+                echo "Rebase attempt $i failed; aborting and retrying..."
+                git rebase --abort || true
+                git reset --hard HEAD
+                sleep 5
+                continue
+              fi
+              if git push origin HEAD:master; then
+                pushed=1
+                break
+              fi
               echo "Push attempt $i failed, retrying..."
               sleep 5
             done
