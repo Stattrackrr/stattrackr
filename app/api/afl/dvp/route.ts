@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
 const DEFAULT_SEASON = 2026;
 const DEFAULT_STAT = 'disposals';
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
 type DvpRow = {
   opponent: string;
@@ -37,7 +38,15 @@ function parseIntSafe(v: string | null, fallback: number): number {
 async function readDvpFile(season: number): Promise<DvpFileShape> {
   const cached = await getAflDvpPayloadFromCache(season);
   if (cached?.rows) return cached as DvpFileShape;
-  const file = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
+  const fileName = season === 2026
+    ? 'afl-dvp-2026.json'
+    : season === 2025
+      ? 'afl-dvp-2025.json'
+      : season === 2024
+        ? 'afl-dvp-2024.json'
+        : null;
+  if (!fileName) throw new Error(`Unsupported season ${season}`);
+  const file = path.join(process.cwd(), 'data', fileName);
   const raw = await fs.readFile(file, 'utf8');
   return JSON.parse(raw) as DvpFileShape;
 }
@@ -45,7 +54,10 @@ async function readDvpFile(season: number): Promise<DvpFileShape> {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const season = parseIntSafe(searchParams.get('season'), DEFAULT_SEASON);
+  const requestedSeason = parseIntSafe(searchParams.get('season'), DEFAULT_SEASON);
+  const season = SUPPORTED_SEASONS.includes(requestedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? requestedSeason
+    : DEFAULT_SEASON;
   const positionParam = (searchParams.get('position') || '').trim().toUpperCase();
   const stat = (searchParams.get('stat') || DEFAULT_STAT).trim();
   const order = (searchParams.get('order') || 'desc').trim().toLowerCase(); // desc = easier, asc = harder

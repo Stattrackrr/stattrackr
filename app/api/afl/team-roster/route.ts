@@ -7,11 +7,6 @@ const AFL_TABLES_BASE = 'https://afltables.com';
 const STATS_BASE = `${AFL_TABLES_BASE}/afl/stats`;
 const TTL_MS = 1000 * 60 * 30; // 30 min
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
-const ROSTER_FILES: Record<number, string> = {
-  2026: 'afl-roster-2026.json',
-  2025: 'afl-roster-2025.json',
-  2024: 'afl-roster-2024.json',
-};
 
 type RosterRow = { name?: string; team?: string };
 
@@ -89,20 +84,28 @@ function parseSeasonTotalsPage(html: string, baseUrl: string): RosterRow[] {
 }
 
 function readRosterFile(season: number): RosterRow[] {
-  const dataDir = path.join(process.cwd(), 'data');
-  const seasonFile = ROSTER_FILES[season];
-  const candidates = [
-    ...(seasonFile ? [path.join(dataDir, seasonFile)] : []),
-    path.join(dataDir, 'afl-roster-2025.json'),
-  ];
-  for (const file of candidates) {
-    try {
-      const raw = fs.readFileSync(file, 'utf8');
+  try {
+    const raw =
+      season === 2026
+        ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-roster-2026.json'), 'utf8')
+        : season === 2025
+          ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-roster-2025.json'), 'utf8')
+          : season === 2024
+            ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-roster-2024.json'), 'utf8')
+            : null;
+    if (raw) {
       const json = JSON.parse(raw) as { players?: RosterRow[] };
       if (Array.isArray(json?.players) && json.players.length > 0) return json.players;
-    } catch {
-      /* try next */
     }
+  } catch {
+    /* try fallback */
+  }
+  try {
+    const rawFallback = fs.readFileSync(path.join(process.cwd(), 'data', 'afl-roster-2025.json'), 'utf8');
+    const jsonFallback = JSON.parse(rawFallback) as { players?: RosterRow[] };
+    if (Array.isArray(jsonFallback?.players) && jsonFallback.players.length > 0) return jsonFallback.players;
+  } catch {
+    /* no fallback */
   }
   return [];
 }

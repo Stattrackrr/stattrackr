@@ -22,17 +22,19 @@ export type LeaguePlayerStatRow = {
 
 /** Read cached league player stats. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
 function readCachedLeaguePlayerStats(season: number): { season: number; players: LeaguePlayerStatRow[] } | null {
-  const dataDir = path.join(process.cwd(), 'data');
-  const readOne = (fileName: string) => {
-    const raw = fs.readFileSync(path.join(dataDir, fileName), 'utf8');
+  try {
+    const raw =
+      season === 2026
+        ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-league-player-stats-2026.json'), 'utf8')
+        : season === 2025
+          ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-league-player-stats-2025.json'), 'utf8')
+          : season === 2024
+            ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-league-player-stats-2024.json'), 'utf8')
+            : null;
+    if (!raw) return null;
     const data = JSON.parse(raw) as { season?: number; players?: LeaguePlayerStatRow[] };
     if (!data?.players?.length) return null;
     return { season: data.season ?? season, players: data.players };
-  };
-  try {
-    if (season === 2026) return readOne('afl-league-player-stats-2026.json');
-    if (season === 2025) return readOne('afl-league-player-stats-2025.json');
-    if (season === 2024) return readOne('afl-league-player-stats-2024.json');
   } catch {
     /* fall through */
   }

@@ -11,21 +11,34 @@ import {
   type AflPlayerLogsCachePayload,
 } from '@/lib/cache/aflPlayerLogsCache';
 
-/** Resolve player's team for a given season from league stats (for players who changed teams). */
-function getPlayerTeamForSeason(season: number, playerName: string): string | null {
-  const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
+const LEAGUE_PLAYER_STATS_FILES: Record<number, string> = {
+  2026: 'afl-league-player-stats-2026.json',
+  2025: 'afl-league-player-stats-2025.json',
+  2024: 'afl-league-player-stats-2024.json',
+};
+
+function readLeaguePlayersForSeason(season: number): { name: string; team: string }[] | null {
+  const fileName = LEAGUE_PLAYER_STATS_FILES[season];
+  if (!fileName) return null;
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    const raw = fs.readFileSync(path.join(process.cwd(), 'data', fileName), 'utf8');
     const data = JSON.parse(raw) as { players?: { name: string; team: string }[] };
-    if (!Array.isArray(data?.players)) return null;
-    const normalized = normalizeAflPlayerNameForMatch(playerName);
-    const row = data.players.find((p) => normalizeAflPlayerNameForMatch(p.name ?? '') === normalized);
-    if (!row?.team) return null;
-    const official = leagueTeamToOfficial(row.team.trim()) ?? footywireNicknameToOfficial(row.team.trim());
-    return official ?? null;
+    return Array.isArray(data?.players) ? data.players : null;
   } catch {
     return null;
   }
+}
+
+/** Resolve player's team for a given season from league stats (for players who changed teams). */
+function getPlayerTeamForSeason(season: number, playerName: string): string | null {
+  const rows = readLeaguePlayersForSeason(season);
+  if (!rows?.length) return null;
+  const normalized = normalizeAflPlayerNameForMatch(playerName);
+  const row = rows.find((p) => normalizeAflPlayerNameForMatch(p.name ?? '') === normalized);
+  if (!row?.team) return null;
+  const official = leagueTeamToOfficial(row.team.trim()) ?? footywireNicknameToOfficial(row.team.trim());
+  return official ?? null;
 }
 
 /** Teams to try for FootyWire fetch (current season + previous season) so players who moved teams still get data. */
@@ -1184,7 +1197,10 @@ export async function GET(request: NextRequest) {
   const forceFetch = request.nextUrl.searchParams.get('force_fetch') === '1' || request.nextUrl.searchParams.get('force_fetch') === 'true';
   const strictSeason = request.nextUrl.searchParams.get('strict_season') === '1' || request.nextUrl.searchParams.get('strict_season') === 'true';
 
-  const season = seasonParam ? parseInt(seasonParam, 10) : null;
+  const parsedSeason = seasonParam ? parseInt(seasonParam, 10) : null;
+  const season = parsedSeason && SUPPORTED_SEASONS.includes(parsedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? parsedSeason
+    : parsedSeason;
   if (!season || Number.isNaN(season)) {
     return NextResponse.json({ error: 'season query param is required (e.g. 2025)' }, { status: 400 });
   }

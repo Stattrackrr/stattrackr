@@ -6,11 +6,6 @@ const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFu
 const TTL_MS = 1000 * 60 * 30; // 30 min
 const FOOTYWIRE_LADDER_URL = 'https://www.footywire.com/afl/json/json-sort-stats-ladder.json';
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
-const LADDER_FILES: Record<number, string> = {
-  2026: 'afl-ladder-2026.json',
-  2025: 'afl-ladder-2025.json',
-  2024: 'afl-ladder-2024.json',
-};
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -145,21 +140,39 @@ function parseLadder(html: string): LadderRow[] {
 }
 
 function readCachedLadder(season: number): { season: number; teams: LadderRow[] } | null {
-  const seasonFile = LADDER_FILES[season];
-  const prevFile = LADDER_FILES[season - 1];
-  const files = [
-    ...(seasonFile ? [path.join(process.cwd(), 'data', seasonFile)] : []),
-    ...(prevFile ? [path.join(process.cwd(), 'data', prevFile)] : []),
-  ];
-  for (const filePath of files) {
-    try {
-      const raw = fs.readFileSync(filePath, 'utf8');
-      const data = JSON.parse(raw) as { season?: number; teams?: LadderRow[] };
-      if (!data?.teams?.length) continue;
-      return { season: data.season ?? season, teams: data.teams };
-    } catch {
-      /* try next file */
-    }
+  const readOne = (raw: string | null) => {
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { season?: number; teams?: LadderRow[] };
+    if (!data?.teams?.length) return null;
+    return { season: data.season ?? season, teams: data.teams };
+  };
+  try {
+    const currentRaw =
+      season === 2026
+        ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2026.json'), 'utf8')
+        : season === 2025
+          ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2025.json'), 'utf8')
+          : season === 2024
+            ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2024.json'), 'utf8')
+            : null;
+    const parsed = readOne(currentRaw);
+    if (parsed) return parsed;
+  } catch {
+    /* try previous season file */
+  }
+  try {
+    const prevRaw =
+      season - 1 === 2026
+        ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2026.json'), 'utf8')
+        : season - 1 === 2025
+          ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2025.json'), 'utf8')
+          : season - 1 === 2024
+            ? fs.readFileSync(path.join(process.cwd(), 'data', 'afl-ladder-2024.json'), 'utf8')
+            : null;
+    const parsedPrev = readOne(prevRaw);
+    if (parsedPrev) return parsedPrev;
+  } catch {
+    /* no previous file */
   }
   return null;
 }

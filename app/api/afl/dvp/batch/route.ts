@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_SEASON = 2026;
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 const VALID_POSITIONS = new Set(['DEF', 'MID', 'FWD', 'RUC']);
 const VALID_DEPTH_ROLES = new Set(['key_fwd', 'gen_fwd', 'ins_mid', 'ruck', 'wng_def', 'gen_def', 'des_kck']);
 const DVP_BATCH_CACHE_PREFIX = 'afl_dvp_batch_v9';
@@ -57,8 +58,24 @@ function isValidOpponent(opponent: string): boolean {
 }
 
 async function readDvpFile(season: number, mode: 'basic' | 'depth', skipPayloadCache = false): Promise<DvpFileShape> {
+  const basicFile = season === 2026
+    ? 'afl-dvp-2026.json'
+    : season === 2025
+      ? 'afl-dvp-2025.json'
+      : season === 2024
+        ? 'afl-dvp-2024.json'
+        : null;
+  const depthFile = season === 2026
+    ? 'afl-dvp-depth-2026.json'
+    : season === 2025
+      ? 'afl-dvp-depth-2025.json'
+      : season === 2024
+        ? 'afl-dvp-depth-2024.json'
+        : null;
+  if (!basicFile || !depthFile) throw new Error(`Unsupported season ${season}`);
+
   if (mode === 'depth') {
-    const file = path.join(process.cwd(), 'data', `afl-dvp-depth-${season}.json`);
+    const file = path.join(process.cwd(), 'data', depthFile);
     const raw = await fs.readFile(file, 'utf8');
     return JSON.parse(raw) as DvpFileShape;
   }
@@ -66,14 +83,22 @@ async function readDvpFile(season: number, mode: 'basic' | 'depth', skipPayloadC
     const cached = await getAflDvpPayloadFromCache(season);
     if (cached?.rows) return cached as DvpFileShape;
   }
-  const file = path.join(process.cwd(), 'data', `afl-dvp-${season}.json`);
+  const file = path.join(process.cwd(), 'data', basicFile);
   const raw = await fs.readFile(file, 'utf8');
   return JSON.parse(raw) as DvpFileShape;
 }
 
 async function readOaFile(season: number): Promise<OaFileShape | null> {
+  const fileName = season === 2026
+    ? 'afl-team-rankings-2026-oa.json'
+    : season === 2025
+      ? 'afl-team-rankings-2025-oa.json'
+      : season === 2024
+        ? 'afl-team-rankings-2024-oa.json'
+        : null;
+  if (!fileName) return null;
   try {
-    const file = path.join(process.cwd(), 'data', `afl-team-rankings-${season}-oa.json`);
+    const file = path.join(process.cwd(), 'data', fileName);
     const raw = await fs.readFile(file, 'utf8');
     return JSON.parse(raw) as OaFileShape;
   } catch {
@@ -96,7 +121,10 @@ const STAT_TO_OA_CODE: Record<string, string> = {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const season = parseIntSafe(searchParams.get('season'), DEFAULT_SEASON);
+  const requestedSeason = parseIntSafe(searchParams.get('season'), DEFAULT_SEASON);
+  const season = SUPPORTED_SEASONS.includes(requestedSeason as (typeof SUPPORTED_SEASONS)[number])
+    ? requestedSeason
+    : DEFAULT_SEASON;
   const position = (searchParams.get('position') || '').trim().toUpperCase();
   const mode = ((searchParams.get('mode') || 'basic').trim().toLowerCase() === 'depth' ? 'depth' : 'basic') as 'basic' | 'depth';
   const depthRole = (searchParams.get('depthRole') || '').trim().toLowerCase();

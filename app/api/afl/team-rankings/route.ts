@@ -7,9 +7,20 @@ const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
 /** Read cached team rankings. Run scripts/fetch-footywire-team-rankings.js to refresh. */
 function readCachedTeamRankings(season: number, type: 'ta' | 'oa' = 'ta') {
-  const dataDir = path.join(process.cwd(), 'data');
-  const readOne = (fileName: string) => {
-    const raw = fs.readFileSync(path.join(dataDir, fileName), 'utf8');
+  const readRaw = (which: 'primary' | 'legacy'): string | null => {
+    if (which === 'primary') {
+      if (season === 2026) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2026-oa.json' : 'afl-team-rankings-2026-ta.json'), 'utf8');
+      if (season === 2025) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2025-oa.json' : 'afl-team-rankings-2025-ta.json'), 'utf8');
+      if (season === 2024) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2024-oa.json' : 'afl-team-rankings-2024-ta.json'), 'utf8');
+      return null;
+    }
+    if (season === 2026) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2026.json'), 'utf8');
+    if (season === 2025) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2025.json'), 'utf8');
+    if (season === 2024) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2024.json'), 'utf8');
+    return null;
+  };
+
+  const parse = (raw: string) => {
     const data = JSON.parse(raw) as {
       season?: number;
       teams?: Array<{ rank: number | null; team: string; stats: Record<string, number | string | null> }>;
@@ -20,31 +31,19 @@ function readCachedTeamRankings(season: number, type: 'ta' | 'oa' = 'ta') {
     return data;
   };
 
-  const primary = (() => {
-    if (season === 2026) return type === 'oa' ? 'afl-team-rankings-2026-oa.json' : 'afl-team-rankings-2026-ta.json';
-    if (season === 2025) return type === 'oa' ? 'afl-team-rankings-2025-oa.json' : 'afl-team-rankings-2025-ta.json';
-    if (season === 2024) return type === 'oa' ? 'afl-team-rankings-2024-oa.json' : 'afl-team-rankings-2024-ta.json';
-    return null;
-  })();
-  const legacy = season === 2026
-    ? 'afl-team-rankings-2026.json'
-    : season === 2025
-      ? 'afl-team-rankings-2025.json'
-      : season === 2024
-        ? 'afl-team-rankings-2024.json'
-        : null;
-
   try {
-    if (primary) {
-      const parsed = readOne(primary);
+    const raw = readRaw('primary');
+    if (raw) {
+      const parsed = parse(raw);
       if (parsed) return parsed;
-    }
+    } 
   } catch {
     /* try legacy */
   }
   try {
-    if (legacy) {
-      const parsed = readOne(legacy);
+    const raw = readRaw('legacy');
+    if (raw) {
+      const parsed = parse(raw);
       if (parsed) return parsed;
     }
   } catch {

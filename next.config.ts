@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   experimental: {
     // Experimental features disabled to avoid build errors
   },
+  outputFileTracingExcludes: {
+    '/*': [
+      './data/afl-model/cache/player-logs/**/*',
+      './data/afl-model/models/**/*',
+      './data/afl-model/datasets/**/*',
+      './scripts/afl_model/__pycache__/**/*',
+    ],
+  },
   // Only suppress known Supabase auth errors during build phase (not runtime)
   // These are expected errors when Supabase client initializes during static generation
   webpack: (config, { isServer }) => {

@@ -1,6 +1,4 @@
 import { Redis } from '@upstash/redis';
-import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
-
 const AFL_CACHE_SCHEMA = 'v1';
 const AFL_CACHE_PREFIX = `afl:player-logs:${AFL_CACHE_SCHEMA}`;
 
@@ -37,13 +35,27 @@ export function isAflPlayerLogsCacheEnabled(): boolean {
   return hasRemoteCache;
 }
 
+function normalizeAflPlayerNameForMatchLocal(name: string): string {
+  const apostropheLike = /[\u0027\u2018\u2019\u201B\u2032\u0060]/g;
+  const hyphenLike = /[\u002D\u2010\u2011\u2012\u2013\u2014\u2212]/g;
+  return String(name ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(apostropheLike, "'")
+    .replace(hyphenLike, '-')
+    .replace(/-/g, ' ')
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function buildAflPlayerLogsCacheKey(params: {
   season: number;
   playerName: string;
   teamForRequest: string | null;
   includeQuarters: boolean;
 }): string {
-  const player = normalizeAflPlayerNameForMatch(params.playerName);
+  const player = normalizeAflPlayerNameForMatchLocal(params.playerName);
   const team = (params.teamForRequest || 'none').trim().toLowerCase().replace(/\s+/g, ' ');
   const quarters = params.includeQuarters ? '1' : '0';
   return `${AFL_CACHE_PREFIX}:${params.season}:${team}:${player}:q${quarters}`;

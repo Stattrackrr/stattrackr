@@ -7,6 +7,7 @@ import { normalizeAflPlayerName } from '@/lib/aflPlayerNameUtils';
 
 /** Current AFL season year; override with AFL_CURRENT_SEASON. */
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
+const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
 type PlayerListEntry = { name: string; team?: string; number?: number | null };
 
@@ -32,11 +33,15 @@ function exactNameMatch(name: string, normalizedQuery: string): boolean {
 /** Read from league player stats (FootyWire). Prefer this so search uses same data as warm script; no API call. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
 function readCachedLeaguePlayerList(): Array<PlayerListEntry> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
-  const seasonsToTry = [year, year - 1];
+  const seasonsToTry = SUPPORTED_SEASONS.filter((s) => s <= year);
   for (const season of seasonsToTry) {
     try {
-      const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
-      const raw = fs.readFileSync(filePath, 'utf8');
+      const fileName = season === 2026
+        ? 'afl-league-player-stats-2026.json'
+        : season === 2025
+          ? 'afl-league-player-stats-2025.json'
+          : 'afl-league-player-stats-2024.json';
+      const raw = fs.readFileSync(path.join(process.cwd(), 'data', fileName), 'utf8');
       const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string; number?: number | null }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
@@ -88,11 +93,15 @@ async function playersFromPropsCache(): Promise<Array<PlayerListEntry> | null> {
 /** Read roster from cached file. Tries current year then previous year (e.g. 2026 then 2025). Run scripts/fetch-afl-roster.js to refresh. */
 function readCachedRoster(): Array<PlayerListEntry> | null {
   const year = parseInt(CURRENT_SEASON, 10) || new Date().getFullYear();
-  const seasonsToTry = [year, year - 1];
+  const seasonsToTry = SUPPORTED_SEASONS.filter((s) => s <= year);
   for (const season of seasonsToTry) {
     try {
-      const filePath = path.join(process.cwd(), 'data', `afl-roster-${season}.json`);
-      const raw = fs.readFileSync(filePath, 'utf8');
+      const fileName = season === 2026
+        ? 'afl-roster-2026.json'
+        : season === 2025
+          ? 'afl-roster-2025.json'
+          : 'afl-roster-2024.json';
+      const raw = fs.readFileSync(path.join(process.cwd(), 'data', fileName), 'utf8');
       const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
       const list = Array.isArray(data?.players) ? data.players : [];
       const players = list
