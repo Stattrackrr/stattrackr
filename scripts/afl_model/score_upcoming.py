@@ -943,71 +943,136 @@ def _pick_unique_players_sorted(candidates: List[dict], limit: int) -> List[dict
     return picked
 
 
-def _apply_side_balance_to_ranked_candidates(
-    candidates: List[dict], selected: List[dict], max_same_side: int, opposite_edge_tolerance: float
-) -> List[dict]:
-    # Keep deterministic ordering while reducing over-concentration to one side for user-facing top picks.
-    if len(selected) < 3 or max_same_side < 1:
-        return selected
+def _recompute_recommendation_fields(
+    row: dict,
+    min_edge: float,
+    min_confidence: float,
+    max_abs_weather_adjustment: float,
+) -> None:
+    market_over = to_float(row.get("marketPOver"))
+    market_under = to_float(row.get("marketPUnder"))
+    p_over = to_float(row.get("pOver"))
+    p_under = to_float(row.get("pUnder"))
 
-    side_counts: Dict[str, int] = {"OVER": 0, "UNDER": 0}
-    for row in selected:
-        side = _to_recommended_side(row)
-        if side:
-            side_counts[side] += 1
+    edge_over = (p_over - market_over) if (p_over is not None and market_over is not None) else None
+    edge_under = (p_under - market_under) if (p_under is not None and market_under is not None) else None
+    row["edgeVsMarket"] = round(edge_over, 4) if edge_over is not None else None
+    row["edgeVsMarketUnder"] = round(edge_under, 4) if edge_under is not None else None
 
-    dominant_side = ""
-    if side_counts["OVER"] > max_same_side:
-        dominant_side = "OVER"
-    elif side_counts["UNDER"] > max_same_side:
-        dominant_side = "UNDER"
-    if not dominant_side:
-        return selected
+    best_side = None
+    best_edge = None
+    best_prob = None
+    if edge_over is not None and edge_under is not None:
+        if edge_over >= edge_under:
+            best_side = "OVER"
+            best_edge = float(edge_over)
+            best_prob = float(p_over or 0.0)
+        else:
+            best_side = "UNDER"
+            best_edge = float(edge_under)
+            best_prob = float(p_under or 0.0)
+    elif edge_over is not None:
+        best_side = "OVER"
+        best_edge = float(edge_over)
+        best_prob = float(p_over or 0.0)
+    elif edge_under is not None:
+        best_side = "UNDER"
+        best_edge = float(edge_under)
+        best_prob = float(p_under or 0.0)
 
-    opposite_side = "UNDER" if dominant_side == "OVER" else "OVER"
-    selected_keys = {str(r.get("projectionKey") or "") for r in selected}
+    row["recommendedSide"] = best_side
+    row["recommendedEdge"] = round(best_edge, 4) if best_edge is not None else None
+    row["recommendedProb"] = round(best_prob, 4) if best_prob is not None else None
 
-    dominant_indexes = [idx for idx, row in enumerate(selected) if _to_recommended_side(row) == dominant_side]
-    if not dominant_indexes:
-        return selected
-    weakest_dom_idx = dominant_indexes[-1]
-    weakest_dom_row = selected[weakest_dom_idx]
-    weakest_dom_edge = to_float(weakest_dom_row.get("recommendedEdge"))
-    if weakest_dom_edge is None:
-        return selected
+    existing_reasons = [str(r) for r in (row.get("recommendationReasons") or [])]
+    keep_reasons = [r for r in existing_reasons if r not in {"no_market_pair", "edge_below_threshold", "confidence_below_threshold"}]
+    reasons = list(keep_reasons)
+    if best_side is None or best_edge is None or best_prob is None:
+        reasons.append("no_market_pair")
+    else:
+        if best_edge < float(min_edge):
+            reasons.append("edge_below_threshold")
+        if best_prob < float(min_confidence):
+            reasons.append("confidence_below_threshold")
+    wx_adj = float(to_float(row.get("weatherAdjustment")) or 0.0)
+    if abs(wx_adj) > float(max_abs_weather_adjustment) and "weather_high_variance" not in reasons:
+        reasons.append("weather_high_variance")
+    row["recommendationReasons"] = reasons
+    row["isRecommendedPick"] = len(reasons) == 0
 
-    best_opposite_candidate = None
-    for row in candidates:
-        row_key = str(row.get("projectionKey") or "")
-        if row_key in selected_keys:
+
+def apply_under_bias_rebalance(
+    rows: List[dict],
+    target_under_share: float,
+    strength: float,
+    max_shift: float,
+    min_edge: float,
+    min_confidence: float,
+    max_abs_weather_adjustment: float,
+) -> None:
+    target = max(0.5, min(0.75, float(target_under_share)))
+    k = max(0.0, min(2.0, float(strength)))
+    max_step = max(0.0, min(0.20, float(max_shift)))
+    eligible = [r for r in rows if _to_recommended_side(r) in {"OVER", "UNDER"} and to_float(r.get("marketPOver")) is not None]
+    if len(eligible) < 20:
+        return
+    under_count = len([r for r in eligible if _to_recommended_side(r) == "UNDER"])
+    under_share = float(under_count / len(eligible))
+    if under_share <= target:
+        return
+
+    shift = min(max_step, max(0.0, (under_share - target) * k))
+    for row in rows:
+        p_over = to_float(row.get("pOver"))
+        market_over = to_float(row.get("marketPOver"))
+        if p_over is None or market_over is None:
             continue
-        if _to_recommended_side(row) != opposite_side:
-            continue
-        best_opposite_candidate = row
-        break
+        # Nudge toward over side with diminishing effect near probability ceiling.
+        adjusted = clamp_prob(float(p_over) + (shift * (1.0 - float(p_over))))
+        row["underBiasShiftApplied"] = round(adjusted - float(p_over), 4)
+        row["pOver"] = round(adjusted, 4)
+        row["pUnder"] = round(1.0 - adjusted, 4)
+        _recompute_recommendation_fields(row, min_edge, min_confidence, max_abs_weather_adjustment)
 
-    if best_opposite_candidate is None:
-        return selected
 
-    opp_edge = to_float(best_opposite_candidate.get("recommendedEdge"))
-    if opp_edge is None:
-        return selected
-    if opp_edge + float(opposite_edge_tolerance) < weakest_dom_edge:
-        return selected
+def enforce_under_share_quota(
+    rows: List[dict],
+    target_under_share: float,
+    min_total_recommended: int = 35,
+) -> None:
+    target = max(0.5, min(0.75, float(target_under_share)))
+    min_total = max(10, int(min_total_recommended))
 
-    replaced_keys = set(selected_keys)
-    replaced_keys.discard(str(weakest_dom_row.get("projectionKey") or ""))
-    replaced_keys.add(str(best_opposite_candidate.get("projectionKey") or ""))
+    def current_recommended() -> List[dict]:
+        return [r for r in rows if bool(r.get("isRecommendedPick")) and _to_recommended_side(r) in {"OVER", "UNDER"}]
 
-    # Preserve deterministic ranking order using original candidate order.
-    out: List[dict] = []
-    for row in candidates:
-        row_key = str(row.get("projectionKey") or "")
-        if row_key in replaced_keys:
-            out.append(row)
-        if len(out) >= 3:
+    rec = current_recommended()
+    if len(rec) < min_total:
+        return
+
+    def under_share(rec_rows: List[dict]) -> float:
+        if not rec_rows:
+            return 0.0
+        u = sum(1 for r in rec_rows if _to_recommended_side(r) == "UNDER")
+        return float(u / len(rec_rows))
+
+    while len(rec) >= min_total and under_share(rec) > target:
+        unders = [r for r in rec if _to_recommended_side(r) == "UNDER"]
+        if not unders:
             break
-    return out
+        weakest_under = sorted(
+            unders,
+            key=lambda r: (
+                to_float(r.get("recommendedEdge")) if to_float(r.get("recommendedEdge")) is not None else 999.0,
+                to_float(r.get("recommendedProb")) if to_float(r.get("recommendedProb")) is not None else 999.0,
+            ),
+        )[0]
+        reasons = [str(x) for x in (weakest_under.get("recommendationReasons") or [])]
+        if "side_balance_demoted_under" not in reasons:
+            reasons.append("side_balance_demoted_under")
+        weakest_under["recommendationReasons"] = reasons
+        weakest_under["isRecommendedPick"] = False
+        rec = current_recommended()
 
 
 def assign_top3_game_ranks(
@@ -1042,14 +1107,8 @@ def assign_top3_game_ranks(
             )
         )
 
-        # One player max per game for user-facing top picks.
+        # Deterministic ranking: highest edge/probability with one row per player.
         selected = _pick_unique_players_sorted(candidates, limit=3)
-        selected = _apply_side_balance_to_ranked_candidates(
-            candidates,
-            selected,
-            max_same_side=max_same_side,
-            opposite_edge_tolerance=opposite_edge_tolerance,
-        )
         rank_by_player: Dict[str, int] = {}
         for idx, row in enumerate(selected, start=1):
             player_key = normalize_name(str(row.get("playerName") or ""))
@@ -1061,7 +1120,7 @@ def assign_top3_game_ranks(
             rank = rank_by_player.get(player_key)
             row["recommendedPlayerRankInGame"] = rank if rank is not None else None
             row["isTop3PickInGame"] = bool(rank is not None and rank <= 3)
-            row["top3RankingVersion"] = "edge_prob_player_deterministic_side_balance_v2"
+            row["top3RankingVersion"] = "edge_prob_player_deterministic_v4"
 
 
 def main() -> None:
@@ -1080,6 +1139,10 @@ def main() -> None:
     parser.add_argument("--top3-max-same-side", type=int, default=2)
     parser.add_argument("--top3-opposite-edge-tolerance", type=float, default=0.02)
     parser.add_argument("--lineup-role-weight", type=float, default=0.7)
+    parser.add_argument("--under-bias-target-share", type=float, default=0.58)
+    parser.add_argument("--under-bias-strength", type=float, default=0.35)
+    parser.add_argument("--under-bias-max-shift", type=float, default=0.06)
+    parser.add_argument("--under-bias-min-total-recommended", type=int, default=35)
     args = parser.parse_args()
 
     artifact_path = args.artifact.strip() or latest_artifact_path()
@@ -1395,6 +1458,21 @@ def main() -> None:
             }
         )
 
+    out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
+    apply_under_bias_rebalance(
+        out_rows,
+        target_under_share=float(args.under_bias_target_share),
+        strength=float(args.under_bias_strength),
+        max_shift=float(args.under_bias_max_shift),
+        min_edge=float(args.min_edge),
+        min_confidence=float(args.min_confidence),
+        max_abs_weather_adjustment=float(args.max_abs_weather_adjustment),
+    )
+    enforce_under_share_quota(
+        out_rows,
+        target_under_share=float(args.under_bias_target_share),
+        min_total_recommended=int(args.under_bias_min_total_recommended),
+    )
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
     assign_top3_game_ranks(
         out_rows,

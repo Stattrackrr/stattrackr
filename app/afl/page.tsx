@@ -5091,7 +5091,7 @@ export default function AFLPage() {
                       <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Player</th>
                       <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Side</th>
                       <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Line</th>
-                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Edge</th>
+                      <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Model</th>
                       <th className="px-2.5 py-2 font-semibold text-gray-700 dark:text-gray-200">Book</th>
                     </tr>
                   </thead>
@@ -5133,7 +5133,7 @@ export default function AFLPage() {
                             {pick.line != null ? pick.line.toFixed(1) : '—'}
                           </td>
                           <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
-                            {pick.recommendedEdge != null ? `${pick.recommendedEdge >= 0 ? '+' : ''}${(pick.recommendedEdge * 100).toFixed(1)}%` : '—'}
+                            {pick.expectedDisposals != null ? pick.expectedDisposals.toFixed(1) : '—'}
                           </td>
                           <td className="px-2.5 py-2">
                             {bookmakerInfo.logoUrl ? (

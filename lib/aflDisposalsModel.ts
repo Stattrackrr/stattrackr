@@ -145,6 +145,69 @@ function getCachedProjectionData() {
   return cache;
 }
 
+function rankedRecommendedRows(rows: AflDisposalsProjectionRow[]): AflDisposalsProjectionRow[] {
+  return [...rows]
+    .filter((row) => {
+      const side = row.recommendedSide;
+      const edge = row.recommendedEdge;
+      const prob = row.recommendedProb;
+      return Boolean(row.isRecommendedPick) &&
+        (side === 'OVER' || side === 'UNDER') &&
+        typeof edge === 'number' && Number.isFinite(edge) &&
+        typeof prob === 'number' && Number.isFinite(prob);
+    })
+    .sort((a, b) => {
+      const ea = typeof a.recommendedEdge === 'number' && Number.isFinite(a.recommendedEdge) ? a.recommendedEdge : -999;
+      const eb = typeof b.recommendedEdge === 'number' && Number.isFinite(b.recommendedEdge) ? b.recommendedEdge : -999;
+      if (ea !== eb) return eb - ea;
+      const pa = typeof a.recommendedProb === 'number' && Number.isFinite(a.recommendedProb) ? a.recommendedProb : -999;
+      const pb = typeof b.recommendedProb === 'number' && Number.isFinite(b.recommendedProb) ? b.recommendedProb : -999;
+      if (pa !== pb) return pb - pa;
+      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
+    });
+}
+
+function selectTopRowsWithSideAnchors(rows: AflDisposalsProjectionRow[], limit: number): AflDisposalsProjectionRow[] {
+  const cappedLimit = Math.max(1, Math.min(10, limit));
+  const ranked = rankedRecommendedRows(rows);
+  if (ranked.length === 0) return [];
+
+  const selected: AflDisposalsProjectionRow[] = [];
+  const selectedPlayers = new Set<string>();
+
+  const bestOver = ranked.find((row) => row.recommendedSide === 'OVER');
+  if (bestOver) {
+    const key = normalizeName(String(bestOver.playerName ?? ''));
+    if (key) {
+      selected.push(bestOver);
+      selectedPlayers.add(key);
+    }
+  }
+
+  const bestUnder = ranked.find((row) => {
+    if (row.recommendedSide !== 'UNDER') return false;
+    const key = normalizeName(String(row.playerName ?? ''));
+    return !!key && !selectedPlayers.has(key);
+  });
+  if (bestUnder) {
+    const key = normalizeName(String(bestUnder.playerName ?? ''));
+    if (key) {
+      selected.push(bestUnder);
+      selectedPlayers.add(key);
+    }
+  }
+
+  for (const row of ranked) {
+    if (selected.length >= cappedLimit) break;
+    const playerKey = normalizeName(String(row.playerName ?? ''));
+    if (!playerKey || selectedPlayers.has(playerKey)) continue;
+    selected.push(row);
+    selectedPlayers.add(playerKey);
+  }
+
+  return selected.slice(0, cappedLimit);
+}
+
 function toLookupResult(row: AflDisposalsProjectionRow, payload: AflDisposalsProjectionPayload | null): AflProjectionLookupResult | null {
   const expected = row.expectedDisposals;
   const sigma = row.sigma;
@@ -213,29 +276,9 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
   if (!gameKey) return [];
   const current = getCachedProjectionData();
   const rows = Array.isArray(current.payload?.rows) ? current.payload!.rows! : [];
-  const rankedRows = rows
-    .filter((row) => String(row.gameKey ?? '').trim() === gameKey && row.isTop3PickInGame === true)
-    .sort((a, b) => {
-      const ra = typeof a.recommendedPlayerRankInGame === 'number' ? a.recommendedPlayerRankInGame : 999;
-      const rb = typeof b.recommendedPlayerRankInGame === 'number' ? b.recommendedPlayerRankInGame : 999;
-      if (ra !== rb) return ra - rb;
-      const ea = typeof a.recommendedEdge === 'number' && Number.isFinite(a.recommendedEdge) ? a.recommendedEdge : -999;
-      const eb = typeof b.recommendedEdge === 'number' && Number.isFinite(b.recommendedEdge) ? b.recommendedEdge : -999;
-      if (ea !== eb) return eb - ea;
-      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
-    });
-
-  const picks: AflDisposalsProjectionRow[] = [];
-  const seenPlayers = new Set<string>();
-  for (const row of rankedRows) {
-    const playerKey = normalizeName(String(row.playerName ?? ''));
-    if (!playerKey || seenPlayers.has(playerKey)) continue;
-    seenPlayers.add(playerKey);
-    picks.push(row);
-    if (picks.length >= Math.max(1, Math.min(10, limit))) break;
-  }
-
-  return picks.map((row) => ({
+  const gameRows = rows.filter((row) => String(row.gameKey ?? '').trim() === gameKey);
+  const picks = selectTopRowsWithSideAnchors(gameRows, limit);
+  return picks.map((row, idx) => ({
     playerName: String(row.playerName ?? ''),
     bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
     line: typeof row.line === 'number' && Number.isFinite(row.line) ? row.line : null,
@@ -246,10 +289,7 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
       typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge) ? row.recommendedEdge : null,
     recommendedProb:
       typeof row.recommendedProb === 'number' && Number.isFinite(row.recommendedProb) ? row.recommendedProb : null,
-    rank:
-      typeof row.recommendedPlayerRankInGame === 'number' && Number.isFinite(row.recommendedPlayerRankInGame)
-        ? row.recommendedPlayerRankInGame
-        : null,
+    rank: idx + 1,
   }));
 }
 
@@ -259,7 +299,6 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
   const byGame = new Map<string, AflDisposalsProjectionRow[]>();
 
   for (const row of rows) {
-    if (row.isTop3PickInGame !== true) continue;
     const gameKey = String(row.gameKey ?? '').trim();
     if (!gameKey) continue;
     const list = byGame.get(gameKey);
@@ -269,22 +308,11 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
 
   const out: AflTopPicksGameGroup[] = [];
   for (const [gameKey, gameRows] of byGame.entries()) {
-    const sorted = [...gameRows].sort((a, b) => {
-      const ra = typeof a.recommendedPlayerRankInGame === 'number' ? a.recommendedPlayerRankInGame : 999;
-      const rb = typeof b.recommendedPlayerRankInGame === 'number' ? b.recommendedPlayerRankInGame : 999;
-      if (ra !== rb) return ra - rb;
-      const ea = typeof a.recommendedEdge === 'number' && Number.isFinite(a.recommendedEdge) ? a.recommendedEdge : -999;
-      const eb = typeof b.recommendedEdge === 'number' && Number.isFinite(b.recommendedEdge) ? b.recommendedEdge : -999;
-      if (ea !== eb) return eb - ea;
-      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
-    });
+    const selected = selectTopRowsWithSideAnchors(gameRows, limitPerGame);
+    if (selected.length === 0) continue;
 
-    const uniquePlayers = new Set<string>();
     const picks: AflTopGamePick[] = [];
-    for (const row of sorted) {
-      const playerKey = normalizeName(String(row.playerName ?? ''));
-      if (!playerKey || uniquePlayers.has(playerKey)) continue;
-      uniquePlayers.add(playerKey);
+    for (const [idx, row] of selected.entries()) {
       picks.push({
         playerName: String(row.playerName ?? ''),
         bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
@@ -296,16 +324,12 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
           typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge) ? row.recommendedEdge : null,
         recommendedProb:
           typeof row.recommendedProb === 'number' && Number.isFinite(row.recommendedProb) ? row.recommendedProb : null,
-        rank:
-          typeof row.recommendedPlayerRankInGame === 'number' && Number.isFinite(row.recommendedPlayerRankInGame)
-            ? row.recommendedPlayerRankInGame
-            : null,
+        rank: idx + 1,
       });
-      if (picks.length >= Math.max(1, Math.min(10, limitPerGame))) break;
     }
 
     if (picks.length === 0) continue;
-    const first = sorted[0];
+    const first = selected[0];
     out.push({
       gameKey,
       homeTeam: String(first?.homeTeam ?? ''),
