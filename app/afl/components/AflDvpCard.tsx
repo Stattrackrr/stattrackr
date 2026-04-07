@@ -353,7 +353,6 @@ export default function AflDvpCard({
       const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
       const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
       const skipClientCache = process.env.NODE_ENV === 'development';
-      setDepthLoading(true);
 
       const nextDepthPerStat: Record<DepthRoleKey, Record<string, number | null>> = {
         key_fwd: {},
@@ -375,17 +374,63 @@ export default function AflDvpCard({
       };
 
       const byRoleData: Partial<Record<DepthRoleKey, DvpBatchResponse>> = {};
+      const applyDepthFromRoleData = (roleData: Partial<Record<DepthRoleKey, DvpBatchResponse>>) => {
+        const firstData = DEPTH_ROLE_OPTIONS
+          .map((r) => roleData[r.key])
+          .find((d) => d?.success);
+        const opponents = firstData?.opponents || [];
+        if (opponents.length > 0) {
+          setAllTeams(opponents);
+          if (!userChangedOpponentRef.current) {
+            const parentOpp = opponentTeamRef.current?.trim();
+            const preferred = parentOpp ? findOpponentKey(parentOpp, opponents) : findOpponentKey(targetOpp, opponents);
+            if (preferred && preferred !== oppSel) setOppSel(preferred);
+          }
+        }
+
+        for (const role of DEPTH_ROLE_OPTIONS) {
+          const posData = roleData[role.key];
+          if (!posData?.success) continue;
+          const oppKey = findOpponentKey(targetOpp, posData.opponents || []);
+          for (const m of DVP_METRICS) {
+            const metric = posData.metrics?.[m.key];
+            const value = metric?.teamTotalValues?.[oppKey];
+            const rank = metric?.teamTotalRanks?.[oppKey];
+            nextDepthPerStat[role.key][m.key] = typeof value === 'number' ? value : null;
+            nextDepthPerRank[role.key][m.key] = typeof rank === 'number' ? rank : null;
+          }
+        }
+
+        setDepthPerStat({ ...nextDepthPerStat });
+        setDepthPerRank({ ...nextDepthPerRank });
+      };
 
       try {
-        for (const role of DEPTH_ROLE_OPTIONS) {
+        const roleRequests = DEPTH_ROLE_OPTIONS.map((role) => {
           const position = DEPTH_ROLE_KEY_TO_API_POS[role.key];
           const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:depth:${selectedSeason}:${position}:${role.key}`;
           const cached = dvpBatchCache.get(cacheKey);
           const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
-          let data: DvpBatchResponse | null = null;
-          if (isFresh && cached) {
-            data = cached.data;
-          } else {
+          if (cached?.data?.success) {
+            byRoleData[role.key] = cached.data;
+          }
+          return { role, position, cacheKey, isFresh };
+        });
+
+        const hasCachedData = Object.keys(byRoleData).length > 0;
+        if (hasCachedData) {
+          applyDepthFromRoleData(byRoleData);
+        }
+
+        const rolesToFetch = roleRequests.filter((r) => !r.isFresh);
+        if (rolesToFetch.length === 0) {
+          setDepthLoading(false);
+          return;
+        }
+        setDepthLoading(!hasCachedData);
+
+        await Promise.all(
+          rolesToFetch.map(async ({ role, position, cacheKey }) => {
             let request = dvpBatchInFlight.get(cacheKey);
             if (!request) {
               request = fetch(
@@ -402,41 +447,17 @@ export default function AflDvpCard({
                 });
               dvpBatchInFlight.set(cacheKey, request);
             }
-            data = await request;
-            if (data?.success) dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
-          }
-          if (abort) return;
-          if (data?.success) byRoleData[role.key] = data;
-        }
+            const data = await request;
+            if (abort) return;
+            if (data?.success) {
+              dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+              byRoleData[role.key] = data;
+            }
+          })
+        );
+        if (abort) return;
 
-        const firstData = DEPTH_ROLE_OPTIONS
-          .map((r) => byRoleData[r.key])
-          .find((d) => d?.success);
-        const opponents = firstData?.opponents || [];
-        if (opponents.length > 0) {
-          setAllTeams(opponents);
-          if (!userChangedOpponentRef.current) {
-            const parentOpp = opponentTeamRef.current?.trim();
-            const preferred = parentOpp ? findOpponentKey(parentOpp, opponents) : findOpponentKey(targetOpp, opponents);
-            if (preferred && preferred !== oppSel) setOppSel(preferred);
-          }
-        }
-
-        for (const role of DEPTH_ROLE_OPTIONS) {
-          const posData = byRoleData[role.key];
-          if (!posData?.success) continue;
-          const oppKey = findOpponentKey(targetOpp, posData.opponents || []);
-          for (const m of DVP_METRICS) {
-            const metric = posData.metrics?.[m.key];
-            const value = metric?.teamTotalValues?.[oppKey];
-            const rank = metric?.teamTotalRanks?.[oppKey];
-            nextDepthPerStat[role.key][m.key] = typeof value === 'number' ? value : null;
-            nextDepthPerRank[role.key][m.key] = typeof rank === 'number' ? rank : null;
-          }
-        }
-
-        setDepthPerStat(nextDepthPerStat);
-        setDepthPerRank(nextDepthPerRank);
+        applyDepthFromRoleData(byRoleData);
       } catch {
         if (!abort) setDepthError('Unable to load depth DvP data.');
       } finally {
@@ -479,6 +500,30 @@ export default function AflDvpCard({
 
     AFL_POSITIONS.forEach((p) => {
       void warm(p);
+    });
+    DEPTH_ROLE_OPTIONS.forEach((role) => {
+      const position = DEPTH_ROLE_KEY_TO_API_POS[role.key];
+      const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:depth:${selectedSeason}:${position}:${role.key}`;
+      const cached = dvpBatchCache.get(cacheKey);
+      const isFresh = !skipClientCache && cached && (Date.now() - cached.timestamp) < DVP_CACHE_TTL;
+      if (isFresh || dvpBatchInFlight.has(cacheKey)) return;
+      const request = fetch(
+        `/api/afl/dvp/batch?season=${selectedSeason}&mode=depth&position=${position}&depthRole=${role.key}&stats=${encodeURIComponent(statsCsv)}${bust}`
+      )
+        .then(async (res) => {
+          const data = (await res.json().catch(() => ({}))) as DvpBatchResponse & { error?: string };
+          if (!res.ok || !data?.success) return null;
+          return data as DvpBatchResponse;
+        })
+        .catch(() => null)
+        .finally(() => {
+          dvpBatchInFlight.delete(cacheKey);
+        });
+      dvpBatchInFlight.set(cacheKey, request);
+      void request.then((data) => {
+        if (cancelled || !data?.success) return;
+        dvpBatchCache.set(cacheKey, { data, timestamp: Date.now() });
+      });
     });
     return () => { cancelled = true; };
   }, [selectedSeason]);

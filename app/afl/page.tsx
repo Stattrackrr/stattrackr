@@ -2124,11 +2124,8 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     // Always refresh current-season logs live so charts pick up finished games promptly.
-    // Also force-refresh 2025/2024 while we backfill fantasy points from updated parser/fallbacks.
+    // Keep historical seasons cached for speed so player loads stay responsive.
     const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
-    const shouldForceRefreshHistoricSeason = (year: number) => year === 2025 || year === 2024;
-    const forceFetchPrev = shouldForceRefreshHistoricSeason(prevYear) ? '&force_fetch=1' : '';
-    const forceFetchOlder = shouldForceRefreshHistoricSeason(olderYear) ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     let dataCurrent: Record<string, unknown> | null = null;
     let dataPrev: Record<string, unknown> | null = null;
@@ -2137,8 +2134,9 @@ export default function AFLPage() {
       if (cancelled || shownPartial) return;
       const curGames = dataCurrent && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
       const prevGames = dataPrev && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
-      // For 2026 we need both seasons merged; don't show 2026-only or refresh will paint partial and effect re-run can leave it stuck.
-      if (currentYear === 2026 && !dataPrev) return;
+      // For 2026 we prefer merged seasons, but don't block UX for too long.
+      // If previous-season fetch is slow, show current-season bars first, then backfill.
+      if (currentYear === 2026 && !dataPrev && (Date.now() - searchStartedAtMs) < 700) return;
       if (curGames.length > 0 && !dataPrev) {
         shownPartial = true;
         setSelectedPlayerGameLogs(curGames);
@@ -2166,7 +2164,7 @@ export default function AFLPage() {
           }
           return { ok: res.ok, data: d };
         });
-        const p2 = fetch(`${baseUrl}&season=${prevYear}${forceFetchPrev}`, fetchOpts).then(async (res) => {
+        const p2 = fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
           if (!cancelled) {
             dataPrev = d;
@@ -2174,7 +2172,7 @@ export default function AFLPage() {
           }
           return { ok: res.ok, data: d };
         });
-        const p3 = fetch(`${baseUrl}&season=${olderYear}${forceFetchOlder}`, fetchOpts).then(async (res) => {
+        const p3 = fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
           return { ok: res.ok, data: d };
         });
