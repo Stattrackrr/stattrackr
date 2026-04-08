@@ -176,6 +176,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const enrich = searchParams.get('enrich') !== 'false';
     const debugStats = searchParams.get('debugStats') === '1';
+    const forceRefresh = searchParams.get('refresh') === '1' || searchParams.get('refresh') === 'true';
 
     // When list is called with valid cron auth, we compute on cache miss (and pass secret to player-game-logs) so N/A report can populate stats.
     const normalizeSecret = (s: string) => (s ?? '').replace(/\r\n|\r|\n/g, '').trim();
@@ -188,7 +189,7 @@ export async function GET(request: Request) {
     const listCronSecret = hasCronAuth ? envSecret : undefined;
     const cacheOnly = !hasCronAuth;
 
-    if (!hasCronAuth && enrich && !debugStats) {
+    if (!hasCronAuth && enrich && !debugStats && !forceRefresh) {
       const now = Date.now();
       if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
         return NextResponse.json(aflEnrichedPayloadMemoryCache.payload, {
