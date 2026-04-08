@@ -1001,78 +1001,115 @@ def _recompute_recommendation_fields(
     row["isRecommendedPick"] = len(reasons) == 0
 
 
-def apply_under_bias_rebalance(
+def _recent_settled_over_rate(rows: List[dict], lookback: int) -> Optional[float]:
+    settled: List[dict] = []
+    for row in rows:
+        if row.get("isVoid") is True:
+            continue
+        actual = to_float(row.get("actualDisposals"))
+        line = to_float(row.get("line"))
+        if actual is None or line is None:
+            continue
+        settled.append(row)
+    if not settled:
+        return None
+    # Prefer latest settled rows first.
+    settled.sort(key=lambda r: str(r.get("settledAt") or r.get("capturedAt") or ""), reverse=True)
+    n = max(10, int(lookback))
+    window = settled[:n]
+    if not window:
+        return None
+    overs = 0
+    for row in window:
+        actual = float(to_float(row.get("actualDisposals")) or 0.0)
+        line = float(to_float(row.get("line")) or 0.0)
+        if actual >= line:
+            overs += 1
+    return float(overs / len(window))
+
+
+def apply_adaptive_side_balance(
     rows: List[dict],
-    target_under_share: float,
+    line_history_rows: List[dict],
+    target_over_rate: Optional[float],
+    lookback_settled: int,
     strength: float,
     max_shift: float,
+    min_rows: int,
     min_edge: float,
     min_confidence: float,
     max_abs_weather_adjustment: float,
-) -> None:
-    target = max(0.5, min(0.75, float(target_under_share)))
+) -> dict:
     k = max(0.0, min(2.0, float(strength)))
     max_step = max(0.0, min(0.20, float(max_shift)))
-    eligible = [r for r in rows if _to_recommended_side(r) in {"OVER", "UNDER"} and to_float(r.get("marketPOver")) is not None]
-    if len(eligible) < 20:
-        return
-    under_count = len([r for r in eligible if _to_recommended_side(r) == "UNDER"])
-    under_share = float(under_count / len(eligible))
-    if under_share <= target:
-        return
+    min_count = max(10, int(min_rows))
 
-    shift = min(max_step, max(0.0, (under_share - target) * k))
+    eligible = [r for r in rows if to_float(r.get("pOver")) is not None and to_float(r.get("marketPOver")) is not None]
+    if len(eligible) < min_count:
+        return {
+            "mode": "adaptive",
+            "applied": False,
+            "reason": "insufficient_rows",
+            "eligibleRows": len(eligible),
+        }
+
+    avg_model_over = mean([float(to_float(r.get("pOver")) or 0.0) for r in eligible]) or 0.5
+    avg_market_over = mean([float(to_float(r.get("marketPOver")) or 0.0) for r in eligible]) or 0.5
+    history_over = _recent_settled_over_rate(line_history_rows, lookback_settled)
+
+    if target_over_rate is not None and math.isfinite(float(target_over_rate)):
+        target_over = max(0.35, min(0.65, float(target_over_rate)))
+        target_source = "arg"
+    else:
+        # Auto-target from live market center + recent realized side-rate.
+        # This keeps probability mass anchored to today's slate while still learning from outcomes.
+        hist_component = history_over if history_over is not None else avg_market_over
+        target_over = max(0.42, min(0.56, (0.65 * float(avg_market_over)) + (0.35 * float(hist_component))))
+        target_source = "auto"
+
+    delta = float(target_over - avg_model_over)
+    shift = max(-max_step, min(max_step, delta * k))
+    if abs(shift) < 1e-6:
+        return {
+            "mode": "adaptive",
+            "applied": False,
+            "reason": "already_centered",
+            "eligibleRows": len(eligible),
+            "avgModelOverBefore": round(avg_model_over, 4),
+            "avgMarketOver": round(avg_market_over, 4),
+            "recentSettledOverRate": round(history_over, 4) if history_over is not None else None,
+            "targetOverRate": round(target_over, 4),
+            "targetSource": target_source,
+        }
+
     for row in rows:
         p_over = to_float(row.get("pOver"))
         market_over = to_float(row.get("marketPOver"))
         if p_over is None or market_over is None:
             continue
-        # Nudge toward over side with diminishing effect near probability ceiling.
-        adjusted = clamp_prob(float(p_over) + (shift * (1.0 - float(p_over))))
-        row["underBiasShiftApplied"] = round(adjusted - float(p_over), 4)
+        # Positive shift nudges toward OVER ceiling; negative shift nudges toward UNDER floor.
+        if shift >= 0:
+            adjusted = clamp_prob(float(p_over) + (shift * (1.0 - float(p_over))))
+        else:
+            adjusted = clamp_prob(float(p_over) + (shift * float(p_over)))
+        row["sideBalanceShiftApplied"] = round(adjusted - float(p_over), 4)
         row["pOver"] = round(adjusted, 4)
         row["pUnder"] = round(1.0 - adjusted, 4)
         _recompute_recommendation_fields(row, min_edge, min_confidence, max_abs_weather_adjustment)
 
-
-def enforce_under_share_quota(
-    rows: List[dict],
-    target_under_share: float,
-    min_total_recommended: int = 35,
-) -> None:
-    target = max(0.5, min(0.75, float(target_under_share)))
-    min_total = max(10, int(min_total_recommended))
-
-    def current_recommended() -> List[dict]:
-        return [r for r in rows if bool(r.get("isRecommendedPick")) and _to_recommended_side(r) in {"OVER", "UNDER"}]
-
-    rec = current_recommended()
-    if len(rec) < min_total:
-        return
-
-    def under_share(rec_rows: List[dict]) -> float:
-        if not rec_rows:
-            return 0.0
-        u = sum(1 for r in rec_rows if _to_recommended_side(r) == "UNDER")
-        return float(u / len(rec_rows))
-
-    while len(rec) >= min_total and under_share(rec) > target:
-        unders = [r for r in rec if _to_recommended_side(r) == "UNDER"]
-        if not unders:
-            break
-        weakest_under = sorted(
-            unders,
-            key=lambda r: (
-                to_float(r.get("recommendedEdge")) if to_float(r.get("recommendedEdge")) is not None else 999.0,
-                to_float(r.get("recommendedProb")) if to_float(r.get("recommendedProb")) is not None else 999.0,
-            ),
-        )[0]
-        reasons = [str(x) for x in (weakest_under.get("recommendationReasons") or [])]
-        if "side_balance_demoted_under" not in reasons:
-            reasons.append("side_balance_demoted_under")
-        weakest_under["recommendationReasons"] = reasons
-        weakest_under["isRecommendedPick"] = False
-        rec = current_recommended()
+    avg_model_over_after = mean([float(to_float(r.get("pOver")) or 0.0) for r in eligible]) or avg_model_over
+    return {
+        "mode": "adaptive",
+        "applied": True,
+        "eligibleRows": len(eligible),
+        "avgModelOverBefore": round(avg_model_over, 4),
+        "avgModelOverAfter": round(avg_model_over_after, 4),
+        "avgMarketOver": round(avg_market_over, 4),
+        "recentSettledOverRate": round(history_over, 4) if history_over is not None else None,
+        "targetOverRate": round(target_over, 4),
+        "targetSource": target_source,
+        "appliedShift": round(shift, 4),
+    }
 
 
 def assign_top3_game_ranks(
@@ -1139,10 +1176,11 @@ def main() -> None:
     parser.add_argument("--top3-max-same-side", type=int, default=2)
     parser.add_argument("--top3-opposite-edge-tolerance", type=float, default=0.02)
     parser.add_argument("--lineup-role-weight", type=float, default=0.7)
-    parser.add_argument("--under-bias-target-share", type=float, default=0.58)
-    parser.add_argument("--under-bias-strength", type=float, default=0.35)
-    parser.add_argument("--under-bias-max-shift", type=float, default=0.06)
-    parser.add_argument("--under-bias-min-total-recommended", type=int, default=35)
+    parser.add_argument("--side-balance-target-over-rate", type=float, default=-1.0)
+    parser.add_argument("--side-balance-lookback-settled", type=int, default=200)
+    parser.add_argument("--side-balance-strength", type=float, default=0.9)
+    parser.add_argument("--side-balance-max-shift", type=float, default=0.09)
+    parser.add_argument("--side-balance-min-rows", type=int, default=40)
     parser.add_argument("--only-player-name", default="")
     parser.add_argument("--only-home-team", default="")
     parser.add_argument("--only-away-team", default="")
@@ -1475,20 +1513,23 @@ def main() -> None:
             }
         )
 
+    existing_history = read_line_history()
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
-    apply_under_bias_rebalance(
+    side_balance_diag = apply_adaptive_side_balance(
         out_rows,
-        target_under_share=float(args.under_bias_target_share),
-        strength=float(args.under_bias_strength),
-        max_shift=float(args.under_bias_max_shift),
+        line_history_rows=existing_history,
+        target_over_rate=(
+            float(args.side_balance_target_over_rate)
+            if float(args.side_balance_target_over_rate) >= 0.0
+            else None
+        ),
+        lookback_settled=int(args.side_balance_lookback_settled),
+        strength=float(args.side_balance_strength),
+        max_shift=float(args.side_balance_max_shift),
+        min_rows=int(args.side_balance_min_rows),
         min_edge=float(args.min_edge),
         min_confidence=float(args.min_confidence),
         max_abs_weather_adjustment=float(args.max_abs_weather_adjustment),
-    )
-    enforce_under_share_quota(
-        out_rows,
-        target_under_share=float(args.under_bias_target_share),
-        min_total_recommended=int(args.under_bias_min_total_recommended),
     )
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
     assign_top3_game_ranks(
@@ -1497,7 +1538,6 @@ def main() -> None:
         opposite_edge_tolerance=max(0.0, float(args.top3_opposite_edge_tolerance)),
     )
     lowest_rows = select_lowest_line_rows(out_rows)
-    existing_history = read_line_history()
     merged_history = upsert_line_history(existing_history, lowest_rows)
     merged_history = enrich_line_history_actuals(merged_history, args.base_url)
     write_line_history(merged_history)
@@ -1510,6 +1550,7 @@ def main() -> None:
         "generatedAt": now_iso(),
         "modelVersion": artifact.get("version"),
         "modelType": artifact.get("modelType"),
+        "sideBalance": side_balance_diag,
         "rows": out_rows,
         "count": len(out_rows),
     }
