@@ -41,7 +41,7 @@ function getPlayerTeamForSeason(season: number, playerName: string): string | nu
   return official ?? null;
 }
 
-/** Teams to try for FootyWire fetch (current season + previous season) so players who moved teams still get data. */
+/** Teams to try for FootyWire fetch (requested season first, then previous season fallback). */
 function getTeamsToTryForSeason(
   season: number,
   playerName: string,
@@ -49,13 +49,21 @@ function getTeamsToTryForSeason(
 ): string[] {
   const fromSeason = getPlayerTeamForSeason(season, playerName);
   const fromPrev = season - 1 >= 2020 ? getPlayerTeamForSeason(season - 1, playerName) : null;
+  const fromNext = season + 1 <= 2100 ? getPlayerTeamForSeason(season + 1, playerName) : null;
   const fallback = teamParam?.trim()
     ? (rosterTeamToInjuryTeam(teamParam.trim()) || footywireNicknameToOfficial(teamParam.trim()) || teamParam.trim())
     : null;
   const seen = new Set<string>();
   const out: string[] = [];
-  // Try previous season's team first when different (player moved) so we hit the FootyWire URL that has their page + advanced stats.
-  const order = fromPrev && fromPrev !== fromSeason ? [fromPrev, fromSeason, fallback] : [fromSeason, fromPrev, fallback];
+  // Always prefer the requested season's team first so we don't return stale/partial prior-team rows.
+  // Previous/next season remain fallbacks for players whose page resolves via a different team slug.
+  // Also append all known teams across supported seasons to cover multi-club movement edge cases.
+  const otherKnownTeams = SUPPORTED_SEASONS
+    .slice()
+    .sort((a, b) => Math.abs(a - season) - Math.abs(b - season))
+    .map((s) => getPlayerTeamForSeason(s, playerName))
+    .filter((t): t is string => Boolean(t));
+  const order = [fromSeason, fromPrev, fromNext, ...otherKnownTeams, fallback];
   for (const t of order) {
     if (!t) continue;
     const official = t.trim();
@@ -103,7 +111,7 @@ async function fetchFootyWireGameLogsWithTeamFallback(
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const FOOTYWIRE_SCHEMA_VERSION = 'v8';
+const FOOTYWIRE_SCHEMA_VERSION = 'v9';
 
 /** 2026 Round 0 (opening round) opponent overrides when FootyWire has wrong/missing opponent. */
 const R0_2026_OPPONENT_OVERRIDES: Record<string, string> = {
@@ -111,6 +119,7 @@ const R0_2026_OPPONENT_OVERRIDES: Record<string, string> = {
 };
 let footyWireCache: Map<string, { expiresAt: number; games: GameLogRow[]; height: string | null; guernsey: number | null }> = new Map();
 const footyWireMatchCache = new Map<string, { expiresAt: number; data: FootyWireMatchQuarterRows | null }>();
+const footyWireMatchTogCache = new Map<string, { expiresAt: number; data: Map<string, number> }>();
 
 type FootyWireTableRow = { cells: string[]; matchId: number | null };
 
@@ -599,6 +608,14 @@ function parseOneTableToRows(tableContent: string): { rows: FootyWireTableRow[];
   return { rows, headerIdx, dataRows };
 }
 
+function inferHeadingSeasonFromFootyWirePage(html: string): number | null {
+  const text = htmlToText(html || '');
+  const m = text.match(/\b(20\d{2})\s+Games?\s+Log\s+for\b/i);
+  if (!m?.[1]) return null;
+  const y = parseInt(m[1], 10);
+  return Number.isFinite(y) ? y : null;
+}
+
 const COL_ALIASES: Record<string, string[]> = {
   Description: ['Round', 'Rnd', 'Desc'],
   Opponent: ['Vs', 'VS', 'Opp'],
@@ -945,6 +962,92 @@ async function fetchFootyWireMatchQuarterRows(matchId: number): Promise<FootyWir
   }
 }
 
+function parseFootyWireMatchTogMap(html: string): Map<string, number> {
+  const out = new Map<string, number>();
+  if (!html || !html.includes('footywire')) return out;
+  const tableContents = extractTableContents(html);
+  for (const tableContent of tableContents) {
+    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    const rows: string[][] = [];
+    let trm: RegExpExecArray | null = trRegex.exec(tableContent);
+    while (trm) {
+      const cells: string[] = [];
+      const tdRegex = /<t[dh][^>]*>([\s\S]*?)(?=<t[dh]\b|$)/gi;
+      let cm: RegExpExecArray | null = tdRegex.exec(trm[1]);
+      while (cm) {
+        cells.push(htmlToText(cm[1]).trim());
+        cm = tdRegex.exec(trm[1]);
+      }
+      if (cells.length > 0) rows.push(cells);
+      trm = trRegex.exec(tableContent);
+    }
+    if (rows.length < 2) continue;
+    const headerIdx = rows.findIndex((r) => r.some((c) => /^Player$/i.test(c.trim())) && r.some((c) => /^(TOG|TOG%|Time on Ground)$/i.test(c.trim())));
+    if (headerIdx < 0) continue;
+    const headers = rows[headerIdx];
+    const playerIdx = headers.findIndex((h) => /^Player$/i.test(h.trim()));
+    const togIdx = headers.findIndex((h) => /^(TOG|TOG%|Time on Ground)$/i.test(h.trim()));
+    if (playerIdx < 0 || togIdx < 0) continue;
+    for (const row of rows.slice(headerIdx + 1)) {
+      const playerRaw = (row[playerIdx] ?? '').trim();
+      const togRaw = (row[togIdx] ?? '').trim();
+      if (!playerRaw || !togRaw) continue;
+      const tog = parseFloat(String(togRaw).replace('%', '').trim());
+      if (!Number.isFinite(tog) || tog <= 0) continue;
+      const normalizedPlayer = normalizeAflPlayerNameForMatch(playerRaw);
+      if (!normalizedPlayer) continue;
+      out.set(normalizedPlayer, tog);
+    }
+    if (out.size > 0) return out;
+  }
+  return out;
+}
+
+function lookupTogForPlayer(togMap: Map<string, number>, playerName: string): number | null {
+  if (togMap.size === 0) return null;
+  const normalizedTarget = normalizeAflPlayerNameForMatch(playerName);
+  const exact = togMap.get(normalizedTarget);
+  if (typeof exact === 'number' && Number.isFinite(exact) && exact > 0) return exact;
+
+  // Fallback: match by surname + first initial for abbreviated first names.
+  const targetParts = normalizedTarget.split(' ').filter(Boolean);
+  const targetLast = targetParts[targetParts.length - 1] ?? '';
+  const targetFirstInitial = targetParts[0]?.[0] ?? '';
+  if (!targetLast) return null;
+  for (const [name, value] of togMap.entries()) {
+    const parts = name.split(' ').filter(Boolean);
+    const last = parts[parts.length - 1] ?? '';
+    const firstInitial = parts[0]?.[0] ?? '';
+    if (last === targetLast && firstInitial === targetFirstInitial && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  return null;
+}
+
+async function fetchFootyWireMatchTogForPlayer(matchId: number, playerName: string): Promise<number | null> {
+  const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}:tog:${matchId}`;
+  const cached = footyWireMatchTogCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return lookupTogForPlayer(cached.data, playerName);
+  }
+  try {
+    const url = `${FOOTYWIRE_BASE}/afl/footy/ft_match_statistics?mid=${matchId}&advv=Y`;
+    const res = await fetch(url, { headers: FOOTYWIRE_HEADERS, next: { revalidate: 60 * 60 } });
+    if (!res.ok) {
+      footyWireMatchTogCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data: new Map() });
+      return null;
+    }
+    const html = await res.text();
+    const togMap = parseFootyWireMatchTogMap(html);
+    footyWireMatchTogCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data: togMap });
+    return lookupTogForPlayer(togMap, playerName);
+  } catch {
+    footyWireMatchTogCache.set(cacheKey, { expiresAt: Date.now() + FOOTYWIRE_TTL_MS, data: new Map() });
+    return null;
+  }
+}
+
 function splitCumulativeToQuarter(c: [number, number, number, number]): [number, number, number, number] {
   return [c[0], c[1] - c[0], c[2] - c[1], c[3] - c[2]];
 }
@@ -1141,6 +1244,12 @@ async function fetchFootyWireGameLogs(
       }
     }
     if (headers.length === 0 || rows.length === 0) continue;
+    const headingSeason = inferHeadingSeasonFromFootyWirePage(html);
+    if (headingSeason && headingSeason !== season) {
+      // Some old-team URLs can ignore year and return current-season data.
+      // Reject these pages so we only keep rows that match requested season.
+      continue;
+    }
     const hasYearEvidence = hasExplicitYearEvidenceForSeason(headers, rows, season);
     if (usedNoYearFallback && season !== currentYear && !hasYearEvidence && !dateRangeLikelyMatchesSeason(rows, season)) {
       // Reject unverifiable rows for past seasons to avoid cloned cross-season data.
@@ -1170,6 +1279,20 @@ async function fetchFootyWireGameLogs(
           Object.assign(games[i], partial);
         }
       }
+    }
+    const missingTogIdx = games
+      .map((g, idx) => ({ idx, g, matchId: rows[idx]?.matchId ?? null }))
+      .filter((entry) => (entry.g.percent_played == null || entry.g.percent_played <= 0) && typeof entry.matchId === 'number');
+    if (missingTogIdx.length > 0) {
+      await Promise.all(
+        missingTogIdx.map(async ({ idx, matchId }) => {
+          if (!matchId) return;
+          const tog = await fetchFootyWireMatchTogForPlayer(matchId, playerName);
+          if (typeof tog === 'number' && Number.isFinite(tog) && tog > 0 && games[idx]) {
+            games[idx].percent_played = tog;
+          }
+        })
+      );
     }
     applyDisposalEfficiency(games);
     applyFantasyPointsFallback(games);
@@ -1265,7 +1388,7 @@ export async function GET(request: NextRequest) {
   const skipMemoryCache = isWarmRequest || forceFetch;
   const cacheOnly = cacheEnabled && !isWarmRequest && !forceFetch; // Cache-only: no FootyWire on miss. force_fetch=1 allows test scripts to hit FootyWire.
   const currentYear = new Date().getFullYear();
-  const allowFetchOnMiss = season === currentYear || season === currentYear - 1; // Dashboard and props need both 2025 + 2026; allow fetch so we never return empty for current/prev season.
+  const allowFetchOnMiss = SUPPORTED_SEASONS.includes(season as (typeof SUPPORTED_SEASONS)[number]); // Allow live fetch on miss for supported dashboard seasons (2026/2025/2024).
   const sourceHeaders = { 'X-AFL-Cache-Enabled': cacheEnabled ? 'true' : 'false' as string };
 
   const debugParse = request.nextUrl.searchParams.get('debug') === '1' || request.nextUrl.searchParams.get('debug') === 'true';
@@ -1318,14 +1441,12 @@ export async function GET(request: NextRequest) {
       cachedDisposalsLookWrong(baseGames as { disposals?: number }[]);
     const cachedSeason = cachedBase?.season ?? (baseGames?.[0] as { season?: number } | undefined)?.season;
     const skipCacheStale2025 = season === 2026 && cachedSeason === 2025;
-    // 2025: serve from cache by default; allow explicit force_fetch warm backfills.
+    // 2025: prefer cache, but allow live fetch on cache miss so moved-team players are not empty.
     if (season === 2025 && !forceFetch) {
       if (cachedBase && hasBaseGames && !skipCacheWrongData) {
         const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
         return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
       }
-      const empty = { season: 2025, source: 'cache-miss', player_name: effectivePlayerName, games: [], game_count: 0, gamesWithQuarters: [] as Record<string, unknown>[] };
-      return NextResponse.json(empty, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss' } });
     }
     // Warm request: skip Redis so we always fetch live 2026 from FootyWire
     if (cachedBase && hasBaseGames && !skipCacheWrongData && !skipCacheStale2025 && !isWarmRequest && !forceFetch) {
@@ -1454,12 +1575,11 @@ export async function GET(request: NextRequest) {
   const skipCacheForSymbolSingle = nameHasSymbol(effectivePlayerName);
   const cachedSeasonSingle = cachedResponse?.season ?? (cachedGamesTyped?.[0] as { season?: number } | undefined)?.season;
   const skipCacheStale2025Single = season === 2026 && cachedSeasonSingle === 2025;
-  // 2025: serve from cache by default; allow explicit force_fetch warm backfills.
+  // 2025: prefer cache, but allow live fetch on cache miss so moved-team players are not empty.
   if (season === 2025 && !forceFetch) {
     if (cachedResponse && Array.isArray(cachedGames) && cachedGames.length > 0 && !skipCacheWrongDataSingle && !skipCacheForSymbolSingle) {
       return NextResponse.json({ ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) }, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
-    return NextResponse.json({ season: 2025, source: 'cache-miss', player_name: effectivePlayerName, games: [], game_count: 0 }, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache-miss' } });
   }
   // Warm: skip Redis so we fetch live 2026; dashboard uses cache when present
   if (

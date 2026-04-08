@@ -7,7 +7,7 @@
  *   PROD_URL=https://your-app.vercel.app
  *
  * Optional:
- *   AFL_WARM_SEASONS=2026,2025
+ *   AFL_WARM_SEASONS=2026,2025,2024
  *   AFL_WARM_CONCURRENCY=6
  *   AFL_WARM_LIMIT=0 (0 = no limit)
  *   AFL_WARM_MAX_FAILURES=100 (workflow succeeds if failed count < this; default 100)
@@ -19,8 +19,8 @@ const fs = require('fs');
 const path = require('path');
 
 const prodUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
-// Only warm current season (2026); 2025 is cached forever and never re-fetched
-const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026')
+// Warm current + previous seasons used by props stats (L10/H2H/season form).
+const warmSeasons = String(process.env.AFL_WARM_SEASONS || '2026,2025,2024')
   .split(',')
   .map((v) => parseInt(v.trim(), 10))
   .filter((n) => Number.isFinite(n));
