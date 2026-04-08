@@ -66,6 +66,23 @@ function getRankForStat(
   return idx >= 0 ? idx + 1 : null;
 }
 
+function getRankTierStyles(rank: number | null, isOpposingAllowed: boolean): { textClass: string; fill: string } {
+  if (!rank || !Number.isFinite(rank)) {
+    return { textClass: 'text-gray-500 dark:text-gray-400', fill: '#6b7280' };
+  }
+  const r = Math.trunc(rank);
+  // Team selected ("for"): 1-7 green, 8-13 orange, 14-18 red.
+  if (!isOpposingAllowed) {
+    if (r <= 7) return { textClass: 'text-green-600 dark:text-green-400', fill: '#16a34a' };
+    if (r <= 13) return { textClass: 'text-orange-600 dark:text-orange-400', fill: '#f59e0b' };
+    return { textClass: 'text-red-600 dark:text-red-400', fill: '#ef4444' };
+  }
+  // Opponent allowed ("opposing"): flipped.
+  if (r <= 7) return { textClass: 'text-red-600 dark:text-red-400', fill: '#ef4444' };
+  if (r <= 13) return { textClass: 'text-orange-600 dark:text-orange-400', fill: '#f59e0b' };
+  return { textClass: 'text-green-600 dark:text-green-400', fill: '#16a34a' };
+}
+
 export default function AflTeamMatchupCard({
   isDark,
   season: _season,
@@ -224,7 +241,6 @@ export default function AflTeamMatchupCard({
               const teamCount = Math.max((taData?.teams?.length ?? 0), (oaData?.teams?.length ?? 0), 18);
               const teamRankSafe = teamRank ?? Number.POSITIVE_INFINITY;
               const oppRankSafe = oppRank ?? Number.POSITIVE_INFINITY;
-              const isTie = teamRankSafe === oppRankSafe;
               const teamBetter = teamRankSafe < oppRankSafe;
               const oppBetter = oppRankSafe < teamRankSafe;
               const teamStrength = teamRank ? Math.max(1, teamCount + 1 - teamRank) : 1;
@@ -235,16 +251,8 @@ export default function AflTeamMatchupCard({
               const betterStrength = Math.max(teamStrength, oppStrength);
               const greenShare = totalStrength > 0 ? (betterStrength / totalStrength) * 100 : 50;
               const redShare = 100 - greenShare;
-              const teamTier = isTie
-                ? { textClass: 'text-gray-500 dark:text-gray-400', fill: '#6b7280' }
-                : teamBetter
-                  ? { textClass: 'text-green-600 dark:text-green-400', fill: '#16a34a' }
-                  : { textClass: 'text-red-600 dark:text-red-400', fill: '#ff1a1a' };
-              const oppTier = isTie
-                ? { textClass: 'text-gray-500 dark:text-gray-400', fill: '#6b7280' }
-                : oppBetter
-                  ? { textClass: 'text-green-600 dark:text-green-400', fill: '#16a34a' }
-                  : { textClass: 'text-red-600 dark:text-red-400', fill: '#ff1a1a' };
+              const teamTier = getRankTierStyles(teamRank, false);
+              const oppTier = getRankTierStyles(oppRank, true);
               return (
                 <div className="flex flex-col items-center justify-center">
                   <div className="w-full bg-gray-100 dark:bg-[#0a1929] rounded-lg border border-gray-200/80 dark:border-gray-600/60 px-2 py-0.5">
@@ -278,12 +286,12 @@ export default function AflTeamMatchupCard({
                     </div>
                     <div className="relative h-3 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600">
                       <div
-                        className="absolute inset-y-0 left-0 bg-green-500"
-                        style={{ width: `${greenShare}%` }}
+                        className="absolute inset-y-0 left-0"
+                        style={{ width: `${greenShare}%`, backgroundColor: teamBetter ? teamTier.fill : oppTier.fill }}
                       />
                       <div
-                        className="absolute inset-y-0 right-0 bg-red-500"
-                        style={{ width: `${redShare}%` }}
+                        className="absolute inset-y-0 right-0"
+                        style={{ width: `${redShare}%`, backgroundColor: teamBetter ? oppTier.fill : teamTier.fill }}
                       />
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-4 text-[10px]">
@@ -295,6 +303,9 @@ export default function AflTeamMatchupCard({
                         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: oppTier.fill }} />
                         {footywireOpponent || opponentName}
                       </span>
+                    </div>
+                    <div className="mt-1 text-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      For vs Against
                     </div>
                   </div>
                 </div>
