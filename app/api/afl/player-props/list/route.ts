@@ -706,6 +706,7 @@ export async function GET(request: Request) {
         modelPUnder: disposalsModel?.pUnder ?? null,
         modelMarketPOver: disposalsModel?.marketPOver ?? null,
         modelEdgeVsMarket: disposalsModel?.edgeVsMarket ?? null,
+        modelLine: disposalsModel?.modelLine ?? null,
         modelVersion: disposalsModel?.modelVersion ?? null,
         modelScoredAt: disposalsModel?.scoredAt ?? null,
         ...(debugStats ? { _dvpPosition: position, _dvpOpponent: opponent } : {}),

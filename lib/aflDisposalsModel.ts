@@ -39,6 +39,7 @@ type AflProjectionLookupResult = {
   sigma: number;
   pOver: number;
   pUnder: number;
+  modelLine: number | null;
   marketPOver: number | null;
   edgeVsMarket: number | null;
   edgeVsMarketUnder: number | null;
@@ -167,6 +168,30 @@ function rankedRecommendedRows(rows: AflDisposalsProjectionRow[]): AflDisposalsP
     });
 }
 
+function rankedFallbackRows(rows: AflDisposalsProjectionRow[]): AflDisposalsProjectionRow[] {
+  return [...rows]
+    .filter((row) => {
+      const expected = row.expectedDisposals;
+      const line = row.line;
+      return (
+        typeof expected === 'number' &&
+        Number.isFinite(expected) &&
+        typeof line === 'number' &&
+        Number.isFinite(line)
+      );
+    })
+    .sort((a, b) => {
+      const edgeA = typeof a.edgeVsMarket === 'number' && Number.isFinite(a.edgeVsMarket)
+        ? Math.abs(a.edgeVsMarket)
+        : Math.abs((a.expectedDisposals ?? 0) - (a.line ?? 0));
+      const edgeB = typeof b.edgeVsMarket === 'number' && Number.isFinite(b.edgeVsMarket)
+        ? Math.abs(b.edgeVsMarket)
+        : Math.abs((b.expectedDisposals ?? 0) - (b.line ?? 0));
+      if (edgeA !== edgeB) return edgeB - edgeA;
+      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
+    });
+}
+
 function selectTopRowsWithSideAnchors(rows: AflDisposalsProjectionRow[], limit: number): AflDisposalsProjectionRow[] {
   const cappedLimit = Math.max(1, Math.min(10, limit));
   const ranked = rankedRecommendedRows(rows);
@@ -230,6 +255,7 @@ function toLookupResult(row: AflDisposalsProjectionRow, payload: AflDisposalsPro
     sigma,
     pOver,
     pUnder,
+    modelLine: typeof row.line === 'number' && Number.isFinite(row.line) ? row.line : null,
     marketPOver: typeof row.marketPOver === 'number' && Number.isFinite(row.marketPOver) ? row.marketPOver : null,
     edgeVsMarket: typeof row.edgeVsMarket === 'number' && Number.isFinite(row.edgeVsMarket) ? row.edgeVsMarket : null,
     edgeVsMarketUnder:
@@ -269,7 +295,33 @@ export function getAflDisposalsProjection(params: {
   const roundedLine = Math.round(line * 2) / 2;
   const altKey = buildProjectionKey(playerName, homeTeam, awayTeam, roundedLine);
   const alt = current.byKey.get(altKey);
-  return alt ? toLookupResult(alt, current.payload) : null;
+  if (alt) return toLookupResult(alt, current.payload);
+
+  // Final fallback: nearest available line for this player/game (still same matchup).
+  const playerNorm = normalizeName(playerName);
+  const homeNorm = normalizeTeam(homeTeam);
+  const awayNorm = normalizeTeam(awayTeam);
+  let bestRow: AflDisposalsProjectionRow | null = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+  const requestedLine = Number.isFinite(line) ? line : roundedLine;
+  const rows = Array.isArray(current.payload?.rows) ? current.payload!.rows! : [];
+  for (const row of rows) {
+    if (!row?.playerName || !row?.homeTeam || !row?.awayTeam || typeof row.line !== 'number') continue;
+    const rowPlayer = normalizeName(row.playerName);
+    if (rowPlayer !== playerNorm) continue;
+    const rowHome = normalizeTeam(row.homeTeam);
+    const rowAway = normalizeTeam(row.awayTeam);
+    const sameMatchup =
+      (rowHome === homeNorm && rowAway === awayNorm) ||
+      (rowHome === awayNorm && rowAway === homeNorm);
+    if (!sameMatchup) continue;
+    const delta = Math.abs((row.line || 0) - requestedLine);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestRow = row;
+    }
+  }
+  return bestRow ? toLookupResult(bestRow, current.payload) : null;
 }
 
 export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflTopGamePick[] {
@@ -308,7 +360,35 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
 
   const out: AflTopPicksGameGroup[] = [];
   for (const [gameKey, gameRows] of byGame.entries()) {
-    const selected = selectTopRowsWithSideAnchors(gameRows, limitPerGame);
+    let selected = selectTopRowsWithSideAnchors(gameRows, limitPerGame);
+    if (selected.length === 0) {
+      // Keep game visible even when no row passes recommendation thresholds.
+      // Fallback to strongest model rows by absolute edge for that matchup.
+      const fallbackRanked = rankedFallbackRows(gameRows);
+      const seen = new Set<string>();
+      selected = [];
+      for (const row of fallbackRanked) {
+        if (selected.length >= Math.max(1, Math.min(10, limitPerGame))) break;
+        const key = normalizeName(String(row.playerName ?? ''));
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        selected.push({
+          ...row,
+          recommendedSide:
+            row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
+              ? row.recommendedSide
+              : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER'),
+          recommendedEdge:
+            typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge)
+              ? row.recommendedEdge
+              : Math.abs((row.expectedDisposals ?? 0) - (row.line ?? 0)),
+          recommendedProb:
+            typeof row.recommendedProb === 'number' && Number.isFinite(row.recommendedProb)
+              ? row.recommendedProb
+              : null,
+        });
+      }
+    }
     if (selected.length === 0) continue;
 
     const picks: AflTopGamePick[] = [];

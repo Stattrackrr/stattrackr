@@ -77,6 +77,7 @@ type AflDisposalsModelProjection = {
   sigma: number;
   pOver: number;
   pUnder: number;
+  modelLine?: number | null;
   marketPOver: number | null;
   edgeVsMarket: number | null;
   edgeVsMarketUnder?: number | null;
@@ -100,6 +101,7 @@ type AflTopGamePick = {
   recommendedProb: number | null;
   rank: number | null;
 };
+const MODEL_NEUTRAL_LINE_GAP = 0.5; // Neutral when model is within 0.5 disposals of line
 type AflTopPicksGameGroup = {
   gameKey: string;
   homeTeam: string;
@@ -605,6 +607,7 @@ export default function AFLPage() {
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
   const [aflDisposalsModelProjection, setAflDisposalsModelProjection] = useState<AflDisposalsModelProjection | null>(null);
   const [aflDisposalsModelLoading, setAflDisposalsModelLoading] = useState(false);
+  const [aflDisposalsModelRefreshLoading, setAflDisposalsModelRefreshLoading] = useState(false);
   const [showAflTopPicksModal, setShowAflTopPicksModal] = useState(false);
   const [aflTopPicksByGame, setAflTopPicksByGame] = useState<AflTopPicksGameGroup[]>([]);
   const [aflTopPicksModalLoading, setAflTopPicksModalLoading] = useState(false);
@@ -1866,6 +1869,32 @@ export default function AFLPage() {
         setAflTopPicksModalLoading(false);
       });
   }, []);
+
+  const refreshAflDisposalsModelForCurrentLine = useCallback(async () => {
+    if (!selectedPlayer?.name || !aflOddsHomeTeam || !aflOddsAwayTeam) return;
+    const lineToUse = aflCurrentLineValue;
+    if (lineToUse == null || !Number.isFinite(lineToUse)) return;
+    setAflDisposalsModelRefreshLoading(true);
+    try {
+      const res = await fetch('/api/afl/model/disposals/refresh-player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName: String(selectedPlayer.name),
+          homeTeam: aflOddsHomeTeam,
+          awayTeam: aflOddsAwayTeam,
+          line: lineToUse,
+        }),
+      });
+      if (!res.ok) return;
+      const payload = (await res.json().catch(() => null)) as { projection?: AflDisposalsModelProjection } | null;
+      if (payload?.projection && typeof payload.projection.expectedDisposals === 'number') {
+        setAflDisposalsModelProjection(payload.projection);
+      }
+    } finally {
+      setAflDisposalsModelRefreshLoading(false);
+    }
+  }, [selectedPlayer?.name, aflOddsHomeTeam, aflOddsAwayTeam, aflCurrentLineValue]);
 
   useEffect(() => {
     if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
@@ -4361,6 +4390,20 @@ export default function AFLPage() {
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
                         <div className="text-[11px] text-gray-600 dark:text-gray-300">
                           Best Side:{' '}
+                          {(() => {
+                            const lineForPrediction =
+                              aflDisposalsModelProjection?.modelLine != null
+                                ? aflDisposalsModelProjection.modelLine
+                                : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                            const expected = aflDisposalsModelProjection?.expectedDisposals;
+                            const isNeutral =
+                              lineForPrediction != null &&
+                              expected != null &&
+                              Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP;
+                            if (isNeutral) {
+                              return <span className="font-bold text-gray-500 dark:text-gray-300">Neutral</span>;
+                            }
+                            return (
                           <span className={`font-bold ${
                             aflDisposalsModelProjection?.edgeVsMarket == null
                               ? 'text-gray-900 dark:text-white'
@@ -4374,28 +4417,41 @@ export default function AFLPage() {
                                 ? 'Over'
                                 : 'Under'}
                           </span>
+                            );
+                          })()}
                         </div>
                       </div>
                         {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
-                            <div className="text-gray-600 dark:text-gray-300">
-                            Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
+                            <div className="text-purple-600 dark:text-purple-300">
+                              Line for prediction:{' '}
+                              <span className="font-bold text-gray-900 dark:text-white">
+                                {aflDisposalsModelProjection.modelLine != null
+                                  ? aflDisposalsModelProjection.modelLine.toFixed(1)
+                                  : (aflCurrentLineValue != null ? aflCurrentLineValue.toFixed(1) : '—')}
+                              </span>
                             </div>
                             <div className="text-gray-600 dark:text-gray-300">
-                              Market Prob (Best Side):{' '}
-                              <span className="font-bold text-gray-900 dark:text-white">
-                                {aflDisposalsModelProjection.marketPOver == null
-                                  ? '—'
-                                  : (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && (aflDisposalsModelProjection.edgeVsMarket ?? 0) >= 0))
-                                    ? `${(aflDisposalsModelProjection.marketPOver * 100).toFixed(1)}%`
-                                    : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
-                              </span>
+                              Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                             </div>
                             <div className="text-gray-600 dark:text-gray-300">
                               Edge (Best Side):{' '}
                             <span className={`font-bold ${
                                 aflDisposalsModelProjection.edgeVsMarket == null
                                   ? 'text-gray-900 dark:text-white'
+                                  : (() => {
+                                      const lineForPrediction =
+                                        aflDisposalsModelProjection.modelLine != null
+                                          ? aflDisposalsModelProjection.modelLine
+                                          : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                                      const expected = aflDisposalsModelProjection.expectedDisposals;
+                                      return (
+                                        lineForPrediction != null &&
+                                        expected != null &&
+                                        Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP
+                                      );
+                                    })()
+                                    ? 'text-gray-500 dark:text-gray-300'
                                   : ((aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
                                       ? (aflDisposalsModelProjection.edgeVsMarket >= 0)
                                       : (-aflDisposalsModelProjection.edgeVsMarket >= 0))
@@ -4405,6 +4461,19 @@ export default function AFLPage() {
                                 {aflDisposalsModelProjection.edgeVsMarket == null
                                   ? '—'
                                   : (() => {
+                                      const lineForPrediction =
+                                        aflDisposalsModelProjection.modelLine != null
+                                          ? aflDisposalsModelProjection.modelLine
+                                          : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                                      const expected = aflDisposalsModelProjection.expectedDisposals;
+                                      return (
+                                        lineForPrediction != null &&
+                                        expected != null &&
+                                        Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP
+                                      );
+                                    })()
+                                    ? 'No edge'
+                                  : (() => {
                                       const bestEdge = (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
                                         ? aflDisposalsModelProjection.edgeVsMarket
                                         : -aflDisposalsModelProjection.edgeVsMarket;
@@ -4412,6 +4481,14 @@ export default function AFLPage() {
                                     })()}
                               </span>
                             </div>
+                            <button
+                              type="button"
+                              onClick={refreshAflDisposalsModelForCurrentLine}
+                              disabled={aflDisposalsModelRefreshLoading}
+                              className="w-full text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline disabled:opacity-60"
+                            >
+                              {aflDisposalsModelRefreshLoading ? 'Refreshing model...' : 'Line changed? refresh here'}
+                            </button>
                             {aflDisposalsModelProjection.isTop3PickInGame === false && (
                               <div className="text-xs text-amber-500 dark:text-amber-400">
                                 Not in top 3 picks for this game.
@@ -4880,41 +4957,68 @@ export default function AFLPage() {
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
                         <div className="text-[11px] text-gray-600 dark:text-gray-300">
                           Best Side:{' '}
-                          <span className={`font-bold ${
-                            aflDisposalsModelProjection?.edgeVsMarket == null
-                              ? 'text-gray-900 dark:text-white'
-                              : aflDisposalsModelProjection.edgeVsMarket >= 0
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                          }`}>
-                            {aflDisposalsModelProjection?.edgeVsMarket == null
-                              ? '—'
-                              : aflDisposalsModelProjection.edgeVsMarket >= 0
-                                ? 'Over'
-                                : 'Under'}
-                          </span>
+                          {(() => {
+                            const lineForPrediction =
+                              aflDisposalsModelProjection?.modelLine != null
+                                ? aflDisposalsModelProjection.modelLine
+                                : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                            const expected = aflDisposalsModelProjection?.expectedDisposals;
+                            const isNeutral =
+                              lineForPrediction != null &&
+                              expected != null &&
+                              Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP;
+                            if (isNeutral) {
+                              return <span className="font-bold text-gray-500 dark:text-gray-300">Neutral</span>;
+                            }
+                            return (
+                              <span className={`font-bold ${
+                                aflDisposalsModelProjection?.edgeVsMarket == null
+                                  ? 'text-gray-900 dark:text-white'
+                                  : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                    ? 'text-green-500'
+                                    : 'text-red-500'
+                              }`}>
+                                {aflDisposalsModelProjection?.edgeVsMarket == null
+                                  ? '—'
+                                  : aflDisposalsModelProjection.edgeVsMarket >= 0
+                                    ? 'Over'
+                                    : 'Under'}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                       {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
-                          <div className="text-gray-600 dark:text-gray-300">
-                            Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
+                          <div className="text-purple-600 dark:text-purple-300">
+                            Line for prediction:{' '}
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {aflDisposalsModelProjection.modelLine != null
+                                ? aflDisposalsModelProjection.modelLine.toFixed(1)
+                                : (aflCurrentLineValue != null ? aflCurrentLineValue.toFixed(1) : '—')}
+                            </span>
                           </div>
                           <div className="text-gray-600 dark:text-gray-300">
-                            Market Prob (Best Side):{' '}
-                            <span className="font-bold text-gray-900 dark:text-white">
-                              {aflDisposalsModelProjection.marketPOver == null
-                                ? '—'
-                                : (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && (aflDisposalsModelProjection.edgeVsMarket ?? 0) >= 0))
-                                  ? `${(aflDisposalsModelProjection.marketPOver * 100).toFixed(1)}%`
-                                  : `${((1 - aflDisposalsModelProjection.marketPOver) * 100).toFixed(1)}%`}
-                            </span>
+                            Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                           </div>
                           <div className="text-gray-600 dark:text-gray-300">
                             Edge (Best Side):{' '}
                               <span className={`font-bold ${
                               aflDisposalsModelProjection.edgeVsMarket == null
                                 ? 'text-gray-900 dark:text-white'
+                                : (() => {
+                                    const lineForPrediction =
+                                      aflDisposalsModelProjection.modelLine != null
+                                        ? aflDisposalsModelProjection.modelLine
+                                        : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                                    const expected = aflDisposalsModelProjection.expectedDisposals;
+                                    return (
+                                      lineForPrediction != null &&
+                                      expected != null &&
+                                      Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP
+                                    );
+                                  })()
+                                  ? 'text-gray-500 dark:text-gray-300'
                                 : ((aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
                                     ? (aflDisposalsModelProjection.edgeVsMarket >= 0)
                                     : (-aflDisposalsModelProjection.edgeVsMarket >= 0))
@@ -4924,6 +5028,19 @@ export default function AFLPage() {
                               {aflDisposalsModelProjection.edgeVsMarket == null
                                 ? '—'
                                 : (() => {
+                                    const lineForPrediction =
+                                      aflDisposalsModelProjection.modelLine != null
+                                        ? aflDisposalsModelProjection.modelLine
+                                        : (aflCurrentLineValue != null ? aflCurrentLineValue : null);
+                                    const expected = aflDisposalsModelProjection.expectedDisposals;
+                                    return (
+                                      lineForPrediction != null &&
+                                      expected != null &&
+                                      Math.abs(expected - lineForPrediction) <= MODEL_NEUTRAL_LINE_GAP
+                                    );
+                                  })()
+                                  ? 'No edge'
+                                : (() => {
                                     const bestEdge = (aflDisposalsModelProjection.recommendedSide === 'OVER' || (aflDisposalsModelProjection.recommendedSide == null && aflDisposalsModelProjection.edgeVsMarket >= 0))
                                       ? aflDisposalsModelProjection.edgeVsMarket
                                       : -aflDisposalsModelProjection.edgeVsMarket;
@@ -4931,6 +5048,14 @@ export default function AFLPage() {
                                   })()}
                             </span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={refreshAflDisposalsModelForCurrentLine}
+                            disabled={aflDisposalsModelRefreshLoading}
+                            className="w-full text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline disabled:opacity-60"
+                          >
+                            {aflDisposalsModelRefreshLoading ? 'Refreshing model...' : 'Line changed? refresh here'}
+                          </button>
                           {aflDisposalsModelProjection.isTop3PickInGame === false && (
                             <div className="text-xs text-amber-500 dark:text-amber-400">
                               Not in top 3 picks for this game.

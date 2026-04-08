@@ -1,0 +1,1727 @@
+{
+  "generatedAt": "2026-04-06T16:53:55.380Z",
+  "criteria": "players in 2026 league list with 2026 logs>0 and 2025 logs=0, and present in 2025 league list by normalized name",
+  "count": 215,
+  "players": [
+    {
+      "name": "Adam Cerra",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Adam Saad",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Aidan Corr",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Alex Davies",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Aliir Aliir",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Alix Tauru",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Archer Day-Wicks",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Archer Reid",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Archie May",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Arthur Jones",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Ashton Moir",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Bailey Laurie",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Ben Miller",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Blake Hardwick",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Blake Howes",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Bo Allan",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Brandon Walker",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Brayden Cook",
+      "team": "Adelaide",
+      "teamResolved": "Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Brodie Kemp",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Buku Khamis",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Caleb Daniel",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Cameron Mackenzie",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Cameron Zurhaar",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Campbell Chesser",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Campbell Gray",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Changkuoth Jiath",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Charlie Ballard",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Charlie Comben",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Charlie Curnow",
+      "team": "Sydney",
+      "teamResolved": "Sydney",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Chayce Jones",
+      "team": "Adelaide",
+      "teamResolved": "Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Colby McKercher",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Connor Budarick",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Connor MacDonald",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Connor Rozee",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Conor Nash",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Cooper Hynes",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Cooper Lord",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Cooper Trembath",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Corey Durdin",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Daniel Butler",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Dante Visentini",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Darcy Byrne-Jones",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Darcy Moore",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Darcy Parish",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Deven Robertson",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Dion Prestia",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Dougal Howard",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Dylan Moore",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Dylan Stephens",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Edward Allan",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Elijah Hollands",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Esava Ratugolea",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Ewan Mackinlay",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Finn Maginness",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Finn O'Sullivan",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Finnbar Maley",
+      "team": "Adelaide",
+      "teamResolved": "Adelaide",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Francis Evans",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "George Hewett",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "George Wardlaw",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Griffin Logue",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Hamish Davis",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry Armstrong",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry McKay",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry Morrison",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry Rowston",
+      "team": "GWS",
+      "teamResolved": "GWS",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry Schoenberg",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harry Sheezel",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Harvey Thomas",
+      "team": "GWS",
+      "teamResolved": "GWS",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Hudson O'Keeffe",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Hugh Bond",
+      "team": "Adelaide",
+      "teamResolved": "Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Hugo Garcia",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Hugo Ralphsmith",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Carroll",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Darling",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Ginnivan",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Gunston",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Lukosius",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Ross",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Scrimshaw",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Silvagni",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jack Whitlock",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jackson Macrae",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jackson Mead",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Hopper",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Konstanty",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Newton",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Van Rooyen",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Wehr",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jacob Weitering",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jaeger O'Meara",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jai Culley",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jai Newcombe",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jake Rogers",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Borlase",
+      "team": "Adelaide",
+      "teamResolved": "Adelaide",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Leake",
+      "team": "GWS",
+      "teamResolved": "GWS",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Sicily",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Trezise",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Tunstill",
+      "team": "Brisbane",
+      "teamResolved": "Brisbane",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "James Worpel",
+      "team": "Geelong",
+      "teamResolved": "Geelong",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jamie Cripps",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jamie Elliott",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 9,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jarman Impey",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jarrod Berry",
+      "team": "Brisbane",
+      "teamResolved": "Brisbane",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jase Burgoyne",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jason Horne-Francis",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jasper Alger",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jayden Nguyen",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jayden Short",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jobe Shanahan",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Joe Berry",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Joe Richards",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Joel Amartey",
+      "team": "Sydney",
+      "teamResolved": "Sydney",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jonty Faull",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jordan Boyd",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jordan Croft",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jordon Sweet",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Josaia Delana",
+      "team": "GWS",
+      "teamResolved": "GWS",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Josh Battle",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Josh Dolan",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Josh Gibcus",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Josh Ward",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Joshua Weddle",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jy Farrar",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jy Simpkin",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Jye Caldwell",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Kane Farrell",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Kane McAuliffe",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Karl Amon",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Keidean Coleman",
+      "team": "Brisbane",
+      "teamResolved": "Brisbane",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Koltyn Tholstrup",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Cowan",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Fogarty",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Gulbin",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Jones",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Schultz",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lachlan Weller",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Leo Lombard",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lewis Young",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Liam Fawcett",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Liam Reidy",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Liam Stocker",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Lloyd Meek",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Logan Evans",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Luke Davies-Uniacke",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Luke Jackson",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Luke McDonald",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Luke Parker",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Luke Trainor",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mabior Chol",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Malakai Champion",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Marc Pittonet",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Massimo D'Ambrosio",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Matt Carroll",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Matt Johnson",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Matt Owies",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Matthew Kennedy",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Max Gruzewski",
+      "team": "GWS",
+      "teamResolved": "GWS",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Miles Bergman",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mitch Georgiades",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mitch McGovern",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mitchell Knevitt",
+      "team": "Geelong",
+      "teamResolved": "Geelong",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mitchell Lewis",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Mykelti Lefau",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Nathan Broad",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Nathan O'Driscoll",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Ned Reeves",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Neil Erasmus",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Nick Larkey",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Nick Vlastuin",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Nick Watson",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Noah Answerth",
+      "team": "Brisbane",
+      "teamResolved": "Brisbane",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Noah Balta",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Oliver Henry",
+      "team": "Geelong",
+      "teamResolved": "Geelong",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Oliver Hollands",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Oliver Wiltshire",
+      "team": "Geelong",
+      "teamResolved": "Geelong",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Oliver Wines",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Ollie Lord",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Oscar Adams",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Patrick Cripps",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Patrick Voss",
+      "team": "Fremantle",
+      "teamResolved": "Fremantle",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Paul Curtis",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Rhyan Mansell",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Roan Steele",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Banks",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Butler",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 9,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Davidson",
+      "team": "Western Bulldogs",
+      "teamResolved": "Western Bulldogs",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Draper",
+      "team": "Brisbane",
+      "teamResolved": "Brisbane",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Lalor",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Sam Walsh",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Samson Ryan",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Seth Campbell",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Steely Green",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Thomas Stewart",
+      "team": "Geelong",
+      "teamResolved": "Geelong",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tim Taranto",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Toby Nankervis",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Toby Pink",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom Barrass",
+      "team": "Hawthorn",
+      "teamResolved": "Hawthorn",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom Brown",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom De Koning",
+      "team": "St Kilda",
+      "teamResolved": "St Kilda",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom Edwards",
+      "team": "Essendon",
+      "teamResolved": "Essendon",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom Lynch",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom McCarthy",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom McDonald",
+      "team": "Melbourne",
+      "teamResolved": "Melbourne",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tom Powell",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tristan Xerri",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tylar Young",
+      "team": "West Coast",
+      "teamResolved": "West Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Tyler Sonsie",
+      "team": "Richmond",
+      "teamResolved": "Richmond",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Wil Parker",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Will Graham",
+      "team": "Gold Coast",
+      "teamResolved": "Gold Coast",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Will Hayes",
+      "team": "Collingwood",
+      "teamResolved": "Collingwood",
+      "c26": 2,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Willem Drew",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Zac Banch",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 1,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Zachary Williams",
+      "team": "Carlton",
+      "teamResolved": "Carlton",
+      "c26": 3,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Zak Butters",
+      "team": "Port Adelaide",
+      "teamResolved": "Port Adelaide",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    },
+    {
+      "name": "Zane Duursma",
+      "team": "North Melbourne",
+      "teamResolved": "North Melbourne",
+      "c26": 4,
+      "c25": 0,
+      "in2025LeagueStats": true
+    }
+  ]
+}

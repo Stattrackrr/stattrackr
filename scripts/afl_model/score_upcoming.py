@@ -1143,6 +1143,9 @@ def main() -> None:
     parser.add_argument("--under-bias-strength", type=float, default=0.35)
     parser.add_argument("--under-bias-max-shift", type=float, default=0.06)
     parser.add_argument("--under-bias-min-total-recommended", type=int, default=35)
+    parser.add_argument("--only-player-name", default="")
+    parser.add_argument("--only-home-team", default="")
+    parser.add_argument("--only-away-team", default="")
     args = parser.parse_args()
 
     artifact_path = args.artifact.strip() or latest_artifact_path()
@@ -1156,6 +1159,20 @@ def main() -> None:
     payload = get_json(list_url)
     rows = payload.get("data", []) if isinstance(payload, dict) else []
     rows = [r for r in rows if str(r.get("statType") or "") == "disposals"]
+    only_player_name = normalize_name(args.only_player_name)
+    only_home_team = normalize_team(args.only_home_team)
+    only_away_team = normalize_team(args.only_away_team)
+    if only_player_name:
+        filtered_rows: List[dict] = []
+        for r in rows:
+            if normalize_name(str(r.get("playerName") or "")) != only_player_name:
+                continue
+            if only_home_team and normalize_team(str(r.get("homeTeam") or "")) != only_home_team:
+                continue
+            if only_away_team and normalize_team(str(r.get("awayTeam") or "")) != only_away_team:
+                continue
+            filtered_rows.append(r)
+        rows = filtered_rows
 
     oa_stats_map = read_oa_team_stats_by_team(args.season)
     ta_stats_map = read_ta_team_stats_by_team(args.season)
@@ -1499,7 +1516,43 @@ def main() -> None:
     versioned_path = os.path.join(projections_dir, f"disposals-projections-{ts}.json")
     latest_path = args.latest_output_path.strip() or os.path.join(MODEL_DIR, "latest-disposals-projections.json")
     write_json(versioned_path, out)
-    write_json(latest_path, out)
+    if only_player_name:
+        existing_rows: List[dict] = []
+        existing_model_version = artifact.get("version")
+        existing_model_type = artifact.get("modelType")
+        try:
+            with open(latest_path, "r", encoding="utf-8") as f:
+                latest_doc = json.load(f)
+            if isinstance(latest_doc, dict):
+                latest_rows = latest_doc.get("rows", [])
+                if isinstance(latest_rows, list):
+                    existing_rows = [row for row in latest_rows if isinstance(row, dict)]
+                existing_model_version = latest_doc.get("modelVersion", existing_model_version)
+                existing_model_type = latest_doc.get("modelType", existing_model_type)
+        except Exception:
+            existing_rows = []
+
+        def same_filtered_scope(row: dict) -> bool:
+            if normalize_name(str(row.get("playerName") or "")) != only_player_name:
+                return False
+            if only_home_team and normalize_team(str(row.get("homeTeam") or "")) != only_home_team:
+                return False
+            if only_away_team and normalize_team(str(row.get("awayTeam") or "")) != only_away_team:
+                return False
+            return True
+
+        merged_rows = [row for row in existing_rows if not same_filtered_scope(row)]
+        merged_rows.extend(out_rows)
+        merged_payload = {
+            "generatedAt": out.get("generatedAt"),
+            "modelVersion": out.get("modelVersion") or existing_model_version,
+            "modelType": out.get("modelType") or existing_model_type,
+            "rows": merged_rows,
+            "count": len(merged_rows),
+        }
+        write_json(latest_path, merged_payload)
+    else:
+        write_json(latest_path, out)
     print(f"Scored projections: {versioned_path} ({len(out_rows)} rows)")
 
 

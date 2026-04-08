@@ -1,0 +1,1119 @@
+{
+  "generatedAt": "2026-04-06T14:49:36.125Z",
+  "teams": {
+    "ADE": {
+      "": [
+        "Toby Murrayinjured",
+        "Archie Ludowyke",
+        "Charlie Edwards",
+        "Indy Cotton",
+        "Mitchell Marsh",
+        "Oscar Ryan",
+        "Tyler Welsh"
+      ],
+      "Designated Kicker": [
+        "Rory Lairdinjured",
+        "Mark Keaneinjured",
+        "Lachlan Sholl",
+        "Josh Worrell",
+        "Wayne Milera"
+      ],
+      "General Defender": [
+        "Jordon Buttsinjured",
+        "Mitchell Hinge",
+        "Chayce Jones",
+        "Nick Murray",
+        "James Borlase",
+        "Billy Dowling",
+        "Max Michalanney",
+        "Brayden Cook",
+        "Luke Nankervis",
+        "Hugh Bond"
+      ],
+      "Inside Midfielder": [
+        "James Peatling",
+        "Sam Berry",
+        "Jake Soligo",
+        "Jordan Dawson"
+      ],
+      "Key Forward": [
+        "Riley Thilthorpe",
+        "Finnbar Maley",
+        "Taylor Walker",
+        "Darcy Fogarty"
+      ],
+      "Ruck": [
+        "Lachlan McAndrew",
+        "Reilly O'Brien"
+      ],
+      "Small/Medium Forward": [
+        "Callum Ah Cheeinjured",
+        "Izak Rankine",
+        "Luke Pedlar",
+        "Josh Rachele",
+        "Zac Taylor",
+        "Sid Draper",
+        "Alex Neal-Bullen",
+        "Ben Keays"
+      ],
+      "Wing/Attacking Defender": [
+        "Daniel Curtininjured",
+        "Isaac Cumming"
+      ]
+    },
+    "BRL": {
+      "": [
+        "Ben Murphyinjured",
+        "Cody Curtin",
+        "Koby Evans",
+        "Luke Beecken",
+        "Luke Lloyd",
+        "Reece Torrent",
+        "Tai Hayes"
+      ],
+      "Designated Kicker": [
+        "Keidean Coleman",
+        "Darcy Wilmot",
+        "Jaspa Fletcher",
+        "Dayne Zorko"
+      ],
+      "General Defender": [
+        "Darcy Gardinerinjured",
+        "Conor McKennainjured",
+        "Jack Payneinjured",
+        "Noah Answerthinjured",
+        "Tom Doedee",
+        "Darragh Joyce",
+        "Shadeau Brain",
+        "Zane Zakostelsky",
+        "Ryan Lester",
+        "Harris Andrews"
+      ],
+      "Inside Midfielder": [
+        "Hugh McCluggageinjured",
+        "Zac Bailey",
+        "Will Ashcroft",
+        "Lachie Neale",
+        "Josh Dunkley"
+      ],
+      "Key Forward": [
+        "Eric Hipwoodinjured",
+        "Cam Rayner",
+        "Oscar Allen",
+        "Kai Lohmann",
+        "Logan Morris",
+        "Lincoln McCarthy",
+        "Charlie Cameron"
+      ],
+      "Ruck": [
+        "Sam Draper",
+        "Darcy Fort"
+      ],
+      "Small/Medium Forward": [
+        "Henry Smithinjured",
+        "Bruce Reville",
+        "James Tunstill",
+        "Levi Ashcroft",
+        "Will McLachlan",
+        "Ty Gallop"
+      ],
+      "Wing/Attacking Defender": [
+        "Daniel Annableinjured",
+        "Sam Marshall",
+        "Jarrod Berry"
+      ]
+    },
+    "CAR": {
+      "": [
+        "Matt Duffyinjured",
+        "Ben Camporeale",
+        "Harry Charleson",
+        "Jack Ison",
+        "Rob Monahan"
+      ],
+      "Designated Kicker": [
+        "Jordan Boyd",
+        "Lachlan Cowan",
+        "Oliver Hollands",
+        "Adam Saad",
+        "Nic Newman",
+        "Oliver Florent"
+      ],
+      "General Defender": [
+        "Harry O'Farrellinjured",
+        "Harry Deaninjured",
+        "Wade Derksen",
+        "Billy Wilson",
+        "Matthew Carroll",
+        "Nick Haynes",
+        "Jacob Weitering",
+        "Lewis Young"
+      ],
+      "Inside Midfielder": [
+        "Zac Williamsinjured",
+        "Cooper Lordinjured",
+        "Adam Cerra",
+        "Sam Walsh",
+        "Jagga Smith",
+        "George Hewett",
+        "Patrick Cripps"
+      ],
+      "Key Forward": [
+        "Harry McKay",
+        "Brodie Kemp",
+        "Francis Evans",
+        "Ashton Moir",
+        "Hudson O'Keeffe",
+        "Mitch McGovern",
+        "Will Hayward"
+      ],
+      "Ruck": [
+        "Liam Reidy",
+        "Marc Pittonet"
+      ],
+      "Small/Medium Forward": [
+        "Jesse Motlopinjured",
+        "Lachie Fogarty",
+        "Elijah Hollands",
+        "Campbell Chesser",
+        "Lucas Camporeale",
+        "Talor Byrne",
+        "Ben Ainsworth"
+      ],
+      "Wing/Attacking Defender": [
+        "Flynn Young",
+        "Matthew Cottrell",
+        "Blake Acres"
+      ]
+    },
+    "COL": {
+      "": [
+        "Harry DeMattiainjured",
+        "Alex Condon",
+        "Angus Anderson",
+        "Iliro Smit",
+        "Jai Saxena",
+        "Jakob Ryan",
+        "Joel Cochran",
+        "Noah Howes",
+        "Sam Swadling",
+        "Tyan Prindable",
+        "Zac McCarthy"
+      ],
+      "Designated Kicker": [
+        "Josh Daicos",
+        "Jeremy Howe",
+        "Brayden Maynard",
+        "Dan Houston"
+      ],
+      "General Defender": [
+        "Darcy Mooreinjured",
+        "Isaac Quaynor",
+        "Wil Parker",
+        "Tew Jiath",
+        "Billy Frampton",
+        "Harry Perryman"
+      ],
+      "Inside Midfielder": [
+        "Scott Pendleburyinjured",
+        "Beau McCreery",
+        "Ned Long",
+        "Nick Daicos",
+        "Jack Crisp"
+      ],
+      "Key Forward": [
+        "Lachie Schultz",
+        "Bobby Hill",
+        "Jack Buller",
+        "Reef McInnes",
+        "Charlie West",
+        "Jamie Elliott",
+        "Tim Membrey",
+        "Daniel McStay"
+      ],
+      "Ruck": [
+        "Oscar Steene",
+        "Darcy Cameron"
+      ],
+      "Small/Medium Forward": [
+        "Patrick Lipinski",
+        "Harvey Harrison",
+        "Edward Allan",
+        "Roan Steele",
+        "William Hayes",
+        "Jordan De Goey",
+        "Lachlan Sullivan"
+      ],
+      "Wing/Attacking Defender": [
+        "Steele Sidebottom"
+      ]
+    },
+    "ESS": {
+      "": [
+        "Cillian Bourkeinjured",
+        "Kayle Gerreyn",
+        "Sullivan Robey"
+      ],
+      "Designated Kicker": [
+        "Mason Redmaninjured",
+        "Nic Martininjured",
+        "Jordan Ridley",
+        "Jaxon Prior",
+        "Archie Roberts",
+        "Jacob Farrow"
+      ],
+      "General Defender": [
+        "Lewis Hayesinjured",
+        "Ben McKay",
+        "Zach Reid",
+        "Saad El-Hawli",
+        "Jayden Nguyen",
+        "Angus Clarke",
+        "Lachlan Blakiston",
+        "Zak Johnson",
+        "Max Kondogiannis"
+      ],
+      "Inside Midfielder": [
+        "Will Setterfieldinjured",
+        "Jye Caldwell",
+        "Sam Durham",
+        "Zach Merrett",
+        "Darcy Parish",
+        "Andrew McGrath"
+      ],
+      "Key Forward": [
+        "Nate Caddyinjured",
+        "Liam McMahon",
+        "Thomas Edwards",
+        "Archer May",
+        "Peter Wright",
+        "Kyle Langford"
+      ],
+      "Ruck": [
+        "Vigo Visentiniinjured",
+        "Nick Bryan"
+      ],
+      "Small/Medium Forward": [
+        "Archie Perkins",
+        "Elijah Tsatas",
+        "Dyson Sharp",
+        "Isaac Kako",
+        "Archer Day-Wicks",
+        "Hussien El Achkar",
+        "Rhys Unwin",
+        "Jade Gresham",
+        "Matt Guelfi"
+      ],
+      "Wing/Attacking Defender": [
+        "Brayden Fioriniinjured",
+        "Harrison Jones",
+        "Nik Cox",
+        "Xavier Duursma"
+      ]
+    },
+    "FRE": {
+      "": [
+        "Adam Sweid",
+        "Aiden Riddle",
+        "Charlie Nicholls",
+        "Jaren Carr",
+        "Leon Kickett",
+        "Ollie Murphy",
+        "Ryda Luke",
+        "Toby Whan",
+        "Tobyn Murray"
+      ],
+      "Designated Kicker": [
+        "Jordan Clark",
+        "Luke Ryan"
+      ],
+      "General Defender": [
+        "Oscar McDonaldinjured",
+        "Brandon Walkerinjured",
+        "Heath Chapman",
+        "Judd McVee",
+        "Joshua Draper",
+        "Karl Worner",
+        "Hugh Davies",
+        "Alex Pearce",
+        "Corey Wagner",
+        "Brennan Cox",
+        "Bailey Banfield"
+      ],
+      "Inside Midfielder": [
+        "Hayden Younginjured",
+        "Andrew Brayshaw",
+        "Caleb Serong",
+        "Matthew Johnson",
+        "Neil Erasmus",
+        "Shai Bolton"
+      ],
+      "Key Forward": [
+        "Sam Sturtinjured",
+        "Isaiah Dudley",
+        "Josh Treacy",
+        "Patrick Voss",
+        "Jye Amiss"
+      ],
+      "Ruck": [
+        "Luke Jackson",
+        "Sean Darcy"
+      ],
+      "Small/Medium Forward": [
+        "Michael Frederickinjured",
+        "Cooper Simpson",
+        "Murphy Reid",
+        "Christopher Scerri",
+        "Jaeger O'Meara",
+        "Sam Switkowski",
+        "Mason Cox"
+      ],
+      "Wing/Attacking Defender": [
+        "Nathan O'Driscoll",
+        "Jeremy Sharp"
+      ]
+    },
+    "GCS": {
+      "": [
+        "Cooper Bellinjured",
+        "Jai Murrayinjured",
+        "Beau Addinsallinjured",
+        "Asher Eastham",
+        "Avery Thomas",
+        "Caleb Lewis",
+        "Dylan Patterson",
+        "Koby Coulson",
+        "Max Knobel",
+        "Zak Evans"
+      ],
+      "Designated Kicker": [
+        "John Noble",
+        "Daniel Rioli",
+        "Joel Jeffrey",
+        "Wil Powell",
+        "Bodhi Uwland"
+      ],
+      "General Defender": [
+        "Caleb Graham",
+        "Charlie Ballard",
+        "Oscar Adams",
+        "Mac Andrew",
+        "Sam Collins"
+      ],
+      "Inside Midfielder": [
+        "Christian Petraccainjured",
+        "Noah Anderson",
+        "Matt Rowell",
+        "Alex Davies",
+        "Touk Miller"
+      ],
+      "Key Forward": [
+        "Jamarra Ugle-Haganinjured",
+        "Ben King",
+        "Bailey Humphrey",
+        "Jed Walter",
+        "Ethan Read",
+        "Ben Long",
+        "Jy Farrar"
+      ],
+      "Ruck": [
+        "Ned Moyle",
+        "Jarrod Witts"
+      ],
+      "Small/Medium Forward": [
+        "Nick Holmaninjured",
+        "Elliott Himmelberginjured",
+        "Jake Rogers",
+        "Will Graham",
+        "Zeke Uwland",
+        "Leonardo Lombard",
+        "Lachlan Gulbin"
+      ],
+      "Wing/Attacking Defender": [
+        "Ben Jepson",
+        "Sam Clohesy",
+        "Lachie Weller"
+      ]
+    },
+    "GEE": {
+      "": [
+        "Harley Barkerinjured",
+        "Jacob Molierinjured",
+        "Keighton Matofai-Forbesinjured",
+        "Cillian Burke",
+        "Hunter Holmes",
+        "Jay Polkinghorne",
+        "Jesse Mellor",
+        "Joe Pike",
+        "Lennox Hofmann",
+        "Nicholas Driscoll"
+      ],
+      "Designated Kicker": [
+        "Lawson Humphries",
+        "Tom Stewart"
+      ],
+      "General Defender": [
+        "Jack Henry",
+        "Zach Guthrie",
+        "Mark O'Connor",
+        "Sam De Koning",
+        "Connor O'Sullivan",
+        "Jed Bews",
+        "Jake Kolodjashnij"
+      ],
+      "Inside Midfielder": [
+        "James Worpel",
+        "Gryan Miers",
+        "Bailey Smith",
+        "Tanner Bruhn",
+        "Max Holmes",
+        "George Stevens",
+        "Tom Atkins"
+      ],
+      "Key Forward": [
+        "Patrick Dangerfieldinjured",
+        "Oliver Henry",
+        "Shannon Neale",
+        "Jeremy Cameron",
+        "Jack Martin",
+        "Tyson Stengle"
+      ],
+      "Ruck": [
+        "Toby Conwayinjured",
+        "Mitchell Edwards",
+        "Rhys Stanley",
+        "Mark Blicavs"
+      ],
+      "Small/Medium Forward": [
+        "Oliver Wiltshire",
+        "Mitch Knevitt",
+        "Jhye Clark",
+        "Oisin Mullin",
+        "Shaun Mannagh",
+        "Jack Bowes",
+        "Brad Close"
+      ],
+      "Wing/Attacking Defender": [
+        "Oliver Dempsey"
+      ]
+    },
+    "GWS": {
+      "": [
+        "Logan Smithinjured",
+        "Finnegan Davisinjured",
+        "Nathan Wardiusinjured",
+        "Harrison Oliver",
+        "Jack Ough",
+        "Oskar Taylor",
+        "Riley Hamilton"
+      ],
+      "Designated Kicker": [
+        "Lachie Ash",
+        "Lachie Whitfield",
+        "Harry Himmelberg"
+      ],
+      "General Defender": [
+        "Sam Taylorinjured",
+        "Jack Buckleyinjured",
+        "Connor Idun",
+        "Leek Aleer",
+        "Conor Stone",
+        "Joe Fonti",
+        "Jayden Laverde"
+      ],
+      "Inside Midfielder": [
+        "Brent Danielsinjured",
+        "Tom Greeninjured",
+        "Finn Callaghan",
+        "Stephen Coniglio",
+        "Clayton Oliver"
+      ],
+      "Key Forward": [
+        "Aaron Cadmaninjured",
+        "Jake Riccardi",
+        "Max Gruzewski",
+        "Phoenix Gothard",
+        "Jake Stringer",
+        "Toby Greene",
+        "Jesse Hogan"
+      ],
+      "Ruck": [
+        "Kieren Briggs",
+        "Nicholas Madden"
+      ],
+      "Small/Medium Forward": [
+        "Toby Bedfordinjured",
+        "Darcy Jonesinjured",
+        "Xavier O'Halloran",
+        "Harry Rowston",
+        "Toby McMullin",
+        "Oliver Hannaford",
+        "Josaia Delana",
+        "James Leake"
+      ],
+      "Wing/Attacking Defender": [
+        "Josh Kellyinjured",
+        "Cody Angoveinjured",
+        "Harvey Thomas",
+        "Callum Brown",
+        "Ryan Angwin"
+      ]
+    },
+    "HAW": {
+      "": [
+        "Matthew LeRayinjured",
+        "Aidan Schubert",
+        "Bodie Ryan",
+        "Cameron Nairn",
+        "Cody Anderson",
+        "Jaime Uhr-Henry",
+        "Matt Hill",
+        "Noah Mraz",
+        "Oliver Greeves",
+        "William McCabe"
+      ],
+      "Designated Kicker": [
+        "Karl Amoninjured",
+        "Josh Weddle",
+        "Jarman Impey",
+        "James Sicily",
+        "Blake Hardwick",
+        "Josh Battle"
+      ],
+      "General Defender": [
+        "James Blanckinjured",
+        "Flynn Perez",
+        "Bailey Macdonald",
+        "Tom Barrass",
+        "Jack Scrimshaw"
+      ],
+      "Inside Midfielder": [
+        "Will Dayinjured",
+        "Cam Mackenzieinjured",
+        "Henry Hustwaiteinjured",
+        "Dylan Moore",
+        "Conor Nash",
+        "Josh Ward",
+        "Jai Newcombe"
+      ],
+      "Key Forward": [
+        "Mitch Lewis",
+        "Nick Watson",
+        "Calsher Dear",
+        "Jack Gunston",
+        "Mabior Chol"
+      ],
+      "Ruck": [
+        "Lloyd Meek",
+        "Ned Reeves"
+      ],
+      "Small/Medium Forward": [
+        "Sam Butler",
+        "Jack Ginnivan",
+        "Connor Macdonald",
+        "Max Ramsden",
+        "Jack Dalton"
+      ],
+      "Wing/Attacking Defender": [
+        "Finn Maginness",
+        "Harry Morrison",
+        "Massimo D'Ambrosio"
+      ]
+    },
+    "MEL": {
+      "": [
+        "Kalani Whiteinjured",
+        "Luker Kentfield",
+        "Oscar Berry",
+        "Ricky Mentha",
+        "Riley Onley",
+        "Thomas Matthews",
+        "Xavier Taylor"
+      ],
+      "Designated Kicker": [
+        "Jake Boweyinjured",
+        "Trent Rivers",
+        "Steven May",
+        "Christian Salem"
+      ],
+      "General Defender": [
+        "Changkuoth Jiathinjured",
+        "Andy Moniz-Wakefield",
+        "Blake Howes",
+        "Daniel Turner",
+        "Jed Adams",
+        "Xavier Lindsay",
+        "Tom McDonald",
+        "Jake Lever"
+      ],
+      "Inside Midfielder": [
+        "Jack Vineyinjured",
+        "Kysaiah Pickett",
+        "Caleb Windsor",
+        "Jack Steele"
+      ],
+      "Key Forward": [
+        "Shane McAdaminjured",
+        "Bayley Fritsch",
+        "Harrison Petty",
+        "Max Heath",
+        "Jacob van Rooyen",
+        "Matthew Jefferson",
+        "Jake Melksham",
+        "Brody Mihocek"
+      ],
+      "Ruck": [
+        "Tom Campbellinjured",
+        "Max Gawn"
+      ],
+      "Small/Medium Forward": [
+        "Paddy Crossinjured",
+        "Kade Chandler",
+        "Harry Sharp",
+        "Jack Henderson",
+        "Bailey Laurie",
+        "Jai Culley",
+        "Latrelle Pickett",
+        "Koltyn Tholstrup",
+        "Aidan Johnson",
+        "Ed Langdon",
+        "Tom Sparrow"
+      ],
+      "Wing/Attacking Defender": [
+        "Harvey Langford"
+      ]
+    },
+    "NTH": {
+      "": [
+        "Luke Urquhartinjured",
+        "Taylor Goadinjured",
+        "Blake Thredgoldinjured",
+        "Brayden George",
+        "Hugo Mikunda",
+        "River Stevens"
+      ],
+      "Designated Kicker": [
+        "Colby McKercher",
+        "Caleb Daniel",
+        "Luke McDonald",
+        "Zac Fisher"
+      ],
+      "General Defender": [
+        "Griffin Logueinjured",
+        "Josh Goaterinjured",
+        "Jackson Archerinjured",
+        "Toby Pink",
+        "Charlie Comben",
+        "Tom Blamires",
+        "Riley Hardeman",
+        "Finn O'Sullivan",
+        "Matt Whitlock",
+        "Wil Dawson",
+        "Aidan Corr"
+      ],
+      "Inside Midfielder": [
+        "Luke Davies-Uniacke",
+        "Tom Powell",
+        "George Wardlaw",
+        "Harry Sheezel",
+        "Luke Parker",
+        "Jy Simpkin"
+      ],
+      "Key Forward": [
+        "Nick Larkey",
+        "Paul Curtis",
+        "Cooper Trembath",
+        "Jack Darling",
+        "Cameron Zurhaar"
+      ],
+      "Ruck": [
+        "Tristan Xerri"
+      ],
+      "Small/Medium Forward": [
+        "Callum Coleman-Jones",
+        "Charlie Spargo",
+        "Zac Banch",
+        "Cooper Harvey",
+        "Robert Hansen Jr",
+        "Zane Duursma",
+        "Jacob Konstanty",
+        "Lachy Dovaston"
+      ],
+      "Wing/Attacking Defender": [
+        "Bailey Scott",
+        "Dylan Stephens"
+      ]
+    },
+    "PTA": {
+      "": [
+        "Jacob Mossinjured",
+        "Benny Barrett",
+        "Tom Anastasopoulos",
+        "Xavier Walsh",
+        "Balyn O'Brien"
+      ],
+      "Designated Kicker": [
+        "Connor Rozeeinjured",
+        "Kane Farrell"
+      ],
+      "General Defender": [
+        "Esava Ratugoleainjured",
+        "Josh Sinninjured",
+        "Harrison Ramminjured",
+        "Brandon Zerk-Thatcher",
+        "Jacob Wehr",
+        "Jackson Mead",
+        "Lachie Jones",
+        "Jase Burgoyne",
+        "Logan Evans",
+        "Will Lorenz",
+        "Josh Lai",
+        "Aliir Aliir"
+      ],
+      "Inside Midfielder": [
+        "Willem Drew",
+        "Zak Butters",
+        "Miles Bergman",
+        "Jason Horne-Francis",
+        "Ollie Wines",
+        "Will Brodie"
+      ],
+      "Key Forward": [
+        "Todd Marshallinjured",
+        "Jack Lukosius",
+        "Corey Durdin",
+        "Mitch Georgiades",
+        "Jack Whitlock"
+      ],
+      "Ruck": [
+        "Ivan Soldoinjured",
+        "Dante Visentini",
+        "Jordon Sweet"
+      ],
+      "Small/Medium Forward": [
+        "Sam Powell-Pepperinjured",
+        "Joe Richards",
+        "Jack Watkins",
+        "Ollie Lord",
+        "Tom Cochrane",
+        "Ewan Mackinlay",
+        "Joe Berry",
+        "Mitch Zadow",
+        "Darcy Byrne-Jones"
+      ],
+      "Wing/Attacking Defender": [
+        "Mani Liddyinjured",
+        "Christian Moraes"
+      ]
+    },
+    "RIC": {
+      "": [
+        "Josh Smillieinjured",
+        "Noah Roberts-Thomson",
+        "Oliver Hayes-Brown",
+        "Patrick Retschko",
+        "Sam Cumming",
+        "Zane Peucker",
+        "Thomas Burton"
+      ],
+      "Designated Kicker": [
+        "Sam Banks",
+        "Sam Grlj",
+        "Nick Vlastuin",
+        "Jayden Short"
+      ],
+      "General Defender": [
+        "Noah Baltainjured",
+        "Ben Miller",
+        "Josh Gibcus",
+        "Tom Brown",
+        "Kaleb Smith",
+        "Luke Trainor",
+        "Campbell Gray",
+        "Nathan Broad"
+      ],
+      "Inside Midfielder": [
+        "Jack Ross",
+        "Kane McAuliffe",
+        "Dion Prestia",
+        "Jacob Hopper",
+        "Tim Taranto"
+      ],
+      "Key Forward": [
+        "Tom Lynchinjured",
+        "Rhyan Mansellinjured",
+        "Harry Armstronginjured",
+        "Mykelti Lefau",
+        "Liam Fawcett",
+        "Jonty Faull"
+      ],
+      "Ruck": [
+        "Toby Nankervisinjured",
+        "Samson Ryan"
+      ],
+      "Small/Medium Forward": [
+        "Judson Clarkeinjured",
+        "Tom Simsinjured",
+        "Jasper Algerinjured",
+        "Taj Hottoninjured",
+        "Maurice Rioli",
+        "Tyler Sonsie",
+        "Steely Green",
+        "Seth Campbell",
+        "Sam Lalor"
+      ],
+      "Wing/Attacking Defender": [
+        "Hugo Ralphsmithinjured",
+        "James Trezise"
+      ]
+    },
+    "STK": {
+      "": [
+        "Charlie Banfieldinjured",
+        "Alex Dodson",
+        "Eamonn Armstrong",
+        "James Barrat",
+        "Kobe McDonald",
+        "Kye Fincher",
+        "Patrick Said"
+      ],
+      "Designated Kicker": [
+        "Bradley Hill",
+        "Callum Wilkie",
+        "Jack Sinclair"
+      ],
+      "General Defender": [
+        "Ryan Byrnesinjured",
+        "Anthony Caminitiinjured",
+        "Liam O'Connellinjured",
+        "Jack Silvagni",
+        "Liam Stocker",
+        "Jack Carroll",
+        "Angus Hastie",
+        "Tobie Travaglia",
+        "Alixzander Tauru",
+        "Dougal Howard"
+      ],
+      "Inside Midfielder": [
+        "Jack Macraeinjured",
+        "Paddy Dowinjured",
+        "Hunter Clarkinjured",
+        "Sam Flanders",
+        "Nasiah Wanganeen-Milera",
+        "Max Hall",
+        "Marcus Windhager",
+        "Hugo Garcia"
+      ],
+      "Key Forward": [
+        "Max Kinginjured",
+        "Jack Higgins",
+        "Liam Ryan",
+        "Cooper Sharman",
+        "Mitch Owens"
+      ],
+      "Ruck": [
+        "Tom De Koning",
+        "Rowan Marshall"
+      ],
+      "Small/Medium Forward": [
+        "Liam Henryinjured",
+        "Isaac Keeler",
+        "Lance Collard",
+        "Mattaes Phillipou",
+        "Darcy Wilson",
+        "Hugh Boxshall",
+        "Dan Butler"
+      ],
+      "Wing/Attacking Defender": [
+        "Mason Wood"
+      ]
+    },
+    "SYD": {
+      "": [
+        "Riak Andrewinjured",
+        "William Greeninjured",
+        "Max Kinginjured",
+        "Noah Chamberlaininjured",
+        "Billy Cootee",
+        "Harry Kyle",
+        "Jevan Phillipou",
+        "Liam Hetherton",
+        "Ned Bowman",
+        "Patrick Snell",
+        "William Edwards"
+      ],
+      "Designated Kicker": [
+        "Nick Blakey",
+        "Riley Bice",
+        "Matt Roberts",
+        "Callum Mills"
+      ],
+      "General Defender": [
+        "Sam Wicks",
+        "Tom McCartin",
+        "Jai Serong",
+        "Dane Rampe",
+        "Harry Cunningham",
+        "Joel Hamling",
+        "Lewis Melican"
+      ],
+      "Inside Midfielder": [
+        "Errol Guldeninjured",
+        "James Rowbottom",
+        "Justin McInerney",
+        "Chad Warner",
+        "Angus Sheldrick",
+        "Isaac Heeney"
+      ],
+      "Key Forward": [
+        "Hayden McLean",
+        "Malcolm Rosas",
+        "Joel Amartey",
+        "Logan McDonald",
+        "Tom Hanily",
+        "Jesse Dattoli",
+        "Charlie Curnow",
+        "Tom Papley"
+      ],
+      "Ruck": [
+        "Brodie Grundy"
+      ],
+      "Small/Medium Forward": [
+        "Taylor Adamsinjured",
+        "Braeden Campbellinjured",
+        "James Jordon",
+        "Corey Warner",
+        "Caiden Cleary",
+        "Jake Lloyd",
+        "Peter Ladhams"
+      ]
+    },
+    "WBD": {
+      "": [
+        "Zac Walkerinjured",
+        "Lachlan Carmichael",
+        "Lachlan Smith",
+        "Louis Emmett",
+        "Luke Kennedy",
+        "Will Darcy"
+      ],
+      "Designated Kicker": [
+        "Lachlan Bramble",
+        "Lachie Jaques",
+        "Bailey Dale"
+      ],
+      "General Defender": [
+        "Nick Coffield",
+        "Luke Cleary",
+        "Michael Sellwood",
+        "Jedd Busslinger",
+        "James O'Donnell",
+        "Rory Lobb",
+        "Ryan Gardner"
+      ],
+      "Inside Midfielder": [
+        "Tom Liberatoreinjured",
+        "Adam Treloarinjured",
+        "Matthew Kennedy",
+        "Ed Richards",
+        "Marcus Bontempelli"
+      ],
+      "Key Forward": [
+        "Cody Weightmaninjured",
+        "Aaron Naughton",
+        "Rhylee West",
+        "Jordan Croft",
+        "Sam Darcy"
+      ],
+      "Ruck": [
+        "Tim English"
+      ],
+      "Small/Medium Forward": [
+        "Riley Garciainjured",
+        "Connor Budarick",
+        "Oskar Baker",
+        "Lachlan McNeil",
+        "Harvey Gallagher",
+        "Ryley Sanders",
+        "Arthur Jones",
+        "Joel Freijah",
+        "Cooper Hynes",
+        "Josh Dolan",
+        "Will Lewis",
+        "James Harmes",
+        "Buku Khamis"
+      ],
+      "Wing/Attacking Defender": [
+        "Laitham Vandermeerinjured",
+        "Sam Davidson",
+        "Bailey Williams"
+      ]
+    },
+    "WCE": {
+      "": [
+        "Sam Alleninjured",
+        "Fred Rodriguezinjured",
+        "Harry Barnett",
+        "Tylah Williams"
+      ],
+      "Designated Kicker": [
+        "Josh Lindsay",
+        "Tom McCarthy",
+        "Liam Duggan",
+        "Tom Cole"
+      ],
+      "General Defender": [
+        "Brandon Starcevichinjured",
+        "Harry Edwardsinjured",
+        "Sandy Brock",
+        "Rhett Bazzo",
+        "Tylar Young",
+        "Lucca Grego",
+        "Reuben Ginbey",
+        "Tyrell Dewar",
+        "Brady Hough",
+        "Harvey Johnston",
+        "Bo Allan"
+      ],
+      "Inside Midfielder": [
+        "Elliot Yeoinjured",
+        "Liam Baker",
+        "Elijah Hewett",
+        "Harley Reid",
+        "Tim Kelly",
+        "Jack Graham"
+      ],
+      "Key Forward": [
+        "Jack Williams",
+        "Archer Reid",
+        "Jobe Shanahan",
+        "Jake Waterman"
+      ],
+      "Ruck": [
+        "Matt Flynn"
+      ],
+      "Small/Medium Forward": [
+        "Tyler Brockmaninjured",
+        "Jacob Newtoninjured",
+        "Noah Longinjured",
+        "Tom Grossinjured",
+        "Bailey J. Williams",
+        "Harry Schoenberg",
+        "Deven Robertson",
+        "Finlay Macrae",
+        "Matthew Owies",
+        "Clay Hall",
+        "Cooper Duff-Tytler",
+        "Malakai Champion",
+        "Hamish Davis",
+        "Willem Duursma",
+        "Jamie Cripps"
+      ],
+      "Wing/Attacking Defender": [
+        "Milan Murdockinjured",
+        "Jack Hutchinsoninjured",
+        "Ryan Maric"
+      ]
+    }
+  }
+}

@@ -31,6 +31,14 @@ export type AflDvpPayload = {
   missingPlayers?: Array<Record<string, unknown>>;
 };
 
+function normalizeTeamForKey(team: string): string {
+  return String(team ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
 export async function getAflDvpPayloadFromCache(season: number): Promise<AflDvpPayload | null> {
   const key = getAflDvpPayloadCacheKey(season);
   return sharedCache.getJSON<AflDvpPayload>(key);
