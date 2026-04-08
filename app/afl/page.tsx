@@ -365,23 +365,53 @@ function buildAflGameIdentityKey(game: Record<string, unknown>): string {
   return [seasonPart, round, opponent, date, result].join('|');
 }
 
+function scoreAflGameRowQuality(game: Record<string, unknown>): number {
+  const num = (v: unknown): number | null => {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+  let score = 0;
+  // Prefer rows that contain richer advanced/supporting stats.
+  const tog = num(game.percent_played);
+  if (tog != null && tog > 0) score += 100;
+  const advancedKeys = [
+    'meters_gained',
+    'intercepts',
+    'contested_possessions',
+    'effective_disposals',
+    'disposal_efficiency',
+    'one_percenters',
+    'tackles_inside_50',
+  ] as const;
+  for (const k of advancedKeys) {
+    const v = num(game[k]);
+    if (v != null && v > 0) score += 20;
+  }
+  // Use core box-score fields as secondary tie-breakers.
+  const coreKeys = ['disposals', 'kicks', 'handballs', 'marks', 'goals', 'tackles'] as const;
+  for (const k of coreKeys) {
+    const v = num(game[k]);
+    if (v != null && v > 0) score += 5;
+  }
+  if (String(game.date ?? game.game_date ?? '').trim()) score += 2;
+  if (String(game.round ?? '').trim()) score += 1;
+  return score;
+}
+
 function dedupeAflGames<T extends Record<string, unknown>>(games: T[]): T[] {
   if (!Array.isArray(games) || games.length <= 1) return games;
-  const seen = new Set<string>();
   const deduped: T[] = [];
+  const indexByKey = new Map<string, number>();
   for (const game of games) {
     const datePart = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
-    const monthDayPart = datePart.length >= 10 ? datePart.slice(5, 10) : '';
     const opponentPart = String(game.opponent ?? '').trim().toLowerCase();
-    const resultPart = String(game.result ?? '').trim().toLowerCase();
     const roundPart = String(game.round ?? '').trim().toUpperCase();
     const gameNumberPart = String(game.game_number ?? '').trim();
     const seasonPart = String(game.season ?? '').trim();
-    const disposalsPart = String(game.disposals ?? '').trim();
-    const kicksPart = String(game.kicks ?? '').trim();
-    const handballsPart = String(game.handballs ?? '').trim();
-    const goalsPart = String(game.goals ?? '').trim();
-    const marksPart = String(game.marks ?? '').trim();
     const identityKey = buildAflGameIdentityKey(game);
     const dateKey = datePart ? [seasonPart, datePart, opponentPart].join('|') : '';
     const roundOpponentKey = roundPart && opponentPart ? [seasonPart, roundPart, opponentPart].join('|') : '';
@@ -402,11 +432,25 @@ function dedupeAflGames<T extends Record<string, unknown>>(games: T[]): T[] {
       deduped.push(game);
       continue;
     }
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(game);
+    const existingIdx = indexByKey.get(key);
+    if (existingIdx == null) {
+      indexByKey.set(key, deduped.length);
+      deduped.push(game);
+      continue;
+    }
+    const existing = deduped[existingIdx];
+    if (scoreAflGameRowQuality(game) > scoreAflGameRowQuality(existing)) {
+      deduped[existingIdx] = game;
+    }
   }
   return deduped;
+}
+
+function hasVerifiedSupportingStats(game: Record<string, unknown>): boolean {
+  const tog = typeof game.percent_played === 'number'
+    ? game.percent_played
+    : (typeof game.percent_played === 'string' ? parseFloat(game.percent_played) : NaN);
+  return Number.isFinite(tog) && tog > 0;
 }
 
 const VALID_AFL_TIMEFRAMES = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
@@ -3063,14 +3107,20 @@ export default function AFLPage() {
   // When a team is selected in the Team dropdown, filter the chart to only games vs that opponent (so the dropdown visibly updates the chart).
   const chartGameLogsForPlayer = useMemo(() => {
     if (aflPropsMode !== 'player') return filteredPlayerGameLogs;
-    if (!aflTeamFilter || aflTeamFilter === 'All' || aflTeamFilter.trim() === '') return filteredPlayerGameLogs;
-    const officialTarget = aflTeamFilter.trim();
-    return filteredPlayerGameLogs.filter((g) => {
-      const opp = (g as Record<string, unknown>)?.opponent;
-      if (opp == null || typeof opp !== 'string') return false;
-      const resolved = opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim();
-      return resolved === officialTarget;
-    });
+    const baseLogs = (!aflTeamFilter || aflTeamFilter === 'All' || aflTeamFilter.trim() === '')
+      ? filteredPlayerGameLogs
+      : filteredPlayerGameLogs.filter((g) => {
+        const opp = (g as Record<string, unknown>)?.opponent;
+        if (opp == null || typeof opp !== 'string') return false;
+        const resolved = opponentToOfficialTeamName(opp) || rosterTeamToInjuryTeam(opp) || opp.trim();
+        return resolved === aflTeamFilter.trim();
+      });
+
+    // If mixed-quality rows exist, keep only games that have verified supporting stats
+    // so chart bars and supporting-stats bars stay aligned.
+    const verified = baseLogs.filter((g) => hasVerifiedSupportingStats(g as Record<string, unknown>));
+    if (verified.length > 0 && verified.length < baseLogs.length) return verified;
+    return baseLogs;
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
 
   // In Game Props mode, optionally filter team logs by selected opponent from Team dropdown.
