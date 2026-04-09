@@ -457,6 +457,9 @@ function hasVerifiedSupportingStats(game: Record<string, unknown>): boolean {
 
 const VALID_AFL_TIMEFRAMES = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 
+/** If current+prev seasons already yield this many games, L10 cannot include the third (oldest) season — load oldest in background. */
+const AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST = 10;
+
 function normalizeAflTimeframe(value: unknown): AflChartTimeframe | null {
   const raw = String(value ?? '').trim().toLowerCase();
   if (!raw) return null;
@@ -629,7 +632,7 @@ export default function AFLPage() {
   const [teamModeSelectedTeamLogs, setTeamModeSelectedTeamLogs] = useState<AflGameLogRecord[]>([]);
   /** Short delay before showing chart so odds have time to load and auto-select inline with chart. */
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
-  const CHART_DISPLAY_DELAY_MS = 500;
+  const CHART_DISPLAY_DELAY_MS = 120;
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
@@ -2040,8 +2043,9 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     const fetchOpts = { cache: 'no-store' as RequestCache };
+    const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
     Promise.all([
-      fetch(`${baseUrl}&season=${currentYear}`, fetchOpts).then((r) => r.json()),
+      fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then((r) => r.json()),
     ])
@@ -2200,23 +2204,20 @@ export default function AFLPage() {
     // Keep historical seasons cached for speed so player loads stay responsive.
     const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
+    type SeasonFetchResult = { ok: boolean; data: Record<string, unknown> };
+    const emptyOlderSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
     (async () => {
-      try {
-        // Fetch current + previous two seasons in parallel; update chart only after merge so bars
-        // don't flash (e.g. 2026-only then 2026+2025).
-        const p1 = fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then(async (res) => {
+      const fetchSeason = (year: number, force = '') =>
+        fetch(`${baseUrl}&season=${year}${force}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
-          return { ok: res.ok, data: d };
+          return { ok: res.ok, data: d } as SeasonFetchResult;
         });
-        const p2 = fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then(async (res) => {
-          const d = (await res.json()) as Record<string, unknown>;
-          return { ok: res.ok, data: d };
-        });
-        const p3 = fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then(async (res) => {
-          const d = (await res.json()) as Record<string, unknown>;
-          return { ok: res.ok, data: d };
-        });
-        const [resultCurrent, resultPrev, resultOlder] = await Promise.all([p1, p2, p3]);
+
+      const applyMergedSeasonResults = (
+        resultCurrent: SeasonFetchResult,
+        resultPrev: SeasonFetchResult,
+        resultOlder: SeasonFetchResult,
+      ) => {
         if (cancelled) return;
         const dataCurrent = resultCurrent.data;
         const dataPrev = resultPrev.data;
@@ -2234,7 +2235,6 @@ export default function AFLPage() {
         if (is2026ResponseActually2025) qCurrent = [];
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
         const qOlder = Array.isArray(dataOlder?.gamesWithQuarters) ? (dataOlder.gamesWithQuarters as Record<string, unknown>[]) : gamesOlder;
-        // Merge: current season first, then older seasons (e.g. 2026/2025/2024).
         const games = dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]);
         const gamesWithQuarters = dedupeAflGames([...qCurrent, ...qPrev, ...qOlder]);
         const data = gamesCurrent.length > 0 ? dataCurrent : (gamesPrev.length > 0 ? dataPrev : dataOlder);
@@ -2250,7 +2250,6 @@ export default function AFLPage() {
           setStatsLoadingForPlayer(false);
           return;
         }
-        // games is [2026..., 2025...] = most recent first; latest = most recent game
         const latest = games[0];
         const numericKeys = new Set<string>();
         const numericMetaKeys = new Set(['season', 'game_number', 'guernsey']);
@@ -2276,7 +2275,6 @@ export default function AFLPage() {
           const seasonAvg = Math.round((total / values.length) * 10) / 10;
           const lastGameRaw = latest[key];
           const lastGame = typeof lastGameRaw === 'number' && Number.isFinite(lastGameRaw) ? lastGameRaw : 0;
-          // L5/L10 = most recent 5/10 games (fill timeframe: e.g. 1x 2026 + 9x 2025 = L10)
           const last5Values = values.slice(0, 5);
           const last10Values = values.slice(0, 10);
           const last5Avg = last5Values.length
@@ -2286,14 +2284,12 @@ export default function AFLPage() {
             ? Math.round((last10Values.reduce((s, v) => s + v, 0) / last10Values.length) * 10) / 10
             : 0;
 
-          // Keep intuitive keys for charting.
           toMerge[`${key}_season_avg`] = seasonAvg;
           toMerge[`${key}_last_game`] = lastGame;
           toMerge[`${key}_last5_avg`] = last5Avg;
           toMerge[`${key}_last10_avg`] = last10Avg;
         }
 
-        // Keep core metadata from the most recent game log for context.
         if (typeof latest.opponent === 'string') toMerge.last_opponent = latest.opponent;
         if (typeof latest.round === 'string') toMerge.last_round = latest.round;
         if (typeof latest.result === 'string') toMerge.last_result = latest.result;
@@ -2303,8 +2299,6 @@ export default function AFLPage() {
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
-        // Don't cache symbol-name players in localStorage — we always fetch fresh (AFL Tables) for them.
-        // For 2026, only persist when we have both seasons so refresh doesn't load 2026-only and show one bar.
         const mergedHas2025 = games.some((g: Record<string, unknown>) => (g?.season as number) === 2025 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2025'));
         const mergedHas2026 = currentYear !== 2026 || games.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2026'));
         const persistOk = currentYear !== 2026 || (mergedHas2025 && mergedHas2026);
@@ -2320,6 +2314,45 @@ export default function AFLPage() {
           } catch {
             // Ignore localStorage write failures.
           }
+        }
+      };
+
+      const countMergedGames = (rc: SeasonFetchResult, rp: SeasonFetchResult, ro: SeasonFetchResult) => {
+        const dataCurrent = rc.data;
+        const dataPrev = rp.data;
+        const dataOlder = ro.data;
+        let gamesCurrent = rc.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
+        const gamesPrev = rp.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const gamesOlder = ro.ok && Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
+        const payloadSeasonCurrent = dataCurrent?.season;
+        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
+        if (is2026ResponseActually2025) gamesCurrent = [];
+        return dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]).length;
+      };
+
+      try {
+        const p1 = fetchSeason(currentYear, forceFetchCurrent);
+        const p2 = fetchSeason(prevYear);
+        const p3 = fetchSeason(olderYear);
+        const [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
+        if (cancelled) return;
+
+        const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
+        if (mergedCountWithoutOldest === 0) {
+          const resultOlder = await p3;
+          if (cancelled) return;
+          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
+        } else if (mergedCountWithoutOldest >= AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
+          applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
+          p3.then((resultOlder) => {
+            if (cancelled) return;
+            applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
+          });
+        } else {
+          const resultOlder = await p3;
+          if (cancelled) return;
+          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
         }
       } catch (e) {
         if (!cancelled) {

@@ -5713,10 +5713,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               const opponent = prop.opponent || '';
                               const currentSeason = new Date().getFullYear();
 
-                              // Warm key AFL endpoints before navigating so player mode can render faster.
+                              // Warm key AFL endpoints before navigating (game logs require ?season= per API).
+                              const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
+                              const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
+                              const force2026 = currentSeason === new Date().getFullYear() ? '&force_fetch=1' : '';
                               const prefetchUrls = [
                                 `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
+                                `${logsBase}&season=2026${force2026}`,
+                                `${logsBase}&season=2025`,
+                                `${logsBase}&season=2024`,
                                 `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
                                 `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
                               ];
@@ -5800,10 +5805,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               const selectedBook = String(bookmakerName || prop.bookmaker || '').trim();
                               if (selectedBook) q.set('bookmaker', selectedBook);
 
-                              // Show loading bar briefly so transition is intentional and prefetch has head start.
-                              setTimeout(() => {
-                                router.push(`/afl?${q.toString()}`);
-                              }, 200);
+                              // Navigate immediately; prefetches above already started in parallel.
+                              router.push(`/afl?${q.toString()}`);
                               setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
                             };
                             return (
