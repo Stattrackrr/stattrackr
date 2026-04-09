@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-09T13:15:25.322Z",
+  "generatedAt": "2026-04-09T15:18:40.554Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 512,
@@ -333,9 +333,9 @@
       "team": "Carlton",
       "games": 5,
       "number": 18,
-      "disposals": 28,
+      "disposals": 28.2,
       "kicks": 12,
-      "handballs": 16,
+      "handballs": 16.2,
       "marks": 2.8,
       "goals": 0.2,
       "tackles": 5.2,
@@ -343,8 +343,8 @@
       "inside_50s": 5.2,
       "rebound_50s": 1.6,
       "contested_possessions": 10.8,
-      "uncontested_possessions": 17.4,
-      "meters_gained": 456.2,
+      "uncontested_possessions": 17.6,
+      "meters_gained": 453,
       "free_kicks_for": 1.2
     },
     {
@@ -724,7 +724,7 @@
       "rebound_50s": 5.8,
       "contested_possessions": 6.2,
       "uncontested_possessions": 13.8,
-      "meters_gained": 466,
+      "meters_gained": 471,
       "free_kicks_for": 0.2
     },
     {
@@ -857,7 +857,7 @@
       "rebound_50s": 1,
       "contested_possessions": 14.8,
       "uncontested_possessions": 10.6,
-      "meters_gained": 265.4,
+      "meters_gained": 266.8,
       "free_kicks_for": 2.6
     },
     {
@@ -914,7 +914,7 @@
       "rebound_50s": 1.2,
       "contested_possessions": 8.8,
       "uncontested_possessions": 16,
-      "meters_gained": 248.8,
+      "meters_gained": 250.6,
       "free_kicks_for": 0.8
     },
     {
@@ -990,7 +990,7 @@
       "rebound_50s": 1.25,
       "contested_possessions": 9.25,
       "uncontested_possessions": 12.75,
-      "meters_gained": 333.75,
+      "meters_gained": 333,
       "free_kicks_for": 1.75
     },
     {
@@ -1027,8 +1027,8 @@
       "inside_50s": 4.4,
       "rebound_50s": 2,
       "contested_possessions": 10.4,
-      "uncontested_possessions": 12.4,
-      "meters_gained": 446.4,
+      "uncontested_possessions": 12.2,
+      "meters_gained": 452.4,
       "free_kicks_for": 1.2
     },
     {
@@ -1294,7 +1294,7 @@
       "rebound_50s": 2,
       "contested_possessions": 12.8,
       "uncontested_possessions": 11,
-      "meters_gained": 360.6,
+      "meters_gained": 361,
       "free_kicks_for": 1.6
     },
     {
@@ -1446,7 +1446,7 @@
       "rebound_50s": 3,
       "contested_possessions": 5,
       "uncontested_possessions": 16,
-      "meters_gained": 250.67,
+      "meters_gained": 258.33,
       "free_kicks_for": 0.67
     },
     {
@@ -1595,10 +1595,10 @@
       "tackles": 2,
       "clearances": 1.8,
       "inside_50s": 2.4,
-      "rebound_50s": 5.4,
+      "rebound_50s": 5.6,
       "contested_possessions": 6,
       "uncontested_possessions": 12.4,
-      "meters_gained": 481.2,
+      "meters_gained": 482.8,
       "free_kicks_for": 0.4
     },
     {
@@ -1845,7 +1845,7 @@
       "rebound_50s": 0,
       "contested_possessions": 12,
       "uncontested_possessions": 10,
-      "meters_gained": 292,
+      "meters_gained": 294.5,
       "free_kicks_for": 1.5
     },
     {
@@ -2073,7 +2073,7 @@
       "rebound_50s": 1.8,
       "contested_possessions": 10,
       "uncontested_possessions": 9.8,
-      "meters_gained": 328.8,
+      "meters_gained": 329.6,
       "free_kicks_for": 1.4
     },
     {
@@ -2472,7 +2472,7 @@
       "rebound_50s": 5.5,
       "contested_possessions": 2.5,
       "uncontested_possessions": 10.5,
-      "meters_gained": 490,
+      "meters_gained": 486,
       "free_kicks_for": 0.5
     },
     {
@@ -2631,7 +2631,7 @@
       "name": "Zak Johnson",
       "team": "Essendon",
       "games": 4,
-      "number": 94,
+      "number": 93,
       "disposals": 18.5,
       "kicks": 10.5,
       "handballs": 8,
@@ -2773,10 +2773,10 @@
       "tackles": 1.6,
       "clearances": 0.8,
       "inside_50s": 3.2,
-      "rebound_50s": 1.2,
+      "rebound_50s": 1.4,
       "contested_possessions": 7,
       "uncontested_possessions": 11.6,
-      "meters_gained": 254.8,
+      "meters_gained": 254.2,
       "free_kicks_for": 1.2
     },
     {
@@ -2954,7 +2954,7 @@
       "name": "Corey Wagner",
       "team": "Fremantle",
       "games": 4,
-      "number": 71,
+      "number": 70,
       "disposals": 18,
       "kicks": 10.5,
       "handballs": 7.5,
@@ -3036,13 +3036,13 @@
       "handballs": 4,
       "marks": 8,
       "goals": 0,
-      "tackles": 3,
+      "tackles": 4,
       "clearances": 1,
       "inside_50s": 3,
-      "rebound_50s": 4,
+      "rebound_50s": 3,
       "contested_possessions": 4,
       "uncontested_possessions": 13,
-      "meters_gained": 436,
+      "meters_gained": 478,
       "free_kicks_for": 0
     },
     {
@@ -3061,7 +3061,7 @@
       "rebound_50s": 1,
       "contested_possessions": 7.2,
       "uncontested_possessions": 10.2,
-      "meters_gained": 323,
+      "meters_gained": 323.6,
       "free_kicks_for": 0.4
     },
     {
@@ -3163,7 +3163,7 @@
       "name": "Jack Scrimshaw",
       "team": "Hawthorn",
       "games": 4,
-      "number": 59,
+      "number": 58,
       "disposals": 17.75,
       "kicks": 9.75,
       "handballs": 8,
@@ -3441,7 +3441,7 @@
       "rebound_50s": 1.25,
       "contested_possessions": 5.75,
       "uncontested_possessions": 11.5,
-      "meters_gained": 313.25,
+      "meters_gained": 314,
       "free_kicks_for": 1
     },
     {
@@ -3638,14 +3638,14 @@
       "name": "Zachary Williams",
       "team": "Carlton",
       "games": 4,
-      "number": 66,
+      "number": 56,
       "disposals": 16.75,
       "kicks": 9.75,
       "handballs": 7,
       "marks": 1.25,
       "goals": 0.5,
-      "tackles": 2.5,
-      "clearances": 3.5,
+      "tackles": 3.25,
+      "clearances": 3.75,
       "inside_50s": 2.5,
       "rebound_50s": 3,
       "contested_possessions": 8.5,
@@ -3695,7 +3695,7 @@
       "name": "Judd McVee",
       "team": "Fremantle",
       "games": 4,
-      "number": 88,
+      "number": 87,
       "disposals": 16.5,
       "kicks": 10,
       "handballs": 6.5,
@@ -3733,7 +3733,7 @@
       "name": "Harry Perryman",
       "team": "Collingwood",
       "games": 4,
-      "number": 88,
+      "number": 87,
       "disposals": 16.5,
       "kicks": 9.75,
       "handballs": 6.75,
@@ -3859,7 +3859,7 @@
       "rebound_50s": 2.8,
       "contested_possessions": 5.6,
       "uncontested_possessions": 10.4,
-      "meters_gained": 326.2,
+      "meters_gained": 336.2,
       "free_kicks_for": 0.2
     },
     {
@@ -3923,7 +3923,7 @@
       "name": "Kane McAuliffe",
       "team": "Richmond",
       "games": 2,
-      "number": 86,
+      "number": 87,
       "disposals": 16,
       "kicks": 10,
       "handballs": 6,
@@ -4037,7 +4037,7 @@
       "name": "Blake Hardwick",
       "team": "Hawthorn",
       "games": 4,
-      "number": 59,
+      "number": 58,
       "disposals": 15.75,
       "kicks": 11,
       "handballs": 4.75,
@@ -4113,7 +4113,7 @@
       "name": "Matt Carroll",
       "team": "Carlton",
       "games": 4,
-      "number": 94,
+      "number": 93,
       "disposals": 15.5,
       "kicks": 9.5,
       "handballs": 6,
@@ -4246,7 +4246,7 @@
       "name": "Campbell Chesser",
       "team": "Carlton",
       "games": 3,
-      "number": 98,
+      "number": 99,
       "disposals": 15.33,
       "kicks": 7.67,
       "handballs": 7.67,
@@ -4265,7 +4265,7 @@
       "name": "Lachlan Cowan",
       "team": "Carlton",
       "games": 4,
-      "number": 59,
+      "number": 58,
       "disposals": 15.25,
       "kicks": 10.5,
       "handballs": 4.75,
@@ -4277,7 +4277,7 @@
       "rebound_50s": 3.75,
       "contested_possessions": 4,
       "uncontested_possessions": 9.5,
-      "meters_gained": 301.25,
+      "meters_gained": 295.5,
       "free_kicks_for": 0
     },
     {
@@ -4486,14 +4486,14 @@
       "rebound_50s": 1,
       "contested_possessions": 4,
       "uncontested_possessions": 10,
-      "meters_gained": 218.5,
+      "meters_gained": 219,
       "free_kicks_for": 1
     },
     {
       "name": "Jaeger O'Meara",
       "team": "Fremantle",
       "games": 2,
-      "number": 86,
+      "number": 87,
       "disposals": 15,
       "kicks": 7,
       "handballs": 8,
@@ -4528,6 +4528,25 @@
       "free_kicks_for": 0.5
     },
     {
+      "name": "Ben Keays",
+      "team": "Adelaide",
+      "games": 5,
+      "number": null,
+      "disposals": 14.8,
+      "kicks": 9,
+      "handballs": 5.8,
+      "marks": 2.8,
+      "goals": 0.8,
+      "tackles": 2.8,
+      "clearances": 0.8,
+      "inside_50s": 3,
+      "rebound_50s": 0.4,
+      "contested_possessions": 4.8,
+      "uncontested_possessions": 8.2,
+      "meters_gained": 210.4,
+      "free_kicks_for": 0.6
+    },
+    {
       "name": "Xavier Duursma",
       "team": "Essendon",
       "games": 4,
@@ -4550,7 +4569,7 @@
       "name": "Zach Guthrie",
       "team": "Geelong",
       "games": 4,
-      "number": 86,
+      "number": 87,
       "disposals": 14.75,
       "kicks": 8.25,
       "handballs": 6.5,
@@ -4619,7 +4638,7 @@
       "rebound_50s": 1.25,
       "contested_possessions": 6,
       "uncontested_possessions": 7.5,
-      "meters_gained": 314,
+      "meters_gained": 313.25,
       "free_kicks_for": 0.75
     },
     {
@@ -4695,27 +4714,8 @@
       "rebound_50s": 0.4,
       "contested_possessions": 3.4,
       "uncontested_possessions": 11.4,
-      "meters_gained": 201.6,
+      "meters_gained": 213.8,
       "free_kicks_for": 0
-    },
-    {
-      "name": "Ben Keays",
-      "team": "Adelaide",
-      "games": 5,
-      "number": null,
-      "disposals": 14.6,
-      "kicks": 8.8,
-      "handballs": 5.8,
-      "marks": 2.8,
-      "goals": 0.8,
-      "tackles": 2.8,
-      "clearances": 0.8,
-      "inside_50s": 3,
-      "rebound_50s": 0.4,
-      "contested_possessions": 4.8,
-      "uncontested_possessions": 8.2,
-      "meters_gained": 214.4,
-      "free_kicks_for": 0.6
     },
     {
       "name": "Koltyn Tholstrup",
@@ -4752,7 +4752,7 @@
       "rebound_50s": 3.5,
       "contested_possessions": 2,
       "uncontested_possessions": 8.5,
-      "meters_gained": 327,
+      "meters_gained": 330.5,
       "free_kicks_for": 0
     },
     {
@@ -4904,8 +4904,8 @@
       "rebound_50s": 0.6,
       "contested_possessions": 6.2,
       "uncontested_possessions": 7.2,
-      "meters_gained": 194.6,
-      "free_kicks_for": 0.8
+      "meters_gained": 196,
+      "free_kicks_for": 1
     },
     {
       "name": "Riley Thilthorpe",
@@ -5177,7 +5177,7 @@
       "name": "Max Michalanney",
       "team": "Adelaide",
       "games": 5,
-      "number": 58,
+      "number": 57,
       "disposals": 13.6,
       "kicks": 9,
       "handballs": 4.6,
@@ -5189,7 +5189,7 @@
       "rebound_50s": 3.8,
       "contested_possessions": 4.8,
       "uncontested_possessions": 8.6,
-      "meters_gained": 264.2,
+      "meters_gained": 265,
       "free_kicks_for": 1
     },
     {
@@ -5215,7 +5215,7 @@
       "name": "James Jordon",
       "team": "Sydney",
       "games": 4,
-      "number": 86,
+      "number": 87,
       "disposals": 13.5,
       "kicks": 6.5,
       "handballs": 7,
@@ -5453,16 +5453,16 @@
       "clearances": 0,
       "inside_50s": 3.5,
       "rebound_50s": 0.25,
-      "contested_possessions": 6.5,
+      "contested_possessions": 6.25,
       "uncontested_possessions": 8,
-      "meters_gained": 305.75,
+      "meters_gained": 317.5,
       "free_kicks_for": 0.75
     },
     {
       "name": "Sam Wicks",
       "team": "Sydney",
       "games": 4,
-      "number": 71,
+      "number": 70,
       "disposals": 13.25,
       "kicks": 7,
       "handballs": 6.25,
@@ -5490,7 +5490,7 @@
       "tackles": 2.6,
       "clearances": 5.6,
       "inside_50s": 1.2,
-      "rebound_50s": 1.6,
+      "rebound_50s": 1.4,
       "contested_possessions": 10,
       "uncontested_possessions": 3.4,
       "meters_gained": 137,
@@ -6215,7 +6215,7 @@
       "rebound_50s": 1,
       "contested_possessions": 7,
       "uncontested_possessions": 5,
-      "meters_gained": 173,
+      "meters_gained": 174.2,
       "free_kicks_for": 1.4
     },
     {
@@ -6241,7 +6241,7 @@
       "name": "Tom Barrass",
       "team": "Hawthorn",
       "games": 4,
-      "number": 94,
+      "number": 93,
       "disposals": 12,
       "kicks": 7.5,
       "handballs": 4.5,
@@ -6355,7 +6355,7 @@
       "name": "Oscar McDonald",
       "team": "Fremantle",
       "games": 2,
-      "number": 94,
+      "number": 93,
       "disposals": 12,
       "kicks": 7,
       "handballs": 5,
@@ -6393,7 +6393,7 @@
       "name": "Dougal Howard",
       "team": "St Kilda",
       "games": 1,
-      "number": 94,
+      "number": 93,
       "disposals": 12,
       "kicks": 10,
       "handballs": 2,
@@ -6538,7 +6538,7 @@
       "rebound_50s": 5.2,
       "contested_possessions": 3.4,
       "uncontested_possessions": 7,
-      "meters_gained": 241.8,
+      "meters_gained": 250.2,
       "free_kicks_for": 0.4
     },
     {
@@ -7020,7 +7020,7 @@
       "name": "Lewis Young",
       "team": "Carlton",
       "games": 5,
-      "number": 85,
+      "number": 84,
       "disposals": 10.8,
       "kicks": 6.2,
       "handballs": 4.6,
@@ -7343,7 +7343,7 @@
       "name": "Harry Dean",
       "team": "Carlton",
       "games": 3,
-      "number": 67,
+      "number": 66,
       "disposals": 10.33,
       "kicks": 6.67,
       "handballs": 3.67,
@@ -7533,7 +7533,7 @@
       "name": "Lachlan Jones",
       "team": "Port Adelaide",
       "games": 3,
-      "number": 67,
+      "number": 66,
       "disposals": 10,
       "kicks": 7.67,
       "handballs": 2.33,
@@ -7970,7 +7970,7 @@
       "name": "Hugh Bond",
       "team": "Adelaide",
       "games": 3,
-      "number": 82,
+      "number": 83,
       "disposals": 9.33,
       "kicks": 7,
       "handballs": 2.33,
@@ -7989,7 +7989,7 @@
       "name": "Tom Brown",
       "team": "Richmond",
       "games": 3,
-      "number": 67,
+      "number": 66,
       "disposals": 9.33,
       "kicks": 6.33,
       "handballs": 3,
@@ -8166,13 +8166,13 @@
       "handballs": 3.67,
       "marks": 3.67,
       "goals": 1.33,
-      "tackles": 2,
+      "tackles": 1.67,
       "clearances": 0.33,
       "inside_50s": 1.33,
       "rebound_50s": 1,
       "contested_possessions": 3.33,
       "uncontested_possessions": 6.33,
-      "meters_gained": 170,
+      "meters_gained": 172.33,
       "free_kicks_for": 0.33
     },
     {
@@ -9407,7 +9407,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3.67,
       "uncontested_possessions": 2.67,
-      "meters_gained": 83.67,
+      "meters_gained": 84.67,
       "free_kicks_for": 0.67
     },
     {
@@ -9420,13 +9420,13 @@
       "handballs": 1.5,
       "marks": 2,
       "goals": 0,
-      "tackles": 1.5,
+      "tackles": 2,
       "clearances": 0,
       "inside_50s": 0.5,
       "rebound_50s": 1.5,
       "contested_possessions": 2.5,
       "uncontested_possessions": 2.5,
-      "meters_gained": 79,
+      "meters_gained": 83.5,
       "free_kicks_for": 0.5
     },
     {
