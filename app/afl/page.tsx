@@ -2200,49 +2200,16 @@ export default function AFLPage() {
     // Keep historical seasons cached for speed so player loads stay responsive.
     const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
-    let dataCurrent: Record<string, unknown> | null = null;
-    let dataPrev: Record<string, unknown> | null = null;
-    let shownPartial = false;
-    const maybeShowPartial = () => {
-      if (cancelled || shownPartial) return;
-      const curGames = dataCurrent && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
-      const prevGames = dataPrev && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
-      // For 2026 we prefer merged seasons, but don't block UX for too long.
-      // If previous-season fetch is slow, show current-season bars first, then backfill.
-      if (currentYear === 2026 && !dataPrev && (Date.now() - searchStartedAtMs) < 700) return;
-      if (curGames.length > 0 && !dataPrev) {
-        shownPartial = true;
-        setSelectedPlayerGameLogs(curGames);
-        const q = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : curGames;
-        setSelectedPlayerGameLogsWithQuarters(q);
-        setStatsLoadingForPlayer(false);
-        return;
-      }
-      if (prevGames.length > 0 && !dataCurrent) {
-        shownPartial = true;
-        setSelectedPlayerGameLogs(prevGames);
-        const q = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : prevGames;
-        setSelectedPlayerGameLogsWithQuarters(q);
-        setStatsLoadingForPlayer(false);
-      }
-    };
     (async () => {
       try {
-        // Fetch current + previous two seasons in parallel.
+        // Fetch current + previous two seasons in parallel; update chart only after merge so bars
+        // don't flash (e.g. 2026-only then 2026+2025).
         const p1 = fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
-          if (!cancelled) {
-            dataCurrent = d;
-            maybeShowPartial();
-          }
           return { ok: res.ok, data: d };
         });
         const p2 = fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then(async (res) => {
           const d = (await res.json()) as Record<string, unknown>;
-          if (!cancelled) {
-            dataPrev = d;
-            maybeShowPartial();
-          }
           return { ok: res.ok, data: d };
         });
         const p3 = fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then(async (res) => {
@@ -2251,8 +2218,8 @@ export default function AFLPage() {
         });
         const [resultCurrent, resultPrev, resultOlder] = await Promise.all([p1, p2, p3]);
         if (cancelled) return;
-        dataCurrent = resultCurrent.data;
-        dataPrev = resultPrev.data;
+        const dataCurrent = resultCurrent.data;
+        const dataPrev = resultPrev.data;
         const dataOlder = resultOlder.data;
         let gamesCurrent = resultCurrent.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
         const gamesPrev = resultPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
