@@ -16,6 +16,8 @@ import math
 import os
 import pickle
 import random
+
+import joblib
 from typing import Any, Dict, List, Tuple
 
 from common import MODEL_DIR, ensure_dir, now_iso, slug_time
@@ -638,8 +640,8 @@ def main() -> None:
     if model_obj is not None:
         model_pickle_rel = os.path.join("models", f"{version}.pkl").replace("\\", "/")
         model_pickle_abs = os.path.join(MODEL_DIR, model_pickle_rel.replace("/", os.sep))
-        with open(model_pickle_abs, "wb") as f:
-            pickle.dump(model_obj, f)
+        # Compressed joblib keeps large RF/HGB artifacts smaller; compatible with joblib.load in scorers.
+        joblib.dump(model_obj, model_pickle_abs, compress=3)
 
     drop_candidates = build_drop_candidates(
         models_dir,

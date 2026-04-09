@@ -12,6 +12,7 @@ import argparse
 import bisect
 import concurrent.futures
 import json
+import joblib
 import math
 import os
 import pickle
@@ -607,8 +608,11 @@ def load_model_object(artifact: dict):
     path = os.path.join(MODEL_DIR, rel.replace("/", os.sep))
     if not os.path.exists(path):
         return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
+    try:
+        return joblib.load(path)
+    except Exception:
+        with open(path, "rb") as f:
+            return pickle.load(f)
 
 
 def parse_float(v, default=0.0) -> float:

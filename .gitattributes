@@ -1,0 +1,2 @@
+# Deep AFL training can produce RandomForest/HGB pickles > GitHub's 100 MB blob limit.
+data/afl-model/models/*.pkl filter=lfs diff=lfs merge=lfs -text

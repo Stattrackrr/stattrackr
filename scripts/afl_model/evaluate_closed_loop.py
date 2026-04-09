@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import json
+import joblib
 import math
 import os
 import pickle
@@ -93,10 +94,13 @@ def load_model_object(artifact: dict):
     if not os.path.exists(abs_path):
         return None
     try:
-        with open(abs_path, "rb") as fh:
-            return pickle.load(fh)
+        return joblib.load(abs_path)
     except Exception:
-        return None
+        try:
+            with open(abs_path, "rb") as fh:
+                return pickle.load(fh)
+        except Exception:
+            return None
 
 
 def predict_expected(artifact: dict, model_obj, feat_raw: dict) -> float:
