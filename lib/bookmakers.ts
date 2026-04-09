@@ -246,6 +246,12 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: getLogoUrl('betfair.com.au'),
     color: '#FFB81C',
   },
+  'dabble': {
+    name: 'Dabble',
+    logo: 'DB',
+    logoUrl: '/images/dabble.jfif',
+    color: '#7C3AED',
+  },
   'unibet_au': {
     name: 'Unibet',
     logo: 'UB',

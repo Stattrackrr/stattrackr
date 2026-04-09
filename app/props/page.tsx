@@ -3110,19 +3110,31 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const effectivePropTypes = propsSport === 'afl' ? availableAflPropTypes : availablePropTypes;
   const isCombinedMode = propsSport === 'combined';
 
-  // AFL: ensure all bookmakers and prop types selected when none or invalid (e.g. after switching from NBA)
+  // AFL: always include every bookmaker that appears in AFL data (union into selection). Uses functional
+  // updates + deps on available list only so a partial overlap from NBA/localStorage expands to all AFL
+  // bookmakers without re-running when the user unchecks a bookmaker (stable available list).
   useEffect(() => {
-    if (propsSport !== 'afl' || aflProps.length === 0 || availableAflBookmakers.length === 0) return;
-    const bookmakersOverlap = Array.from(selectedBookmakers).some((b) => availableAflBookmakers.includes(b));
+    if (propsSport !== 'afl' || availableAflBookmakers.length === 0) return;
+    setSelectedBookmakers((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const b of availableAflBookmakers) {
+        if (!next.has(b)) {
+          next.add(b);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [propsSport, availableAflBookmakers]);
+
+  // AFL: ensure prop types selected when none or invalid (e.g. after switching from NBA)
+  useEffect(() => {
+    if (propsSport !== 'afl' || aflProps.length === 0 || availableAflPropTypes.length === 0) return;
     const propTypesOverlap = Array.from(selectedPropTypes).some((t) => availableAflPropTypes.includes(t));
-    if (selectedBookmakers.size > 0 && bookmakersOverlap && selectedPropTypes.size > 0 && propTypesOverlap) return;
-    if (selectedBookmakers.size === 0 || !bookmakersOverlap) {
-      setSelectedBookmakers(new Set(availableAflBookmakers));
-    }
-    if (selectedPropTypes.size === 0 || !propTypesOverlap) {
-      setSelectedPropTypes(new Set(availableAflPropTypes));
-    }
-  }, [propsSport, aflProps.length, availableAflBookmakers, availableAflPropTypes, selectedBookmakers, selectedPropTypes]);
+    if (selectedPropTypes.size > 0 && propTypesOverlap) return;
+    setSelectedPropTypes(new Set(availableAflPropTypes));
+  }, [propsSport, aflProps.length, availableAflPropTypes, selectedPropTypes]);
 
   // AFL: ensure all games selected when none or invalid (e.g. after switching from NBA or cache miss)
   useEffect(() => {
