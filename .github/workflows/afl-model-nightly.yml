@@ -86,6 +86,8 @@ jobs:
           git add data/afl-model 2>/dev/null || true
           git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
           git add data/afl-dfs-usage-*.json 2>/dev/null || true
+          # Role map is refreshed by fetch:afl:dfs-role-map; must be staged or pull --rebase fails (unstaged changes).
+          git add data/afl-dfs-role-map-*.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No nightly AFL model output changes"
           else

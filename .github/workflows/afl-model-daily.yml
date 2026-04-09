@@ -79,6 +79,7 @@ jobs:
           git add data/afl-model 2>/dev/null || true
           git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
           git add data/afl-dfs-usage-*.json 2>/dev/null || true
+          git add data/afl-dfs-role-map-*.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No AFL model output changes"
           else
