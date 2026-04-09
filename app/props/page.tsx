@@ -15,7 +15,7 @@ import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
 import { currentNbaSeason, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '@/lib/nbaConstants';
-import { BOOKMAKER_INFO } from '@/lib/bookmakers';
+import { getBookmakerInfo } from '@/lib/bookmakers';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
@@ -5010,8 +5010,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           >
                             <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                               {effectiveBookmakers.map(bookmaker => {
-                                const bookmakerKey = bookmaker.toLowerCase();
-                                const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                const bookmakerInfo = getBookmakerInfo(bookmaker);
                                 const isSelected = selectedBookmakers.has(bookmaker);
                                 return (
                                   <label
@@ -5063,8 +5062,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         >
                           <div className="p-2 space-y-1">
                             {effectiveBookmakers.map(bookmaker => {
-                              const bookmakerKey = bookmaker.toLowerCase();
-                              const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                              const bookmakerInfo = getBookmakerInfo(bookmaker);
                               const isSelected = selectedBookmakers.has(bookmaker);
                               return (
                                 <label
@@ -6020,8 +6018,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                             <div key={lineValue} className="flex items-center gap-1.5">
                                               {/* Show visible bookmakers for this line */}
                                               {visibleLines.map((line, lineIdx) => {
-                                                const bookmakerKey = line.bookmaker?.toLowerCase() || '';
-                                                const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                                const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
                                                 return (
                                                   <div key={lineIdx} className="flex items-center gap-1.5">
                                                     {/* Bookmaker card/button */}
@@ -6146,8 +6143,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                         {/* All bookmakers in grid */}
                                                         <div className="flex flex-wrap gap-2">
                                                           {lines.map((line, lineIdx) => {
-                                                            const bookmakerKey = line.bookmaker?.toLowerCase() || '';
-                                                            const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                                            const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
                                                             return (
                                                               <div
                                                                 key={lineIdx}
@@ -6216,8 +6212,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     ) : (
                                       // Fallback to main bookmaker if no bookmakerLines
                                       (() => {
-                                        const bookmakerKey = prop.bookmaker?.toLowerCase() || '';
-                                        const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                        const bookmakerInfo = getBookmakerInfo(prop.bookmaker || '');
                                         return (
                                           <div className="flex items-center gap-2">
                                             {bookmakerInfo?.logoUrl && (
@@ -7456,8 +7451,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     <div className="flex flex-col gap-2 min-w-0">
                                       {/* First 2 bookmakers */}
                                       {firstTwoBookmakers.map((bookmaker, idx) => {
-                                        const bookmakerKey = bookmaker.bookmaker?.toLowerCase() || '';
-                                        const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                        const bookmakerInfo = getBookmakerInfo(bookmaker.bookmaker || '');
                                         return (
                                           <div
                                             key={idx}
@@ -7556,8 +7550,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                 {/* All bookmakers list */}
                                                 <div className="space-y-2">
                                                   {allBookmakers.map((line, idx) => {
-                                                    const bookmakerKey = line.bookmaker?.toLowerCase() || '';
-                                                    const bookmakerInfo = BOOKMAKER_INFO[bookmakerKey] || BOOKMAKER_INFO[bookmakerKey.replace(/\s+/g, '')] || null;
+                                                    const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
                                                     return (
                                                       <div
                                                         key={idx}

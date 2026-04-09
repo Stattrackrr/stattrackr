@@ -252,6 +252,13 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: '/images/dabble.jfif',
     color: '#7C3AED',
   },
+  // The Odds API uses title "Dabble AU" (see aflPlayerPropsCache book.title || book.key)
+  'dabble au': {
+    name: 'Dabble',
+    logo: 'DB',
+    logoUrl: '/images/dabble.jfif',
+    color: '#7C3AED',
+  },
   'unibet_au': {
     name: 'Unibet',
     logo: 'UB',
