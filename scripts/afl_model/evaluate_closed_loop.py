@@ -553,6 +553,38 @@ def write_model_card(history_dir: str, payload: dict, candidate_details: List[di
         fh.write("\n".join(md) + "\n")
 
 
+def compute_side_bias_from_history(history_path: str) -> dict:
+    """Compare model vs actual over-rate on settled rows (void excluded)."""
+    payload = safe_read_json(history_path) or {}
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    if not isinstance(rows, list):
+        return {"settledCount": 0, "note": "no_rows"}
+    settled: List[Tuple[float, float, float]] = []
+    for row in rows:
+        if not isinstance(row, dict) or row.get("isVoid") is True:
+            continue
+        try:
+            actual = float(row.get("actualDisposals"))
+            line = float(row.get("line"))
+            model = float(row.get("modelExpectedDisposals"))
+        except Exception:
+            continue
+        if not all(math.isfinite(x) for x in (actual, line, model)):
+            continue
+        settled.append((actual, line, model))
+    if not settled:
+        return {"settledCount": 0}
+    n = len(settled)
+    actual_over = sum(1 for a, l, _ in settled if a > l) / n
+    model_over = sum(1 for _, l, m in settled if m > l) / n
+    return {
+        "settledCount": n,
+        "actualOverRate": round(actual_over, 4),
+        "modelOverRate": round(model_over, 4),
+        "overRateDeltaModelMinusActual": round(model_over - actual_over, 4),
+    }
+
+
 def promote_if_needed(pass_guardrails: bool, promote_flag: bool, candidate_artifact_path: str, candidate_projections_path: str) -> Dict[str, str]:
     info: Dict[str, str] = {}
     if not pass_guardrails or not promote_flag:
@@ -637,14 +669,19 @@ def main() -> None:
         fail_streak += 1
     freeze_active = fail_streak >= max(1, int(args.freeze_fail_streak))
 
-    guardrail_checks = {
+    checks_core = {
         "sampleCountOk": sample_count >= guardrails["minSamples"],
         "brierOk": brier_improvement >= guardrails["minBrierImprovement"],
         "logLossOk": logloss_change <= guardrails["maxLogLossIncrease"],
         "hitRateOk": hit_rate_delta >= -guardrails["maxHitRateDrop"],
+    }
+    pass_guardrails = all(checks_core.values())
+    guardrail_checks = {
+        **checks_core,
         "freezeInactive": not freeze_active,
     }
-    pass_guardrails = all(guardrail_checks.values())
+    bias_history_path = os.path.join(history_dir, "disposals-line-history.json")
+    bias_diagnostics = compute_side_bias_from_history(bias_history_path)
     promotion_info = promote_if_needed(pass_guardrails, args.promote_if_pass, args.candidate_artifact, args.candidate_projections)
 
     payload = {
@@ -654,6 +691,7 @@ def main() -> None:
         "candidateFallbackToCurrent": not isinstance(candidate_artifact_payload, dict),
         "guardrails": guardrails,
         "checks": guardrail_checks,
+        "biasDiagnostics": bias_diagnostics,
         "deltas": {
             "brierImprovement": round(brier_improvement, 6),
             "logLossChange": round(logloss_change, 6),
@@ -664,6 +702,7 @@ def main() -> None:
             "promoted": promotion_info.get("promoted") == "true",
             "freezeActive": freeze_active,
             "freezeFailStreak": fail_streak,
+            "freezeWouldBlockLegacy": freeze_active and pass_guardrails,
             "promotionInfo": promotion_info,
         },
         "candidate": candidate_metrics,
@@ -699,7 +738,13 @@ def main() -> None:
     write_model_card(history_dir, payload, candidate_details)
     print(f"Evaluated settled samples: {sample_count}")
     print(f"Guardrails pass: {pass_guardrails}")
-    print(f"Freeze active: {freeze_active} (streak={fail_streak})")
+    print(f"Freeze active: {freeze_active} (streak={fail_streak}) - informational only for promotion")
+    if bias_diagnostics.get("settledCount"):
+        print(
+            f"Bias (settled): model over-rate {bias_diagnostics.get('modelOverRate')} "
+            f"vs actual {bias_diagnostics.get('actualOverRate')} "
+            f"(delta model-actual {bias_diagnostics.get('overRateDeltaModelMinusActual')})"
+        )
     print(f"Promoted: {payload['decision']['promoted']}")
 
 

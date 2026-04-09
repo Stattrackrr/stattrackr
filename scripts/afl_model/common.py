@@ -324,6 +324,25 @@ def primary_home_venue_key(team: str) -> str:
     return sorted(list(venues))[0]
 
 
+def venue_keys_for_team_home_grounds(team: str) -> set:
+    """
+    Canonical venue keys where this team is designated home (AFL home grounds).
+    Used when scoring upcoming fixtures: the match is played at the home team's venue(s).
+    """
+    ck = canonical_team_key(team)
+    if not ck:
+        return set()
+    out = set()
+    for raw in TEAM_HOME_VENUES_BY_KEY.get(ck, set()) or set():
+        vk = canonical_venue_key(str(raw))
+        if vk:
+            out.add(vk)
+    pk = primary_home_venue_key(team)
+    if pk:
+        out.add(canonical_venue_key(pk))
+    return {x for x in out if x}
+
+
 def read_oa_team_stats_by_team(season: int) -> Dict[str, Dict[str, float]]:
     path = os.path.join(DATA_DIR, f"afl-team-rankings-{season}-oa.json")
     if not os.path.exists(path):

@@ -276,6 +276,8 @@ def build_rows_for_player(
         cl_hist = [to_float(x.get("clearances")) for x in history]
         i50_hist = [to_float(x.get("inside_50s")) for x in history]
         mg_hist = [to_float(x.get("meters_gained")) for x in history]
+        roll5_prev_disp = float(mean(rolling(prev_disposals[::-1], 5)) or 0.0)
+        roll5_prev_tog = float(mean(rolling([x for x in tog_hist if x is not None][::-1], 5)) or 0.0)
 
         game_date = parse_date(str(g.get("date") or g.get("game_date") or ""))
         prev_date = parse_date(str(history[-1].get("date") or history[-1].get("game_date") or "")) if history else None
@@ -320,8 +322,12 @@ def build_rows_for_player(
         venue_prev_disposals = [x for x in venue_prev_disposals if x is not None]
         venue_prev_tog = [to_float(x.get("percent_played")) for x in venue_games]
         venue_prev_tog = [x for x in venue_prev_tog if x is not None]
-        venue_player_disp_last5 = float(mean(rolling(venue_prev_disposals[::-1], 5)) or 0.0)
-        venue_player_tog_last5 = float(mean(rolling(venue_prev_tog[::-1], 5)) or 0.0)
+        if not venue_games:
+            venue_player_disp_last5 = roll5_prev_disp
+            venue_player_tog_last5 = roll5_prev_tog
+        else:
+            venue_player_disp_last5 = float(mean(rolling(venue_prev_disposals[::-1], 5)) or 0.0)
+            venue_player_tog_last5 = float(mean(rolling(venue_prev_tog[::-1], 5)) or 0.0)
 
         recent_tog = [to_float(x.get("percent_played")) for x in history[-5:]]
         recent_tog = [x for x in recent_tog if x is not None]

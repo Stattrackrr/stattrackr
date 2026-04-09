@@ -24,6 +24,7 @@ from common import (
     MODEL_DIR,
     canonical_team_key,
     canonical_venue_key,
+    venue_keys_for_team_home_grounds,
     get_json,
     interstate_travel_flag,
     mean,
@@ -145,7 +146,7 @@ def build_feature_map(
     games: List[dict],
     opp_allow_disposals: Optional[float],
     next_game_date: Optional[object],
-    next_venue_key: str,
+    fixture_venue_keys: set,
     is_true_home: float,
     is_shared_home_away_venue: float,
     is_interstate_travel: float,
@@ -203,13 +204,25 @@ def build_feature_map(
     roll10_cl = float(mean(rolling([x for x in cl if x is not None], 10)) or 0.0)
     role_delta_cl = roll3_cl - roll10_cl
 
-    venue_games = [g for g in games_sorted if canonical_venue_key(str(g.get("venue") or "")) == next_venue_key and next_venue_key]
+    roll5_disp_mean = float(mean(rolling(disposals, 5)) or 0.0)
+    roll5_tog_mean = float(mean(rolling([x for x in tog if x is not None], 5)) or 0.0)
+
+    vk = fixture_venue_keys or set()
+    venue_games = [
+        g
+        for g in games_sorted
+        if canonical_venue_key(str(g.get("venue") or "")) in vk
+        and vk
+    ]
     venue_disposals = [to_float(g.get("disposals")) for g in venue_games]
     venue_disposals = [x for x in venue_disposals if x is not None]
     venue_tog = [to_float(g.get("percent_played")) for g in venue_games]
     venue_tog = [x for x in venue_tog if x is not None]
     venue_player_disp_last5 = float(mean(rolling(venue_disposals, 5)) or 0.0)
     venue_player_tog_last5 = float(mean(rolling(venue_tog, 5)) or 0.0)
+    if not venue_games:
+        venue_player_disp_last5 = roll5_disp_mean
+        venue_player_tog_last5 = roll5_tog_mean
 
     recent_tog = [x for x in tog[:5] if x is not None]
     low_tog_count = len([x for x in recent_tog if x < 65.0])
@@ -524,6 +537,60 @@ def fetch_latest_footywire_roles(base_url: str) -> Dict[str, Dict[str, Dict[str,
         return _build_footywire_match_role_lookup(payload)
     except Exception:
         return {}
+
+
+def resolve_footywire_roles_for_fixture(
+    footywire_roles_by_match: Dict[str, Dict[str, Dict[str, str]]],
+    home: str,
+    away: str,
+) -> Dict[str, Dict[str, str]]:
+    want = _matchup_key(home, away)
+    if want and want in footywire_roles_by_match:
+        return footywire_roles_by_match[want]
+    hk = canonical_team_key(home)
+    ak = canonical_team_key(away)
+    if not hk or not ak:
+        return {}
+    for mu_key, teams_map in footywire_roles_by_match.items():
+        parts = mu_key.split("|", 1)
+        if len(parts) != 2:
+            continue
+        if {parts[0], parts[1]} == {hk, ak}:
+            return teams_map
+    return {}
+
+
+def lookup_lineup_role_from_matchup(
+    matchup_roles_by_team: Dict[str, Dict[str, str]],
+    team_key: str,
+    player: str,
+) -> Optional[str]:
+    pn = normalize_name(player)
+    if not pn:
+        return None
+    tmap = matchup_roles_by_team.get(team_key, {}) or {}
+    if pn in tmap:
+        r = str(tmap.get(pn) or "").strip().upper()
+        return r or None
+    pn_compact = "".join(ch for ch in pn if ch.isalnum())
+    for nk, role in tmap.items():
+        if not nk:
+            continue
+        nk_compact = "".join(ch for ch in nk if ch.isalnum())
+        if nk_compact and nk_compact == pn_compact:
+            r = str(role or "").strip().upper()
+            return r or None
+    best: Optional[str] = None
+    best_len = 0
+    for nk, role in tmap.items():
+        if not nk or len(nk) < 5:
+            continue
+        if nk in pn or pn in nk:
+            ln = min(len(nk), len(pn))
+            if ln > best_len:
+                best_len = ln
+                best = str(role or "").strip().upper() or None
+    return best
 
 
 def latest_artifact_path() -> str:
@@ -1341,6 +1408,8 @@ def main() -> None:
         player_team_norm = normalize_team(player_team)
         if player_team_norm == away_norm:
             opponent = home
+        elif player_team_norm == home_norm:
+            opponent = away
         else:
             player_team = home
             player_team_norm = home_norm
@@ -1348,7 +1417,8 @@ def main() -> None:
         player_is_home = 1.0 if player_team_norm == home_norm else 0.0
         shared_home_away = shared_home_venue_flag(player_team, opponent)
         is_true_home = 1.0 if player_is_home >= 0.5 and shared_home_away < 0.5 else 0.0
-        next_venue_key = canonical_venue_key(primary_home_venue_key(home))
+        fixture_venue_keys = venue_keys_for_team_home_grounds(home)
+        next_venue_key = sorted(fixture_venue_keys)[0] if fixture_venue_keys else canonical_venue_key(primary_home_venue_key(home))
         is_interstate_travel = 0.0 if player_is_home >= 0.5 else interstate_travel_flag(player_team, next_venue_key)
 
         team_key = canonical_team_key(player_team)
@@ -1371,8 +1441,8 @@ def main() -> None:
         dfs_role_bucket = str(dfs_role_row.get("role_bucket") or "").strip().upper()
         dfs_role_group = str(dfs_role_row.get("role_group") or "").strip()
         dfs_role_flags = dfs_role_group_flags(dfs_role_group)
-        matchup_roles = footywire_roles_by_match.get(_matchup_key(home, away), {})
-        lineup_role_bucket = matchup_roles.get(team_key, {}).get(normalize_name(player))
+        matchup_roles = resolve_footywire_roles_for_fixture(footywire_roles_by_match, home, away)
+        lineup_role_bucket = lookup_lineup_role_from_matchup(matchup_roles, team_key, player)
         role_bucket = lineup_role_bucket or (dfs_role_bucket if dfs_role_bucket in {"DEF", "MID", "FWD", "RUC"} else recent_role_bucket)
         opp_role = dvp_by_opp_pos.get(opponent_key, {}).get(role_bucket, {})
         opp_role_disp_index = to_float(opp_role.get("index"))
@@ -1394,7 +1464,7 @@ def main() -> None:
             games,
             opp_allow_disposals,
             next_game_date,
-            next_venue_key,
+            fixture_venue_keys,
             is_true_home,
             shared_home_away,
             is_interstate_travel,

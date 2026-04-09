@@ -451,7 +451,7 @@ def main() -> None:
     parser.add_argument("--drop-candidate-lookback", type=int, default=8)
     parser.add_argument("--drop-candidate-min-runs", type=int, default=5)
     parser.add_argument("--candidate-only", action="store_true")
-    parser.add_argument("--calibration-min-samples", type=int, default=100)
+    parser.add_argument("--calibration-min-samples", type=int, default=60)
     parser.add_argument("--cv-folds", type=int, default=3)
     parser.add_argument("--tune-depth", choices=["standard", "deep"], default="standard")
     args = parser.parse_args()
