@@ -3500,7 +3500,7 @@ export default function AFLPage() {
                                 </div>
                               </div>
                               {displayOpponent && nextGameWeatherSummary ? (
-                                <div className="text-[10px] xl:text-xs text-gray-600 dark:text-gray-300">
+                                <div className="text-[10px] xl:text-xs text-gray-600 dark:text-gray-300 text-center w-full">
                                   Wind: {nextGameWeatherSummary.windLabel} | Rain: {nextGameWeatherSummary.rainLabel} | Temp: {nextGameWeatherSummary.tempLabel}
                                 </div>
                               ) : null}
@@ -3527,8 +3527,11 @@ export default function AFLPage() {
                       </div>
                     </div>
                     {/* Mobile: Row 1 = Back + Player name | Tipoff (top right); Row 2 = Team/position | Team vs Opponent */}
-                    <div className="lg:hidden flex flex-col gap-0.5">
-                      <div className="flex items-start justify-between gap-2 w-full">
+                    <div className="lg:hidden flex flex-col gap-0.5 relative">
+                      {/* Wheel is position:absolute so this block's height is only back + name — avoids a tall flex row (wheel ~85px) leaving empty space under the name */}
+                      <div
+                        className={`w-full min-w-0 ${aflPropsMode === 'player' && dashboardImpliedOdds ? 'pr-[5.75rem]' : ''}`}
+                      >
                         <div className="flex-shrink-0 min-w-0">
                           {selectedPlayer ? (
                             <div>
@@ -3577,58 +3580,60 @@ export default function AFLPage() {
                             </div>
                           )}
                         </div>
-                        {aflPropsMode === 'player' && dashboardImpliedOdds && (
-                          <div className="flex-shrink-0 ml-3">
-                            <ImpliedOddsWheel
-                              isDark={!!mounted && isDark}
-                              calculatedImpliedOdds={dashboardImpliedOdds}
-                              size={85}
-                            />
-                          </div>
-                        )}
                       </div>
-                      <div className="lg:hidden flex items-center justify-between gap-1.5">
-                        <div className="flex-shrink-0 min-w-0">
-                          {selectedPlayer ? (
-                            <div>
-                              {aflPropsMode === 'player' && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  {selectedHeaderTeamName || '—'}
-                                </div>
-                              )}
-                              {aflPropsMode === 'player' && selectedPlayer.position && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
-                                  {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
-                                </div>
-                              )}
-                              {aflPropsMode === 'player' && selectedPlayer.height && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
-                                </div>
-                              )}
-                            </div>
-                          ) : loadingPlayerFromUrl ? (
-                            <div className="space-y-1">
-                              <div className="h-3 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
-                              <div className="h-3 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
-                            </div>
-                          ) : (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">Search for a player below</div>
-                          )}
+                      {aflPropsMode === 'player' && dashboardImpliedOdds && (
+                        <div className="absolute right-0 -top-3 z-20 flex-shrink-0 pointer-events-auto">
+                          <ImpliedOddsWheel
+                            isDark={!!mounted && isDark}
+                            calculatedImpliedOdds={dashboardImpliedOdds}
+                            size={85}
+                          />
                         </div>
-                        <div className="flex-shrink-0 min-w-0">
-                          {selectedPlayer?.team ? (
-                            (() => {
-                              const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
-                              let opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
-                              if (opponentFull !== '—' && isSameAflTeam(opponentFull, teamFull)) opponentFull = '—';
-                              const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
-                              const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
-                              const teamAbbr = getTeamAbbrev(teamFull);
-                              const opponentAbbr = opponentFull !== '—' ? getTeamAbbrev(opponentFull) : '—';
-                              return (
-                                <div className="flex flex-col items-end gap-1 min-w-0">
+                      )}
+                      <div className="lg:hidden flex flex-col gap-1 w-full min-w-0">
+                        <div className="flex items-start justify-between gap-1.5 w-full min-w-0">
+                          <div className="flex-shrink-0 min-w-0">
+                            {selectedPlayer ? (
+                              <div>
+                                {aflPropsMode === 'player' && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {selectedHeaderTeamName || '—'}
+                                  </div>
+                                )}
+                                {aflPropsMode === 'player' && selectedPlayer.position && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
+                                    {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
+                                  </div>
+                                )}
+                                {aflPropsMode === 'player' && selectedPlayer.height && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {heightCmToFeet(String(selectedPlayer.height)) ?? String(selectedPlayer.height)}
+                                  </div>
+                                )}
+                              </div>
+                            ) : loadingPlayerFromUrl ? (
+                              <div className="space-y-1">
+                                <div className="h-3 w-20 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                                <div className="h-3 w-16 rounded animate-pulse bg-gray-200 dark:bg-gray-700" />
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Search for a player below</div>
+                            )}
+                          </div>
+                          <div
+                            className={`flex-shrink-0 min-w-0 ${aflPropsMode === 'player' && dashboardImpliedOdds ? 'pt-5' : ''}`}
+                          >
+                            {selectedPlayer?.team ? (
+                              (() => {
+                                const teamFull = rosterTeamToInjuryTeam(String(selectedPlayer!.team)) || String(selectedPlayer!.team);
+                                let opponentFull = displayOpponent ? (opponentToOfficialTeamName(displayOpponent) || displayOpponent) : '—';
+                                if (opponentFull !== '—' && isSameAflTeam(opponentFull, teamFull)) opponentFull = '—';
+                                const teamLogo = resolveTeamLogo(teamFull, logoByTeam);
+                                const opponentLogo = opponentFull !== '—' ? resolveTeamLogo(opponentFull, logoByTeam) : null;
+                                const teamAbbr = getTeamAbbrev(teamFull);
+                                const opponentAbbr = opponentFull !== '—' ? getTeamAbbrev(opponentFull) : '—';
+                                return (
                                   <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-3 sm:py-2 min-w-0">
                                     <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                                       <div className="flex items-center gap-1 min-w-0">
@@ -3668,22 +3673,22 @@ export default function AFLPage() {
                                       </div>
                                     ) : null}
                                   </div>
-                                  {displayOpponent && nextGameWeatherSummary ? (
-                                    <div className="text-[10px] text-gray-600 dark:text-gray-300 text-right">
-                                      Wind: {nextGameWeatherSummary.windLabel} | Rain: {nextGameWeatherSummary.rainLabel} | Temp: {nextGameWeatherSummary.tempLabel}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              );
-                            })()
-                          ) : loadingPlayerFromUrl ? (
-                            <div className="h-9 w-32 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
-                          ) : (
-                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
-                              <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
-                            </div>
-                          )}
+                                );
+                              })()
+                            ) : loadingPlayerFromUrl ? (
+                              <div className="h-9 w-32 rounded-lg animate-pulse bg-gray-200 dark:bg-gray-700" />
+                            ) : (
+                              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-2">
+                                <span className="text-gray-400 dark:text-gray-500 text-sm font-medium">Select Player</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        {selectedPlayer?.team && displayOpponent && nextGameWeatherSummary ? (
+                          <div className="text-[10px] text-gray-600 dark:text-gray-300 text-center w-full px-1 leading-tight">
+                            Wind: {nextGameWeatherSummary.windLabel} | Rain: {nextGameWeatherSummary.rainLabel} | Temp: {nextGameWeatherSummary.tempLabel}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                     {aflPropsMode === 'team' && (
