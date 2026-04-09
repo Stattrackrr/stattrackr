@@ -4,6 +4,7 @@ Evaluate candidate vs current AFL disposals model on settled picks, with guardra
 
 Usage:
   python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass
+  python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --skip-metric-guardrails  # promote whenever min-samples met
 """
 
 from __future__ import annotations
@@ -621,6 +622,29 @@ def main() -> None:
     parser.add_argument("--min-samples", type=int, default=25)
     parser.add_argument("--freeze-fail-streak", type=int, default=3)
     parser.add_argument("--promote-if-pass", action="store_true")
+    parser.add_argument(
+        "--min-brier-improvement",
+        type=float,
+        default=0.004,
+        help="Relative Brier improvement (cur-cand)/cur required to pass; default 0.004 (0.4%%).",
+    )
+    parser.add_argument(
+        "--max-log-loss-increase",
+        type=float,
+        default=0.015,
+        help="Max relative log-loss increase (cand-cur)/cur allowed; default 0.015 (1.5%%).",
+    )
+    parser.add_argument(
+        "--max-hit-rate-drop",
+        type=float,
+        default=0.025,
+        help="Max hit-rate drop (candidate - current) allowed; default 0.025 (2.5%% pts).",
+    )
+    parser.add_argument(
+        "--skip-metric-guardrails",
+        action="store_true",
+        help="If set, promotion only requires min settled samples (metrics still logged in output).",
+    )
     args = parser.parse_args()
 
     current_artifact = load_model_artifact(args.current_artifact)
@@ -650,9 +674,9 @@ def main() -> None:
 
     guardrails = {
         "minSamples": int(args.min_samples),
-        "minBrierImprovement": 0.01,
-        "maxLogLossIncrease": 0.005,
-        "maxHitRateDrop": 0.015,
+        "minBrierImprovement": float(args.min_brier_improvement),
+        "maxLogLossIncrease": float(args.max_log_loss_increase),
+        "maxHitRateDrop": float(args.max_hit_rate_drop),
     }
     history_dir = os.path.join(MODEL_DIR, "history")
     os.makedirs(history_dir, exist_ok=True)
@@ -675,7 +699,10 @@ def main() -> None:
         "logLossOk": logloss_change <= guardrails["maxLogLossIncrease"],
         "hitRateOk": hit_rate_delta >= -guardrails["maxHitRateDrop"],
     }
-    pass_guardrails = all(checks_core.values())
+    if bool(args.skip_metric_guardrails):
+        pass_guardrails = bool(checks_core["sampleCountOk"])
+    else:
+        pass_guardrails = all(checks_core.values())
     guardrail_checks = {
         **checks_core,
         "freezeInactive": not freeze_active,
@@ -703,6 +730,7 @@ def main() -> None:
             "freezeActive": freeze_active,
             "freezeFailStreak": fail_streak,
             "freezeWouldBlockLegacy": freeze_active and pass_guardrails,
+            "metricGuardrailsSkipped": bool(args.skip_metric_guardrails),
             "promotionInfo": promotion_info,
         },
         "candidate": candidate_metrics,

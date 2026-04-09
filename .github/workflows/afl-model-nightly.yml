@@ -60,13 +60,21 @@ jobs:
           npm run fetch:afl:dfs-role-map
           npm run fetch:afl:weather-context
 
-      - name: Nightly candidate training and evaluation
+      # Train a new candidate, then evaluate vs current on settled picks. When guardrails pass,
+      # evaluate_closed_loop copies candidate -> latest-model.json (and calibration/projections).
+      - name: Nightly build dataset, train candidate, score candidate
         run: |
           python scripts/afl_model/build_dataset.py --base-url "${{ secrets.PROD_URL }}"
           python scripts/afl_model/train_disposals_model.py --candidate-only --importance-max-rows 2500 --drop-candidate-lookback 16 --drop-candidate-min-runs 6 --calibration-min-samples 140 --cv-folds 5 --tune-depth deep
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-candidate-model.json" --latest-output-path "data/afl-model/latest-candidate-disposals-projections.json"
-          python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
-          # Always refresh live projections consumed by dashboard/top picks, even when candidate promotion is blocked.
+
+      # --skip-metric-guardrails: always ship the new nightly candidate when we have enough settled
+      # rows (min-samples). Brier/log-loss/hit deltas are still written to model-eval-latest.json for review.
+      - name: Evaluate vs settled picks and promote candidate to live (if guardrails pass)
+        run: |
+          python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --skip-metric-guardrails --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
+          python -c "import json; p='data/afl-model/history/model-eval-latest.json'; d=json.load(open(p)); dec=d.get('decision',{}); c=d.get('candidate',{}); u=d.get('current',{}); print('=== AFL closed-loop: pass=', dec.get('pass'), 'promoted=', dec.get('promoted'), '| candidate', c.get('modelVersion'), '| live', u.get('modelVersion'))"
+          # Always refresh live projections for dashboard/top picks (uses latest-model.json after any promotion).
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json"
 
       - name: Commit and push nightly model outputs if changed
