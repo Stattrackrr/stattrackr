@@ -94,7 +94,7 @@ jobs:
             git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
             pushed=0
             for i in 1 2 3; do
-              if git pull --rebase origin master && git push origin master; then
+              if git pull --rebase --autostash origin master && git push origin master; then
                 pushed=1
                 break
               fi
