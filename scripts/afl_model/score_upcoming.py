@@ -385,6 +385,39 @@ def _matchup_key(team_a: str, team_b: str) -> str:
     return f"{x}|{y}"
 
 
+def infer_player_team_from_games(home_team: str, away_team: str, games: List[dict], fallback_team: str = "") -> str:
+    home_key = normalize_team(home_team)
+    away_key = normalize_team(away_team)
+    fallback_key = normalize_team(fallback_team)
+    valid_keys = {k for k in [home_key, away_key] if k}
+
+    if fallback_key in valid_keys:
+        return fallback_team
+    if not valid_keys:
+        return fallback_team
+
+    scores: Dict[str, float] = {k: 0.0 for k in valid_keys}
+    for g in games:
+        g_team = normalize_team(str(g.get("team") or ""))
+        g_opp = normalize_team(str(g.get("opponent") or ""))
+        if g_team in scores:
+            scores[g_team] += 2.0
+        # If the player's logged opponent matches one side, player's team is likely the other side.
+        if g_opp == home_key and away_key in scores:
+            scores[away_key] += 1.0
+        elif g_opp == away_key and home_key in scores:
+            scores[home_key] += 1.0
+
+    if not scores:
+        return fallback_team
+    best_key = max(scores.items(), key=lambda item: item[1])[0]
+    if best_key == home_key:
+        return home_team
+    if best_key == away_key:
+        return away_team
+    return fallback_team
+
+
 def _position_label_to_role_bucket(label: str, idx: int = -1) -> Optional[str]:
     p = str(label or "").strip().upper()
     if p in {"FB", "HB", "B"}:
@@ -1226,20 +1259,36 @@ def main() -> None:
     logs_cache: Dict[str, List[dict]] = {}
     out_rows: List[dict] = []
 
-    # Pre-fetch all unique player/team logs in concurrent batches.
+    # Pre-fetch all plausible player/team logs in concurrent batches.
+    # When playerTeam is missing from list rows, fetch both home and away so we can infer the
+    # correct side from logs before building opponent-context features.
     unique_player_team: Dict[str, tuple[str, str]] = {}
     for r in rows:
         player = str(r.get("playerName") or "").strip()
         if not player:
             continue
+        home_team = str(r.get("homeTeam") or "").strip()
+        away_team = str(r.get("awayTeam") or "").strip()
         player_team = str(r.get("playerTeam") or "").strip()
-        if not player_team:
-            player_team = str(r.get("homeTeam") or "").strip()
-        if not player_team:
-            continue
-        key = f"{normalize_name(player)}|{normalize_team(player_team)}"
-        if key not in unique_player_team:
-            unique_player_team[key] = (player, player_team)
+
+        candidate_teams: List[str] = []
+        if player_team:
+            candidate_teams.append(player_team)
+        else:
+            if home_team:
+                candidate_teams.append(home_team)
+            if away_team:
+                candidate_teams.append(away_team)
+
+        seen_team_keys: set[str] = set()
+        for candidate_team in candidate_teams:
+            team_key = normalize_team(candidate_team)
+            if not team_key or team_key in seen_team_keys:
+                continue
+            seen_team_keys.add(team_key)
+            key = f"{normalize_name(player)}|{team_key}"
+            if key not in unique_player_team:
+                unique_player_team[key] = (player, candidate_team)
 
     fetch_tasks = list(unique_player_team.items())
     batch_size = max(1, int(args.batch_size))
@@ -1274,13 +1323,29 @@ def main() -> None:
         if not player or not home or not away:
             continue
 
-        # Resolve player team from available field if present, else infer from opponent side.
-        player_team = str(r.get("playerTeam") or "").strip()
+        row_player_team = str(r.get("playerTeam") or "").strip()
+        player_key = normalize_name(player)
+        home_norm = normalize_team(home)
+        away_norm = normalize_team(away)
+
+        home_cache_key = f"{player_key}|{home_norm}"
+        away_cache_key = f"{player_key}|{away_norm}"
+        home_games = logs_cache.get(home_cache_key) or []
+        away_games = logs_cache.get(away_cache_key) or []
+        candidate_games = [*home_games, *away_games]
+
+        player_team = infer_player_team_from_games(home, away, candidate_games, row_player_team)
         if not player_team:
-            # Fallback: use home team by default.
             player_team = home
-        opponent = away if normalize_team(player_team) == normalize_team(home) else home
-        player_is_home = 1.0 if normalize_team(player_team) == normalize_team(home) else 0.0
+
+        player_team_norm = normalize_team(player_team)
+        if player_team_norm == away_norm:
+            opponent = home
+        else:
+            player_team = home
+            player_team_norm = home_norm
+            opponent = away
+        player_is_home = 1.0 if player_team_norm == home_norm else 0.0
         shared_home_away = shared_home_venue_flag(player_team, opponent)
         is_true_home = 1.0 if player_is_home >= 0.5 and shared_home_away < 0.5 else 0.0
         next_venue_key = canonical_venue_key(primary_home_venue_key(home))
@@ -1299,8 +1364,8 @@ def main() -> None:
         opp_allow_i50 = oa_value_for_opponent(opponent, oa_stats_map, "inside_50s")
         opp_allow_mg = oa_value_for_opponent(opponent, oa_stats_map, "meters_gained")
 
-        cache_key = f"{normalize_name(player)}|{normalize_team(player_team)}"
-        games = logs_cache.get(cache_key) or []
+        cache_key = f"{player_key}|{player_team_norm}"
+        games = logs_cache.get(cache_key) or candidate_games
         recent_role_bucket = infer_role_bucket_from_games(games)
         dfs_role_row = dfs_role_map.get(normalize_name(player), {}) or {}
         dfs_role_bucket = str(dfs_role_row.get("role_bucket") or "").strip().upper()
