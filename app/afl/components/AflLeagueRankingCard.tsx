@@ -204,6 +204,7 @@ export function AflLeagueRankingCard({
                 // Use league data (ft_player_rankings) for value so it matches rank source; avoid stale game-log averages.
                 const value = (playerMatch as unknown as Record<string, number>)[key];
                 if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+                if (compareScope === 'league' && (playerMatch.games || 0) < minGames) return null;
                 const rankResult = getRank(comparePool, key as keyof LeaguePlayerRow, value, minGames);
                 if (!rankResult) return null;
                 const { rank, total } = rankResult;

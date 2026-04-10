@@ -3099,6 +3099,10 @@ export default function AFLPage() {
 
     const result: Record<TeamRankStatKey, { rank: number; total: number } | null> = { ...empty };
     for (const statKey of statKeys) {
+      if (playerVsRankScope === 'league' && (Number(playerRow.games) || 0) < minGames) {
+        result[statKey] = null;
+        continue;
+      }
       const playerValue = Number(playerRow[statKey]);
       if (!Number.isFinite(playerValue)) {
         result[statKey] = null;
