@@ -3764,44 +3764,20 @@ export default function AFLPage() {
                         </div>
                       </>
                     )}
-                    {/* Journal button - same as NBA: open AddToJournalModal, disabled when game in progress */}
+                    {/* AFL journal is temporarily disabled while maintenance is in progress. */}
                     {teamContextTeam && nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—' && nextGameTipoff && (
                       <div className="flex gap-2 px-0 pt-0.5">
                         <button
                           type="button"
-                          onClick={() => {
-                            if (!isPro) {
-                              router.push('/subscription');
-                              return;
-                            }
-                            if (!isGameInProgress) {
-                              setShowJournalModal(true);
-                            }
-                          }}
-                          disabled={isGameInProgress || !isPro}
-                          className={`flex-1 px-2 py-1 sm:py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 ${
-                            isGameInProgress || !isPro
-                              ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                              : 'bg-purple-600 hover:bg-purple-700'
-                          }`}
-                          title={
-                            !isPro
-                              ? 'Journal is a Pro feature'
-                              : isGameInProgress
-                                ? 'Game in progress - journal disabled'
-                                : 'Add to journal'
-                          }
+                          onClick={() => {}}
+                          disabled
+                          className="flex-1 px-2 py-1 sm:py-1.5 text-white text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 bg-gray-400 cursor-not-allowed opacity-50"
+                          title="AFL journal is under maintenance"
                         >
-                          {!isPro ? (
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                          )}
-                          Journal
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                          </svg>
+                          Maintenance
                         </button>
                       </div>
                     )}
