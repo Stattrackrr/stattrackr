@@ -239,18 +239,13 @@ export default function AflTeamMatchupCard({
               // Opponent Allowed is defensive quality: allowing less is better rank.
               const oppRank = getRankForStat(oaData?.teams ?? [], oppRow.team, selectedStat, false);
               const teamCount = Math.max((taData?.teams?.length ?? 0), (oaData?.teams?.length ?? 0), 18);
-              const teamRankSafe = teamRank ?? Number.POSITIVE_INFINITY;
-              const oppRankSafe = oppRank ?? Number.POSITIVE_INFINITY;
-              const teamBetter = teamRankSafe < oppRankSafe;
-              const oppBetter = oppRankSafe < teamRankSafe;
               const teamStrength = teamRank ? Math.max(1, teamCount + 1 - teamRank) : 1;
               const oppStrength = oppRank ? Math.max(1, teamCount + 1 - oppRank) : 1;
               const totalStrength = teamStrength + oppStrength;
-              // Bar is fixed as green (better) on left and red (worse) on right.
-              // So width uses stronger-vs-weaker share, not team-vs-opponent side.
-              const betterStrength = Math.max(teamStrength, oppStrength);
-              const greenShare = totalStrength > 0 ? (betterStrength / totalStrength) * 100 : 50;
-              const redShare = 100 - greenShare;
+              // Keep the bar aligned with the label: left is always the selected team's "For",
+              // right is always the opponent's "Against".
+              const teamShare = totalStrength > 0 ? (teamStrength / totalStrength) * 100 : 50;
+              const oppShare = 100 - teamShare;
               const teamTier = getRankTierStyles(teamRank, false);
               const oppTier = getRankTierStyles(oppRank, true);
               return (
@@ -287,11 +282,11 @@ export default function AflTeamMatchupCard({
                     <div className="relative h-3 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600">
                       <div
                         className="absolute inset-y-0 left-0"
-                        style={{ width: `${greenShare}%`, backgroundColor: teamBetter ? teamTier.fill : oppTier.fill }}
+                        style={{ width: `${teamShare}%`, backgroundColor: teamTier.fill }}
                       />
                       <div
                         className="absolute inset-y-0 right-0"
-                        style={{ width: `${redShare}%`, backgroundColor: teamBetter ? oppTier.fill : teamTier.fill }}
+                        style={{ width: `${oppShare}%`, backgroundColor: oppTier.fill }}
                       />
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-4 text-[10px]">
