@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-10T11:45:12.680Z",
+  "generatedAt": "2026-04-10T17:12:22.639Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-04-11T02:35:00Z",
       "weather": {
-        "temperatureC": 16,
+        "temperatureC": 15.6,
         "precipitationMm": 0,
-        "windKmh": 17.9
+        "windKmh": 18.8
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-04-11T03:15:00Z",
       "weather": {
-        "temperatureC": 16.4,
+        "temperatureC": 16.2,
         "precipitationMm": 0,
-        "windKmh": 17.4
+        "windKmh": 18.4
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-04-11T06:15:00Z",
       "weather": {
-        "temperatureC": 22.4,
+        "temperatureC": 23.2,
         "precipitationMm": 0,
-        "windKmh": 17.2
+        "windKmh": 16.2
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-04-11T09:35:00Z",
       "weather": {
-        "temperatureC": 14.6,
+        "temperatureC": 13.5,
         "precipitationMm": 0,
-        "windKmh": 11.6
+        "windKmh": 11.7
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-04-12T02:30:58Z",
       "weather": {
-        "temperatureC": 15.7,
+        "temperatureC": 15.5,
         "precipitationMm": 0,
-        "windKmh": 21.1
+        "windKmh": 22.1
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-04-12T05:15:00Z",
       "weather": {
-        "temperatureC": 18.5,
+        "temperatureC": 18.1,
         "precipitationMm": 0,
-        "windKmh": 25.1
+        "windKmh": 26.1
       }
     },
     {
@@ -77,7 +77,7 @@
       "weather": {
         "temperatureC": 17.5,
         "precipitationMm": 0,
-        "windKmh": 12.7
+        "windKmh": 14.7
       }
     }
   ],
