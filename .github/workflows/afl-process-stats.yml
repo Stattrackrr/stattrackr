@@ -68,11 +68,32 @@ jobs:
           npm run fetch:footywire-team-rankings -- --season=2026
           npm run fetch:footywire-team-rankings -- --season=2025
 
-      # Build DvP files locally from latest player logs + DFS role map so both Basic and Depth stay current.
+      # Build DvP files locally from latest player logs. Only rebuild Depth when the DFS role map
+      # is populated, otherwise the builder falls back to default roles and can wipe specialist
+      # roles like key_fwd / wng_def / des_kck from the tracked depth dataset.
       - name: Build AFL DvP files (Basic + Depth) 2026
         run: |
           npm run build:afl:dvp -- --season=2026 --base-url="${{ secrets.PROD_URL }}" --concurrency=16
-          npm run build:afl:dvp:depth -- --season=2026 --base-url="${{ secrets.PROD_URL }}" --concurrency=16
+          ROLE_MAP_COUNT=$(node -e "try { const fs = require('fs'); const j = JSON.parse(fs.readFileSync('data/afl-dfs-role-map-latest.json', 'utf8')); process.stdout.write(String(Number(j?.count || 0))); } catch { process.stdout.write('0'); }")
+          echo "DFS role map count: ${ROLE_MAP_COUNT}"
+          if [ "${ROLE_MAP_COUNT}" -gt "0" ]; then
+            npm run build:afl:dvp:depth -- --season=2026 --base-url="${{ secrets.PROD_URL }}" --concurrency=16
+            node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('data/afl-dvp-depth-2026.json', 'utf8'));
+            const rows = Array.isArray(data?.rows) ? data.rows : [];
+            const roles = new Set(rows.map((r) => String(r?.depthRole || '')).filter(Boolean));
+            const required = ['key_fwd', 'gen_fwd', 'ins_mid', 'ruck', 'wng_def', 'gen_def', 'des_kck'];
+            const missing = required.filter((role) => !roles.has(role));
+            if (missing.length) {
+              console.error('Missing depth DvP roles: ' + missing.join(', '));
+              process.exit(1);
+            }
+            console.log('✅ Depth DvP role coverage validation passed');
+            "
+          else
+            echo "⚠️ DFS role map is empty; skipping depth DvP rebuild so the tracked depth dataset is preserved."
+          fi
         env:
           NODE_OPTIONS: '--max-old-space-size=1024'
 
@@ -134,6 +155,7 @@ jobs:
             git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
             pushed=0
             for i in 1 2 3; do
+              git merge --abort 2>/dev/null || true
               git fetch origin master
               # This job never edits LFS .pkl files; normalize tree so merge/push does not hit
               # "should have been pointers" / rebase+autostash LFS conflicts.
@@ -142,6 +164,7 @@ jobs:
                 pushed=1
                 break
               fi
+              git merge --abort 2>/dev/null || true
               echo "Push attempt $i failed, retrying..."
               sleep 5
             done
