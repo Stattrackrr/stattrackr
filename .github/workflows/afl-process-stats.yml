@@ -38,6 +38,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          lfs: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -118,6 +119,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git lfs install
           git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
           git add data/afl-player-headshots-2026.json data/afl-player-headshots.json 2>/dev/null || true
           git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
@@ -132,7 +134,14 @@ jobs:
             git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
             pushed=0
             for i in 1 2 3; do
-              git pull --rebase --autostash origin master && git push origin master && pushed=1 && break
+              git fetch origin master
+              # This job never edits LFS .pkl files; normalize tree so merge/push does not hit
+              # "should have been pointers" / rebase+autostash LFS conflicts.
+              git checkout HEAD -- data/afl-model/models/ 2>/dev/null || true
+              if git merge origin/master --no-edit && git push origin master; then
+                pushed=1
+                break
+              fi
               echo "Push attempt $i failed, retrying..."
               sleep 5
             done

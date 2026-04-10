@@ -86,7 +86,7 @@ jobs:
           git add data/afl-model 2>/dev/null || true
           git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
           git add data/afl-dfs-usage-*.json 2>/dev/null || true
-          # Role map is refreshed by fetch:afl:dfs-role-map; must be staged or pull --rebase fails (unstaged changes).
+          # Role map is refreshed by fetch:afl:dfs-role-map; must be staged or push step sees a dirty tree.
           git add data/afl-dfs-role-map-*.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No nightly AFL model output changes"
@@ -94,7 +94,9 @@ jobs:
             git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
             pushed=0
             for i in 1 2 3; do
-              if git pull --rebase --autostash origin master && git push origin master; then
+              git fetch origin master
+              git checkout HEAD -- data/afl-model/models/ 2>/dev/null || true
+              if git merge origin/master --no-edit && git push origin master; then
                 pushed=1
                 break
               fi

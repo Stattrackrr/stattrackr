@@ -86,7 +86,12 @@ jobs:
             git commit -m "chore(data): daily AFL model refresh [skip ci]"
             pushed=0
             for i in 1 2 3; do
-              git pull --rebase --autostash origin master && git push origin master && pushed=1 && break
+              git fetch origin master
+              git checkout HEAD -- data/afl-model/models/ 2>/dev/null || true
+              if git merge origin/master --no-edit && git push origin master; then
+                pushed=1
+                break
+              fi
               echo "Push attempt $i failed, retrying..."
               sleep 5
             done
