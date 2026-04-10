@@ -418,6 +418,7 @@ export default function AflDvpCard({
         });
 
         const hasCachedData = Object.keys(byRoleData).length > 0;
+        const hasSelectedCachedData = !!byRoleData[depthPosSel]?.success;
         if (hasCachedData) {
           applyDepthFromRoleData(byRoleData);
         }
@@ -427,7 +428,7 @@ export default function AflDvpCard({
           setDepthLoading(false);
           return;
         }
-        setDepthLoading(!hasCachedData);
+        setDepthLoading(!hasSelectedCachedData);
 
         await Promise.all(
           rolesToFetch.map(async ({ role, position, cacheKey }) => {
@@ -466,7 +467,7 @@ export default function AflDvpCard({
     };
     run();
     return () => { abort = true; };
-  }, [oppSel, opponentTeam, selectedSeason, viewMode]);
+  }, [depthPosSel, oppSel, opponentTeam, selectedSeason, viewMode]);
 
   // Warm all positions in the background so switching position feels instant.
   useEffect(() => {
@@ -578,6 +579,7 @@ export default function AflDvpCard({
     };
   };
   const depthHasData = DEPTH_ROLE_OPTIONS.some((r) => Object.keys(depthPerStat[r.key]).length > 0);
+  const selectedDepthHasData = Object.keys(depthPerStat[depthPosSel]).length > 0;
 
   if (!playerName) {
     return <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Select a player to view DvP.</div>;
@@ -714,7 +716,7 @@ export default function AflDvpCard({
         {viewMode === 'depth' ? (
           depthError ? (
             <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading depth DvP stats: {depthError}</div>
-          ) : depthLoading && !depthHasData ? (
+          ) : depthLoading && !selectedDepthHasData ? (
             <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
               {DVP_METRICS.map((m, index) => (
                 <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${mounted && isDark ? 'border-slate-700' : 'border-slate-300'} px-3 py-2.5`}>
@@ -722,8 +724,12 @@ export default function AflDvpCard({
                 </div>
               ))}
             </div>
-          ) : !depthHasData ? (
-            <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>No depth DvP data available yet.</div>
+          ) : !selectedDepthHasData ? (
+            <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {depthHasData
+                ? `No depth DvP data available for ${depthPosLabel}.`
+                : 'No depth DvP data available yet.'}
+            </div>
           ) : (
             <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
               {DVP_METRICS.map((m) => (
