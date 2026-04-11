@@ -25,6 +25,13 @@ def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
 
+def get_projections_dir() -> str:
+    override = str(os.environ.get("AFL_MODEL_PROJECTIONS_DIR") or "").strip()
+    if override:
+        return os.path.abspath(override)
+    return os.path.join(MODEL_DIR, "projections")
+
+
 def now_iso() -> str:
     return dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 

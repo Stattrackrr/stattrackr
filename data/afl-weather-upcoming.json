@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-11T11:28:10.013Z",
+  "generatedAt": "2026-04-11T17:01:56.725Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-04-12T02:30:58Z",
       "weather": {
-        "temperatureC": 15.2,
+        "temperatureC": 15.3,
         "precipitationMm": 0,
-        "windKmh": 20.6
+        "windKmh": 18.7
       }
     },
     {
@@ -22,7 +22,7 @@
       "weather": {
         "temperatureC": 18.5,
         "precipitationMm": 0,
-        "windKmh": 23.6
+        "windKmh": 23.8
       }
     },
     {
@@ -31,11 +31,22 @@
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-04-12T09:15:00Z",
       "weather": {
-        "temperatureC": 17.5,
+        "temperatureC": 17.6,
         "precipitationMm": 0,
-        "windKmh": 14.8
+        "windKmh": 16.1
+      }
+    },
+    {
+      "gameId": "b2a975ff1523c589133e55fc1a37fcd5",
+      "homeTeam": "Carlton Blues",
+      "awayTeam": "Collingwood Magpies",
+      "commenceTime": "2026-04-16T09:30:00Z",
+      "weather": {
+        "temperatureC": 16.8,
+        "precipitationMm": 0.1,
+        "windKmh": 6.3
       }
     }
   ],
-  "count": 3
+  "count": 4
 }

@@ -20,7 +20,7 @@ import random
 import joblib
 from typing import Any, Dict, List, Tuple
 
-from common import MODEL_DIR, ensure_dir, now_iso, slug_time
+from common import MODEL_DIR, ensure_dir, get_projections_dir, now_iso, slug_time
 from build_dataset import FEATURE_COLUMNS
 
 
@@ -239,7 +239,7 @@ def load_settled_calibration_rows(max_projection_files: int = 160) -> List[dict]
     if not actual_by_snapshot:
         return []
 
-    projections_dir = os.path.join(MODEL_DIR, "projections")
+    projections_dir = get_projections_dir()
     if not os.path.exists(projections_dir):
         return []
     projection_files = [
