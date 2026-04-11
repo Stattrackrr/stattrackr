@@ -82,7 +82,7 @@ jobs:
       - name: Commit and open/update PR for nightly model outputs if changed
         run: |
           if [ -z "${GH_TOKEN}" ]; then
-            echo "Missing required secret: GH_TOKEN"
+            echo "Missing required GitHub workflow token"
             exit 1
           fi
 
@@ -121,7 +121,7 @@ jobs:
             fi
           fi
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
 
 
