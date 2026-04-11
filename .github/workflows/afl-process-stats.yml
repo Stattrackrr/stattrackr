@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
+      pull-requests: write
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -135,12 +136,20 @@ jobs:
           console.log('✅ Player vs Team advanced stats validation passed');
           "
 
-      # Commit and push 2026 (and 2025) data so app has latest league stats + team rankings
-      - name: Commit and push data files if changed
+      # Repo rules require changes to land through a PR rather than a direct push to master.
+      - name: Commit and open/update PR for data files if changed
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "Missing required secret: GH_TOKEN"
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git lfs install
+          BRANCH="pr/afl-process-stats"
+          git fetch origin master "${BRANCH}" 2>/dev/null || git fetch origin master
+          git checkout -B "${BRANCH}" origin/master
           git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
           git add data/afl-player-headshots-2026.json data/afl-player-headshots.json 2>/dev/null || true
           git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
@@ -153,26 +162,27 @@ jobs:
             echo "No changes to AFL data files"
           else
             git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
-            pushed=0
-            for i in 1 2 3; do
-              git merge --abort 2>/dev/null || true
-              git fetch origin master
-              # This job never edits LFS .pkl files; normalize tree so merge/push does not hit
-              # "should have been pointers" / rebase+autostash LFS conflicts.
-              git checkout HEAD -- data/afl-model/models/ 2>/dev/null || true
-              if git merge origin/master --no-edit && git push origin master; then
-                pushed=1
-                break
-              fi
-              git merge --abort 2>/dev/null || true
-              echo "Push attempt $i failed, retrying..."
-              sleep 5
-            done
-            if [ "$pushed" -ne 1 ]; then
-              echo "Failed to push after retries"
-              exit 1
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+            git push --force-with-lease --set-upstream origin "${BRANCH}"
+
+            pr_number="$(gh pr list --base master --head "${BRANCH}" --state open --json number --jq '.[0].number')"
+            if [ -z "${pr_number}" ] || [ "${pr_number}" = "null" ]; then
+              gh pr create \
+                --base master \
+                --head "${BRANCH}" \
+                --title "chore(data): update AFL stats, rankings, and headshots" \
+                --body "Automated AFL data refresh from the scheduled stats workflow."
+              pr_number="$(gh pr list --base master --head "${BRANCH}" --state open --json number --jq '.[0].number')"
+            else
+              echo "Updated existing PR #${pr_number}"
+            fi
+
+            if [ -n "${pr_number}" ] && [ "${pr_number}" != "null" ]; then
+              gh pr merge "${pr_number}" --auto --squash || echo "Unable to enable auto-merge for PR #${pr_number}"
             fi
           fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Check PROD_URL and CRON_SECRET
         id: check

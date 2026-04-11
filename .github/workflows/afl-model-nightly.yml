@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 180
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -78,11 +79,19 @@ jobs:
           # Always refresh live projections for dashboard/top picks (uses latest-model.json after any promotion).
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json"
 
-      - name: Commit and push nightly model outputs if changed
+      - name: Commit and open/update PR for nightly model outputs if changed
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "Missing required secret: GH_TOKEN"
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git lfs install
+          BRANCH="pr/afl-model-nightly"
+          git fetch origin master "${BRANCH}" 2>/dev/null || git fetch origin master
+          git checkout -B "${BRANCH}" origin/master
           git add data/afl-model 2>/dev/null || true
           git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
           git add data/afl-dfs-usage-*.json 2>/dev/null || true
@@ -92,22 +101,27 @@ jobs:
             echo "No nightly AFL model output changes"
           else
             git commit -m "chore(data): nightly AFL model training refresh [skip ci]"
-            pushed=0
-            for i in 1 2 3; do
-              git fetch origin master
-              git checkout HEAD -- data/afl-model/models/ 2>/dev/null || true
-              if git merge origin/master --no-edit && git push origin master; then
-                pushed=1
-                break
-              fi
-              echo "Push attempt $i failed, retrying..."
-              sleep 5
-            done
-            if [ "$pushed" -ne 1 ]; then
-              echo "Failed to push after retries"
-              exit 1
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+            git push --force-with-lease --set-upstream origin "${BRANCH}"
+
+            pr_number="$(gh pr list --base master --head "${BRANCH}" --state open --json number --jq '.[0].number')"
+            if [ -z "${pr_number}" ] || [ "${pr_number}" = "null" ]; then
+              gh pr create \
+                --base master \
+                --head "${BRANCH}" \
+                --title "chore(data): nightly AFL model training refresh" \
+                --body "Automated AFL model refresh from the nightly training workflow."
+              pr_number="$(gh pr list --base master --head "${BRANCH}" --state open --json number --jq '.[0].number')"
+            else
+              echo "Updated existing PR #${pr_number}"
+            fi
+
+            if [ -n "${pr_number}" ] && [ "${pr_number}" != "null" ]; then
+              gh pr merge "${pr_number}" --auto --squash || echo "Unable to enable auto-merge for PR #${pr_number}"
             fi
           fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
 
 
