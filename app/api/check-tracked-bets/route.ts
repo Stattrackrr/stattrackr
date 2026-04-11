@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
+import { checkRateLimit, checkRateLimitAsync, strictRateLimiter } from '@/lib/rateLimit';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -33,8 +33,11 @@ export async function GET(request: Request) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const bypassAuth = isDevelopment && request.headers.get('x-bypass-auth') === 'true';
   
+  let userId: string | null = null;
+
   if (!bypassAuth) {
     let isAuthorized = false;
+    let isCron = false;
     
     // Check if this is a cron request (Vercel cron or manual with secret)
     const url = new URL(request.url);
@@ -44,11 +47,13 @@ export async function GET(request: Request) {
     // Check for cron secret in query parameter
     if (querySecret && cronSecret && querySecret === cronSecret) {
       isAuthorized = true;
+      isCron = true;
     } else {
       // Check for cron authorization (Vercel cron or header-based)
       const authResult = authorizeCronRequest(request);
       if (authResult.authorized) {
         isAuthorized = true;
+        isCron = true;
       }
     }
     
@@ -62,6 +67,7 @@ export async function GET(request: Request) {
         if (session && session.user && !error) {
           // User is authenticated via cookies
           isAuthorized = true;
+          userId = session.user.id;
           console.log('[check-tracked-bets] ✅ User authenticated via session');
         }
       } catch (error: any) {
@@ -82,6 +88,19 @@ export async function GET(request: Request) {
     if (!rateResult.allowed && rateResult.response) {
       return rateResult.response;
     }
+
+    if (!isCron) {
+      const distributedRateLimit = await checkRateLimitAsync(request, {
+        keyPrefix: 'check-tracked-bets:user',
+        identifier: userId || undefined,
+        maxRequests: process.env.NODE_ENV === 'development' ? 30 : 6,
+        windowMs: 60 * 1000,
+        fallbackLimiter: strictRateLimiter,
+      });
+      if (!distributedRateLimit.allowed && distributedRateLimit.response) {
+        return distributedRateLimit.response;
+      }
+    }
   }
 
   try {
@@ -91,14 +110,21 @@ export async function GET(request: Request) {
     let offset = 0;
     let hasMore = true;
 
-    // Fetch tracked props in batches
+    // Fetch tracked props in batches. User-triggered refreshes only touch that
+    // user's rows; cron keeps the global sweep.
     while (hasMore) {
-      const { data: batch, error } = await supabaseAdmin
+      let query = supabaseAdmin
         .from('tracked_props')
         .select('*')
         .or('status.in.(pending,live),and(status.eq.completed,actual_pts.is.null)')
         .order('game_date', { ascending: false })
         .range(offset, offset + BATCH_SIZE - 1);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: batch, error } = await query;
 
       if (error) {
         console.error('Error fetching tracked props:', error);

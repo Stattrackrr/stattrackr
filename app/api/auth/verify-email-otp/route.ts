@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildTrustedAppUrl, getTrustedAppOrigin, isAllowedAppOrigin } from "@/lib/appUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const AUTH_CALLBACK = "/auth/callback";
@@ -80,18 +81,27 @@ export async function POST(req: Request) {
 
     await supabaseAdmin.from("email_verification_codes").delete().eq("email", emailNorm);
 
-    // Prefer the origin the user is on (e.g. localhost when developing) so the magic-link
-    // redirect goes back to the same host. Fall back to NEXT_PUBLIC_SITE_URL or x-forwarded-host.
-    const hasValidOrigin =
-      typeof origin === "string" &&
-      /^https?:\/\/[^/]+$/.test(origin.trim());
-    const baseUrl = hasValidOrigin
-      ? origin.trim()
-      : process.env.NEXT_PUBLIC_SITE_URL ||
-        (req.headers.get("x-forwarded-host")
-          ? `https://${req.headers.get("x-forwarded-host")}`
-          : "http://localhost:3000");
-    const redirectTo = `${baseUrl}${AUTH_CALLBACK}?next=${encodeURIComponent(DEFAULT_NEXT)}`;
+    const requestOrigin = (() => {
+      try {
+        return new URL(req.url).origin;
+      } catch {
+        return null;
+      }
+    })();
+    const baseUrl = getTrustedAppOrigin({
+      requestedOrigin: typeof origin === "string" ? origin.trim() : null,
+      fallbackOrigin: requestOrigin,
+    });
+    if (origin && !isAllowedAppOrigin(origin)) {
+      console.warn("[verify-email-otp] Ignoring untrusted origin:", origin);
+    }
+    const redirectTo = buildTrustedAppUrl(
+      `${AUTH_CALLBACK}?next=${encodeURIComponent(DEFAULT_NEXT)}`,
+      {
+        requestedOrigin: baseUrl,
+        fallbackOrigin: requestOrigin,
+      }
+    );
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",

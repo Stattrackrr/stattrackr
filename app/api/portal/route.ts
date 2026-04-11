@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { buildTrustedAppUrl } from '@/lib/appUrl';
 import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
@@ -98,7 +99,10 @@ export async function GET(request: NextRequest) {
       console.warn('Portal - Trial user without STRIPE_PORTAL_CONFIG_TRIAL, falling back to default portal config');
     }
 
-    const returnUrl = `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/subscription`;
+    const returnUrl = buildTrustedAppUrl('/subscription', {
+      requestedOrigin: request.headers.get('origin'),
+      fallbackOrigin: request.nextUrl.origin,
+    });
     let portalSession;
     try {
       portalSession = await stripe.billingPortal.sessions.create({

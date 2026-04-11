@@ -17,18 +17,11 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
   const cronSecret = normalizeSecret(process.env.CRON_SECRET ?? '');
 
   const vercelCronHeader = normalizeSecret(request.headers.get('x-vercel-cron') ?? '').toLowerCase();
-  const userAgent = String(request.headers.get('user-agent') ?? '').toLowerCase();
   const isVercelCronHeader =
     !!vercelCronHeader &&
     vercelCronHeader !== '0' &&
     vercelCronHeader !== 'false' &&
     vercelCronHeader !== 'no';
-  const isVercelCronUserAgent = userAgent.includes('vercel-cron');
-
-  // Vercel cron can identify itself by x-vercel-cron header and/or vercel-cron UA.
-  if (isVercelCronHeader || isVercelCronUserAgent) {
-    return { authorized: true };
-  }
 
   if (!cronSecret) {
     console.warn('[Cron auth] 401: CRON_SECRET is not configured');
@@ -58,7 +51,12 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
   const provided = normalizeSecret(querySecret || headerSecret || authSecret);
 
   if (!provided || provided !== cronSecret) {
-    const reason = !provided ? 'no secret in request (check Vercel sends Authorization: Bearer CRON_SECRET)' : 'secret mismatch (check CRON_SECRET has no extra spaces/newlines in Vercel)';
+    const reason = !provided
+      ? 'no secret in request (send Authorization: Bearer CRON_SECRET, X-Cron-Secret, or ?secret=)'
+      : 'secret mismatch (check CRON_SECRET has no extra spaces/newlines in deployment env)';
+    if (isVercelCronHeader) {
+      console.warn('[Cron auth] Received x-vercel-cron without a valid shared secret');
+    }
     console.warn('[Cron auth] 401:', reason);
     return {
       authorized: false,

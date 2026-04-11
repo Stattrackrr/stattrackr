@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { checkRateLimitAsync, strictRateLimiter } from '@/lib/rateLimit';
+import { sharedCache } from '@/lib/sharedCache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,12 +16,66 @@ if (!BALLDONTLIE_API_KEY.trim()) {
   throw new Error('BALLDONTLIE_API_KEY environment variable is invalid');
 }
 
+const LIVE_STATS_TTL_SECONDS = 20;
+
+function buildLiveStatsCacheKey(playerId: string, gameId: string) {
+  return `live-stats:${playerId}:${gameId}`;
+}
+
+function getAuthHeaders() {
+  return {
+    'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
+  };
+}
+
+async function fetchJson(url: string) {
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const error: any = new Error(`BallDontLie request failed with ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.json();
+}
+
+async function resolveGameIdForPlayerOnDate(playerId: string, gameDate: string): Promise<string | null> {
+  const gamesData = await fetchJson(`https://api.balldontlie.io/v1/games?dates[]=${gameDate}&per_page=100`);
+  const games = Array.isArray(gamesData?.data) ? gamesData.data : [];
+  if (games.length === 0) return null;
+
+  const statsData = await fetchJson(
+    `https://api.balldontlie.io/v1/stats?dates[]=${gameDate}&player_ids[]=${playerId}&per_page=100`
+  );
+  const stats = Array.isArray(statsData?.data) ? statsData.data : [];
+  const matchingStat = stats.find((entry: any) => {
+    const statGameId = entry?.game?.id;
+    return statGameId != null && games.some((game: any) => String(game.id) === String(statGameId));
+  });
+
+  return matchingStat?.game?.id ? String(matchingStat.game.id) : null;
+}
+
 /**
  * Get live stats for a player in a specific game
  * Query params: playerId, gameId
  */
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResult = await checkRateLimitAsync(request, {
+      keyPrefix: 'live-stats',
+      maxRequests: process.env.NODE_ENV === 'development' ? 120 : 30,
+      windowMs: 60 * 1000,
+      fallbackLimiter: strictRateLimiter,
+    });
+    if (!rateLimitResult.allowed && rateLimitResult.response) {
+      return rateLimitResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
     const gameId = searchParams.get('gameId');
@@ -58,42 +113,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // If we have gameDate but not gameId, find the game first
+    // If we have gameDate but not gameId, find the game first with at most
+    // two upstream requests instead of one per game on the slate.
     let targetGameId = gameId;
     if (!targetGameId && gameDate) {
-      const gamesResponse = await fetch(
-        `https://api.balldontlie.io/v1/games?dates[]=${gameDate}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-          },
-        }
-      );
-
-      if (gamesResponse.ok) {
-        const gamesData = await gamesResponse.json();
-        const games = gamesData.data || [];
-        
-        // Find game where player is playing by checking stats for each game
-        for (const game of games) {
-          const statsResponse = await fetch(
-            `https://api.balldontlie.io/v1/stats?game_ids[]=${game.id}&player_ids[]=${playerId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-              },
-            }
-          );
-
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json();
-            if (statsData.data && statsData.data.length > 0) {
-              targetGameId = game.id;
-              break;
-            }
-          }
-        }
-      }
+      targetGameId = await resolveGameIdForPlayerOnDate(playerId, gameDate);
     }
 
     if (!targetGameId) {
@@ -103,24 +127,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch stats for this specific game and player
-    const statsResponse = await fetch(
-      `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGameId}&player_ids[]=${playerId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${BALLDONTLIE_API_KEY}`,
-        },
-      }
-    );
-
-    if (!statsResponse.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch stats' },
-        { status: statsResponse.status }
-      );
+    const cacheKey = buildLiveStatsCacheKey(playerId, String(targetGameId));
+    const cached = await sharedCache.getJSON<any>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
     }
 
-    const statsData = await statsResponse.json();
+    // Fetch stats for this specific game and player
+    const statsData = await fetchJson(
+      `https://api.balldontlie.io/v1/stats?game_ids[]=${targetGameId}&player_ids[]=${playerId}`
+    );
     
     if (!statsData.data || statsData.data.length === 0) {
       return NextResponse.json(
@@ -131,8 +147,7 @@ export async function GET(request: NextRequest) {
 
     const stat = statsData.data[0];
     
-    // Return formatted stats
-    return NextResponse.json({
+    const payload = {
       pts: stat.pts || 0,
       reb: stat.reb || 0,
       ast: stat.ast || 0,
@@ -140,12 +155,16 @@ export async function GET(request: NextRequest) {
       blk: stat.blk || 0,
       fg3m: stat.fg3m || 0,
       game: stat.game,
-    });
+    };
+
+    await sharedCache.setJSON(cacheKey, payload, LIVE_STATS_TTL_SECONDS);
+
+    return NextResponse.json(payload);
   } catch (error: any) {
     console.error('Error fetching live stats:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to fetch live stats' },
-      { status: 500 }
+      { status: error?.status || 500 }
     );
   }
 }
