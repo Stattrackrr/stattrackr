@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "node .cursor/hooks/git-branch-guard.js",
+        "matcher": "^git\\s",
+        "failClosed": true
+      }
+    ]
+  }
+}

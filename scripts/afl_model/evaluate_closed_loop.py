@@ -20,7 +20,7 @@ import shutil
 from typing import Dict, List, Optional, Tuple
 
 from build_dataset import FEATURE_COLUMNS
-from common import MODEL_DIR, now_iso, write_json
+from common import MODEL_DIR, get_projections_dir, now_iso, write_json
 from train_disposals_model import baseline_predict_row
 
 
@@ -192,7 +192,7 @@ def load_settled_samples(max_projection_files: int) -> List[dict]:
     if not actual_by_key:
         return []
 
-    projections_dir = os.path.join(MODEL_DIR, "projections")
+    projections_dir = get_projections_dir()
     files = []
     if os.path.exists(projections_dir):
         files = [f for f in os.listdir(projections_dir) if f.startswith("disposals-projections-") and f.endswith(".json")]

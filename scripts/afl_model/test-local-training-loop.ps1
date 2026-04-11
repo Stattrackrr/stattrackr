@@ -6,6 +6,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$env:AFL_MODEL_PROJECTIONS_DIR = "data/afl-model/local/projections"
+$localCandidateProjections = "data/afl-model/local/latest-candidate-disposals-projections.json"
 
 function Write-Section($text) {
   Write-Host ""
@@ -81,14 +83,14 @@ if ($Deep) {
   Run-Step "Train candidate (standard)" "python scripts/afl_model/train_disposals_model.py --candidate-only"
 }
 
-Run-Step "Score candidate projections" "python scripts/afl_model/score_upcoming.py --base-url `"$BaseUrl`" --artifact `"data/afl-model/models/latest-candidate-model.json`" --latest-output-path `"data/afl-model/latest-candidate-disposals-projections.json`""
-Run-Step "Evaluate + guarded promote" "python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --candidate-artifact `"data/afl-model/models/latest-candidate-model.json`" --current-artifact `"data/afl-model/models/latest-model.json`" --candidate-projections `"data/afl-model/latest-candidate-disposals-projections.json`""
+Run-Step "Score candidate projections" "python scripts/afl_model/score_upcoming.py --base-url `"$BaseUrl`" --artifact `"data/afl-model/models/latest-candidate-model.json`" --latest-output-path `"$localCandidateProjections`""
+Run-Step "Evaluate + guarded promote" "python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --candidate-artifact `"data/afl-model/models/latest-candidate-model.json`" --current-artifact `"data/afl-model/models/latest-model.json`" --candidate-projections `"$localCandidateProjections`""
 
 Write-Section "4) Output verification"
 $requiredFiles = @(
   "data/afl-model/models/latest-candidate-model.json",
   "data/afl-model/models/latest-candidate-calibration.json",
-  "data/afl-model/latest-candidate-disposals-projections.json",
+  $localCandidateProjections,
   "data/afl-model/history/model-eval-latest.json",
   "data/afl-model/history/model-performance-history.json",
   "data/afl-model/history/model-card-latest.json",
