@@ -811,12 +811,12 @@ const SimpleChart = memo(function SimpleChart({
       {/* In-chart average + hit rate - center when second axis visible, else top right; mobile: can sit lower to clear Team/controls (AFL) */}
       {averageDisplay && !hideAverageOverlay && (
         <div
-          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-2 px-2 py-1 rounded shadow leading-none ${
+          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${
             averageOverlayLowerOnMobile
               ? (
                 hasSecondAxis || averageOverlayLower
                   ? (averageOverlayLowerExtra ? 'top-0 sm:top-0' : 'top-0 sm:top-0')
-                  : 'top-1 sm:-top-5'
+                  : 'top-0 sm:-top-5'
               )
               : (
                 hasSecondAxis || averageOverlayLower
@@ -825,25 +825,31 @@ const SimpleChart = memo(function SimpleChart({
               )
           } ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
           style={{
-            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)',
-            border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)'}`,
+            backgroundColor: averageOverlayLowerOnMobile
+              ? (isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)')
+              : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
+            border: `1px solid ${
+              averageOverlayLowerOnMobile
+                ? (isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)')
+                : (isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)')
+            }`,
           }}
           aria-hidden
         >
-          <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+          <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
             {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
             <span className="font-semibold">{averageDisplay.formatted}</span>
           </span>
           {averageDisplay.hitRate != null && (
             <>
-              <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>|</span>
-              <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+              <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+              <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
                 Hit: <span className="font-semibold">{averageDisplay.hitRate}%</span>
               </span>
               {averageDisplay.hitCount != null && averageDisplay.totalGames != null && (
                 <>
-                  <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>|</span>
-                  <span className={`text-[11px] font-medium leading-none ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                  <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+                  <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
                     <span className="font-semibold">{averageDisplay.hitCount}/{averageDisplay.totalGames}</span>
                   </span>
                 </>
