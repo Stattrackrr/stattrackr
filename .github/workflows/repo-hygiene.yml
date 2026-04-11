@@ -1,0 +1,44 @@
+name: Repo Hygiene
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+      - pr/**
+
+jobs:
+  generated-file-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Collect changed files
+        id: changes
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_ref="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            files=$(git diff --name-only "$base_ref"...HEAD | tr '\n' ' ')
+          else
+            before="${{ github.event.before }}"
+            if [[ -n "$before" && "$before" != "0000000000000000000000000000000000000000" ]]; then
+              files=$(git diff --name-only "$before"...HEAD | tr '\n' ' ')
+            else
+              files=$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ' ')
+            fi
+          fi
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+
+      - name: Check repo hygiene
+        run: node scripts/check-repo-hygiene.js ${{ steps.changes.outputs.files }}
