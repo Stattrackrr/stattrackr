@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { cache, CACHE_TTL } from '@/lib/cache';
+import { authorizeCronRequest } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for cron job
@@ -326,74 +327,11 @@ const SHOULD_TRIGGER_LEAGUE_BULK =
   process.env.ENABLE_LEAGUE_BULK === 'true' || process.env.NODE_ENV !== 'production';
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret (optional but recommended)
-  // Try multiple header name variations (HTTP headers are case-insensitive)
-  const authHeader = request.headers.get('authorization') 
-    || request.headers.get('Authorization')
-    || request.headers.get('AUTHORIZATION');
-  
-  // Also check query parameter as fallback (easier for testing with PowerShell)
-  const requestUrl = new URL(request.url);
-  const secretFromQuery = requestUrl.searchParams.get('secret');
-  
-  // Debug: Log all headers and URL details
-  const allHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => {
-    allHeaders[key] = value;
-  });
-  console.log('[NBA Stats Refresh] Request URL:', request.url);
-  console.log('[NBA Stats Refresh] URL search params:', requestUrl.search);
-  console.log('[NBA Stats Refresh] All headers:', Object.keys(allHeaders));
-  console.log('[NBA Stats Refresh] Authorization header (get):', authHeader || 'NOT FOUND');
-  console.log('[NBA Stats Refresh] Secret from query:', secretFromQuery ? `PROVIDED (length: ${secretFromQuery.length})` : 'NOT PROVIDED');
-  
-  // Check if this is a Vercel Cron call (they send x-vercel-cron header)
-  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
-  
-  // Check if this is an internal Vercel request (from same deployment)
-  // Internal requests have x-vercel-* headers and come from vercel domains
-  const host = request.headers.get('host') || '';
-  const isInternalVercel = host.includes('vercel.app') || 
-                           host.includes('vercel.app') ||
-                           request.headers.get('x-vercel-id') !== null ||
-                           request.headers.get('x-vercel-deployment-url') !== null;
-  
-  console.log('[NBA Stats Refresh] Is Vercel Cron call:', isVercelCron);
-  console.log('[NBA Stats Refresh] Is internal Vercel request:', isInternalVercel);
-  console.log('[NBA Stats Refresh] Host:', host);
-  
-  const cronSecret = process.env.CRON_SECRET;
-  
-  // Allow bypass in development or if secret is not set
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const allowBypass = isDevelopment || !cronSecret;
-  
-  // Vercel Cron calls and internal Vercel requests are authenticated by Vercel itself
-  // Only require auth for manual/external calls
-  if (cronSecret && !allowBypass && !isVercelCron && !isInternalVercel) {
-    // Check both header and query parameter
-    const normalizedHeader = authHeader?.trim().toLowerCase();
-    const expectedHeader = `bearer ${cronSecret}`.toLowerCase();
-    const headerMatch = normalizedHeader === expectedHeader;
-    const queryMatch = secretFromQuery === cronSecret;
-    
-    // Log for debugging (will show in Vercel logs)
-    console.log('[NBA Stats Refresh] Auth check:', {
-      hasHeader: !!authHeader,
-      headerMatch,
-      queryMatch,
-      secretLength: cronSecret.length
-    });
-    
-    if (!headerMatch && !queryMatch) {
-      return NextResponse.json({ 
-        error: 'Unauthorized',
-        hint: 'CRON_SECRET required. Use ?secret=YOUR_SECRET in URL or Authorization: Bearer YOUR_SECRET header.',
-        receivedHeader: authHeader ? 'yes' : 'no',
-        receivedQuery: secretFromQuery ? 'yes' : 'no'
-      }, { status: 401 });
-    }
+  const authResult = authorizeCronRequest(request);
+  if (!authResult.authorized) {
+    return authResult.response;
   }
+  const requestUrl = new URL(request.url);
 
   const startTime = Date.now();
   const { currentNbaSeason } = await import('@/lib/nbaUtils');

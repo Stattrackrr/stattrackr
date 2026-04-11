@@ -6,10 +6,16 @@ export const dynamic = 'force-dynamic';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 import { runPredictionForProp } from '@/lib/prediction-engine/runPrediction';
 
 export async function GET(request: NextRequest) {
   try {
+    const rateLimitResult = checkRateLimit(request, strictRateLimiter);
+    if (!rateLimitResult.allowed && rateLimitResult.response) {
+      return rateLimitResult.response;
+    }
+
     const { searchParams } = new URL(request.url);
 
     const playerIdParam = searchParams.get('player_id');
@@ -31,6 +37,30 @@ export async function GET(request: NextRequest) {
         success: false,
         error: 'Invalid player_id',
       }, { status: 400 });
+    }
+
+    if (gameDate && !/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid game_date. Use YYYY-MM-DD.',
+      }, { status: 400 });
+    }
+
+    if (opponent && !/^[A-Za-z]{2,4}$/.test(opponent.trim())) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid opponent. Use a 2-4 letter team abbreviation.',
+      }, { status: 400 });
+    }
+
+    if (lineParam) {
+      const parsedLine = Number(lineParam);
+      if (!Number.isFinite(parsedLine)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid line value',
+        }, { status: 400 });
+      }
     }
 
     console.log(`[Prediction Engine] Generating prediction for player ${playerId}, stat: ${statType}`);
