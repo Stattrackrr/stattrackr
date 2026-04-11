@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from common import (
     DATA_DIR,
     MODEL_DIR,
+    get_projections_dir,
     canonical_team_key,
     canonical_venue_key,
     venue_keys_for_team_home_grounds,
@@ -1682,7 +1683,7 @@ def main() -> None:
     write_line_history(merged_history)
 
     ts = slug_time()
-    projections_dir = os.path.join(MODEL_DIR, "projections")
+    projections_dir = get_projections_dir()
     os.makedirs(projections_dir, exist_ok=True)
 
     out = {
