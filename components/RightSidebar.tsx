@@ -1693,8 +1693,8 @@ export default function RightSidebar({
     setIsRefreshing(true);
     
     try {
-      // First, trigger the check-tracked-bets API to update any completed games
-      await fetch('/api/check-bets', {
+      // Refresh only the signed-in user's tracked bets. The cron endpoint does the global sweep.
+      await fetch('/api/check-tracked-bets', {
         credentials: 'include', // Include cookies for authentication
       });
     } catch (error) {

@@ -123,6 +123,37 @@ function buildStatsUrl(playerId: string, season: number, page: number = 1, perPa
   return url;
 }
 
+function buildStatsCacheKey(options: {
+  playerId: string;
+  season: number;
+  postseason: boolean;
+  gameIds?: number[];
+  period?: number;
+  perPage: number;
+  maxPages: number;
+  skipDvp: boolean;
+}) {
+  const sortedGameIds =
+    options.gameIds && options.gameIds.length > 0
+      ? [...options.gameIds].sort((a, b) => a - b)
+      : [];
+  const periodSuffix =
+    options.period !== undefined && options.period !== null && options.period > 0
+      ? `_period${options.period}`
+      : '';
+  const scopeSuffix =
+    sortedGameIds.length > 0
+      ? `_games_${sortedGameIds.join('_')}`
+      : `_${options.postseason ? 'po' : 'reg'}`;
+
+  return [
+    `${getCacheKey.playerStats(options.playerId, options.season)}${scopeSuffix}${periodSuffix}`,
+    `pp${options.perPage}`,
+    `mp${options.maxPages}`,
+    options.skipDvp ? 'nodvp' : 'withdvp',
+  ].join('_');
+}
+
 async function bdlFetch(url: URL, timeoutMs: number = 30000) {
   // BDL docs say "Authorization: YOUR_API_KEY" but Bearer format also works
   // We use Bearer format for consistency with other APIs
@@ -199,10 +230,16 @@ export async function GET(req: NextRequest) {
 
     // Check cache first (before rate limiting) - include postseason, gameIds, and period in cache key
     // This ensures regular season, postseason, and period-specific (e.g. Q1) stats are cached separately
-    const periodSuffix = usePeriod ? `_period${period}` : '';
-    const cacheKey = gameIds && gameIds.length > 0
-      ? `${getCacheKey.playerStats(playerId, season)}_games_${gameIds.sort((a, b) => a - b).join('_')}${periodSuffix}`
-      : `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}${periodSuffix}`;
+    const cacheKey = buildStatsCacheKey({
+      playerId,
+      season,
+      postseason,
+      gameIds,
+      period: usePeriod ? period : undefined,
+      perPage: perPageParam,
+      maxPages,
+      skipDvp,
+    });
     
     // Try in-memory cache first (fastest)
     let cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
@@ -245,7 +282,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if a request for this player/season/postseason/period is already in flight
-    const requestKey = `${playerId}-${season}-${postseason ? 'po' : 'reg'}${usePeriod ? `-p${period}` : ''}`;
+    const requestKey = cacheKey;
     if (inFlightRequests.has(requestKey)) {
       // Request already in flight, waiting
       try {
@@ -323,7 +360,6 @@ export async function GET(req: NextRequest) {
           // If timeout on first page, try to return cached data
           if (error.isTimeout && page === 1) {
             console.warn(`[Stats API] Timeout on first page for player ${playerId}, season ${season}, postseason ${postseason} - checking cache...`);
-            const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
             const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
             if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
               console.log(`[Stats API] Returning cached data after timeout: ${cachedData.data.length} stats`);
@@ -525,7 +561,6 @@ export async function GET(req: NextRequest) {
       // On timeout, try to return cached data
       if (error.message?.includes('timeout')) {
         console.warn(`[Stats API] Overall timeout for player ${playerId}, season ${season}, postseason ${postseason} - checking cache...`);
-        const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
         const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
         if (cachedData && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
           console.log(`[Stats API] Returning cached data after overall timeout: ${cachedData.data.length} stats`);
@@ -546,8 +581,27 @@ export async function GET(req: NextRequest) {
     const seasonParam = searchParams.get("season");
     const season = Number(seasonParam || 2023);
     const postseason = (searchParams.get("postseason") || "false").toLowerCase() === "true";
+    const perPageParam = Number(searchParams.get("per_page") || 40);
+    const maxPages = Number(searchParams.get("max_pages") || 3);
+    const skipDvp = searchParams.get("skip_dvp") === "1" || searchParams.get("skip_dvp") === "true";
+    const gameIdsParam = searchParams.get("game_ids");
+    const gameIds = gameIdsParam
+      ? gameIdsParam.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id))
+      : undefined;
+    const periodParam = searchParams.get("period");
+    const period = periodParam !== null ? parseInt(periodParam || "0", 10) : undefined;
+    const usePeriod = period !== undefined && !isNaN(period) && period > 0;
     if (playerId) {
-      const cacheKey = `${getCacheKey.playerStats(playerId, season)}_${postseason ? 'po' : 'reg'}`;
+      const cacheKey = buildStatsCacheKey({
+        playerId,
+        season,
+        postseason,
+        gameIds,
+        period: usePeriod ? period : undefined,
+        perPage: perPageParam,
+        maxPages,
+        skipDvp,
+      });
       const cachedData = cache.get<{ data: BdlPlayerStats[] }>(cacheKey);
       if (cachedData) {
         return NextResponse.json(cachedData, { status: 200 });

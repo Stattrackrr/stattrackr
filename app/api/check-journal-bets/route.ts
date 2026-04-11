@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
+import { checkRateLimit, checkRateLimitAsync, strictRateLimiter } from '@/lib/rateLimit';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { calculateUniversalBetResult } from '@/lib/betResultUtils';
@@ -363,6 +363,19 @@ export async function GET(request: Request) {
     const rateResult = checkRateLimit(request, strictRateLimiter);
     if (!rateResult.allowed && rateResult.response) {
       return rateResult.response;
+    }
+
+    if (!isCron) {
+      const distributedRateLimit = await checkRateLimitAsync(request, {
+        keyPrefix: 'check-journal-bets:user',
+        identifier: userId || undefined,
+        maxRequests: process.env.NODE_ENV === 'development' ? 20 : 4,
+        windowMs: 60 * 1000,
+        fallbackLimiter: strictRateLimiter,
+      });
+      if (!distributedRateLimit.allowed && distributedRateLimit.response) {
+        return distributedRateLimit.response;
+      }
     }
   }
 

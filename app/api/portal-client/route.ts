@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { buildTrustedAppUrl } from '@/lib/appUrl';
 import { getStripe } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
@@ -64,7 +65,10 @@ export async function POST(request: NextRequest) {
     let stripeTrialCreatedMs: number | null = null;
     const trialConfigId = process.env.STRIPE_PORTAL_CONFIG_TRIAL;
     const paidConfigId = process.env.STRIPE_PORTAL_CONFIG_PAID;
-    const returnUrl = `${request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL}/home`;
+    const returnUrl = buildTrustedAppUrl('/home', {
+      requestedOrigin: request.headers.get('origin'),
+      fallbackOrigin: request.nextUrl.origin,
+    });
 
     try {
       // Prefer Stripe as source-of-truth to avoid stale DB status routing.

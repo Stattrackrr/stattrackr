@@ -1,12 +1,23 @@
 // Rate limiting utility for API routes
 // Prevents abuse and protects external API quotas
 
+import { Redis } from '@upstash/redis';
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-class RateLimiter {
+type RateLimitCheckResult = { allowed: boolean; remaining: number; resetAt: number };
+
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || '';
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const distributedRedis =
+  upstashUrl && upstashToken
+    ? new Redis({ url: upstashUrl, token: upstashToken })
+    : null;
+
+export class RateLimiter {
   private requests = new Map<string, RateLimitEntry>();
   private readonly maxRequests: number;
   private readonly windowMs: number;
@@ -24,7 +35,7 @@ class RateLimiter {
    * @param identifier - Usually IP address or user ID
    * @returns Object with allowed status and remaining requests
    */
-  check(identifier: string): { allowed: boolean; remaining: number; resetAt: number } {
+  check(identifier: string): RateLimitCheckResult {
     const now = Date.now();
     const entry = this.requests.get(identifier);
 
@@ -147,27 +158,93 @@ export function checkRateLimit(
   const result = limiter.check(identifier);
 
   if (!result.allowed) {
-    const resetDate = new Date(result.resetAt).toISOString();
     return {
       allowed: false,
-      response: new Response(
-        JSON.stringify({
-          error: 'Rate limit exceeded',
-          resetAt: resetDate,
-          message: 'Too many requests. Please try again later.'
-        }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-RateLimit-Limit': limiter['maxRequests'].toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': resetDate,
-            'Retry-After': Math.ceil((result.resetAt - Date.now()) / 1000).toString()
-          }
-        }
-      )
+      response: buildRateLimitResponse(result.resetAt, limiter['maxRequests']),
     };
+  }
+
+  return { allowed: true };
+}
+
+function buildRateLimitResponse(resetAt: number, maxRequests: number): Response {
+  const resetDate = new Date(resetAt).toISOString();
+  return new Response(
+    JSON.stringify({
+      error: 'Rate limit exceeded',
+      resetAt: resetDate,
+      message: 'Too many requests. Please try again later.'
+    }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-RateLimit-Limit': maxRequests.toString(),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': resetDate,
+        'Retry-After': Math.ceil((resetAt - Date.now()) / 1000).toString()
+      }
+    }
+  );
+}
+
+export async function checkRateLimitAsync(
+  request: Request,
+  options?: {
+    keyPrefix?: string;
+    identifier?: string;
+    maxRequests?: number;
+    windowMs?: number;
+    fallbackLimiter?: RateLimiter;
+  }
+): Promise<{ allowed: boolean; response?: Response }> {
+  const identifier = options?.identifier || getRequestIdentifier(request);
+  const keyPrefix = options?.keyPrefix || 'api';
+  const maxRequests = options?.maxRequests ?? 100;
+  const windowMs = options?.windowMs ?? 15 * 60 * 1000;
+
+  if (!identifier) {
+    return { allowed: true };
+  }
+
+  if (!distributedRedis) {
+    const fallbackLimiter = options?.fallbackLimiter || apiRateLimiter;
+    const result = fallbackLimiter.check(identifier);
+    if (!result.allowed) {
+      return {
+        allowed: false,
+        response: buildRateLimitResponse(result.resetAt, fallbackLimiter['maxRequests']),
+      };
+    }
+    return { allowed: true };
+  }
+
+  const now = Date.now();
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const resetAt = windowStart + windowMs;
+  const key = `rate-limit:${keyPrefix}:${identifier}:${windowStart}`;
+
+  try {
+    const count = await distributedRedis.incr(key);
+    if (count === 1) {
+      await distributedRedis.expire(key, Math.max(1, Math.ceil(windowMs / 1000)));
+    }
+
+    if (count > maxRequests) {
+      return {
+        allowed: false,
+        response: buildRateLimitResponse(resetAt, maxRequests),
+      };
+    }
+  } catch {
+    const fallbackLimiter = options?.fallbackLimiter || apiRateLimiter;
+    const result = fallbackLimiter.check(identifier);
+    if (!result.allowed) {
+      return {
+        allowed: false,
+        response: buildRateLimitResponse(result.resetAt, fallbackLimiter['maxRequests']),
+      };
+    }
   }
 
   return { allowed: true };
