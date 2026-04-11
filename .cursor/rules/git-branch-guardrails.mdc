@@ -1,0 +1,13 @@
+---
+description: Keep master clean and avoid generated file commits
+alwaysApply: true
+---
+
+# Git Branch Guardrails
+
+- Do not do day-to-day edits, commits, or pushes directly on `master` or `main`.
+- Before starting a coding task, prefer a fresh task branch from the latest synced `master`.
+- When the repo is dirty, isolate only the files relevant to the requested task before committing or pushing.
+- Never intentionally stage generated artifacts such as `.next/`, `__pycache__/`, or local AFL scratch outputs under `data/afl-model/local/`.
+- If a user asks to push or commit from `master`/`main`, stop and move the work to a branch first unless they explicitly want a sync-only action.
+- Treat Git LFS AFL model pointer issues as a separate repo-hygiene problem; do not work around them by committing noisy local artifacts.
