@@ -30,11 +30,24 @@ function getTrackedFiles() {
 function getChangedFiles() {
   const args = process.argv.slice(2);
   if (args.length > 0) {
-    return args.filter(Boolean);
+    return args
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const normalized = entry.replace(/\\/g, '/');
+        const isDeletion = normalized.startsWith('D:');
+        const path = isDeletion ? normalized.slice(2) : normalized;
+        return { path, isDeletion };
+      });
   }
 
   const output = run('git diff --name-only --cached HEAD');
-  return output ? output.split(/\r?\n/).filter(Boolean) : [];
+  return output
+    ? output
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((path) => ({ path, isDeletion: false }))
+    : [];
 }
 
 function main() {
@@ -45,18 +58,25 @@ function main() {
     FORBIDDEN_TRACKED_PREFIXES.some((prefix) => file.startsWith(prefix))
   );
 
-  const changedViolations = changedFiles.filter((file) =>
-    FORBIDDEN_CHANGED_PATTERNS.some((pattern) => pattern.test(file))
+  const changedViolations = changedFiles
+    .filter((file) => !file.isDeletion)
+    .map((file) => file.path)
+    .filter((file) =>
+      FORBIDDEN_CHANGED_PATTERNS.some((pattern) => pattern.test(file))
+    );
+  const trackedViolationsExcludingDeleted = trackedViolations.filter(
+    (file) =>
+      !changedFiles.some((changed) => changed.isDeletion && changed.path === file)
   );
 
-  if (trackedViolations.length === 0 && changedViolations.length === 0) {
+  if (trackedViolationsExcludingDeleted.length === 0 && changedViolations.length === 0) {
     console.log('Repo hygiene check passed.');
     return;
   }
 
-  if (trackedViolations.length > 0) {
+  if (trackedViolationsExcludingDeleted.length > 0) {
     console.error('Forbidden generated files are tracked in git:');
-    trackedViolations.forEach((file) => console.error(`- ${file}`));
+    trackedViolationsExcludingDeleted.forEach((file) => console.error(`- ${file}`));
   }
 
   if (changedViolations.length > 0) {
