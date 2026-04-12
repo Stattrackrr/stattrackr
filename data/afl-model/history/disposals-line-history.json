@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-11T17:20:21Z",
+  "generatedAt": "2026-04-12T11:37:39Z",
   "count": 260,
   "rows": [
     {
@@ -18,7 +18,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.58,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 35.0,
+      "actualTog": 83.0,
+      "differenceLine": 6.5,
+      "differenceModel": 8.42,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:05Z"
     },
     {
       "snapshotKey": "jacob hopper|2026-W15",
@@ -36,7 +44,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 24.4,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 26.0,
+      "actualTog": 71.0,
+      "differenceLine": 2.5,
+      "differenceModel": 1.6,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:10Z"
     },
     {
       "snapshotKey": "tim taranto|2026-W15",
@@ -54,7 +70,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 25.34,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 25.0,
+      "actualTog": 82.0,
+      "differenceLine": -0.5,
+      "differenceModel": -0.34,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:15Z"
     },
     {
       "snapshotKey": "finn callaghan|2026-W15",
@@ -72,7 +96,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 28.1,
-      "modelEdge": -0.0854
+      "modelEdge": -0.0854,
+      "actualDisposals": 37.0,
+      "actualTog": 80.0,
+      "differenceLine": 7.5,
+      "differenceModel": 8.9,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:16Z"
     },
     {
       "snapshotKey": "clayton oliver|2026-W15",
@@ -90,7 +122,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.96,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 31.0,
+      "actualTog": 81.0,
+      "differenceLine": 1.5,
+      "differenceModel": 4.04,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:17Z"
     },
     {
       "snapshotKey": "jayden short|2026-W15",
@@ -108,7 +148,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 21.01,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 23.0,
+      "actualTog": 83.0,
+      "differenceLine": 0.5,
+      "differenceModel": 1.99,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:21Z"
     },
     {
       "snapshotKey": "jack ross|2026-W15",
@@ -126,7 +174,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.16,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 19.0,
+      "actualTog": 81.0,
+      "differenceLine": -1.5,
+      "differenceModel": -1.16,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:27Z"
     },
     {
       "snapshotKey": "lachie whitfield|2026-W15",
@@ -144,7 +200,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 27.29,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 31.0,
+      "actualTog": 79.0,
+      "differenceLine": 2.5,
+      "differenceModel": 3.71,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:28Z"
     },
     {
       "snapshotKey": "tom atkins|2026-W15",
@@ -310,7 +374,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.17,
-      "modelEdge": -0.0834
+      "modelEdge": -0.0834,
+      "actualDisposals": 15.0,
+      "actualTog": 61.0,
+      "differenceLine": -4.5,
+      "differenceModel": -1.17,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:33Z"
     },
     {
       "snapshotKey": "harley reid|2026-W15",
@@ -328,7 +400,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 22.88,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 22.0,
+      "actualTog": 83.0,
+      "differenceLine": 2.5,
+      "differenceModel": -0.88,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:38Z"
     },
     {
       "snapshotKey": "joseph fonti|2026-W15",
@@ -346,7 +426,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 15.49,
-      "modelEdge": -0.0909
+      "modelEdge": -0.0909,
+      "actualDisposals": 14.0,
+      "actualTog": 82.0,
+      "differenceLine": -4.5,
+      "differenceModel": -1.49,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:39Z"
     },
     {
       "snapshotKey": "zak butters|2026-W15",
@@ -400,7 +488,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.21,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 17.0,
+      "actualTog": 100.0,
+      "differenceLine": -2.5,
+      "differenceModel": -1.21,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:49Z"
     },
     {
       "snapshotKey": "jase burgoyne|2026-W15",
@@ -436,7 +532,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.14,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 20.0,
+      "actualTog": 86.0,
+      "differenceLine": -0.5,
+      "differenceModel": -0.14,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:33:55Z"
     },
     {
       "snapshotKey": "nasiah wanganeen milera|2026-W15",
@@ -508,7 +612,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 18.27,
-      "modelEdge": -0.0264
+      "modelEdge": -0.0264,
+      "actualDisposals": 11.0,
+      "actualTog": 79.0,
+      "differenceLine": -7.5,
+      "differenceModel": -7.27,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:13Z"
     },
     {
       "snapshotKey": "josh lindsay|2026-W15",
@@ -526,7 +638,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 18.0,
-      "modelEdge": -0.0358
+      "modelEdge": -0.0358,
+      "actualDisposals": 21.0,
+      "actualTog": 73.0,
+      "differenceLine": 4.5,
+      "differenceModel": 3.0,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:19Z"
     },
     {
       "snapshotKey": "sam flanders|2026-W15",
@@ -562,7 +682,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.58,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 17.0,
+      "actualTog": 81.0,
+      "differenceLine": -1.5,
+      "differenceModel": -0.58,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:28Z"
     },
     {
       "snapshotKey": "marcus windhager|2026-W15",
@@ -616,7 +744,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 17.85,
-      "modelEdge": -0.0947
+      "modelEdge": -0.0947,
+      "actualDisposals": 7.0,
+      "actualTog": 40.0,
+      "differenceLine": -12.5,
+      "differenceModel": -10.85,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:38Z"
     },
     {
       "snapshotKey": "tim kelly|2026-W15",
@@ -634,7 +770,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 21.69,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 22.0,
+      "actualTog": 75.0,
+      "differenceLine": -1.5,
+      "differenceModel": 0.31,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:42Z"
     },
     {
       "snapshotKey": "jack graham|2026-W15",
@@ -652,7 +796,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 19.29,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 14.0,
+      "actualTog": 69.0,
+      "differenceLine": -4.5,
+      "differenceModel": -5.29,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:46Z"
     },
     {
       "snapshotKey": "harrison himmelberg|2026-W15",
@@ -670,7 +822,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.63,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 13.0,
+      "actualTog": 83.0,
+      "differenceLine": -4.5,
+      "differenceModel": -4.63,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:47Z"
     },
     {
       "snapshotKey": "ryan angwin|2026-W15",
@@ -688,7 +848,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 17.35,
-      "modelEdge": -0.0358
+      "modelEdge": -0.0358,
+      "actualDisposals": 14.0,
+      "actualTog": 81.0,
+      "differenceLine": -3.5,
+      "differenceModel": -3.35,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:48Z"
     },
     {
       "snapshotKey": "willem drew|2026-W15",
@@ -724,7 +892,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 19.02,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 22.0,
+      "actualTog": 84.0,
+      "differenceLine": 2.5,
+      "differenceModel": 2.98,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:34:57Z"
     },
     {
       "snapshotKey": "jason horne francis|2026-W15",
@@ -760,7 +936,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.55,
-      "modelEdge": -0.019
+      "modelEdge": -0.019,
+      "actualDisposals": 17.0,
+      "actualTog": 78.0,
+      "differenceLine": -3.5,
+      "differenceModel": -3.55,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:05Z"
     },
     {
       "snapshotKey": "tom mccarthy|2026-W15",
@@ -778,7 +962,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 19.24,
-      "modelEdge": -0.0115
+      "modelEdge": -0.0115,
+      "actualDisposals": 28.0,
+      "actualTog": 78.0,
+      "differenceLine": 8.5,
+      "differenceModel": 8.76,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:09Z"
     },
     {
       "snapshotKey": "callum wilkie|2026-W15",
@@ -868,7 +1060,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 19.61,
-      "modelEdge": -0.0704
+      "modelEdge": -0.0704,
+      "actualDisposals": 20.0,
+      "actualTog": 78.0,
+      "differenceLine": -0.5,
+      "differenceModel": 0.39,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:32Z"
     },
     {
       "snapshotKey": "toby greene|2026-W15",
@@ -886,7 +1086,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 20.32,
-      "modelEdge": -0.0264
+      "modelEdge": -0.0264,
+      "actualDisposals": 29.0,
+      "actualTog": 84.0,
+      "differenceLine": 8.5,
+      "differenceModel": 8.68,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:33Z"
     },
     {
       "snapshotKey": "willem duursma|2026-W15",
@@ -904,7 +1112,15 @@
       "overOdds": "-112",
       "underOdds": "-119",
       "modelExpectedDisposals": 16.39,
-      "modelEdge": -0.0131
+      "modelEdge": -0.0131,
+      "actualDisposals": 20.0,
+      "actualTog": 78.0,
+      "differenceLine": 4.5,
+      "differenceModel": 3.61,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:48Z"
     },
     {
       "snapshotKey": "kane farrell|2026-W15",
@@ -940,7 +1156,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.6,
-      "modelEdge": -0.0779
+      "modelEdge": -0.0779,
+      "actualDisposals": 13.0,
+      "actualTog": 79.0,
+      "differenceLine": -6.5,
+      "differenceModel": -5.6,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:58Z"
     },
     {
       "snapshotKey": "zach guthrie|2026-W15",
@@ -958,7 +1182,15 @@
       "overOdds": "-120",
       "underOdds": "-112",
       "modelExpectedDisposals": 15.74,
-      "modelEdge": -0.0255
+      "modelEdge": -0.0255,
+      "actualDisposals": 13.0,
+      "actualTog": 80.0,
+      "differenceLine": -2.5,
+      "differenceModel": -2.74,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:35:59Z"
     },
     {
       "snapshotKey": "james worpel|2026-W15",
@@ -976,7 +1208,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 20.37,
-      "modelEdge": -0.0358
+      "modelEdge": -0.0358,
+      "actualDisposals": 20.0,
+      "actualTog": 72.0,
+      "differenceLine": -0.5,
+      "differenceModel": -0.37,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-04-12T11:36:00Z"
     },
     {
       "snapshotKey": "chad warner|2026-W15",
