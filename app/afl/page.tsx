@@ -3006,6 +3006,35 @@ export default function AFLPage() {
     return v.toFixed(1);
   };
 
+  const renderPlayerSeasonValueWithDisposalShare = (playerStatKey: string) => {
+    const formattedValue = renderPlayerSeasonValue(playerStatKey);
+    if (!formattedValue) return null;
+
+    const disposalShareStats = new Set([
+      'uncontested_possessions',
+      'contested_possessions',
+      'kicks',
+      'handballs',
+    ]);
+
+    if (!disposalShareStats.has(playerStatKey)) return formattedValue;
+
+    const playerValue = getCurrentSeasonAvg(playerStatKey);
+    const disposalAverage = getCurrentSeasonAvg('disposals');
+    if (
+      typeof playerValue !== 'number' ||
+      !Number.isFinite(playerValue) ||
+      typeof disposalAverage !== 'number' ||
+      !Number.isFinite(disposalAverage) ||
+      disposalAverage <= 0
+    ) {
+      return formattedValue;
+    }
+
+    const disposalPct = Math.round((playerValue / disposalAverage) * 100);
+    return `${formattedValue} (${disposalPct}%)`;
+  };
+
   const renderOpponentSeasonValue = (statCode: string) => {
     const v = getOpponentSeasonAvg(statCode);
     if (typeof v !== 'number' || !Number.isFinite(v)) return null;
@@ -4346,7 +4375,7 @@ export default function AFLPage() {
                               : (matchupOpponent || 'Select opponent')}
                           </span>
                         </div>
-                        <div className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
+                        <div className="grid grid-cols-[minmax(0,1fr)_12ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] gap-x-1.5 mb-1">
                           <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">Stat</span>
                           <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-right pr-0">Player</span>
                           <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400"></span>
@@ -4361,10 +4390,10 @@ export default function AFLPage() {
                             const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
                             const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
                             return (
-                              <div key={`m-${row.label}`} className="grid grid-cols-[minmax(0,1fr)_5ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] items-center gap-x-1.5 min-w-0">
+                              <div key={`m-${row.label}`} className="grid grid-cols-[minmax(0,1fr)_12ch_3.5ch_3.5ch_6ch_minmax(0,1fr)] items-center gap-x-1.5 min-w-0">
                                 <span className="text-gray-700 dark:text-gray-200 truncate pr-1">{row.label}</span>
-                                <span className="font-semibold text-gray-900 dark:text-white justify-self-end text-right tabular-nums whitespace-nowrap">
-                                  {playerValue ?? '—'}
+                                <span className="font-semibold text-gray-900 dark:text-white justify-self-end text-right tabular-nums whitespace-nowrap text-[11px]">
+                                  {renderPlayerSeasonValueWithDisposalShare(row.playerStatKey) ?? '—'}
                                 </span>
                                 <span className="justify-self-start whitespace-nowrap">
                                   {playerRank ?? <span className="inline-block w-[3.5ch]" />}
@@ -4913,7 +4942,7 @@ export default function AFLPage() {
                         </div>
                       </div>
                       <div className="text-xs sm:text-sm min-w-0">
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] gap-x-1 xl:gap-x-2 mb-1">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_12ch_auto_auto_auto_minmax(0,1fr)] gap-x-1 xl:gap-x-2 mb-1">
                           <span className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400 text-left">Player season avg</span>
                           <span />
                           <span />
@@ -4928,10 +4957,10 @@ export default function AFLPage() {
                             const playerRank = playerValue != null ? renderPlayerTeamRank(row.playerRankKey) : null;
                             const opponentRank = opponentValue != null ? renderOpponentTeamRank(row.opponentStatCode) : null;
                             return (
-                            <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_minmax(0,1fr)] items-center gap-x-1 xl:gap-x-2 min-w-0">
+                            <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] xl:grid-cols-[minmax(0,1fr)_12ch_auto_auto_auto_minmax(0,1fr)] items-center gap-x-1 xl:gap-x-2 min-w-0">
                               <span className="text-gray-700 dark:text-gray-200 text-left whitespace-nowrap truncate pr-1">{row.label}</span>
-                              <span className="font-semibold text-gray-900 dark:text-white justify-self-end w-[5ch] xl:w-[6ch] text-right tabular-nums whitespace-nowrap">
-                                {playerValue ?? '—'}
+                              <span className="font-semibold text-gray-900 dark:text-white justify-self-end w-[5ch] xl:w-[12ch] text-right tabular-nums whitespace-nowrap text-[11px] xl:text-xs">
+                                {renderPlayerSeasonValueWithDisposalShare(row.playerStatKey) ?? '—'}
                               </span>
                               <span className="justify-self-start whitespace-nowrap">
                                 {playerRank ?? <span className="inline-block w-[3.5ch] xl:w-[4ch]" />}
