@@ -21,6 +21,7 @@ import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, formatOdds } from '@/lib/currencyUtils';
 import { cachedFetch } from '@/lib/requestCache';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
+import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import Image from 'next/image';
 
 interface Game {
@@ -376,6 +377,9 @@ const BATCH_DELAY_MS = 500;
 const ODDS_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
 const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
+const PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX = 'props-next-sport-survey-v1';
+const NEXT_SPORT_SURVEY_OPTIONS = ['Tennis', 'Soccer', 'MLB', 'Esports'] as const;
+type NextSportSurveyOption = (typeof NEXT_SPORT_SURVEY_OPTIONS)[number];
 const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   WSH: 'WAS',
   GS: 'GSW',
@@ -395,6 +399,7 @@ const AFL_TEAM_LOGOS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 export default function NBALandingPage() {
   const router = useRouter();
   const { isDark, theme, setTheme } = useTheme();
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -618,6 +623,14 @@ export default function NBALandingPage() {
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+  const [selectedSurveySport, setSelectedSurveySport] = useState<NextSportSurveyOption | null>(null);
+  const [surveySubmitting, setSurveySubmitting] = useState(false);
+  const [surveyError, setSurveyError] = useState<string | null>(null);
+  const surveyStorageKey = useMemo(
+    () => viewerId ? `${PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX}:${viewerId}` : null,
+    [viewerId]
+  );
 
   // Reset "user modified" flag when leaving AFL-only filter mode.
   useEffect(() => {
@@ -940,6 +953,7 @@ export default function NBALandingPage() {
       
       if (!session?.user) {
         if (isMounted) {
+          setViewerId(null);
           setSubscriptionChecked(true);
           setTimeout(() => {
             router.push('/login?redirect=/props');
@@ -964,6 +978,7 @@ export default function NBALandingPage() {
         const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
         const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
         const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null;
+        setViewerId(session.user.id);
         setUserEmail(session.user.email || null);
         setUsername(displayName);
         setAvatarUrl(avatarFromProfile);
@@ -996,6 +1011,7 @@ export default function NBALandingPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         if (isMounted) {
+          setViewerId(null);
           setIsPro(false);
           router.push('/login?redirect=/props');
         }
@@ -1016,6 +1032,92 @@ export default function NBALandingPage() {
       router.replace('/home#pricing');
     }
   }, [subscriptionChecked, isPro, gamesLoading, router]);
+
+  useEffect(() => {
+    if (!mounted || !subscriptionChecked || !isPro || !surveyStorageKey) {
+      return;
+    }
+
+    try {
+      const savedVote = localStorage.getItem(surveyStorageKey);
+      if (savedVote) {
+        setSurveyOpen(false);
+        return;
+      }
+    } catch {
+      // Ignore storage errors and show the survey.
+    }
+
+    setSurveyOpen(true);
+  }, [mounted, subscriptionChecked, isPro, surveyStorageKey]);
+
+  useEffect(() => {
+    if (!surveyOpen || typeof document === 'undefined') {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [surveyOpen]);
+
+  const handleNextSportSurveySubmit = useCallback(async () => {
+    if (!selectedSurveySport || surveySubmitting) {
+      return;
+    }
+
+    setSurveySubmitting(true);
+    setSurveyError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('Please sign in again and try once more.');
+      }
+
+      const response = await fetch('/api/props-sport-survey', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          selectedSport: selectedSurveySport,
+          sourcePage: 'props',
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to submit vote');
+      }
+
+      if (surveyStorageKey) {
+        try {
+          localStorage.setItem(
+            surveyStorageKey,
+            JSON.stringify({
+              selectedSport: selectedSurveySport,
+              submittedAt: new Date().toISOString(),
+            })
+          );
+        } catch {
+          // Ignore storage errors after a successful submit.
+        }
+      }
+
+      setSurveyOpen(false);
+    } catch (error) {
+      setSurveyError(error instanceof Error ? error.message : 'Could not save your vote. Please try again.');
+    } finally {
+      setSurveySubmitting(false);
+    }
+  }, [selectedSurveySport, surveyStorageKey, surveySubmitting]);
 
   // Fetch games (today plus nearby) to keep props-linked games selected across date boundaries
   // OPTIMIZATION: Pre-fetch games immediately and cache them for dashboard
@@ -7784,6 +7886,113 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </button>
+      )}
+
+      {surveyOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-md rounded-3xl border shadow-2xl ${
+              mounted && isDark ? 'bg-[#081525]/95 border-slate-700/80' : 'bg-white/95 border-gray-200'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="props-next-sport-survey-title"
+          >
+            <div className="p-5 sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${
+                    mounted && isDark ? 'border-slate-700 bg-slate-900/80' : 'border-gray-200 bg-gray-50'
+                  }`}>
+                    <StatTrackrLogo className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      mounted && isDark ? 'text-purple-300/80' : 'text-purple-600'
+                    }`}>
+                      Quick Poll
+                    </div>
+                    <h2
+                      id="props-next-sport-survey-title"
+                      className={`mt-1 text-[28px] leading-none font-semibold ${
+                        mounted && isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      We Want Your Say
+                    </h2>
+                  </div>
+                </div>
+              </div>
+
+              <p className={`mt-4 text-sm sm:text-[15px] leading-6 ${mounted && isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                What sport do you want to see on stattrackr next?
+              </p>
+
+              <div className="mt-5 grid grid-cols-1 gap-2.5">
+                {NEXT_SPORT_SURVEY_OPTIONS.map((option) => {
+                  const isSelected = selectedSurveySport === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSurveySport(option);
+                        setSurveyError(null);
+                      }}
+                      className={`group w-full rounded-2xl border px-4 py-3.5 text-left text-sm font-medium transition-all ${
+                        isSelected
+                          ? mounted && isDark
+                            ? 'border-purple-400/80 bg-purple-500/12 text-white shadow-[0_0_0_1px_rgba(168,85,247,0.18)]'
+                            : 'border-purple-400 bg-purple-50 text-gray-900 shadow-[0_0_0_1px_rgba(168,85,247,0.12)]'
+                          : mounted && isDark
+                            ? 'border-slate-700 bg-slate-900/55 text-slate-200 hover:border-slate-500 hover:bg-slate-900/80'
+                            : 'border-gray-200 bg-gray-50/90 text-gray-800 hover:border-purple-200 hover:bg-white'
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{option}</span>
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
+                            isSelected
+                              ? 'border-purple-400 bg-purple-500 text-white'
+                              : mounted && isDark
+                                ? 'border-slate-500 text-transparent group-hover:border-slate-400'
+                                : 'border-gray-300 text-transparent group-hover:border-purple-300'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+                            <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.42l-7.2 7.2a1 1 0 01-1.415 0l-3.2-3.2a1 1 0 111.414-1.42l2.493 2.494 6.493-6.494a1 1 0 011.415 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {surveyError && (
+                <p className="mt-4 text-sm text-red-500">
+                  {surveyError}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleNextSportSurveySubmit}
+                disabled={!selectedSurveySport || surveySubmitting}
+                className={`mt-5 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3.5 text-sm font-semibold transition ${
+                  !selectedSurveySport || surveySubmitting
+                    ? 'cursor-not-allowed bg-slate-400/60 text-white'
+                    : 'bg-gradient-to-r from-purple-600 to-violet-500 text-white hover:from-purple-500 hover:to-violet-400'
+                }`}
+              >
+                {surveySubmitting ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Find player modal */}
