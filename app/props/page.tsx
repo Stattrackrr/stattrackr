@@ -147,6 +147,7 @@ function TipoffCountdown({
   const [countdown, setCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
   const [isBeyond24h, setIsBeyond24h] = useState(false);
+  const liveWindowMs = 3 * 60 * 60 * 1000;
 
   useEffect(() => {
     if (!game) {
@@ -160,7 +161,11 @@ function TipoffCountdown({
     // First, try to use the datetime field from the game object (most reliable)
     if ((game as any).datetime) {
       const gameDateTime = new Date((game as any).datetime);
-      if (!Number.isNaN(gameDateTime.getTime()) && gameDateTime.getTime() > now) {
+      if (
+        !Number.isNaN(gameDateTime.getTime()) &&
+        gameDateTime.getTime() > now - liveWindowMs &&
+        gameDateTime.getTime() < now + (7 * 24 * 60 * 60 * 1000)
+      ) {
         tipoffDate = gameDateTime;
       }
     }
@@ -173,8 +178,12 @@ function TipoffCountdown({
         // Check if it's at midnight (00:00:00) - if so, it's just a date placeholder, not the actual game time
         const isMidnight = parsedStatus.getUTCHours() === 0 && parsedStatus.getUTCMinutes() === 0 && parsedStatus.getUTCSeconds() === 0;
         
-        // Only use if it's in the future and NOT midnight (midnight means it's just a date, not actual game time)
-        if (parsedStatus.getTime() > now && !isMidnight && parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)) {
+        // Allow a recently-passed tipoff so the props page can still show LIVE after bounce.
+        if (
+          parsedStatus.getTime() > now - liveWindowMs &&
+          !isMidnight &&
+          parsedStatus.getTime() < now + (7 * 24 * 60 * 60 * 1000)
+        ) {
           tipoffDate = parsedStatus;
         }
       }
@@ -226,8 +235,9 @@ function TipoffCountdown({
       }
     }
     
-    if (!tipoffDate || tipoffDate.getTime() <= now) {
+    if (!tipoffDate || tipoffDate.getTime() <= now - liveWindowMs) {
       setCountdown(null);
+      setIsGameInProgress(false);
       return;
     }
 
@@ -238,9 +248,8 @@ function TipoffCountdown({
       setIsBeyond24h(diff > 24 * 60 * 60 * 1000);
       
       // Check if game is in progress (started within last 3 hours)
-      const threeHoursMs = 3 * 60 * 60 * 1000;
       const timeSinceTipoff = now - tipoff;
-      const gameIsLive = timeSinceTipoff > 0 && timeSinceTipoff < threeHoursMs;
+      const gameIsLive = timeSinceTipoff > 0 && timeSinceTipoff < liveWindowMs;
       
       setIsGameInProgress(gameIsLive);
       
@@ -264,13 +273,13 @@ function TipoffCountdown({
 
   if (isGameInProgress) {
     return (
-      <div className="inline-flex items-center justify-center w-[84px] h-16 rounded-xl border-2"
+      <div className="inline-flex items-center justify-center w-[84px] h-16 rounded-xl border-2 animate-live-badge-pulse-green"
         style={{
-          background: 'linear-gradient(145deg, #22c55e, #16a34a)',
-          borderColor: '#4ade80',
-          boxShadow: '0 0 14px #22c55e80, 0 0 7px #16a34a55, inset 0 1px 0 #86efac55',
+          background: 'linear-gradient(145deg, rgba(34, 197, 94, 0.72), rgba(22, 163, 74, 0.62))',
+          borderColor: 'rgba(74, 222, 128, 0.58)',
+          boxShadow: '0 0 10px rgba(34, 197, 94, 0.35), 0 0 5px rgba(22, 163, 74, 0.22), inset 0 1px 0 rgba(134, 239, 172, 0.18)',
         }}>
-        <span className="text-xs font-semibold text-white">LIVE</span>
+        <span className="text-xs font-semibold text-red-500 animate-live-pulse-red">LIVE</span>
       </div>
     );
   }

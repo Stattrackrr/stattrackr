@@ -1718,14 +1718,17 @@ export default function AFLPage() {
               : '';
           const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
           const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
-          const gameDateForProps = tipoffValid ? tipoffValid.toISOString().split('T')[0] : '';
-          const nextGameIdFromApi = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : '';
+          const preserveLiveGame = shouldPreserveLiveAflGame(nextGameTipoff, tipoffValid);
+          const effectiveTipoff = preserveLiveGame ? nextGameTipoff : tipoffValid;
+          const effectiveOpponent = preserveLiveGame ? (nextGameOpponent ?? opponent) : opponent;
+          const effectiveGameId = preserveLiveGame ? (nextGameId ?? '') : (typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : '');
+          const gameDateForProps = effectiveTipoff ? effectiveTipoff.toISOString().split('T')[0] : '';
           if (!cancelled) {
-            if (nextGameIdFromApi && nextGameIdFromApi !== nextGameId) setNextGameId(nextGameIdFromApi);
-            if (opponent && opponent !== nextGameOpponent) setNextGameOpponent(opponent);
-            if (tipoffValid && tipoffValid.getTime() !== nextGameTipoff?.getTime()) setNextGameTipoff(tipoffValid);
+            if (!preserveLiveGame && effectiveGameId && effectiveGameId !== nextGameId) setNextGameId(effectiveGameId);
+            if (!preserveLiveGame && effectiveOpponent && effectiveOpponent !== nextGameOpponent) setNextGameOpponent(effectiveOpponent);
+            if (!preserveLiveGame && effectiveTipoff && effectiveTipoff.getTime() !== nextGameTipoff?.getTime()) setNextGameTipoff(effectiveTipoff);
           }
-          return { opponent, gameDateForProps, nextGameIdFromApi };
+          return { opponent: effectiveOpponent, gameDateForProps, nextGameIdFromApi: effectiveGameId };
         });
     };
 
@@ -3169,6 +3172,15 @@ export default function AFLPage() {
     });
   }, [aflPropsMode, aflTeamGamePropsLogs, aflGamePropsVsTeamFilter]);
 
+  const AFL_MATCH_DURATION_MS = 3.5 * 60 * 60 * 1000;
+  const shouldPreserveLiveAflGame = (currentTipoff: Date | null, incomingTipoff: Date | null) => {
+    if (!currentTipoff || !incomingTipoff) return false;
+    const now = Date.now();
+    const currentMs = currentTipoff.getTime();
+    const incomingMs = incomingTipoff.getTime();
+    return now >= currentMs && now < currentMs + AFL_MATCH_DURATION_MS && incomingMs > currentMs;
+  };
+
   // Fetch next game (fixture scrape) for the current context team in Game Props,
   // or the selected player's team in Player Props.
   // Use prefetch from sessionStorage (props page) so opponent shows immediately and no re-render when API returns same data.
@@ -3230,8 +3242,9 @@ export default function AFLPage() {
         const tipoff = data?.next_game_tipoff && typeof data.next_game_tipoff === 'string' ? new Date(data.next_game_tipoff) : null;
         const tipoffValid = tipoff && Number.isFinite(tipoff.getTime()) ? tipoff : null;
         const gameId = typeof data?.next_game_id === 'string' && data.next_game_id ? data.next_game_id : null;
+        const preserveLiveGame = shouldPreserveLiveAflGame(nextGameTipoff, tipoffValid);
         const weatherRaw = data?.next_game_weather as Record<string, unknown> | null | undefined;
-        setNextGameId(gameId);
+        if (!preserveLiveGame) setNextGameId(gameId);
         setNextGameWeather(
           weatherRaw
             ? {
@@ -3242,7 +3255,7 @@ export default function AFLPage() {
             : null
         );
         const prev = nextGameFromFetchRef.current;
-        if (prev.opponent !== opp || (prev.tipoff?.getTime() !== tipoffValid?.getTime())) {
+        if (!preserveLiveGame && (prev.opponent !== opp || (prev.tipoff?.getTime() !== tipoffValid?.getTime()))) {
           setNextGameOpponent(opp);
           setNextGameTipoff(tipoffValid);
           nextGameFromFetchRef.current = { opponent: opp, tipoff: tipoffValid };
@@ -3264,7 +3277,6 @@ export default function AFLPage() {
   }, [selectedPlayer?.name, selectedPlayer?.last_round, lastRoundFromLogs, season, teamContextTeam]);
 
   // Mark game as in progress when tipoff has passed and within ~3.5h (AFL match duration)
-  const AFL_MATCH_DURATION_MS = 3.5 * 60 * 60 * 1000;
   useEffect(() => {
     if (!nextGameTipoff) {
       setIsGameInProgress(false);
@@ -3472,7 +3484,7 @@ export default function AFLPage() {
                                   </div>
                                 ) : displayOpponent && isGameInProgress ? (
                                   <div className="flex flex-col items-center flex-shrink-0 min-w-0">
-                                    <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400">LIVE</div>
+                                    <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 animate-live-pulse-green">LIVE</div>
                                   </div>
                                 ) : displayOpponent && nextGameTipoff ? (
                                   <div className="flex flex-col items-center flex-shrink-0 min-w-0">
@@ -3669,7 +3681,7 @@ export default function AFLPage() {
                                       </div>
                                     ) : displayOpponent && isGameInProgress ? (
                                       <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
-                                        <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap">LIVE</div>
+                                        <div className="text-xs font-semibold text-green-600 dark:text-green-400 whitespace-nowrap animate-live-pulse-green">LIVE</div>
                                       </div>
                                     ) : displayOpponent && nextGameTipoff ? (
                                       <div className="ml-2 pl-2 border-l border-gray-300 dark:border-gray-600 flex-shrink-0">
