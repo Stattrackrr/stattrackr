@@ -380,6 +380,7 @@ const NOTIFICATION_STORAGE_KEY = 'stattrackr-notifications';
 const PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX = 'props-next-sport-survey-v1';
 const NEXT_SPORT_SURVEY_OPTIONS = ['Tennis', 'Soccer', 'MLB', 'Esports'] as const;
 type NextSportSurveyOption = (typeof NEXT_SPORT_SURVEY_OPTIONS)[number];
+const PROPS_NEXT_SPORT_SURVEY_ENDS_AT = '2026-04-14T01:19:00.000Z';
 const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   WSH: 'WAS',
   GS: 'GSW',
@@ -631,6 +632,18 @@ export default function NBALandingPage() {
     () => viewerId ? `${PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX}:${viewerId}` : null,
     [viewerId]
   );
+  const surveyEndsAtLabel = useMemo(() => {
+    const parsed = new Date(PROPS_NEXT_SPORT_SURVEY_ENDS_AT);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }, []);
+  const isSurveyClosed = useMemo(() => Date.now() >= Date.parse(PROPS_NEXT_SPORT_SURVEY_ENDS_AT), []);
 
   // Reset "user modified" flag when leaving AFL-only filter mode.
   useEffect(() => {
@@ -1034,22 +1047,74 @@ export default function NBALandingPage() {
   }, [subscriptionChecked, isPro, gamesLoading, router]);
 
   useEffect(() => {
-    if (!mounted || !subscriptionChecked || !isPro || !surveyStorageKey) {
+    if (!mounted || !subscriptionChecked || !isPro || !surveyStorageKey || !viewerId) {
       return;
     }
 
-    try {
-      const savedVote = localStorage.getItem(surveyStorageKey);
-      if (savedVote) {
-        setSurveyOpen(false);
-        return;
-      }
-    } catch {
-      // Ignore storage errors and show the survey.
+    if (isSurveyClosed) {
+      setSurveyOpen(false);
+      return;
     }
 
-    setSurveyOpen(true);
-  }, [mounted, subscriptionChecked, isPro, surveyStorageKey]);
+    let cancelled = false;
+
+    const checkSurveyStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
+        if (!accessToken || cancelled) {
+          return;
+        }
+
+        const response = await fetch('/api/props-sport-survey?view=status', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          credentials: 'include',
+        });
+
+        const payload = await response.json().catch(() => null);
+        const hasAnswered = Boolean(payload?.hasAnswered);
+        const selectedSport = payload?.selectedSport;
+
+        if (surveyStorageKey && hasAnswered && selectedSport && typeof selectedSport === 'string') {
+          try {
+            localStorage.setItem(
+              surveyStorageKey,
+              JSON.stringify({
+                selectedSport,
+                submittedAt: payload?.answeredAt ?? new Date().toISOString(),
+              })
+            );
+          } catch {
+            // Ignore storage errors.
+          }
+        }
+
+        if (!cancelled) {
+          setSurveyOpen(!hasAnswered && !Boolean(payload?.isClosed));
+        }
+      } catch {
+        try {
+          const savedVote = localStorage.getItem(surveyStorageKey);
+          if (!cancelled) {
+            setSurveyOpen(!savedVote);
+          }
+        } catch {
+          if (!cancelled) {
+            setSurveyOpen(true);
+          }
+        }
+      }
+    };
+
+    checkSurveyStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, subscriptionChecked, isPro, surveyStorageKey, viewerId, isSurveyClosed]);
 
   useEffect(() => {
     if (!surveyOpen || typeof document === 'undefined') {
@@ -7927,6 +7992,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               <p className={`mt-4 text-sm sm:text-[15px] leading-6 ${mounted && isDark ? 'text-slate-300' : 'text-gray-600'}`}>
                 What sport do you want to see on stattrackr next?
               </p>
+              {surveyEndsAtLabel && (
+                <p className={`mt-2 text-xs sm:text-[13px] ${mounted && isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Survey closes in 36 hours on {surveyEndsAtLabel}.
+                </p>
+              )}
 
               <div className="mt-5 grid grid-cols-1 gap-2.5">
                 {NEXT_SPORT_SURVEY_OPTIONS.map((option) => {
