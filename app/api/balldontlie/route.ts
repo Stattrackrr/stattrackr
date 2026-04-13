@@ -2,6 +2,15 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import cache, { CACHE_TTL, getCacheKey } from '@/lib/cache';
+import { checkRateLimitAsync, strictRateLimiter } from '@/lib/rateLimit';
+
+const ALLOWED_BDL_ENDPOINTS = new Set(['/players']);
+
+function getBdlApiKey(): string {
+  const raw = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+  if (!raw) return '';
+  return raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -10,6 +19,20 @@ export async function GET(request: NextRequest) {
   const endpoint = searchParams.get('endpoint');
   if (!endpoint) {
     return NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
+  }
+
+  if (!ALLOWED_BDL_ENDPOINTS.has(endpoint)) {
+    return NextResponse.json({ error: 'Unsupported endpoint' }, { status: 400 });
+  }
+
+  const rateLimitResult = await checkRateLimitAsync(request, {
+    keyPrefix: 'balldontlie-proxy',
+    maxRequests: process.env.NODE_ENV === 'development' ? 120 : 30,
+    windowMs: 60 * 1000,
+    fallbackLimiter: strictRateLimiter,
+  });
+  if (!rateLimitResult.allowed && rateLimitResult.response) {
+    return rateLimitResult.response;
   }
 
   // Remove the endpoint param and forward the rest
@@ -42,8 +65,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'StatTrackr/1.0',
-        // Some endpoints don't require auth; include only if configured
-        ...(process.env.BALLDONTLIE_API_KEY ? { 'Authorization': `Bearer ${process.env.BALLDONTLIE_API_KEY}` } : {}),
+        ...(getBdlApiKey() ? { 'Authorization': getBdlApiKey() } : {}),
       },
     });
 

@@ -32,7 +32,11 @@ export function validateEnv(): void {
   const missing: string[] = [];
   
   for (const [key, description] of Object.entries(REQUIRED_ENV_VARS)) {
-    if (!process.env[key]) {
+    const value =
+      key === 'BALLDONTLIE_API_KEY'
+        ? (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY)
+        : process.env[key];
+    if (!value) {
       missing.push(`${key} (${description})`);
     }
   }
@@ -51,7 +55,10 @@ export function validateEnv(): void {
  * Throws if required variable is missing
  */
 export function getEnv(key: keyof typeof REQUIRED_ENV_VARS): string {
-  const value = process.env[key];
+  const value =
+    key === 'BALLDONTLIE_API_KEY'
+      ? (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY)
+      : process.env[key];
   
   // Only throw on server-side or during build - client side might not have process.env
   if (!value && typeof window === 'undefined') {
@@ -107,13 +114,7 @@ if (typeof window === 'undefined' && process.env.NEXT_PHASE !== 'phase-productio
   } catch (error) {
     console.error('❌ Environment validation failed:');
     console.error(error);
-    // Don't throw during build or deployment - just warn
-    // The app will fail gracefully when trying to use missing env vars
-    if (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1') {
-      // During Vercel deployment, don't throw - let it deploy and fail at runtime if needed
-      console.warn('⚠️ Environment validation failed but continuing deployment');
-    } else if (process.env.NODE_ENV === 'production') {
-      // Only throw in production if not on Vercel
+    if (process.env.NODE_ENV === 'production') {
       throw error;
     }
   }

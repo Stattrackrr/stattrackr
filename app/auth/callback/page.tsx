@@ -6,6 +6,22 @@ import { supabase } from "@/lib/supabaseClient";
 
 const DEFAULT_NEXT = "/home";
 
+function getSafeNextPath(rawNext: string | null): string {
+  if (!rawNext) return DEFAULT_NEXT;
+
+  // Only allow same-origin absolute paths.
+  if (!rawNext.startsWith("/")) return DEFAULT_NEXT;
+  if (rawNext.startsWith("//")) return DEFAULT_NEXT;
+
+  try {
+    const url = new URL(rawNext, window.location.origin);
+    if (url.origin !== window.location.origin) return DEFAULT_NEXT;
+    return `${url.pathname}${url.search}${url.hash}` || DEFAULT_NEXT;
+  } catch {
+    return DEFAULT_NEXT;
+  }
+}
+
 function AuthCallbackLoading() {
   return (
     <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
@@ -29,7 +45,7 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const run = async () => {
-      const next = new URLSearchParams(window.location.search).get("next") || DEFAULT_NEXT;
+      const next = getSafeNextPath(new URLSearchParams(window.location.search).get("next"));
       const hash = typeof window !== "undefined" ? window.location.hash : "";
       const params = new URLSearchParams(hash.replace(/^#/, ""));
       const accessToken = params.get("access_token");
