@@ -74,6 +74,10 @@ export function getTrustedAppOrigin(options?: {
   if (allowedOrigins.length > 0) {
     return allowedOrigins[0];
   }
+
+  // Unreachable in practice because the empty allowlist case returns above,
+  // but keep an explicit fallback for TypeScript exhaustiveness.
+  return fallbackOrigin || 'http://localhost:3000';
 }
 
 export function buildTrustedAppUrl(
