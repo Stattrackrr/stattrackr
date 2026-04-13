@@ -54,6 +54,15 @@ export function getTrustedAppOrigin(options?: {
   const fallbackOrigin = normalizeOrigin(options?.fallbackOrigin);
   const allowedOrigins = getConfiguredOrigins();
 
+  if (allowedOrigins.length === 0) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'No trusted app origins are configured. Set NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_SITE_URL, VERCEL_URL, or ALLOWED_APP_ORIGINS.'
+      );
+    }
+    return fallbackOrigin || 'http://localhost:3000';
+  }
+
   if (requestedOrigin && allowedOrigins.includes(requestedOrigin)) {
     return requestedOrigin;
   }
@@ -65,12 +74,6 @@ export function getTrustedAppOrigin(options?: {
   if (allowedOrigins.length > 0) {
     return allowedOrigins[0];
   }
-
-  if (fallbackOrigin) {
-    return fallbackOrigin;
-  }
-
-  return 'http://localhost:3000';
 }
 
 export function buildTrustedAppUrl(

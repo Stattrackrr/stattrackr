@@ -203,67 +203,6 @@ export default function HomePage() {
     }
   }, [isCheckingSubscription, user, hasPremium, router]);
 
-  // While showing StatTrackr loading (checking subscription or pro redirecting), prefetch props caches
-  // so when user lands on /props they see data immediately from sessionStorage
-  useEffect(() => {
-    const showLoading = isCheckingSubscription || (user && hasPremium);
-    if (!showLoading || typeof window === 'undefined') return;
-
-    const CACHE_KEY = 'nba-player-props-cache';
-    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
-    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
-
-    const prefetchNba = async () => {
-      try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        const ts = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
-        if (cached && ts && Date.now() - parseInt(ts, 10) < CACHE_TTL_MS) return;
-        const res = await fetch('/api/nba/player-props', { cache: 'force-cache' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.data));
-            sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    const prefetchGames = async () => {
-      try {
-        const today = new Date();
-        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
-        const key = `dashboard-games-${start}-${end}`;
-        const cached = sessionStorage.getItem(key);
-        const ts = sessionStorage.getItem(`${key}-timestamp`);
-        if (cached && ts && Date.now() - parseInt(ts, 10) < 30 * 60 * 1000) return;
-        const res = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-            sessionStorage.setItem(key, JSON.stringify(data.data));
-            sessionStorage.setItem(`${key}-timestamp`, Date.now().toString());
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    // Warm AFL list API so props page AFL tab loads fast (sessionStorage filled by props page when they open AFL)
-    const prefetchAfl = () => {
-      fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
-    };
-
-    router.prefetch('/props');
-    prefetchNba();
-    prefetchGames();
-    prefetchAfl();
-  }, [isCheckingSubscription, user, hasPremium, router]);
-
   useEffect(() => {
     const lg = 1024;
     const update = () => setIsMobileViewport(typeof window !== 'undefined' && window.innerWidth < lg);

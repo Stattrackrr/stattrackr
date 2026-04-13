@@ -1280,9 +1280,10 @@ async function processPlayerPropsCore(request: NextRequest) {
         processedCount: propsWithStats.length,
       };
       cache.set(checkpointKey, checkpointData, 60); // 1 hour TTL
-      await setNBACache(checkpointKey, 'checkpoint', checkpointData, 60, false).catch(() => {
-        // Ignore checkpoint save errors - not critical
-      });
+      const checkpointSaved = await setNBACache(checkpointKey, 'checkpoint', checkpointData, 60, false);
+      if (!checkpointSaved) {
+        console.warn(`[Player Props Process] Failed to persist checkpoint ${checkpointKey}; recovery across instances may be unavailable`);
+      }
       
       // Increased delay between batches to reduce rate limiting
       if (i + BATCH_SIZE < uniqueProps.length) {

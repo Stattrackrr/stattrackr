@@ -15,6 +15,15 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Only create client if credentials are available (fail gracefully if not)
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+const nbaCacheWarnings = new Set<string>();
+
+function warnNbaCache(context: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  const key = `${context}:${message}`;
+  if (nbaCacheWarnings.has(key)) return;
+  nbaCacheWarnings.add(key);
+  console.warn(`[NBA Cache] ${context}:`, error);
+}
 
 if (supabaseUrl && supabaseServiceKey) {
   try {
@@ -25,7 +34,7 @@ if (supabaseUrl && supabaseServiceKey) {
       }
     });
   } catch (error: any) {
-    // Failed to initialize - will use in-memory cache only
+    warnNbaCache('Failed to initialize Supabase cache client; using in-memory fallback', error);
   }
 }
 
@@ -187,7 +196,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
         });
         return cacheEntry.data as T;
       } catch (restError: any) {
-        // REST API error, fall through to JS client as fallback
+        if (!quiet) {
+          warnNbaCache(`REST cache read failed for ${cacheKey}; falling back to JS client`, restError);
+        }
       }
     }
     
@@ -206,7 +217,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     const result = await Promise.race([queryPromise, timeoutPromise]);
 
     if (result === null) {
-      // Timeout - Supabase is too slow, skip it and use in-memory cache
+      if (!quiet) {
+        warnNbaCache(`Supabase JS cache read timed out for ${cacheKey}; using in-memory fallback`, new Error(`timeout after ${jsTimeoutMs}ms`));
+      }
       return null;
     }
 
@@ -281,7 +294,9 @@ export async function getNBACache<T = any>(cacheKey: string, options: GetCacheOp
     });
     return dataToReturn;
   } catch (error: any) {
-    // Fail gracefully - return null so in-memory cache can be used
+    if (!quiet) {
+      warnNbaCache(`Unexpected cache read failure for ${cacheKey}; using in-memory fallback`, error);
+    }
     return null;
   }
   })();
@@ -337,6 +352,9 @@ export async function setNBACache(
       });
 
     if (error) {
+      if (!quiet) {
+        warnNbaCache(`Failed to persist cache key ${cacheKey}`, error);
+      }
       return false;
     }
 
@@ -350,7 +368,9 @@ export async function setNBACache(
     });
     return true;
   } catch (error: any) {
-    // Fail gracefully - in-memory cache will still work
+    if (!quiet) {
+      warnNbaCache(`Unexpected cache write failure for ${cacheKey}`, error);
+    }
     return false;
   }
 }
