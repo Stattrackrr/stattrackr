@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { currentNbaSeason } from '@/lib/nbaConstants';
 
 export async function GET(
   request: NextRequest,
@@ -8,11 +9,16 @@ export async function GET(
     const { id } = await params;
     
     // Ball Don't Lie API endpoint for player stats
+    const season = currentNbaSeason();
+    const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
+    const authHeader = apiKey
+      ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`)
+      : '';
     const response = await fetch(
-      `https://api.balldontlie.io/v1/stats?player_ids[]=${id}&seasons[]=2024&per_page=100`,
+      `https://api.balldontlie.io/v1/stats?player_ids[]=${id}&seasons[]=${season}&per_page=100`,
       {
         headers: {
-          'Authorization': process.env.BALL_DONT_LIE_API_KEY || '',
+          ...(authHeader ? { 'Authorization': authHeader } : {}),
         },
       }
     );

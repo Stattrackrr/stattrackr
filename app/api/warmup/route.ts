@@ -3,6 +3,7 @@
  * Call this periodically to prevent cold starts
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cronAuth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,11 +14,16 @@ export async function GET(req: NextRequest) {
                    req.nextUrl.searchParams.get('warmup') === 'true';
 
   if (isWarmup) {
+    const authResult = authorizeCronRequest(req);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
+
     // Optionally warm up critical endpoints by making internal requests
     // This keeps the functions warm and caches populated
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                    'http://localhost:3000';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     // Warm up critical endpoints in parallel (non-blocking)
     const warmupPromises = [
