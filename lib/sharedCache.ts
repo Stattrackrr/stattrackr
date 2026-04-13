@@ -12,6 +12,14 @@
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const HAS_UPSTASH = !!(REST_URL && REST_TOKEN);
+const fallbackWarnings = new Set<string>();
+
+function warnSharedCacheFallback(operation: string, error: unknown): void {
+  const key = `${operation}:${error instanceof Error ? error.message : String(error)}`;
+  if (fallbackWarnings.has(key)) return;
+  fallbackWarnings.add(key);
+  console.warn(`[sharedCache] Falling back to in-memory cache during ${operation}:`, error);
+}
 
 // One-time dev hint when using in-memory fallback (AFL props etc. will be empty until populated)
 if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development' && !HAS_UPSTASH) {
@@ -63,8 +71,8 @@ export const sharedCache = {
                 : null;
         if (val == null || val === '') return null;
         try { return JSON.parse(val as string) as T; } catch { return null; }
-      } catch {
-        // fall back to memory on error
+      } catch (error) {
+        warnSharedCacheFallback('redis GET', error);
       }
     }
     // memory fallback
@@ -80,8 +88,8 @@ export const sharedCache = {
         // SET key value EX ttlSeconds
         await upstash(['SET', key, payload, 'EX', ttlSeconds]);
         return;
-      } catch {
-        // fall back to memory
+      } catch (error) {
+        warnSharedCacheFallback('redis SET', error);
       }
     }
     const exp = ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
@@ -91,30 +99,34 @@ export const sharedCache = {
   async clearKeysByPrefix(prefix: string): Promise<number> {
     const match = prefix.endsWith('*') ? prefix : `${prefix}*`;
     if (HAS_UPSTASH) {
-      let cursor: number | string = 0;
-      const keys: string[] = [];
-      const maxScans = 200;
-      let scans = 0;
-      do {
-        const raw = await upstash(['SCAN', String(cursor), 'MATCH', match, 'COUNT', 500]);
-        const res = raw != null && typeof raw === 'object' && 'result' in raw ? (raw as { result: unknown }).result : raw;
-        const arr = Array.isArray(res) ? res : [];
-        const next = arr[0];
-        const keyList = arr[1];
-        cursor = typeof next === 'string' ? next : next;
-        const nextNum = typeof cursor === 'string' ? parseInt(cursor, 10) : Number(cursor);
-        cursor = Number.isFinite(nextNum) ? nextNum : 0;
-        if (Array.isArray(keyList)) keys.push(...keyList.filter((k): k is string => typeof k === 'string'));
-        if (++scans >= maxScans) break;
-      } while (cursor !== 0);
-      let deleted = 0;
-      for (let i = 0; i < keys.length; i += 100) {
-        const batch = keys.slice(i, i + 100);
-        if (batch.length === 0) continue;
-        await upstash(['DEL', ...batch]);
-        deleted += batch.length;
+      try {
+        let cursor: number | string = 0;
+        const keys: string[] = [];
+        const maxScans = 200;
+        let scans = 0;
+        do {
+          const raw = await upstash(['SCAN', String(cursor), 'MATCH', match, 'COUNT', 500]);
+          const res = raw != null && typeof raw === 'object' && 'result' in raw ? (raw as { result: unknown }).result : raw;
+          const arr = Array.isArray(res) ? res : [];
+          const next = arr[0];
+          const keyList = arr[1];
+          cursor = typeof next === 'string' ? next : next;
+          const nextNum = typeof cursor === 'string' ? parseInt(cursor, 10) : Number(cursor);
+          cursor = Number.isFinite(nextNum) ? nextNum : 0;
+          if (Array.isArray(keyList)) keys.push(...keyList.filter((k): k is string => typeof k === 'string'));
+          if (++scans >= maxScans) break;
+        } while (cursor !== 0);
+        let deleted = 0;
+        for (let i = 0; i < keys.length; i += 100) {
+          const batch = keys.slice(i, i + 100);
+          if (batch.length === 0) continue;
+          await upstash(['DEL', ...batch]);
+          deleted += batch.length;
+        }
+        return deleted;
+      } catch (error) {
+        warnSharedCacheFallback('redis prefix clear', error);
       }
-      return deleted;
     }
     let deleted = 0;
     for (const key of memory.keys()) {
