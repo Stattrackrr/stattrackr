@@ -11,6 +11,7 @@ import {
   getAflDvpPayloadCacheKey,
   AFL_DVP_CACHE_TTL_SECONDS,
 } from '@/lib/aflDvpCache';
+import { warmCombinedPropsSnapshot } from '@/lib/combinedPropsSnapshot';
 import sharedCache from '@/lib/sharedCache';
 
 export const dynamic = 'force-dynamic';
@@ -184,6 +185,16 @@ export async function GET(request: NextRequest) {
           }
         } catch (e) {
           console.warn('[AFL cron] Enriched list prewarm failed:', e instanceof Error ? e.message : e);
+        }
+
+        try {
+          await warmCombinedPropsSnapshot({
+            origin: warmBaseUrl,
+            cronSecret: cronSecret || undefined,
+          });
+          console.log('[AFL cron] Combined props snapshot prewarm done');
+        } catch (e) {
+          console.warn('[AFL cron] Combined props snapshot prewarm failed:', e instanceof Error ? e.message : e);
         }
       }
     } catch (e) {
