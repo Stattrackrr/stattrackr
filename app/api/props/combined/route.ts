@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  buildCombinedPropsSnapshot,
+  getCombinedPropsSnapshot,
+  isCombinedPropsSnapshotStale,
+  warmCombinedPropsSnapshot,
+} from '@/lib/combinedPropsSnapshot';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,57 +15,54 @@ export async function GET(request: NextRequest) {
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
   const debugStats = request.nextUrl.searchParams.get('debugStats') === '1';
   const origin = request.nextUrl.origin;
-
-  const nbaUrl = new URL('/api/nba/player-props', origin);
-  const aflUrl = new URL('/api/afl/player-props/list', origin);
-
-  if (refresh) {
-    nbaUrl.searchParams.set('refresh', '1');
-    aflUrl.searchParams.set('refresh', '1');
-  }
-  if (debugStats) {
-    aflUrl.searchParams.set('debugStats', '1');
-  }
+  const cronSecret = request.headers.get('x-cron-secret') ?? undefined;
 
   try {
-    const [nbaResponse, aflResponse] = await Promise.all([
-      fetch(nbaUrl, {
-        cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-        },
-      }),
-      fetch(aflUrl, {
-        cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-        },
-      }),
-    ]);
+    if (!refresh && !debugStats) {
+      const cachedSnapshot = await getCombinedPropsSnapshot();
+      if (cachedSnapshot) {
+        const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
+        if (stale) {
+          void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
+            console.warn(
+              '[Props Combined] Background snapshot refresh failed:',
+              error instanceof Error ? error.message : error
+            );
+          });
+        }
 
-    const [nbaPayload, aflPayload] = await Promise.all([
-      nbaResponse.json().catch(() => null),
-      aflResponse.json().catch(() => null),
-    ]);
+        return NextResponse.json(
+          {
+            ...cachedSnapshot,
+            cachedSnapshot: true,
+            backgroundRefreshStarted: stale,
+          },
+          {
+            status: cachedSnapshot.success ? 200 : 502,
+            headers: {
+              'Cache-Control': COMBINED_CACHE_CONTROL,
+            },
+          }
+        );
+      }
+    }
 
-    const success = nbaResponse.ok && aflResponse.ok;
+    const snapshot = await buildCombinedPropsSnapshot({
+      origin,
+      refresh,
+      debugStats,
+      cronSecret,
+      writeCache: !debugStats,
+    });
 
     return NextResponse.json(
       {
-        success,
-        nba: {
-          ok: nbaResponse.ok,
-          status: nbaResponse.status,
-          payload: nbaPayload,
-        },
-        afl: {
-          ok: aflResponse.ok,
-          status: aflResponse.status,
-          payload: aflPayload,
-        },
+        ...snapshot,
+        cachedSnapshot: false,
+        backgroundRefreshStarted: false,
       },
       {
-        status: success ? 200 : 502,
+        status: snapshot.success ? 200 : 502,
         headers: {
           'Cache-Control': COMBINED_CACHE_CONTROL,
         },
