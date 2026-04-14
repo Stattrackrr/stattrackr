@@ -568,7 +568,9 @@ export default function NBALandingPage() {
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
+  const [combinedPropsLoading, setCombinedPropsLoading] = useState(false);
   const aflPropsFetchCompleteRef = useRef(false);
+  const combinedPropsFetchCompleteRef = useRef(false);
   const aflRetryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const aflListFetchInFlightRef = useRef<Promise<{
     games: AflGameForProps[];
@@ -583,6 +585,165 @@ export default function NBALandingPage() {
   const selectedAflGamesRef = useRef<Set<string>>(new Set());
   // If the user manually checks/unchecks games, don't let the async AFL list fetch overwrite their selection.
   const userModifiedAflGamesRef = useRef(false);
+
+  const mergeNbaPropsWithStoredCalculatedStats = useCallback((props: PlayerProp[]) => {
+    const calculatedMap = new Map<string, PlayerProp>();
+    const calculatedKeys: string[] = [];
+
+    if (typeof window === 'undefined') {
+      return { props, calculatedMap, calculatedKeys };
+    }
+
+    try {
+      const stored = sessionStorage.getItem('nba-player-props-calculated-stats');
+      if (!stored) return { props, calculatedMap, calculatedKeys };
+
+      const calculatedStats = JSON.parse(stored);
+      if (!Array.isArray(calculatedStats)) {
+        return { props, calculatedMap, calculatedKeys };
+      }
+
+      calculatedStats.forEach((prop: PlayerProp) => {
+        const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+        calculatedMap.set(key, prop);
+        calculatedKeys.push(key);
+      });
+
+      return {
+        props: props.map((prop: PlayerProp) => {
+          const key = `${prop.playerName}|${prop.statType}|${prop.opponent}|${prop.line}`;
+          const calculated = calculatedMap.get(key);
+          if (!calculated) return prop;
+
+          return {
+            ...prop,
+            h2hAvg: calculated.h2hAvg ?? prop.h2hAvg,
+            seasonAvg: calculated.seasonAvg ?? prop.seasonAvg,
+            h2hHitRate: calculated.h2hHitRate ?? prop.h2hHitRate,
+            seasonHitRate: calculated.seasonHitRate ?? prop.seasonHitRate,
+          };
+        }),
+        calculatedMap,
+        calculatedKeys,
+      };
+    } catch {
+      return { props, calculatedMap, calculatedKeys: [] };
+    }
+  }, []);
+
+  const aggregateAflListPayload = useCallback((listData: any) => {
+    const games: AflGameForProps[] = Array.isArray(listData?.games) ? listData.games : [];
+    const rows: any[] = Array.isArray(listData?.data) ? listData.data : [];
+    const keyToRow = new Map<string, {
+      playerName: string;
+      gameId: string;
+      homeTeam: string;
+      awayTeam: string;
+      playerTeam?: string | null;
+      statType: string;
+      line: number;
+      commenceTime: string;
+      bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>;
+      last5Avg?: number | null;
+      last10Avg?: number | null;
+      h2hAvg?: number | null;
+      seasonAvg?: number | null;
+      streak?: number | null;
+      last5HitRate?: { hits: number; total: number } | null;
+      last10HitRate?: { hits: number; total: number } | null;
+      h2hHitRate?: { hits: number; total: number } | null;
+      seasonHitRate?: { hits: number; total: number } | null;
+      dvpRating?: number | null;
+      dvpStatValue?: number | null;
+    }>();
+
+    for (const r of rows) {
+      const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
+      const existing = keyToRow.get(key);
+      const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
+      if (existing) {
+        existing.bookmakerLines.push(bl);
+      } else {
+        keyToRow.set(key, {
+          playerName: r.playerName,
+          gameId: r.gameId,
+          homeTeam: r.homeTeam,
+          awayTeam: r.awayTeam,
+          playerTeam: r.playerTeam ?? null,
+          statType: r.statType,
+          line: r.line,
+          commenceTime: r.commenceTime || '',
+          bookmakerLines: [bl],
+          last5Avg: r.last5Avg,
+          last10Avg: r.last10Avg,
+          h2hAvg: r.h2hAvg,
+          seasonAvg: r.seasonAvg,
+          streak: r.streak,
+          last5HitRate: r.last5HitRate,
+          last10HitRate: r.last10HitRate,
+          h2hHitRate: r.h2hHitRate,
+          seasonHitRate: r.seasonHitRate,
+          dvpRating: r.dvpRating,
+          dvpStatValue: r.dvpStatValue,
+        });
+      }
+    }
+
+    const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
+      const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
+      const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
+      const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
+      const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
+      const team = playerNorm || homeNorm;
+      const opponent = playerNorm
+        ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
+        : awayNorm;
+
+      return {
+        playerName: a.playerName,
+        playerId: '',
+        team,
+        opponent,
+        statType: a.statType,
+        line: a.line,
+        overProb: 0,
+        underProb: 0,
+        overOdds: a.bookmakerLines[0]?.overOdds ?? 'N/A',
+        underOdds: a.bookmakerLines[0]?.underOdds ?? 'N/A',
+        impliedOverProb: 0,
+        impliedUnderProb: 0,
+        bestLine: a.line,
+        bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
+        confidence: 'Medium',
+        gameDate: a.commenceTime,
+        bookmakerLines: a.bookmakerLines,
+        gameId: a.gameId,
+        homeTeam: a.homeTeam,
+        awayTeam: a.awayTeam,
+        last5Avg: a.last5Avg,
+        last10Avg: a.last10Avg,
+        h2hAvg: a.h2hAvg,
+        seasonAvg: a.seasonAvg,
+        streak: a.streak,
+        last5HitRate: a.last5HitRate,
+        last10HitRate: a.last10HitRate,
+        h2hHitRate: a.h2hHitRate,
+        seasonHitRate: a.seasonHitRate,
+        dvpRating: a.dvpRating,
+        dvpStatValue: a.dvpStatValue,
+      };
+    });
+
+    return {
+      games,
+      aggregated,
+      ingestMessage: typeof listData?.ingestMessage === 'string' ? listData.ingestMessage : undefined,
+      lastUpdated: typeof listData?.lastUpdated === 'string' ? listData.lastUpdated : undefined,
+      nextUpdate: typeof listData?.nextUpdate === 'string' ? listData.nextUpdate : undefined,
+      noAflOdds: listData?.noAflOdds === true,
+      debugMeta: listData?._meta as Record<string, unknown> | null | undefined,
+    };
+  }, []);
 
   const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
     const nextSet = new Set(nextGameIds);
@@ -760,6 +921,7 @@ export default function NBALandingPage() {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const sportParam = url.searchParams.get('sport');
+    let restoredNbaCache = false;
 
     // 1) Restore sport from URL when explicitly provided
     if (sportParam === 'nba') {
@@ -820,6 +982,7 @@ export default function NBALandingPage() {
             setPlayerProps(propsWithMergedStats);
             propsLoadedRef.current = true;
             setPropsLoading(false);
+            restoredNbaCache = true;
           }
         } catch {
           // ignore parse errors
@@ -886,6 +1049,12 @@ export default function NBALandingPage() {
       }
       aflPropsFetchCompleteRef.current = restoredAflCache;
       setAflPropsLoading(!restoredAflCache);
+      const requiresCombinedFirstPaint = (sportParam === null || sportParam === 'combined' || sportParam === 'all');
+      if (requiresCombinedFirstPaint) {
+        const restoredCombinedCache = restoredNbaCache && restoredAflCache;
+        combinedPropsFetchCompleteRef.current = restoredCombinedCache;
+        setCombinedPropsLoading(!restoredCombinedCache);
+      }
       // 5) AFL team logos cache for instant logo-only matchup rendering
       try {
         const logosRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
@@ -901,6 +1070,9 @@ export default function NBALandingPage() {
       } catch {
         // ignore
       }
+    } else {
+      combinedPropsFetchCompleteRef.current = false;
+      setCombinedPropsLoading(false);
     }
   }, []);
 
@@ -1278,83 +1450,7 @@ export default function NBALandingPage() {
         }
         const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
         const listData = await listRes.json();
-        const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
-        const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
-        for (const r of rows) {
-          const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
-          const existing = keyToRow.get(key);
-          const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
-          if (existing) {
-            existing.bookmakerLines.push(bl);
-          } else {
-            keyToRow.set(key, {
-              playerName: r.playerName,
-              gameId: r.gameId,
-              homeTeam: r.homeTeam,
-              awayTeam: r.awayTeam,
-              playerTeam: r.playerTeam ?? null,
-              statType: r.statType,
-              line: r.line,
-              commenceTime: r.commenceTime || '',
-              bookmakerLines: [bl],
-              last5Avg: r.last5Avg,
-              last10Avg: r.last10Avg,
-              h2hAvg: r.h2hAvg,
-              seasonAvg: r.seasonAvg,
-              streak: r.streak,
-              last5HitRate: r.last5HitRate,
-              last10HitRate: r.last10HitRate,
-              h2hHitRate: r.h2hHitRate,
-              seasonHitRate: r.seasonHitRate,
-              dvpRating: r.dvpRating,
-              dvpStatValue: r.dvpStatValue,
-            });
-          }
-        }
-        const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
-          const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-          const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
-          const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
-          const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
-          const team = playerNorm || homeNorm;
-          const opponent = playerNorm
-            ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
-            : awayNorm;
-          return {
-          playerName: a.playerName,
-          playerId: '',
-          team,
-          opponent,
-          statType: a.statType,
-          line: a.line,
-          overProb: 0,
-          underProb: 0,
-          overOdds: a.bookmakerLines[0]?.overOdds ?? 'N/A',
-          underOdds: a.bookmakerLines[0]?.underOdds ?? 'N/A',
-          impliedOverProb: 0,
-          impliedUnderProb: 0,
-          bestLine: a.line,
-          bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
-          confidence: 'Medium',
-          gameDate: a.commenceTime,
-          bookmakerLines: a.bookmakerLines,
-          gameId: a.gameId,
-          homeTeam: a.homeTeam,
-          awayTeam: a.awayTeam,
-          last5Avg: a.last5Avg,
-          last10Avg: a.last10Avg,
-          h2hAvg: a.h2hAvg,
-          seasonAvg: a.seasonAvg,
-          streak: a.streak,
-          last5HitRate: a.last5HitRate,
-          last10HitRate: a.last10HitRate,
-          h2hHitRate: a.h2hHitRate,
-          seasonHitRate: a.seasonHitRate,
-          dvpRating: a.dvpRating,
-          dvpStatValue: a.dvpStatValue,
-        };
-        });
+        const { games, aggregated } = aggregateAflListPayload(listData);
         if (listData.noAflOdds === true) {
           try {
             sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
@@ -1379,7 +1475,7 @@ export default function NBALandingPage() {
   // Fetch AFL games + player props when sport is AFL or combined. No sessionStorage paint: list API + no-store are source of truth (avoids stale Swans v Hawks after a game).
   // When API returns empty and we never got props this run, retry once after 2s (transient) before empty / delayed retries.
   useEffect(() => {
-    if (propsSport !== 'afl' && propsSport !== 'combined') return;
+    if (propsSport !== 'afl') return;
     let cancelled = false;
     let hadNonEmptyFresh = false;
     // Keep cached rows visible while we refresh in background.
@@ -1401,91 +1497,7 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
         if (!cancelled && !debugStats) setAflListDebugMeta(null);
-        const games: AflGameForProps[] = Array.isArray(listData.games) ? listData.games : [];
-        const rows: any[] = Array.isArray(listData.data) ? listData.data : [];
-        const keyToRow = new Map<string, { playerName: string; gameId: string; homeTeam: string; awayTeam: string; playerTeam?: string | null; statType: string; line: number; commenceTime: string; bookmakerLines: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>; last5Avg?: number | null; last10Avg?: number | null; h2hAvg?: number | null; seasonAvg?: number | null; streak?: number | null; last5HitRate?: { hits: number; total: number } | null; last10HitRate?: { hits: number; total: number } | null; h2hHitRate?: { hits: number; total: number } | null; seasonHitRate?: { hits: number; total: number } | null; dvpRating?: number | null; dvpStatValue?: number | null }>();
-        for (const r of rows) {
-          const key = `${r.playerName}|${r.gameId}|${r.statType}|${r.line}`;
-          const existing = keyToRow.get(key);
-          const bl = { bookmaker: r.bookmaker, line: r.line, overOdds: r.overOdds || 'N/A', underOdds: r.underOdds || 'N/A' };
-          if (existing) {
-            existing.bookmakerLines.push(bl);
-          } else {
-            keyToRow.set(key, {
-              playerName: r.playerName,
-              gameId: r.gameId,
-              homeTeam: r.homeTeam,
-              awayTeam: r.awayTeam,
-              playerTeam: r.playerTeam ?? null,
-              statType: r.statType,
-              line: r.line,
-              commenceTime: r.commenceTime || '',
-              bookmakerLines: [bl],
-              last5Avg: r.last5Avg,
-              last10Avg: r.last10Avg,
-              h2hAvg: r.h2hAvg,
-              seasonAvg: r.seasonAvg,
-              streak: r.streak,
-              last5HitRate: r.last5HitRate,
-              last10HitRate: r.last10HitRate,
-              h2hHitRate: r.h2hHitRate,
-              seasonHitRate: r.seasonHitRate,
-              dvpRating: r.dvpRating,
-              dvpStatValue: r.dvpStatValue,
-            });
-          }
-        }
-        const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
-          const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-          const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
-          const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
-          const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
-          const team = playerNorm || homeNorm;
-          const opponent = playerNorm
-            ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
-            : awayNorm;
-          return {
-            playerName: a.playerName,
-            playerId: '',
-            team,
-            opponent,
-            statType: a.statType,
-            line: a.line,
-            overProb: 0,
-            underProb: 0,
-            overOdds: a.bookmakerLines[0]?.overOdds ?? 'N/A',
-            underOdds: a.bookmakerLines[0]?.underOdds ?? 'N/A',
-            impliedOverProb: 0,
-            impliedUnderProb: 0,
-            bestLine: a.line,
-            bookmaker: a.bookmakerLines[0]?.bookmaker ?? '',
-            confidence: 'Medium',
-            gameDate: a.commenceTime,
-            bookmakerLines: a.bookmakerLines,
-            gameId: a.gameId,
-            homeTeam: a.homeTeam,
-            awayTeam: a.awayTeam,
-            last5Avg: a.last5Avg,
-            last10Avg: a.last10Avg,
-            h2hAvg: a.h2hAvg,
-            seasonAvg: a.seasonAvg,
-            streak: a.streak,
-            last5HitRate: a.last5HitRate,
-            last10HitRate: a.last10HitRate,
-            h2hHitRate: a.h2hHitRate,
-            seasonHitRate: a.seasonHitRate,
-            dvpRating: a.dvpRating,
-            dvpStatValue: a.dvpStatValue,
-          };
-        });
-        return {
-          games,
-          aggregated,
-          ingestMessage: typeof listData.ingestMessage === 'string' ? listData.ingestMessage : undefined,
-          lastUpdated: typeof listData.lastUpdated === 'string' ? listData.lastUpdated : undefined,
-          nextUpdate: typeof listData.nextUpdate === 'string' ? listData.nextUpdate : undefined,
-          noAflOdds: listData.noAflOdds === true,
-        };
+        return aggregateAflListPayload(listData);
       })();
       aflListFetchInFlightRef.current = requestPromise;
       try {
@@ -1861,12 +1873,148 @@ export default function NBALandingPage() {
     }
   };
 
+  useEffect(() => {
+    if (propsSport !== 'combined') return;
+
+    let cancelled = false;
+    const CACHE_KEY = 'nba-player-props-cache';
+    const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+
+    const applyCombinedPayload = (combinedPayload: any) => {
+      const nbaPayload = combinedPayload?.nba?.payload;
+      const aflPayload = combinedPayload?.afl?.payload;
+      const nbaRows = Array.isArray(nbaPayload?.data) ? nbaPayload.data as PlayerProp[] : [];
+      const mergedNba = mergeNbaPropsWithStoredCalculatedStats(nbaRows);
+      const aflResult = aggregateAflListPayload(aflPayload);
+
+      setPlayerProps(mergedNba.props);
+      propsLoadedRef.current = mergedNba.props.length > 0;
+      initialFetchCompletedRef.current = true;
+      setPropsWithCalculatedStats(mergedNba.calculatedMap);
+      mergedNba.calculatedKeys.forEach((key) => calculatedKeysRef.current.add(key));
+      setPropsLoading(false);
+      setPropsProcessing(false);
+      if (mergedNba.props.length > 0) {
+        const dataString = JSON.stringify(nbaRows);
+        if (safeSetSessionStorage(CACHE_KEY, dataString)) {
+          safeSetSessionStorage(CACHE_TIMESTAMP_KEY, Date.now().toString());
+        }
+      }
+
+      setAflGames(aflResult.games);
+      setAflProps(aflResult.aggregated);
+      setAflIngestMessage(aflResult.ingestMessage ?? null);
+      setAflLastUpdated(aflResult.lastUpdated ?? null);
+      if (aflResult.debugMeta) {
+        setAflListDebugMeta(aflResult.debugMeta);
+      } else {
+        setAflListDebugMeta(null);
+      }
+      if (aflResult.noAflOdds) {
+        try {
+          sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
+        } catch {
+          // Ignore
+        }
+        userModifiedAflGamesRef.current = false;
+        syncSelectedAflGames([]);
+      } else {
+        if (aflResult.games.length > 0) {
+          syncSelectedAflGames(aflResult.games.map((g) => g.gameId));
+        }
+        if (aflResult.aggregated.length > 0 || aflResult.games.length > 0) {
+          try {
+            sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
+              props: aflResult.aggregated,
+              games: aflResult.games,
+              selectedGameIds: getSelectedAflGameIdsForCache(
+                aflResult.games.length > 0 ? aflResult.games.map((g) => g.gameId) : []
+              ),
+              timestamp: Date.now(),
+            }));
+          } catch {
+            // Ignore cache write failures.
+          }
+        }
+      }
+      aflPropsFetchCompleteRef.current = true;
+      setAflPropsLoading(false);
+      combinedPropsFetchCompleteRef.current = true;
+      setCombinedPropsLoading(false);
+    };
+
+    const fetchCombinedProps = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const forceRefresh = urlParams.get('refresh') === '1';
+      const debugStats = urlParams.get('debugStats') === '1';
+      const hasWarmCombinedCache = propsLoadedRef.current && aflPropsFetchCompleteRef.current;
+
+      if (!hasWarmCombinedCache) {
+        setCombinedPropsLoading(true);
+        setPropsLoading(true);
+        setAflPropsLoading(true);
+      }
+
+      const params = new URLSearchParams();
+      if (forceRefresh) params.set('refresh', '1');
+      if (debugStats) params.set('debugStats', '1');
+      const combinedUrl = `/api/props/combined${params.toString() ? `?${params.toString()}` : ''}`;
+
+      try {
+        const response = await fetch(combinedUrl, { cache: 'no-store' });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success || !payload?.nba?.ok || !payload?.afl?.ok) {
+          throw new Error(payload?.error || 'Failed to load combined props');
+        }
+        if (cancelled) return;
+        applyCombinedPayload(payload);
+      } catch (error) {
+        if (cancelled) return;
+        console.warn('[Props] Combined payload fetch failed, falling back to direct parallel requests:', error);
+        try {
+          const [nbaResponse, aflResponse] = await Promise.all([
+            fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' }),
+            fetch(debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list', { cache: 'no-store' }),
+          ]);
+          const [nbaPayload, aflPayload] = await Promise.all([
+            nbaResponse.json().catch(() => null),
+            aflResponse.json().catch(() => null),
+          ]);
+          if (!nbaResponse.ok || !aflResponse.ok) {
+            throw new Error('Fallback combined props requests failed');
+          }
+          applyCombinedPayload({
+            nba: { ok: true, payload: nbaPayload },
+            afl: { ok: true, payload: aflPayload },
+          });
+        } catch (fallbackError) {
+          console.error('[Props] Failed to load combined props:', fallbackError);
+          combinedPropsFetchCompleteRef.current = false;
+          setCombinedPropsLoading(false);
+          setPropsLoading(false);
+          setAflPropsLoading(false);
+        }
+      }
+    };
+
+    void fetchCombinedProps();
+    return () => {
+      cancelled = true;
+    };
+  }, [aggregateAflListPayload, getSelectedAflGameIdsForCache, mergeNbaPropsWithStoredCalculatedStats, propsSport, syncSelectedAflGames]);
+
   // Fetch player props with good win chances from BDL
   useEffect(() => {
     // When page is opened directly in AFL mode, never run NBA props/polling side effects.
     const initialSportFromUrl =
       typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sport') : null;
-    if (propsSport === 'afl' || initialSportFromUrl === 'afl') {
+    if (propsSport !== 'nba' || initialSportFromUrl === 'afl') {
+      if (propsSport === 'afl' || initialSportFromUrl === 'afl') {
+        setPropsLoading(false);
+      }
+      if (propsSport === 'combined') {
+        return;
+      }
       setPropsLoading(false);
       return;
     }
@@ -5303,8 +5451,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   </details>
                 )}
                 
-                {activeFilteredCount === 0 ? (
-                    ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (propsLoading || aflPropsLoading))) ? (
+                {(propsSport === 'combined' && combinedPropsLoading) || activeFilteredCount === 0 ? (
+                    ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
                       <div className="hidden 2xl:block overflow-x-auto">

@@ -268,24 +268,15 @@ export async function GET(request: NextRequest) {
     };
     
     let cachedProps: any = null;
-    let part1Props: any = null;
-    let part2Props: any = null;
-    let part3Props: any = null;
-    
-    if (forceRefresh) {
-      // Force refresh: only check Supabase (bypass in-memory cache)
-      part1Props = await getNBACache<any>(part1CacheKey, cacheOptions);
-      part2Props = await getNBACache<any>(part2CacheKey, cacheOptions);
-      part3Props = await getNBACache<any>(part3CacheKey, cacheOptions);
-    } else {
-      // Check Supabase first, then in-memory cache
-      part1Props = await getNBACache<any>(part1CacheKey, cacheOptions);
+    let [part1Props, part2Props, part3Props] = await Promise.all([
+      getNBACache<any>(part1CacheKey, cacheOptions),
+      getNBACache<any>(part2CacheKey, cacheOptions),
+      getNBACache<any>(part3CacheKey, cacheOptions),
+    ]);
+
+    if (!forceRefresh) {
       if (!part1Props) part1Props = cache.get<any>(part1CacheKey);
-      
-      part2Props = await getNBACache<any>(part2CacheKey, cacheOptions);
       if (!part2Props) part2Props = cache.get<any>(part2CacheKey);
-      
-      part3Props = await getNBACache<any>(part3CacheKey, cacheOptions);
       if (!part3Props) part3Props = cache.get<any>(part3CacheKey);
     }
     

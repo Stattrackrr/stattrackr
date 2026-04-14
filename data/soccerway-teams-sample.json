@@ -1,0 +1,2781 @@
+{
+  "generatedAt": "2026-04-13T17:58:16.046Z",
+  "source": "soccerway.com",
+  "competitions": [
+    {
+      "country": "England",
+      "competition": "Premier League",
+      "url": "https://www.soccerway.com/england/premier-league/standings/",
+      "title": "Premier League standings, England | Soccerway",
+      "heading": "Premier League standings",
+      "teamCount": 20,
+      "teams": [
+        {
+          "name": "Arsenal",
+          "href": "/team/arsenal/hA1Zm19f/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Manchester City",
+          "href": "/team/manchester-city/Wtn9Stg0/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Manchester Utd",
+          "href": "/team/manchester-united/ppjDR086/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Aston Villa",
+          "href": "/team/aston-villa/W00wmLO0/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Liverpool",
+          "href": "/team/liverpool/lId4TMwf/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Chelsea",
+          "href": "/team/chelsea/4fGZN2oK/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Brentford",
+          "href": "/team/brentford/xYe7DwID/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Everton",
+          "href": "/team/everton/KluSTr9s/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Brighton",
+          "href": "/team/brighton/2XrRecc3/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Sunderland",
+          "href": "/team/sunderland/WSzc94ws/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Bournemouth",
+          "href": "/team/bournemouth/OtpNdwrc/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Fulham",
+          "href": "/team/fulham/69ZiU2Om/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Crystal Palace",
+          "href": "/team/crystal-palace/AovF1Mia/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Newcastle",
+          "href": "/team/newcastle-utd/p6ahwuwJ/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Leeds",
+          "href": "/team/leeds/tUxUbLR2/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Nottingham",
+          "href": "/team/nottingham/UsushcZr/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "West Ham",
+          "href": "/team/west-ham/Cxq57r8g/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Tottenham",
+          "href": "/team/tottenham/UDg08Ohm/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Burnley",
+          "href": "/team/burnley/z3dmTMMO/",
+          "competition": "Premier League",
+          "country": "England"
+        },
+        {
+          "name": "Wolves",
+          "href": "/team/wolves/j3Azpf5d/",
+          "competition": "Premier League",
+          "country": "England"
+        }
+      ]
+    },
+    {
+      "country": "England",
+      "competition": "Championship",
+      "url": "https://www.soccerway.com/england/championship/standings/",
+      "title": "Championship standings, England | Soccerway",
+      "heading": "Championship standings",
+      "teamCount": 24,
+      "teams": [
+        {
+          "name": "Coventry",
+          "href": "/team/coventry/GOvB22xg/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Ipswich",
+          "href": "/team/ipswich/thqhB2MB/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Millwall",
+          "href": "/team/millwall/6uz2cJBL/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Middlesbrough",
+          "href": "/team/middlesbrough/6F0lvLNC/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Southampton",
+          "href": "/team/southampton/WdKOwxDM/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Hull",
+          "href": "/team/hull-city/S66R0t75/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Wrexham",
+          "href": "/team/wrexham/IgO7K1ZA/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Derby",
+          "href": "/team/derby/Iug0YO0Q/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Norwich",
+          "href": "/team/norwich/Qo6off6p/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Bristol City",
+          "href": "/team/bristol-city/MahqU27I/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "QPR",
+          "href": "/team/qpr/lrMHUHDc/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Watford",
+          "href": "/team/watford/UmMRoGzp/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Preston",
+          "href": "/team/preston/x8IDVcbi/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Swansea",
+          "href": "/team/swansea/K6xezbY7/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Birmingham",
+          "href": "/team/birmingham/SWk4muv7/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Stoke",
+          "href": "/team/stoke-city/hSUajdSS/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Sheffield Utd",
+          "href": "/team/sheffield-utd/MeKPSerA/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Charlton",
+          "href": "/team/charlton/fXf5mQ7t/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Blackburn",
+          "href": "/team/blackburn/6Nl8nagD/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "West Brom",
+          "href": "/team/west-brom/CCBWpzjj/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Portsmouth",
+          "href": "/team/portsmouth/zckREQFJ/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Oxford Utd",
+          "href": "/team/oxford-utd/vgOBT43c/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Leicester",
+          "href": "/team/leicester/KrrdAMyI/",
+          "competition": "Championship",
+          "country": "England"
+        },
+        {
+          "name": "Sheffield Wed",
+          "href": "/team/sheffield-wed/llcCvIcG/",
+          "competition": "Championship",
+          "country": "England"
+        }
+      ]
+    },
+    {
+      "country": "Spain",
+      "competition": "LaLiga",
+      "url": "https://www.soccerway.com/spain/primera-division/standings/",
+      "title": "LaLiga standings, Spain | Soccerway",
+      "heading": "LaLiga standings",
+      "teamCount": 20,
+      "teams": [
+        {
+          "name": "Barcelona",
+          "href": "/team/barcelona/SKbpVP5K/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Real Madrid",
+          "href": "/team/real-madrid/W8mj7MDD/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Villarreal",
+          "href": "/team/villarreal/lUatW5jE/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Atl. Madrid",
+          "href": "/team/atl-madrid/jaarqpLQ/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Betis",
+          "href": "/team/betis/vJbTeCGP/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Celta Vigo",
+          "href": "/team/celta-vigo/8pvUZFhf/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Real Sociedad",
+          "href": "/team/real-sociedad/jNvak2f3/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Getafe",
+          "href": "/team/getafe/dboeiWOt/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Osasuna",
+          "href": "/team/osasuna/ETdxjU8a/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Espanyol",
+          "href": "/team/espanyol/QFfPdh1J/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Ath Bilbao",
+          "href": "/team/ath-bilbao/IP5zl0cJ/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Girona",
+          "href": "/team/girona/nNNpcUSL/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Rayo Vallecano",
+          "href": "/team/rayo-vallecano/8bcjFy6O/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Valencia",
+          "href": "/team/valencia/CQeaytrD/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Mallorca",
+          "href": "/team/mallorca/4jDQxrbf/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Sevilla",
+          "href": "/team/sevilla/h8oAv4Ts/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Alaves",
+          "href": "/team/alaves/hxt57t2q/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Elche",
+          "href": "/team/elche/4jl02tPF/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Oviedo",
+          "href": "/team/real-oviedo/SzYzw34K/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        },
+        {
+          "name": "Levante",
+          "href": "/team/levante/G8FL0ShI/",
+          "competition": "LaLiga",
+          "country": "Spain"
+        }
+      ]
+    },
+    {
+      "country": "Germany",
+      "competition": "Bundesliga",
+      "url": "https://www.soccerway.com/germany/bundesliga/standings/",
+      "title": "Bundesliga standings, Germany | Soccerway",
+      "heading": "Bundesliga standings",
+      "teamCount": 18,
+      "teams": [
+        {
+          "name": "Bayern Munich",
+          "href": "/team/bayern-munich/nVp0wiqd/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Dortmund",
+          "href": "/team/dortmund/nP1i5US1/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Stuttgart",
+          "href": "/team/vfb-stuttgart/nJQmYp1B/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "RB Leipzig",
+          "href": "/team/rb-leipzig/KbS1suSm/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Bayer Leverkusen",
+          "href": "/team/bayer-leverkusen/4jcj2zMd/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Hoffenheim",
+          "href": "/team/hoffenheim/hQAtP9Sl/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Eintracht Frankfurt",
+          "href": "/team/eintracht-frankfurt/8vndvXTk/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Freiburg",
+          "href": "/team/freiburg/fiEQZ7C7/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Mainz",
+          "href": "/team/mainz/EuakNmc1/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Augsburg",
+          "href": "/team/augsburg/fTVNku3I/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Union Berlin",
+          "href": "/team/union-berlin/pzHW4oaE/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Hamburger SV",
+          "href": "/team/hamburger/v9k3aY5F/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "FC Koln",
+          "href": "/team/1-fc-koln/WG9pOTse/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "B. Monchengladbach",
+          "href": "/team/b-monchengladbach/88HSzjDr/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Werder Bremen",
+          "href": "/team/werder-bremen/Ig1f1fy3/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "St. Pauli",
+          "href": "/team/st-pauli/ILyJuN3g/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Wolfsburg",
+          "href": "/team/wolfsburg/nwkTahLL/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        },
+        {
+          "name": "Heidenheim",
+          "href": "/team/heidenheim/KWixEVWi/",
+          "competition": "Bundesliga",
+          "country": "Germany"
+        }
+      ]
+    },
+    {
+      "country": "Italy",
+      "competition": "Serie A",
+      "url": "https://www.soccerway.com/italy/serie-a/standings/",
+      "title": "Serie A standings, Italy | Soccerway",
+      "heading": "Serie A standings",
+      "teamCount": 20,
+      "teams": [
+        {
+          "name": "Inter",
+          "href": "/team/inter/Iw7eKK25/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Napoli",
+          "href": "/team/napoli/69Dxbc61/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "AC Milan",
+          "href": "/team/ac-milan/8Sa8HInO/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Juventus",
+          "href": "/team/juventus/C06aJvIB/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Como",
+          "href": "/team/como/ttyLthOA/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "AS Roma",
+          "href": "/team/as-roma/zVqqL0ma/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Atalanta",
+          "href": "/team/atalanta/8C9JjMXu/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Bologna",
+          "href": "/team/bologna/0M9xNN8N/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Lazio",
+          "href": "/team/lazio/URcSl02h/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Udinese",
+          "href": "/team/udinese/rXw8YKDE/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Sassuolo",
+          "href": "/team/sassuolo/QDdvI0zl/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Torino",
+          "href": "/team/torino/MZFZnvX4/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Genoa",
+          "href": "/team/genoa/d0PJxeie/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Parma",
+          "href": "/team/parma/6DxlaxHN/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Cagliari",
+          "href": "/team/cagliari/SCGVmKHb/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Fiorentina",
+          "href": "/team/fiorentina/Q3A3IbXH/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Cremonese",
+          "href": "/team/cremonese/KUzfp5N3/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Lecce",
+          "href": "/team/lecce/G8lYsMgU/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Verona",
+          "href": "/team/verona/rJVAIaHo/",
+          "competition": "Serie A",
+          "country": "Italy"
+        },
+        {
+          "name": "Pisa",
+          "href": "/team/pisa/roasMsOT/",
+          "competition": "Serie A",
+          "country": "Italy"
+        }
+      ]
+    },
+    {
+      "country": "France",
+      "competition": "Ligue 1",
+      "url": "https://www.soccerway.com/france/ligue-1/standings/",
+      "title": "Ligue 1 standings, France | Soccerway",
+      "heading": "Ligue 1 standings",
+      "teamCount": 18,
+      "teams": [
+        {
+          "name": "PSG",
+          "href": "/team/psg/CjhkPw0k/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Lens",
+          "href": "/team/lens/IBmris38/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Lille",
+          "href": "/team/lille/pfDZL71o/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Marseille",
+          "href": "/team/marseille/SblU3Hee/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Lyon",
+          "href": "/team/lyon/2akflumR/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Rennes",
+          "href": "/team/rennes/d2nnj1IE/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Monaco",
+          "href": "/team/monaco/2PIvr8o4/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Strasbourg",
+          "href": "/team/strasbourg/nP6UzIU1/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Lorient",
+          "href": "/team/lorient/jgNAYRGi/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Toulouse",
+          "href": "/team/toulouse/MLmY2yB1/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Brest",
+          "href": "/team/brest/Cr4VGaUl/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Paris FC",
+          "href": "/team/paris-fc/0OEHEprs/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Angers",
+          "href": "/team/angers/SAlF91iL/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Le Havre",
+          "href": "/team/le-havre/CIEe04GT/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Nice",
+          "href": "/team/nice/YagoQJpq/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Auxerre",
+          "href": "/team/auxerre/MTLr36WA/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Nantes",
+          "href": "/team/nantes/veuetnGG/",
+          "competition": "Ligue 1",
+          "country": "France"
+        },
+        {
+          "name": "Metz",
+          "href": "/team/metz/4v0yqlWc/",
+          "competition": "Ligue 1",
+          "country": "France"
+        }
+      ]
+    },
+    {
+      "country": "Netherlands",
+      "competition": "Eredivisie",
+      "url": "https://www.soccerway.com/netherlands/eredivisie/standings/",
+      "title": "Eredivisie standings, Netherlands | Soccerway",
+      "heading": "Eredivisie standings",
+      "teamCount": 18,
+      "teams": [
+        {
+          "name": "PSV",
+          "href": "/team/psv/M9UEHJWi/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Feyenoord",
+          "href": "/team/feyenoord/8zjySeoN/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Nijmegen",
+          "href": "/team/nijmegen/nRluRF0T/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Twente",
+          "href": "/team/twente/dhOKTHGA/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Ajax",
+          "href": "/team/ajax/8UOvIwnb/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "AZ Alkmaar",
+          "href": "/team/az-alkmaar/2RxOow1i/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Utrecht",
+          "href": "/team/utrecht/p6QXMgOj/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Heerenveen",
+          "href": "/team/heerenveen/EDjXSyWG/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Groningen",
+          "href": "/team/groningen/MBUGcjb9/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Sparta Rotterdam",
+          "href": "/team/sparta-rotterdam/KK4FaFV3/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "G.A. Eagles",
+          "href": "/team/g-a-eagles/hG8POBb8/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Sittard",
+          "href": "/team/sittard/YH8HX5iP/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Zwolle",
+          "href": "/team/zwolle/r1L5w2EB/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "FC Volendam",
+          "href": "/team/fc-volendam/6VbkuOqa/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Excelsior",
+          "href": "/team/excelsior/nNlLsRUr/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Telstar",
+          "href": "/team/telstar/Aw0qTPat/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "NAC Breda",
+          "href": "/team/nac-breda/nLNrHc14/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        },
+        {
+          "name": "Heracles",
+          "href": "/team/heracles/bB3JbZpA/",
+          "competition": "Eredivisie",
+          "country": "Netherlands"
+        }
+      ]
+    },
+    {
+      "country": "United States",
+      "competition": "MLS",
+      "url": "https://www.soccerway.com/usa/mls/",
+      "title": "MLS 2026 table, fixtures, live scores & results - USA | Soccerway",
+      "heading": "MLS 2026 table, fixtures, live scores & results",
+      "teamCount": 30,
+      "teams": [
+        {
+          "name": "Vancouver Whitecaps",
+          "href": "/team/vancouver-whitecaps/K2dlua5N/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "San Jose Earthquakes",
+          "href": "/team/san-jose-earthquakes/x05z14ue/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Los Angeles FC",
+          "href": "/team/los-angeles-fc/txUJt9AR/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Real Salt Lake",
+          "href": "/team/real-salt-lake/W0ealpQl/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Seattle Sounders",
+          "href": "/team/seattle-sounders/6P5S63Ah/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Colorado Rapids",
+          "href": "/team/colorado-rapids/jmBZNRn8/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "FC Dallas",
+          "href": "/team/fc-dallas/4GtbI4Q1/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "San Diego FC",
+          "href": "/team/san-diego-fc/EuGkBf33/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Minnesota United",
+          "href": "/team/minnesota-united/zXFxsw2a/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Los Angeles Galaxy",
+          "href": "/team/los-angeles-galaxy/U3ebh62R/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Portland Timbers",
+          "href": "/team/portland-timbers/bm8usLzB/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Houston Dynamo",
+          "href": "/team/houston-dynamo/2i4sdl32/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Austin FC",
+          "href": "/team/austin-fc/IeT6JBE3/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "St. Louis City",
+          "href": "/team/st-louis-city/4r4sKQud/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Sporting Kansas City",
+          "href": "/team/sporting-kansas-city/CURGfJWt/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Nashville SC",
+          "href": "/team/nashville-sc/84yIDQMe/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Chicago Fire",
+          "href": "/team/chicago-fire/UwAwNo2E/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Inter Miami",
+          "href": "/team/inter-miami/0AheRyBg/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "New York City",
+          "href": "/team/new-york-city/vZraQYnO/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Charlotte",
+          "href": "/team/charlotte-fc/QJF7WTFB/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Toronto FC",
+          "href": "/team/toronto-fc/zsdfgnmL/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "New York Red Bulls",
+          "href": "/team/new-york-red-bulls/zV5YmQAr/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "New England Revolution",
+          "href": "/team/new-england-revolution/tr3oe8I8/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "DC United",
+          "href": "/team/dc-united/O6hjfSXE/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "FC Cincinnati",
+          "href": "/team/fc-cincinnati/8btog05R/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Columbus Crew",
+          "href": "/team/columbus-crew/pQ8rarA7/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Atlanta Utd",
+          "href": "/team/atlanta-united/EPngUvhk/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Orlando City",
+          "href": "/team/orlando-city/rsHkUNCo/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "Philadelphia Union",
+          "href": "/team/philadelphia-union/Szrwix67/",
+          "competition": "MLS",
+          "country": "United States"
+        },
+        {
+          "name": "CF Montreal",
+          "href": "/team/cf-montreal/j9cigLCr/",
+          "competition": "MLS",
+          "country": "United States"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "competitionCount": 8,
+    "totalDiscoveredRows": 168,
+    "uniqueTeams": 168
+  },
+  "uniqueTeams": [
+    {
+      "name": "AC Milan",
+      "href": "/team/ac-milan/8Sa8HInO/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Ajax",
+      "href": "/team/ajax/8UOvIwnb/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Alaves",
+      "href": "/team/alaves/hxt57t2q/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Angers",
+      "href": "/team/angers/SAlF91iL/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Arsenal",
+      "href": "/team/arsenal/hA1Zm19f/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "AS Roma",
+      "href": "/team/as-roma/zVqqL0ma/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Aston Villa",
+      "href": "/team/aston-villa/W00wmLO0/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Atalanta",
+      "href": "/team/atalanta/8C9JjMXu/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Ath Bilbao",
+      "href": "/team/ath-bilbao/IP5zl0cJ/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Atl. Madrid",
+      "href": "/team/atl-madrid/jaarqpLQ/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Atlanta Utd",
+      "href": "/team/atlanta-united/EPngUvhk/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Augsburg",
+      "href": "/team/augsburg/fTVNku3I/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Austin FC",
+      "href": "/team/austin-fc/IeT6JBE3/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Auxerre",
+      "href": "/team/auxerre/MTLr36WA/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "AZ Alkmaar",
+      "href": "/team/az-alkmaar/2RxOow1i/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "B. Monchengladbach",
+      "href": "/team/b-monchengladbach/88HSzjDr/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Barcelona",
+      "href": "/team/barcelona/SKbpVP5K/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Bayer Leverkusen",
+      "href": "/team/bayer-leverkusen/4jcj2zMd/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Bayern Munich",
+      "href": "/team/bayern-munich/nVp0wiqd/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Betis",
+      "href": "/team/betis/vJbTeCGP/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Birmingham",
+      "href": "/team/birmingham/SWk4muv7/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Blackburn",
+      "href": "/team/blackburn/6Nl8nagD/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Bologna",
+      "href": "/team/bologna/0M9xNN8N/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Bournemouth",
+      "href": "/team/bournemouth/OtpNdwrc/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Brentford",
+      "href": "/team/brentford/xYe7DwID/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Brest",
+      "href": "/team/brest/Cr4VGaUl/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Brighton",
+      "href": "/team/brighton/2XrRecc3/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Bristol City",
+      "href": "/team/bristol-city/MahqU27I/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Burnley",
+      "href": "/team/burnley/z3dmTMMO/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Cagliari",
+      "href": "/team/cagliari/SCGVmKHb/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Celta Vigo",
+      "href": "/team/celta-vigo/8pvUZFhf/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "CF Montreal",
+      "href": "/team/cf-montreal/j9cigLCr/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Charlotte",
+      "href": "/team/charlotte-fc/QJF7WTFB/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Charlton",
+      "href": "/team/charlton/fXf5mQ7t/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Chelsea",
+      "href": "/team/chelsea/4fGZN2oK/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Chicago Fire",
+      "href": "/team/chicago-fire/UwAwNo2E/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Colorado Rapids",
+      "href": "/team/colorado-rapids/jmBZNRn8/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Columbus Crew",
+      "href": "/team/columbus-crew/pQ8rarA7/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Como",
+      "href": "/team/como/ttyLthOA/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Coventry",
+      "href": "/team/coventry/GOvB22xg/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Cremonese",
+      "href": "/team/cremonese/KUzfp5N3/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Palace",
+      "href": "/team/crystal-palace/AovF1Mia/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "DC United",
+      "href": "/team/dc-united/O6hjfSXE/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Derby",
+      "href": "/team/derby/Iug0YO0Q/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Dortmund",
+      "href": "/team/dortmund/nP1i5US1/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Eintracht Frankfurt",
+      "href": "/team/eintracht-frankfurt/8vndvXTk/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Elche",
+      "href": "/team/elche/4jl02tPF/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Espanyol",
+      "href": "/team/espanyol/QFfPdh1J/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Everton",
+      "href": "/team/everton/KluSTr9s/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Excelsior",
+      "href": "/team/excelsior/nNlLsRUr/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "FC Cincinnati",
+      "href": "/team/fc-cincinnati/8btog05R/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "FC Dallas",
+      "href": "/team/fc-dallas/4GtbI4Q1/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "FC Koln",
+      "href": "/team/1-fc-koln/WG9pOTse/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "FC Volendam",
+      "href": "/team/fc-volendam/6VbkuOqa/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Feyenoord",
+      "href": "/team/feyenoord/8zjySeoN/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Fiorentina",
+      "href": "/team/fiorentina/Q3A3IbXH/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Freiburg",
+      "href": "/team/freiburg/fiEQZ7C7/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Fulham",
+      "href": "/team/fulham/69ZiU2Om/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "G.A. Eagles",
+      "href": "/team/g-a-eagles/hG8POBb8/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Genoa",
+      "href": "/team/genoa/d0PJxeie/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Getafe",
+      "href": "/team/getafe/dboeiWOt/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Girona",
+      "href": "/team/girona/nNNpcUSL/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Groningen",
+      "href": "/team/groningen/MBUGcjb9/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Hamburger SV",
+      "href": "/team/hamburger/v9k3aY5F/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Heerenveen",
+      "href": "/team/heerenveen/EDjXSyWG/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Heidenheim",
+      "href": "/team/heidenheim/KWixEVWi/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Heracles",
+      "href": "/team/heracles/bB3JbZpA/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Hoffenheim",
+      "href": "/team/hoffenheim/hQAtP9Sl/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Houston Dynamo",
+      "href": "/team/houston-dynamo/2i4sdl32/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Hull",
+      "href": "/team/hull-city/S66R0t75/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Inter",
+      "href": "/team/inter/Iw7eKK25/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Inter Miami",
+      "href": "/team/inter-miami/0AheRyBg/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Ipswich",
+      "href": "/team/ipswich/thqhB2MB/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Juventus",
+      "href": "/team/juventus/C06aJvIB/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Lazio",
+      "href": "/team/lazio/URcSl02h/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Le Havre",
+      "href": "/team/le-havre/CIEe04GT/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Lecce",
+      "href": "/team/lecce/G8lYsMgU/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Leeds",
+      "href": "/team/leeds/tUxUbLR2/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Leicester",
+      "href": "/team/leicester/KrrdAMyI/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Lens",
+      "href": "/team/lens/IBmris38/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Levante",
+      "href": "/team/levante/G8FL0ShI/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Lille",
+      "href": "/team/lille/pfDZL71o/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Liverpool",
+      "href": "/team/liverpool/lId4TMwf/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Lorient",
+      "href": "/team/lorient/jgNAYRGi/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Los Angeles FC",
+      "href": "/team/los-angeles-fc/txUJt9AR/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Los Angeles Galaxy",
+      "href": "/team/los-angeles-galaxy/U3ebh62R/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Lyon",
+      "href": "/team/lyon/2akflumR/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Mainz",
+      "href": "/team/mainz/EuakNmc1/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Mallorca",
+      "href": "/team/mallorca/4jDQxrbf/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Manchester City",
+      "href": "/team/manchester-city/Wtn9Stg0/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Manchester Utd",
+      "href": "/team/manchester-united/ppjDR086/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Marseille",
+      "href": "/team/marseille/SblU3Hee/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Metz",
+      "href": "/team/metz/4v0yqlWc/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Middlesbrough",
+      "href": "/team/middlesbrough/6F0lvLNC/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Millwall",
+      "href": "/team/millwall/6uz2cJBL/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Minnesota United",
+      "href": "/team/minnesota-united/zXFxsw2a/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Monaco",
+      "href": "/team/monaco/2PIvr8o4/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "NAC Breda",
+      "href": "/team/nac-breda/nLNrHc14/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Nantes",
+      "href": "/team/nantes/veuetnGG/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Napoli",
+      "href": "/team/napoli/69Dxbc61/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Nashville SC",
+      "href": "/team/nashville-sc/84yIDQMe/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "New England Revolution",
+      "href": "/team/new-england-revolution/tr3oe8I8/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "New York City",
+      "href": "/team/new-york-city/vZraQYnO/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "New York Red Bulls",
+      "href": "/team/new-york-red-bulls/zV5YmQAr/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Newcastle",
+      "href": "/team/newcastle-utd/p6ahwuwJ/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Nice",
+      "href": "/team/nice/YagoQJpq/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Nijmegen",
+      "href": "/team/nijmegen/nRluRF0T/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Norwich",
+      "href": "/team/norwich/Qo6off6p/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Nottingham",
+      "href": "/team/nottingham/UsushcZr/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Orlando City",
+      "href": "/team/orlando-city/rsHkUNCo/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Osasuna",
+      "href": "/team/osasuna/ETdxjU8a/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Oviedo",
+      "href": "/team/real-oviedo/SzYzw34K/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Oxford Utd",
+      "href": "/team/oxford-utd/vgOBT43c/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Paris FC",
+      "href": "/team/paris-fc/0OEHEprs/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Parma",
+      "href": "/team/parma/6DxlaxHN/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Philadelphia Union",
+      "href": "/team/philadelphia-union/Szrwix67/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Pisa",
+      "href": "/team/pisa/roasMsOT/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Portland Timbers",
+      "href": "/team/portland-timbers/bm8usLzB/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Portsmouth",
+      "href": "/team/portsmouth/zckREQFJ/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Preston",
+      "href": "/team/preston/x8IDVcbi/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "PSG",
+      "href": "/team/psg/CjhkPw0k/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "PSV",
+      "href": "/team/psv/M9UEHJWi/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "QPR",
+      "href": "/team/qpr/lrMHUHDc/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Rayo Vallecano",
+      "href": "/team/rayo-vallecano/8bcjFy6O/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "RB Leipzig",
+      "href": "/team/rb-leipzig/KbS1suSm/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Real Madrid",
+      "href": "/team/real-madrid/W8mj7MDD/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Real Salt Lake",
+      "href": "/team/real-salt-lake/W0ealpQl/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Real Sociedad",
+      "href": "/team/real-sociedad/jNvak2f3/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Rennes",
+      "href": "/team/rennes/d2nnj1IE/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "San Diego FC",
+      "href": "/team/san-diego-fc/EuGkBf33/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "San Jose Earthquakes",
+      "href": "/team/san-jose-earthquakes/x05z14ue/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Sassuolo",
+      "href": "/team/sassuolo/QDdvI0zl/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Seattle Sounders",
+      "href": "/team/seattle-sounders/6P5S63Ah/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Sevilla",
+      "href": "/team/sevilla/h8oAv4Ts/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Sheffield Utd",
+      "href": "/team/sheffield-utd/MeKPSerA/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Sheffield Wed",
+      "href": "/team/sheffield-wed/llcCvIcG/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Sittard",
+      "href": "/team/sittard/YH8HX5iP/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Southampton",
+      "href": "/team/southampton/WdKOwxDM/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Sparta Rotterdam",
+      "href": "/team/sparta-rotterdam/KK4FaFV3/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Sporting Kansas City",
+      "href": "/team/sporting-kansas-city/CURGfJWt/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "St. Louis City",
+      "href": "/team/st-louis-city/4r4sKQud/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "St. Pauli",
+      "href": "/team/st-pauli/ILyJuN3g/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Stoke",
+      "href": "/team/stoke-city/hSUajdSS/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Strasbourg",
+      "href": "/team/strasbourg/nP6UzIU1/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Stuttgart",
+      "href": "/team/vfb-stuttgart/nJQmYp1B/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Sunderland",
+      "href": "/team/sunderland/WSzc94ws/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Swansea",
+      "href": "/team/swansea/K6xezbY7/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Telstar",
+      "href": "/team/telstar/Aw0qTPat/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Torino",
+      "href": "/team/torino/MZFZnvX4/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Toronto FC",
+      "href": "/team/toronto-fc/zsdfgnmL/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Tottenham",
+      "href": "/team/tottenham/UDg08Ohm/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Toulouse",
+      "href": "/team/toulouse/MLmY2yB1/",
+      "competitions": [
+        {
+          "country": "France",
+          "competition": "Ligue 1"
+        }
+      ]
+    },
+    {
+      "name": "Twente",
+      "href": "/team/twente/dhOKTHGA/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Udinese",
+      "href": "/team/udinese/rXw8YKDE/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Union Berlin",
+      "href": "/team/union-berlin/pzHW4oaE/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Utrecht",
+      "href": "/team/utrecht/p6QXMgOj/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    },
+    {
+      "name": "Valencia",
+      "href": "/team/valencia/CQeaytrD/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Vancouver Whitecaps",
+      "href": "/team/vancouver-whitecaps/K2dlua5N/",
+      "competitions": [
+        {
+          "country": "United States",
+          "competition": "MLS"
+        }
+      ]
+    },
+    {
+      "name": "Verona",
+      "href": "/team/verona/rJVAIaHo/",
+      "competitions": [
+        {
+          "country": "Italy",
+          "competition": "Serie A"
+        }
+      ]
+    },
+    {
+      "name": "Villarreal",
+      "href": "/team/villarreal/lUatW5jE/",
+      "competitions": [
+        {
+          "country": "Spain",
+          "competition": "LaLiga"
+        }
+      ]
+    },
+    {
+      "name": "Watford",
+      "href": "/team/watford/UmMRoGzp/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Werder Bremen",
+      "href": "/team/werder-bremen/Ig1f1fy3/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "West Brom",
+      "href": "/team/west-brom/CCBWpzjj/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "West Ham",
+      "href": "/team/west-ham/Cxq57r8g/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Wolfsburg",
+      "href": "/team/wolfsburg/nwkTahLL/",
+      "competitions": [
+        {
+          "country": "Germany",
+          "competition": "Bundesliga"
+        }
+      ]
+    },
+    {
+      "name": "Wolves",
+      "href": "/team/wolves/j3Azpf5d/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Premier League"
+        }
+      ]
+    },
+    {
+      "name": "Wrexham",
+      "href": "/team/wrexham/IgO7K1ZA/",
+      "competitions": [
+        {
+          "country": "England",
+          "competition": "Championship"
+        }
+      ]
+    },
+    {
+      "name": "Zwolle",
+      "href": "/team/zwolle/r1L5w2EB/",
+      "competitions": [
+        {
+          "country": "Netherlands",
+          "competition": "Eredivisie"
+        }
+      ]
+    }
+  ]
+}
