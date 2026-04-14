@@ -1,0 +1,2738 @@
+{
+  "generatedAt": "2026-04-13T17:30:57.153Z",
+  "source": "soccerway.com",
+  "inputUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/",
+  "baseUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/",
+  "title": "Stuttgart v Dortmund live scores & match info | Soccerway",
+  "canonicalUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/",
+  "ogTitle": "Stuttgart - Dortmund 0:2",
+  "ogDescription": "GERMANY: Bundesliga - Round 28",
+  "eventId": "2NTch5hd",
+  "availableTabs": [
+    "summary",
+    "stats",
+    "player-stats",
+    "lineups"
+  ],
+  "pages": {
+    "summary": {
+      "url": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/",
+      "title": "Stuttgart v Dortmund live scores & match info | Soccerway",
+      "canonicalUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/",
+      "metaDescription": "Stay tuned with Stuttgart v Dortmund live scores, lineups & H2H stats. Follow Soccerway for more soccer stats.",
+      "ogTitle": "Stuttgart - Dortmund 0:2",
+      "ogDescription": "GERMANY: Bundesliga - Round 28",
+      "htmlLength": 558456,
+      "eventId": "2NTch5hd",
+      "preconnects": [
+        "https://2020.ds.lsapp.eu/pq_graphql",
+        "https://2020.flashscore.ninja"
+      ],
+      "scriptAssets": [
+        "/x/js/translations-detail.2020.3c843f3d.js",
+        "/res/_fs/build/detail.e9087d2.js"
+      ],
+      "tabIdentifiers": [
+        {
+          "key": "SUMMARY",
+          "ident": "summary"
+        },
+        {
+          "key": "LINEUPS",
+          "ident": "lineups"
+        },
+        {
+          "key": "ODDS_COMPARISON",
+          "ident": "odds"
+        },
+        {
+          "key": "TV",
+          "ident": "tv"
+        },
+        {
+          "key": "STATISTICS",
+          "ident": "stats"
+        },
+        {
+          "key": "PLAYER_STATISTICS",
+          "ident": "player-stats"
+        },
+        {
+          "key": "LIVE_COMMENTARY",
+          "ident": "live-commentary"
+        },
+        {
+          "key": "STANDINGS",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_DRAW",
+          "ident": "draw"
+        },
+        {
+          "key": "NEWS_FEED",
+          "ident": "news"
+        },
+        {
+          "key": "LIVE_TABLE",
+          "ident": "live-table"
+        },
+        {
+          "key": "MATCH_HISTORY",
+          "ident": "match-history"
+        },
+        {
+          "key": "MATCH_HISTORY_TENNIS",
+          "ident": "point-by-point"
+        },
+        {
+          "key": "MATCH_HISTORY_DARTS",
+          "ident": "match-history"
+        },
+        {
+          "key": "VIDEO_HIGHLIGHTS",
+          "ident": "video"
+        },
+        {
+          "key": "PHOTOREPORT",
+          "ident": "photos"
+        },
+        {
+          "key": "REPORT",
+          "ident": "report"
+        },
+        {
+          "key": "STANDINGS_FORM",
+          "ident": "form"
+        },
+        {
+          "key": "STANDINGS_TOP_SCORERS",
+          "ident": "top-scorers"
+        },
+        {
+          "key": "STANDINGS_OVERALL",
+          "ident": "overall"
+        },
+        {
+          "key": "STANDINGS_HOME",
+          "ident": "home"
+        },
+        {
+          "key": "STANDINGS_AWAY",
+          "ident": "away"
+        },
+        {
+          "key": "STANDINGS_TABLE",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_LIVE_TABLE",
+          "ident": "live-standings"
+        },
+        {
+          "key": "STANDINGS_OVER_UNDER",
+          "ident": "over_under"
+        },
+        {
+          "key": "LIVE_COMMENTARY_ALL",
+          "ident": "all-comments"
+        },
+        {
+          "key": "LIVE_COMMENTARY_IMPORTANT",
+          "ident": "important-only"
+        },
+        {
+          "key": "STATS_FT",
+          "ident": "overall"
+        },
+        {
+          "key": "STATS_ET",
+          "ident": "extra-time"
+        },
+        {
+          "key": "STATS_EINN",
+          "ident": "extra-inning"
+        },
+        {
+          "key": "COMPARISON_DOUBLE_CHANCE",
+          "ident": "double-chance"
+        },
+        {
+          "key": "COMPARISON_OVER_UNDER",
+          "ident": "over-under"
+        },
+        {
+          "key": "COMPARISON_ASIAN_HANDICAP",
+          "ident": "asian-handicap"
+        },
+        {
+          "key": "COMPARISON_HOME_AWAY",
+          "ident": "home-away"
+        },
+        {
+          "key": "COMPARISON_DRAW_NO_BET",
+          "ident": "draw-no-bet"
+        },
+        {
+          "key": "COMPARISON_TO_QUALIFY",
+          "ident": "to-qualify"
+        },
+        {
+          "key": "COMPARISON_HT_FT",
+          "ident": "ht-ft"
+        },
+        {
+          "key": "COMPARISON_CORRECT_SCORE",
+          "ident": "correct-score"
+        },
+        {
+          "key": "COMPARISON_ODD_EVEN",
+          "ident": "odd-even"
+        },
+        {
+          "key": "COMPARISON_BOTH_TEAMS_TO_SCORE",
+          "ident": "both-teams-to-score"
+        },
+        {
+          "key": "COMPARISON_EUROPEAN_HANDICAP",
+          "ident": "european-handicap"
+        },
+        {
+          "key": "COMPARISON_NEXT_GOAL",
+          "ident": "next-goal"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT_INCLUDE_OT",
+          "ident": "ft-including-ot"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT",
+          "ident": "full-time"
+        }
+      ],
+      "statLabelCount": 23,
+      "playerStatLabelCount": 34,
+      "shortPlayerStatLabelCount": 17,
+      "eventLabelCount": 6,
+      "statLabels": [
+        {
+          "key": "BALL_POSSESSION",
+          "label": "Ball possession"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "FREE_KICKS",
+          "label": "Free kicks"
+        },
+        {
+          "key": "CORNER_KICKS",
+          "label": "Corner kicks"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "THROW_INS",
+          "label": "Throw ins"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "GOAL_KICKS",
+          "label": "Goal kicks"
+        },
+        {
+          "key": "FOULS",
+          "label": "Fouls"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "CATEGORY_TOP_STATS",
+          "label": "Top stats"
+        },
+        {
+          "key": "CATEGORY_SHOTS",
+          "label": "Shots"
+        },
+        {
+          "key": "CATEGORY_ATTACKS",
+          "label": "Attack"
+        },
+        {
+          "key": "CATEGORY_PASSES",
+          "label": "Passes"
+        },
+        {
+          "key": "CATEGORY_DEFENSE",
+          "label": "Defense"
+        },
+        {
+          "key": "CATEGORY_GOALKEEPING",
+          "label": "Goalkeeping"
+        },
+        {
+          "key": "LONG_BALLS",
+          "label": "Long passes"
+        },
+        {
+          "key": "PASSES_IN_THE_FINAL_THIRD_ACCURACY",
+          "label": "Passes in final third"
+        },
+        {
+          "key": "TACKLES_ACCURACY",
+          "label": "Tackles"
+        },
+        {
+          "key": "CROSSES_ACCURACY",
+          "label": "Crosses"
+        }
+      ],
+      "playerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "Goals"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "Assists"
+        },
+        {
+          "key": "SHORT_GOALS",
+          "label": "G"
+        },
+        {
+          "key": "SHORT_ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHORT_SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "SHORT_SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "SHORT_OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "Fouls committed"
+        },
+        {
+          "key": "SHORT_FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "Fouls suffered"
+        },
+        {
+          "key": "SHORT_FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "SHORT_YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "SHORT_RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "SHORT_PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "Passes"
+        },
+        {
+          "key": "SHORT_TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "Total passes"
+        },
+        {
+          "key": "SHORT_GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHORT_BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "Blocked shots"
+        },
+        {
+          "key": "SHORT_COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "Completed passes"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHORT_SHUTOUTS",
+          "label": "CS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "Save Percentage"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "Shutouts"
+        }
+      ],
+      "shortPlayerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "G"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "CS"
+        }
+      ],
+      "eventLabels": [
+        {
+          "key": "GOAL",
+          "label": ""
+        },
+        {
+          "key": "PEN",
+          "label": "Penalty"
+        },
+        {
+          "key": "PEN_MISS",
+          "label": "Penalty missed"
+        },
+        {
+          "key": "OWN",
+          "label": "Own goal"
+        },
+        {
+          "key": "RED",
+          "label": "Red card"
+        },
+        {
+          "key": "YELLOW",
+          "label": "Yellow card"
+        }
+      ],
+      "likelyCoverage": {
+        "teamGoals": true,
+        "teamShots": true,
+        "teamShotsOnTarget": true,
+        "teamCorners": true,
+        "teamCards": true,
+        "playerGoalsFromEvents": true,
+        "playerAssistsFromEvents": true,
+        "playerCardsFromEvents": true,
+        "playerShotsLikely": true,
+        "playerShotsOnTargetLikely": true
+      },
+      "playerLinksSample": [],
+      "teamLinksSample": [
+        "/team/inter-miami/0AheRyBg/",
+        "/team/al-nassr/h4I89ZuE/",
+        "/team/messi-lionel/vgOOdZbd/",
+        "/team/ronaldo-cristiano/WGOY4FSt/",
+        "/team/arsenal/hA1Zm19f/",
+        "/team/manchester-city/Wtn9Stg0/",
+        "/team/manchester-united/ppjDR086/",
+        "/team/chelsea/4fGZN2oK/",
+        "/team/liverpool/lId4TMwf/"
+      ],
+      "matchLinksSample": [
+        "/match/fiorentina-Q3A3IbXH/lazio-URcSl02h/",
+        "/match/leeds-tUxUbLR2/manchester-united-ppjDR086/",
+        "/match/atl-madrid-jaarqpLQ/barcelona-SKbpVP5K/",
+        "/match/liverpool-lId4TMwf/psg-CjhkPw0k/",
+        "/match/arsenal-hA1Zm19f/sporting-cp-tljXuHBC/",
+        "/match/bayern-munich-nVp0wiqd/real-madrid-W8mj7MDD/",
+        "/match/cagliari-SCGVmKHb/inter-Iw7eKK25/",
+        "/match/lazio-URcSl02h/napoli-69Dxbc61/",
+        "/match/as-roma-zVqqL0ma/atalanta-8C9JjMXu/",
+        "/match/chelsea-4fGZN2oK/manchester-united-ppjDR086/",
+        "/match/fountain-gate-UZbifa45/simba-C2SQy01d/",
+        "/match/al-ettifaq-fc-ncrXAWGn/al-nassr-h4I89ZuE/",
+        "/match/mbeya-city-6o8pEMUK/young-africans-dMbOiRbT/",
+        "/match/dortmund-nP1i5US1/hoffenheim-hQAtP9Sl/",
+        "/match/namungo-rq101FoU/simba-C2SQy01d/",
+        "/match/colorado-rapids-jmBZNRn8/inter-miami-0AheRyBg/",
+        "/match/al-nassr-h4I89ZuE/al-wasl-OQuUcn3P/",
+        "/match/bayern-munich-nVp0wiqd/vfb-stuttgart-nJQmYp1B/"
+      ],
+      "snippets": [
+        {
+          "keyword": "Corner kicks",
+          "snippet": "TICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGOR"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_GOAL\":\"Power-play\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_SHORTHANDED_GOAL\":\"Shorthanded\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-pl"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_STATISTICS_GOALS\":\"Goals\",\"TRANS_HOCKEY_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_HOCKEY_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PIM\":\"Penalties in Minutes\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_PLAYER_STATISTICS_HITS\":\"Hits\",\"TRANS_HOCKEY_PLAYER_STATISTICS_BLOCKED_SHOTS\":\"Blocked Shots\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GIVEAWAYS\":\"Giveaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_TAKEAWAYS\":\"Takeaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS\":\"Faceoffs\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_WON\":\"Faceoffs Won\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS\":\"FO\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS_WON\":\"FOW\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_P"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "SOCCER_MATCH_SCORER_TYPE_OWN\":\"Own goal\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_RED\":\"Red card\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_YELLOW\":\"Yellow card\",\"TRANS_SOCCER_STATISTICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELL"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "RANS_PLAYER_CAREER_SHORT_MATCHES_PLAYED\":\"MP\",\"TRANS_PLAYER_CAREER_MINUTES\":\"Minutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "Y_LEAGUE_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRAN"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "_RUGBY_UNION_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"T"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "nutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS_PLAYER_CAREER_TYPE\":\"Type\",\"TRANS_PLAYER_CAREER_FEE\":\"Fee\",\"TRANS_PLAYER_CAREE"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "AYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_PEN\":\"Penalties\",\"TRANS_RUGBY_"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "N_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"TRANS_SNOOKER_WORLD_RANKING_MENU\":\"World Ranking\",\"TRANS_SNOOKER"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "he number of goals a goalkeeper should have conceded based on the quantity and quality of the shots faced. The quality of each shot is calculated based on factors such as shot placement, goalkeeper positioning and more. xGOT Faced corresponds to the xGOT value of the opposing side.\",\"TRANS_EXPECTED_ASSISTS_INFO\":\"xA represents the likelihood that a pass will lead to an assist for a goal. It evaluates the quality of a pass based on factors such as its placement, trajectory, and the context of the attacking play.\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER_SHORT\":\"(G)\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER\":\"Goalkeeper\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN_SHORT\":\"(C)\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN\":\"Captain\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN_SHORT\":\"(A)\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN\""
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TISTICS_CATEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_B"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_BASKETBALL_"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "IL_BOOKMARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Od"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "ARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Odds forma"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "NT_STANDINGS\":\"Current standings\",\"TRANS_TEAM\":\"Team\",\"TRANS_TEAM_COACHES\":\"Coaches\",\"TRANS_PLAYER\":\"Player\",\"TRANS_PLAYERS\":\"Players\",\"TRANS_GOALKEEPER\":\"Goalkeeper\",\"TRANS_RANK\":\"Rank\",\"TRANS_MATCHES_PLAYED_SHORT\":\"MP\",\"TRANS_WINS_SHORT\":\"W\",\"TRANS_DRAWS_SHORT\":\"D\",\"TRANS_LOSSES_SHORT\":\"L\",\"TRANS_GOALS_SHORT\":\"Goals\",\"TRANS_POINTS_SHORT\":\"Pts\",\"TRANS_MATCHES_PLAYED\":\"Matches played\",\"TRANS_WIN\":\"Win\",\"TRANS_DRAW\":\"Draw\",\"TRANS_LOST\":\"Loss\",\"TRANS_GOALS\":\"Goals\",\"TRANS_POINTS\":\"Points\",\"TRANS_WIN_SHORT\":\"W\",\"TRANS_DRAW_SHORT\":\"D\",\"TRANS_LOST_SHORT\":\"L\",\"TRANS_LAST_5\":\"Last 5\",\"TRANS_LAST_5_MATCHES\":\"Last 5 matches\",\"TRANS_STANDINGS_NOT_FOR_THIS_SPORT\":\"This sport is not provided with standings at the moment.\",\"TRANS_STANDINGS_RANK_SETUP_H2H_MATCH\":\"If points are tied at the end of the com"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "R_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-play PCT\",\"TRANS_HOCKEY_STATISTICS_PENALTY_KILLING\":\"Pen. Killing PCT\",\"TRANS_HOCKEY_STATISTICS_HITS\":\"Hits\",\"T"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "_STATISTICS_GOALKEEPER_EVEN_STRENGTH_SAVES\":\"Goalkeeper Even Strength Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_POWERPLAY_SAVES\":\"Goalkeeper Power-play Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORTHANDED_SAVES\":\"Goalkeeper Shorthanded Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES_PERCENTAGE\":\"Save Percentage\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALS_AGAINST_AVERAGE\":\"Goals Against Average\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHUTOUTS\":\"Shutouts\",\"TRANS_HOCKEY_PENALTY_SLASHING\":\"Slashing\",\"TRANS_HOCKEY_PENALTY_BOARDING\":\"Boarding\",\"TRANS_HOCKEY_PENALTY_BUTT_ENDING\":\"Butt-ending\",\"TRANS_HOCKEY_PENALTY_CROSS_CHECKING\":\"Cross-checking\",\"TRANS_HOCKEY_PENALTY_DELAY_OF_GAME\":\"Delay of game\",\"TRANS_HOCKEY_PENALTY_ELBOWI"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGORY_ATTACKS\":\"Attack\",\"TRANS_SOCCER_STATISTICS_CATEGORY_PASSES\":\"Passes\",\"TRANS_SOCCER_STATISTICS_CATEGORY_DEFENSE\":\"Defense\",\"TRANS_SOCCER_STATISTICS_CAT"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "/LivesportFinderLatin-Bold_Static.woff2\" as=\"font\" type=\"font/woff2\" crossorigin> <meta property=\"og:url\" content=\"https://www.soccerway.com/match"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": ",\"TRANS_DAY_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "Y_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_GOLF\":\"Statistics\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_CRICKET\":\"Scorecard\",\"TRANS_DETAIL_BOOKMARK_FALL_OF_WICKETS\":\"Fall of Wickets\",\"TRANS_DETAIL_BOOKMARK_OVERS\":\"Ball by Ball\",\"TRANS_DETAIL_BOOKMARK_LIVE_COMMENTARY\":\"Commentary\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS\":\"Pre-match odds\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS_UNCLICKABLE\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_ODDS\":\"Live odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_TABLE\":\"LIVE Table\","
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "ON_GUIDE_LINK\":\"https:\\/\\/www.flashscore.com\\/r\\/?t=5&id=OSM00lBF\",\"TRANS_NOTIFICATION_GUIDE_TEXT\":\"How to set up tailored notifications\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE_MALE\":\"Go to player profile\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE\":\"Go to profile\",\"TRANS_PLAYER_STATS_LOAD_FAILED\":\"Player stats couldn’t be loaded.\",\"TRANS_PLAYER_STATS_TRY_AGAIN\":\"Please try again later.\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_TOP_STATS\":\"top\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_SHOTS\":\"shots\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_ATTACK\":\"attack\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_PASSES\":\"passes\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_DEFENSE\":\"defense\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_GOALKEEPING\""
+        }
+      ],
+      "tableTagCount": 0
+    },
+    "stats": {
+      "url": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/stats/",
+      "title": "Stuttgart v Dortmund 04/04/2026, Stats - Soccerway.com",
+      "canonicalUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/stats/",
+      "metaDescription": null,
+      "ogTitle": "Stuttgart - Dortmund 0:2",
+      "ogDescription": "GERMANY: Bundesliga - Round 28",
+      "htmlLength": 557851,
+      "eventId": "2NTch5hd",
+      "preconnects": [
+        "https://2020.ds.lsapp.eu/pq_graphql",
+        "https://2020.flashscore.ninja"
+      ],
+      "scriptAssets": [
+        "/x/js/translations-detail.2020.3c843f3d.js",
+        "/res/_fs/build/detail.e9087d2.js"
+      ],
+      "tabIdentifiers": [
+        {
+          "key": "SUMMARY",
+          "ident": "summary"
+        },
+        {
+          "key": "LINEUPS",
+          "ident": "lineups"
+        },
+        {
+          "key": "ODDS_COMPARISON",
+          "ident": "odds"
+        },
+        {
+          "key": "TV",
+          "ident": "tv"
+        },
+        {
+          "key": "STATISTICS",
+          "ident": "stats"
+        },
+        {
+          "key": "PLAYER_STATISTICS",
+          "ident": "player-stats"
+        },
+        {
+          "key": "LIVE_COMMENTARY",
+          "ident": "live-commentary"
+        },
+        {
+          "key": "STANDINGS",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_DRAW",
+          "ident": "draw"
+        },
+        {
+          "key": "NEWS_FEED",
+          "ident": "news"
+        },
+        {
+          "key": "LIVE_TABLE",
+          "ident": "live-table"
+        },
+        {
+          "key": "MATCH_HISTORY",
+          "ident": "match-history"
+        },
+        {
+          "key": "MATCH_HISTORY_TENNIS",
+          "ident": "point-by-point"
+        },
+        {
+          "key": "MATCH_HISTORY_DARTS",
+          "ident": "match-history"
+        },
+        {
+          "key": "VIDEO_HIGHLIGHTS",
+          "ident": "video"
+        },
+        {
+          "key": "PHOTOREPORT",
+          "ident": "photos"
+        },
+        {
+          "key": "REPORT",
+          "ident": "report"
+        },
+        {
+          "key": "STANDINGS_FORM",
+          "ident": "form"
+        },
+        {
+          "key": "STANDINGS_TOP_SCORERS",
+          "ident": "top-scorers"
+        },
+        {
+          "key": "STANDINGS_OVERALL",
+          "ident": "overall"
+        },
+        {
+          "key": "STANDINGS_HOME",
+          "ident": "home"
+        },
+        {
+          "key": "STANDINGS_AWAY",
+          "ident": "away"
+        },
+        {
+          "key": "STANDINGS_TABLE",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_LIVE_TABLE",
+          "ident": "live-standings"
+        },
+        {
+          "key": "STANDINGS_OVER_UNDER",
+          "ident": "over_under"
+        },
+        {
+          "key": "LIVE_COMMENTARY_ALL",
+          "ident": "all-comments"
+        },
+        {
+          "key": "LIVE_COMMENTARY_IMPORTANT",
+          "ident": "important-only"
+        },
+        {
+          "key": "STATS_FT",
+          "ident": "overall"
+        },
+        {
+          "key": "STATS_ET",
+          "ident": "extra-time"
+        },
+        {
+          "key": "STATS_EINN",
+          "ident": "extra-inning"
+        },
+        {
+          "key": "COMPARISON_DOUBLE_CHANCE",
+          "ident": "double-chance"
+        },
+        {
+          "key": "COMPARISON_OVER_UNDER",
+          "ident": "over-under"
+        },
+        {
+          "key": "COMPARISON_ASIAN_HANDICAP",
+          "ident": "asian-handicap"
+        },
+        {
+          "key": "COMPARISON_HOME_AWAY",
+          "ident": "home-away"
+        },
+        {
+          "key": "COMPARISON_DRAW_NO_BET",
+          "ident": "draw-no-bet"
+        },
+        {
+          "key": "COMPARISON_TO_QUALIFY",
+          "ident": "to-qualify"
+        },
+        {
+          "key": "COMPARISON_HT_FT",
+          "ident": "ht-ft"
+        },
+        {
+          "key": "COMPARISON_CORRECT_SCORE",
+          "ident": "correct-score"
+        },
+        {
+          "key": "COMPARISON_ODD_EVEN",
+          "ident": "odd-even"
+        },
+        {
+          "key": "COMPARISON_BOTH_TEAMS_TO_SCORE",
+          "ident": "both-teams-to-score"
+        },
+        {
+          "key": "COMPARISON_EUROPEAN_HANDICAP",
+          "ident": "european-handicap"
+        },
+        {
+          "key": "COMPARISON_NEXT_GOAL",
+          "ident": "next-goal"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT_INCLUDE_OT",
+          "ident": "ft-including-ot"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT",
+          "ident": "full-time"
+        }
+      ],
+      "statLabelCount": 23,
+      "playerStatLabelCount": 34,
+      "shortPlayerStatLabelCount": 17,
+      "eventLabelCount": 6,
+      "statLabels": [
+        {
+          "key": "BALL_POSSESSION",
+          "label": "Ball possession"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "FREE_KICKS",
+          "label": "Free kicks"
+        },
+        {
+          "key": "CORNER_KICKS",
+          "label": "Corner kicks"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "THROW_INS",
+          "label": "Throw ins"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "GOAL_KICKS",
+          "label": "Goal kicks"
+        },
+        {
+          "key": "FOULS",
+          "label": "Fouls"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "CATEGORY_TOP_STATS",
+          "label": "Top stats"
+        },
+        {
+          "key": "CATEGORY_SHOTS",
+          "label": "Shots"
+        },
+        {
+          "key": "CATEGORY_ATTACKS",
+          "label": "Attack"
+        },
+        {
+          "key": "CATEGORY_PASSES",
+          "label": "Passes"
+        },
+        {
+          "key": "CATEGORY_DEFENSE",
+          "label": "Defense"
+        },
+        {
+          "key": "CATEGORY_GOALKEEPING",
+          "label": "Goalkeeping"
+        },
+        {
+          "key": "LONG_BALLS",
+          "label": "Long passes"
+        },
+        {
+          "key": "PASSES_IN_THE_FINAL_THIRD_ACCURACY",
+          "label": "Passes in final third"
+        },
+        {
+          "key": "TACKLES_ACCURACY",
+          "label": "Tackles"
+        },
+        {
+          "key": "CROSSES_ACCURACY",
+          "label": "Crosses"
+        }
+      ],
+      "playerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "Goals"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "Assists"
+        },
+        {
+          "key": "SHORT_GOALS",
+          "label": "G"
+        },
+        {
+          "key": "SHORT_ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHORT_SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "SHORT_SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "SHORT_OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "Fouls committed"
+        },
+        {
+          "key": "SHORT_FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "Fouls suffered"
+        },
+        {
+          "key": "SHORT_FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "SHORT_YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "SHORT_RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "SHORT_PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "Passes"
+        },
+        {
+          "key": "SHORT_TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "Total passes"
+        },
+        {
+          "key": "SHORT_GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHORT_BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "Blocked shots"
+        },
+        {
+          "key": "SHORT_COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "Completed passes"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHORT_SHUTOUTS",
+          "label": "CS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "Save Percentage"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "Shutouts"
+        }
+      ],
+      "shortPlayerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "G"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "CS"
+        }
+      ],
+      "eventLabels": [
+        {
+          "key": "GOAL",
+          "label": ""
+        },
+        {
+          "key": "PEN",
+          "label": "Penalty"
+        },
+        {
+          "key": "PEN_MISS",
+          "label": "Penalty missed"
+        },
+        {
+          "key": "OWN",
+          "label": "Own goal"
+        },
+        {
+          "key": "RED",
+          "label": "Red card"
+        },
+        {
+          "key": "YELLOW",
+          "label": "Yellow card"
+        }
+      ],
+      "likelyCoverage": {
+        "teamGoals": true,
+        "teamShots": true,
+        "teamShotsOnTarget": true,
+        "teamCorners": true,
+        "teamCards": true,
+        "playerGoalsFromEvents": true,
+        "playerAssistsFromEvents": true,
+        "playerCardsFromEvents": true,
+        "playerShotsLikely": true,
+        "playerShotsOnTargetLikely": true
+      },
+      "playerLinksSample": [],
+      "teamLinksSample": [
+        "/team/inter-miami/0AheRyBg/",
+        "/team/al-nassr/h4I89ZuE/",
+        "/team/messi-lionel/vgOOdZbd/",
+        "/team/ronaldo-cristiano/WGOY4FSt/",
+        "/team/arsenal/hA1Zm19f/",
+        "/team/manchester-city/Wtn9Stg0/",
+        "/team/manchester-united/ppjDR086/",
+        "/team/chelsea/4fGZN2oK/",
+        "/team/liverpool/lId4TMwf/"
+      ],
+      "matchLinksSample": [
+        "/match/fiorentina-Q3A3IbXH/lazio-URcSl02h/",
+        "/match/leeds-tUxUbLR2/manchester-united-ppjDR086/",
+        "/match/atl-madrid-jaarqpLQ/barcelona-SKbpVP5K/",
+        "/match/liverpool-lId4TMwf/psg-CjhkPw0k/",
+        "/match/arsenal-hA1Zm19f/sporting-cp-tljXuHBC/",
+        "/match/bayern-munich-nVp0wiqd/real-madrid-W8mj7MDD/",
+        "/match/cagliari-SCGVmKHb/inter-Iw7eKK25/",
+        "/match/lazio-URcSl02h/napoli-69Dxbc61/",
+        "/match/as-roma-zVqqL0ma/atalanta-8C9JjMXu/",
+        "/match/chelsea-4fGZN2oK/manchester-united-ppjDR086/",
+        "/match/fountain-gate-UZbifa45/simba-C2SQy01d/",
+        "/match/al-ettifaq-fc-ncrXAWGn/al-nassr-h4I89ZuE/",
+        "/match/mbeya-city-6o8pEMUK/young-africans-dMbOiRbT/",
+        "/match/dortmund-nP1i5US1/hoffenheim-hQAtP9Sl/",
+        "/match/namungo-rq101FoU/simba-C2SQy01d/",
+        "/match/colorado-rapids-jmBZNRn8/inter-miami-0AheRyBg/",
+        "/match/al-nassr-h4I89ZuE/al-wasl-OQuUcn3P/",
+        "/match/bayern-munich-nVp0wiqd/vfb-stuttgart-nJQmYp1B/"
+      ],
+      "snippets": [
+        {
+          "keyword": "Corner kicks",
+          "snippet": "TICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGOR"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_GOAL\":\"Power-play\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_SHORTHANDED_GOAL\":\"Shorthanded\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-pl"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_STATISTICS_GOALS\":\"Goals\",\"TRANS_HOCKEY_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_HOCKEY_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PIM\":\"Penalties in Minutes\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_PLAYER_STATISTICS_HITS\":\"Hits\",\"TRANS_HOCKEY_PLAYER_STATISTICS_BLOCKED_SHOTS\":\"Blocked Shots\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GIVEAWAYS\":\"Giveaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_TAKEAWAYS\":\"Takeaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS\":\"Faceoffs\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_WON\":\"Faceoffs Won\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS\":\"FO\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS_WON\":\"FOW\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_P"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "SOCCER_MATCH_SCORER_TYPE_OWN\":\"Own goal\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_RED\":\"Red card\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_YELLOW\":\"Yellow card\",\"TRANS_SOCCER_STATISTICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELL"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "RANS_PLAYER_CAREER_SHORT_MATCHES_PLAYED\":\"MP\",\"TRANS_PLAYER_CAREER_MINUTES\":\"Minutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "Y_LEAGUE_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRAN"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "_RUGBY_UNION_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"T"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "nutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS_PLAYER_CAREER_TYPE\":\"Type\",\"TRANS_PLAYER_CAREER_FEE\":\"Fee\",\"TRANS_PLAYER_CAREE"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "AYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_PEN\":\"Penalties\",\"TRANS_RUGBY_"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "N_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"TRANS_SNOOKER_WORLD_RANKING_MENU\":\"World Ranking\",\"TRANS_SNOOKER"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "he number of goals a goalkeeper should have conceded based on the quantity and quality of the shots faced. The quality of each shot is calculated based on factors such as shot placement, goalkeeper positioning and more. xGOT Faced corresponds to the xGOT value of the opposing side.\",\"TRANS_EXPECTED_ASSISTS_INFO\":\"xA represents the likelihood that a pass will lead to an assist for a goal. It evaluates the quality of a pass based on factors such as its placement, trajectory, and the context of the attacking play.\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER_SHORT\":\"(G)\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER\":\"Goalkeeper\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN_SHORT\":\"(C)\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN\":\"Captain\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN_SHORT\":\"(A)\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN\""
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TISTICS_CATEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_B"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_BASKETBALL_"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "IL_BOOKMARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Od"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "ARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Odds forma"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "NT_STANDINGS\":\"Current standings\",\"TRANS_TEAM\":\"Team\",\"TRANS_TEAM_COACHES\":\"Coaches\",\"TRANS_PLAYER\":\"Player\",\"TRANS_PLAYERS\":\"Players\",\"TRANS_GOALKEEPER\":\"Goalkeeper\",\"TRANS_RANK\":\"Rank\",\"TRANS_MATCHES_PLAYED_SHORT\":\"MP\",\"TRANS_WINS_SHORT\":\"W\",\"TRANS_DRAWS_SHORT\":\"D\",\"TRANS_LOSSES_SHORT\":\"L\",\"TRANS_GOALS_SHORT\":\"Goals\",\"TRANS_POINTS_SHORT\":\"Pts\",\"TRANS_MATCHES_PLAYED\":\"Matches played\",\"TRANS_WIN\":\"Win\",\"TRANS_DRAW\":\"Draw\",\"TRANS_LOST\":\"Loss\",\"TRANS_GOALS\":\"Goals\",\"TRANS_POINTS\":\"Points\",\"TRANS_WIN_SHORT\":\"W\",\"TRANS_DRAW_SHORT\":\"D\",\"TRANS_LOST_SHORT\":\"L\",\"TRANS_LAST_5\":\"Last 5\",\"TRANS_LAST_5_MATCHES\":\"Last 5 matches\",\"TRANS_STANDINGS_NOT_FOR_THIS_SPORT\":\"This sport is not provided with standings at the moment.\",\"TRANS_STANDINGS_RANK_SETUP_H2H_MATCH\":\"If points are tied at the end of the com"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "R_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-play PCT\",\"TRANS_HOCKEY_STATISTICS_PENALTY_KILLING\":\"Pen. Killing PCT\",\"TRANS_HOCKEY_STATISTICS_HITS\":\"Hits\",\"T"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "_STATISTICS_GOALKEEPER_EVEN_STRENGTH_SAVES\":\"Goalkeeper Even Strength Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_POWERPLAY_SAVES\":\"Goalkeeper Power-play Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORTHANDED_SAVES\":\"Goalkeeper Shorthanded Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES_PERCENTAGE\":\"Save Percentage\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALS_AGAINST_AVERAGE\":\"Goals Against Average\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHUTOUTS\":\"Shutouts\",\"TRANS_HOCKEY_PENALTY_SLASHING\":\"Slashing\",\"TRANS_HOCKEY_PENALTY_BOARDING\":\"Boarding\",\"TRANS_HOCKEY_PENALTY_BUTT_ENDING\":\"Butt-ending\",\"TRANS_HOCKEY_PENALTY_CROSS_CHECKING\":\"Cross-checking\",\"TRANS_HOCKEY_PENALTY_DELAY_OF_GAME\":\"Delay of game\",\"TRANS_HOCKEY_PENALTY_ELBOWI"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGORY_ATTACKS\":\"Attack\",\"TRANS_SOCCER_STATISTICS_CATEGORY_PASSES\":\"Passes\",\"TRANS_SOCCER_STATISTICS_CATEGORY_DEFENSE\":\"Defense\",\"TRANS_SOCCER_STATISTICS_CAT"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": ",\"TRANS_DAY_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "Y_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "\",\"TRANS_DETAIL_BOOKMARK_ODDS\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_STANDINGS_TABLE\":\"Standings\",\"TRANS_DETAIL_BOOKMARK_STANDINGS_DRAW\":\"Draw\",\"TRANS_DETAIL_BOOKMARK_NEWS_FEED\":\"News\",\"TRANS_DATE_OF_BIRTH\":\"Date of Birth\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_SUMMARY\":\"summary\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_LINEUPS\":\"lineups\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_ODDS_COMPARISON\":\"odds\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_TV\":\"tv\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STATISTICS\":\"stats\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_PLAYER_STATISTICS\":\"player-stats\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_LIVE_COMMENTARY\":\"live-commentary\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STANDINGS\":\"standings\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STANDINGS_DRAW\":\"draw\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_NEWS_FEED\":\"news\",\"TRANS_DETAIL_BOOKMARK_URL_IDEN"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_GOLF\":\"Statistics\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_CRICKET\":\"Scorecard\",\"TRANS_DETAIL_BOOKMARK_FALL_OF_WICKETS\":\"Fall of Wickets\",\"TRANS_DETAIL_BOOKMARK_OVERS\":\"Ball by Ball\",\"TRANS_DETAIL_BOOKMARK_LIVE_COMMENTARY\":\"Commentary\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS\":\"Pre-match odds\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS_UNCLICKABLE\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_ODDS\":\"Live odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_TABLE\":\"LIVE Table\","
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "ON_GUIDE_LINK\":\"https:\\/\\/www.flashscore.com\\/r\\/?t=5&id=OSM00lBF\",\"TRANS_NOTIFICATION_GUIDE_TEXT\":\"How to set up tailored notifications\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE_MALE\":\"Go to player profile\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE\":\"Go to profile\",\"TRANS_PLAYER_STATS_LOAD_FAILED\":\"Player stats couldn’t be loaded.\",\"TRANS_PLAYER_STATS_TRY_AGAIN\":\"Please try again later.\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_TOP_STATS\":\"top\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_SHOTS\":\"shots\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_ATTACK\":\"attack\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_PASSES\":\"passes\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_DEFENSE\":\"defense\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_GOALKEEPING\""
+        }
+      ],
+      "tableTagCount": 0
+    },
+    "player-stats": {
+      "url": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/player-stats/",
+      "title": "Stuttgart v Dortmund 04/04/2026, Player stats - Soccerway.com",
+      "canonicalUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/player-stats/",
+      "metaDescription": null,
+      "ogTitle": "Stuttgart - Dortmund 0:2",
+      "ogDescription": "GERMANY: Bundesliga - Round 28",
+      "htmlLength": 558011,
+      "eventId": "2NTch5hd",
+      "preconnects": [
+        "https://2020.ds.lsapp.eu/pq_graphql",
+        "https://2020.flashscore.ninja"
+      ],
+      "scriptAssets": [
+        "/x/js/translations-detail.2020.3c843f3d.js",
+        "/res/_fs/build/detail.e9087d2.js"
+      ],
+      "tabIdentifiers": [
+        {
+          "key": "SUMMARY",
+          "ident": "summary"
+        },
+        {
+          "key": "LINEUPS",
+          "ident": "lineups"
+        },
+        {
+          "key": "ODDS_COMPARISON",
+          "ident": "odds"
+        },
+        {
+          "key": "TV",
+          "ident": "tv"
+        },
+        {
+          "key": "STATISTICS",
+          "ident": "stats"
+        },
+        {
+          "key": "PLAYER_STATISTICS",
+          "ident": "player-stats"
+        },
+        {
+          "key": "LIVE_COMMENTARY",
+          "ident": "live-commentary"
+        },
+        {
+          "key": "STANDINGS",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_DRAW",
+          "ident": "draw"
+        },
+        {
+          "key": "NEWS_FEED",
+          "ident": "news"
+        },
+        {
+          "key": "LIVE_TABLE",
+          "ident": "live-table"
+        },
+        {
+          "key": "MATCH_HISTORY",
+          "ident": "match-history"
+        },
+        {
+          "key": "MATCH_HISTORY_TENNIS",
+          "ident": "point-by-point"
+        },
+        {
+          "key": "MATCH_HISTORY_DARTS",
+          "ident": "match-history"
+        },
+        {
+          "key": "VIDEO_HIGHLIGHTS",
+          "ident": "video"
+        },
+        {
+          "key": "PHOTOREPORT",
+          "ident": "photos"
+        },
+        {
+          "key": "REPORT",
+          "ident": "report"
+        },
+        {
+          "key": "STANDINGS_FORM",
+          "ident": "form"
+        },
+        {
+          "key": "STANDINGS_TOP_SCORERS",
+          "ident": "top-scorers"
+        },
+        {
+          "key": "STANDINGS_OVERALL",
+          "ident": "overall"
+        },
+        {
+          "key": "STANDINGS_HOME",
+          "ident": "home"
+        },
+        {
+          "key": "STANDINGS_AWAY",
+          "ident": "away"
+        },
+        {
+          "key": "STANDINGS_TABLE",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_LIVE_TABLE",
+          "ident": "live-standings"
+        },
+        {
+          "key": "STANDINGS_OVER_UNDER",
+          "ident": "over_under"
+        },
+        {
+          "key": "LIVE_COMMENTARY_ALL",
+          "ident": "all-comments"
+        },
+        {
+          "key": "LIVE_COMMENTARY_IMPORTANT",
+          "ident": "important-only"
+        },
+        {
+          "key": "STATS_FT",
+          "ident": "overall"
+        },
+        {
+          "key": "STATS_ET",
+          "ident": "extra-time"
+        },
+        {
+          "key": "STATS_EINN",
+          "ident": "extra-inning"
+        },
+        {
+          "key": "COMPARISON_DOUBLE_CHANCE",
+          "ident": "double-chance"
+        },
+        {
+          "key": "COMPARISON_OVER_UNDER",
+          "ident": "over-under"
+        },
+        {
+          "key": "COMPARISON_ASIAN_HANDICAP",
+          "ident": "asian-handicap"
+        },
+        {
+          "key": "COMPARISON_HOME_AWAY",
+          "ident": "home-away"
+        },
+        {
+          "key": "COMPARISON_DRAW_NO_BET",
+          "ident": "draw-no-bet"
+        },
+        {
+          "key": "COMPARISON_TO_QUALIFY",
+          "ident": "to-qualify"
+        },
+        {
+          "key": "COMPARISON_HT_FT",
+          "ident": "ht-ft"
+        },
+        {
+          "key": "COMPARISON_CORRECT_SCORE",
+          "ident": "correct-score"
+        },
+        {
+          "key": "COMPARISON_ODD_EVEN",
+          "ident": "odd-even"
+        },
+        {
+          "key": "COMPARISON_BOTH_TEAMS_TO_SCORE",
+          "ident": "both-teams-to-score"
+        },
+        {
+          "key": "COMPARISON_EUROPEAN_HANDICAP",
+          "ident": "european-handicap"
+        },
+        {
+          "key": "COMPARISON_NEXT_GOAL",
+          "ident": "next-goal"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT_INCLUDE_OT",
+          "ident": "ft-including-ot"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT",
+          "ident": "full-time"
+        }
+      ],
+      "statLabelCount": 23,
+      "playerStatLabelCount": 34,
+      "shortPlayerStatLabelCount": 17,
+      "eventLabelCount": 6,
+      "statLabels": [
+        {
+          "key": "BALL_POSSESSION",
+          "label": "Ball possession"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "FREE_KICKS",
+          "label": "Free kicks"
+        },
+        {
+          "key": "CORNER_KICKS",
+          "label": "Corner kicks"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "THROW_INS",
+          "label": "Throw ins"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "GOAL_KICKS",
+          "label": "Goal kicks"
+        },
+        {
+          "key": "FOULS",
+          "label": "Fouls"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "CATEGORY_TOP_STATS",
+          "label": "Top stats"
+        },
+        {
+          "key": "CATEGORY_SHOTS",
+          "label": "Shots"
+        },
+        {
+          "key": "CATEGORY_ATTACKS",
+          "label": "Attack"
+        },
+        {
+          "key": "CATEGORY_PASSES",
+          "label": "Passes"
+        },
+        {
+          "key": "CATEGORY_DEFENSE",
+          "label": "Defense"
+        },
+        {
+          "key": "CATEGORY_GOALKEEPING",
+          "label": "Goalkeeping"
+        },
+        {
+          "key": "LONG_BALLS",
+          "label": "Long passes"
+        },
+        {
+          "key": "PASSES_IN_THE_FINAL_THIRD_ACCURACY",
+          "label": "Passes in final third"
+        },
+        {
+          "key": "TACKLES_ACCURACY",
+          "label": "Tackles"
+        },
+        {
+          "key": "CROSSES_ACCURACY",
+          "label": "Crosses"
+        }
+      ],
+      "playerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "Goals"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "Assists"
+        },
+        {
+          "key": "SHORT_GOALS",
+          "label": "G"
+        },
+        {
+          "key": "SHORT_ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHORT_SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "SHORT_SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "SHORT_OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "Fouls committed"
+        },
+        {
+          "key": "SHORT_FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "Fouls suffered"
+        },
+        {
+          "key": "SHORT_FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "SHORT_YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "SHORT_RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "SHORT_PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "Passes"
+        },
+        {
+          "key": "SHORT_TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "Total passes"
+        },
+        {
+          "key": "SHORT_GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHORT_BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "Blocked shots"
+        },
+        {
+          "key": "SHORT_COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "Completed passes"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHORT_SHUTOUTS",
+          "label": "CS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "Save Percentage"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "Shutouts"
+        }
+      ],
+      "shortPlayerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "G"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "CS"
+        }
+      ],
+      "eventLabels": [
+        {
+          "key": "GOAL",
+          "label": ""
+        },
+        {
+          "key": "PEN",
+          "label": "Penalty"
+        },
+        {
+          "key": "PEN_MISS",
+          "label": "Penalty missed"
+        },
+        {
+          "key": "OWN",
+          "label": "Own goal"
+        },
+        {
+          "key": "RED",
+          "label": "Red card"
+        },
+        {
+          "key": "YELLOW",
+          "label": "Yellow card"
+        }
+      ],
+      "likelyCoverage": {
+        "teamGoals": true,
+        "teamShots": true,
+        "teamShotsOnTarget": true,
+        "teamCorners": true,
+        "teamCards": true,
+        "playerGoalsFromEvents": true,
+        "playerAssistsFromEvents": true,
+        "playerCardsFromEvents": true,
+        "playerShotsLikely": true,
+        "playerShotsOnTargetLikely": true
+      },
+      "playerLinksSample": [],
+      "teamLinksSample": [
+        "/team/inter-miami/0AheRyBg/",
+        "/team/al-nassr/h4I89ZuE/",
+        "/team/messi-lionel/vgOOdZbd/",
+        "/team/ronaldo-cristiano/WGOY4FSt/",
+        "/team/arsenal/hA1Zm19f/",
+        "/team/manchester-city/Wtn9Stg0/",
+        "/team/manchester-united/ppjDR086/",
+        "/team/chelsea/4fGZN2oK/",
+        "/team/liverpool/lId4TMwf/"
+      ],
+      "matchLinksSample": [
+        "/match/fiorentina-Q3A3IbXH/lazio-URcSl02h/",
+        "/match/leeds-tUxUbLR2/manchester-united-ppjDR086/",
+        "/match/atl-madrid-jaarqpLQ/barcelona-SKbpVP5K/",
+        "/match/liverpool-lId4TMwf/psg-CjhkPw0k/",
+        "/match/arsenal-hA1Zm19f/sporting-cp-tljXuHBC/",
+        "/match/bayern-munich-nVp0wiqd/real-madrid-W8mj7MDD/",
+        "/match/cagliari-SCGVmKHb/inter-Iw7eKK25/",
+        "/match/lazio-URcSl02h/napoli-69Dxbc61/",
+        "/match/as-roma-zVqqL0ma/atalanta-8C9JjMXu/",
+        "/match/chelsea-4fGZN2oK/manchester-united-ppjDR086/",
+        "/match/fountain-gate-UZbifa45/simba-C2SQy01d/",
+        "/match/al-ettifaq-fc-ncrXAWGn/al-nassr-h4I89ZuE/",
+        "/match/mbeya-city-6o8pEMUK/young-africans-dMbOiRbT/",
+        "/match/dortmund-nP1i5US1/hoffenheim-hQAtP9Sl/",
+        "/match/namungo-rq101FoU/simba-C2SQy01d/",
+        "/match/colorado-rapids-jmBZNRn8/inter-miami-0AheRyBg/",
+        "/match/al-nassr-h4I89ZuE/al-wasl-OQuUcn3P/",
+        "/match/bayern-munich-nVp0wiqd/vfb-stuttgart-nJQmYp1B/"
+      ],
+      "snippets": [
+        {
+          "keyword": "Corner kicks",
+          "snippet": "TICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGOR"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_GOAL\":\"Power-play\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_SHORTHANDED_GOAL\":\"Shorthanded\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-pl"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_STATISTICS_GOALS\":\"Goals\",\"TRANS_HOCKEY_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_HOCKEY_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PIM\":\"Penalties in Minutes\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_PLAYER_STATISTICS_HITS\":\"Hits\",\"TRANS_HOCKEY_PLAYER_STATISTICS_BLOCKED_SHOTS\":\"Blocked Shots\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GIVEAWAYS\":\"Giveaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_TAKEAWAYS\":\"Takeaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS\":\"Faceoffs\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_WON\":\"Faceoffs Won\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS\":\"FO\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS_WON\":\"FOW\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_P"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "SOCCER_MATCH_SCORER_TYPE_OWN\":\"Own goal\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_RED\":\"Red card\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_YELLOW\":\"Yellow card\",\"TRANS_SOCCER_STATISTICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELL"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "RANS_PLAYER_CAREER_SHORT_MATCHES_PLAYED\":\"MP\",\"TRANS_PLAYER_CAREER_MINUTES\":\"Minutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "Y_LEAGUE_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRAN"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "_RUGBY_UNION_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"T"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "nutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS_PLAYER_CAREER_TYPE\":\"Type\",\"TRANS_PLAYER_CAREER_FEE\":\"Fee\",\"TRANS_PLAYER_CAREE"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "AYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_PEN\":\"Penalties\",\"TRANS_RUGBY_"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "N_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"TRANS_SNOOKER_WORLD_RANKING_MENU\":\"World Ranking\",\"TRANS_SNOOKER"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "he number of goals a goalkeeper should have conceded based on the quantity and quality of the shots faced. The quality of each shot is calculated based on factors such as shot placement, goalkeeper positioning and more. xGOT Faced corresponds to the xGOT value of the opposing side.\",\"TRANS_EXPECTED_ASSISTS_INFO\":\"xA represents the likelihood that a pass will lead to an assist for a goal. It evaluates the quality of a pass based on factors such as its placement, trajectory, and the context of the attacking play.\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER_SHORT\":\"(G)\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER\":\"Goalkeeper\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN_SHORT\":\"(C)\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN\":\"Captain\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN_SHORT\":\"(A)\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN\""
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TISTICS_CATEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_B"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_BASKETBALL_"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "IL_BOOKMARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Od"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "ARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Odds forma"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "NT_STANDINGS\":\"Current standings\",\"TRANS_TEAM\":\"Team\",\"TRANS_TEAM_COACHES\":\"Coaches\",\"TRANS_PLAYER\":\"Player\",\"TRANS_PLAYERS\":\"Players\",\"TRANS_GOALKEEPER\":\"Goalkeeper\",\"TRANS_RANK\":\"Rank\",\"TRANS_MATCHES_PLAYED_SHORT\":\"MP\",\"TRANS_WINS_SHORT\":\"W\",\"TRANS_DRAWS_SHORT\":\"D\",\"TRANS_LOSSES_SHORT\":\"L\",\"TRANS_GOALS_SHORT\":\"Goals\",\"TRANS_POINTS_SHORT\":\"Pts\",\"TRANS_MATCHES_PLAYED\":\"Matches played\",\"TRANS_WIN\":\"Win\",\"TRANS_DRAW\":\"Draw\",\"TRANS_LOST\":\"Loss\",\"TRANS_GOALS\":\"Goals\",\"TRANS_POINTS\":\"Points\",\"TRANS_WIN_SHORT\":\"W\",\"TRANS_DRAW_SHORT\":\"D\",\"TRANS_LOST_SHORT\":\"L\",\"TRANS_LAST_5\":\"Last 5\",\"TRANS_LAST_5_MATCHES\":\"Last 5 matches\",\"TRANS_STANDINGS_NOT_FOR_THIS_SPORT\":\"This sport is not provided with standings at the moment.\",\"TRANS_STANDINGS_RANK_SETUP_H2H_MATCH\":\"If points are tied at the end of the com"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "R_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-play PCT\",\"TRANS_HOCKEY_STATISTICS_PENALTY_KILLING\":\"Pen. Killing PCT\",\"TRANS_HOCKEY_STATISTICS_HITS\":\"Hits\",\"T"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "_STATISTICS_GOALKEEPER_EVEN_STRENGTH_SAVES\":\"Goalkeeper Even Strength Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_POWERPLAY_SAVES\":\"Goalkeeper Power-play Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORTHANDED_SAVES\":\"Goalkeeper Shorthanded Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES_PERCENTAGE\":\"Save Percentage\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALS_AGAINST_AVERAGE\":\"Goals Against Average\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHUTOUTS\":\"Shutouts\",\"TRANS_HOCKEY_PENALTY_SLASHING\":\"Slashing\",\"TRANS_HOCKEY_PENALTY_BOARDING\":\"Boarding\",\"TRANS_HOCKEY_PENALTY_BUTT_ENDING\":\"Butt-ending\",\"TRANS_HOCKEY_PENALTY_CROSS_CHECKING\":\"Cross-checking\",\"TRANS_HOCKEY_PENALTY_DELAY_OF_GAME\":\"Delay of game\",\"TRANS_HOCKEY_PENALTY_ELBOWI"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGORY_ATTACKS\":\"Attack\",\"TRANS_SOCCER_STATISTICS_CATEGORY_PASSES\":\"Passes\",\"TRANS_SOCCER_STATISTICS_CATEGORY_DEFENSE\":\"Defense\",\"TRANS_SOCCER_STATISTICS_CAT"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": ",\"TRANS_DAY_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "Y_SAT\":\"Saturday\",\"TRANS_DAY_SUN\":\"Sunday\",\"TRANS_DAY_TODAY\":\"Today\",\"TRANS_DAY_TOMORROW\":\"Tomorrow\",\"TRANS_DAY_YESTERDAY\":\"Yesterday\",\"TRANS_DAY_NEXT\":\"Next day\",\"TRANS_DAY_PREVIOUS\":\"Previous day\",\"TRANS_DATE\":\"Date\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_LINEUPS\":\"Lineups\",\"TRANS_DETAIL_BOOKMARK_ODDS_COMPARISON\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_TV_SCHEDULE\":\"TV\",\"TRANS_DETAIL_BOOKMARK_TV_LIVE_STREAMING\":\"TV \\/ Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "\",\"TRANS_DETAIL_BOOKMARK_ODDS\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_STANDINGS_TABLE\":\"Standings\",\"TRANS_DETAIL_BOOKMARK_STANDINGS_DRAW\":\"Draw\",\"TRANS_DETAIL_BOOKMARK_NEWS_FEED\":\"News\",\"TRANS_DATE_OF_BIRTH\":\"Date of Birth\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_SUMMARY\":\"summary\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_LINEUPS\":\"lineups\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_ODDS_COMPARISON\":\"odds\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_TV\":\"tv\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STATISTICS\":\"stats\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_PLAYER_STATISTICS\":\"player-stats\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_LIVE_COMMENTARY\":\"live-commentary\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STANDINGS\":\"standings\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_STANDINGS_DRAW\":\"draw\",\"TRANS_DETAIL_BOOKMARK_URL_IDENT_NEWS_FEED\":\"news\",\"TRANS_DETAIL_BOOKMARK_URL_IDEN"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "Stuttgart v Dortmund 04/04/2026, Player stats - Soccerway.com <link rel=\"preload\" href=\"https://sta"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "ocal.setDarkThemeAsDefault(); } cjs.Api.darkModeLocal.setThemeClass() Stuttgart v Dortmund 04/04/2026 Player stats cjs.Api.loader.get(\"cjs\").call((_cjs) => { _cjs.Api.localLsid.beforeLoad((isLoggedIn) => { if (isLoggedIn) { const seoTopElement = document.getElementsByClassName('seoTop')[0]; seoTopElement.style.display = 'none'; seoTopElement.classList.add('seoTopHidden'); document.body.classList.add('isLoggedIn'); document.body.classList.remove('seoTopWrapperHi"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_GOLF\":\"Statistics\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_CRICKET\":\"Scorecard\",\"TRANS_DETAIL_BOOKMARK_FALL_OF_WICKETS\":\"Fall of Wickets\",\"TRANS_DETAIL_BOOKMARK_OVERS\":\"Ball by Ball\",\"TRANS_DETAIL_BOOKMARK_LIVE_COMMENTARY\":\"Commentary\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS\":\"Pre-match odds\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS_UNCLICKABLE\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_ODDS\":\"Live odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_TABLE\":\"LIVE Table\","
+        }
+      ],
+      "tableTagCount": 0
+    },
+    "lineups": {
+      "url": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/lineups/",
+      "title": "Stuttgart v Dortmund 04/04/2026, Lineups - Soccerway.com",
+      "canonicalUrl": "https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/lineups/",
+      "metaDescription": null,
+      "ogTitle": "Stuttgart - Dortmund 0:2",
+      "ogDescription": "GERMANY: Bundesliga - Round 28",
+      "htmlLength": 557658,
+      "eventId": "2NTch5hd",
+      "preconnects": [
+        "https://2020.ds.lsapp.eu/pq_graphql",
+        "https://2020.flashscore.ninja"
+      ],
+      "scriptAssets": [
+        "/x/js/translations-detail.2020.3c843f3d.js",
+        "/res/_fs/build/detail.e9087d2.js"
+      ],
+      "tabIdentifiers": [
+        {
+          "key": "SUMMARY",
+          "ident": "summary"
+        },
+        {
+          "key": "LINEUPS",
+          "ident": "lineups"
+        },
+        {
+          "key": "ODDS_COMPARISON",
+          "ident": "odds"
+        },
+        {
+          "key": "TV",
+          "ident": "tv"
+        },
+        {
+          "key": "STATISTICS",
+          "ident": "stats"
+        },
+        {
+          "key": "PLAYER_STATISTICS",
+          "ident": "player-stats"
+        },
+        {
+          "key": "LIVE_COMMENTARY",
+          "ident": "live-commentary"
+        },
+        {
+          "key": "STANDINGS",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_DRAW",
+          "ident": "draw"
+        },
+        {
+          "key": "NEWS_FEED",
+          "ident": "news"
+        },
+        {
+          "key": "LIVE_TABLE",
+          "ident": "live-table"
+        },
+        {
+          "key": "MATCH_HISTORY",
+          "ident": "match-history"
+        },
+        {
+          "key": "MATCH_HISTORY_TENNIS",
+          "ident": "point-by-point"
+        },
+        {
+          "key": "MATCH_HISTORY_DARTS",
+          "ident": "match-history"
+        },
+        {
+          "key": "VIDEO_HIGHLIGHTS",
+          "ident": "video"
+        },
+        {
+          "key": "PHOTOREPORT",
+          "ident": "photos"
+        },
+        {
+          "key": "REPORT",
+          "ident": "report"
+        },
+        {
+          "key": "STANDINGS_FORM",
+          "ident": "form"
+        },
+        {
+          "key": "STANDINGS_TOP_SCORERS",
+          "ident": "top-scorers"
+        },
+        {
+          "key": "STANDINGS_OVERALL",
+          "ident": "overall"
+        },
+        {
+          "key": "STANDINGS_HOME",
+          "ident": "home"
+        },
+        {
+          "key": "STANDINGS_AWAY",
+          "ident": "away"
+        },
+        {
+          "key": "STANDINGS_TABLE",
+          "ident": "standings"
+        },
+        {
+          "key": "STANDINGS_LIVE_TABLE",
+          "ident": "live-standings"
+        },
+        {
+          "key": "STANDINGS_OVER_UNDER",
+          "ident": "over_under"
+        },
+        {
+          "key": "LIVE_COMMENTARY_ALL",
+          "ident": "all-comments"
+        },
+        {
+          "key": "LIVE_COMMENTARY_IMPORTANT",
+          "ident": "important-only"
+        },
+        {
+          "key": "STATS_FT",
+          "ident": "overall"
+        },
+        {
+          "key": "STATS_ET",
+          "ident": "extra-time"
+        },
+        {
+          "key": "STATS_EINN",
+          "ident": "extra-inning"
+        },
+        {
+          "key": "COMPARISON_DOUBLE_CHANCE",
+          "ident": "double-chance"
+        },
+        {
+          "key": "COMPARISON_OVER_UNDER",
+          "ident": "over-under"
+        },
+        {
+          "key": "COMPARISON_ASIAN_HANDICAP",
+          "ident": "asian-handicap"
+        },
+        {
+          "key": "COMPARISON_HOME_AWAY",
+          "ident": "home-away"
+        },
+        {
+          "key": "COMPARISON_DRAW_NO_BET",
+          "ident": "draw-no-bet"
+        },
+        {
+          "key": "COMPARISON_TO_QUALIFY",
+          "ident": "to-qualify"
+        },
+        {
+          "key": "COMPARISON_HT_FT",
+          "ident": "ht-ft"
+        },
+        {
+          "key": "COMPARISON_CORRECT_SCORE",
+          "ident": "correct-score"
+        },
+        {
+          "key": "COMPARISON_ODD_EVEN",
+          "ident": "odd-even"
+        },
+        {
+          "key": "COMPARISON_BOTH_TEAMS_TO_SCORE",
+          "ident": "both-teams-to-score"
+        },
+        {
+          "key": "COMPARISON_EUROPEAN_HANDICAP",
+          "ident": "european-handicap"
+        },
+        {
+          "key": "COMPARISON_NEXT_GOAL",
+          "ident": "next-goal"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT_INCLUDE_OT",
+          "ident": "ft-including-ot"
+        },
+        {
+          "key": "COMPARISON_SCOPE_FT",
+          "ident": "full-time"
+        }
+      ],
+      "statLabelCount": 23,
+      "playerStatLabelCount": 34,
+      "shortPlayerStatLabelCount": 17,
+      "eventLabelCount": 6,
+      "statLabels": [
+        {
+          "key": "BALL_POSSESSION",
+          "label": "Ball possession"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "FREE_KICKS",
+          "label": "Free kicks"
+        },
+        {
+          "key": "CORNER_KICKS",
+          "label": "Corner kicks"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "THROW_INS",
+          "label": "Throw ins"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "GOAL_KICKS",
+          "label": "Goal kicks"
+        },
+        {
+          "key": "FOULS",
+          "label": "Fouls"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "CATEGORY_TOP_STATS",
+          "label": "Top stats"
+        },
+        {
+          "key": "CATEGORY_SHOTS",
+          "label": "Shots"
+        },
+        {
+          "key": "CATEGORY_ATTACKS",
+          "label": "Attack"
+        },
+        {
+          "key": "CATEGORY_PASSES",
+          "label": "Passes"
+        },
+        {
+          "key": "CATEGORY_DEFENSE",
+          "label": "Defense"
+        },
+        {
+          "key": "CATEGORY_GOALKEEPING",
+          "label": "Goalkeeping"
+        },
+        {
+          "key": "LONG_BALLS",
+          "label": "Long passes"
+        },
+        {
+          "key": "PASSES_IN_THE_FINAL_THIRD_ACCURACY",
+          "label": "Passes in final third"
+        },
+        {
+          "key": "TACKLES_ACCURACY",
+          "label": "Tackles"
+        },
+        {
+          "key": "CROSSES_ACCURACY",
+          "label": "Crosses"
+        }
+      ],
+      "playerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "Goals"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "Assists"
+        },
+        {
+          "key": "SHORT_GOALS",
+          "label": "G"
+        },
+        {
+          "key": "SHORT_ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "Shots on goal"
+        },
+        {
+          "key": "SHORT_SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "Shots off goal"
+        },
+        {
+          "key": "SHORT_SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "Offsides"
+        },
+        {
+          "key": "SHORT_OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "Fouls committed"
+        },
+        {
+          "key": "SHORT_FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "Fouls suffered"
+        },
+        {
+          "key": "SHORT_FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "Goalkeeper saves"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "Yellow cards"
+        },
+        {
+          "key": "SHORT_YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "Red cards"
+        },
+        {
+          "key": "SHORT_RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "SHORT_PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "Passes"
+        },
+        {
+          "key": "SHORT_TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "Total passes"
+        },
+        {
+          "key": "SHORT_GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "Goal attempts"
+        },
+        {
+          "key": "SHORT_BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "Blocked shots"
+        },
+        {
+          "key": "SHORT_COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "Completed passes"
+        },
+        {
+          "key": "SHORT_GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHORT_SHUTOUTS",
+          "label": "CS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "Save Percentage"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "Shutouts"
+        }
+      ],
+      "shortPlayerStatLabels": [
+        {
+          "key": "GOALS",
+          "label": "G"
+        },
+        {
+          "key": "ASSISTS",
+          "label": "A"
+        },
+        {
+          "key": "SHOTS_ON_GOAL",
+          "label": "SG"
+        },
+        {
+          "key": "SHOTS_OFF_GOAL",
+          "label": "SO"
+        },
+        {
+          "key": "OFFSIDES",
+          "label": "O"
+        },
+        {
+          "key": "FOULS_COMMITED",
+          "label": "FC"
+        },
+        {
+          "key": "FOULS_SUFFERED",
+          "label": "FS"
+        },
+        {
+          "key": "GOALKEEPER_SAVES",
+          "label": "GS"
+        },
+        {
+          "key": "YELLOW_CARDS",
+          "label": "YC"
+        },
+        {
+          "key": "RED_CARDS",
+          "label": "RC"
+        },
+        {
+          "key": "PASS_SUCCESS",
+          "label": "PS"
+        },
+        {
+          "key": "TOTAL_PASSES",
+          "label": "TP"
+        },
+        {
+          "key": "GOAL_ATTEMPTS",
+          "label": "GA"
+        },
+        {
+          "key": "BLOCKED_SHOTS",
+          "label": "BS"
+        },
+        {
+          "key": "COMPLETES_PASSES",
+          "label": "CP"
+        },
+        {
+          "key": "GOALKEEPER_SAVES_PERCENTAGE",
+          "label": "SV%"
+        },
+        {
+          "key": "SHUTOUTS",
+          "label": "CS"
+        }
+      ],
+      "eventLabels": [
+        {
+          "key": "GOAL",
+          "label": ""
+        },
+        {
+          "key": "PEN",
+          "label": "Penalty"
+        },
+        {
+          "key": "PEN_MISS",
+          "label": "Penalty missed"
+        },
+        {
+          "key": "OWN",
+          "label": "Own goal"
+        },
+        {
+          "key": "RED",
+          "label": "Red card"
+        },
+        {
+          "key": "YELLOW",
+          "label": "Yellow card"
+        }
+      ],
+      "likelyCoverage": {
+        "teamGoals": true,
+        "teamShots": true,
+        "teamShotsOnTarget": true,
+        "teamCorners": true,
+        "teamCards": true,
+        "playerGoalsFromEvents": true,
+        "playerAssistsFromEvents": true,
+        "playerCardsFromEvents": true,
+        "playerShotsLikely": true,
+        "playerShotsOnTargetLikely": true
+      },
+      "playerLinksSample": [],
+      "teamLinksSample": [
+        "/team/inter-miami/0AheRyBg/",
+        "/team/al-nassr/h4I89ZuE/",
+        "/team/messi-lionel/vgOOdZbd/",
+        "/team/ronaldo-cristiano/WGOY4FSt/",
+        "/team/arsenal/hA1Zm19f/",
+        "/team/manchester-city/Wtn9Stg0/",
+        "/team/manchester-united/ppjDR086/",
+        "/team/chelsea/4fGZN2oK/",
+        "/team/liverpool/lId4TMwf/"
+      ],
+      "matchLinksSample": [
+        "/match/fiorentina-Q3A3IbXH/lazio-URcSl02h/",
+        "/match/leeds-tUxUbLR2/manchester-united-ppjDR086/",
+        "/match/atl-madrid-jaarqpLQ/barcelona-SKbpVP5K/",
+        "/match/liverpool-lId4TMwf/psg-CjhkPw0k/",
+        "/match/arsenal-hA1Zm19f/sporting-cp-tljXuHBC/",
+        "/match/bayern-munich-nVp0wiqd/real-madrid-W8mj7MDD/",
+        "/match/cagliari-SCGVmKHb/inter-Iw7eKK25/",
+        "/match/lazio-URcSl02h/napoli-69Dxbc61/",
+        "/match/as-roma-zVqqL0ma/atalanta-8C9JjMXu/",
+        "/match/chelsea-4fGZN2oK/manchester-united-ppjDR086/",
+        "/match/fountain-gate-UZbifa45/simba-C2SQy01d/",
+        "/match/al-ettifaq-fc-ncrXAWGn/al-nassr-h4I89ZuE/",
+        "/match/mbeya-city-6o8pEMUK/young-africans-dMbOiRbT/",
+        "/match/dortmund-nP1i5US1/hoffenheim-hQAtP9Sl/",
+        "/match/namungo-rq101FoU/simba-C2SQy01d/",
+        "/match/colorado-rapids-jmBZNRn8/inter-miami-0AheRyBg/",
+        "/match/al-nassr-h4I89ZuE/al-wasl-OQuUcn3P/",
+        "/match/bayern-munich-nVp0wiqd/vfb-stuttgart-nJQmYp1B/"
+      ],
+      "snippets": [
+        {
+          "keyword": "Corner kicks",
+          "snippet": "TICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGOR"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_GOAL\":\"Power-play\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_SHORTHANDED_GOAL\":\"Shorthanded\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-pl"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "_STATISTICS_GOALS\":\"Goals\",\"TRANS_HOCKEY_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_HOCKEY_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_HOCKEY_PLAYER_STATISTICS_PIM\":\"Penalties in Minutes\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_PLAYER_STATISTICS_HITS\":\"Hits\",\"TRANS_HOCKEY_PLAYER_STATISTICS_BLOCKED_SHOTS\":\"Blocked Shots\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GIVEAWAYS\":\"Giveaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_TAKEAWAYS\":\"Takeaways\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS\":\"Faceoffs\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_WON\":\"Faceoffs Won\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS\":\"FO\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORT_FACEOFFS_WON\":\"FOW\",\"TRANS_HOCKEY_PLAYER_STATISTICS_FACEOFFS_P"
+        },
+        {
+          "keyword": "Shots on goal",
+          "snippet": "SOCCER_MATCH_SCORER_TYPE_OWN\":\"Own goal\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_RED\":\"Red card\",\"TRANS_SOCCER_MATCH_SCORER_TYPE_YELLOW\":\"Yellow card\",\"TRANS_SOCCER_STATISTICS_BALL_POSSESSION\":\"Ball possession\",\"TRANS_SOCCER_STATISTICS_GOAL_ATTEMPTS\":\"Goal attempts\",\"TRANS_SOCCER_STATISTICS_SHOTS_ON_GOAL\":\"Shots on goal\",\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELL"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "RANS_PLAYER_CAREER_SHORT_MATCHES_PLAYED\":\"MP\",\"TRANS_PLAYER_CAREER_MINUTES\":\"Minutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "Y_LEAGUE_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRAN"
+        },
+        {
+          "keyword": "Yellow cards",
+          "snippet": "_RUGBY_UNION_PLAYER_STATISTICS_TRIES\":\"Tries\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"T"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "nutes\",\"TRANS_PLAYER_CAREER_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_PLAYER_CAREER_GOALS\":\"Goals\",\"TRANS_PLAYER_CAREER_GOALS_SCORED\":\"Goals Scored\",\"TRANS_PLAYER_CAREER_YELLOW\":\"Yellow\",\"TRANS_PLAYER_CAREER_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_PLAYER_CAREER_RED\":\"Red\",\"TRANS_PLAYER_CAREER_RED_CARDS\":\"Red Cards\",\"TRANS_PLAYER_CAREER_TOTAL\":\"Total\",\"TRANS_PLAYER_CAREER_DISPLAY_COMPETITIONS\":\"Display competitions\",\"TRANS_PLAYER_CAREER_HIDE_COMPETITIONS\":\"Hide competitions\",\"TRANS_PLAYER_CAREER_SHOW_DETAILS\":\"Show details\",\"TRANS_PLAYER_CAREER_HIDE_DETAILS\":\"Hide details\",\"TRANS_PLAYER_CAREER_TRANSFERS\":\"Transfers\",\"TRANS_PLAYER_CAREER_DATE\":\"Date\",\"TRANS_PLAYER_CAREER_FROM\":\"From\",\"TRANS_PLAYER_CAREER_TO\":\"To\",\"TRANS_PLAYER_CAREER_TYPE\":\"Type\",\"TRANS_PLAYER_CAREER_FEE\":\"Fee\",\"TRANS_PLAYER_CAREE"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "AYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_LEAGUE_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_LEAGUE_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_LEAGUE_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_RUGBY_UNION_MATCH_STATUS_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_PEN\":\"Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_AET\":\"After Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_FIN_APEN\":\"After Penalties\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_ET\":\"Extra Time\",\"TRANS_RUGBY_UNION_MATCH_STATUS_IFRAME_PEN\":\"Penalties\",\"TRANS_RUGBY_"
+        },
+        {
+          "keyword": "Red cards",
+          "snippet": "N_PLAYER_STATISTICS_CONVERSION_GOALS\":\"Conversions\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_PENALTY_GOALS\":\"Penalty Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_DROPPED_GOALS\":\"Drop Goals\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_YELLOW_CARDS\":\"Yellow Cards\",\"TRANS_RUGBY_UNION_PLAYER_STATISTICS_RED_CARDS\":\"Red Cards\",\"TRANS_RUGBY_UNION_POINT_BY_POINT\":\"Point by point\",\"TRANS_RUGBY_UNION_MATCH_HISTORY_LABEL_ADDITIONAL_TEXT\":\"(+ advantage of the leading team)\",\"TRANS_SNOOKER_BEST_OF_FRAMES\":\"Best of %s frames\",\"TRANS_SNOOKER_BEST_OF_FRAMES_IFRAME\":\"%s F\",\"TRANS_SNOOKER_FRAME_NUMBER\":\"Frame %s\",\"TRANS_SNOOKER_FRAME_BY_FRAME\":\"Frame by frame\",\"TRANS_SNOOKER_WORLD_RANKING\":\"World Ranking\",\"TRANS_SNOOKER_WORLD_RANKING_URL\":\"world-ranking\",\"TRANS_SNOOKER_WORLD_RANKING_MENU\":\"World Ranking\",\"TRANS_SNOOKER"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "he number of goals a goalkeeper should have conceded based on the quantity and quality of the shots faced. The quality of each shot is calculated based on factors such as shot placement, goalkeeper positioning and more. xGOT Faced corresponds to the xGOT value of the opposing side.\",\"TRANS_EXPECTED_ASSISTS_INFO\":\"xA represents the likelihood that a pass will lead to an assist for a goal. It evaluates the quality of a pass based on factors such as its placement, trajectory, and the context of the attacking play.\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER_SHORT\":\"(G)\",\"TRANS_PARTICIPANT_TYPE_GOALKEEPER\":\"Goalkeeper\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN_SHORT\":\"(C)\",\"TRANS_PARTICIPANT_TYPE_CAPTAIN\":\"Captain\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN_SHORT\":\"(A)\",\"TRANS_PARTICIPANT_TYPE_ALTERNATE_CAPTAIN\""
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TISTICS_CATEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_B"
+        },
+        {
+          "keyword": "Assists",
+          "snippet": "TEGORY_SCORING\":\"Scoring\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_REBOUNDS\":\"Rebounds\",\"TRANS_BASKETBALL_STATISTICS_CATEGORY_OTHER\":\"Other\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_POINTS\":\"Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_REBOUNDS\":\"Total Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_ASSISTS\":\"Assists\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_MINUTES_PLAYED\":\"Minutes Played\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PLUS_MINUS_POINTS\":\"+\\/- Points\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_OFFENSIVE_REBOUNDS\":\"Offensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_DEFENSIVE_REBOUNDS\":\"Defensive Rebounds\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_PERSONAL_FOULS\":\"Personal Fouls\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_STEALS\":\"Steals\",\"TRANS_BASKETBALL_PLAYER_STATISTICS_TURNOVERS\":\"Turnovers\",\"TRANS_BASKETBALL_"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "IL_BOOKMARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Od"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "ARK_URL_IDENT_COMPARISON_SCOPE_SET2\":\"set-2\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_SETS\":\"Sets\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GAMES\":\"Games\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_POINTS\":\"Points\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_FRAMES\":\"Frames\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_GOALS\":\"Goals\",\"TRANS_ODDS_COMPARISON_HANDICAP_TYPE_RUNS\":\"Runs\",\"TRANS_ODDS\":\"Odds\",\"TRANS_LIVE_ODDS\":\"Live odds\",\"TRANS_BOOKMAKER\":\"Bookmaker\",\"TRANS_BETTING_EXCHANGE\":\"Betting Exchange\",\"TRANS_ODDS_POWERED_BY\":\"Odds displayed are advertising content from the listed bookmakers.\",\"TRANS_ODDS_POWERED_BY_IN_LIVE_TABLE\":\"Tato sekce je komerční prezentací kurzové nabídky společností: %s\",\"TRANS_PREMATCH_ODDS_UNAVAILABLE\":\"Pre-match odds were not available for this bet type.\",\"TRANS_ODDS_FORMAT\":\"Odds forma"
+        },
+        {
+          "keyword": "Goals",
+          "snippet": "NT_STANDINGS\":\"Current standings\",\"TRANS_TEAM\":\"Team\",\"TRANS_TEAM_COACHES\":\"Coaches\",\"TRANS_PLAYER\":\"Player\",\"TRANS_PLAYERS\":\"Players\",\"TRANS_GOALKEEPER\":\"Goalkeeper\",\"TRANS_RANK\":\"Rank\",\"TRANS_MATCHES_PLAYED_SHORT\":\"MP\",\"TRANS_WINS_SHORT\":\"W\",\"TRANS_DRAWS_SHORT\":\"D\",\"TRANS_LOSSES_SHORT\":\"L\",\"TRANS_GOALS_SHORT\":\"Goals\",\"TRANS_POINTS_SHORT\":\"Pts\",\"TRANS_MATCHES_PLAYED\":\"Matches played\",\"TRANS_WIN\":\"Win\",\"TRANS_DRAW\":\"Draw\",\"TRANS_LOST\":\"Loss\",\"TRANS_GOALS\":\"Goals\",\"TRANS_POINTS\":\"Points\",\"TRANS_WIN_SHORT\":\"W\",\"TRANS_DRAW_SHORT\":\"D\",\"TRANS_LOST_SHORT\":\"L\",\"TRANS_LAST_5\":\"Last 5\",\"TRANS_LAST_5_MATCHES\":\"Last 5 matches\",\"TRANS_STANDINGS_NOT_FOR_THIS_SPORT\":\"This sport is not provided with standings at the moment.\",\"TRANS_STANDINGS_RANK_SETUP_H2H_MATCH\":\"If points are tied at the end of the com"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "R_TYPE_EMPTY_NET_GOAL\":\"Empty net\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_SCORED\":\"Penalty\",\"TRANS_HOCKEY_MATCH_SCORER_TYPE_PEN_MISSED\":\"Penalty missed\",\"TRANS_HOCKEY_STATISTICS_SHOTS_ON_GOAL\":\"Shots on Goal\",\"TRANS_HOCKEY_STATISTICS_SHOOTING\":\"Shooting PCT\",\"TRANS_HOCKEY_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_STATISTICS_SAVES\":\"Saves PCT\",\"TRANS_HOCKEY_STATISTICS_EMPTY_NET_GOALS\":\"Empty Net Goals\",\"TRANS_HOCKEY_STATISTICS_PENALTIES\":\"Penalties\",\"TRANS_HOCKEY_STATISTICS_PENALTY_IN_MINUTES\":\"PIM\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY_GOALS\":\"Power-play Goals\",\"TRANS_HOCKEY_STATISTICS_SHORTHANDED_GOALS\":\"Shorthanded Goals\",\"TRANS_HOCKEY_STATISTICS_POWERPLAY\":\"Power-play PCT\",\"TRANS_HOCKEY_STATISTICS_PENALTY_KILLING\":\"Pen. Killing PCT\",\"TRANS_HOCKEY_STATISTICS_HITS\":\"Hits\",\"T"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "_STATISTICS_GOALKEEPER_EVEN_STRENGTH_SAVES\":\"Goalkeeper Even Strength Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_POWERPLAY_SAVES\":\"Goalkeeper Power-play Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHORTHANDED_SAVES\":\"Goalkeeper Shorthanded Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper Saves\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALKEEPER_SAVES_PERCENTAGE\":\"Save Percentage\",\"TRANS_HOCKEY_PLAYER_STATISTICS_GOALS_AGAINST_AVERAGE\":\"Goals Against Average\",\"TRANS_HOCKEY_PLAYER_STATISTICS_SHUTOUTS\":\"Shutouts\",\"TRANS_HOCKEY_PENALTY_SLASHING\":\"Slashing\",\"TRANS_HOCKEY_PENALTY_BOARDING\":\"Boarding\",\"TRANS_HOCKEY_PENALTY_BUTT_ENDING\":\"Butt-ending\",\"TRANS_HOCKEY_PENALTY_CROSS_CHECKING\":\"Cross-checking\",\"TRANS_HOCKEY_PENALTY_DELAY_OF_GAME\":\"Delay of game\",\"TRANS_HOCKEY_PENALTY_ELBOWI"
+        },
+        {
+          "keyword": "Goalkeeper saves",
+          "snippet": "\"TRANS_SOCCER_STATISTICS_SHOTS_OFF_GOAL\":\"Shots off goal\",\"TRANS_SOCCER_STATISTICS_FREE_KICKS\":\"Free kicks\",\"TRANS_SOCCER_STATISTICS_CORNER_KICKS\":\"Corner kicks\",\"TRANS_SOCCER_STATISTICS_OFFSIDES\":\"Offsides\",\"TRANS_SOCCER_STATISTICS_THROW_INS\":\"Throw ins\",\"TRANS_SOCCER_STATISTICS_GOALKEEPER_SAVES\":\"Goalkeeper saves\",\"TRANS_SOCCER_STATISTICS_GOAL_KICKS\":\"Goal kicks\",\"TRANS_SOCCER_STATISTICS_FOULS\":\"Fouls\",\"TRANS_SOCCER_STATISTICS_RED_CARDS\":\"Red cards\",\"TRANS_SOCCER_STATISTICS_YELLOW_CARDS\":\"Yellow cards\",\"TRANS_SOCCER_STATISTICS_CATEGORY_TOP_STATS\":\"Top stats\",\"TRANS_SOCCER_STATISTICS_CATEGORY_SHOTS\":\"Shots\",\"TRANS_SOCCER_STATISTICS_CATEGORY_ATTACKS\":\"Attack\",\"TRANS_SOCCER_STATISTICS_CATEGORY_PASSES\":\"Passes\",\"TRANS_SOCCER_STATISTICS_CATEGORY_DEFENSE\":\"Defense\",\"TRANS_SOCCER_STATISTICS_CAT"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "Stuttgart v Dortmund 04/04/2026, Lineups - Soccerway.com <link rel=\"preload\" href=\"https://static.f"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "th=device-width, initial-scale=1\"> <link c"
+        },
+        {
+          "keyword": "lineups",
+          "snippet": "ef=\"https://static.flashscore.com/res/styles/container.2020.css\"> <link rel=\"alternate\" hreflang=\"en-gh\" h"
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "Live Streaming\",\"TRANS_DETAIL_BOOKMARK_LIVE_CENTRE\":\"Live Centre\",\"TRANS_DETAIL_BOOKMARK_MATCH\":\"Match\",\"TRANS_DETAIL_BOOKMARK_MATCH_SUMMARY_2\":\"Summary\",\"TRANS_DETAIL_BOOKMARK_MATCH_STATISTICS\":\"Match Statistics\",\"TRANS_DETAIL_BOOKMARK_STATISTICS\":\"Stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS\":\"Player stats\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_GOLF\":\"Statistics\",\"TRANS_DETAIL_BOOKMARK_PLAYER_STATISTICS_CRICKET\":\"Scorecard\",\"TRANS_DETAIL_BOOKMARK_FALL_OF_WICKETS\":\"Fall of Wickets\",\"TRANS_DETAIL_BOOKMARK_OVERS\":\"Ball by Ball\",\"TRANS_DETAIL_BOOKMARK_LIVE_COMMENTARY\":\"Commentary\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS\":\"Pre-match odds\",\"TRANS_DETAIL_BOOKMARK_PRE_MATCH_ODDS_UNCLICKABLE\":\"Odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_ODDS\":\"Live odds\",\"TRANS_DETAIL_BOOKMARK_LIVE_TABLE\":\"LIVE Table\","
+        },
+        {
+          "keyword": "player stats",
+          "snippet": "ON_GUIDE_LINK\":\"https:\\/\\/www.flashscore.com\\/r\\/?t=5&id=OSM00lBF\",\"TRANS_NOTIFICATION_GUIDE_TEXT\":\"How to set up tailored notifications\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE_MALE\":\"Go to player profile\",\"TRANS_PLAYER_STATS_GO_TO_PLAYER_PROFILE\":\"Go to profile\",\"TRANS_PLAYER_STATS_LOAD_FAILED\":\"Player stats couldn’t be loaded.\",\"TRANS_PLAYER_STATS_TRY_AGAIN\":\"Please try again later.\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_TOP_STATS\":\"top\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_SHOTS\":\"shots\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_ATTACK\":\"attack\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_PASSES\":\"passes\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_DEFENSE\":\"defense\",\"TRANS_PLAYER_MATCH_STATS_SOCCER_CATEGORY_URL_IDENT_GOALKEEPING\""
+        }
+      ],
+      "tableTagCount": 0
+    }
+  },
+  "combinedCoverage": {
+    "teamStats": {
+      "statsPage": {
+        "teamGoals": true,
+        "teamShots": true,
+        "teamShotsOnTarget": true,
+        "teamCorners": true,
+        "teamCards": true,
+        "playerGoalsFromEvents": true,
+        "playerAssistsFromEvents": true,
+        "playerCardsFromEvents": true,
+        "playerShotsLikely": true,
+        "playerShotsOnTargetLikely": true
+      }
+    },
+    "playerStats": {
+      "labelsDetected": 34,
+      "shortLabelsDetected": 17,
+      "playerShots": true,
+      "playerShotsOnTarget": true,
+      "playerGoals": true,
+      "playerAssists": true,
+      "playerCards": true,
+      "goalkeeperSaves": true
+    },
+    "events": {
+      "summaryHasGoalEvents": true,
+      "summaryHasCardEvents": true
+    }
+  },
+  "jsonAssignments": []
+}
