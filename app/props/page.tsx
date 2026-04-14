@@ -137,6 +137,7 @@ interface AflGameForProps {
 
 type CombinedPropsSnapshotResponse = {
   success: boolean;
+  error?: string;
   snapshotVersion?: number;
   generatedAt?: string;
   staleAt?: string;
