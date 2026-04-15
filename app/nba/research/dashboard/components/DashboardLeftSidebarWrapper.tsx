@@ -17,6 +17,8 @@ interface DashboardLeftSidebarWrapperProps {
   onSignOutClick: () => void;
   onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
   belowNavSlot?: ReactNode;
+  /** When set with /afl, show Sports + Journal + Coming Soon like NBA dashboard (e.g. AFL Game Props). */
+  showDashboardNavLinks?: boolean;
 }
 
 export function DashboardLeftSidebarWrapper({
@@ -33,6 +35,7 @@ export function DashboardLeftSidebarWrapper({
   onSignOutClick,
   onProfileUpdated,
   belowNavSlot,
+  showDashboardNavLinks,
 }: DashboardLeftSidebarWrapperProps) {
   return (
     <>
@@ -51,6 +54,7 @@ export function DashboardLeftSidebarWrapper({
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           belowNavSlot={belowNavSlot}
+          showDashboardNavLinks={showDashboardNavLinks}
         />
       
       {/* Expand Sidebar Button - visible when sidebar is closed */}

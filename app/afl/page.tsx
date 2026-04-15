@@ -3462,6 +3462,7 @@ export default function AFLPage() {
               onSubscriptionClick={() => router.push('/subscription')}
               onSignOutClick={async () => { await supabase.auth.signOut({ scope: 'local' }); router.push('/'); }}
               onProfileUpdated={({ username: u, avatar_url: a }) => { if (u !== undefined) setUsername(u ?? null); if (a !== undefined) setAvatarUrl(a ?? null); }}
+              showDashboardNavLinks={aflPropsMode === 'team'}
               belowNavSlot={
                 aflPropsMode === 'player' && selectedPlayer?.name ? (
                   <AflSidebarHotPicks
