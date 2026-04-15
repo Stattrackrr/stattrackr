@@ -192,42 +192,46 @@ function rankedFallbackRows(rows: AflDisposalsProjectionRow[]): AflDisposalsProj
     });
 }
 
+/** Matches `score_upcoming.py` default `--top3-max-same-side` (max picks on one side of the line per game). */
+const TOP_PICKS_MAX_SAME_SIDE = 2;
+
 function selectTopRowsWithSideAnchors(rows: AflDisposalsProjectionRow[], limit: number): AflDisposalsProjectionRow[] {
   const cappedLimit = Math.max(1, Math.min(10, limit));
+  const maxSame = Math.max(1, TOP_PICKS_MAX_SAME_SIDE);
   const ranked = rankedRecommendedRows(rows);
   if (ranked.length === 0) return [];
 
   const selected: AflDisposalsProjectionRow[] = [];
   const selectedPlayers = new Set<string>();
+  let overCount = 0;
+  let underCount = 0;
 
-  const bestOver = ranked.find((row) => row.recommendedSide === 'OVER');
-  if (bestOver) {
-    const key = normalizeName(String(bestOver.playerName ?? ''));
-    if (key) {
-      selected.push(bestOver);
-      selectedPlayers.add(key);
-    }
-  }
+  const canTakeSide = (side: 'OVER' | 'UNDER') =>
+    side === 'OVER' ? overCount < maxSame : underCount < maxSame;
 
-  const bestUnder = ranked.find((row) => {
-    if (row.recommendedSide !== 'UNDER') return false;
-    const key = normalizeName(String(row.playerName ?? ''));
-    return !!key && !selectedPlayers.has(key);
-  });
-  if (bestUnder) {
-    const key = normalizeName(String(bestUnder.playerName ?? ''));
-    if (key) {
-      selected.push(bestUnder);
-      selectedPlayers.add(key);
-    }
-  }
-
-  for (const row of ranked) {
-    if (selected.length >= cappedLimit) break;
+  const tryAdd = (row: AflDisposalsProjectionRow): boolean => {
+    const side = row.recommendedSide;
+    if (side !== 'OVER' && side !== 'UNDER') return false;
     const playerKey = normalizeName(String(row.playerName ?? ''));
-    if (!playerKey || selectedPlayers.has(playerKey)) continue;
+    if (!playerKey || selectedPlayers.has(playerKey)) return false;
+    if (!canTakeSide(side)) return false;
     selected.push(row);
     selectedPlayers.add(playerKey);
+    if (side === 'OVER') overCount += 1;
+    else underCount += 1;
+    return true;
+  };
+
+  // Anchor: best OVER and best UNDER by rank order (when caps allow).
+  const bestOver = ranked.find((row) => row.recommendedSide === 'OVER');
+  if (bestOver) tryAdd(bestOver);
+  const bestUnder = ranked.find((row) => row.recommendedSide === 'UNDER');
+  if (bestUnder) tryAdd(bestUnder);
+
+  // Fill remaining slots in rank order, but never exceed maxSame on one side (avoids 3× UNDER when model leans under).
+  for (const row of ranked) {
+    if (selected.length >= cappedLimit) break;
+    tryAdd(row);
   }
 
   return selected.slice(0, cappedLimit);
@@ -365,19 +369,28 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
       // Keep game visible even when no row passes recommendation thresholds.
       // Fallback to strongest model rows by absolute edge for that matchup.
       const fallbackRanked = rankedFallbackRows(gameRows);
+      const cap = Math.max(1, Math.min(10, limitPerGame));
+      const maxSame = TOP_PICKS_MAX_SAME_SIDE;
       const seen = new Set<string>();
+      let overCt = 0;
+      let underCt = 0;
       selected = [];
       for (const row of fallbackRanked) {
-        if (selected.length >= Math.max(1, Math.min(10, limitPerGame))) break;
+        if (selected.length >= cap) break;
         const key = normalizeName(String(row.playerName ?? ''));
         if (!key || seen.has(key)) continue;
+        const side: 'OVER' | 'UNDER' =
+          row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
+            ? row.recommendedSide
+            : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER');
+        if (side === 'OVER' && overCt >= maxSame) continue;
+        if (side === 'UNDER' && underCt >= maxSame) continue;
         seen.add(key);
+        if (side === 'OVER') overCt += 1;
+        else underCt += 1;
         selected.push({
           ...row,
-          recommendedSide:
-            row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
-              ? row.recommendedSide
-              : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER'),
+          recommendedSide: side,
           recommendedEdge:
             typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge)
               ? row.recommendedEdge

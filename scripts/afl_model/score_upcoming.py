@@ -1034,17 +1034,40 @@ def _to_recommended_side(row: dict) -> str:
     return ""
 
 
-def _pick_unique_players_sorted(candidates: List[dict], limit: int) -> List[dict]:
+def _pick_unique_players_sorted(
+    candidates: List[dict], limit: int, max_same_side: int = 99
+) -> List[dict]:
+    """Greedy pick by candidate order: unique players, at most `max_same_side` on each OVER/UNDER side."""
+    max_same = max(1, int(max_same_side))
     seen_players: set[str] = set()
     picked: List[dict] = []
+    over_ct = 0
+    under_ct = 0
+
+    def can_take(side: str) -> bool:
+        if side == "OVER":
+            return over_ct < max_same
+        if side == "UNDER":
+            return under_ct < max_same
+        return False
+
     for row in candidates:
+        if len(picked) >= limit:
+            break
+        side = str(row.get("recommendedSide") or "").strip().upper()
+        if side not in {"OVER", "UNDER"}:
+            continue
         player_key = normalize_name(str(row.get("playerName") or ""))
         if not player_key or player_key in seen_players:
             continue
-        seen_players.add(player_key)
+        if not can_take(side):
+            continue
         picked.append(row)
-        if len(picked) >= limit:
-            break
+        seen_players.add(player_key)
+        if side == "OVER":
+            over_ct += 1
+        else:
+            under_ct += 1
     return picked
 
 
@@ -1249,8 +1272,9 @@ def assign_top3_game_ranks(
             )
         )
 
-        # Deterministic ranking: highest edge/probability with one row per player.
-        selected = _pick_unique_players_sorted(candidates, limit=3)
+        # Deterministic ranking: highest edge/probability, unique players, capped same-side count
+        # (matches TS `TOP_PICKS_MAX_SAME_SIDE` so UI cannot show 3× UNDER when model leans under).
+        selected = _pick_unique_players_sorted(candidates, limit=3, max_same_side=max_same_side)
         rank_by_player: Dict[str, int] = {}
         for idx, row in enumerate(selected, start=1):
             player_key = normalize_name(str(row.get("playerName") or ""))
@@ -1262,7 +1286,7 @@ def assign_top3_game_ranks(
             rank = rank_by_player.get(player_key)
             row["recommendedPlayerRankInGame"] = rank if rank is not None else None
             row["isTop3PickInGame"] = bool(rank is not None and rank <= 3)
-            row["top3RankingVersion"] = "edge_prob_player_deterministic_v4"
+            row["top3RankingVersion"] = "edge_prob_player_side_cap_v5"
 
 
 def main() -> None:
