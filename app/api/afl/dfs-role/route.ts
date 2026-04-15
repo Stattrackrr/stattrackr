@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
 
 type DfsRolePlayer = {
   name?: string;
@@ -45,12 +46,21 @@ export async function GET(request: NextRequest) {
       }) || null;
     }
 
+    const dvpParam = String(request.nextUrl.searchParams.get('dvp') || '')
+      .trim()
+      .toUpperCase();
+    const fantasyDvp =
+      dvpParam === 'DEF' || dvpParam === 'MID' || dvpParam === 'FWD' || dvpParam === 'RUC' ? dvpParam : null;
+    const roleGroup = match?.roleGroup || null;
+    const shortLabel = resolveDfsRoleDisplayLabel(roleGroup, fantasyDvp);
+
     return NextResponse.json({
       success: true,
       player,
       found: !!match,
-      roleGroup: match?.roleGroup || null,
+      roleGroup,
       roleBucket: match?.roleBucket || null,
+      shortLabel,
       season: data.season ?? null,
       generatedAt: data.generatedAt ?? null,
     });

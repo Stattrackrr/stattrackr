@@ -2374,7 +2374,8 @@ export default function AFLPage() {
     return () => { cancelled = true; };
   }, [selectedPlayer?.name, selectedPlayer?.team, season]);
 
-  // Fetch DFS role label for top header context (e.g. MID - INS MID).
+  // Fetch DFS role label for top header context (e.g. MID - INS MID). Pass fantasy DvP so we can
+  // still show RUC → RUCK when the DFS role JSON is empty or missing the player.
   useEffect(() => {
     const playerName = selectedPlayer?.name ? String(selectedPlayer.name).trim() : '';
     if (aflPropsMode !== 'player' || !playerName) {
@@ -2384,17 +2385,26 @@ export default function AFLPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/afl/dfs-role?player=${encodeURIComponent(playerName)}`);
+        const dvp = toDvpPositionLabel(selectedPlayer?.position);
+        const q = new URLSearchParams();
+        q.set('player', playerName);
+        if (dvp) q.set('dvp', dvp);
+        const res = await fetch(`/api/afl/dfs-role?${q.toString()}`);
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
-        const label = dfsRoleGroupToHeaderLabel(typeof json?.roleGroup === 'string' ? json.roleGroup : null);
+        const fromApi =
+          typeof json?.shortLabel === 'string' && json.shortLabel.trim()
+            ? json.shortLabel.trim()
+            : null;
+        const label =
+          fromApi ?? dfsRoleGroupToHeaderLabel(typeof json?.roleGroup === 'string' ? json.roleGroup : null);
         setSelectedPlayerDfsRole(label);
       } catch {
         if (!cancelled) setSelectedPlayerDfsRole(null);
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, aflPropsMode]);
+  }, [selectedPlayer?.name, selectedPlayer?.position, aflPropsMode]);
 
   // Fetch player position from AFL Fantasy positions list for top header context.
   useEffect(() => {

@@ -42,6 +42,23 @@ export function dfsRoleGroupToShortLabel(roleGroup: string | null | undefined): 
   return String(roleGroup).trim();
 }
 
+/**
+ * Prefer role from DFS Australia map; when the map is empty or the player is missing, use a minimal
+ * DvP-aware fallback so headers still match Defense-vs-Position copy (e.g. RUC → RUCK).
+ */
+export function resolveDfsRoleDisplayLabel(
+  roleGroupFromFile: string | null | undefined,
+  fantasyDvp: string | null | undefined
+): string | null {
+  const fromFile = dfsRoleGroupToShortLabel(roleGroupFromFile);
+  if (fromFile) return fromFile;
+  const raw = String(fantasyDvp ?? '')
+    .trim()
+    .toUpperCase();
+  if (raw === 'RUC') return 'RUCK';
+  return null;
+}
+
 export function normalizeFantasyPositionToDvp(raw: string): 'DEF' | 'MID' | 'FWD' | 'RUC' {
   const pos = String(raw || '').trim().toUpperCase();
   if (pos === 'DEF' || pos === 'MID' || pos === 'FWD' || pos === 'RUC') return pos;

@@ -10,12 +10,7 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
-import {
-  dfsRoleGroupToShortLabel,
-  findDfsRoleGroup,
-  loadDfsRolePlayers,
-  normalizeFantasyPositionToDvp,
-} from '@/lib/aflDfsRoleMap';
+import { findDfsRoleGroup, loadDfsRolePlayers, normalizeFantasyPositionToDvp, resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -654,16 +649,6 @@ export async function GET(request: Request) {
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
-    const dfsPlayers = await loadDfsRolePlayers();
-    const dfsShortByNormalizedName = new Map<string, string | null>();
-    const seenPlayerKeysForDfs = new Set<string>();
-    for (const r of rows) {
-      const nk = normalizeAflPlayerNameForMatch(r.playerName);
-      if (seenPlayerKeysForDfs.has(nk)) continue;
-      seenPlayerKeysForDfs.add(nk);
-      const group = findDfsRoleGroup(dfsPlayers, r.playerName);
-      dfsShortByNormalizedName.set(nk, dfsRoleGroupToShortLabel(group));
-    }
     const rowContexts = rows.map((r) => {
       const playerTeam = resolvePlayerTeam(r.playerName, r.homeTeam, r.awayTeam);
       const opponent =
@@ -675,6 +660,21 @@ export async function GET(request: Request) {
       const position = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
       return { r, playerTeam, opponent, position };
     });
+    const dfsPlayers = await loadDfsRolePlayers();
+    const dfsShortByNormalizedName = new Map<string, string | null>();
+    const fantasyDvpByPlayerKey = new Map<string, 'DEF' | 'MID' | 'FWD' | 'RUC'>();
+    for (const ctx of rowContexts) {
+      const nk = normalizeAflPlayerNameForMatch(ctx.r.playerName);
+      if (!fantasyDvpByPlayerKey.has(nk)) {
+        fantasyDvpByPlayerKey.set(nk, normalizeFantasyPositionToDvp(ctx.position));
+      }
+    }
+    for (const [nk, fantasyDvp] of fantasyDvpByPlayerKey) {
+      const sampleName =
+        rowContexts.find((c) => normalizeAflPlayerNameForMatch(c.r.playerName) === nk)?.r.playerName ?? '';
+      const group = sampleName ? findDfsRoleGroup(dfsPlayers, sampleName) : null;
+      dfsShortByNormalizedName.set(nk, resolveDfsRoleDisplayLabel(group, fantasyDvp));
+    }
     const neededPositions = Array.from(new Set(rowContexts.map((ctx) => ctx.position).filter(Boolean)));
     await Promise.all(neededPositions.map((pos) => loadDvpBatchForPosition(pos)));
 
