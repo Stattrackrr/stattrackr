@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
@@ -25,6 +25,8 @@ interface LeftSidebarProps {
   onToggleSidebar?: () => void;
   /** Called after profile (name, username, phone) or avatar is saved so parent can update displayed name/avatar */
   onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
+  /** Optional scrollable region below Journal (e.g. AFL dashboard hot picks). */
+  belowNavSlot?: ReactNode;
 }
 
 export default function LeftSidebar({
@@ -42,6 +44,7 @@ export default function LeftSidebar({
   sidebarOpen = true,
   onToggleSidebar,
   onProfileUpdated,
+  belowNavSlot,
 }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
@@ -340,7 +343,8 @@ export default function LeftSidebar({
       </div>
 
       {/* Navigation links */}
-      <nav className="flex-1 p-3 text-black dark:text-white flex flex-col">
+      <nav className="flex-1 p-3 text-black dark:text-white flex flex-col min-h-0">
+        <div className="flex-shrink-0">
         {/* Sports Dropdown */}
         <div>
           <button
@@ -419,6 +423,12 @@ export default function LeftSidebar({
             )}
           </Link>
         </div>
+        </div>
+        {belowNavSlot ? (
+          <div className="flex-1 min-h-0 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto fade-scrollbar custom-scrollbar">{belowNavSlot}</div>
+          </div>
+        ) : null}
       </nav>
       
       {/* Profile Summary */}

@@ -13,6 +13,7 @@ import { AflTeamSelectionsCard } from '@/app/afl/components/AflTeamSelectionsCar
 import AflDvpCard from '@/app/afl/components/AflDvpCard';
 import { AflLadderCard, getTeamAbbrev } from '@/app/afl/components/AflLadderCard';
 import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
+import { AflSidebarHotPicks } from '@/app/afl/components/AflSidebarHotPicks';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
@@ -2107,6 +2108,28 @@ export default function AFLPage() {
       .catch(() => {});
   }, [season]);
 
+  const selectPlayerFromSidebarHotPick = useCallback(
+    (player: { name: string; team?: string }) => {
+      const name = String(player.name ?? '').trim();
+      if (!name) return;
+      const record: AflPlayerRecord = {
+        name,
+        ...(player.team && String(player.team).trim() ? { team: String(player.team).trim() } : {}),
+      };
+      setSearchQuery('');
+      setShowSearchDropdown(false);
+      setSelectedPlayer(record);
+      setAflPropsMode('player');
+      setAflRightTab('dvp');
+      setLoadingPlayerFromUrl(false);
+      setSelectedPlayerGameLogs([]);
+      setSelectedPlayerGameLogsWithQuarters([]);
+      setStatsLoadingForPlayer(true);
+      prefetchPlayerLogs(record);
+    },
+    [prefetchPlayerLogs]
+  );
+
   // Fetch FootyWire game logs for the selected player.
   useEffect(() => {
     const playerName = selectedPlayer?.name;
@@ -3378,6 +3401,15 @@ export default function AFLPage() {
               onSubscriptionClick={() => router.push('/subscription')}
               onSignOutClick={async () => { await supabase.auth.signOut({ scope: 'local' }); router.push('/'); }}
               onProfileUpdated={({ username: u, avatar_url: a }) => { if (u !== undefined) setUsername(u ?? null); if (a !== undefined) setAvatarUrl(a ?? null); }}
+              belowNavSlot={
+                aflPropsMode === 'player' && selectedPlayer?.name ? (
+                  <AflSidebarHotPicks
+                    excludePlayerName={String(selectedPlayer.name)}
+                    isDark={!!mounted && isDark}
+                    onSelectPlayer={selectPlayerFromSidebarHotPick}
+                  />
+                ) : undefined
+              }
             />
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 min-h-0">
               {/* Main content - same containers as NBA dashboard */}
