@@ -11,6 +11,8 @@ import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { Search } from 'lucide-react';
 import type { SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+import { SoccerStatsChart } from '@/app/soccer/components/SoccerStatsChart';
+import { SoccerResultsList } from '@/app/soccer/components/SoccerResultsList';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -81,9 +83,6 @@ export default function SoccerPage() {
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   const [propsMode, setPropsMode] = useState<'player' | 'team'>('player');
-  const [rightTab, setRightTab] = useState<'breakdown' | 'dvp' | 'team_matchup'>('dvp');
-  const [playerVsTab, setPlayerVsTab] = useState<'comparison' | 'prediction'>('comparison');
-  const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
 
   const [data, setData] = useState<SoccerDashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,14 +104,6 @@ export default function SoccerPage() {
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
 
   useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    if (propsMode === 'team') {
-      setRightTab('breakdown');
-    } else {
-      setRightTab('dvp');
-    }
-  }, [propsMode]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -483,238 +474,78 @@ export default function SoccerPage() {
                         mounted && isDark ? 'border-gray-700 text-gray-100' : 'border-gray-200 text-gray-900'
                       }`}
                     >
-                      Recent results{selectedTeam ? ` · ${selectedTeam.name}` : ''}
+                      Team stats chart{selectedTeam ? ` · ${selectedTeam.name}` : ''}
                     </div>
-                    <div className="custom-scrollbar fade-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3">
+                    <div className="min-h-0 flex-1 overflow-hidden px-1 py-1 sm:px-2 sm:py-2">
                       {!selectedTeam ? (
                         <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
-                          Select a team above to load recent results from Soccerway.
+                          Select a team above to chart Soccerway match stats.
                         </div>
                       ) : recentMatchesLoading ? (
-                        <div className="space-y-2 p-1">
-                          {[...Array(8)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`h-14 animate-pulse rounded-lg ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
-                              style={{ animationDelay: `${i * 0.06}s` }}
-                            />
-                          ))}
+                        <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+                          <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+                            {[...Array(20)].map((_, idx) => {
+                              const heights = [45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59, 52];
+                              const height = heights[idx] || 48;
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                                  style={{ height: '100%' }}
+                                >
+                                  <div
+                                    className={`w-full rounded-t animate-pulse ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                                    style={{
+                                      height: `${height}%`,
+                                      animationDelay: `${idx * 0.08}s`,
+                                      minHeight: '30px',
+                                      transition: 'height 0.3s ease',
+                                      minWidth: '28px',
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       ) : recentMatchesError ? (
                         <div className="px-2 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
                       ) : recentMatches.length === 0 ? (
-                        <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>No recent results parsed for this team.</div>
+                        <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>No Soccerway stat history parsed for this team.</div>
                       ) : (
-                        <ul className="space-y-2 pb-2">
-                          {recentMatches.map((m) => {
-                            const selectedLower = selectedTeam.name.trim().toLowerCase();
-                            const homeHighlight = m.homeTeam.trim().toLowerCase() === selectedLower;
-                            const awayHighlight = m.awayTeam.trim().toLowerCase() === selectedLower;
-                            const dateLabel =
-                              m.kickoffUnix != null
-                                ? new Date(m.kickoffUnix * 1000).toLocaleString(undefined, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—';
-                            const absUrl = `https://www.soccerway.com${m.summaryPath.startsWith('/') ? m.summaryPath : `/${m.summaryPath}`}`;
-                            return (
-                              <li key={m.matchId}>
-                                <a
-                                  href={absUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={`block rounded-lg border px-3 py-2.5 transition hover:bg-gray-50 dark:hover:bg-[#132337] ${
-                                    mounted && isDark ? 'border-gray-700 bg-black/20' : 'border-gray-200 bg-white'
-                                  }`}
-                                >
-                                  <div className={`mb-1 text-[11px] uppercase tracking-wide ${emptyText}`}>{dateLabel}</div>
-                                  <div className="flex items-center justify-between gap-2 text-sm">
-                                    <span
-                                      className={`min-w-0 flex-1 truncate text-left ${
-                                        homeHighlight ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'
-                                      }`}
-                                    >
-                                      {m.homeTeam}
-                                    </span>
-                                    <span className="flex-shrink-0 font-mono text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
-                                      {m.homeScore} – {m.awayScore}
-                                    </span>
-                                    <span
-                                      className={`min-w-0 flex-1 truncate text-right ${
-                                        awayHighlight ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'
-                                      }`}
-                                    >
-                                      {m.awayTeam}
-                                    </span>
-                                  </div>
-                                </a>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                        <SoccerStatsChart matches={recentMatches} selectedTeamName={selectedTeam.name} isDark={Boolean(mounted && isDark)} />
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* 4. Supporting stats — player mode only on AFL */}
-                {propsMode === 'player' && (
-                  <div
-                    className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
-                  >
-                    <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      Supporting stats
-                    </h3>
-                    <div className="min-h-[220px]" />
-                  </div>
-                )}
-
-                {/* 4b. Lineup under chart — team mode */}
-                {propsMode === 'team' && (
-                  <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
-                    <div className="min-h-[180px]" />
-                  </div>
-                )}
-
-                {/* 4.5 DVP | Opponent | Team Matchup — mobile */}
-                <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0`}>
-                  <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
-                    {propsMode === 'player' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setRightTab('dvp')}
-                          className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                            rightTab === 'dvp'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          DVP
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                            rightTab === 'breakdown'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          Opponent Breakdown
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                            rightTab === 'team_matchup'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          Team Matchup
-                        </button>
-                      </>
-                    )}
-                    {propsMode === 'team' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setRightTab('breakdown')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                            rightTab === 'breakdown'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          Opponent Breakdown
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                            rightTab === 'team_matchup'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          Team Matchup
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="relative flex-1 min-h-0 w-full min-w-0 flex flex-col overflow-y-auto">
-                    <div className={`min-h-[200px] flex items-center justify-center text-sm ${emptyText}`} />
+                <div
+                  className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
+                >
+                  <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Match log
+                  </h3>
+                  <div className="min-h-[220px] max-h-[720px] overflow-y-auto px-2 sm:px-3 custom-scrollbar fade-scrollbar">
+                    <SoccerResultsList
+                      selectedTeamName={selectedTeam?.name ?? null}
+                      matches={recentMatches}
+                      loading={recentMatchesLoading}
+                      error={recentMatchesError}
+                      emptyTextClassName={emptyText}
+                      isDark={Boolean(mounted && isDark)}
+                    />
                   </div>
                 </div>
 
-                {/* 4.52 Player vs Team — mobile */}
+                {/* 4.5 — mobile placeholder (right-column mirror, empty) */}
+                <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
+                  <div className="min-h-[200px]" />
+                </div>
+
+                {/* 4.52 — mobile placeholder */}
                 {propsMode === 'player' && (
                   <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} px-2 sm:px-2.5 py-2.5 sm:py-3`}>
-                    <div className="flex gap-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsTab('comparison')}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsTab === 'comparison'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Player vs Team
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsTab('prediction')}
-                        className={`relative flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsTab === 'prediction'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Prediction Model
-                        <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
-                          BETA
-                        </span>
-                      </button>
-                    </div>
-                    {playerVsTab === 'comparison' && (
-                      <div className="flex justify-center mb-2">
-                        <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                          <button
-                            type="button"
-                            onClick={() => setPlayerVsRankScope('team')}
-                            className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                              playerVsRankScope === 'team'
-                                ? 'bg-purple-600 text-white'
-                                : isDark
-                                  ? 'bg-transparent text-gray-400 hover:text-gray-200'
-                                  : 'bg-transparent text-gray-600 hover:text-gray-900'
-                            }`}
-                          >
-                            vs Team
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPlayerVsRankScope('league')}
-                            className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                              playerVsRankScope === 'league'
-                                ? 'bg-purple-600 text-white'
-                                : isDark
-                                  ? 'bg-transparent text-gray-400 hover:text-gray-200'
-                                  : 'bg-transparent text-gray-600 hover:text-gray-900'
-                            }`}
-                          >
-                            vs League
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <div className={`min-h-[160px] rounded-lg border border-dashed ${isDark ? 'border-gray-700 bg-black/10' : 'border-gray-200 bg-gray-50'}`} />
+                    <div className="min-h-[160px]" />
                   </div>
                 )}
 
@@ -745,138 +576,17 @@ export default function SoccerPage() {
                 )}
               </div>
 
-              {/* Right panel */}
+              {/* Right panel — empty shells (layout only) */}
               <div
                 className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                   sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
                 }`}
               >
-                <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} px-3 pt-3 pb-4 relative overflow-visible`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
-                  </div>
-                  <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setPropsMode('player')}
-                      className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        propsMode === 'player'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Player Props
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPropsMode('team')}
-                      className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        propsMode === 'team'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Game Props
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{scrapeNote}</p>
-                </div>
-
-                <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} p-1.5 xl:p-2 w-full min-w-0`}>
-                  <div className="flex gap-1.5 xl:gap-2 mb-2">
-                    {propsMode === 'player' && (
-                      <button
-                        type="button"
-                        onClick={() => setRightTab('dvp')}
-                        className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                          rightTab === 'dvp'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        DVP
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setRightTab('breakdown')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        rightTab === 'breakdown'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Opponent Breakdown
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRightTab('team_matchup')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        rightTab === 'team_matchup'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Team Matchup
-                    </button>
-                  </div>
-                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
-                    {propsMode === 'player' && (
-                      <div className={rightTab === 'dvp' ? 'flex-1 min-h-0 overflow-y-auto flex flex-col' : 'hidden'}>
-                        <div className={`flex-1 min-h-0 ${emptyText} flex items-center justify-center text-sm`} />
-                      </div>
-                    )}
-                    <div className={rightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'}>
-                      <div className={`flex-1 min-h-0 ${emptyText} flex items-center justify-center text-sm`} />
-                    </div>
-                    <div className={rightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'}>
-                      <div className={`flex-1 min-h-0 ${emptyText} flex items-center justify-center text-sm`} />
-                    </div>
-                  </div>
-                </div>
-
-                {propsMode === 'player' && (
-                  <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} px-1.5 xl:px-2 py-1.5 xl:py-2 w-full min-w-0 mt-0`}>
-                    <div className="flex gap-1.5 xl:gap-2 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsTab('comparison')}
-                        className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                          playerVsTab === 'comparison'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Player vs Team
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsTab('prediction')}
-                        className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                          playerVsTab === 'prediction'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Prediction Model
-                        <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
-                          BETA
-                        </span>
-                      </button>
-                    </div>
-                    <div className={`min-h-[220px] rounded-lg border border-dashed ${isDark ? 'border-gray-700 bg-black/10' : 'border-gray-200 bg-gray-50'}`} />
-                  </div>
-                )}
-
-                <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} p-2 xl:p-3 pb-12 xl:pb-14 w-full min-w-0`}>
-                  <div className="relative h-[320px] w-full min-w-0 flex flex-col min-h-0">
-                    <div className={`flex-1 ${emptyText} flex items-center justify-center text-sm`} />
-                  </div>
-                </div>
-
-                <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} p-2 xl:p-3 w-full min-w-0 mt-0`}>
-                  <div className="min-h-[240px]" />
-                </div>
+                <div className={`hidden lg:block min-h-[120px] rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block h-[380px] w-full min-w-0 shrink-0 rounded-lg xl:h-[420px] ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block min-h-[320px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
               </div>
             </div>
           </div>
