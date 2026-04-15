@@ -13,7 +13,8 @@ export interface UseQ1StatsFetchParams {
 
 /**
  * Fetches 1st quarter pts/reb/ast from BDL stats API (period=1) when we have player stats.
- * Only for completed games. Builds a map by game_id for the Game Log table.
+ * Merges regular + postseason rows. Note: BDL often has **no** `period=1` row for many games
+ * (full-game stats exist); the UI treats those as unknown (—), not 0.
  */
 export function useQ1StatsFetch({
   propsMode,

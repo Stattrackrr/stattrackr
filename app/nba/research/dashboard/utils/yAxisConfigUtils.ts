@@ -13,7 +13,7 @@ export interface YAxisConfig {
 }
 
 export interface ChartDataItem {
-  value: number;
+  value: number | null;
   stats?: any;
   [key: string]: any;
 }
@@ -39,13 +39,18 @@ export function calculateYAxisConfig({
   }
   
   const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
-  const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'double_double', 'triple_double', 'turnover', 'pf', 'stl', 'blk'];
+  const smallIncrementStats = ['reb', 'ast', 'fg3m', 'fg3a', 'fgm', 'fga', 'ftm', 'fta', 'oreb', 'dreb', 'double_double', 'triple_double', 'turnover', 'pf', 'stl', 'blk', 'q1_pts', 'q1_reb', 'q1_ast'];
   const isSmallIncrementStat = smallIncrementStats.includes(selectedStat);
   
   // Get min and max values from data
   // For spread stat, values will be adjusted later, but we need to account for absolute values
   // to ensure domain covers all possible adjusted values
-  const values = chartData.map(d => d.value);
+  const values = chartData
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null && v !== undefined && Number.isFinite(v));
+  if (values.length === 0) {
+    return { domain: [0, 50], ticks: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], dataMin: 0, dataMax: 0 };
+  }
   let minValue = Math.min(...values);
   let maxValue = Math.max(...values);
   

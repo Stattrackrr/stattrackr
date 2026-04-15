@@ -15,7 +15,7 @@ import { BaseGameDataItem } from './baseGameDataUtils';
 import { NBAPlayer } from '../types';
 
 export interface FilteredChartDataItem extends BaseGameDataItem {
-  value: number;
+  value: number | null;
 }
 
 export interface FilteredChartDataParams {
@@ -176,7 +176,13 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
         tickLabel: opponent || "",
       };
       const statValue = getStatValue(stats, selectedStat, q1StatsByGameId);
-      const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+      const isQ1 = selectedStat === 'q1_pts' || selectedStat === 'q1_reb' || selectedStat === 'q1_ast';
+      const value: number | null =
+        statValue === null
+          ? (isQ1 ? null : 0)
+          : statValue !== undefined && Number.isFinite(statValue as number)
+            ? (statValue as number)
+            : 0;
       return {
         ...gameData,
         value,
@@ -333,7 +339,13 @@ export function processFilteredChartData(params: FilteredChartDataParams): Filte
     };
 
     const statValue = getStatValue(stats, selectedStat, q1StatsByGameId);
-    const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+    const isQ1 = selectedStat === 'q1_pts' || selectedStat === 'q1_reb' || selectedStat === 'q1_ast';
+    const value: number | null =
+      statValue === null
+        ? (isQ1 ? null : 0)
+        : statValue !== undefined && Number.isFinite(statValue as number)
+          ? (statValue as number)
+          : 0;
     
     return {
       ...gameData,
