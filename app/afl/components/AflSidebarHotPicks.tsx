@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
 import { buildAflHotPicksFromListRows, type AflHotPickCard } from '@/lib/aflHotPicksFromList';
 
 function aflInitials(name: string): string {
@@ -87,7 +88,10 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
               p.l5Hits != null && p.l5Total != null && p.l5Total > 0
                 ? Math.round((p.l5Hits / p.l5Total) * 100)
                 : null;
-            const posLine = [p.aflFantasyPosition, p.aflDfsRole].filter(Boolean).join(' · ');
+            const dfsLabel =
+              (p.aflDfsRole && String(p.aflDfsRole).trim()) ||
+              (p.aflFantasyPosition ? resolveDfsRoleDisplayLabel(null, p.aflFantasyPosition) : null);
+            const posLine = [p.aflFantasyPosition, dfsLabel].filter(Boolean).join(' · ');
             return (
               <button
                 key={`${p.playerName}-${p.statType}-${p.line}`}

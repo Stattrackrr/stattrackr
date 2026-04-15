@@ -43,8 +43,8 @@ export function dfsRoleGroupToShortLabel(roleGroup: string | null | undefined): 
 }
 
 /**
- * Prefer role from DFS Australia map; when the map is empty or the player is missing, use a minimal
- * DvP-aware fallback so headers still match Defense-vs-Position copy (e.g. RUC → RUCK).
+ * Prefer role from DFS Australia map; when the map is empty or the player is missing, use DvP-bucket
+ * fallbacks so list/props headers still show Fantasy · DFS style (e.g. MID → INS MID, DEF → GEN DEF).
  */
 export function resolveDfsRoleDisplayLabel(
   roleGroupFromFile: string | null | undefined,
@@ -56,6 +56,9 @@ export function resolveDfsRoleDisplayLabel(
     .trim()
     .toUpperCase();
   if (raw === 'RUC') return 'RUCK';
+  if (raw === 'DEF') return 'GEN DEF';
+  if (raw === 'MID') return 'INS MID';
+  if (raw === 'FWD') return 'GEN FWD';
   return null;
 }
 

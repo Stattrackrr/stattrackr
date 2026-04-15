@@ -11,6 +11,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -80,7 +81,8 @@ interface PlayerProp {
 
 function formatAflFantasyDfsPositionLabel(prop: Pick<PlayerProp, 'aflFantasyPosition' | 'aflDfsRole'>): string | null {
   const f = prop.aflFantasyPosition;
-  const d = prop.aflDfsRole;
+  const dRaw = prop.aflDfsRole != null && String(prop.aflDfsRole).trim() ? String(prop.aflDfsRole).trim() : null;
+  const d = dRaw ?? (f ? resolveDfsRoleDisplayLabel(null, f) : null);
   if (!f && !d) return null;
   if (f && d) return `${f} - ${d}`;
   return f || d || null;
