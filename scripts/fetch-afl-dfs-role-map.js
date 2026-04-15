@@ -13,6 +13,9 @@
  * Writes:
  *   data/afl-dfs-role-map-{season}.json
  *   data/afl-dfs-role-map-latest.json
+ *
+ * When this fetch returns zero players (no DFS_COOKIE), the app falls back to
+ * `dfs-role-map-all-teams.json` or `data/afl-dfs-role-map-static.json` — see `lib/aflDfsRoleMap.ts`.
  */
 
 require('dotenv').config({ path: '.env.local' });

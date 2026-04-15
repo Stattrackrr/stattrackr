@@ -6189,10 +6189,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               // Warm key AFL endpoints before navigating (game logs require ?season= per API).
                               const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
                               const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
-                              const force2026 = currentSeason === new Date().getFullYear() ? '&force_fetch=1' : '';
                               const prefetchUrls = [
                                 `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                `${logsBase}&season=2026${force2026}`,
+                                `${logsBase}&season=2026`,
                                 `${logsBase}&season=2025`,
                                 `${logsBase}&season=2024`,
                                 `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,

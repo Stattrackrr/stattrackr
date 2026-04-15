@@ -6,6 +6,8 @@ export type DfsRolePlayer = {
   name?: string;
   normalizedName?: string;
   roleGroup?: string;
+  /** Fantasy DvP bucket derived from DFS role group (same rules as `scripts/fetch-afl-dfs-role-map.js`). */
+  roleBucket?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
 };
 
 /** Same normalization as GET /api/afl/dfs-role for consistent matching. */
@@ -18,10 +20,49 @@ export function normalizeDfsRolePlayerKey(name: string): string {
     .trim();
 }
 
-/** Short header label aligned with app/afl/page.tsx dfsRoleGroupToHeaderLabel. */
+/**
+ * Given-name aliases so roster/props spelling (e.g. Lachlan) matches DFS export spelling (e.g. Lachie).
+ * Keys are first-token lowercase after {@link normalizeDfsRolePlayerKey}; values are canonical first tokens.
+ */
+const DFS_GIVEN_NAME_CANONICAL: Record<string, string> = {
+  lachie: 'lachlan',
+};
+
+/**
+ * Stable key for matching DFS role rows when official AFL register uses a different first-name spelling
+ * than the DFS site / static map.
+ */
+export function normalizeDfsRolePlayerMatchKey(name: string): string {
+  const base = normalizeDfsRolePlayerKey(name);
+  const parts = base.split(' ').filter(Boolean);
+  if (parts.length < 2) return base;
+  const canon = DFS_GIVEN_NAME_CANONICAL[parts[0]] ?? parts[0];
+  if (canon === parts[0]) return base;
+  return [canon, ...parts.slice(1)].join(' ');
+}
+
+/** Normalize DFS Australia `positionGroup` / stored `roleGroup` for comparisons. */
+function normalizeDfsRoleGroupKey(raw: string): string {
+  return String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Short DFS sub-position label (KEY FWD, WNG DEF, DES KCK, …).
+ * Covers every `positionGroup` string we see from DFS Australia’s DVP export
+ * (see `scripts/fetch-afl-dfs-role-map.js`): seven canonical groups plus common wording variants.
+ * Anything unknown is returned trimmed as-is.
+ */
 export function dfsRoleGroupToShortLabel(roleGroup: string | null | undefined): string | null {
-  const key = String(roleGroup || '').trim().toLowerCase();
-  if (!key) return null;
+  const raw = String(roleGroup ?? '').trim();
+  if (!raw) return null;
+  const key = normalizeDfsRoleGroupKey(raw);
+
+  // Canonical positionGroup strings from the site
   if (key === 'key forward') return 'KEY FWD';
   if (key === 'small/medium forward') return 'GEN FWD';
   if (key === 'inside midfielder') return 'INS MID';
@@ -29,7 +70,17 @@ export function dfsRoleGroupToShortLabel(roleGroup: string | null | undefined): 
   if (key === 'wing/attacking defender') return 'WNG DEF';
   if (key === 'general defender') return 'GEN DEF';
   if (key === 'designated kicker') return 'DES KCK';
-  return String(roleGroup).trim();
+
+  // Phrase variants (spacing/casing/wording)
+  if (key.includes('designated') && key.includes('kicker')) return 'DES KCK';
+  if (key.includes('wing') && key.includes('defender')) return 'WNG DEF';
+  if (key.includes('general') && key.includes('defender')) return 'GEN DEF';
+  if (key.includes('inside') && key.includes('midfield')) return 'INS MID';
+  if (key.includes('key') && key.includes('forward')) return 'KEY FWD';
+  if ((key.includes('small') || key.includes('medium')) && key.includes('forward')) return 'GEN FWD';
+  if (key === 'ruckman') return 'RUCK';
+
+  return raw;
 }
 
 /**
@@ -64,18 +115,35 @@ export function normalizeFantasyPositionToDvp(raw: string): 'DEF' | 'MID' | 'FWD
   return 'MID';
 }
 
-export function findDfsRoleGroup(players: DfsRolePlayer[], playerName: string): string | null {
-  const target = normalizeDfsRolePlayerKey(playerName);
-  if (!target) return null;
+/** Map DFS Australia `positionGroup` / static role title to DvP bucket. */
+export function roleBucketFromDfsRoleGroup(group: string | null | undefined): 'DEF' | 'MID' | 'FWD' | 'RUC' | null {
+  const g = String(group || '').toLowerCase();
+  if (!g) return null;
+  if (g.includes('inside midfielder')) return 'MID';
+  if (g.includes('ruck')) return 'RUC';
+  if (g.includes('forward')) return 'FWD';
+  if (g.includes('defender') || g.includes('kicker')) return 'DEF';
+  return null;
+}
+
+export function findDfsRolePlayer(players: DfsRolePlayer[], playerName: string): DfsRolePlayer | null {
+  if (!normalizeDfsRolePlayerKey(playerName)) return null;
+  const target = normalizeDfsRolePlayerMatchKey(playerName);
   let match =
-    players.find((p) => normalizeDfsRolePlayerKey(p.normalizedName || p.name || '') === target) || null;
+    players.find(
+      (p) => normalizeDfsRolePlayerMatchKey(p.normalizedName || p.name || '') === target
+    ) || null;
   if (!match) {
     match =
       players.find((p) => {
-        const n = normalizeDfsRolePlayerKey(p.normalizedName || p.name || '');
+        const n = normalizeDfsRolePlayerMatchKey(p.normalizedName || p.name || '');
         return n.includes(target) || target.includes(n);
       }) || null;
   }
-  const g = match?.roleGroup;
+  return match ?? null;
+}
+
+export function findDfsRoleGroup(players: DfsRolePlayer[], playerName: string): string | null {
+  const g = findDfsRolePlayer(players, playerName)?.roleGroup;
   return typeof g === 'string' && g.trim() ? g.trim() : null;
 }

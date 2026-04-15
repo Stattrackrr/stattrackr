@@ -10,7 +10,13 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
-import { findDfsRoleGroup, loadDfsRolePlayers, normalizeFantasyPositionToDvp, resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
+import {
+  findDfsRoleGroup,
+  findDfsRolePlayer,
+  loadDfsRolePlayers,
+  normalizeFantasyPositionToDvp,
+  resolveDfsRoleDisplayLabel,
+} from '@/lib/aflDfsRoleMap';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,8 +28,8 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v2';
-const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v2';
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v3';
+const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v3';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
@@ -649,6 +655,7 @@ export async function GET(request: Request) {
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
+    const dfsPlayers = await loadDfsRolePlayers();
     const rowContexts = rows.map((r) => {
       const playerTeam = resolvePlayerTeam(r.playerName, r.homeTeam, r.awayTeam);
       const opponent =
@@ -657,10 +664,12 @@ export async function GET(request: Request) {
           : playerTeam && teamMatchesOverride(playerTeam, r.awayTeam)
             ? r.homeTeam
             : r.awayTeam;
-      const position = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
+      const filePos = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
+      const dfsP = findDfsRolePlayer(dfsPlayers, r.playerName);
+      const position =
+        dfsP?.roleBucket != null ? dfsP.roleBucket : normalizeFantasyPositionToDvp(filePos);
       return { r, playerTeam, opponent, position };
     });
-    const dfsPlayers = await loadDfsRolePlayers();
     const dfsShortByNormalizedName = new Map<string, string | null>();
     const fantasyDvpByPlayerKey = new Map<string, 'DEF' | 'MID' | 'FWD' | 'RUC'>();
     for (const ctx of rowContexts) {

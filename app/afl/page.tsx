@@ -39,6 +39,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search, Loader2 } from 'lucide-react';
+import { dfsRoleGroupToShortLabel as dfsRoleGroupToHeaderLabel } from '@/lib/aflDfsRoleLabels';
 
 type AflPlayerRecord = Record<string, string | number>;
 type AflGameLogRecord = Record<string, unknown>;
@@ -155,19 +156,6 @@ function isSameAflTeam(a: string, b: string): boolean {
 
 function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
-}
-
-function dfsRoleGroupToHeaderLabel(roleGroup: string | null | undefined): string | null {
-  const key = String(roleGroup || '').trim().toLowerCase();
-  if (!key) return null;
-  if (key === 'key forward') return 'KEY FWD';
-  if (key === 'small/medium forward') return 'GEN FWD';
-  if (key === 'inside midfielder') return 'INS MID';
-  if (key === 'ruck') return 'RUCK';
-  if (key === 'wing/attacking defender') return 'WNG DEF';
-  if (key === 'general defender') return 'GEN DEF';
-  if (key === 'designated kicker') return 'DES KCK';
-  return String(roleGroup).trim();
 }
 
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v5';
@@ -2047,9 +2035,8 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     const fetchOpts = { cache: 'no-store' as RequestCache };
-    const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
     Promise.all([
-      fetch(`${baseUrl}&season=${currentYear}${forceFetchCurrent}`, fetchOpts).then((r) => r.json()),
+      fetch(`${baseUrl}&season=${currentYear}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
       fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then((r) => r.json()),
     ])
@@ -2226,9 +2213,9 @@ export default function AFLPage() {
     const currentYear = season;
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
-    // Always refresh current-season logs live so charts pick up finished games promptly.
-    // Keep historical seasons cached for speed so player loads stay responsive.
-    const forceFetchCurrent = currentYear === new Date().getFullYear() ? '&force_fetch=1' : '';
+    // Do not pass force_fetch from the browser: it bypasses Redis + FootyWire memory cache and
+    // blocks ~20s+ per season while scraping live. Freshness is handled by TTL, cron warm, and
+    // localStorage invalidation when 2026/2025 mix looks wrong.
     const fetchOpts = { cache: 'no-store' as RequestCache }; // Avoid stale 2025 empty response in production
     type SeasonFetchResult = { ok: boolean; data: Record<string, unknown> };
     const emptyOlderSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
@@ -2358,7 +2345,7 @@ export default function AFLPage() {
       };
 
       try {
-        const p1 = fetchSeason(currentYear, forceFetchCurrent);
+        const p1 = fetchSeason(currentYear, '');
         const p2 = fetchSeason(prevYear);
         const p3 = fetchSeason(olderYear);
         const [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
@@ -2422,6 +2409,22 @@ export default function AFLPage() {
         const label =
           fromApi ?? dfsRoleGroupToHeaderLabel(typeof json?.roleGroup === 'string' ? json.roleGroup : null);
         setSelectedPlayerDfsRole(label);
+
+        const rbRaw = json?.roleBucket;
+        const rb =
+          typeof rbRaw === 'string' && ['DEF', 'MID', 'FWD', 'RUC'].includes(rbRaw.trim().toUpperCase())
+            ? (rbRaw.trim().toUpperCase() as 'DEF' | 'MID' | 'FWD' | 'RUC')
+            : null;
+        if (json?.success === true && rb) {
+          setSelectedPlayer((prev) => {
+            if (!prev || cancelled) return prev;
+            const cur = String(prev.position ?? '')
+              .trim()
+              .toUpperCase();
+            if (cur === 'DEF' || cur === 'MID' || cur === 'FWD' || cur === 'RUC') return prev;
+            return { ...prev, position: rb };
+          });
+        }
       } catch {
         if (!cancelled) setSelectedPlayerDfsRole(null);
       }
@@ -2509,9 +2512,8 @@ export default function AFLPage() {
         }
 
         const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(repPlayerName)}&team=${encodeURIComponent(selectedTeam)}&include_both=1`;
-        const forceFetchCurrentTeam = season === new Date().getFullYear() ? '&force_fetch=1' : '';
         const [curRes, prevRes, olderRes] = await Promise.all([
-          fetch(`${baseUrl}&season=${season}${forceFetchCurrentTeam}`, { cache: 'no-store' }),
+          fetch(`${baseUrl}&season=${season}`, { cache: 'no-store' }),
           fetch(`${baseUrl}&season=${season - 1}`, { cache: 'no-store' }),
           fetch(`${baseUrl}&season=${season - 2}`, { cache: 'no-store' }),
         ]);
@@ -3492,10 +3494,19 @@ export default function AFLPage() {
                                 {selectedHeaderTeamName || '—'}
                               </div>
                             )}
-                            {aflPropsMode === 'player' && selectedPlayer.position ? (
+                            {aflPropsMode === 'player' && (selectedPlayer.position || selectedPlayerDfsRole) ? (
                               <div className="text-xs text-gray-600 dark:text-gray-400">
-                                Position: {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
-                                {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
+                                Position:{' '}
+                                {(() => {
+                                  const f = selectedPlayer.position
+                                    ? (toDvpPositionLabel(selectedPlayer.position) ??
+                                      String(selectedPlayer.position))
+                                    : null;
+                                  const d = selectedPlayerDfsRole;
+                                  if (f && d) return `${f} - ${d}`;
+                                  if (f) return f;
+                                  return d ?? '';
+                                })()}
                               </div>
                             ) : null}
                             {aflPropsMode === 'player' && selectedPlayer.height ? (
@@ -3687,10 +3698,18 @@ export default function AFLPage() {
                                     {selectedHeaderTeamName || '—'}
                                   </div>
                                 )}
-                                {aflPropsMode === 'player' && selectedPlayer.position && (
+                                {aflPropsMode === 'player' && (selectedPlayer.position || selectedPlayerDfsRole) && (
                                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                                    {(toDvpPositionLabel(selectedPlayer.position) ?? String(selectedPlayer.position))}
-                                    {selectedPlayerDfsRole ? ` - ${selectedPlayerDfsRole}` : ''}
+                                    {(() => {
+                                      const f = selectedPlayer.position
+                                        ? (toDvpPositionLabel(selectedPlayer.position) ??
+                                          String(selectedPlayer.position))
+                                        : null;
+                                      const d = selectedPlayerDfsRole;
+                                      if (f && d) return `${f} - ${d}`;
+                                      if (f) return f;
+                                      return d ?? '';
+                                    })()}
                                   </div>
                                 )}
                                 {aflPropsMode === 'player' && selectedPlayer.height && (

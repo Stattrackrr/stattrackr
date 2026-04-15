@@ -1,29 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
 import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleLabels';
-
-type DfsRolePlayer = {
-  name?: string;
-  normalizedName?: string;
-  roleGroup?: string;
-  roleBucket?: string | null;
-};
-
-type DfsRoleFile = {
-  season?: number;
-  generatedAt?: string;
-  players?: DfsRolePlayer[];
-};
-
-function normalizeName(name: string): string {
-  return String(name || '')
-    .toLowerCase()
-    .replace(/-/g, ' ')
-    .replace(/[^a-z0-9'\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+import { findDfsRolePlayer, loadDfsRoleMapBundle } from '@/lib/aflDfsRoleMap';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,37 +9,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing player query param.' }, { status: 400 });
     }
 
-    const filePath = path.join(process.cwd(), 'data', 'afl-dfs-role-map-latest.json');
-    const raw = await fs.readFile(filePath, 'utf8');
-    const data = JSON.parse(raw) as DfsRoleFile;
-    const players = Array.isArray(data.players) ? data.players : [];
-
-    const target = normalizeName(player);
-    let match = players.find((p) => normalizeName(p.normalizedName || p.name || '') === target) || null;
-    if (!match) {
-      match = players.find((p) => {
-        const n = normalizeName(p.normalizedName || p.name || '');
-        return n.includes(target) || target.includes(n);
-      }) || null;
-    }
+    const { players, season, generatedAt } = await loadDfsRoleMapBundle();
+    const match = findDfsRolePlayer(players, player);
 
     const dvpParam = String(request.nextUrl.searchParams.get('dvp') || '')
       .trim()
       .toUpperCase();
     const fantasyDvp =
       dvpParam === 'DEF' || dvpParam === 'MID' || dvpParam === 'FWD' || dvpParam === 'RUC' ? dvpParam : null;
-    const roleGroup = match?.roleGroup || null;
+    const roleGroup =
+      match?.roleGroup && String(match.roleGroup).trim() ? String(match.roleGroup).trim() : null;
     const shortLabel = resolveDfsRoleDisplayLabel(roleGroup, fantasyDvp);
 
     return NextResponse.json({
       success: true,
       player,
-      found: !!match,
+      found: !!match && !!roleGroup,
       roleGroup,
-      roleBucket: match?.roleBucket || null,
+      roleBucket: match?.roleBucket ?? null,
       shortLabel,
-      season: data.season ?? null,
-      generatedAt: data.generatedAt ?? null,
+      season,
+      generatedAt,
     });
   } catch (err) {
     return NextResponse.json(
@@ -75,4 +42,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
