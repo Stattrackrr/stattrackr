@@ -41,6 +41,7 @@ import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdo
 import { Search, Loader2 } from 'lucide-react';
 import { dfsRoleGroupToShortLabel as dfsRoleGroupToHeaderLabel } from '@/lib/aflDfsRoleLabels';
 import { buildAflJournalQuickPreset } from '@/lib/buildAflJournalQuickPreset';
+import { playerHasFootywireSlugOverride } from '@/lib/aflFootywireSlugOverrides';
 
 /** Match /props player cards: purple-tint border + soft violet outer glow (light + dark). */
 const AFL_DASH_CARD_GLOW =
@@ -163,7 +164,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v5';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v6';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -2033,6 +2034,9 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(player.team)) || footywireNicknameToOfficial(String(player.team)) || String(player.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, name, teamForApi);
+    if (playerHasFootywireSlugOverride(name)) {
+      prefetchedLogsRef.current.delete(logsCacheKey);
+    }
     if (prefetchedLogsRef.current.has(logsCacheKey)) return;
     const teamQuery = teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : '';
     const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(name)}${teamQuery}&include_both=1`;
@@ -2145,9 +2149,19 @@ export default function AFLPage() {
     // For 2026 we need both seasons so players who changed teams (e.g. Bailey Smith) get 2025 + 2026. Don't use cache/prefetch that only has 2026.
     const cacheOkFor2026 = (games: { season?: unknown; date?: string; game_date?: string }[]) =>
       season !== 2026 || (has2026InGames(games) && has2025InGames(games));
-    // Symbol-name players: never use prefetched or localStorage — always fetch fresh.
+    // Symbol-name players and FootyWire slug-collision players: never use prefetched or localStorage — always fetch fresh.
     const isSymbolPlayer = playerNameHasSymbol(String(playerName));
-    if (!isSymbolPlayer && !shouldBypassClientLogsCache) {
+    const isFootywireSlugOverridePlayer = playerHasFootywireSlugOverride(String(playerName));
+    const needsStaleLogBypass = isSymbolPlayer || isFootywireSlugOverridePlayer;
+    if (isFootywireSlugOverridePlayer) {
+      prefetchedLogsRef.current.delete(logsCacheKey);
+      try {
+        localStorage.removeItem(logsCacheKey);
+      } catch {
+        // Ignore.
+      }
+    }
+    if (!needsStaleLogBypass && !shouldBypassClientLogsCache) {
       const prefetched = prefetchedLogsRef.current.get(logsCacheKey);
       if (prefetched && (season !== 2026 || has2026InGames(prefetched.games)) && cacheOkFor2026(prefetched.games)) {
         prefetchedLogsRef.current.delete(logsCacheKey);
@@ -2166,14 +2180,14 @@ export default function AFLPage() {
     } else {
       prefetchedLogsRef.current.delete(logsCacheKey);
     }
-    if (isSymbolPlayer) {
+    if (needsStaleLogBypass) {
       try {
         localStorage.removeItem(logsCacheKey);
       } catch {
         // Ignore.
       }
     }
-    if (!isSymbolPlayer && !shouldBypassClientLogsCache) {
+    if (!needsStaleLogBypass && !shouldBypassClientLogsCache) {
       try {
         const raw = localStorage.getItem(logsCacheKey);
         if (raw) {

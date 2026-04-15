@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { rosterTeamToInjuryTeam, getFootyWireTeamNameForPlayerUrl, footywireNicknameToOfficial, leagueTeamToOfficial } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerName, normalizeAflPlayerNameForLookup, normalizeAflPlayerNameForMatch, toCanonicalAflPlayerName } from '@/lib/aflPlayerNameUtils';
+import { getAflFootywireSlugOverridesForName } from '@/lib/aflFootywireSlugOverrides';
 import {
   buildAflPlayerLogsCacheKey,
   getAflPlayerLogsCache,
@@ -111,7 +112,7 @@ async function fetchFootyWireGameLogsWithTeamFallback(
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FOOTYWIRE_TTL_MS = 1000 * 60 * 60; // 1 hour
-const FOOTYWIRE_SCHEMA_VERSION = 'v9';
+const FOOTYWIRE_SCHEMA_VERSION = 'v10';
 
 /** 2026 Round 0 (opening round) opponent overrides when FootyWire has wrong/missing opponent. */
 const R0_2026_OPPONENT_OVERRIDES: Record<string, string> = {
@@ -267,17 +268,6 @@ function footyWirePlayerSlugNoMiddleInitial(playerName: string): string | null {
 }
 
 /** Known FootyWire slug overrides (they use different first name or spelling than our data). */
-const FOOTYWIRE_SLUG_OVERRIDES: Record<string, string[]> = {
-  'tom lynch': ['thomas-lynch'],
-  'bobby hill': ['ian-hill'],
-  'wil dawson': ['will-dawson'],
-  'michael frederick': ['michael-fredrick'],
-};
-
-function getFootyWireSlugOverrides(playerName: string): string[] {
-  const key = (playerName ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-  return FOOTYWIRE_SLUG_OVERRIDES[key] ?? [];
-}
 
 /** Normalize "D Ambrosio" / "O Meara" (no apostrophe from UI) to "D'Ambrosio" / "O'Meara" so cache and league lookups match. */
 function normalizeIrishNameForLookup(name: string): string {
@@ -292,12 +282,19 @@ function nameHasSymbol(name: string): boolean {
   return /['\u2018\u2019]/.test(name) || /\b[OD]'/i.test(name) || /\b[OD] [A-Z]/.test(name.trim()) || /-/.test(name);
 }
 
-/** True if cached game list has disposals that look wrong (e.g. we cached the wrong table for symbol-name players). */
+/** True if cached game list has disposals that look wrong (wrong FootyWire table / namesake page). */
 function cachedDisposalsLookWrong(games: { disposals?: number }[]): boolean {
   if (!Array.isArray(games) || games.length === 0) return false;
-  const total = games.reduce((s, g) => s + (g.disposals ?? 0), 0);
+  const disposals = games.map((g) =>
+    typeof g.disposals === 'number' && Number.isFinite(g.disposals) ? g.disposals : 0,
+  );
+  const total = disposals.reduce((s, v) => s + v, 0);
   const avg = total / games.length;
-  return avg < 3;
+  if (avg < 3) return true;
+  const maxD = Math.max(0, ...disposals);
+  // Legacy namesake pages often parse as "valid" logs with ~4–9 avg and no game above ~11 disposals.
+  if (games.length >= 5 && maxD <= 14 && avg < 9) return true;
+  return false;
 }
 
 function footyWireGameLogUrl(teamName: string, playerName: string, year: number, advanced = false): string {
@@ -1155,7 +1152,11 @@ async function fetchFootyWireGameLogs(
   const cacheKey = `${FOOTYWIRE_SCHEMA_VERSION}|${teamName}|${playerName}|${season}|quarters:${includeQuarterEnrichment ? '1' : '0'}`;
   const cached = !skipMemoryCache ? footyWireCache.get(cacheKey) : undefined;
   if (cached && cached.expiresAt > Date.now()) {
-    if (nameHasSymbol(playerName) && cachedDisposalsLookWrong(cached.games)) {
+    const slugOvMem = getAflFootywireSlugOverridesForName(playerName);
+    if (
+      cachedDisposalsLookWrong(cached.games) &&
+      (nameHasSymbol(playerName) || slugOvMem.length > 0)
+    ) {
       footyWireCache.delete(cacheKey);
     } else {
       let games = cached.games;
@@ -1176,10 +1177,16 @@ async function fetchFootyWireGameLogs(
   const insertHyphenAfterOOrD = (s: string) => s.replace(/-o([a-z]{2,})/g, '-o-$1').replace(/-d([a-z]{2,})/g, '-d-$1');
   const altSlugWithHyphen = insertHyphenAfterOOrD(primarySlug) !== primarySlug ? insertHyphenAfterOOrD(primarySlug) : (altSlug && altSlug !== primarySlug ? insertHyphenAfterOOrD(altSlug) : null);
   const slugNoMiddle = footyWirePlayerSlugNoMiddleInitial(playerName);
-  const overrides = getFootyWireSlugOverrides(playerName);
-  const slugCandidates: string[] = [primarySlug, altSlug, altSlugWithHyphen, slugNoMiddle, ...overrides].filter((s): s is string => Boolean(s));
-  const slugSet = new Set<string>(slugCandidates);
-  const slugsToTry = Array.from(slugSet);
+  const overrides = getAflFootywireSlugOverridesForName(playerName);
+  // Try explicit overrides first: default slug often HTTP-200s to a wrong namesake page (same slug, different person).
+  const slugCandidates = [
+    ...overrides,
+    primarySlug,
+    altSlug,
+    altSlugWithHyphen,
+    slugNoMiddle,
+  ].filter((s): s is string => Boolean(s));
+  const slugsToTry = Array.from(new Set(slugCandidates));
 
   for (const playerSlug of slugsToTry) {
     const url = `${FOOTYWIRE_BASE}/afl/footy/pg-${teamSlug}--${playerSlug}?year=${season}`;
@@ -1261,7 +1268,8 @@ async function fetchFootyWireGameLogs(
       return g;
     });
     // Skip this slug's result only if disposals look wrong and we might get a better result from another slug (same page can't be re-parsed).
-    if (nameHasSymbol(playerName) && cachedDisposalsLookWrong(games)) continue;
+    const slugOvTry = getAflFootywireSlugOverridesForName(playerName);
+    if (cachedDisposalsLookWrong(games) && (nameHasSymbol(playerName) || slugOvTry.length > 0)) continue;
     let advRes = advResInitial;
     if (!advRes.ok) {
       advRes = await fetch(advUrl, fetchOpts);
@@ -1315,7 +1323,14 @@ async function fetchFootyWireGameLogs(
       );
     }
     const { height, guernsey } = parseFootyWireProfile(html);
-    if (advRes.ok && !(nameHasSymbol(playerName) && cachedDisposalsLookWrong(games))) {
+    const slugOvCache = getAflFootywireSlugOverridesForName(playerName);
+    if (
+      advRes.ok &&
+      !(
+        cachedDisposalsLookWrong(games) &&
+        (nameHasSymbol(playerName) || slugOvCache.length > 0)
+      )
+    ) {
       footyWireCache.set(cacheKey, {
         expiresAt: Date.now() + FOOTYWIRE_TTL_MS,
         games,
@@ -1435,10 +1450,11 @@ export async function GET(request: NextRequest) {
     const baseGames = cachedBase?.games as { disposals?: number }[] | undefined;
     const cachedCount = cachedBase?.game_count ?? (Array.isArray(baseGames) ? baseGames.length : 0);
     const hasBaseGames = Array.isArray(baseGames) && baseGames.length > 0 && cachedCount > 0;
+    const slugOverridesForPlayer = getAflFootywireSlugOverridesForName(effectivePlayerName);
     const skipCacheWrongData =
       hasBaseGames &&
-      nameHasSymbol(effectivePlayerName) &&
-      cachedDisposalsLookWrong(baseGames as { disposals?: number }[]);
+      cachedDisposalsLookWrong(baseGames as { disposals?: number }[]) &&
+      (nameHasSymbol(effectivePlayerName) || slugOverridesForPlayer.length > 0);
     const cachedSeason = cachedBase?.season ?? (baseGames?.[0] as { season?: number } | undefined)?.season;
     const skipCacheStale2025 = season === 2026 && cachedSeason === 2025;
     // 2025: prefer cache, but allow live fetch on cache miss so moved-team players are not empty.
@@ -1567,11 +1583,12 @@ export async function GET(request: NextRequest) {
   const cachedGames = cachedResponse?.games;
   const cachedGameCount = cachedResponse?.game_count ?? (Array.isArray(cachedGames) ? cachedGames.length : 0);
   const cachedGamesTyped = cachedGames as { disposals?: number }[] | undefined;
+  const slugOverridesSingle = getAflFootywireSlugOverridesForName(effectivePlayerName);
   const skipCacheWrongDataSingle =
-    nameHasSymbol(effectivePlayerName) &&
     Array.isArray(cachedGamesTyped) &&
     cachedGamesTyped.length > 0 &&
-    cachedDisposalsLookWrong(cachedGamesTyped);
+    cachedDisposalsLookWrong(cachedGamesTyped) &&
+    (nameHasSymbol(effectivePlayerName) || slugOverridesSingle.length > 0);
   const skipCacheForSymbolSingle = nameHasSymbol(effectivePlayerName);
   const cachedSeasonSingle = cachedResponse?.season ?? (cachedGamesTyped?.[0] as { season?: number } | undefined)?.season;
   const skipCacheStale2025Single = season === 2026 && cachedSeasonSingle === 2025;
