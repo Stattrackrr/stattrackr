@@ -10,6 +10,7 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { Search } from 'lucide-react';
+import type { SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -92,7 +93,11 @@ export default function SoccerPage() {
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [teamSearchOpen, setTeamSearchOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<SoccerTeamRow | null>(null);
+  const [recentMatches, setRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
+  const [recentMatchesLoading, setRecentMatchesLoading] = useState(false);
+  const [recentMatchesError, setRecentMatchesError] = useState<string | null>(null);
   const teamSearchWrapRef = useRef<HTMLDivElement>(null);
+  const teamResultsRequestId = useRef(0);
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } =
     useDashboardStyles({ sidebarOpen });
@@ -198,6 +203,47 @@ export default function SoccerPage() {
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [teamSearchOpen]);
+
+  useEffect(() => {
+    if (!selectedTeam) {
+      setRecentMatches([]);
+      setRecentMatchesError(null);
+      setRecentMatchesLoading(false);
+      return;
+    }
+
+    const requestId = (teamResultsRequestId.current += 1);
+    const ac = new AbortController();
+    setRecentMatchesLoading(true);
+    setRecentMatchesError(null);
+
+    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
+    void fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}`, { signal: ac.signal, cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+          matches?: SoccerwayRecentMatch[];
+        } | null;
+        if (!response.ok) {
+          throw new Error(payload?.error || 'Failed to load recent matches');
+        }
+        if (teamResultsRequestId.current !== requestId) return;
+        setRecentMatches(Array.isArray(payload?.matches) ? payload.matches : []);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (teamResultsRequestId.current !== requestId) return;
+        setRecentMatches([]);
+        setRecentMatchesError(err instanceof Error ? err.message : 'Failed to load recent matches');
+      })
+      .finally(() => {
+        if (teamResultsRequestId.current === requestId) {
+          setRecentMatchesLoading(false);
+        }
+      });
+
+    return () => ac.abort();
+  }, [selectedTeam]);
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -431,7 +477,88 @@ export default function SoccerPage() {
                   className={`chart-container-no-focus relative z-10 rounded-lg p-0 h-[520px] sm:h-[460px] md:h-[510px] lg:h-[580px] w-full flex flex-col min-w-0 flex-shrink-0 overflow-hidden ${AFL_DASH_CARD_GLOW} sm:pt-0 sm:pr-1 sm:pb-0 sm:pl-0 md:pt-1 md:pr-2 md:pb-0 md:pl-0 lg:pt-2 lg:pr-3 lg:pb-0 lg:pl-0`}
                   style={{ outline: 'none' }}
                 >
-                  <div className="h-full w-full" />
+                  <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                    <div
+                      className={`flex-shrink-0 border-b px-3 py-2.5 text-sm font-semibold ${
+                        mounted && isDark ? 'border-gray-700 text-gray-100' : 'border-gray-200 text-gray-900'
+                      }`}
+                    >
+                      Recent results{selectedTeam ? ` · ${selectedTeam.name}` : ''}
+                    </div>
+                    <div className="custom-scrollbar fade-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3">
+                      {!selectedTeam ? (
+                        <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
+                          Select a team above to load recent results from Soccerway.
+                        </div>
+                      ) : recentMatchesLoading ? (
+                        <div className="space-y-2 p-1">
+                          {[...Array(8)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`h-14 animate-pulse rounded-lg ${mounted && isDark ? 'bg-gray-800' : 'bg-gray-200'}`}
+                              style={{ animationDelay: `${i * 0.06}s` }}
+                            />
+                          ))}
+                        </div>
+                      ) : recentMatchesError ? (
+                        <div className="px-2 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
+                      ) : recentMatches.length === 0 ? (
+                        <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>No recent results parsed for this team.</div>
+                      ) : (
+                        <ul className="space-y-2 pb-2">
+                          {recentMatches.map((m) => {
+                            const selectedLower = selectedTeam.name.trim().toLowerCase();
+                            const homeHighlight = m.homeTeam.trim().toLowerCase() === selectedLower;
+                            const awayHighlight = m.awayTeam.trim().toLowerCase() === selectedLower;
+                            const dateLabel =
+                              m.kickoffUnix != null
+                                ? new Date(m.kickoffUnix * 1000).toLocaleString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—';
+                            const absUrl = `https://www.soccerway.com${m.summaryPath.startsWith('/') ? m.summaryPath : `/${m.summaryPath}`}`;
+                            return (
+                              <li key={m.matchId}>
+                                <a
+                                  href={absUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`block rounded-lg border px-3 py-2.5 transition hover:bg-gray-50 dark:hover:bg-[#132337] ${
+                                    mounted && isDark ? 'border-gray-700 bg-black/20' : 'border-gray-200 bg-white'
+                                  }`}
+                                >
+                                  <div className={`mb-1 text-[11px] uppercase tracking-wide ${emptyText}`}>{dateLabel}</div>
+                                  <div className="flex items-center justify-between gap-2 text-sm">
+                                    <span
+                                      className={`min-w-0 flex-1 truncate text-left ${
+                                        homeHighlight ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'
+                                      }`}
+                                    >
+                                      {m.homeTeam}
+                                    </span>
+                                    <span className="flex-shrink-0 font-mono text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                                      {m.homeScore} – {m.awayScore}
+                                    </span>
+                                    <span
+                                      className={`min-w-0 flex-1 truncate text-right ${
+                                        awayHighlight ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'
+                                      }`}
+                                    >
+                                      {m.awayTeam}
+                                    </span>
+                                  </div>
+                                </a>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* 4. Supporting stats — player mode only on AFL */}
