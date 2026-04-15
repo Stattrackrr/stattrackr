@@ -9,6 +9,7 @@ import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/compon
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
+import { Search } from 'lucide-react';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -18,6 +19,48 @@ type SoccerDashboardPayload = {
   matchSample?: Record<string, unknown> | null;
   teamSample?: Record<string, unknown> | null;
 };
+
+type SoccerTeamRow = {
+  name: string;
+  href: string;
+  competitions: Array<{ country: string; competition: string }>;
+};
+
+function parseUniqueTeamsFromSample(teamSample: Record<string, unknown> | null | undefined): SoccerTeamRow[] {
+  const raw = teamSample?.uniqueTeams;
+  if (!Array.isArray(raw)) return [];
+  const rows: SoccerTeamRow[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const name = typeof o.name === 'string' ? o.name.trim() : '';
+    const href = typeof o.href === 'string' ? o.href.trim() : '';
+    if (!name || !href) continue;
+    const compsRaw = Array.isArray(o.competitions) ? o.competitions : [];
+    const competitions = compsRaw
+      .map((c) => {
+        if (!c || typeof c !== 'object') return null;
+        const x = c as Record<string, unknown>;
+        return {
+          country: typeof x.country === 'string' ? x.country : '',
+          competition: typeof x.competition === 'string' ? x.competition : '',
+        };
+      })
+      .filter((c): c is { country: string; competition: string } => c != null);
+    rows.push({ name, href, competitions });
+  }
+  return rows;
+}
+
+function teamMatchesQuery(team: SoccerTeamRow, q: string): boolean {
+  const n = team.name.toLowerCase();
+  if (n.includes(q)) return true;
+  for (const c of team.competitions) {
+    if (c.country.toLowerCase().includes(q)) return true;
+    if (c.competition.toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
 
 export default function SoccerPage() {
   const router = useRouter();
@@ -45,6 +88,11 @@ export default function SoccerPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [teamSearchOpen, setTeamSearchOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<SoccerTeamRow | null>(null);
+  const teamSearchWrapRef = useRef<HTMLDivElement>(null);
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } =
     useDashboardStyles({ sidebarOpen });
@@ -127,6 +175,29 @@ export default function SoccerPage() {
     if (m?.generatedAt) return `Sample updated ${new Date(m.generatedAt).toLocaleString()}`;
     return 'Soccerway sample loaded';
   }, [loading, error, data]);
+
+  const teamUniverse = useMemo(
+    () => parseUniqueTeamsFromSample(data?.teamSample as Record<string, unknown> | undefined),
+    [data?.teamSample]
+  );
+
+  const filteredTeams = useMemo(() => {
+    const q = teamSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return teamUniverse.filter((t) => teamMatchesQuery(t, q)).slice(0, 24);
+  }, [teamUniverse, teamSearchQuery]);
+
+  useEffect(() => {
+    const onDocMouseDown = (e: MouseEvent) => {
+      const el = teamSearchWrapRef.current;
+      if (!el || !teamSearchOpen) return;
+      if (e.target instanceof Node && !el.contains(e.target)) {
+        setTeamSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [teamSearchOpen]);
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -246,6 +317,111 @@ export default function SoccerPage() {
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div
+                      ref={teamSearchWrapRef}
+                      className="w-full min-w-0 border-t border-gray-200 dark:border-gray-700/80 pt-3 mt-2 lg:mt-3 lg:pt-3"
+                    >
+                      <label htmlFor="soccer-team-search" className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                        Search team
+                      </label>
+                      <div className="relative max-w-xl lg:max-w-lg">
+                        <Search
+                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                          aria-hidden
+                        />
+                        <input
+                          id="soccer-team-search"
+                          type="search"
+                          autoComplete="off"
+                          value={teamSearchQuery}
+                          onChange={(e) => {
+                            setTeamSearchQuery(e.target.value);
+                            setTeamSearchOpen(true);
+                          }}
+                          onFocus={() => setTeamSearchOpen(true)}
+                          placeholder={
+                            teamUniverse.length
+                              ? `Search ${teamUniverse.length} teams by name, league, or country…`
+                              : 'Teams load with the sample — refresh if empty…'
+                          }
+                          className={`w-full rounded-lg border py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:placeholder-gray-400 ${
+                            mounted && isDark
+                              ? 'border-gray-600 bg-[#0f172a] text-white'
+                              : 'border-gray-300 bg-gray-50 text-gray-900'
+                          }`}
+                        />
+                        {teamSearchOpen && teamSearchQuery.trim() ? (
+                          <div
+                            className={`absolute left-0 right-0 top-full z-[80] mt-1 max-h-64 overflow-y-auto rounded-lg border shadow-lg custom-scrollbar ${
+                              mounted && isDark ? 'border-gray-600 bg-[#0f172a]' : 'border-gray-200 bg-white'
+                            }`}
+                          >
+                            {filteredTeams.length === 0 ? (
+                              <div className={`px-3 py-3 text-sm ${emptyText}`}>No teams match</div>
+                            ) : (
+                              <ul className="py-1">
+                                {filteredTeams.map((team) => {
+                                  const meta =
+                                    team.competitions.length > 0
+                                      ? team.competitions
+                                          .map((c) => [c.country, c.competition].filter(Boolean).join(' · '))
+                                          .join(' | ')
+                                      : '';
+                                  return (
+                                    <li key={team.href}>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          setSelectedTeam(team);
+                                          setTeamSearchQuery(team.name);
+                                          setTeamSearchOpen(false);
+                                        }}
+                                        className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
+                                          selectedTeam?.href === team.href
+                                            ? 'bg-purple-50 dark:bg-purple-950/40'
+                                            : ''
+                                        }`}
+                                      >
+                                        <span className="font-medium text-gray-900 dark:text-white">{team.name}</span>
+                                        {meta ? (
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">{meta}</span>
+                                        ) : null}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                      {selectedTeam ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                          <span className="font-medium text-gray-800 dark:text-gray-100">Selected:</span>
+                          <a
+                            href={`https://www.soccerway.com${selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-purple-600 underline decoration-purple-500/40 underline-offset-2 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-200"
+                          >
+                            {selectedTeam.name}
+                          </a>
+                          <span className="text-gray-400 dark:text-gray-500">(Soccerway)</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTeam(null);
+                              setTeamSearchQuery('');
+                            }}
+                            className="rounded-md border border-gray-300 px-2 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
