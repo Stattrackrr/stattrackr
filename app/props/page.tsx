@@ -72,6 +72,18 @@ interface PlayerProp {
   gameId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  /** AFL Fantasy bucket (DEF/MID/FWD/RUC) for list display; from /api/afl/player-props/list. */
+  aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
+  /** DFS role short label (e.g. INS MID); optional when not in DFS map. */
+  aflDfsRole?: string | null;
+}
+
+function formatAflFantasyDfsPositionLabel(prop: Pick<PlayerProp, 'aflFantasyPosition' | 'aflDfsRole'>): string | null {
+  const f = prop.aflFantasyPosition;
+  const d = prop.aflDfsRole;
+  if (!f && !d) return null;
+  if (f && d) return `${f} - ${d}`;
+  return f || d || null;
 }
 
 function medianValue(values: number[]): number | null {
@@ -685,6 +697,8 @@ export default function NBALandingPage() {
       seasonHitRate?: { hits: number; total: number } | null;
       dvpRating?: number | null;
       dvpStatValue?: number | null;
+      aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
+      aflDfsRole?: string | null;
     }>();
 
     for (const r of rows) {
@@ -715,6 +729,8 @@ export default function NBALandingPage() {
           seasonHitRate: r.seasonHitRate,
           dvpRating: r.dvpRating,
           dvpStatValue: r.dvpStatValue,
+          aflFantasyPosition: r.aflFantasyPosition ?? null,
+          aflDfsRole: r.aflDfsRole ?? null,
         });
       }
     }
@@ -761,6 +777,8 @@ export default function NBALandingPage() {
         seasonHitRate: a.seasonHitRate,
         dvpRating: a.dvpRating,
         dvpStatValue: a.dvpStatValue,
+        aflFantasyPosition: a.aflFantasyPosition ?? null,
+        aflDfsRole: a.aflDfsRole ?? null,
       };
     });
 
@@ -6375,6 +6393,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       <div className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                         {prop.playerName}
                                       </div>
+                                      {rowSport === 'afl' && (() => {
+                                        const aflPosLine = formatAflFantasyDfsPositionLabel(prop);
+                                        return aflPosLine ? (
+                                          <div
+                                            className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                          >
+                                            {aflPosLine}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                       <div className={`text-sm font-medium ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                         {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                       </div>
@@ -7740,6 +7768,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         )}
                                       </div>
                                     </div>
+                                    {rowSport === 'afl' && (() => {
+                                      const aflPosLine = formatAflFantasyDfsPositionLabel(prop);
+                                      return aflPosLine ? (
+                                        <div
+                                          className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                        >
+                                          {aflPosLine}
+                                        </div>
+                                      ) : null;
+                                    })()}
                                     {/* Stat Type and Line */}
                                     <div className={`text-sm font-semibold mt-0.5 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                       {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}

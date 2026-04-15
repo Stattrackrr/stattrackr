@@ -10,6 +10,12 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName, opponentToFootywireTeam } from '@/lib/aflTeamMapping';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { getAflDisposalsProjection, getAflDisposalsProjectionPayloadMeta } from '@/lib/aflDisposalsModel';
+import {
+  dfsRoleGroupToShortLabel,
+  findDfsRoleGroup,
+  loadDfsRolePlayers,
+  normalizeFantasyPositionToDvp,
+} from '@/lib/aflDfsRoleMap';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,8 +27,8 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v1';
-const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v1';
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v2';
+const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v2';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
@@ -648,6 +654,16 @@ export async function GET(request: Request) {
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
+    const dfsPlayers = await loadDfsRolePlayers();
+    const dfsShortByNormalizedName = new Map<string, string | null>();
+    const seenPlayerKeysForDfs = new Set<string>();
+    for (const r of rows) {
+      const nk = normalizeAflPlayerNameForMatch(r.playerName);
+      if (seenPlayerKeysForDfs.has(nk)) continue;
+      seenPlayerKeysForDfs.add(nk);
+      const group = findDfsRoleGroup(dfsPlayers, r.playerName);
+      dfsShortByNormalizedName.set(nk, dfsRoleGroupToShortLabel(group));
+    }
     const rowContexts = rows.map((r) => {
       const playerTeam = resolvePlayerTeam(r.playerName, r.homeTeam, r.awayTeam);
       const opponent =
@@ -663,6 +679,9 @@ export async function GET(request: Request) {
     await Promise.all(neededPositions.map((pos) => loadDvpBatchForPosition(pos)));
 
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(({ r, playerTeam, opponent, position }) => {
+      const fantasyDvp = normalizeFantasyPositionToDvp(position);
+      const dfsShort =
+        dfsShortByNormalizedName.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
       const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
@@ -709,6 +728,8 @@ export async function GET(request: Request) {
         modelLine: disposalsModel?.modelLine ?? null,
         modelVersion: disposalsModel?.modelVersion ?? null,
         modelScoredAt: disposalsModel?.scoredAt ?? null,
+        aflFantasyPosition: fantasyDvp,
+        aflDfsRole: dfsShort,
         ...(debugStats ? { _dvpPosition: position, _dvpOpponent: opponent } : {}),
       };
       return baseRow;
