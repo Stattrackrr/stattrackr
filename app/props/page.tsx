@@ -11,7 +11,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
-import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleLabels';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';

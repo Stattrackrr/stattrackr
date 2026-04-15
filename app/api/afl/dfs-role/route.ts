@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleLabels';
 
 type DfsRolePlayer = {
   name?: string;

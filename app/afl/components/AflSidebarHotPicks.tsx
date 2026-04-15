@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
-import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleMap';
+import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleLabels';
 import { buildAflHotPicksFromListRows, type AflHotPickCard } from '@/lib/aflHotPicksFromList';
 
 function aflInitials(name: string): string {
