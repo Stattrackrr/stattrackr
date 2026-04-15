@@ -162,13 +162,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing bet payload' }, { status: 400 });
     }
 
-    if (String(bet?.sport ?? '').trim().toUpperCase() === 'AFL') {
-      return NextResponse.json(
-        { error: 'AFL journal is currently under maintenance' },
-        { status: 503 }
-      );
-    }
-
     // Always enforce user_id on the server for safety. Use admin client so insert succeeds
     // regardless of cookie/session context (RLS would block when auth is via Bearer token only).
     let insertPayload;

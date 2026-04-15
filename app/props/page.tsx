@@ -11,7 +11,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
-import { resolveDfsRoleDisplayLabel } from '@/lib/aflDfsRoleLabels';
+import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -77,15 +77,6 @@ interface PlayerProp {
   aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
   /** DFS role short label (e.g. INS MID); optional when not in DFS map. */
   aflDfsRole?: string | null;
-}
-
-function formatAflFantasyDfsPositionLabel(prop: Pick<PlayerProp, 'aflFantasyPosition' | 'aflDfsRole'>): string | null {
-  const f = prop.aflFantasyPosition;
-  const dRaw = prop.aflDfsRole != null && String(prop.aflDfsRole).trim() ? String(prop.aflDfsRole).trim() : null;
-  const d = dRaw ?? (f ? resolveDfsRoleDisplayLabel(null, f) : null);
-  if (!f && !d) return null;
-  if (f && d) return `${f} - ${d}`;
-  return f || d || null;
 }
 
 function medianValue(values: number[]): number | null {
@@ -6395,7 +6386,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         {prop.playerName}
                                       </div>
                                       {rowSport === 'afl' && (() => {
-                                        const aflPosLine = formatAflFantasyDfsPositionLabel(prop);
+                                        const aflPosLine = formatAflFantasyDfsPositionLabel(prop.aflFantasyPosition, prop.aflDfsRole);
                                         return aflPosLine ? (
                                           <div
                                             className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
@@ -7770,7 +7761,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       </div>
                                     </div>
                                     {rowSport === 'afl' && (() => {
-                                      const aflPosLine = formatAflFantasyDfsPositionLabel(prop);
+                                      const aflPosLine = formatAflFantasyDfsPositionLabel(prop.aflFantasyPosition, prop.aflDfsRole);
                                       return aflPosLine ? (
                                         <div
                                           className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}

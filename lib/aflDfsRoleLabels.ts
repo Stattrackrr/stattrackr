@@ -103,6 +103,21 @@ export function resolveDfsRoleDisplayLabel(
   return null;
 }
 
+/** Same pattern as the AFL props table: `DEF - DES KCK`, or one side when the other is missing. */
+export function formatAflFantasyDfsPositionLabel(
+  fantasyPosition: string | null | undefined,
+  aflDfsRole: string | null | undefined
+): string | null {
+  const fRaw = fantasyPosition != null ? String(fantasyPosition).trim().toUpperCase() : '';
+  const fValid =
+    fRaw === 'DEF' || fRaw === 'MID' || fRaw === 'FWD' || fRaw === 'RUC' ? (fRaw as 'DEF' | 'MID' | 'FWD' | 'RUC') : null;
+  const dRaw = aflDfsRole != null && String(aflDfsRole).trim() ? String(aflDfsRole).trim() : null;
+  const d = dRaw ?? (fValid ? resolveDfsRoleDisplayLabel(null, fValid) : null);
+  if (!fValid && !d) return null;
+  if (fValid && d) return `${fValid} - ${d}`;
+  return fValid || d || null;
+}
+
 export function normalizeFantasyPositionToDvp(raw: string): 'DEF' | 'MID' | 'FWD' | 'RUC' {
   const pos = String(raw || '').trim().toUpperCase();
   if (pos === 'DEF' || pos === 'MID' || pos === 'FWD' || pos === 'RUC') return pos;

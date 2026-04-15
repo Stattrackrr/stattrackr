@@ -9,6 +9,8 @@ export type AflHotPickCard = {
   l5Hits: number | null;
   l5Total: number | null;
   gameId?: string;
+  homeTeam?: string | null;
+  awayTeam?: string | null;
   aflFantasyPosition?: string | null;
   aflDfsRole?: string | null;
 };
@@ -72,6 +74,8 @@ export function buildAflHotPicksFromListRows(
         l5Hits: hr?.hits ?? null,
         l5Total: hr?.total ?? null,
         gameId: typeof r.gameId === 'string' ? r.gameId : undefined,
+        homeTeam: typeof r.homeTeam === 'string' ? r.homeTeam.trim() : null,
+        awayTeam: typeof r.awayTeam === 'string' ? r.awayTeam.trim() : null,
         aflFantasyPosition: typeof r.aflFantasyPosition === 'string' ? r.aflFantasyPosition : null,
         aflDfsRole: typeof r.aflDfsRole === 'string' ? r.aflDfsRole : null,
       };
