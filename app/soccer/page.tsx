@@ -210,8 +210,9 @@ export default function SoccerPage() {
             </div>
             <h1 className="text-4xl font-semibold tracking-tight">Soccer</h1>
             <p className="mt-3 max-w-3xl text-sm text-slate-300 sm:text-base">
-              This page now loads both the latest Soccerway match sample and the seeded team discovery
-              sample so we can inspect game stats and every team we can currently return.
+              This page loads a Soccerway match sample (by default the first upcoming-style fixture found
+              on the Premier League fixtures page when you refresh) plus the seeded team discovery sample
+              so we can inspect game stats and every team we can currently return.
             </p>
           </div>
 
@@ -243,7 +244,7 @@ export default function SoccerPage() {
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Current sample</div>
                 <h2 className="mt-3 text-2xl font-semibold text-white">
-                  {matchSample?.match?.ogTitle || matchSample?.match?.heading || 'Latest Soccerway match'}
+                  {matchSample?.match?.ogTitle || matchSample?.match?.heading || 'Soccerway match sample'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-300">
                   {matchSample?.match?.ogDescription || 'No match description available.'}
