@@ -134,7 +134,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'unibet': {
     name: 'Unibet',
     logo: 'UB',
-    logoUrl: getLogoUrl('unibet.com'),
+    logoUrl: '/images/unibet.jpg',
     color: '#43B649',
   },
   'foxbet': {
@@ -243,7 +243,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'betfair': {
     name: 'Betfair',
     logo: 'BF',
-    logoUrl: getLogoUrl('betfair.com.au'),
+    logoUrl: '/images/betfair.png',
     color: '#FFB81C',
   },
   'dabble': {
@@ -262,7 +262,7 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
   'unibet_au': {
     name: 'Unibet',
     logo: 'UB',
-    logoUrl: getLogoUrl('unibet.com.au'),
+    logoUrl: '/images/unibet.jpg',
     color: '#43B649',
   },
 };
