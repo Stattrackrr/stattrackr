@@ -27,6 +27,8 @@ interface LeftSidebarProps {
   onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
   /** Optional scrollable region in nav (e.g. AFL dashboard hot picks; on /afl, Sports/Journal are hidden). */
   belowNavSlot?: ReactNode;
+  /** On /afl, Sports/Journal are hidden by default; set true for AFL Game Props to match other dashboards. */
+  showDashboardNavLinks?: boolean;
 }
 
 export default function LeftSidebar({
@@ -45,6 +47,7 @@ export default function LeftSidebar({
   onToggleSidebar,
   onProfileUpdated,
   belowNavSlot,
+  showDashboardNavLinks = false,
 }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
@@ -183,6 +186,7 @@ export default function LeftSidebar({
   const membershipLabel = isPro ? 'Pro Member' : 'Member';
   const showProfileCard = Boolean(avatarUrl || username || userEmail || onSubscriptionClick || onSignOutClick);
   const isAflDashboard = pathname === '/afl';
+  const suppressDashboardNav = isAflDashboard && !showDashboardNavLinks;
   
   // Generate a consistent random color based on user's name/email
   const getAvatarColor = (name: string): string => {
@@ -345,7 +349,7 @@ export default function LeftSidebar({
 
       {/* Navigation links — Sports + Journal hidden on AFL dashboard only */}
       <nav className="flex-1 p-3 text-black dark:text-white flex flex-col min-h-0">
-        {!isAflDashboard ? (
+        {!suppressDashboardNav ? (
           <div className="flex-shrink-0">
             {/* Sports Dropdown */}
             <div>
@@ -430,7 +434,7 @@ export default function LeftSidebar({
         {belowNavSlot ? (
           <div
             className={`flex-1 min-h-0 flex flex-col overflow-hidden ${
-              !isAflDashboard ? 'mt-3 pt-3 border-t border-gray-200 dark:border-gray-700' : ''
+              !suppressDashboardNav ? 'mt-3 pt-3 border-t border-gray-200 dark:border-gray-700' : ''
             }`}
           >
             <div className="flex-1 min-h-0 overflow-y-auto fade-scrollbar custom-scrollbar">{belowNavSlot}</div>
@@ -537,7 +541,7 @@ export default function LeftSidebar({
         </div>
       )}
 
-      {!isAflDashboard ? (
+      {!suppressDashboardNav ? (
         <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white mt-auto">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
           <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
