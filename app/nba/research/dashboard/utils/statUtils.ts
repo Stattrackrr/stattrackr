@@ -9,8 +9,14 @@ export type Q1StatsByGameId = Record<number, { pts: number; reb: number; ast: nu
 export function getStatValue(stats: BallDontLieStats, key: string, q1StatsByGameId?: Q1StatsByGameId): number {
   // 1st quarter stats (from BDL period=1, completed games only)
   if (q1StatsByGameId && (key === 'q1_pts' || key === 'q1_reb' || key === 'q1_ast')) {
-    const gameId = stats?.game?.id;
-    if (typeof gameId === 'number' && !isNaN(gameId)) {
+    const rawId = stats?.game?.id;
+    let gameId = NaN;
+    if (typeof rawId === 'number' && Number.isFinite(rawId)) gameId = rawId;
+    else if (typeof rawId === 'string') {
+      const n = parseInt(rawId, 10);
+      if (Number.isFinite(n)) gameId = n;
+    }
+    if (Number.isFinite(gameId)) {
       const q1 = q1StatsByGameId[gameId];
       if (q1) {
         if (key === 'q1_pts') return q1.pts;

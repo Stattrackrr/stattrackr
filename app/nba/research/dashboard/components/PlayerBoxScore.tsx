@@ -298,8 +298,14 @@ const PlayerBoxScore = memo(function PlayerBoxScore({
                     )}
                   </td>
                   {(() => {
-                    const gameId = game.game?.id;
-                    const q1 = typeof gameId === 'number' ? q1StatsByGameId[gameId] : undefined;
+                    const raw = game.game?.id;
+                    let gid = NaN;
+                    if (typeof raw === 'number' && Number.isFinite(raw)) gid = raw;
+                    else if (typeof raw === 'string') {
+                      const n = parseInt(raw, 10);
+                      if (Number.isFinite(n)) gid = n;
+                    }
+                    const q1 = Number.isFinite(gid) ? q1StatsByGameId[gid] : undefined;
                     return (
                       <>
                         <td className="py-2 px-2 text-center text-gray-900 dark:text-white font-medium">

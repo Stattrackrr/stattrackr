@@ -34,18 +34,33 @@ export function useQ1StatsFetch({
 
     lastPlayerIdRef.current = resolvedPlayerId;
     const season = currentNbaSeason();
+    const bust = '&refresh=1';
+    const base = `/api/stats?player_id=${resolvedPlayerId}&season=${season}&period=1&per_page=100&max_pages=5&skip_dvp=1${bust}`;
 
     const controller = new AbortController();
-    const url = `/api/stats?player_id=${resolvedPlayerId}&season=${season}&period=1&per_page=100&max_pages=5&postseason=false&skip_dvp=1`;
+    const urls = [`${base}&postseason=false`, `${base}&postseason=true`];
 
-    fetch(url, { signal: controller.signal })
-      .then((r) => r.json().catch(() => ({})))
-      .then((j: { data?: BallDontLieStats[] }) => {
-        const data = Array.isArray(j?.data) ? j.data : [];
+    const parseGameId = (raw: unknown): number | null => {
+      if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+      if (typeof raw === 'string') {
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) ? n : null;
+      }
+      return null;
+    };
+
+    Promise.all(
+      urls.map((url) =>
+        fetch(url, { signal: controller.signal }).then((r) => r.json().catch(() => ({})))
+      )
+    )
+      .then((responses: Array<{ data?: BallDontLieStats[] }>) => {
         const map: Q1StatsByGameId = {};
-        for (const stat of data) {
-          const gameId = stat?.game?.id;
-          if (typeof gameId === 'number' && !isNaN(gameId)) {
+        for (const j of responses) {
+          const data = Array.isArray(j?.data) ? j.data : [];
+          for (const stat of data) {
+            const gameId = parseGameId(stat?.game?.id);
+            if (gameId == null) continue;
             map[gameId] = {
               pts: stat.pts ?? 0,
               reb: stat.reb ?? 0,
