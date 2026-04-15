@@ -11,6 +11,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
+import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -72,6 +73,10 @@ interface PlayerProp {
   gameId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  /** AFL Fantasy bucket (DEF/MID/FWD/RUC) for list display; from /api/afl/player-props/list. */
+  aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
+  /** DFS role short label (e.g. INS MID); optional when not in DFS map. */
+  aflDfsRole?: string | null;
 }
 
 function medianValue(values: number[]): number | null {
@@ -685,6 +690,8 @@ export default function NBALandingPage() {
       seasonHitRate?: { hits: number; total: number } | null;
       dvpRating?: number | null;
       dvpStatValue?: number | null;
+      aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
+      aflDfsRole?: string | null;
     }>();
 
     for (const r of rows) {
@@ -715,6 +722,8 @@ export default function NBALandingPage() {
           seasonHitRate: r.seasonHitRate,
           dvpRating: r.dvpRating,
           dvpStatValue: r.dvpStatValue,
+          aflFantasyPosition: r.aflFantasyPosition ?? null,
+          aflDfsRole: r.aflDfsRole ?? null,
         });
       }
     }
@@ -761,6 +770,8 @@ export default function NBALandingPage() {
         seasonHitRate: a.seasonHitRate,
         dvpRating: a.dvpRating,
         dvpStatValue: a.dvpStatValue,
+        aflFantasyPosition: a.aflFantasyPosition ?? null,
+        aflDfsRole: a.aflDfsRole ?? null,
       };
     });
 
@@ -6169,10 +6180,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               // Warm key AFL endpoints before navigating (game logs require ?season= per API).
                               const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
                               const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
-                              const force2026 = currentSeason === new Date().getFullYear() ? '&force_fetch=1' : '';
                               const prefetchUrls = [
                                 `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                `${logsBase}&season=2026${force2026}`,
+                                `${logsBase}&season=2026`,
                                 `${logsBase}&season=2025`,
                                 `${logsBase}&season=2024`,
                                 `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
@@ -6375,6 +6385,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       <div className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                         {prop.playerName}
                                       </div>
+                                      {rowSport === 'afl' && (() => {
+                                        const aflPosLine = formatAflFantasyDfsPositionLabel(prop.aflFantasyPosition, prop.aflDfsRole);
+                                        return aflPosLine ? (
+                                          <div
+                                            className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                          >
+                                            {aflPosLine}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                       <div className={`text-sm font-medium ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                         {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                       </div>
@@ -7740,6 +7760,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         )}
                                       </div>
                                     </div>
+                                    {rowSport === 'afl' && (() => {
+                                      const aflPosLine = formatAflFantasyDfsPositionLabel(prop.aflFantasyPosition, prop.aflDfsRole);
+                                      return aflPosLine ? (
+                                        <div
+                                          className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                        >
+                                          {aflPosLine}
+                                        </div>
+                                      ) : null;
+                                    })()}
                                     {/* Stat Type and Line */}
                                     <div className={`text-sm font-semibold mt-0.5 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                       {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}

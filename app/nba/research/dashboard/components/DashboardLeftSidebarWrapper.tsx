@@ -1,7 +1,7 @@
 'use client';
 
 import LeftSidebar from "@/components/LeftSidebar";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, type ReactNode } from "react";
 
 interface DashboardLeftSidebarWrapperProps {
   sidebarOpen: boolean;
@@ -16,6 +16,7 @@ interface DashboardLeftSidebarWrapperProps {
   onSubscriptionClick: () => void;
   onSignOutClick: () => void;
   onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
+  belowNavSlot?: ReactNode;
 }
 
 export function DashboardLeftSidebarWrapper({
@@ -31,6 +32,7 @@ export function DashboardLeftSidebarWrapper({
   onSubscriptionClick,
   onSignOutClick,
   onProfileUpdated,
+  belowNavSlot,
 }: DashboardLeftSidebarWrapperProps) {
   return (
     <>
@@ -48,6 +50,7 @@ export function DashboardLeftSidebarWrapper({
           onProfileUpdated={onProfileUpdated}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          belowNavSlot={belowNavSlot}
         />
       
       {/* Expand Sidebar Button - visible when sidebar is closed */}

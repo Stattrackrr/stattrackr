@@ -295,7 +295,6 @@ export default function AflDisposalsHistoryPage() {
                   season: String(request.season),
                   player_name: request.playerName,
                   include_both: '1',
-                  force_fetch: '1',
                 });
                 const logsRes = await fetch(`/api/afl/player-game-logs?${params.toString()}`, { cache: 'no-store' });
                 if (!logsRes.ok) return null;

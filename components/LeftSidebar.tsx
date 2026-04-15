@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, Dispatch, SetStateAction, useEffect, useRef } from "react";
+import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
@@ -25,6 +25,8 @@ interface LeftSidebarProps {
   onToggleSidebar?: () => void;
   /** Called after profile (name, username, phone) or avatar is saved so parent can update displayed name/avatar */
   onProfileUpdated?: (data: { username?: string | null; full_name?: string | null; avatar_url?: string | null }) => void;
+  /** Optional scrollable region in nav (e.g. AFL dashboard hot picks; on /afl, Sports/Journal are hidden). */
+  belowNavSlot?: ReactNode;
 }
 
 export default function LeftSidebar({
@@ -42,6 +44,7 @@ export default function LeftSidebar({
   sidebarOpen = true,
   onToggleSidebar,
   onProfileUpdated,
+  belowNavSlot,
 }: LeftSidebarProps) {
   const pathname = usePathname();
   const [showSettings, setShowSettings] = useState(false);
@@ -179,6 +182,7 @@ export default function LeftSidebar({
   const fallbackInitial = displayName?.trim().charAt(0)?.toUpperCase() || 'P';
   const membershipLabel = isPro ? 'Pro Member' : 'Member';
   const showProfileCard = Boolean(avatarUrl || username || userEmail || onSubscriptionClick || onSignOutClick);
+  const isAflDashboard = pathname === '/afl';
   
   // Generate a consistent random color based on user's name/email
   const getAvatarColor = (name: string): string => {
@@ -339,86 +343,99 @@ export default function LeftSidebar({
         </div>
       </div>
 
-      {/* Navigation links */}
-      <nav className="flex-1 p-3 text-black dark:text-white flex flex-col">
-        {/* Sports Dropdown */}
-        <div>
-          <button
-            onClick={() => setShowSportsDropdown(!showSportsDropdown)}
-            className="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
-          >
-            <span>Sports</span>
-            <svg className={`w-4 h-4 transition-transform ${showSportsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </button>
-          
-          {/* Sports Dropdown Menu - Inline */}
-          {showSportsDropdown && (
-            <ul className="mt-1 space-y-1 pl-2">
-              {sports.map((sport) => (
-                <li key={sport.name}>
-                  {sport.comingSoon === true ? (
-                    <div
-                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between gap-2"
-                    >
-                      <span className="flex items-center gap-2">
-                        {sport.logo}
-                        <span>{sport.name} coming soon</span>
-                      </span>
-                      <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
-                        {sport.comingSoonText ?? 'Coming Soon'}
-                      </span>
-                    </div>
-                  ) : (
-                    <Link
-                      href={sport.href}
-                      onClick={() => setShowSportsDropdown(false)}
-                      className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
-                    >
-                      <span className="flex items-center gap-2">
-                        {sport.logo}
-                        <span>{sport.name}</span>
-                      </span>
-                      {sport.beta && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
-                          Beta
-                        </span>
+      {/* Navigation links — Sports + Journal hidden on AFL dashboard only */}
+      <nav className="flex-1 p-3 text-black dark:text-white flex flex-col min-h-0">
+        {!isAflDashboard ? (
+          <div className="flex-shrink-0">
+            {/* Sports Dropdown */}
+            <div>
+              <button
+                onClick={() => setShowSportsDropdown(!showSportsDropdown)}
+                className="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800"
+              >
+                <span>Sports</span>
+                <svg className={`w-4 h-4 transition-transform ${showSportsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </button>
+
+              {/* Sports Dropdown Menu - Inline */}
+              {showSportsDropdown && (
+                <ul className="mt-1 space-y-1 pl-2">
+                  {sports.map((sport) => (
+                    <li key={sport.name}>
+                      {sport.comingSoon === true ? (
+                        <div
+                          className="block px-3 py-2 text-sm font-medium rounded transition-colors text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center justify-between gap-2"
+                        >
+                          <span className="flex items-center gap-2">
+                            {sport.logo}
+                            <span>{sport.name} coming soon</span>
+                          </span>
+                          <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
+                            {sport.comingSoonText ?? 'Coming Soon'}
+                          </span>
+                        </div>
+                      ) : (
+                        <Link
+                          href={sport.href}
+                          onClick={() => setShowSportsDropdown(false)}
+                          className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
+                        >
+                          <span className="flex items-center gap-2">
+                            {sport.logo}
+                            <span>{sport.name}</span>
+                          </span>
+                          {sport.beta && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
+                              Beta
+                            </span>
+                          )}
+                        </Link>
                       )}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        
-        {/* Journal section - right under Sports */}
-        <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <Link
-            href={hasPremium ? "/journal" : "/subscription"}
-            className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pathname === "/journal"
-                ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                : !hasPremium
-                ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Journal section - right under Sports */}
+            <div className="mt-6 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <Link
+                href={hasPremium ? "/journal" : "/subscription"}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === "/journal"
+                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
+                    : !hasPremium
+                      ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                }`}
+                onClick={(e) => {
+                  if (!hasPremium) {
+                    e.preventDefault();
+                    window.location.href = '/subscription';
+                  }
+                }}
+              >
+                <span>Journal</span>
+                {!hasPremium && (
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </Link>
+            </div>
+          </div>
+        ) : null}
+        {belowNavSlot ? (
+          <div
+            className={`flex-1 min-h-0 flex flex-col overflow-hidden ${
+              !isAflDashboard ? 'mt-3 pt-3 border-t border-gray-200 dark:border-gray-700' : ''
             }`}
-            onClick={(e) => {
-              if (!hasPremium) {
-                e.preventDefault();
-                window.location.href = '/subscription';
-              }
-            }}
           >
-            <span>Journal</span>
-            {!hasPremium && (
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            )}
-          </Link>
-        </div>
+            <div className="flex-1 min-h-0 overflow-y-auto fade-scrollbar custom-scrollbar">{belowNavSlot}</div>
+          </div>
+        ) : null}
       </nav>
       
       {/* Profile Summary */}
@@ -520,24 +537,25 @@ export default function LeftSidebar({
         </div>
       )}
 
-      {/* Coming Soon Section - Way further down */}
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white mt-auto">
-        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
-        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-          <li className="flex items-center gap-2">
-            <span className="text-lg" aria-hidden>🏟️</span>
-            <span>More Sports</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-lg" aria-hidden="true">
-              <svg className="w-5 h-5 fill-current text-[#5865F2]" viewBox="0 0 24 24">
-                <path d="M20.317 4.369a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.078.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.249.077.077 0 00-.078-.037 19.736 19.736 0 00-4.885 1.515.07.07 0 00-.032.024C.533 9.045-.319 13.58.099 18.058a.082.082 0 00.031.057 19.9 19.9 0 005.99 3.034.077.077 0 00.084-.028c.461-.63.873-1.295 1.226-1.994a.076.076 0 00-.041-.105 12.267 12.267 0 01-1.753-.83.077.077 0 01-.008-.128c.118-.089.236-.18.349-.272a.074.074 0 01.077-.01c3.668 1.672 7.625 1.672 11.253 0a.074.074 0 01.078.009c.114.093.231.184.35.273a.077.077 0 01-.006.126 11.9 11.9 0 01-1.754.83.076.076 0 00-.04.105c.36.699.773 1.364 1.225 1.993a.076.076 0 00.084.029 19.876 19.876 0 005.993-3.033.079.079 0 00.031-.056c.5-5.177-.838-9.674-3.549-13.666a.061.061 0 00-.03-.025zM8.02 15.331c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.955 2.445-2.158 2.445zm7.974 0c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.947 2.445-2.158 2.445z" />
-              </svg>
-            </span>
-            <span>Discord</span>
-          </li>
-        </ul>
-      </div>
+      {!isAflDashboard ? (
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-black dark:text-white mt-auto">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Coming Soon</p>
+          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <li className="flex items-center gap-2">
+              <span className="text-lg" aria-hidden>🏟️</span>
+              <span>More Sports</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-lg" aria-hidden="true">
+                <svg className="w-5 h-5 fill-current text-[#5865F2]" viewBox="0 0 24 24">
+                  <path d="M20.317 4.369a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.078.037c-.211.375-.444.864-.608 1.249a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.249.077.077 0 00-.078-.037 19.736 19.736 0 00-4.885 1.515.07.07 0 00-.032.024C.533 9.045-.319 13.58.099 18.058a.082.082 0 00.031.057 19.9 19.9 0 005.99 3.034.077.077 0 00.084-.028c.461-.63.873-1.295 1.226-1.994a.076.076 0 00-.041-.105 12.267 12.267 0 01-1.753-.83.077.077 0 01-.008-.128c.118-.089.236-.18.349-.272a.074.074 0 01.077-.01c3.668 1.672 7.625 1.672 11.253 0a.074.074 0 01.078.009c.114.093.231.184.35.273a.077.077 0 01-.006.126 11.9 11.9 0 01-1.754.83.076.076 0 00-.04.105c.36.699.773 1.364 1.225 1.993a.076.076 0 00.084.029 19.876 19.876 0 005.993-3.033.079.079 0 00.031-.056c.5-5.177-.838-9.674-3.549-13.666a.061.061 0 00-.03-.025zM8.02 15.331c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.955 2.445-2.158 2.445zm7.974 0c-1.183 0-2.157-1.097-2.157-2.445 0-1.348.955-2.445 2.157-2.445 1.211 0 2.175 1.106 2.158 2.445 0 1.348-.947 2.445-2.158 2.445z" />
+                </svg>
+              </span>
+              <span>Discord</span>
+            </li>
+          </ul>
+        </div>
+      ) : null}
 
       {/* Profile Modal - opens only when "Profile" is clicked in the dropdown */}
       {showProfileModal && mounted && createPortal(
