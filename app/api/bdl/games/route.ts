@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get('page') || '1';
   const cursor = searchParams.get('cursor') || '';
   const perPage = searchParams.get('per_page') || '25';
-  
+  const forceRefresh =
+    searchParams.get('refresh') === '1' || searchParams.get('refresh') === 'true';
+
   // Stable aggregated key (no cursor) when team_ids[] is provided
   const seasonsParams = searchParams.getAll('seasons[]');
   const teamParams = searchParams.getAll('team_ids[]');
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
   const COMPLETED_GAMES_TTL_SEC = 24 * 60 * 60; // 24 hours
   const ttlForStable = includesCurrentSeason ? COMPLETED_GAMES_TTL_SEC : LONG_TTL_SEC;
 
-  if (stableKey) {
+  if (stableKey && !forceRefresh) {
     const sharedHit = await sharedCache.getJSON<any>(stableKey);
     if (sharedHit) return NextResponse.json(sharedHit);
     const memHit = cache.get(stableKey);
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
       sharedCache.setJSON(stableKey, memHit, ttlForStable).catch(() => {});
       return NextResponse.json(memHit);
     }
-  } else {
+  } else if (!forceRefresh) {
     // Fallback to legacy key when no team filter provided
     const legacyKey = seasons 
       ? `games:seasons:${seasons}:cursor:${cursor}:per_page:${perPage}` 
@@ -155,8 +157,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(finalData);
     }
 
-    // Legacy fallback (no team filter): forward query as is
-    searchParams.forEach((value, key) => base.searchParams.append(key, value));
+    // Legacy fallback (no team filter): forward query as is (skip our cache-bust param)
+    searchParams.forEach((value, key) => {
+      if (key === 'refresh') return;
+      base.searchParams.append(key, value);
+    });
     const url = base.toString();
     const apiKey = process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '';
     const authHeader = apiKey ? (apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`) : '';

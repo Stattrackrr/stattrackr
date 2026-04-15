@@ -283,7 +283,7 @@ export async function GET(req: NextRequest) {
 
     // Check if a request for this player/season/postseason/period is already in flight
     const requestKey = cacheKey;
-    if (inFlightRequests.has(requestKey)) {
+    if (!forceRefresh && inFlightRequests.has(requestKey)) {
       // Request already in flight, waiting
       try {
         const existingData = await inFlightRequests.get(requestKey)!;

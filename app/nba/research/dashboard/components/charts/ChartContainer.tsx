@@ -76,7 +76,9 @@ const ChartContainer = memo(function ChartContainer({
 }: any) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const totalSamples = hitRateStats?.total ?? chartData.length;
-  const overSamples = hitRateStats?.overCount ?? chartData.filter((d: any) => d.value > bettingLine).length;
+  const overSamples =
+    hitRateStats?.overCount ??
+    chartData.filter((d: any) => d.value != null && Number.isFinite(d.value) && d.value > bettingLine).length;
   
   // Check if URL params indicate a player should be loaded (for initial page load detection)
   // Use useState/useEffect to avoid hydration mismatch (server renders false, client checks after mount)

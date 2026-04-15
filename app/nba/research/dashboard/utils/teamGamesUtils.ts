@@ -59,7 +59,8 @@ export async function fetchTeamGamesData(
       targetSeasons.map(async (s) => {
         try {
           // Fetch all games for this season (API handles pagination internally)
-          const url = `/api/bdl/games?seasons[]=${s}&team_ids[]=${teamId}&per_page=100`;
+          const refresh = s === String(current) ? '&refresh=1' : '';
+          const url = `/api/bdl/games?seasons[]=${s}&team_ids[]=${teamId}&per_page=100${refresh}`;
           const res = await fetch(url);
           const js = await res.json();
           const arr = Array.isArray(js?.data) ? js.data : [];
@@ -93,7 +94,8 @@ export async function fetchTeamGamesData(
       
       let games = seasonData.data.filter((game: any) => {
         const isTeamInvolved = game.home_team?.id === teamId || game.visitor_team?.id === teamId;
-        const isCompleted = game.status === 'Final';
+        const statusNorm = String(game.status || '').toLowerCase();
+        const isCompleted = statusNorm === 'final' || statusNorm.includes('completed');
         const hasScores = game.home_team_score != null && game.visitor_team_score != null;
         
         const passes = isTeamInvolved && isCompleted && hasScores;

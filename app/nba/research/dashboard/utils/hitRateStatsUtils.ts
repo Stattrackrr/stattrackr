@@ -27,8 +27,8 @@ export function calculateHitRateStats({
   resolvedPlayerId,
 }: CalculateHitRateStatsParams): HitRateStats {
   const validValues = chartData
-    .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
-    .filter((v): v is number => Number.isFinite(v));
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null && v !== undefined && Number.isFinite(v));
   
   // Check if URL params indicate a player should be loaded (for initial page load detection)
   let hasUrlPlayer = false;
@@ -62,7 +62,7 @@ export function calculateHitRateStats({
 
   // Calculate actual hit rates by counting games where stat > bettingLine
   // This gives real hit rates, not probability-based estimates
-  const total = chartData.length;
+  const total = validValues.length;
   let overCount = 0;
   let underCount = 0;
 
@@ -88,8 +88,8 @@ export function calculateHitRateStats({
   };
 
   const primaryValues = chartData
-    .map(d => (Number.isFinite(d.value) ? d.value : Number(d.value)))
-    .filter((v): v is number => Number.isFinite(v));
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null && v !== undefined && Number.isFinite(v));
 
   const averages: AverageStatInfo[] = [];
   const statMeta = currentStatOptions.find(s => s.key === selectedStat);

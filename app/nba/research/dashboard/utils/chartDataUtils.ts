@@ -11,7 +11,8 @@ import type { Q1StatsByGameId } from './statUtils';
 import { BaseGameDataItem } from './baseGameDataUtils';
 
 export interface ChartDataItem extends BaseGameDataItem {
-  value: number;
+  /** null = unknown (e.g. BDL has no Q1 split for this game yet) */
+  value: number | null;
   isLive?: boolean;
 }
 
@@ -36,14 +37,18 @@ export function processChartData({
   todaysGames,
   q1StatsByGameId,
 }: ChartDataParams): ChartDataItem[] {
+  const isQ1 = selectedStat === 'q1_pts' || selectedStat === 'q1_reb' || selectedStat === 'q1_ast';
   const mapped = source.map(game => {
     const statValue = propsMode === 'team' 
       ? getGameStatValue((game as any).gameData, selectedStat, gamePropsTeam || '') 
       : (game as any).stats ? getStatValue((game as any).stats, selectedStat, q1StatsByGameId) : 0;
     
-    // For steals/blocks, ensure we return 0 instead of null/undefined
-    // This is important because these stats can legitimately be 0
-    const value = (statValue !== null && statValue !== undefined) ? statValue : 0;
+    const value: number | null =
+      statValue === null
+        ? (isQ1 ? null : 0)
+        : statValue !== undefined && Number.isFinite(statValue as number)
+          ? (statValue as number)
+          : 0;
     
     return {
       ...game,

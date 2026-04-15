@@ -15,7 +15,7 @@ export default memo(function StaticLabelList({
   formatChartLabel: (v: any) => string; 
   fontSizePx?: number;
   selectedStat?: string;
-  chartData?: Array<{ value: number; [key: string]: any }>;
+  chartData?: Array<{ value: number | null; [key: string]: any }>;
 }) {
   return (
     <LabelList
@@ -31,8 +31,9 @@ export default memo(function StaticLabelList({
         if (!props) return null;
         
         const value = props?.value ?? props?.payload?.value;
-        // Hide label if value is null or undefined
-        if (value === null || value === undefined) {
+        const isQ1 = selectedStat === 'q1_pts' || selectedStat === 'q1_reb' || selectedStat === 'q1_ast';
+        // Hide label if missing (except Q1: show em dash when BDL has no quarter row)
+        if ((value === null || value === undefined) && !isQ1) {
           return null;
         }
         
@@ -59,8 +60,10 @@ export default memo(function StaticLabelList({
           return null;
         }
         
-        const numericValue = Number(value);
-        const isZero = numericValue === 0;
+        const numericValue =
+          value === null || value === undefined || !Number.isFinite(Number(value)) ? NaN : Number(value);
+        const isMissingQ1 = isQ1 && (value === null || value === undefined);
+        const isZero = Number.isFinite(numericValue) && numericValue === 0;
         const heightNum = Number(height ?? viewBox?.height ?? 0);
         const yNum = Number(y ?? 0);
         const barTop = Math.min(yNum, yNum + heightNum);
@@ -70,7 +73,7 @@ export default memo(function StaticLabelList({
         if (numericValue < 0) {
           // Keep negative labels below the bar for spread/margin readability.
           labelY = barBottom + 14;
-        } else if (!isZero) {
+        } else if (!isZero && !isMissingQ1) {
           // Positive bars: show just above bar top.
           labelY = barTop - 4;
         }
@@ -81,10 +84,10 @@ export default memo(function StaticLabelList({
         }
 
         // Special handling for fg3m (3PM/A) - show made/attempted format
-        let displayText = formatChartLabel(labelValue);
+        let displayText = isMissingQ1 ? '—' : formatChartLabel(labelValue);
         
         // Always check for fg3m - try multiple ways to access the data
-        if (selectedStat === 'fg3m') {
+        if (!isMissingQ1 && selectedStat === 'fg3m') {
           // Try dataObject.stats (from chartData lookup by index)
           const stats = dataObject?.stats;
           if (stats && (stats.fg3m !== undefined || stats.fg3a !== undefined)) {
@@ -122,7 +125,7 @@ export default memo(function StaticLabelList({
             style={{
               fontSize: `${fontSizePx}px`,
               fontWeight: CHART_CONFIG.labelList.fontWeight,
-              fill: isDark ? '#ffffff' : '#000000'
+              fill: isMissingQ1 ? (isDark ? '#9ca3af' : '#6b7280') : isDark ? '#ffffff' : '#000000'
             }}
           >
             {displayText}

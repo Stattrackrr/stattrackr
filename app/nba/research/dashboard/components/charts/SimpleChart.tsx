@@ -18,7 +18,7 @@ import { CHART_CONFIG } from '../../constants';
 
 interface SimpleChartProps {
   isLoading?: boolean;
-  chartData: Array<{ value: number; [key: string]: any }>;
+  chartData: Array<{ value: number | null; [key: string]: any }>;
   yAxisConfig: { domain: [number, number]; ticks: number[] };
   isDark: boolean;
   bettingLine: number;
@@ -214,8 +214,11 @@ const SimpleChart = memo(function SimpleChart({
     const total = chartData.length;
     let overCount = 0;
     let underCount = 0;
+    let counted = 0;
     for (let i = 0; i < total; i++) {
       const value = chartData[i].value;
+      if (value === null || value === undefined || !Number.isFinite(value)) continue;
+      counted++;
       if (isSpreadLikeStat) {
         if (value <= bettingLine) overCount++;
         else underCount++;
@@ -224,8 +227,8 @@ const SimpleChart = memo(function SimpleChart({
         else if (value < bettingLine) underCount++;
       }
     }
-    const overPercent = total > 0 ? (overCount / total) * 100 : 0;
-    const underPercent = total > 0 ? (underCount / total) * 100 : 0;
+    const overPercent = counted > 0 ? (overCount / counted) * 100 : 0;
+    const underPercent = counted > 0 ? (underCount / counted) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);
   }, [chartData, bettingLine, getBackgroundGradient, isTogStat, isSpreadLikeStat]);
   
@@ -239,7 +242,8 @@ const SimpleChart = memo(function SimpleChart({
   }, [initialBackgroundGradient, getBackgroundGradient]);
 
   // Determine bar color based on value vs betting line
-  const getBarColor = useCallback((value: number, line: number) => {
+  const getBarColor = useCallback((value: number | null, line: number) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return '#94a3b8'; // no BDL Q1 row
     if (isTogStat) return '#6b7280'; // neutral gray for TOG%
     if (isSpreadLikeStat) return value <= line ? '#10b981' : '#ef4444'; // cover vs no-cover
     if (value > line) return '#10b981'; // green
@@ -322,6 +326,11 @@ const SimpleChart = memo(function SimpleChart({
       if (!Number.isFinite(i) || !data[i]) return;
       
       const barValue = data[i].value;
+      if (barValue === null || barValue === undefined || !Number.isFinite(barValue)) {
+        el.setAttribute('data-state', 'na');
+        el.setAttribute('fill', '#94a3b8');
+        return;
+      }
       const isOver = isSpreadLikeStat ? (barValue <= line) : (barValue > line);
       const isPush = !isSpreadLikeStat && barValue === line;
       const newState = isTogStat ? 'neutral' : (isOver ? 'over' : isPush ? 'push' : 'under');
@@ -355,9 +364,10 @@ const SimpleChart = memo(function SimpleChart({
         }
         return;
       }
-      const total = chartData.length;
-      const overCount = chartData.filter((d) => (isSpreadLikeStat ? d.value <= bettingLine : d.value > bettingLine)).length;
-      const underCount = chartData.filter((d) => (isSpreadLikeStat ? d.value > bettingLine : d.value < bettingLine)).length;
+      const counted = chartData.filter((d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value));
+      const total = counted.length;
+      const overCount = counted.filter((d) => (isSpreadLikeStat ? (d.value as number) <= bettingLine : (d.value as number) > bettingLine)).length;
+      const underCount = counted.filter((d) => (isSpreadLikeStat ? (d.value as number) > bettingLine : (d.value as number) < bettingLine)).length;
       const overPercent = total > 0 ? (overCount / total) * 100 : 0;
       const underPercent = total > 0 ? (underCount / total) * 100 : 0;
       const newGradient = getBackgroundGradient(overPercent, underPercent);
@@ -412,14 +422,17 @@ const SimpleChart = memo(function SimpleChart({
         const data = chartDataRef.current;
         if (data && data.length > 0) {
           if (isTogStat) return;
-          const total = data.length;
+          const known = data.filter(
+            (d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value as number)
+          );
+          const total = known.length;
           const stat = selectedStatRef.current;
           const overCount = stat === 'spread'
-            ? data.filter(d => d.value < value).length
-            : data.filter(d => d.value > value).length;
+            ? known.filter((d) => (d.value as number) < value).length
+            : known.filter((d) => (d.value as number) > value).length;
           const underCount = stat === 'spread'
-            ? data.filter(d => d.value > value).length
-            : data.filter(d => d.value < value).length;
+            ? known.filter((d) => (d.value as number) > value).length
+            : known.filter((d) => (d.value as number) < value).length;
           const overPercent = total > 0 ? (overCount / total) * 100 : 0;
           const underPercent = total > 0 ? (underCount / total) * 100 : 0;
           const newGradient = getBackgroundGradientRef.current(overPercent, underPercent);
@@ -455,14 +468,17 @@ const SimpleChart = memo(function SimpleChart({
       const data = chartDataRef.current;
       if (data && data.length > 0) {
         if (isTogStat) return;
-        const total = data.length;
+        const known = data.filter(
+          (d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value as number)
+        );
+        const total = known.length;
         const stat = selectedStatRef.current;
         const overCount = stat === 'spread' 
-          ? data.filter(d => d.value < value).length
-          : data.filter(d => d.value > value).length;
+          ? known.filter((d) => (d.value as number) < value).length
+          : known.filter((d) => (d.value as number) > value).length;
         const underCount = stat === 'spread'
-          ? data.filter(d => d.value > value).length
-          : data.filter(d => d.value < value).length;
+          ? known.filter((d) => (d.value as number) > value).length
+          : known.filter((d) => (d.value as number) < value).length;
         const overPercent = total > 0 ? (overCount / total) * 100 : 0;
         const underPercent = total > 0 ? (underCount / total) * 100 : 0;
         const newGradient = getBackgroundGradientRef.current(overPercent, underPercent);
