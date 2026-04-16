@@ -18,6 +18,7 @@ import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
 import { Lightbulb, ChevronDown, ChevronUp, TrendingUp, TrendingDown, BarChart3, Minus, X } from 'lucide-react';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
+import ImportedBetsReviewDrawer from '@/components/ImportedBetsReviewDrawer';
 
 export default function JournalPage() {
   return (
@@ -3461,6 +3462,8 @@ function JournalContent() {
         </div>
       )}
       
+      <ImportedBetsReviewDrawer />
+
       {/* Mobile Insights Modal - Full Screen */}
       {showMobileInsights && (
         <div className="lg:hidden fixed inset-0 z-[100] bg-white dark:bg-[#0a1929] flex flex-col">

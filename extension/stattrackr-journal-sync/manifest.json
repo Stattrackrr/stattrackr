@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "StatTrackr Journal Sync",
+  "version": "0.1.0",
+  "description": "Capture sportsbook bets from supported Australian books and send them to the StatTrackr journal import flow.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "*://*.sportsbet.com.au/*",
+    "*://*.tab.com.au/*",
+    "*://*.neds.com.au/*",
+    "*://*.ladbrokes.com.au/*",
+    "*://*.bet365.com/*",
+    "*://*.bet365.com.au/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "StatTrackr Journal Sync",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.sportsbet.com.au/*",
+        "*://*.tab.com.au/*",
+        "*://*.neds.com.au/*",
+        "*://*.ladbrokes.com.au/*",
+        "*://*.bet365.com/*",
+        "*://*.bet365.com.au/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
