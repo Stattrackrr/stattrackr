@@ -79,6 +79,23 @@ interface PlayerProp {
   aflDfsRole?: string | null;
 }
 
+function normalizeAflStatForDashboard(stat: string): string {
+  const value = String(stat || '').trim().toLowerCase();
+  if (!value) return 'disposals';
+  if (value === 'disposals' || value === 'disposals_over') return 'disposals';
+  if (value === 'goals_over' || value === 'anytime_goal_scorer') return 'goals';
+  if (value === 'marks') return 'marks';
+  if (value === 'tackles') return 'tackles';
+  if (value === 'kicks') return 'kicks';
+  if (value === 'handballs') return 'handballs';
+  if (value === 'tog') return 'tog';
+  if (value === 'inside_50s') return 'inside_50s';
+  if (value === 'uncontested' || value === 'uncontested_possessions') return 'uncontested_possessions';
+  if (value === 'meters_gained') return 'meters_gained';
+  if (value === 'free_kicks_against') return 'free_kicks_against';
+  return 'disposals';
+}
+
 function medianValue(values: number[]): number | null {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -6156,22 +6173,6 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             const opponentAbbr = normalizeTeam(prop.opponent);
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                             const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
-                            const normalizeAflStatForDashboard = (stat: string): string => {
-                              const value = String(stat || '').trim().toLowerCase();
-                              if (!value) return 'disposals';
-                              if (value === 'disposals' || value === 'disposals_over') return 'disposals';
-                              if (value === 'goals_over' || value === 'anytime_goal_scorer') return 'goals';
-                              if (value === 'marks') return 'marks';
-                              if (value === 'tackles') return 'tackles';
-                              if (value === 'kicks') return 'kicks';
-                              if (value === 'handballs') return 'handballs';
-                              if (value === 'tog') return 'tog';
-                              if (value === 'inside_50s') return 'inside_50s';
-                              if (value === 'uncontested' || value === 'uncontested_possessions') return 'uncontested_possessions';
-                              if (value === 'meters_gained') return 'meters_gained';
-                              if (value === 'free_kicks_against') return 'free_kicks_against';
-                              return 'disposals';
-                            };
                             const navigateToAflPlayer = (lineValue?: number, bookmakerName?: string) => {
                               const team = prop.team || '';
                               const opponent = prop.opponent || '';
@@ -7619,6 +7620,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   q.set('name', prop.playerName);
                                   if (prop.team) q.set('team', prop.team);
                                   if (prop.opponent) q.set('opponent', prop.opponent);
+                                  q.set('stat', normalizeAflStatForDashboard(prop.statType));
+                                  const selectedLine = Number.isFinite(prop.line) ? prop.line : null;
+                                  if (selectedLine != null) q.set('line', String(selectedLine));
+                                  const selectedBook = String(prop.bookmaker || '').trim();
+                                  if (selectedBook) q.set('bookmaker', selectedBook);
 
                                   // Show loading bar briefly so transition is intentional and prefetch has head start.
                                   setTimeout(() => {
