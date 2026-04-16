@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StatTrackr Journal Sync</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        width: 320px;
+        font-family: Arial, sans-serif;
+        background: #081220;
+        color: #fff;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 12px;
+        color: #cbd5e1;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: #d8b4fe;
+      }
+      input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #fff;
+        margin-bottom: 12px;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        margin-bottom: 10px;
+      }
+      button {
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 10px;
+        background: #9333ea;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      #status {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>StatTrackr Journal Sync</h1>
+    <p>Stay logged into StatTrackr in this browser. Captured bets open the in-app import bridge and land in your journal review queue or auto-add flow.</p>
+
+    <label for="appOrigin">StatTrackr app origin</label>
+    <input id="appOrigin" type="text" placeholder="https://stattrackr.com" />
+
+    <div class="toggle">
+      <input id="autoAdd" type="checkbox" />
+      <label for="autoAdd" style="margin: 0; color: #fff; font-size: 13px;">Auto-add after capture</label>
+    </div>
+
+    <div class="toggle">
+      <input id="autoCapture" type="checkbox" />
+      <label for="autoCapture" style="margin: 0; color: #fff; font-size: 13px;">Auto-capture on bet confirmation pages</label>
+    </div>
+
+    <button id="saveButton" type="button">Save settings</button>
+    <div id="status"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
