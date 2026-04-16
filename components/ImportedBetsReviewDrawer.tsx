@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, Download, RefreshCw, Trash2, X } from 'lucide-react';
 import { sourceBookLabel } from '@/lib/journalImport';
+import { supabase } from '@/lib/supabaseClient';
 
 type ImportedBetRow = {
   id: string;
@@ -36,6 +37,22 @@ async function readJson(response: Response) {
   return body;
 }
 
+async function getDrawerSession() {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+      return session;
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+  }
+
+  return null;
+}
+
 export default function ImportedBetsReviewDrawer() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,7 +69,16 @@ export default function ImportedBetsReviewDrawer() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/journal/import?status=all&limit=40');
+      const session = await getDrawerSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch('/api/journal/import?status=all&limit=40', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
       const body = await readJson(response);
       setItems(Array.isArray(body.imports) ? body.imports : []);
     } catch (loadError: any) {
@@ -76,9 +102,17 @@ export default function ImportedBetsReviewDrawer() {
     setSubmitting(true);
     setError(null);
     try {
+      const session = await getDrawerSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch('/api/journal/import/review', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ action, ids }),
       });
       const body = await readJson(response);
