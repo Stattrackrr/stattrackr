@@ -49,6 +49,58 @@ function getAvatarColor(name: string): string {
   return AVATAR_GRADIENTS[Math.abs(h) % AVATAR_GRADIENTS.length];
 }
 
+type HomeSubscriptionDetails = {
+  status: string | null;
+  tier: string | null;
+  billingCycle: string | null;
+  currentPeriodEnd: string | null;
+  stripeCustomerId: string | null;
+};
+
+type PaymentMethodSummary = {
+  brand?: string;
+  last4?: string;
+  exp_month?: number;
+  exp_year?: number;
+} | null;
+
+function formatDisplayDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatSubscriptionStatus(status: string | null | undefined): string {
+  if (!status) return 'No active subscription';
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatBillingCycleLabel(cycle: string | null | undefined): string {
+  if (!cycle) return 'Custom billing';
+  if (cycle === 'semiannual') return 'Every 6 months';
+  return cycle.charAt(0).toUpperCase() + cycle.slice(1);
+}
+
+function getSubscriptionStatusTone(status: string | null | undefined): string {
+  if (status === 'active' || status === 'trialing') {
+    return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+  }
+  if (status === 'past_due' || status === 'unpaid' || status === 'incomplete') {
+    return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+  }
+  if (status === 'canceled' || status === 'incomplete_expired') {
+    return 'border-slate-500/30 bg-slate-500/10 text-slate-300';
+  }
+  return 'border-purple-500/30 bg-purple-500/10 text-purple-300';
+}
+
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
@@ -75,6 +127,10 @@ export default function HomePage() {
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [loadingBrandReady, setLoadingBrandReady] = useState(false);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<HomeSubscriptionDetails | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodSummary>(null);
+  const [billingPortalLoading, setBillingPortalLoading] = useState(false);
+  const [billingPortalError, setBillingPortalError] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +225,9 @@ export default function HomePage() {
         checkPremiumStatus(session.user.id);
       } else {
         setIsCheckingSubscription(false);
+        setSubscriptionDetails(null);
+        setPaymentMethod(null);
+        setBillingPortalError(null);
       }
     };
     run();
@@ -180,6 +239,9 @@ export default function HomePage() {
       } else {
         setIsCheckingSubscription(false);
         setHasPremium(false);
+        setSubscriptionDetails(null);
+        setPaymentMethod(null);
+        setBillingPortalError(null);
       }
     });
 
@@ -223,12 +285,49 @@ export default function HomePage() {
     return () => document.removeEventListener('click', handleClick);
   }, [showProfileMenu]);
 
+  useEffect(() => {
+    if (!user || !subscriptionDetails?.stripeCustomerId) {
+      setPaymentMethod(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPaymentMethod = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const response = await fetch('/api/payment-method', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        const data = await response.json().catch(() => ({ paymentMethod: null }));
+        if (!cancelled) {
+          setPaymentMethod(data.paymentMethod ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setPaymentMethod(null);
+        }
+      }
+    };
+
+    void loadPaymentMethod();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, subscriptionDetails?.stripeCustomerId]);
+
   const checkPremiumStatus = async (userId: string) => {
     try {
       // Check Pro access - try profiles table first, fallback to subscriptions table
       const { data: profile } = await (supabase
         .from('profiles') as any)
-        .select('subscription_status, subscription_tier')
+        .select('subscription_status, subscription_tier, subscription_billing_cycle, subscription_current_period_end, stripe_customer_id')
         .eq('id', userId)
         .single();
       
@@ -238,9 +337,17 @@ export default function HomePage() {
       if (profile) {
         // Use profiles table if available
         const profileData = profile as any;
+        setSubscriptionDetails({
+          status: profileData.subscription_status ?? null,
+          tier: profileData.subscription_tier ?? null,
+          billingCycle: profileData.subscription_billing_cycle ?? null,
+          currentPeriodEnd: profileData.subscription_current_period_end ?? null,
+          stripeCustomerId: profileData.stripe_customer_id ?? null,
+        });
         isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
         isProTier = profileData.subscription_tier === 'pro';
       } else {
+        setSubscriptionDetails(null);
         // Fallback to subscriptions table
         const { data: subscription } = await (supabase
           .from('subscriptions') as any)
@@ -260,8 +367,43 @@ export default function HomePage() {
     } catch (error) {
       console.error('Error checking subscription:', error);
       setHasPremium(false);
+      setSubscriptionDetails(null);
     } finally {
       setIsCheckingSubscription(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setBillingPortalError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login?redirect=/home');
+        return;
+      }
+
+      setBillingPortalLoading(true);
+      const response = await fetch('/api/portal-client', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) {
+        setBillingPortalError(data.error || 'Unable to open Stripe billing right now.');
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Error opening Stripe portal:', error);
+      setBillingPortalError('Unable to open Stripe billing right now.');
+    } finally {
+      setBillingPortalLoading(false);
     }
   };
 
@@ -405,6 +547,15 @@ export default function HomePage() {
                               {user?.email ?? '—'}
                             </p>
                             <button
+                              onClick={() => {
+                                setShowProfileMenu(false);
+                                void handleManageSubscription();
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                            >
+                              Manage subscription
+                            </button>
+                            <button
                               onClick={async () => {
                                 await supabase.auth.signOut({ scope: 'local' });
                                 setShowProfileMenu(false);
@@ -442,6 +593,17 @@ export default function HomePage() {
                             <p className="px-4 py-1.5 pb-2 text-sm text-gray-300 truncate border-b border-gray-700" title={user?.email ?? ''}>
                               {user?.email ?? '—'}
                             </p>
+                            {subscriptionDetails?.stripeCustomerId && (
+                              <button
+                                onClick={() => {
+                                  setShowProfileMenu(false);
+                                  void handleManageSubscription();
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                              >
+                                Manage subscription
+                              </button>
+                            )}
                             <button
                               onClick={async () => {
                                 await supabase.auth.signOut({ scope: 'local' });
@@ -513,6 +675,71 @@ export default function HomePage() {
                 Need help?
               </button>
             </div>
+            {user && subscriptionDetails?.stripeCustomerId && (
+              <div className="mt-8 max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 text-left backdrop-blur-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-xl font-semibold text-white">Subscription details</h2>
+                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getSubscriptionStatusTone(subscriptionDetails.status)}`}>
+                        {formatSubscriptionStatus(subscriptionDetails.status)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-300">
+                      Your Stripe billing profile is attached to this account, so you can manage payment details or cancel from here.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-white/10 bg-[#09111f] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Plan</p>
+                        <p className="mt-2 text-base font-medium text-white">
+                          {subscriptionDetails.tier ? `${subscriptionDetails.tier.toUpperCase()} · ${formatBillingCycleLabel(subscriptionDetails.billingCycle)}` : 'Stripe subscription on file'}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-[#09111f] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
+                          {subscriptionDetails.status === 'canceled' ? 'Access ends' : 'Billing date'}
+                        </p>
+                        <p className="mt-2 text-base font-medium text-white">
+                          {formatDisplayDate(subscriptionDetails.currentPeriodEnd) ?? 'Not available'}
+                        </p>
+                      </div>
+                      {paymentMethod && (
+                        <div className="rounded-xl border border-white/10 bg-[#09111f] p-4 sm:col-span-2">
+                          <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Payment method</p>
+                          <p className="mt-2 text-base font-medium text-white">
+                            {(paymentMethod.brand || 'Card').toUpperCase()} ending in {paymentMethod.last4 || '----'}
+                            {paymentMethod.exp_month && paymentMethod.exp_year ? ` · Expires ${String(paymentMethod.exp_month).padStart(2, '0')}/${paymentMethod.exp_year}` : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {(subscriptionDetails.status === 'past_due' || subscriptionDetails.status === 'unpaid') && (
+                      <p className="text-sm text-amber-300">
+                        Your access may be paused until billing is resolved. Open Stripe to update payment details or cancel.
+                      </p>
+                    )}
+                    {billingPortalError && (
+                      <p className="text-sm text-rose-300">{billingPortalError}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-3 md:min-w-[220px]">
+                    <button
+                      onClick={() => void handleManageSubscription()}
+                      disabled={billingPortalLoading}
+                      className="rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {billingPortalLoading ? 'Opening Stripe...' : 'Manage in Stripe'}
+                    </button>
+                    <button
+                      onClick={() => router.push('/home#pricing')}
+                      className="rounded-lg border border-white/10 px-5 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-white/5"
+                    >
+                      View plans
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mock Device Preview */}
