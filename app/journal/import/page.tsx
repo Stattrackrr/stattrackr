@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function decodePayload(encoded: string) {
@@ -10,7 +10,7 @@ function decodePayload(encoded: string) {
   return JSON.parse(json);
 }
 
-export default function JournalImportPage() {
+function JournalImportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const payloadParam = searchParams.get('payload');
@@ -109,5 +109,28 @@ export default function JournalImportPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function JournalImportPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 px-6 py-12 text-white">
+          <div className="mx-auto max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-purple-300">
+              Journal Import
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold">Sportsbook sync</h1>
+            <p className="mt-3 text-sm text-slate-300">Preparing sportsbook import...</p>
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div className="h-full w-1/2 animate-pulse rounded-full bg-purple-500" />
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <JournalImportContent />
+    </Suspense>
   );
 }
