@@ -101,6 +101,17 @@ function getSubscriptionStatusTone(status: string | null | undefined): string {
   return 'border-purple-500/30 bg-purple-500/10 text-purple-300';
 }
 
+function hasSubscriptionFootprint(details: HomeSubscriptionDetails | null): boolean {
+  if (!details) return false;
+  return Boolean(
+    details.stripeCustomerId ||
+    details.status ||
+    details.tier ||
+    details.billingCycle ||
+    details.currentPeriodEnd
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
@@ -133,6 +144,7 @@ export default function HomePage() {
   const [billingPortalError, setBillingPortalError] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const showSubscriptionCard = !!user && hasSubscriptionFootprint(subscriptionDetails);
 
   useEffect(() => {
     if (loadingBrandReady) return;
@@ -593,17 +605,15 @@ export default function HomePage() {
                             <p className="px-4 py-1.5 pb-2 text-sm text-gray-300 truncate border-b border-gray-700" title={user?.email ?? ''}>
                               {user?.email ?? '—'}
                             </p>
-                            {subscriptionDetails?.stripeCustomerId && (
-                              <button
-                                onClick={() => {
-                                  setShowProfileMenu(false);
-                                  void handleManageSubscription();
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
-                              >
-                                Manage subscription
-                              </button>
-                            )}
+                            <button
+                              onClick={() => {
+                                setShowProfileMenu(false);
+                                void handleManageSubscription();
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
+                            >
+                              Manage subscription
+                            </button>
                             <button
                               onClick={async () => {
                                 await supabase.auth.signOut({ scope: 'local' });
@@ -675,7 +685,7 @@ export default function HomePage() {
                 Need help?
               </button>
             </div>
-            {user && subscriptionDetails?.stripeCustomerId && (
+            {showSubscriptionCard && (
               <div className="mt-8 max-w-3xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 text-left backdrop-blur-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="space-y-3">
@@ -686,21 +696,23 @@ export default function HomePage() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-300">
-                      Your Stripe billing profile is attached to this account, so you can manage payment details or cancel from here.
+                      {subscriptionDetails?.stripeCustomerId
+                        ? 'Your Stripe billing profile is attached to this account, so you can manage payment details or cancel from here.'
+                        : 'Subscription data exists on this account. Use billing management below to refresh details or open Stripe if it is linked.'}
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border border-white/10 bg-[#09111f] p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Plan</p>
                         <p className="mt-2 text-base font-medium text-white">
-                          {subscriptionDetails.tier ? `${subscriptionDetails.tier.toUpperCase()} · ${formatBillingCycleLabel(subscriptionDetails.billingCycle)}` : 'Stripe subscription on file'}
+                          {subscriptionDetails?.tier ? `${subscriptionDetails.tier.toUpperCase()} · ${formatBillingCycleLabel(subscriptionDetails.billingCycle)}` : 'Subscription details available'}
                         </p>
                       </div>
                       <div className="rounded-xl border border-white/10 bg-[#09111f] p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                          {subscriptionDetails.status === 'canceled' ? 'Access ends' : 'Billing date'}
+                          {subscriptionDetails?.status === 'canceled' ? 'Access ends' : 'Billing date'}
                         </p>
                         <p className="mt-2 text-base font-medium text-white">
-                          {formatDisplayDate(subscriptionDetails.currentPeriodEnd) ?? 'Not available'}
+                          {formatDisplayDate(subscriptionDetails?.currentPeriodEnd) ?? 'Not available'}
                         </p>
                       </div>
                       {paymentMethod && (
@@ -713,7 +725,7 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    {(subscriptionDetails.status === 'past_due' || subscriptionDetails.status === 'unpaid') && (
+                    {(subscriptionDetails?.status === 'past_due' || subscriptionDetails?.status === 'unpaid') && (
                       <p className="text-sm text-amber-300">
                         Your access may be paused until billing is resolved. Open Stripe to update payment details or cancel.
                       </p>
