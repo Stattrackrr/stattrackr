@@ -4,6 +4,22 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
+async function getImportSession() {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+      return session;
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+  }
+
+  return null;
+}
+
 function decodePayload(encoded: string) {
   const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
@@ -38,10 +54,7 @@ function JournalImportContent() {
       }
 
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
+        const session = await getImportSession();
         if (!session?.access_token) {
           throw new Error('Not authenticated');
         }
