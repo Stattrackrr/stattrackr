@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 function decodePayload(encoded: string) {
   const normalized = encoded.replace(/-/g, '+').replace(/_/g, '/');
@@ -37,9 +38,20 @@ function JournalImportContent() {
       }
 
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Not authenticated');
+        }
+
         const response = await fetch('/api/journal/import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify(decodedPayload),
         });
         const body = await response.json().catch(() => null);
