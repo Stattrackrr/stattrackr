@@ -691,8 +691,8 @@ export default function HomePage() {
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
                       <h2 className="text-xl font-semibold text-white">Subscription details</h2>
-                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getSubscriptionStatusTone(subscriptionDetails.status)}`}>
-                        {formatSubscriptionStatus(subscriptionDetails.status)}
+                      <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${getSubscriptionStatusTone(subscriptionDetails?.status)}`}>
+                        {formatSubscriptionStatus(subscriptionDetails?.status)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-300">
