@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-17T11:50:18.021Z",
+  "generatedAt": "2026-04-17T17:13:15.910Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -11,7 +11,7 @@
       "weather": {
         "temperatureC": 24.8,
         "precipitationMm": 0,
-        "windKmh": 11.8
+        "windKmh": 12.3
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-04-18T06:15:07Z",
       "weather": {
-        "temperatureC": 15.8,
+        "temperatureC": 15.6,
         "precipitationMm": 0,
-        "windKmh": 11.2
+        "windKmh": 11.5
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-04-18T09:35:37Z",
       "weather": {
-        "temperatureC": 22.7,
+        "temperatureC": 21.8,
         "precipitationMm": 0,
-        "windKmh": 4.7
+        "windKmh": 6.2
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-04-19T03:10:00Z",
       "weather": {
-        "temperatureC": 18.1,
+        "temperatureC": 17.3,
         "precipitationMm": 0,
-        "windKmh": 3.9
+        "windKmh": 2
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-04-19T05:15:00Z",
       "weather": {
-        "temperatureC": 20.2,
+        "temperatureC": 18.4,
         "precipitationMm": 0,
-        "windKmh": 2.8
+        "windKmh": 3.8
       }
     },
     {
@@ -66,7 +66,7 @@
       "weather": {
         "temperatureC": 19.6,
         "precipitationMm": 0,
-        "windKmh": 10.5
+        "windKmh": 9.2
       }
     }
   ],
