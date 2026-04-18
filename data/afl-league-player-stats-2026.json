@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-18T12:52:52.935Z",
+  "generatedAt": "2026-04-18T14:37:22.904Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 535,
@@ -412,7 +412,7 @@
       "disposals": 26.5,
       "kicks": 18.5,
       "handballs": 8,
-      "marks": 11.33,
+      "marks": 11.5,
       "goals": 0,
       "tackles": 2,
       "clearances": 0.17,
@@ -553,7 +553,7 @@
       "rebound_50s": 7.17,
       "contested_possessions": 6.83,
       "uncontested_possessions": 14.67,
-      "meters_gained": 569.17,
+      "meters_gained": 568.67,
       "free_kicks_for": 0.67
     },
     {
@@ -645,7 +645,7 @@
       "tackles": 4,
       "clearances": 2.83,
       "inside_50s": 3.17,
-      "rebound_50s": 2.67,
+      "rebound_50s": 2.5,
       "contested_possessions": 8.5,
       "uncontested_possessions": 16.5,
       "meters_gained": 419.33,
@@ -686,7 +686,7 @@
       "rebound_50s": 4.33,
       "contested_possessions": 7.67,
       "uncontested_possessions": 12.83,
-      "meters_gained": 558.5,
+      "meters_gained": 558,
       "free_kicks_for": 2.17
     },
     {
@@ -1180,8 +1180,8 @@
       "rebound_50s": 1.83,
       "contested_possessions": 9.83,
       "uncontested_possessions": 12.17,
-      "meters_gained": 440.33,
-      "free_kicks_for": 1
+      "meters_gained": 439.67,
+      "free_kicks_for": 1.17
     },
     {
       "name": "Cooper Lord",
@@ -1235,9 +1235,9 @@
       "clearances": 1,
       "inside_50s": 3.33,
       "rebound_50s": 2.5,
-      "contested_possessions": 3.67,
+      "contested_possessions": 3.83,
       "uncontested_possessions": 19.17,
-      "meters_gained": 471.33,
+      "meters_gained": 471.17,
       "free_kicks_for": 0.33
     },
     {
@@ -1465,7 +1465,7 @@
       "rebound_50s": 1.83,
       "contested_possessions": 12.83,
       "uncontested_possessions": 11,
-      "meters_gained": 347.33,
+      "meters_gained": 348,
       "free_kicks_for": 1.5
     },
     {
@@ -1788,7 +1788,7 @@
       "rebound_50s": 1.67,
       "contested_possessions": 9.67,
       "uncontested_possessions": 10.67,
-      "meters_gained": 321.67,
+      "meters_gained": 321.83,
       "free_kicks_for": 1.5
     },
     {
@@ -2434,7 +2434,7 @@
       "rebound_50s": 0.83,
       "contested_possessions": 5.17,
       "uncontested_possessions": 13.67,
-      "meters_gained": 324,
+      "meters_gained": 323.33,
       "free_kicks_for": 1.17
     },
     {
@@ -3600,7 +3600,7 @@
       "name": "Brayden Cook",
       "team": "Adelaide",
       "games": 6,
-      "number": 77,
+      "number": 78,
       "disposals": 16.67,
       "kicks": 11.17,
       "handballs": 5.5,
@@ -3612,7 +3612,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 5.17,
       "uncontested_possessions": 11.5,
-      "meters_gained": 376.17,
+      "meters_gained": 375.67,
       "free_kicks_for": 0.17
     },
     {
@@ -3802,7 +3802,7 @@
       "rebound_50s": 4,
       "contested_possessions": 3,
       "uncontested_possessions": 14,
-      "meters_gained": 318.5,
+      "meters_gained": 318,
       "free_kicks_for": 0
     },
     {
@@ -4250,14 +4250,14 @@
       "disposals": 15.8,
       "kicks": 10.6,
       "handballs": 5.2,
-      "marks": 2.2,
+      "marks": 2,
       "goals": 1,
       "tackles": 3.2,
       "clearances": 1.4,
       "inside_50s": 3.2,
       "rebound_50s": 1.2,
       "contested_possessions": 7.2,
-      "uncontested_possessions": 7.8,
+      "uncontested_possessions": 7.6,
       "meters_gained": 309.6,
       "free_kicks_for": 0.8
     },
@@ -5512,7 +5512,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 2.67,
       "uncontested_possessions": 10.67,
-      "meters_gained": 317.67,
+      "meters_gained": 317.83,
       "free_kicks_for": 0.5
     },
     {
@@ -5930,7 +5930,7 @@
       "rebound_50s": 0.2,
       "contested_possessions": 6,
       "uncontested_possessions": 8,
-      "meters_gained": 320.2,
+      "meters_gained": 320.8,
       "free_kicks_for": 1
     },
     {
@@ -7049,8 +7049,8 @@
       "clearances": 1.4,
       "inside_50s": 1.4,
       "rebound_50s": 0.8,
-      "contested_possessions": 4.8,
-      "uncontested_possessions": 6.4,
+      "contested_possessions": 4.6,
+      "uncontested_possessions": 6.6,
       "meters_gained": 167,
       "free_kicks_for": 0.8
     },
@@ -7146,7 +7146,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5.5,
       "uncontested_possessions": 6.17,
-      "meters_gained": 193,
+      "meters_gained": 192.83,
       "free_kicks_for": 1.17
     },
     {
@@ -8016,11 +8016,11 @@
       "goals": 1,
       "tackles": 1.75,
       "clearances": 0.25,
-      "inside_50s": 3,
+      "inside_50s": 2.75,
       "rebound_50s": 0.75,
       "contested_possessions": 3.5,
       "uncontested_possessions": 7.5,
-      "meters_gained": 215.75,
+      "meters_gained": 214.5,
       "free_kicks_for": 0.75
     },
     {
@@ -8970,7 +8970,7 @@
       "rebound_50s": 0.8,
       "contested_possessions": 3.6,
       "uncontested_possessions": 4.2,
-      "meters_gained": 162.8,
+      "meters_gained": 163.6,
       "free_kicks_for": 0.8
     },
     {
@@ -9331,7 +9331,7 @@
       "rebound_50s": 0.25,
       "contested_possessions": 4,
       "uncontested_possessions": 4,
-      "meters_gained": 72.25,
+      "meters_gained": 73.5,
       "free_kicks_for": 0.5
     },
     {
