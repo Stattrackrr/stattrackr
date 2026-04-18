@@ -1,50 +1,17 @@
 {
-  "generatedAt": "2026-04-17T17:13:15.910Z",
+  "generatedAt": "2026-04-18T11:32:36.522Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "656fbf034f276e97eed4af2eb7e3caa6",
-      "homeTeam": "Gold Coast Suns",
-      "awayTeam": "Essendon Bombers",
-      "commenceTime": "2026-04-18T03:15:00Z",
-      "weather": {
-        "temperatureC": 24.8,
-        "precipitationMm": 0,
-        "windKmh": 12.3
-      }
-    },
-    {
-      "gameId": "feddd7f503a6d642d48f1b44dacb4362",
-      "homeTeam": "Hawthorn Hawks",
-      "awayTeam": "Port Adelaide Power",
-      "commenceTime": "2026-04-18T06:15:07Z",
-      "weather": {
-        "temperatureC": 15.6,
-        "precipitationMm": 0,
-        "windKmh": 11.5
-      }
-    },
-    {
-      "gameId": "fa9a95dacdda3a7a779f799f29679355",
-      "homeTeam": "Adelaide Crows",
-      "awayTeam": "St Kilda Saints",
-      "commenceTime": "2026-04-18T09:35:37Z",
-      "weather": {
-        "temperatureC": 21.8,
-        "precipitationMm": 0,
-        "windKmh": 6.2
-      }
-    },
     {
       "gameId": "716fc5cfb82755fe9e18195e07cb7d0f",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-04-19T03:10:00Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 17.9,
         "precipitationMm": 0,
-        "windKmh": 2
+        "windKmh": 6.2
       }
     },
     {
@@ -53,9 +20,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-04-19T05:15:00Z",
       "weather": {
-        "temperatureC": 18.4,
+        "temperatureC": 19.8,
         "precipitationMm": 0,
-        "windKmh": 3.8
+        "windKmh": 4
       }
     },
     {
@@ -64,11 +31,11 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-04-19T07:10:00Z",
       "weather": {
-        "temperatureC": 19.6,
+        "temperatureC": 20.3,
         "precipitationMm": 0,
-        "windKmh": 9.2
+        "windKmh": 10.9
       }
     }
   ],
-  "count": 6
+  "count": 3
 }
