@@ -442,6 +442,45 @@ const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   BRK: 'BKN',
   NY: 'NYK',
 };
+const EASTERN_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+function getEasternDateKey(value?: string | null): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return raw.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || '';
+  }
+
+  const parts = EASTERN_DATE_FORMATTER.formatToParts(parsed);
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+  return year && month && day ? `${year}-${month}-${day}` : '';
+}
+
+function normalizeNbaTeam(team: string): string {
+  if (!team) return '';
+  const upper = team.toUpperCase().trim().replace(/\./g, '');
+  if (upper.length <= 3) {
+    return NBA_TEAM_ABBR_ALIASES[upper] || upper;
+  }
+
+  const abbr = TEAM_FULL_TO_ABBR[upper] || TEAM_FULL_TO_ABBR[team] || null;
+  if (!abbr) return upper;
+  const normalizedAbbr = abbr.toUpperCase().replace(/\./g, '');
+  return NBA_TEAM_ABBR_ALIASES[normalizedAbbr] || normalizedAbbr;
+}
+
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
 const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v1';
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
@@ -3460,42 +3499,62 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     if (todaysGames.length === 0) {
       return null;
     }
-    
-    // Normalize team names to abbreviations - handle both full names and abbreviations
-    const normalizeTeam = (team: string): string => {
-      if (!team) return '';
-      const upper = team.toUpperCase().trim().replace(/\./g, '');
-      // Check if it's already an abbreviation (3 letters or less)
-      if (upper.length <= 3) {
-        return NBA_TEAM_ABBR_ALIASES[upper] || upper;
-      }
-      // Try to find abbreviation from full name
-      const abbr = TEAM_FULL_TO_ABBR[upper] || TEAM_FULL_TO_ABBR[team] || null;
-      if (!abbr) return upper;
-      const normalizedAbbr = abbr.toUpperCase().replace(/\./g, '');
-      return NBA_TEAM_ABBR_ALIASES[normalizedAbbr] || normalizedAbbr;
-    };
-    
-    const propTeam = normalizeTeam(prop.team || '');
-    const propOpponent = normalizeTeam(prop.opponent || '');
-    
-    if (!propTeam || !propOpponent) {
-      return null;
-    }
-    
-    const matchedGame = todaysGames.find(game => {
-      const homeTeam = game.home_team?.abbreviation?.toUpperCase() || '';
-      const awayTeam = game.visitor_team?.abbreviation?.toUpperCase() || '';
-      
-      if (!homeTeam || !awayTeam) return false;
-      
-      // Check if prop's team and opponent match this game's teams (either direction)
-      const match = (propTeam === homeTeam && propOpponent === awayTeam) ||
-             (propTeam === awayTeam && propOpponent === homeTeam);
-      
-      return match;
+
+    const propTeam = normalizeNbaTeam(prop.team || prop.homeTeam || '');
+    const propOpponent = normalizeNbaTeam(prop.opponent || prop.awayTeam || '');
+    const propDateKey = getEasternDateKey(prop.gameDate);
+    const propTeams = Array.from(
+      new Set(
+        [prop.team, prop.opponent, prop.homeTeam, prop.awayTeam]
+          .map((team) => normalizeNbaTeam(team || ''))
+          .filter(Boolean)
+      )
+    );
+
+    const exactMatchWithDate = todaysGames.find((game) => {
+      const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
+      const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
+      if (!homeTeam || !awayTeam || !propTeam || !propOpponent) return false;
+
+      const matchupMatches =
+        (propTeam === homeTeam && propOpponent === awayTeam) ||
+        (propTeam === awayTeam && propOpponent === homeTeam);
+      if (!matchupMatches) return false;
+      if (!propDateKey) return true;
+
+      const gameDateKey = getEasternDateKey((game as any).datetime || game.date || game.status);
+      return !gameDateKey || gameDateKey === propDateKey;
     });
-    
+    if (exactMatchWithDate) {
+      return exactMatchWithDate;
+    }
+
+    const exactMatch = todaysGames.find((game) => {
+      const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
+      const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
+      if (!homeTeam || !awayTeam || !propTeam || !propOpponent) return false;
+
+      return (
+        (propTeam === homeTeam && propOpponent === awayTeam) ||
+        (propTeam === awayTeam && propOpponent === homeTeam)
+      );
+    });
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const datedSingleTeamMatch = todaysGames.filter((game) => {
+      const homeTeam = normalizeNbaTeam(game.home_team?.abbreviation || '');
+      const awayTeam = normalizeNbaTeam(game.visitor_team?.abbreviation || '');
+      if (!homeTeam || !awayTeam || propTeams.length === 0 || !propDateKey) return false;
+
+      const gameDateKey = getEasternDateKey((game as any).datetime || game.date || game.status);
+      if (gameDateKey && gameDateKey !== propDateKey) return false;
+
+      return propTeams.some((team) => team === homeTeam || team === awayTeam);
+    });
+    const matchedGame = datedSingleTeamMatch.length === 1 ? datedSingleTeamMatch[0] : null;
+
     if (!matchedGame && propTeam && propOpponent) {
       // Debug: log first few mismatches per unique prop team/opponent combo
       const debugKey = `${propTeam}-${propOpponent}`;
