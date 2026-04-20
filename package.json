@@ -30,6 +30,7 @@
     "fetch:footywire-ladder": "node scripts/fetch-footywire-ladder.js",
     "fix:afl-player-names-with-symbols": "node scripts/fix-afl-player-names-with-symbols.js",
     "warm:afl:player-logs": "node scripts/warm-afl-player-logs.js",
+    "warm:soccer:cache": "node scripts/warm-soccer-cache.js",
     "test:afl:massimo": "node scripts/test-afl-player-massimo.js",
     "test:afl:2025-2026-logs": "node scripts/test-afl-2025-2026-logs.js",
     "test:afl:2025-2026-logs:all": "node scripts/test-afl-2025-2026-logs.js --all",
