@@ -1,0 +1,251 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cronAuth';
+import {
+  getSoccerMatchStatsCache,
+  getSoccerTeamResultsCache,
+  normalizeSoccerTeamHref,
+  setSoccerMatchStatsCache,
+  setSoccerTeamResultsCache,
+  type SoccerMatchStatsCachePayload,
+  type SoccerTeamResultsCachePayload,
+} from '@/lib/soccerCache';
+import {
+  buildSoccerwayMatchStatsFeedUrl,
+  buildSoccerwayParticipantResultsFeedUrl,
+  extractSoccerwayCountryId,
+  extractSoccerwayFeedSign,
+  extractParticipantIdFromTeamHref,
+  parseSoccerwayMatchStatsFeed,
+  parseSoccerwayTeamResultsHtml,
+  type SoccerwayMatchStats,
+  type SoccerwayRecentMatch,
+} from '@/lib/soccerwayTeamResults';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
+const MAX_SHOW_MORE_PAGES = 100;
+const HISTORY_CUTOFF_UNIX = Math.floor(Date.UTC(2008, 0, 1, 0, 0, 0) / 1000);
+const MATCH_STATS_BATCH_SIZE = 8;
+const TEAM_RESULTS_TTL_MINUTES = 12 * 60;
+const MATCH_STATS_TTL_MINUTES = 30 * 24 * 60;
+const SOCCERWAY_HTML_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+
+function appendUniqueMatches(target: SoccerwayRecentMatch[], incoming: SoccerwayRecentMatch[]): number {
+  const seen = new Set(target.map((match) => match.summaryPath));
+  let added = 0;
+  for (const match of incoming) {
+    if (seen.has(match.summaryPath)) continue;
+    seen.add(match.summaryPath);
+    target.push(match);
+    added += 1;
+  }
+  return added;
+}
+
+function filterMatchesFrom2008(matches: SoccerwayRecentMatch[]): SoccerwayRecentMatch[] {
+  return matches.filter((match) => match.kickoffUnix == null || match.kickoffUnix >= HISTORY_CUTOFF_UNIX);
+}
+
+function pageReachedHistoryCutoff(matches: SoccerwayRecentMatch[]): boolean {
+  return matches.some((match) => match.kickoffUnix != null && match.kickoffUnix < HISTORY_CUTOFF_UNIX);
+}
+
+function toTeamResultsPayload(teamHref: string, resultsUrl: string, matches: SoccerwayRecentMatch[], showMorePagesFetched: number): SoccerTeamResultsCachePayload {
+  return {
+    teamHref,
+    resultsUrl,
+    matches: matches.map(({ stats: _stats, ...match }) => match),
+    count: matches.length,
+    showMorePagesFetched,
+    source: 'soccerway',
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchTeamResultsFromSoccerway(teamHref: string): Promise<{
+  resultsUrl: string;
+  matches: SoccerwayRecentMatch[];
+  feedSign: string | null;
+  showMorePagesFetched: number;
+}> {
+  const resultsUrl = `https://www.soccerway.com${teamHref}/results/`;
+  const response = await fetch(resultsUrl, {
+    headers: SOCCERWAY_HTML_HEADERS,
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`Soccerway returned ${response.status}`);
+
+  const html = await response.text();
+  const matches = filterMatchesFrom2008(parseSoccerwayTeamResultsHtml(html));
+  const feedSign = extractSoccerwayFeedSign(html);
+  const countryId = extractSoccerwayCountryId(html);
+  const participantId = extractParticipantIdFromTeamHref(teamHref);
+  let showMorePagesFetched = 0;
+
+  if (feedSign && countryId && participantId) {
+    for (let page = 1; page <= MAX_SHOW_MORE_PAGES; page += 1) {
+      const feedUrl = buildSoccerwayParticipantResultsFeedUrl({
+        countryId,
+        participantId,
+        page,
+        timezoneHour: 0,
+        language: 'en',
+        projectTypeId: 1,
+      });
+      const feedResponse = await fetch(feedUrl, {
+        headers: {
+          'User-Agent': SOCCERWAY_HTML_HEADERS['User-Agent'],
+          Accept: '*/*',
+          'Accept-Language': SOCCERWAY_HTML_HEADERS['Accept-Language'],
+          Referer: 'https://www.soccerway.com/',
+          Origin: 'https://www.soccerway.com',
+          'x-fsign': feedSign,
+        },
+        cache: 'no-store',
+      });
+      if (!feedResponse.ok) break;
+
+      const feedText = await feedResponse.text();
+      const pageMatches = parseSoccerwayTeamResultsHtml(feedText);
+      if (pageMatches.length === 0) break;
+
+      showMorePagesFetched += 1;
+      const added = appendUniqueMatches(matches, filterMatchesFrom2008(pageMatches));
+      if (pageReachedHistoryCutoff(pageMatches) || added === 0) break;
+    }
+  }
+
+  return { resultsUrl, matches, feedSign, showMorePagesFetched };
+}
+
+async function fetchMatchStatsFromSoccerway(matchId: string, feedSign: string): Promise<SoccerwayMatchStats | null> {
+  const feedUrl = buildSoccerwayMatchStatsFeedUrl(matchId);
+  const response = await fetch(feedUrl, {
+    headers: {
+      'User-Agent': SOCCERWAY_HTML_HEADERS['User-Agent'],
+      Accept: '*/*',
+      'Accept-Language': SOCCERWAY_HTML_HEADERS['Accept-Language'],
+      Referer: 'https://www.soccerway.com/',
+      Origin: 'https://www.soccerway.com',
+      'x-fsign': feedSign,
+    },
+    cache: 'no-store',
+  });
+  if (!response.ok) return null;
+  return parseSoccerwayMatchStatsFeed(await response.text(), feedUrl);
+}
+
+async function hydrateMatchStats(
+  matches: SoccerwayRecentMatch[],
+  feedSign: string | null,
+  forceRefresh: boolean
+): Promise<{
+  matches: SoccerwayRecentMatch[];
+  statsCacheHits: number;
+  statsFetchedLive: number;
+  statsMissing: number;
+}> {
+  let statsCacheHits = 0;
+  let statsFetchedLive = 0;
+  let statsMissing = 0;
+  const hydrated = [...matches];
+
+  for (let offset = 0; offset < hydrated.length; offset += MATCH_STATS_BATCH_SIZE) {
+    const batch = hydrated.slice(offset, offset + MATCH_STATS_BATCH_SIZE);
+    const enriched = await Promise.all(
+      batch.map(async (match) => {
+        if (!forceRefresh) {
+          const cached = await getSoccerMatchStatsCache(match.matchId, { quiet: true });
+          if (cached) {
+            statsCacheHits += 1;
+            return { ...match, stats: cached.stats };
+          }
+        }
+
+        if (!feedSign) {
+          statsMissing += 1;
+          return { ...match, stats: null };
+        }
+
+        const stats = await fetchMatchStatsFromSoccerway(match.matchId, feedSign);
+        const payload: SoccerMatchStatsCachePayload = {
+          matchId: match.matchId,
+          stats,
+          source: 'soccerway',
+          generatedAt: new Date().toISOString(),
+        };
+        await setSoccerMatchStatsCache(match.matchId, payload, MATCH_STATS_TTL_MINUTES, true);
+        statsFetchedLive += 1;
+        if (!stats) statsMissing += 1;
+        return { ...match, stats };
+      })
+    );
+
+    for (let i = 0; i < enriched.length; i += 1) hydrated[offset + i] = enriched[i];
+  }
+
+  return { matches: hydrated, statsCacheHits, statsFetchedLive, statsMissing };
+}
+
+export async function GET(request: NextRequest) {
+  const href = request.nextUrl.searchParams.get('href')?.trim() || '';
+  const teamHref = normalizeSoccerTeamHref(href);
+  const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
+
+  if (!TEAM_HREF_RE.test(teamHref)) {
+    return NextResponse.json({ error: 'Invalid or missing href (expected /team/{slug}/{id}/).' }, { status: 400 });
+  }
+
+  if (forceRefresh && process.env.NODE_ENV === 'production') {
+    const auth = authorizeCronRequest(request);
+    if (!auth.authorized) return auth.response;
+  }
+
+  const resultsUrl = `https://www.soccerway.com${teamHref}/results/`;
+
+  try {
+    let teamResultsSource: 'cache' | 'live' = 'live';
+    let cachedPayload = forceRefresh ? null : await getSoccerTeamResultsCache(teamHref, { quiet: true });
+    let baseMatches = cachedPayload?.matches ?? [];
+    let showMorePagesFetched = cachedPayload?.showMorePagesFetched ?? 0;
+    let feedSign: string | null = null;
+
+    if (!cachedPayload) {
+      const live = await fetchTeamResultsFromSoccerway(teamHref);
+      baseMatches = live.matches;
+      showMorePagesFetched = live.showMorePagesFetched;
+      feedSign = live.feedSign;
+      const teamPayload = toTeamResultsPayload(teamHref, live.resultsUrl, live.matches, live.showMorePagesFetched);
+      await setSoccerTeamResultsCache(teamHref, teamPayload, TEAM_RESULTS_TTL_MINUTES, true);
+    } else {
+      teamResultsSource = 'cache';
+    }
+
+    const hydrated = await hydrateMatchStats(baseMatches, feedSign, forceRefresh);
+
+    return NextResponse.json({
+      resultsUrl,
+      matches: hydrated.matches,
+      count: hydrated.matches.length,
+      showMorePagesFetched,
+      cache: {
+        teamResultsSource,
+        forcedRefresh: forceRefresh,
+        statsCacheHits: hydrated.statsCacheHits,
+        statsFetchedLive: hydrated.statsFetchedLive,
+        statsMissing: hydrated.statsMissing,
+        teamResultsExpiresAt: (cachedPayload as { __cache_metadata?: { expires_at?: string } } | null)?.__cache_metadata?.expires_at ?? null,
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch team results';
+    return NextResponse.json({ error: message, resultsUrl }, { status: 500 });
+  }
+}

@@ -69,6 +69,9 @@
     },
     "app/api/afl/props-stats/warm/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/cron/warm-soccer-cache/route.ts": {
+      "maxDuration": 300
     }
   },
   "rewrites": [

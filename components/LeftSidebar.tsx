@@ -267,11 +267,17 @@ export default function LeftSidebar({
     }
   };
 
-  // Sport icons: NBA and AFL logos from public/images
-  const SportLogo = ({ sport }: { sport: "nba" | "afl" }) => (
+  // Sport icons from public/images.
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "soccer" }) => (
     <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center" aria-hidden>
       <img
-        src={sport === "nba" ? "/images/nba-logo.png" : "/images/afl-logo.png"}
+        src={
+          sport === "nba"
+            ? "/images/nba-logo.png"
+            : sport === "afl"
+              ? "/images/afl-logo.png"
+              : "/images/soccer-logo.png"
+        }
         alt=""
         className="w-5 h-5 object-contain"
       />
@@ -281,7 +287,8 @@ export default function LeftSidebar({
   type SportEntry = { name: string; href: string; logo: React.ReactNode; comingSoon?: boolean; comingSoonText?: string; beta?: boolean };
   const sports: SportEntry[] = [
     { name: "NBA", href: "/props", logo: <SportLogo sport="nba" /> },
-    { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" />, beta: true },
+    { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
+    { name: "Soccer", href: "/soccer", logo: <SportLogo sport="soccer" />, comingSoon: true },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
@@ -374,7 +381,7 @@ export default function LeftSidebar({
                         >
                           <span className="flex items-center gap-2">
                             {sport.logo}
-                            <span>{sport.name} coming soon</span>
+                            <span>{sport.name}</span>
                           </span>
                           <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full shrink-0">
                             {sport.comingSoonText ?? 'Coming Soon'}
