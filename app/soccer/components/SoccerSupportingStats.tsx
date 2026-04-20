@@ -324,7 +324,7 @@ export function SoccerSupportingStats({
                 dataKey="key"
                 axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}
                 tickLine={false}
-                tick={() => null}
+                tick={false}
                 tickFormatter={() => ''}
                 height={8}
                 interval={0}
