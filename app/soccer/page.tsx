@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -85,7 +85,7 @@ function normalizeTeamHref(value: string | null | undefined): string {
   return (href.startsWith('/') ? href : `/${href}`).replace(/\/+$/, '');
 }
 
-export default function SoccerPage() {
+function SoccerPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -803,5 +803,13 @@ export default function SoccerPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function SoccerPage() {
+  return (
+    <Suspense fallback={null}>
+      <SoccerPageContent />
+    </Suspense>
   );
 }

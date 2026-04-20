@@ -9,6 +9,7 @@ import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTe
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
 type SoccerSplitResultFilter = 'all' | 'wins' | 'losses' | 'draws';
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
+type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'home' | 'away';
 
 type SoccerChartRow = {
@@ -17,7 +18,7 @@ type SoccerChartRow = {
   tickLabel: string;
   opponent: string;
   result: string;
-  venue: SoccerVenueFilter;
+  venue: SoccerMatchVenue;
   value: number;
   comparisonValue: string | null;
   gameDate: string;
@@ -138,7 +139,7 @@ function getSelectedTeamPerspective(match: SoccerwayRecentMatch, selectedTeamNam
   const teamScore = side === 'away' ? match.awayScore : match.homeScore;
   const opponentScore = side === 'away' ? match.homeScore : match.awayScore;
   const opponent = side === 'away' ? match.homeTeam : match.awayTeam;
-  const venue: SoccerVenueFilter = side === 'away' ? 'AWAY' : 'HOME';
+  const venue: SoccerMatchVenue = side === 'away' ? 'AWAY' : 'HOME';
   const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
 
   return {

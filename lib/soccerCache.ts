@@ -281,7 +281,7 @@ async function setSoccerCache(
 
     const { error } = await supabaseAdmin
       .from(TABLE_NAME)
-      .upsert(cacheEntry, { onConflict: 'cache_key' });
+      .upsert(cacheEntry as any, { onConflict: 'cache_key' });
 
     if (error) {
       if (!quiet) warnSoccerCache(`Failed to persist cache key ${cacheKey}`, error);
