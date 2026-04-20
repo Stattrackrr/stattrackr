@@ -64,6 +64,10 @@ interface SimpleChartProps {
   desktopChartRightMarginWithSecondAxis?: number;
   /** Optional Y-axis width for the primary axis on desktop. */
   yAxisWidth?: number;
+  /** Optional extra styling for the primary Y-axis tick labels. */
+  yAxisTickStyle?: Record<string, string | number>;
+  /** When true, preserve the provided primary Y-axis tick positions exactly. */
+  preservePrimaryYAxisTicks?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -102,6 +106,8 @@ const SimpleChart = memo(function SimpleChart({
   desktopChartRightMargin = 14,
   desktopChartRightMarginWithSecondAxis = 5,
   yAxisWidth = 32,
+  yAxisTickStyle,
+  preservePrimaryYAxisTicks = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -621,8 +627,11 @@ const SimpleChart = memo(function SimpleChart({
     if (!yAxisConfig?.domain || !yAxisConfig?.ticks) {
       return yAxisConfig?.ticks || [];
     }
+    if (preservePrimaryYAxisTicks) {
+      return yAxisConfig.ticks;
+    }
     return limitTicks(yAxisConfig.ticks, yAxisConfig.domain);
-  }, [yAxisConfig, limitTicks]);
+  }, [yAxisConfig, limitTicks, preservePrimaryYAxisTicks]);
 
   // Limit right Y-axis ticks to only 4 (matching left axis)
   const limitedRightTicks = useMemo(() => {
@@ -1025,7 +1034,7 @@ const SimpleChart = memo(function SimpleChart({
             <YAxis
               domain={yAxisConfig.domain}
               ticks={limitedTicks}
-              tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 12 }}
+              tick={{ fill: isDark ? '#ffffff' : '#000000', fontSize: 12, ...(yAxisTickStyle || {}) }}
               tickFormatter={yAxisTickFormatter ?? ((v: number) => String(Math.round(v)))}
               axisLine={false}
               tickLine={false}
