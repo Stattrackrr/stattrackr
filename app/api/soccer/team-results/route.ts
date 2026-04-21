@@ -28,8 +28,7 @@ const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
 const MAX_SHOW_MORE_PAGES = 100;
 const HISTORY_CUTOFF_UNIX = Math.floor(Date.UTC(2008, 0, 1, 0, 0, 0) / 1000);
 const MATCH_STATS_BATCH_SIZE = 8;
-const TEAM_RESULTS_TTL_MINUTES = 12 * 60;
-const MATCH_STATS_TTL_MINUTES = 30 * 24 * 60;
+const FOREVER_CACHE_TTL_MINUTES = Number.POSITIVE_INFINITY;
 const SOCCERWAY_HTML_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -38,11 +37,12 @@ const SOCCERWAY_HTML_HEADERS = {
 };
 
 function appendUniqueMatches(target: SoccerwayRecentMatch[], incoming: SoccerwayRecentMatch[]): number {
-  const seen = new Set(target.map((match) => match.summaryPath));
+  const seen = new Set(target.map((match) => String(match.matchId || '').trim() || match.summaryPath));
   let added = 0;
   for (const match of incoming) {
-    if (seen.has(match.summaryPath)) continue;
-    seen.add(match.summaryPath);
+    const dedupeKey = String(match.matchId || '').trim() || match.summaryPath;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
     target.push(match);
     added += 1;
   }
@@ -61,12 +61,24 @@ function toTeamResultsPayload(teamHref: string, resultsUrl: string, matches: Soc
   return {
     teamHref,
     resultsUrl,
-    matches: matches.map(({ stats: _stats, ...match }) => match),
+    matches,
     count: matches.length,
     showMorePagesFetched,
     source: 'soccerway',
     generatedAt: new Date().toISOString(),
   };
+}
+
+function matchesHaveEmbeddedStats(matches: SoccerwayRecentMatch[]): boolean {
+  return matches.every((match) => Object.prototype.hasOwnProperty.call(match, 'stats'));
+}
+
+function matchesHaveLogoMetadata(matches: SoccerwayRecentMatch[]): boolean {
+  return matches.every(
+    (match) =>
+      Object.prototype.hasOwnProperty.call(match, 'homeLogoUrl') &&
+      Object.prototype.hasOwnProperty.call(match, 'awayLogoUrl')
+  );
 }
 
 async function fetchTeamResultsFromSoccerway(teamHref: string): Promise<{
@@ -181,7 +193,7 @@ async function hydrateMatchStats(
           source: 'soccerway',
           generatedAt: new Date().toISOString(),
         };
-        await setSoccerMatchStatsCache(match.matchId, payload, MATCH_STATS_TTL_MINUTES, true);
+        await setSoccerMatchStatsCache(match.matchId, payload, FOREVER_CACHE_TTL_MINUTES, true);
         statsFetchedLive += 1;
         if (!stats) statsMissing += 1;
         return { ...match, stats };
@@ -222,13 +234,30 @@ export async function GET(request: NextRequest) {
       baseMatches = live.matches;
       showMorePagesFetched = live.showMorePagesFetched;
       feedSign = live.feedSign;
-      const teamPayload = toTeamResultsPayload(teamHref, live.resultsUrl, live.matches, live.showMorePagesFetched);
-      await setSoccerTeamResultsCache(teamHref, teamPayload, TEAM_RESULTS_TTL_MINUTES, true);
     } else {
       teamResultsSource = 'cache';
+      if (!matchesHaveLogoMetadata(baseMatches)) {
+        const live = await fetchTeamResultsFromSoccerway(teamHref);
+        baseMatches = live.matches;
+        showMorePagesFetched = live.showMorePagesFetched;
+        feedSign = live.feedSign;
+        teamResultsSource = 'live';
+      }
     }
 
-    const hydrated = await hydrateMatchStats(baseMatches, feedSign, forceRefresh);
+    const shouldHydrateStats =
+      forceRefresh || teamResultsSource === 'live' || !matchesHaveEmbeddedStats(baseMatches);
+    const hydrated = shouldHydrateStats
+      ? await hydrateMatchStats(baseMatches, feedSign, forceRefresh)
+      : {
+          matches: baseMatches,
+          statsCacheHits: 0,
+          statsFetchedLive: 0,
+          statsMissing: baseMatches.filter((match) => match.stats == null).length,
+        };
+
+    const hydratedPayload = toTeamResultsPayload(teamHref, resultsUrl, hydrated.matches, showMorePagesFetched);
+    await setSoccerTeamResultsCache(teamHref, hydratedPayload, FOREVER_CACHE_TTL_MINUTES, true);
 
     return NextResponse.json({
       resultsUrl,

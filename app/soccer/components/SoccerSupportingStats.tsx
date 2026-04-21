@@ -43,7 +43,11 @@ const SUPPORTING_OPTIONS_BY_MAIN: Record<string, string[]> = {
 const PERCENT_STATS = new Set(['ball_possession']);
 
 function normalizeTeamName(value: string): string {
-  return value.trim().toLowerCase();
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*$/g, '')
+    .replace(/\s+/g, ' ');
 }
 
 function formatStatKey(name: string): string {
@@ -129,6 +133,13 @@ function applyTimeframe(rows: SupportingRow[], timeframe: SoccerTimeframe): Supp
   return rows.slice(-lastN);
 }
 
+function getSoccerSeasonYear(kickoff: Date | null): number {
+  if (!kickoff) return 0;
+  const month = kickoff.getUTCMonth();
+  const year = kickoff.getUTCFullYear();
+  return month >= 6 ? year : year - 1;
+}
+
 function getOpponent(match: SoccerwayRecentMatch, selectedTeamName: string): string {
   const side = getSelectedTeamSide(match, selectedTeamName);
   return side === 'away' ? match.homeTeam : match.awayTeam;
@@ -169,7 +180,7 @@ export function SoccerSupportingStats({
           homeStatMap,
           awayStatMap,
           kickoffMs: kickoff?.getTime() ?? 0,
-          gameSeason: kickoff?.getUTCFullYear() ?? 0,
+          gameSeason: getSoccerSeasonYear(kickoff),
           opponent: getOpponent(match, selectedTeamName),
         };
       })
@@ -324,7 +335,7 @@ export function SoccerSupportingStats({
                 dataKey="key"
                 axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}
                 tickLine={false}
-                tick={() => null}
+                tick={false}
                 tickFormatter={() => ''}
                 height={8}
                 interval={0}

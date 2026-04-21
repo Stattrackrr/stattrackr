@@ -9,15 +9,18 @@ import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTe
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
 type SoccerSplitResultFilter = 'all' | 'wins' | 'losses' | 'draws';
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
+type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'home' | 'away';
 
 type SoccerChartRow = {
   key: string;
   xKey: string;
   tickLabel: string;
+  tickDateLabel: string;
   opponent: string;
+  opponentLogoUrl: string | null;
   result: string;
-  venue: SoccerVenueFilter;
+  venue: SoccerMatchVenue;
   value: number;
   comparisonValue: string | null;
   gameDate: string;
@@ -75,7 +78,11 @@ const SOCCER_STAT_PRIORITY = [
 ];
 
 function normalizeTeamName(value: string): string {
-  return value.trim().toLowerCase();
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*$/g, '')
+    .replace(/\s+/g, ' ');
 }
 
 function formatStatKey(name: string): string {
@@ -138,13 +145,15 @@ function getSelectedTeamPerspective(match: SoccerwayRecentMatch, selectedTeamNam
   const teamScore = side === 'away' ? match.awayScore : match.homeScore;
   const opponentScore = side === 'away' ? match.homeScore : match.awayScore;
   const opponent = side === 'away' ? match.homeTeam : match.awayTeam;
-  const venue: SoccerVenueFilter = side === 'away' ? 'AWAY' : 'HOME';
+  const opponentLogoUrl = side === 'away' ? match.homeLogoUrl ?? null : match.awayLogoUrl ?? null;
+  const venue: SoccerMatchVenue = side === 'away' ? 'AWAY' : 'HOME';
   const result = teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D';
 
   return {
     teamScore,
     opponentScore,
     opponent,
+    opponentLogoUrl,
     result,
     venue,
   };
@@ -165,34 +174,83 @@ function getTimeframeLabel(value: SoccerTimeframe): string {
   return value.replace('season:', '');
 }
 
-function SoccerXAxisTick({ x, y, payload, data, isDark }: any) {
+function shouldHideSoccerTickDetails(timeframe: SoccerTimeframe): boolean {
+  return timeframe === 'last50' || timeframe === 'all' || timeframe.startsWith('season:');
+}
+
+function shouldHideSoccerVenueMarker(timeframe: SoccerTimeframe): boolean {
+  return timeframe === 'all';
+}
+
+function formatTickDate(kickoffUnix: number | null): string {
+  if (kickoffUnix == null) return '';
+  return new Date(kickoffUnix * 1000).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function getSoccerSeasonYear(kickoff: Date | null): number {
+  if (!kickoff) return 0;
+  const month = kickoff.getUTCMonth();
+  const year = kickoff.getUTCFullYear();
+  return month >= 6 ? year : year - 1;
+}
+
+function SoccerXAxisTick({ x, y, payload, data, isDark, hideTickDetails, hideVenueMarker }: any) {
   const point = data?.find((item: SoccerChartRow) => item.xKey === payload.value) as SoccerChartRow | undefined;
   if (!point) return null;
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <text
-        x={0}
-        y={0}
-        dy={14}
-        textAnchor="middle"
-        fill={isDark ? '#cbd5e1' : '#475569'}
-        fontSize={10}
-        fontWeight={700}
-      >
-        {point.tickLabel}
-      </text>
-      <text
-        x={0}
-        y={0}
-        dy={28}
-        textAnchor="middle"
-        fill={isDark ? '#94a3b8' : '#64748b'}
-        fontSize={9}
-        fontWeight={600}
-      >
-        {point.venue === 'HOME' ? 'H' : 'A'}
-      </text>
+      {!hideTickDetails && point.opponentLogoUrl ? (
+        <image
+          href={point.opponentLogoUrl}
+          x={-10}
+          y={4}
+          width={20}
+          height={20}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      ) : !hideTickDetails ? (
+        <text
+          x={0}
+          y={0}
+          dy={18}
+          textAnchor="middle"
+          fill={isDark ? '#cbd5e1' : '#475569'}
+          fontSize={10}
+          fontWeight={700}
+        >
+          {point.tickLabel}
+        </text>
+      ) : null}
+      {!hideVenueMarker ? (
+        <text
+          x={0}
+          y={0}
+          dy={!hideTickDetails && point.opponentLogoUrl ? 36 : !hideTickDetails ? 34 : 18}
+          textAnchor="middle"
+          fill={isDark ? '#c084fc' : '#9333ea'}
+          fontSize={9}
+          fontWeight={700}
+        >
+          {point.venue === 'HOME' ? 'H' : 'A'}
+        </text>
+      ) : null}
+      {!hideTickDetails ? (
+        <text
+          x={0}
+          y={0}
+          dy={50}
+          textAnchor="middle"
+          fill={isDark ? '#94a3b8' : '#64748b'}
+          fontSize={9}
+          fontWeight={600}
+        >
+          {point.tickDateLabel}
+        </text>
+      ) : null}
     </g>
   );
 }
@@ -341,7 +399,7 @@ export function SoccerStatsChart({
         }
 
         const kickoff = match.kickoffUnix != null ? new Date(match.kickoffUnix * 1000) : null;
-        const gameSeason = kickoff?.getUTCFullYear() ?? 0;
+        const gameSeason = getSoccerSeasonYear(kickoff);
         const gameDate = kickoff
           ? kickoff.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
           : 'Unknown date';
@@ -531,7 +589,9 @@ export function SoccerStatsChart({
           key: `${row.match.matchId}-${idx}`,
           xKey: `${row.match.matchId}-${idx}`,
           tickLabel: getTeamAbbrev(row.opponent),
+          tickDateLabel: formatTickDate(row.match.kickoffUnix),
           opponent: row.opponent,
+          opponentLogoUrl: row.opponentLogoUrl,
           result: row.result,
           venue: row.venue,
           value: value as number,
@@ -602,7 +662,12 @@ export function SoccerStatsChart({
     return (props: any) => <SoccerChartTooltip {...props} isDark={isDark} selectedStatLabel={selectedStatLabel} />;
   }, [isDark, selectedStat, statLabels]);
 
-  const soccerXAxisTick = useMemo(() => <SoccerXAxisTick data={chartData} isDark={isDark} />, [chartData, isDark]);
+  const hideTickDetails = useMemo(() => shouldHideSoccerTickDetails(selectedTimeframe), [selectedTimeframe]);
+  const hideVenueMarker = useMemo(() => shouldHideSoccerVenueMarker(selectedTimeframe), [selectedTimeframe]);
+  const soccerXAxisTick = useMemo(
+    () => <SoccerXAxisTick data={chartData} isDark={isDark} hideTickDetails={hideTickDetails} hideVenueMarker={hideVenueMarker} />,
+    [chartData, hideTickDetails, hideVenueMarker, isDark]
+  );
 
   if (!selectedTeamName) {
     return (
@@ -800,6 +865,9 @@ export function SoccerStatsChart({
             desktopChartRightInset={8}
             desktopChartRightMargin={8}
             yAxisWidth={34}
+            xAxisHeight={hideTickDetails ? 28 : 56}
+            chartBottomMargin={8}
+            hideBarValueLabels={selectedTimeframe === 'all'}
           />
         )}
       </div>

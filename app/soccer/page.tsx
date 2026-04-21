@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -42,6 +42,58 @@ type SoccerTeamRow = {
   href: string;
   competitions: Array<{ country: string; competition: string }>;
 };
+
+type SoccerDashboardSessionState = {
+  team: Pick<SoccerTeamRow, 'name' | 'href'>;
+  recentMatches: SoccerwayRecentMatch[];
+  cachedAt: number;
+};
+
+// Bump the restore cache version when the stored match payload shape/coverage changes.
+const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v3:';
+
+function getSoccerDashboardSessionKey(teamHref: string): string {
+  return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
+}
+
+function readSoccerDashboardSessionState(teamHref: string): SoccerDashboardSessionState | null {
+  if (typeof window === 'undefined') return null;
+  const normalizedHref = normalizeTeamHref(teamHref);
+  if (!normalizedHref) return null;
+  try {
+    const raw = window.sessionStorage.getItem(getSoccerDashboardSessionKey(normalizedHref));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SoccerDashboardSessionState> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const teamName = typeof parsed.team?.name === 'string' ? parsed.team.name.trim() : '';
+    const teamStoredHref = typeof parsed.team?.href === 'string' ? normalizeTeamHref(parsed.team.href) : '';
+    const recentMatches = Array.isArray(parsed.recentMatches) ? (parsed.recentMatches as SoccerwayRecentMatch[]) : [];
+    if (!teamName || !teamStoredHref || teamStoredHref !== normalizedHref || recentMatches.length === 0) return null;
+    return {
+      team: { name: teamName, href: teamStoredHref },
+      recentMatches,
+      cachedAt: typeof parsed.cachedAt === 'number' ? parsed.cachedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeSoccerDashboardSessionState(team: Pick<SoccerTeamRow, 'name' | 'href'>, recentMatches: SoccerwayRecentMatch[]): void {
+  if (typeof window === 'undefined') return;
+  const normalizedHref = normalizeTeamHref(team.href);
+  if (!normalizedHref || !team.name.trim() || recentMatches.length === 0) return;
+  try {
+    const payload: SoccerDashboardSessionState = {
+      team: { name: team.name.trim(), href: normalizedHref },
+      recentMatches,
+      cachedAt: Date.now(),
+    };
+    window.sessionStorage.setItem(getSoccerDashboardSessionKey(normalizedHref), JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
 
 function parseUniqueTeamsFromSample(teamSample: Record<string, unknown> | null | undefined): SoccerTeamRow[] {
   const raw = teamSample?.uniqueTeams;
@@ -85,7 +137,7 @@ function normalizeTeamHref(value: string | null | undefined): string {
   return (href.startsWith('/') ? href : `/${href}`).replace(/\/+$/, '');
 }
 
-export default function SoccerPage() {
+function SoccerPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -212,6 +264,25 @@ export default function SoccerPage() {
   const teamHrefFromUrl = normalizeTeamHref(searchParams.get('team'));
   const selectedTeamHref = normalizeTeamHref(selectedTeam?.href);
 
+  useEffect(() => {
+    if (!teamHrefFromUrl) return;
+    const cached = readSoccerDashboardSessionState(teamHrefFromUrl);
+    if (!cached) return;
+
+    setSelectedTeam((prev) => {
+      if (normalizeTeamHref(prev?.href) === cached.team.href) return prev;
+      return {
+        name: cached.team.name,
+        href: cached.team.href,
+        competitions: [],
+      };
+    });
+    setTeamSearchQuery((prev) => prev || cached.team.name);
+    setRecentMatches((prev) => (prev.length > 0 ? prev : cached.recentMatches));
+    setRecentMatchesError(null);
+    setRecentMatchesLoading(false);
+  }, [teamHrefFromUrl]);
+
   const updateTeamUrl = useCallback(
     (teamHref: string | null) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -258,10 +329,18 @@ export default function SoccerPage() {
 
     const requestId = (teamResultsRequestId.current += 1);
     const ac = new AbortController();
-    setRecentMatchesLoading(true);
+    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
+    const cached = readSoccerDashboardSessionState(href);
+    const hasCachedMatches = Array.isArray(cached?.recentMatches) && cached.recentMatches.length > 0;
+
+    if (hasCachedMatches) {
+      setRecentMatches(cached!.recentMatches);
+      setRecentMatchesLoading(false);
+    } else {
+      setRecentMatchesLoading(true);
+    }
     setRecentMatchesError(null);
 
-    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
     void fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}`, { signal: ac.signal, cache: 'no-store' })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as {
@@ -272,13 +351,19 @@ export default function SoccerPage() {
           throw new Error(payload?.error || 'Failed to load recent matches');
         }
         if (teamResultsRequestId.current !== requestId) return;
-        setRecentMatches(Array.isArray(payload?.matches) ? payload.matches : []);
+        const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        setRecentMatches(matches);
+        if (matches.length > 0) {
+          writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
+        }
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (teamResultsRequestId.current !== requestId) return;
-        setRecentMatches([]);
-        setRecentMatchesError(err instanceof Error ? err.message : 'Failed to load recent matches');
+        if (!hasCachedMatches) {
+          setRecentMatches([]);
+          setRecentMatchesError(err instanceof Error ? err.message : 'Failed to load recent matches');
+        }
       })
       .finally(() => {
         if (teamResultsRequestId.current === requestId) {
@@ -803,5 +888,13 @@ export default function SoccerPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function SoccerPage() {
+  return (
+    <Suspense fallback={null}>
+      <SoccerPageContent />
+    </Suspense>
   );
 }

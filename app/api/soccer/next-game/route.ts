@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { normalizeSoccerTeamHref } from '@/lib/soccerCache';
+import { authorizeCronRequest } from '@/lib/cronAuth';
+import {
+  getSoccerNextFixtureCache,
+  normalizeSoccerTeamHref,
+  setSoccerNextFixtureCache,
+  type SoccerNextFixtureCachePayload,
+} from '@/lib/soccerCache';
 import {
   extractParticipantIdFromTeamHref,
   parseSoccerwayTeamFixturesHtml,
@@ -17,6 +23,7 @@ const SOCCERWAY_HTML_HEADERS = {
   'Accept-Language': 'en-US,en;q=0.9',
 };
 const UPCOMING_GRACE_SECONDS = 30 * 60;
+const FOREVER_CACHE_TTL_MINUTES = Number.POSITIVE_INFINITY;
 
 type NextFixtureResponse = {
   matchId: string;
@@ -50,14 +57,35 @@ function pickNextFixture(fixtures: SoccerwayUpcomingFixture[]): SoccerwayUpcomin
 export async function GET(request: NextRequest) {
   const href = request.nextUrl.searchParams.get('href')?.trim() || '';
   const teamHref = normalizeSoccerTeamHref(href);
+  const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
 
   if (!TEAM_HREF_RE.test(teamHref)) {
     return NextResponse.json({ error: 'Invalid or missing href (expected /team/{slug}/{id}/).' }, { status: 400 });
   }
 
+  if (forceRefresh && process.env.NODE_ENV === 'production') {
+    const auth = authorizeCronRequest(request);
+    if (!auth.authorized) return auth.response;
+  }
+
   const fixturesUrl = `https://www.soccerway.com${teamHref}/fixtures/`;
 
   try {
+    if (!forceRefresh) {
+      const cached = await getSoccerNextFixtureCache(teamHref, { quiet: true });
+      if (cached) {
+        return NextResponse.json({
+          fixturesUrl: cached.fixturesUrl,
+          fixture: cached.fixture,
+          count: cached.count,
+          cache: {
+            source: 'cache',
+            forcedRefresh: false,
+          },
+        });
+      }
+    }
+
     const response = await fetch(fixturesUrl, {
       headers: SOCCERWAY_HTML_HEADERS,
       cache: 'no-store',
@@ -88,10 +116,24 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    const cachePayload: SoccerNextFixtureCachePayload = {
+      teamHref,
+      fixturesUrl,
+      fixture: payload,
+      count: fixtures.length,
+      source: 'soccerway',
+      generatedAt: new Date().toISOString(),
+    };
+    await setSoccerNextFixtureCache(teamHref, cachePayload, FOREVER_CACHE_TTL_MINUTES, true);
+
     return NextResponse.json({
       fixturesUrl,
       fixture: payload,
       count: fixtures.length,
+      cache: {
+        source: 'live',
+        forcedRefresh: forceRefresh,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch next fixture';
