@@ -10,6 +10,8 @@ export type SoccerwayRecentMatch = {
   matchId: string;
   homeTeam: string;
   awayTeam: string;
+  homeLogoUrl?: string | null;
+  awayLogoUrl?: string | null;
   homeScore: number;
   awayScore: number;
   kickoffUnix: number | null;
@@ -55,6 +57,12 @@ export type SoccerwayMatchStats = {
   raw: string;
 };
 
+function buildSoccerwayResultDedupeKey(match: { matchId?: string | null; summaryPath?: string | null }): string {
+  const matchId = String(match.matchId || '').trim();
+  if (matchId) return `match:${matchId}`;
+  return `summary:${String(match.summaryPath || '').trim()}`;
+}
+
 function pickInt(raw: string | undefined): number | null {
   if (raw == null || raw === '') return null;
   const n = Number.parseInt(raw, 10);
@@ -80,7 +88,7 @@ function buildFlashscoreLogoUrl(token: string | undefined): string | null {
 export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): SoccerwayRecentMatch[] {
   const chunks = splitSoccerwayFeedChunks(html);
   const out: SoccerwayRecentMatch[] = [];
-  const seenPath = new Set<string>();
+  const seenKeys = new Set<string>();
 
   for (let i = 1; i < chunks.length; i += 1) {
     const chunk = chunks[i];
@@ -112,13 +120,16 @@ export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): Soc
     if (!wu || !px || !wv || !py || !ae || !af || ag == null || ah == null) continue;
 
     const summaryPath = `/match/${wu}-${px}/${wv}-${py}/summary/`;
-    if (seenPath.has(summaryPath)) continue;
-    seenPath.add(summaryPath);
+    const dedupeKey = buildSoccerwayResultDedupeKey({ matchId, summaryPath });
+    if (seenKeys.has(dedupeKey)) continue;
+    seenKeys.add(dedupeKey);
 
     out.push({
       matchId,
       homeTeam: ae,
       awayTeam: af,
+      homeLogoUrl: buildFlashscoreLogoUrl(fields.OA),
+      awayLogoUrl: buildFlashscoreLogoUrl(fields.OB),
       homeScore: ag,
       awayScore: ah,
       kickoffUnix: kick,
@@ -134,7 +145,7 @@ export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): Soc
 export function parseSoccerwayTeamFixturesHtml(html: string, limit?: number): SoccerwayUpcomingFixture[] {
   const chunks = splitSoccerwayFeedChunks(html);
   const out: SoccerwayUpcomingFixture[] = [];
-  const seenPath = new Set<string>();
+  const seenKeys = new Set<string>();
 
   for (let i = 1; i < chunks.length; i += 1) {
     const chunk = chunks[i];
@@ -164,8 +175,9 @@ export function parseSoccerwayTeamFixturesHtml(html: string, limit?: number): So
     if (!wu || !px || !wv || !py || !ae || !af) continue;
 
     const summaryPath = `/match/${wu}-${px}/${wv}-${py}/summary/`;
-    if (seenPath.has(summaryPath)) continue;
-    seenPath.add(summaryPath);
+    const dedupeKey = buildSoccerwayResultDedupeKey({ matchId, summaryPath });
+    if (seenKeys.has(dedupeKey)) continue;
+    seenKeys.add(dedupeKey);
 
     out.push({
       matchId,

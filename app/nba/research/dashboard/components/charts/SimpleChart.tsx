@@ -68,6 +68,12 @@ interface SimpleChartProps {
   yAxisTickStyle?: Record<string, string | number>;
   /** When true, preserve the provided primary Y-axis tick positions exactly. */
   preservePrimaryYAxisTicks?: boolean;
+  /** Optional X-axis height for custom tick layouts. */
+  xAxisHeight?: number;
+  /** Optional bottom margin for the chart canvas. */
+  chartBottomMargin?: number;
+  /** When true, hide numeric labels drawn on bars. */
+  hideBarValueLabels?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -108,6 +114,9 @@ const SimpleChart = memo(function SimpleChart({
   yAxisWidth = 32,
   yAxisTickStyle,
   preservePrimaryYAxisTicks = false,
+  xAxisHeight = 40,
+  chartBottomMargin = 19,
+  hideBarValueLabels = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -1015,7 +1024,7 @@ const SimpleChart = memo(function SimpleChart({
               top: isMobile ? 44 : 22,
               right: isMobile ? 0 : (hasSecondAxis ? desktopChartRightMarginWithSecondAxis : desktopChartRightMargin), 
               left: 0, 
-              bottom: 19 
+              bottom: chartBottomMargin 
             }}
             barCategoryGap="5%"
           >
@@ -1024,7 +1033,7 @@ const SimpleChart = memo(function SimpleChart({
               tick={(selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason')
                 ? false
                 : (customXAxisTick || <CustomXAxisTick data={mergedChartData} hideLogo={selectedTimeframe === 'lastseason' || selectedTimeframe === 'thisseason'} />)}
-              height={40}
+              height={xAxisHeight}
               interval={0}
               allowDuplicatedCategory={false}
               axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: isMobile ? 3 : 2 }}
@@ -1240,7 +1249,7 @@ const SimpleChart = memo(function SimpleChart({
                     />
                     
                     {/* Attempts label on top of attempts bar */}
-                    {attempts > 0 && (
+                    {!hideBarValueLabels && attempts > 0 && (
                       <text
                         x={x + width / 2}
                         y={y - 4}
@@ -1270,7 +1279,7 @@ const SimpleChart = memo(function SimpleChart({
                     )}
                     
                     {/* Makes label on top of makes bar */}
-                    {makes > 0 && makesHeight > 10 && (
+                    {!hideBarValueLabels && makes > 0 && makesHeight > 10 && (
                       <text
                         x={x + width / 2}
                         y={y + height - makesHeight - 4}
@@ -1316,7 +1325,7 @@ const SimpleChart = memo(function SimpleChart({
             
               {/* Labels on top of bars - memoized to prevent re-renders when betting line changes */}
               {/* Don't show default labels for fg3m since we handle them in the custom shape */}
-              {selectedStat !== 'fg3m' && memoizedLabelList}
+              {selectedStat !== 'fg3m' && !hideBarValueLabels && memoizedLabelList}
             </Bar>
             {hasSecondAxis && (
               <Line

@@ -4,8 +4,10 @@ import type { SoccerwayMatchStats, SoccerwayRecentMatch } from '@/lib/soccerwayT
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE_NAME = 'soccer_api_cache';
-const SOCCER_CACHE_SCHEMA = 'v1';
+// Bump when persistent soccer cache payload/coverage rules change.
+const SOCCER_CACHE_SCHEMA = 'v3';
 const SOCCER_CACHE_WARNINGS = new Set<string>();
+const SOCCER_CACHE_FOREVER_EXPIRES_AT = '9999-12-31T23:59:59.999Z';
 
 let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
@@ -40,7 +42,7 @@ const hotCache = new Map<string, HotCacheEntry>();
 const inflightReads = new Map<string, Promise<unknown | null>>();
 const recentWrites = new Map<string, RecentWriteEntry>();
 
-export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index';
+export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture';
 
 export type SoccerTeamResultsCachePayload = {
   teamHref: string;
@@ -55,6 +57,29 @@ export type SoccerTeamResultsCachePayload = {
 export type SoccerMatchStatsCachePayload = {
   matchId: string;
   stats: SoccerwayMatchStats | null;
+  source: 'soccerway';
+  generatedAt: string;
+};
+
+export type SoccerNextFixtureCacheFixture = {
+  matchId: string;
+  homeTeam: string;
+  awayTeam: string;
+  opponentName: string;
+  isHome: boolean | null;
+  teamLogoUrl: string | null;
+  opponentLogoUrl: string | null;
+  kickoffUnix: number | null;
+  summaryPath: string;
+  competitionName: string | null;
+  competitionCountry: string | null;
+};
+
+export type SoccerNextFixtureCachePayload = {
+  teamHref: string;
+  fixturesUrl: string;
+  fixture: SoccerNextFixtureCacheFixture | null;
+  count: number;
   source: 'soccerway';
   generatedAt: string;
 };
@@ -114,6 +139,10 @@ export function buildSoccerTeamResultsCacheKey(teamHref: string): string {
 
 export function buildSoccerMatchStatsCacheKey(matchId: string): string {
   return `soccer:match-stats:${SOCCER_CACHE_SCHEMA}:${String(matchId || '').trim()}`;
+}
+
+export function buildSoccerNextFixtureCacheKey(teamHref: string): string {
+  return `soccer:next-fixture:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
 }
 
 function attachCacheMetadata<T>(value: T, row: Record<string, unknown>): T {
@@ -183,9 +212,6 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
           if (!Array.isArray(rows) || rows.length === 0) return null;
 
           const row = rows[0] as Record<string, unknown>;
-          const expiresAt = row.expires_at ? new Date(String(row.expires_at)) : null;
-          if (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt < new Date()) return null;
-
           const value = attachCacheMetadata(row.data as T, row);
           hotCache.set(cacheKey, { expiresAtMs: Date.now() + HOT_CACHE_TTL_MS, value });
           return value;
@@ -226,11 +252,6 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
       }
       if (!data) return null;
 
-      const expiresAt = data.expires_at ? new Date(String(data.expires_at)) : null;
-      if (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt < new Date()) {
-        return null;
-      }
-
       const value = attachCacheMetadata(data.data as T, data);
       hotCache.set(cacheKey, { expiresAtMs: Date.now() + HOT_CACHE_TTL_MS, value });
       return value;
@@ -267,7 +288,10 @@ async function setSoccerCache(
     }
 
     const fetchedAt = extras.fetchedAt ? new Date(extras.fetchedAt) : new Date();
-    const expiresAt = new Date(fetchedAt.getTime() + ttlMinutes * 60 * 1000);
+    const expiresAt =
+      Number.isFinite(ttlMinutes) && ttlMinutes > 0
+        ? new Date(fetchedAt.getTime() + ttlMinutes * 60 * 1000)
+        : new Date(SOCCER_CACHE_FOREVER_EXPIRES_AT);
     const cacheEntry = {
       cache_key: cacheKey,
       cache_type: cacheType,
@@ -347,6 +371,33 @@ export async function setSoccerMatchStatsCache(
     payload,
     ttlMinutes,
     { matchId: normalized, fetchedAt: payload.generatedAt },
+    quiet
+  );
+}
+
+export async function getSoccerNextFixtureCache(
+  teamHref: string,
+  options: GetCacheOptions = {}
+): Promise<SoccerNextFixtureCachePayload | null> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return null;
+  return getSoccerCache<SoccerNextFixtureCachePayload>(buildSoccerNextFixtureCacheKey(normalized), options);
+}
+
+export async function setSoccerNextFixtureCache(
+  teamHref: string,
+  payload: SoccerNextFixtureCachePayload,
+  ttlMinutes: number,
+  quiet = false
+): Promise<boolean> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return false;
+  return setSoccerCache(
+    buildSoccerNextFixtureCacheKey(normalized),
+    'next_fixture',
+    payload,
+    ttlMinutes,
+    { teamHref: normalized, fetchedAt: payload.generatedAt },
     quiet
   );
 }
