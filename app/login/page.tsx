@@ -12,6 +12,7 @@ const HOME_ROUTE = "/home";
 export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -91,6 +92,9 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        if (!acceptTerms) {
+          throw new Error("Please accept the Terms of Service and Privacy Policy to create an account.");
+        }
         const res = await fetch("/api/auth/signup-with-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,6 +105,7 @@ export default function LoginPage() {
             firstName: firstName || null,
             lastName: lastName || null,
             phone: phone || null,
+            acceptedTerms: true,
           }),
         });
         const json = await res.json().catch(() => ({}));
@@ -298,7 +303,7 @@ export default function LoginPage() {
         <span className="font-medium">Back to Home</span>
       </button>
       
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-6 items-center">
         
         {/* Left Side - Branding & Features */}
         <div className="hidden lg:block space-y-8 text-white">
@@ -343,11 +348,11 @@ export default function LoginPage() {
 
         {/* Right Side - Login Form */}
         <div className="w-full max-w-md mx-auto lg:mx-0">
-          <div className="bg-[#0a1929] rounded-2xl border border-gray-800 shadow-2xl p-8">
+          <div className="bg-[#0a1929] rounded-2xl border border-gray-800 shadow-2xl p-6 sm:p-7">
             
             {/* Mobile Header */}
-            <div className="lg:hidden text-center mb-8">
-              <div className="flex justify-center mb-4">
+            <div className="lg:hidden text-center mb-6">
+              <div className="flex justify-center mb-3">
                 <StatTrackrLogoWithText 
                   logoSize="w-14 h-14" 
                   textSize="text-2xl"
@@ -358,7 +363,7 @@ export default function LoginPage() {
             </div>
 
             {/* Form Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-white mb-2">
                 {showForgotPassword ? "Reset password" : isSignUp ? "Create Account" : "Welcome Back"}
               </h2>
@@ -424,7 +429,7 @@ export default function LoginPage() {
               /* Forgot password — email then 6-digit code */
               <div className="space-y-6">
                 {!forgotPasswordSuccess ? (
-                  <form onSubmit={handleForgotPassword} className="space-y-6">
+                  <form onSubmit={handleForgotPassword} className="space-y-5">
                     <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                       <div className="relative">
@@ -433,7 +438,7 @@ export default function LoginPage() {
                           type="email"
                           value={forgotPasswordEmail}
                           onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                          className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
                           placeholder="Enter your email"
                           required
                         />
@@ -447,7 +452,7 @@ export default function LoginPage() {
                     <button
                       type="submit"
                       disabled={forgotPasswordLoading}
-                      className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {forgotPasswordLoading ? (
                         <div className="flex justify-center">
@@ -459,7 +464,7 @@ export default function LoginPage() {
                     </button>
                   </form>
                 ) : (
-                  <form onSubmit={handleVerifyResetCode} className="space-y-6">
+                  <form onSubmit={handleVerifyResetCode} className="space-y-5">
                     <div className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-900/50 text-emerald-400 text-sm">
                       Check your email for the 6-digit code. If you don&apos;t see it, check spam.
                     </div>
@@ -472,7 +477,7 @@ export default function LoginPage() {
                         value={forgotPasswordCode}
                         onChange={(e) => setForgotPasswordCode(e.target.value.replace(/\D/g, ""))}
                         placeholder="000000"
-                        className="w-full h-12 px-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-center text-lg tracking-[0.4em]"
+                        className="w-full h-11 px-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-center text-lg tracking-[0.4em]"
                       />
                     </div>
                     {forgotPasswordError && (
@@ -483,7 +488,7 @@ export default function LoginPage() {
                     <button
                       type="submit"
                       disabled={forgotPasswordVerifyLoading || forgotPasswordCode.length !== 6}
-                      className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {forgotPasswordVerifyLoading ? (
                         <div className="flex justify-center">
@@ -565,7 +570,7 @@ export default function LoginPage() {
             ) : (
             <>
             {/* Auth Form */}
-            <form onSubmit={handleAuth} className="space-y-6">
+            <form onSubmit={handleAuth} className="space-y-4">
               {/* Sign Up Additional Fields */}
               {isSignUp && (
                 <>
@@ -580,46 +585,48 @@ export default function LoginPage() {
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
                         placeholder="Enter your username"
                         required
                       />
                     </div>
                   </div>
 
-                  {/* First Name Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      First Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                        placeholder="Enter your first name"
-                        required
-                      />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* First Name Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                        First Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          placeholder="First name"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Last Name Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      Last Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                        placeholder="Enter your last name"
-                        required
-                      />
+                    {/* Last Name Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                        Last Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                          placeholder="Last name"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -634,7 +641,7 @@ export default function LoginPage() {
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                        className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
                         placeholder="Enter your phone number"
                       />
                     </div>
@@ -653,7 +660,7 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                    className="w-full h-11 pl-12 pr-4 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
                     placeholder="Enter your email"
                     required
                   />
@@ -671,7 +678,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-12 pl-12 pr-12 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                    className="w-full h-11 pl-12 pr-12 bg-[#050d1a] border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-colors"
                     placeholder="Enter your password"
                     required
                     minLength={6}
@@ -686,9 +693,33 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {isSignUp && (
+                <div className="flex items-start gap-3 rounded-xl border border-gray-800 bg-[#050d1a] p-3.5">
+                  <input
+                    type="checkbox"
+                    id="acceptTerms"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border border-gray-700 bg-[#050d1a] text-purple-600 focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <label htmlFor="acceptTerms" className="text-sm leading-6 text-gray-400">
+                    I agree to the{" "}
+                    <a href="/terms" target="_blank" rel="noreferrer" className="font-medium text-purple-400 hover:text-purple-300">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="/privacy" target="_blank" rel="noreferrer" className="font-medium text-purple-400 hover:text-purple-300">
+                      Privacy Policy
+                    </a>
+                    .
+                  </label>
+                </div>
+              )}
+
               {/* Remember Me & Forgot password - Only for Sign In */}
               {!isSignUp && (
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -719,7 +750,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -734,7 +765,7 @@ export default function LoginPage() {
 
             {/* Divider - show if Google is available */}
             {googleAvailable && (
-              <div className="my-6 flex items-center">
+              <div className="my-5 flex items-center">
                 <div className="flex-1 h-px bg-gray-700" />
                 <span className="px-4 text-sm text-gray-500">or</span>
                 <div className="flex-1 h-px bg-gray-700" />
@@ -746,7 +777,7 @@ export default function LoginPage() {
               <button
                 onClick={handleGoogleAuth}
                 disabled={loading}
-                className="w-full h-12 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -780,6 +811,7 @@ export default function LoginPage() {
                     setLastName("");
                     setPhone("");
                     setRememberMe(false);
+                    setAcceptTerms(false);
                   }}
                   className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
                 >
