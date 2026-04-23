@@ -18,6 +18,7 @@ export async function POST(req: Request) {
       firstName,
       lastName,
       phone,
+      acceptedTerms,
     } = body as {
       email?: string;
       password?: string;
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
       firstName?: string;
       lastName?: string;
       phone?: string | null;
+      acceptedTerms?: boolean;
     };
 
     if (!email || !password || typeof email !== "string" || typeof password !== "string") {
@@ -39,6 +41,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (acceptedTerms !== true) {
+      return NextResponse.json(
+        { error: "You must accept the Terms of Service and Privacy Policy to create an account." },
+        { status: 400 }
+      );
+    }
 
     const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email.trim().toLowerCase(),
@@ -49,6 +57,8 @@ export async function POST(req: Request) {
         first_name: firstName ?? null,
         last_name: lastName ?? null,
         phone: phone ?? null,
+        accepted_terms: true,
+        accepted_terms_at: new Date().toISOString(),
       },
     });
 
