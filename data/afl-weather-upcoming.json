@@ -1,28 +1,17 @@
 {
-  "generatedAt": "2026-04-23T17:52:22.508Z",
+  "generatedAt": "2026-04-24T17:28:46.413Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "ab98e8ba645495af4d1ea13b68fdead0",
-      "homeTeam": "Richmond Tigers",
-      "awayTeam": "Melbourne Demons",
-      "commenceTime": "2026-04-24T09:40:34Z",
-      "weather": {
-        "temperatureC": 20.4,
-        "precipitationMm": 0,
-        "windKmh": 8.4
-      }
-    },
     {
       "gameId": "fd04b9b8d279971365bceaf68b31a090",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-04-25T02:30:07Z",
       "weather": {
-        "temperatureC": 22.8,
+        "temperatureC": 22.6,
         "precipitationMm": 0,
-        "windKmh": 21.6
+        "windKmh": 19.1
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-04-25T05:20:19Z",
       "weather": {
-        "temperatureC": 25.2,
+        "temperatureC": 24.4,
         "precipitationMm": 0,
-        "windKmh": 20.2
+        "windKmh": 18
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-04-25T08:35:29Z",
       "weather": {
-        "temperatureC": 24.9,
+        "temperatureC": 23.9,
         "precipitationMm": 0,
-        "windKmh": 7.2
+        "windKmh": 10.8
       }
     },
     {
@@ -53,9 +42,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-04-25T10:15:26Z",
       "weather": {
-        "temperatureC": 19.8,
+        "temperatureC": 17.7,
         "precipitationMm": 0,
-        "windKmh": 14.8
+        "windKmh": 11.3
       }
     },
     {
@@ -64,9 +53,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-04-26T03:10:04Z",
       "weather": {
-        "temperatureC": 25.2,
+        "temperatureC": 24.5,
         "precipitationMm": 0,
-        "windKmh": 21
+        "windKmh": 18.5
       }
     },
     {
@@ -75,9 +64,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-04-26T05:15:44Z",
       "weather": {
-        "temperatureC": 22.9,
-        "precipitationMm": 0.1,
-        "windKmh": 14.5
+        "temperatureC": 21.7,
+        "precipitationMm": 0,
+        "windKmh": 13.4
       }
     },
     {
@@ -86,11 +75,11 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-04-26T06:40:16Z",
       "weather": {
-        "temperatureC": 23,
+        "temperatureC": 21.2,
         "precipitationMm": 0,
-        "windKmh": 12.2
+        "windKmh": 14.8
       }
     }
   ],
-  "count": 8
+  "count": 7
 }

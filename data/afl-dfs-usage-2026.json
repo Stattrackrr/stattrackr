@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-23T17:52:15.778Z",
+  "generatedAt": "2026-04-24T17:28:38.747Z",
   "source": "dfsaustralia.com/wp-admin/admin-ajax.php",
   "actions": {
     "cba": "afl_cbas_call_new_mysql",
@@ -27,10 +27,10 @@
     "WCE"
   ],
   "rowsFetched": {
-    "cbaRows": 256,
+    "cbaRows": 258,
     "kickinRows": 143
   },
-  "count": 355,
+  "count": 357,
   "players": [
     {
       "name": "Lachlan McAndrew",
@@ -2114,7 +2114,7 @@
     {
       "name": "Brodie Grundy",
       "normalizedName": "brodie grundy",
-      "cbaPct": 81.7,
+      "cbaPct": 81.1,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2126,23 +2126,23 @@
       "kickInPlayOnPct": null
     },
     {
-      "name": "Chad Warner",
-      "normalizedName": "chad warner",
-      "cbaPct": 60,
+      "name": "Justin McInerney",
+      "normalizedName": "justin mcinerney",
+      "cbaPct": 59.7,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
-      "name": "Justin McInerney",
-      "normalizedName": "justin mcinerney",
-      "cbaPct": 57.7,
+      "name": "Chad Warner",
+      "normalizedName": "chad warner",
+      "cbaPct": 57.8,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "James Rowbottom",
       "normalizedName": "james rowbottom",
-      "cbaPct": 51.4,
+      "cbaPct": 50.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2156,28 +2156,28 @@
     {
       "name": "Angus Sheldrick",
       "normalizedName": "angus sheldrick",
-      "cbaPct": 38.5,
+      "cbaPct": 40.2,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Joel Amartey",
       "normalizedName": "joel amartey",
-      "cbaPct": 18.3,
+      "cbaPct": 18.9,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Tom Papley",
       "normalizedName": "tom papley",
-      "cbaPct": 13.1,
+      "cbaPct": 15.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "James Jordon",
       "normalizedName": "james jordon",
-      "cbaPct": 7.4,
+      "cbaPct": 15.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2198,21 +2198,21 @@
     {
       "name": "Jake Lloyd",
       "normalizedName": "jake lloyd",
-      "cbaPct": 0.6,
+      "cbaPct": 0.5,
       "kickIns": 1,
       "kickInPlayOnPct": 100
     },
     {
       "name": "Nick Blakey",
       "normalizedName": "nick blakey",
-      "cbaPct": 0.6,
-      "kickIns": 30,
+      "cbaPct": 0.5,
+      "kickIns": 34,
       "kickInPlayOnPct": 100
     },
     {
       "name": "Jai Serong",
       "normalizedName": "jai serong",
-      "cbaPct": 0.6,
+      "cbaPct": 0.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2220,14 +2220,14 @@
       "name": "Callum Mills",
       "normalizedName": "callum mills",
       "cbaPct": null,
-      "kickIns": 19,
-      "kickInPlayOnPct": 94.7368
+      "kickIns": 20,
+      "kickInPlayOnPct": 95
     },
     {
       "name": "Riley Bice",
       "normalizedName": "riley bice",
       "cbaPct": null,
-      "kickIns": 19,
+      "kickIns": 20,
       "kickInPlayOnPct": 100
     },
     {
@@ -2261,21 +2261,28 @@
     {
       "name": "Ed Richards",
       "normalizedName": "ed richards",
-      "cbaPct": 74.4,
+      "cbaPct": 74.3,
+      "kickIns": null,
+      "kickInPlayOnPct": null
+    },
+    {
+      "name": "Lachlan Smith",
+      "normalizedName": "lachlan smith",
+      "cbaPct": 71,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Marcus Bontempelli",
       "normalizedName": "marcus bontempelli",
-      "cbaPct": 65.6,
+      "cbaPct": 66.8,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Matthew Kennedy",
       "normalizedName": "matthew kennedy",
-      "cbaPct": 63.9,
+      "cbaPct": 60.7,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2287,23 +2294,30 @@
       "kickInPlayOnPct": null
     },
     {
+      "name": "Adam Treloar",
+      "normalizedName": "adam treloar",
+      "cbaPct": 48.4,
+      "kickIns": null,
+      "kickInPlayOnPct": null
+    },
+    {
       "name": "Louis Emmett",
       "normalizedName": "louis emmett",
-      "cbaPct": 48.3,
+      "cbaPct": 41.6,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Ryley Sanders",
       "normalizedName": "ryley sanders",
-      "cbaPct": 41.2,
+      "cbaPct": 40.8,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Joel Freijah",
       "normalizedName": "joel freijah",
-      "cbaPct": 29,
+      "cbaPct": 27.1,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2331,14 +2345,14 @@
     {
       "name": "Rhylee West",
       "normalizedName": "rhylee west",
-      "cbaPct": 6,
+      "cbaPct": 6.1,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Cooper Hynes",
       "normalizedName": "cooper hynes",
-      "cbaPct": 5.1,
+      "cbaPct": 4.3,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2346,8 +2360,15 @@
       "name": "Bailey Dale",
       "normalizedName": "bailey dale",
       "cbaPct": null,
-      "kickIns": 48,
-      "kickInPlayOnPct": 89.5833
+      "kickIns": 57,
+      "kickInPlayOnPct": 89.4737
+    },
+    {
+      "name": "Lachlan Bramble",
+      "normalizedName": "lachlan bramble",
+      "cbaPct": null,
+      "kickIns": 15,
+      "kickInPlayOnPct": 86.6667
     },
     {
       "name": "Connor Budarick",
@@ -2357,18 +2378,11 @@
       "kickInPlayOnPct": 93.3333
     },
     {
-      "name": "Lachlan Bramble",
-      "normalizedName": "lachlan bramble",
-      "cbaPct": null,
-      "kickIns": 8,
-      "kickInPlayOnPct": 87.5
-    },
-    {
       "name": "Lachie Jaques",
       "normalizedName": "lachie jaques",
       "cbaPct": null,
-      "kickIns": 6,
-      "kickInPlayOnPct": 83.3333
+      "kickIns": 7,
+      "kickInPlayOnPct": 85.7143
     },
     {
       "name": "Bailey J. Williams",
