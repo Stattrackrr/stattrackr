@@ -50,7 +50,7 @@ type SoccerDashboardSessionState = {
 };
 
 // Bump the restore cache version when the stored match payload shape/coverage changes.
-const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v3:';
+const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v4:';
 
 function getSoccerDashboardSessionKey(teamHref: string): string {
   return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
@@ -146,6 +146,7 @@ function SoccerPageContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
   const [isPro, setIsPro] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -168,13 +169,16 @@ function SoccerPageContent() {
   const [recentMatches, setRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [recentMatchesLoading, setRecentMatchesLoading] = useState(false);
   const [recentMatchesError, setRecentMatchesError] = useState<string | null>(null);
+  const [recentMatchesCacheMiss, setRecentMatchesCacheMiss] = useState(false);
   const [nextFixture, setNextFixture] = useState<SoccerNextFixture | null>(null);
   const [nextFixtureLoading, setNextFixtureLoading] = useState(false);
   const [nextFixtureError, setNextFixtureError] = useState<string | null>(null);
+  const [nextFixtureCacheMiss, setNextFixtureCacheMiss] = useState(false);
   const [nextFixtureCountdown, setNextFixtureCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [mainChartStat, setMainChartStat] = useState('');
   const [chartTimeframe, setChartTimeframe] = useState<SoccerTimeframe>('last10');
   const [chartTeamScope, setChartTeamScope] = useState<SoccerStatTeamScope>('all');
+  const [chartCompetition, setChartCompetition] = useState('all');
   const teamSearchWrapRef = useRef<HTMLDivElement>(null);
   const teamResultsRequestId = useRef(0);
   const nextFixtureRequestId = useRef(0);
@@ -187,19 +191,34 @@ function SoccerPageContent() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    const loadUser = async () => {
+    let isMounted = true;
+
+    const checkSubscription = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        if (isMounted) {
+          setIsPro(false);
+          setUsername(null);
+          setUserEmail(null);
+          setAvatarUrl(null);
+          setSubscriptionChecked(true);
+          setTimeout(() => {
+            router.push('/login?redirect=/soccer');
+          }, 0);
+        }
+        return;
+      }
+
       const user = session.user;
-      setUserEmail(user.email ?? null);
       try {
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, username, avatar_url, subscription_status, subscription_tier')
           .eq('id', user.id)
           .single();
+        if (!isMounted) return;
         const p = profile as {
           full_name?: string;
           username?: string;
@@ -207,17 +226,46 @@ function SoccerPageContent() {
           subscription_status?: string;
           subscription_tier?: string;
         } | null;
-        setUsername(p?.full_name || p?.username || null);
-        setAvatarUrl(p?.avatar_url ?? null);
+        setUserEmail(user.email ?? null);
+        setUsername(p?.full_name || p?.username || user.user_metadata?.username || user.user_metadata?.full_name || null);
+        setAvatarUrl(p?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null);
         const active = p?.subscription_status === 'active' || p?.subscription_status === 'trialing';
         const proTier = p?.subscription_tier === 'pro';
         setIsPro(Boolean(active && proTier));
+        setSubscriptionChecked(true);
       } catch (e) {
         console.error('Soccer page: profile load failed', e);
+        if (isMounted) setSubscriptionChecked(true);
       }
     };
-    void loadUser();
-  }, []);
+    void checkSubscription();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (isMounted) {
+          setIsPro(false);
+          setUsername(null);
+          setUserEmail(null);
+          setAvatarUrl(null);
+          setSubscriptionChecked(true);
+          router.push('/login?redirect=/soccer');
+        }
+      } else if (event === 'SIGNED_IN' && isMounted && session?.user) {
+        void checkSubscription();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (subscriptionChecked && !isPro) {
+      router.replace('/home#pricing');
+    }
+  }, [subscriptionChecked, isPro, router]);
 
   const loadSample = useCallback(async () => {
     try {
@@ -238,8 +286,9 @@ function SoccerPageContent() {
   }, []);
 
   useEffect(() => {
+    if (!subscriptionChecked || !isPro) return;
     void loadSample();
-  }, [loadSample]);
+  }, [isPro, loadSample, subscriptionChecked]);
 
   const scrapeNote = useMemo(() => {
     if (loading) return 'Loading Soccerway sample in background…';
@@ -280,6 +329,7 @@ function SoccerPageContent() {
     setTeamSearchQuery((prev) => prev || cached.team.name);
     setRecentMatches((prev) => (prev.length > 0 ? prev : cached.recentMatches));
     setRecentMatchesError(null);
+    setRecentMatchesCacheMiss(false);
     setRecentMatchesLoading(false);
   }, [teamHrefFromUrl]);
 
@@ -323,6 +373,7 @@ function SoccerPageContent() {
     if (!selectedTeam) {
       setRecentMatches([]);
       setRecentMatchesError(null);
+      setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
       return;
     }
@@ -335,23 +386,26 @@ function SoccerPageContent() {
 
     if (hasCachedMatches) {
       setRecentMatches(cached!.recentMatches);
+      setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
     } else {
       setRecentMatchesLoading(true);
     }
     setRecentMatchesError(null);
 
-    void fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}`, { signal: ac.signal, cache: 'no-store' })
+    void fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}&cacheOnly=1`, { signal: ac.signal, cache: 'no-store' })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
           matches?: SoccerwayRecentMatch[];
+          cache?: { teamResultsSource?: string };
         } | null;
         if (!response.ok) {
           throw new Error(payload?.error || 'Failed to load recent matches');
         }
         if (teamResultsRequestId.current !== requestId) return;
         const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        setRecentMatchesCacheMiss(payload?.cache?.teamResultsSource === 'cache-miss');
         setRecentMatches(matches);
         if (matches.length > 0) {
           writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
@@ -360,6 +414,7 @@ function SoccerPageContent() {
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (teamResultsRequestId.current !== requestId) return;
+        setRecentMatchesCacheMiss(false);
         if (!hasCachedMatches) {
           setRecentMatches([]);
           setRecentMatchesError(err instanceof Error ? err.message : 'Failed to load recent matches');
@@ -378,6 +433,7 @@ function SoccerPageContent() {
     if (!selectedTeam) {
       setNextFixture(null);
       setNextFixtureError(null);
+      setNextFixtureCacheMiss(false);
       setNextFixtureLoading(false);
       return;
     }
@@ -386,24 +442,28 @@ function SoccerPageContent() {
     const ac = new AbortController();
     setNextFixtureLoading(true);
     setNextFixtureError(null);
+    setNextFixtureCacheMiss(false);
 
     const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
-    void fetch(`/api/soccer/next-game?href=${encodeURIComponent(href)}`, { signal: ac.signal, cache: 'no-store' })
+    void fetch(`/api/soccer/next-game?href=${encodeURIComponent(href)}&cacheOnly=1`, { signal: ac.signal, cache: 'no-store' })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as {
           error?: string;
           fixture?: SoccerNextFixture | null;
+          cache?: { source?: string };
         } | null;
         if (!response.ok) {
           throw new Error(payload?.error || 'Failed to load next fixture');
         }
         if (nextFixtureRequestId.current !== requestId) return;
+        setNextFixtureCacheMiss(payload?.cache?.source === 'cache-miss');
         setNextFixture(payload?.fixture ?? null);
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (nextFixtureRequestId.current !== requestId) return;
         setNextFixture(null);
+        setNextFixtureCacheMiss(false);
         setNextFixtureError(err instanceof Error ? err.message : 'Failed to load next fixture');
       })
       .finally(() => {
@@ -429,10 +489,14 @@ function SoccerPageContent() {
   const selectedHeaderTeamName = selectedTeam?.name ?? null;
   const headerTitle = selectedHeaderTeamName ?? 'Select a team';
   const displayOpponent = nextFixture?.opponentName?.trim() ? nextFixture.opponentName.trim() : null;
+  const recentMatchesEmptyMessage = recentMatchesCacheMiss
+    ? 'No cached Soccerway stat history yet.'
+    : 'No Soccerway stat history parsed for this team.';
   const nextFixtureMeta = useMemo(() => {
     if (!selectedTeam) return null;
     if (nextFixtureLoading) return 'Loading next fixture...';
     if (nextFixtureError) return nextFixtureError;
+    if (nextFixtureCacheMiss) return 'No cached upcoming fixture yet.';
     if (!nextFixture) return 'No upcoming fixture found on Soccerway.';
 
     const parts: string[] = [];
@@ -449,7 +513,11 @@ function SoccerPageContent() {
       );
     }
     return parts.join(' · ');
-  }, [nextFixture, nextFixtureError, nextFixtureKickoff, nextFixtureLoading, selectedTeam]);
+  }, [nextFixture, nextFixtureCacheMiss, nextFixtureError, nextFixtureKickoff, nextFixtureLoading, selectedTeam]);
+
+  if (subscriptionChecked && !isPro) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -750,7 +818,7 @@ function SoccerPageContent() {
                       ) : recentMatchesError ? (
                         <div className="px-2 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
                       ) : recentMatches.length === 0 ? (
-                        <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>No Soccerway stat history parsed for this team.</div>
+                        <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
                       ) : (
                         <SoccerStatsChart
                           matches={recentMatches}
@@ -759,6 +827,7 @@ function SoccerPageContent() {
                           onSelectedStatChange={setMainChartStat}
                           onSelectedTimeframeChange={setChartTimeframe}
                           onSelectedTeamScopeChange={setChartTeamScope}
+                          onSelectedCompetitionChange={setChartCompetition}
                         />
                       )}
                     </div>
@@ -786,12 +855,15 @@ function SoccerPageContent() {
                       </div>
                     ) : recentMatchesError ? (
                       <div className="px-3 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
+                    ) : recentMatches.length === 0 ? (
+                      <div className={`px-3 py-4 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
                     ) : (
                       <SoccerSupportingStats
                         matches={recentMatches}
                         selectedTeamName={selectedTeam.name}
                         timeframe={chartTimeframe}
                         teamScope={chartTeamScope}
+                        competitionFilter={chartCompetition}
                         mainChartStat={mainChartStat}
                         isDark={Boolean(mounted && isDark)}
                       />

@@ -12,6 +12,8 @@ export type SoccerwayRecentMatch = {
   awayTeam: string;
   homeLogoUrl?: string | null;
   awayLogoUrl?: string | null;
+  competitionName?: string | null;
+  competitionCountry?: string | null;
   homeScore: number;
   awayScore: number;
   kickoffUnix: number | null;
@@ -130,6 +132,8 @@ export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): Soc
       awayTeam: af,
       homeLogoUrl: buildFlashscoreLogoUrl(fields.OA),
       awayLogoUrl: buildFlashscoreLogoUrl(fields.OB),
+      competitionName: fields.ZK ?? null,
+      competitionCountry: fields.ZY ?? null,
       homeScore: ag,
       awayScore: ah,
       kickoffUnix: kick,
