@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
   const href = request.nextUrl.searchParams.get('href')?.trim() || '';
   const teamHref = normalizeSoccerTeamHref(href);
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
+  const cacheOnly = request.nextUrl.searchParams.get('cacheOnly') === '1';
 
   if (!TEAM_HREF_RE.test(teamHref)) {
     return NextResponse.json({ error: 'Invalid or missing href (expected /team/{slug}/{id}/).' }, { status: 400 });
@@ -81,9 +82,23 @@ export async function GET(request: NextRequest) {
           cache: {
             source: 'cache',
             forcedRefresh: false,
+            cacheOnly,
           },
         });
       }
+    }
+
+    if (cacheOnly) {
+      return NextResponse.json({
+        fixturesUrl,
+        fixture: null,
+        count: 0,
+        cache: {
+          source: 'cache-miss',
+          forcedRefresh: false,
+          cacheOnly: true,
+        },
+      });
     }
 
     const response = await fetch(fixturesUrl, {

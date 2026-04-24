@@ -12,6 +12,7 @@ type SoccerSupportingStatsProps = {
   selectedTeamName: string;
   timeframe: SoccerTimeframe;
   teamScope: SoccerStatTeamScope;
+  competitionFilter?: string;
   mainChartStat?: string;
   isDark: boolean;
 };
@@ -145,11 +146,18 @@ function getOpponent(match: SoccerwayRecentMatch, selectedTeamName: string): str
   return side === 'away' ? match.homeTeam : match.awayTeam;
 }
 
+function getCompetitionKey(match: SoccerwayRecentMatch): string {
+  const country = String(match.competitionCountry || '').trim();
+  const competition = String(match.competitionName || '').trim();
+  return `${country}:::${competition}`;
+}
+
 export function SoccerSupportingStats({
   matches,
   selectedTeamName,
   timeframe,
   teamScope,
+  competitionFilter = 'all',
   mainChartStat,
   isDark,
 }: SoccerSupportingStatsProps) {
@@ -188,15 +196,20 @@ export function SoccerSupportingStats({
       .sort((a, b) => a.kickoffMs - b.kickoffMs);
   }, [matches, selectedTeamName]);
 
+  const filteredNormalizedRows = useMemo(() => {
+    if (competitionFilter === 'all') return normalizedRows;
+    return normalizedRows.filter((row) => getCompetitionKey(row.match) === competitionFilter);
+  }, [competitionFilter, normalizedRows]);
+
   const availableStats = useMemo(() => {
     const keys = new Set<string>();
-    for (const row of normalizedRows) {
+    for (const row of filteredNormalizedRows) {
       for (const [key, value] of Object.entries(row.statMap)) {
         if (Number.isFinite(value)) keys.add(key);
       }
     }
     return keys;
-  }, [normalizedRows]);
+  }, [filteredNormalizedRows]);
 
   const supportingOptions = useMemo(() => {
     const preferred = SUPPORTING_OPTIONS_BY_MAIN[mainChartStat || ''] || DEFAULT_SUPPORTING_OPTIONS;
@@ -218,7 +231,7 @@ export function SoccerSupportingStats({
 
   const chartData = useMemo(() => {
     if (!selectedSupportingStat) return [];
-    const rows = normalizedRows
+    const rows = filteredNormalizedRows
       .map((row, idx) => {
         const value = getScopedValueForStat({
           statMap: row.statMap,
@@ -239,13 +252,13 @@ export function SoccerSupportingStats({
       })
       .filter((row): row is SupportingRow => row != null);
     return applyTimeframe(rows, timeframe);
-  }, [normalizedRows, selectedSupportingStat, teamScope, timeframe]);
+  }, [filteredNormalizedRows, selectedSupportingStat, teamScope, timeframe]);
 
   const averagesByStat = useMemo(() => {
     const averages = new Map<string, number | null>();
     for (const stat of supportingOptions) {
       const values = applyTimeframe(
-        normalizedRows
+        filteredNormalizedRows
           .map((row, idx) => {
             const value = getScopedValueForStat({
               statMap: row.statMap,
@@ -274,7 +287,7 @@ export function SoccerSupportingStats({
       averages.set(stat, values.reduce((sum, value) => sum + value, 0) / values.length);
     }
     return averages;
-  }, [normalizedRows, supportingOptions, teamScope, timeframe]);
+  }, [filteredNormalizedRows, supportingOptions, teamScope, timeframe]);
 
   const barFill = isDark ? '#6b7280' : '#9ca3af';
   const labelFill = isDark ? '#e5e7eb' : '#374151';
