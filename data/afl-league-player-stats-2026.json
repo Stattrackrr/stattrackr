@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-04-25T08:45:27.775Z",
+  "generatedAt": "2026-04-25T10:39:19.072Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 550,
@@ -21,7 +21,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 10.83,
       "uncontested_possessions": 24.17,
-      "meters_gained": 706.17,
+      "meters_gained": 706,
       "free_kicks_for": 1.5
     },
     {
@@ -78,7 +78,7 @@
       "rebound_50s": 6.14,
       "contested_possessions": 7,
       "uncontested_possessions": 21.57,
-      "meters_gained": 531.71,
+      "meters_gained": 532.57,
       "free_kicks_for": 0.86
     },
     {
@@ -224,13 +224,13 @@
       "handballs": 10.71,
       "marks": 6.86,
       "goals": 0,
-      "tackles": 2,
+      "tackles": 2.14,
       "clearances": 1.57,
       "inside_50s": 4,
       "rebound_50s": 4.43,
       "contested_possessions": 6.14,
       "uncontested_possessions": 20.43,
-      "meters_gained": 529.43,
+      "meters_gained": 529.71,
       "free_kicks_for": 0.71
     },
     {
@@ -420,7 +420,7 @@
       "rebound_50s": 3,
       "contested_possessions": 8.71,
       "uncontested_possessions": 17,
-      "meters_gained": 447.71,
+      "meters_gained": 447.57,
       "free_kicks_for": 1.57
     },
     {
@@ -591,7 +591,7 @@
       "rebound_50s": 5.43,
       "contested_possessions": 5,
       "uncontested_possessions": 15.86,
-      "meters_gained": 449.43,
+      "meters_gained": 450.71,
       "free_kicks_for": 0.43
     },
     {
@@ -895,7 +895,7 @@
       "rebound_50s": 1,
       "contested_possessions": 10,
       "uncontested_possessions": 14.14,
-      "meters_gained": 340.14,
+      "meters_gained": 340.43,
       "free_kicks_for": 0.86
     },
     {
@@ -952,7 +952,7 @@
       "rebound_50s": 1.67,
       "contested_possessions": 7.67,
       "uncontested_possessions": 16.33,
-      "meters_gained": 264.67,
+      "meters_gained": 270.33,
       "free_kicks_for": 0
     },
     {
@@ -1047,7 +1047,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 8.17,
       "uncontested_possessions": 15.5,
-      "meters_gained": 176.83,
+      "meters_gained": 175.67,
       "free_kicks_for": 0.67
     },
     {
@@ -2092,7 +2092,7 @@
       "rebound_50s": 1.29,
       "contested_possessions": 8.14,
       "uncontested_possessions": 12.43,
-      "meters_gained": 298.14,
+      "meters_gained": 298,
       "free_kicks_for": 0.86
     },
     {
@@ -2111,7 +2111,7 @@
       "rebound_50s": 3,
       "contested_possessions": 6.29,
       "uncontested_possessions": 12.57,
-      "meters_gained": 317.14,
+      "meters_gained": 317.57,
       "free_kicks_for": 0.86
     },
     {
@@ -2257,13 +2257,13 @@
       "handballs": 10.57,
       "marks": 4.57,
       "goals": 0.29,
-      "tackles": 2.57,
+      "tackles": 2.71,
       "clearances": 1.29,
       "inside_50s": 2.86,
       "rebound_50s": 1.57,
       "contested_possessions": 4.57,
       "uncontested_possessions": 14.71,
-      "meters_gained": 268.43,
+      "meters_gained": 267.57,
       "free_kicks_for": 0.71
     },
     {
@@ -2282,7 +2282,7 @@
       "rebound_50s": 4,
       "contested_possessions": 5.43,
       "uncontested_possessions": 13.71,
-      "meters_gained": 430.29,
+      "meters_gained": 430.43,
       "free_kicks_for": 0.71
     },
     {
@@ -2985,7 +2985,7 @@
       "rebound_50s": 2.43,
       "contested_possessions": 4.43,
       "uncontested_possessions": 13.14,
-      "meters_gained": 301.57,
+      "meters_gained": 302.57,
       "free_kicks_for": 0.43
     },
     {
@@ -3023,7 +3023,7 @@
       "rebound_50s": 4,
       "contested_possessions": 2.8,
       "uncontested_possessions": 13.6,
-      "meters_gained": 345.6,
+      "meters_gained": 342.6,
       "free_kicks_for": 0.4
     },
     {
@@ -3175,7 +3175,7 @@
       "rebound_50s": 3.29,
       "contested_possessions": 3.71,
       "uncontested_possessions": 13.71,
-      "meters_gained": 343.43,
+      "meters_gained": 342.57,
       "free_kicks_for": 0.57
     },
     {
@@ -3230,9 +3230,9 @@
       "clearances": 0.33,
       "inside_50s": 1.83,
       "rebound_50s": 3.33,
-      "contested_possessions": 4.67,
-      "uncontested_possessions": 12,
-      "meters_gained": 347,
+      "contested_possessions": 4.83,
+      "uncontested_possessions": 11.83,
+      "meters_gained": 350.67,
       "free_kicks_for": 0.83
     },
     {
@@ -3365,7 +3365,7 @@
       "rebound_50s": 2.17,
       "contested_possessions": 5.17,
       "uncontested_possessions": 12.33,
-      "meters_gained": 265,
+      "meters_gained": 264.67,
       "free_kicks_for": 0.33
     },
     {
@@ -3764,7 +3764,7 @@
       "rebound_50s": 2,
       "contested_possessions": 5.29,
       "uncontested_possessions": 11,
-      "meters_gained": 253.14,
+      "meters_gained": 253.43,
       "free_kicks_for": 0.57
     },
     {
@@ -4391,7 +4391,7 @@
       "rebound_50s": 1.5,
       "contested_possessions": 5.25,
       "uncontested_possessions": 10.25,
-      "meters_gained": 252.25,
+      "meters_gained": 253,
       "free_kicks_for": 1.25
     },
     {
@@ -4429,7 +4429,7 @@
       "rebound_50s": 1,
       "contested_possessions": 5.57,
       "uncontested_possessions": 10,
-      "meters_gained": 171.71,
+      "meters_gained": 166.14,
       "free_kicks_for": 1
     },
     {
@@ -4448,7 +4448,7 @@
       "rebound_50s": 1,
       "contested_possessions": 5.67,
       "uncontested_possessions": 9.33,
-      "meters_gained": 323.67,
+      "meters_gained": 322.33,
       "free_kicks_for": 1
     },
     {
@@ -4657,7 +4657,7 @@
       "rebound_50s": 0.29,
       "contested_possessions": 5.71,
       "uncontested_possessions": 10,
-      "meters_gained": 254.43,
+      "meters_gained": 254.14,
       "free_kicks_for": 1.14
     },
     {
@@ -5014,7 +5014,7 @@
       "goals": 1.17,
       "tackles": 1.83,
       "clearances": 1.33,
-      "inside_50s": 3.17,
+      "inside_50s": 3,
       "rebound_50s": 0.67,
       "contested_possessions": 4.5,
       "uncontested_possessions": 9.67,
@@ -5797,7 +5797,7 @@
       "rebound_50s": 1,
       "contested_possessions": 3.57,
       "uncontested_possessions": 8.86,
-      "meters_gained": 222.29,
+      "meters_gained": 224.86,
       "free_kicks_for": 0.43
     },
     {
@@ -5930,7 +5930,7 @@
       "rebound_50s": 3,
       "contested_possessions": 4,
       "uncontested_possessions": 9.43,
-      "meters_gained": 167.57,
+      "meters_gained": 164.86,
       "free_kicks_for": 1.14
     },
     {
@@ -6523,25 +6523,6 @@
       "free_kicks_for": 1.5
     },
     {
-      "name": "Isaac Kako",
-      "team": "Essendon",
-      "games": 6,
-      "number": 80,
-      "disposals": 12.17,
-      "kicks": 5.83,
-      "handballs": 6.33,
-      "marks": 1.83,
-      "goals": 1.17,
-      "tackles": 1.33,
-      "clearances": 1,
-      "inside_50s": 2.83,
-      "rebound_50s": 0.33,
-      "contested_possessions": 5.5,
-      "uncontested_possessions": 6.17,
-      "meters_gained": 172.83,
-      "free_kicks_for": 0.5
-    },
-    {
       "name": "Cameron Zurhaar",
       "team": "North Melbourne",
       "games": 6,
@@ -6578,6 +6559,25 @@
       "uncontested_possessions": 6.43,
       "meters_gained": 191.86,
       "free_kicks_for": 1.43
+    },
+    {
+      "name": "Isaac Kako",
+      "team": "Essendon",
+      "games": 6,
+      "number": 80,
+      "disposals": 12,
+      "kicks": 5.83,
+      "handballs": 6.17,
+      "marks": 1.83,
+      "goals": 1.17,
+      "tackles": 1.33,
+      "clearances": 1,
+      "inside_50s": 2.83,
+      "rebound_50s": 0.33,
+      "contested_possessions": 5.5,
+      "uncontested_possessions": 6,
+      "meters_gained": 170.83,
+      "free_kicks_for": 0.5
     },
     {
       "name": "Harry McKay",
@@ -6899,7 +6899,7 @@
       "rebound_50s": 1.4,
       "contested_possessions": 3.6,
       "uncontested_possessions": 9,
-      "meters_gained": 270.4,
+      "meters_gained": 272.6,
       "free_kicks_for": 1
     },
     {
@@ -7488,7 +7488,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3.71,
       "uncontested_possessions": 6.71,
-      "meters_gained": 139.57,
+      "meters_gained": 140.29,
       "free_kicks_for": 0.57
     },
     {
@@ -8343,7 +8343,7 @@
       "rebound_50s": 2.57,
       "contested_possessions": 2.86,
       "uncontested_possessions": 6.57,
-      "meters_gained": 91.14,
+      "meters_gained": 91.29,
       "free_kicks_for": 0
     },
     {
@@ -8459,6 +8459,25 @@
       "uncontested_possessions": 4.33,
       "meters_gained": 102.33,
       "free_kicks_for": 1.33
+    },
+    {
+      "name": "Sullivan Robey",
+      "team": "Essendon",
+      "games": 3,
+      "number": null,
+      "disposals": 9.67,
+      "kicks": 4.67,
+      "handballs": 5,
+      "marks": 2,
+      "goals": 0.67,
+      "tackles": 2.33,
+      "clearances": 0.33,
+      "inside_50s": 2.33,
+      "rebound_50s": 0,
+      "contested_possessions": 3.33,
+      "uncontested_possessions": 7.33,
+      "meters_gained": 154.67,
+      "free_kicks_for": 0.33
     },
     {
       "name": "Logan McDonald",
@@ -8632,25 +8651,6 @@
       "free_kicks_for": 0.33
     },
     {
-      "name": "Sullivan Robey",
-      "team": "Essendon",
-      "games": 3,
-      "number": null,
-      "disposals": 9.33,
-      "kicks": 4.33,
-      "handballs": 5,
-      "marks": 2,
-      "goals": 0.67,
-      "tackles": 2.33,
-      "clearances": 0.33,
-      "inside_50s": 2.33,
-      "rebound_50s": 0,
-      "contested_possessions": 3.33,
-      "uncontested_possessions": 7.33,
-      "meters_gained": 155.67,
-      "free_kicks_for": 0.33
-    },
-    {
       "name": "Latrelle Pickett",
       "team": "Melbourne",
       "games": 7,
@@ -8723,7 +8723,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3.75,
       "uncontested_possessions": 5,
-      "meters_gained": 169.75,
+      "meters_gained": 174.75,
       "free_kicks_for": 1
     },
     {
@@ -9065,7 +9065,7 @@
       "rebound_50s": 1.29,
       "contested_possessions": 5.43,
       "uncontested_possessions": 3.86,
-      "meters_gained": 121,
+      "meters_gained": 121.14,
       "free_kicks_for": 1.57
     },
     {
@@ -9080,7 +9080,7 @@
       "goals": 1.71,
       "tackles": 1.86,
       "clearances": 0.43,
-      "inside_50s": 1.86,
+      "inside_50s": 2,
       "rebound_50s": 0,
       "contested_possessions": 3.43,
       "uncontested_possessions": 5,
@@ -9293,7 +9293,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5.2,
       "uncontested_possessions": 2.6,
-      "meters_gained": 39.4,
+      "meters_gained": 38.4,
       "free_kicks_for": 1.6
     },
     {
