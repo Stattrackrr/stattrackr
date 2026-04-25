@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-25T11:36:37.993Z",
+  "generatedAt": "2026-04-25T17:05:53.374Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,7 +9,7 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-04-26T03:10:04Z",
       "weather": {
-        "temperatureC": 24.2,
+        "temperatureC": 24.6,
         "precipitationMm": 0,
         "windKmh": 17.5
       }
@@ -20,9 +20,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-04-26T05:15:44Z",
       "weather": {
-        "temperatureC": 21.4,
-        "precipitationMm": 0.6,
-        "windKmh": 15.6
+        "temperatureC": 21.9,
+        "precipitationMm": 0.1,
+        "windKmh": 13.7
       }
     },
     {
@@ -33,7 +33,7 @@
       "weather": {
         "temperatureC": 21,
         "precipitationMm": 0,
-        "windKmh": 16.4
+        "windKmh": 15.3
       }
     }
   ],
