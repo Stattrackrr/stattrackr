@@ -86,7 +86,7 @@ function splitSoccerwayFeedSegments(raw: string): SoccerwayFeedSegment[] {
     .split('~')
     .map((segment) => segment.trim())
     .filter(Boolean)
-    .flatMap((segment) => {
+    .flatMap((segment): SoccerwayFeedSegment[] => {
       if (segment.startsWith('AA÷')) return [{ type: 'match' as const, body: segment.slice(3) }];
       if (segment.startsWith('ZA÷')) return [{ type: 'competition' as const, body: segment }];
       return [];
