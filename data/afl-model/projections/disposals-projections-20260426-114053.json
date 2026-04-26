@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-04-26T11:40:53Z",
+  "modelVersion": "afl-disp-20260425-172334",
+  "modelType": "rf",
+  "sideBalance": {
+    "mode": "adaptive",
+    "applied": false,
+    "reason": "insufficient_rows",
+    "eligibleRows": 0
+  },
+  "rows": [],
+  "count": 0
+}
