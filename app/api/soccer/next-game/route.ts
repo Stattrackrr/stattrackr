@@ -37,6 +37,7 @@ type NextFixtureResponse = {
   summaryPath: string;
   competitionName: string | null;
   competitionCountry: string | null;
+  competitionStage: string | null;
 };
 
 function pickNextFixture(fixtures: SoccerwayUpcomingFixture[]): SoccerwayUpcomingFixture | null {
@@ -52,6 +53,55 @@ function pickNextFixture(fixtures: SoccerwayUpcomingFixture[]): SoccerwayUpcomin
       .filter((fixture) => fixture.kickoffUnix != null)
       .sort((a, b) => (a.kickoffUnix ?? Number.MAX_SAFE_INTEGER) - (b.kickoffUnix ?? Number.MAX_SAFE_INTEGER))[0] ?? null
   );
+}
+
+function deriveDetailedCompetitionStage(params: {
+  ogDescription: string | null;
+  competitionCountry: string | null;
+  competitionName: string | null;
+}): string | null {
+  const ogDescription = String(params.ogDescription || '').trim();
+  const competitionCountry = String(params.competitionCountry || '').trim();
+  const competitionName = String(params.competitionName || '').trim();
+  if (!ogDescription || !competitionName) return null;
+
+  let value = ogDescription;
+  if (competitionCountry && value.toLowerCase().startsWith(`${competitionCountry.toLowerCase()}:`)) {
+    value = value.slice(competitionCountry.length + 1).trim();
+  }
+
+  if (!value.toLowerCase().startsWith(competitionName.toLowerCase())) return null;
+  value = value.slice(competitionName.length).trim().replace(/^[-:]\s*/, '').trim();
+  return value || null;
+}
+
+async function fetchDetailedFixtureStage(summaryPath: string, fixture: SoccerwayUpcomingFixture): Promise<string | null> {
+  const normalizedPath = String(summaryPath || '').trim();
+  if (!normalizedPath) return fixture.competitionStage ?? null;
+
+  try {
+    const response = await fetch(`https://www.soccerway.com${normalizedPath}`, {
+      headers: SOCCERWAY_HTML_HEADERS,
+      cache: 'no-store',
+    });
+    if (!response.ok) return fixture.competitionStage ?? null;
+
+    const html = await response.text();
+    const ogDescription =
+      html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/i)?.[1] ??
+      html.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:description"/i)?.[1] ??
+      null;
+
+    return (
+      deriveDetailedCompetitionStage({
+        ogDescription,
+        competitionCountry: fixture.competitionCountry,
+        competitionName: fixture.competitionName,
+      }) ?? fixture.competitionStage ?? null
+    );
+  } catch {
+    return fixture.competitionStage ?? null;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -114,6 +164,7 @@ export async function GET(request: NextRequest) {
 
     let payload: NextFixtureResponse | null = null;
     if (nextFixture) {
+      const competitionStage = await fetchDetailedFixtureStage(nextFixture.summaryPath, nextFixture);
       const isHome =
         nextFixture.homeParticipantId === participantId ? true : nextFixture.awayParticipantId === participantId ? false : null;
       payload = {
@@ -128,6 +179,7 @@ export async function GET(request: NextRequest) {
         summaryPath: nextFixture.summaryPath,
         competitionName: nextFixture.competitionName,
         competitionCountry: nextFixture.competitionCountry,
+        competitionStage,
       };
     }
 

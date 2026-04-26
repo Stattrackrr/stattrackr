@@ -35,6 +35,7 @@ type SoccerNextFixture = {
   summaryPath: string;
   competitionName: string | null;
   competitionCountry: string | null;
+  competitionStage: string | null;
 };
 
 type SoccerTeamRow = {
@@ -50,7 +51,7 @@ type SoccerDashboardSessionState = {
 };
 
 // Bump the restore cache version when the stored match payload shape/coverage changes.
-const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v4:';
+const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v5:';
 
 function getSoccerDashboardSessionKey(teamHref: string): string {
   return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
@@ -135,6 +136,35 @@ function normalizeTeamHref(value: string | null | undefined): string {
   const href = String(value || '').trim();
   if (!href) return '';
   return (href.startsWith('/') ? href : `/${href}`).replace(/\/+$/, '');
+}
+
+function splitFixtureNameLines(value: string | null | undefined): [string, string?] {
+  const name = String(value || '').trim();
+  if (!name) return ['-'];
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return [name];
+  return [parts[0], parts.slice(1).join(' ')];
+}
+
+function formatFixtureStageLabel(value: string | null | undefined): string | null {
+  let stage = String(value || '').trim();
+  if (!stage) return null;
+
+  if (stage.includes(' - ')) {
+    stage = stage.split(' - ').map((part) => part.trim()).filter(Boolean).at(-1) || stage;
+  }
+
+  const roundNumber = stage.match(/^round\s+(\d+)$/i);
+  if (roundNumber) return `RD ${roundNumber[1]}`;
+
+  const roundOf = stage.match(/^round of\s+(\d+)$/i);
+  if (roundOf) return `RD ${roundOf[1]}`;
+
+  if (/semi-finals?/i.test(stage)) return 'Semi Final';
+  if (/quarter-finals?/i.test(stage)) return 'Quarter Final';
+  if (/finals?/i.test(stage)) return 'Final';
+
+  return stage;
 }
 
 function SoccerPageContent() {
@@ -489,30 +519,47 @@ function SoccerPageContent() {
   const selectedHeaderTeamName = selectedTeam?.name ?? null;
   const headerTitle = selectedHeaderTeamName ?? 'Select a team';
   const displayOpponent = nextFixture?.opponentName?.trim() ? nextFixture.opponentName.trim() : null;
+  const fixturePrimaryName = nextFixture?.isHome === false ? displayOpponent : selectedHeaderTeamName;
+  const fixtureSecondaryName = nextFixture?.isHome === false ? selectedHeaderTeamName : displayOpponent;
+  const fixturePrimaryLogoUrl =
+    nextFixture?.isHome === false ? nextFixture?.opponentLogoUrl ?? null : nextFixture?.teamLogoUrl ?? null;
+  const fixtureSecondaryLogoUrl =
+    nextFixture?.isHome === false ? nextFixture?.teamLogoUrl ?? null : nextFixture?.opponentLogoUrl ?? null;
+  const fixturePrimaryAlt = nextFixture?.isHome === false ? displayOpponent ?? 'Home team' : selectedHeaderTeamName ?? 'Selected team';
+  const fixtureSecondaryAlt = nextFixture?.isHome === false ? selectedHeaderTeamName ?? 'Selected team' : displayOpponent ?? 'Away team';
+  const fixturePrimaryLines = splitFixtureNameLines(fixturePrimaryName);
+  const fixtureSecondaryLines = splitFixtureNameLines(fixtureSecondaryName);
   const recentMatchesEmptyMessage = recentMatchesCacheMiss
     ? 'No cached Soccerway stat history yet.'
     : 'No Soccerway stat history parsed for this team.';
   const nextFixtureMeta = useMemo(() => {
     if (!selectedTeam) return null;
-    if (nextFixtureLoading) return 'Loading next fixture...';
-    if (nextFixtureError) return nextFixtureError;
-    if (nextFixtureCacheMiss) return 'No cached upcoming fixture yet.';
-    if (!nextFixture) return 'No upcoming fixture found on Soccerway.';
+    if (nextFixtureLoading) return { primary: 'Loading next fixture...', secondary: null, isError: false };
+    if (nextFixtureError) return { primary: nextFixtureError, secondary: null, isError: true };
+    if (nextFixtureCacheMiss) return { primary: 'No cached upcoming fixture yet.', secondary: null, isError: false };
+    if (!nextFixture) return { primary: 'No upcoming fixture found on Soccerway.', secondary: null, isError: false };
 
-    const parts: string[] = [];
-    const comp = [nextFixture.competitionCountry, nextFixture.competitionName].filter(Boolean).join(': ');
-    if (comp) parts.push(comp);
-    if (nextFixture.isHome === true) parts.push('Home');
-    else if (nextFixture.isHome === false) parts.push('Away');
+    const competition = String(nextFixture.competitionName || '').trim();
+    const stage = formatFixtureStageLabel(nextFixture.competitionStage);
+    const primary = [competition, stage].filter(Boolean).join(' · ') || null;
+
+    const secondaryParts: string[] = [];
     if (nextFixtureKickoff) {
-      parts.push(
+      secondaryParts.push(
         nextFixtureKickoff.toLocaleString([], {
           month: 'short',
           day: 'numeric',
         })
       );
     }
-    return parts.join(' · ');
+    if (nextFixture.isHome === true) secondaryParts.push('Home');
+    else if (nextFixture.isHome === false) secondaryParts.push('Away');
+
+    return {
+      primary,
+      secondary: secondaryParts.join(' · ') || null,
+      isError: false,
+    };
   }, [nextFixture, nextFixtureCacheMiss, nextFixtureError, nextFixtureKickoff, nextFixtureLoading, selectedTeam]);
 
   if (subscriptionChecked && !isPro) {
@@ -600,18 +647,23 @@ function SoccerPageContent() {
                       </div>
                       <div className="flex min-w-0 flex-1 justify-center">
                         <div className="flex flex-col items-center gap-1.5 min-w-0 flex-shrink">
-                          <div className="flex items-center gap-1.5 xl:gap-2.5 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 xl:px-2.5 xl:py-1.5 min-w-0 flex-shrink overflow-hidden">
-                            <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
-                              {nextFixture?.teamLogoUrl ? (
-                                <img
-                                  src={nextFixture.teamLogoUrl}
-                                  alt={selectedHeaderTeamName ?? 'Selected team'}
-                                  className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
-                                />
-                              ) : null}
-                              <span className={`text-xs xl:text-sm font-medium truncate ${selectedHeaderTeamName ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                {selectedHeaderTeamName ?? '—'}
-                              </span>
+                          <div className="flex items-center gap-2 xl:gap-3 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 xl:px-2.5 xl:py-1.5 min-w-0 flex-shrink overflow-hidden">
+                            <div className="flex flex-col items-center justify-center w-14 xl:w-[72px] min-w-0 flex-shrink-0">
+                              <div className="flex items-center justify-center w-6 h-6 xl:w-8 xl:h-8 flex-shrink-0">
+                                {fixturePrimaryLogoUrl ? (
+                                  <img
+                                    src={fixturePrimaryLogoUrl}
+                                    alt={fixturePrimaryAlt}
+                                    className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                  />
+                                ) : <span className="text-gray-400 dark:text-gray-500 font-medium text-xs">-</span>}
+                              </div>
+                              <div className="mt-1 text-center leading-tight min-w-0">
+                                <div className="text-[10px] xl:text-[11px] font-medium text-gray-900 dark:text-white truncate">{fixturePrimaryLines[0]}</div>
+                                {fixturePrimaryLines[1] ? (
+                                  <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 truncate">{fixturePrimaryLines[1]}</div>
+                                ) : null}
+                              </div>
                             </div>
                             {selectedHeaderTeamName && nextFixtureCountdown ? (
                               <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-[72px]">
@@ -625,22 +677,26 @@ function SoccerPageContent() {
                             ) : (
                               <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">VS</span>
                             )}
-                            <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
-                              {nextFixture?.opponentLogoUrl ? (
+                            <div className="flex flex-col items-center justify-center w-14 xl:w-[72px] min-w-0 flex-shrink-0">
+                              {fixtureSecondaryLogoUrl ? (
                                 <img
-                                  src={nextFixture.opponentLogoUrl}
-                                  alt={displayOpponent ?? 'Opponent'}
+                                  src={fixtureSecondaryLogoUrl}
+                                  alt={fixtureSecondaryAlt}
                                   className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
                                 />
-                              ) : null}
-                              <span className={`text-xs xl:text-sm font-medium truncate ${displayOpponent ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                {nextFixtureLoading ? 'Loading...' : displayOpponent ?? '—'}
-                              </span>
+                              ) : <span className="text-gray-400 dark:text-gray-500 font-medium text-xs">-</span>}
+                              <div className="mt-1 text-center leading-tight min-w-0">
+                                <div className="text-[10px] xl:text-[11px] font-medium text-gray-900 dark:text-white truncate">{fixtureSecondaryLines[0]}</div>
+                                {fixtureSecondaryLines[1] ? (
+                                  <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 truncate">{fixtureSecondaryLines[1]}</div>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
                           {nextFixtureMeta ? (
-                            <div className={`text-[10px] xl:text-[11px] text-center w-full leading-tight ${nextFixtureError ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'}`}>
-                              {nextFixtureMeta}
+                            <div className={`text-[10px] xl:text-[11px] text-center w-full leading-tight ${nextFixtureMeta.isError ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-300'}`}>
+                              {nextFixtureMeta.primary ? <div>{nextFixtureMeta.primary}</div> : null}
+                              {nextFixtureMeta.secondary ? <div>{nextFixtureMeta.secondary}</div> : null}
                             </div>
                           ) : null}
                         </div>
@@ -654,36 +710,47 @@ function SoccerPageContent() {
                       <div className="flex flex-col gap-0.5 w-full min-w-0 items-center">
                         <div className="flex justify-center">
                           <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-2.5 sm:py-1.5 min-w-0">
-                            <div className="flex items-center gap-1 min-w-0">
-                              {nextFixture?.teamLogoUrl ? (
-                                <img
-                                  src={nextFixture.teamLogoUrl}
-                                  alt={selectedHeaderTeamName ?? 'Selected team'}
-                                  className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
-                                />
-                              ) : null}
-                              <span className={`text-xs sm:text-sm font-medium truncate ${selectedHeaderTeamName ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                {selectedHeaderTeamName ?? '—'}
-                              </span>
+                            <div className="flex flex-col items-center justify-center w-14 sm:w-[68px] min-w-0 flex-shrink-0">
+                              <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
+                                {fixturePrimaryLogoUrl ? (
+                                  <img
+                                    src={fixturePrimaryLogoUrl}
+                                    alt={fixturePrimaryAlt}
+                                    className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                                  />
+                                ) : <span className="text-gray-400 dark:text-gray-500 font-medium text-xs">-</span>}
+                              </div>
+                              <div className="mt-1 text-center leading-tight min-w-0">
+                                <div className="text-[10px] font-medium text-gray-900 dark:text-white truncate">{fixturePrimaryLines[0]}</div>
+                                {fixturePrimaryLines[1] ? (
+                                  <div className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{fixturePrimaryLines[1]}</div>
+                                ) : null}
+                              </div>
                             </div>
                             <span className="text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs">VS</span>
-                            <div className="flex items-center gap-1 min-w-0">
-                              {nextFixture?.opponentLogoUrl ? (
-                                <img
-                                  src={nextFixture.opponentLogoUrl}
-                                  alt={displayOpponent ?? 'Opponent'}
-                                  className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
-                                />
-                              ) : null}
-                              <span className={`text-xs sm:text-sm font-medium truncate ${displayOpponent ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                {nextFixtureLoading ? 'Loading...' : displayOpponent ?? '—'}
-                              </span>
+                            <div className="flex flex-col items-center justify-center w-14 sm:w-[68px] min-w-0 flex-shrink-0">
+                              <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0">
+                                {fixtureSecondaryLogoUrl ? (
+                                  <img
+                                    src={fixtureSecondaryLogoUrl}
+                                    alt={fixtureSecondaryAlt}
+                                    className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                                  />
+                                ) : <span className="text-gray-400 dark:text-gray-500 font-medium text-xs">-</span>}
+                              </div>
+                              <div className="mt-1 text-center leading-tight min-w-0">
+                                <div className="text-[10px] font-medium text-gray-900 dark:text-white truncate">{fixtureSecondaryLines[0]}</div>
+                                {fixtureSecondaryLines[1] ? (
+                                  <div className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{fixtureSecondaryLines[1]}</div>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
                         </div>
                         {nextFixtureMeta ? (
-                          <div className={`text-center text-[10px] leading-tight ${nextFixtureError ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                            {nextFixtureMeta}
+                          <div className={`text-center text-[10px] leading-tight ${nextFixtureMeta.isError ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-300'}`}>
+                            {nextFixtureMeta.primary ? <div>{nextFixtureMeta.primary}</div> : null}
+                            {nextFixtureMeta.secondary ? <div>{nextFixtureMeta.secondary}</div> : null}
                           </div>
                         ) : null}
                       </div>

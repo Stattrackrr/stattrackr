@@ -39,6 +39,7 @@ type SoccerStatsChartProps = {
 };
 
 const SOCCER_STAT_PRIORITY = [
+  'moneyline',
   'total_goals',
   'expected_goals_xg',
   'xg_on_target_xgot',
@@ -97,6 +98,7 @@ function formatStatKey(name: string): string {
 }
 
 function formatStatLabel(label: string): string {
+  if (label === 'moneyline') return 'H2H';
   if (label === 'total_goals') return 'Total goals';
   if (label === 'expected_goals_xg') return 'xG';
   if (label === 'xg_on_target_xgot') return 'xGOT';
@@ -269,7 +271,7 @@ function SoccerXAxisTick({ x, y, payload, data, isDark, hideTickDetails, hideVen
   );
 }
 
-function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel }: any) {
+function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStatKey }: any) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -312,6 +314,10 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as SoccerChartRow | undefined;
   if (!point) return null;
+  const displayValue =
+    selectedStatKey === 'moneyline'
+      ? point.result === 'D' ? '0' : point.result
+      : payload[0]?.value;
 
   const getTooltipPosition = () => {
     const currentPosition = mousePosition ?? (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
@@ -356,7 +362,7 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
       <div className="text-[11px] opacity-70">{point.gameDate}</div>
       <div className="mt-1">{point.result} · {point.scoreline}</div>
       <div className="mt-1">
-        {selectedStatLabel}: <span className="font-semibold">{payload[0]?.value}</span>
+        {selectedStatLabel}: <span className="font-semibold">{displayValue}</span>
         {point.comparisonValue ? <span className="opacity-70"> vs {point.comparisonValue}</span> : null}
       </div>
     </div>
@@ -424,6 +430,9 @@ export function SoccerStatsChart({
         awayStatMap.total_goals = match.awayScore;
         comparisonMap.total_goals = `${match.homeScore}-${match.awayScore}`;
         labelMap.total_goals = 'Total goals';
+        statMap.moneyline = perspective.result === 'W' ? 1 : perspective.result === 'L' ? -1 : 0;
+        comparisonMap.moneyline = null;
+        labelMap.moneyline = 'H2H';
 
         return {
           match,
@@ -664,10 +673,23 @@ export function SoccerStatsChart({
   }, [baseChartData]);
 
   useEffect(() => {
+    if (selectedStat === 'moneyline') {
+      setLineValue(0);
+      return;
+    }
     setLineValue(Number.isFinite(statAverage) ? Math.round(statAverage) : 0);
   }, [selectedStat, selectedStatTeamScope, statAverage]);
 
   const yAxisConfig = useMemo(() => {
+    if (selectedStat === 'moneyline') {
+      return {
+        // Add a little extra room below losses so the -1 bar
+        // doesn't sit flush with the bottom edge of the plot.
+        domain: [-1.12, 1] as [number, number],
+        ticks: [-1, 0, 1],
+      };
+    }
+
     const values = chartData.map((row) => row.value).filter((value) => Number.isFinite(value));
     if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
@@ -697,11 +719,18 @@ export function SoccerStatsChart({
       domain: [0, bound] as [number, number],
       ticks,
     };
-  }, [chartData, lineValue]);
+  }, [chartData, lineValue, selectedStat]);
 
   const customTooltip = useMemo(() => {
     const selectedStatLabel = statLabels.get(selectedStat) || formatStatLabel(selectedStat || 'stat');
-    return (props: any) => <SoccerChartTooltip {...props} isDark={isDark} selectedStatLabel={selectedStatLabel} />;
+    return (props: any) => (
+      <SoccerChartTooltip
+        {...props}
+        isDark={isDark}
+        selectedStatLabel={selectedStatLabel}
+        selectedStatKey={selectedStat}
+      />
+    );
   }, [isDark, selectedStat, statLabels]);
 
   const hideTickDetails = useMemo(() => shouldHideSoccerTickDetails(selectedTimeframe), [selectedTimeframe]);
@@ -882,7 +911,14 @@ export function SoccerStatsChart({
             selectedTimeframe={selectedTimeframe}
             customTooltip={customTooltip}
             customXAxisTick={soccerXAxisTick}
-            yAxisTickFormatter={(value: number) => `${Math.round(value)}`}
+            yAxisTickFormatter={(value: number) => {
+              if (selectedStat === 'moneyline') {
+                if (value >= 1) return 'W';
+                if (value <= -1) return 'L';
+                return '0';
+              }
+              return `${Math.round(value)}`;
+            }}
             yAxisTickStyle={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
             preservePrimaryYAxisTicks={true}
             centerAverageOverlay={true}

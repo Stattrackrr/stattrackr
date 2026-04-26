@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 const baseUrl = String(process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
-const limit = Math.max(1, parseInt(process.env.SOCCER_WARM_LIMIT || '10', 10));
+const limit = String(process.env.SOCCER_WARM_LIMIT || 'all').trim();
 const concurrency = Math.max(1, parseInt(process.env.SOCCER_WARM_CONCURRENCY || '2', 10));
 const refresh = String(process.env.SOCCER_WARM_REFRESH || '1') === '1';
+const team = String(process.env.SOCCER_WARM_TEAM || '').trim();
 const cronSecret = String(process.env.CRON_SECRET || '').trim();
 
 if (!baseUrl) {
@@ -13,10 +14,11 @@ if (!baseUrl) {
 
 async function main() {
   const params = new URLSearchParams({
-    limit: String(limit),
+    limit,
     concurrency: String(concurrency),
     refresh: refresh ? '1' : '0',
   });
+  if (team) params.set('team', team);
   const headers = { Accept: 'application/json' };
   if (cronSecret) {
     headers.Authorization = `Bearer ${cronSecret}`;

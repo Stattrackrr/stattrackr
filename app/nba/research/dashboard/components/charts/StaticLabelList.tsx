@@ -83,6 +83,11 @@ export default memo(function StaticLabelList({
           return null;
         }
 
+        // Soccer H2H: only show labels for draws (0), not wins/losses.
+        if (selectedStat === 'moneyline' && !isMissingQ1) {
+          if (!isZero) return null;
+        }
+
         // Special handling for fg3m (3PM/A) - show made/attempted format
         let displayText = isMissingQ1 ? '—' : formatChartLabel(labelValue);
         
