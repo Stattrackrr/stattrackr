@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, ResponsiveContainer, XAxis, Cell } from 'recharts';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
-import type { SoccerStatTeamScope, SoccerTimeframe } from '@/app/soccer/components/SoccerStatsChart';
+import {
+  SOCCER_BETTABLE_STATS,
+  SOCCER_STAT_PRIORITY,
+  type SoccerStatTeamScope,
+  type SoccerTimeframe,
+} from '@/app/soccer/components/SoccerStatsChart';
 
 type SoccerVenueFilter = 'HOME' | 'AWAY';
 
@@ -22,26 +27,32 @@ type SupportingRow = {
   opponent: string;
   value: number;
   isPercent: boolean;
+  usesDecimal: boolean;
   gameSeason: number;
   kickoffMs: number;
 };
 
-const DEFAULT_SUPPORTING_OPTIONS = ['expected_goals_xg', 'shots_on_target', 'total_shots', 'ball_possession'];
-const SUPPORTING_OPTIONS_BY_MAIN: Record<string, string[]> = {
-  total_goals: ['expected_goals_xg', 'xg_on_target_xgot', 'shots_on_target', 'total_shots'],
-  expected_goals_xg: ['xg_on_target_xgot', 'shots_on_target', 'big_chances', 'total_shots'],
-  xg_on_target_xgot: ['expected_goals_xg', 'shots_on_target', 'big_chances', 'total_shots'],
-  ball_possession: ['passes', 'accurate_passes', 'passes_in_final_third', 'touches_in_opposition_box'],
-  total_shots: ['shots_on_target', 'shots_off_target', 'blocked_shots', 'expected_goals_xg'],
-  shots_on_target: ['xg_on_target_xgot', 'big_chances', 'expected_goals_xg', 'total_shots'],
-  shots_off_target: ['blocked_shots', 'total_shots', 'expected_goals_xg', 'shots_on_target'],
-  blocked_shots: ['shots_off_target', 'total_shots', 'tackles', 'clearances'],
-  passes: ['accurate_passes', 'ball_possession', 'passes_in_final_third', 'accurate_through_passes'],
-  accurate_passes: ['passes', 'ball_possession', 'passes_in_final_third', 'accurate_through_passes'],
-  tackles: ['duels_won', 'interceptions', 'clearances', 'fouls'],
-  duels_won: ['tackles', 'interceptions', 'clearances', 'fouls'],
-};
 const PERCENT_STATS = new Set(['ball_possession']);
+const DEFAULT_SUPPORTING_OPTIONS = ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'];
+const SUPPORTING_OPTIONS_BY_MAIN: Record<string, string[]> = {
+  moneyline: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
+  total_goals: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
+  total_shots: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
+  shots_on_target: ['xg_on_target_xgot', 'expected_goals_xg', 'expected_assists_xa', 'accurate_through_passes'],
+  shots_off_target: ['expected_goals_xg', 'ball_possession', 'crosses', 'hit_the_woodwork'],
+  blocked_shots: ['expected_goals_xg', 'crosses', 'passes_in_final_third', 'touches_in_opposition_box'],
+  big_chances: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'touches_in_opposition_box'],
+  corner_kicks: ['crosses', 'passes_in_final_third', 'touches_in_opposition_box', 'ball_possession'],
+  yellow_cards: ['duels_won', 'interceptions', 'clearances', 'offsides'],
+  red_cards: ['duels_won', 'interceptions', 'clearances', 'offsides'],
+  fouls: ['duels_won', 'interceptions', 'clearances', 'offsides'],
+  free_kicks: ['offsides', 'crosses', 'passes_in_final_third', 'ball_possession'],
+  touches_in_opposition_box: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'passes_in_final_third'],
+  tackles: ['duels_won', 'interceptions', 'clearances', 'fouls'],
+  goalkeeper_saves: ['xgot_faced', 'goals_prevented', 'clearances', 'interceptions'],
+  shots_inside_the_box: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'touches_in_opposition_box'],
+  shots_outside_the_box: ['xg_on_target_xgot', 'hit_the_woodwork', 'ball_possession', 'crosses'],
+};
 
 function normalizeTeamName(value: string): string {
   return value
@@ -103,23 +114,26 @@ function getTeamValueForStat(match: SoccerwayRecentMatch, selectedTeamName: stri
 
 function getScopedValueForStat(params: {
   statMap: Record<string, number>;
+  opponentStatMap: Record<string, number>;
   homeStatMap: Record<string, number>;
   awayStatMap: Record<string, number>;
   stat: string;
   teamScope: SoccerStatTeamScope;
 }): number | null {
-  const { statMap, homeStatMap, awayStatMap, stat, teamScope } = params;
+  const { statMap, opponentStatMap, homeStatMap, awayStatMap, stat, teamScope } = params;
   const homeValue = homeStatMap[stat];
   const awayValue = awayStatMap[stat];
+  const teamValue = statMap[stat];
+  const opponentValue = opponentStatMap[stat];
 
   if (teamScope === 'all') {
     if (Number.isFinite(homeValue) && Number.isFinite(awayValue)) return homeValue + awayValue;
-    return Number.isFinite(statMap[stat]) ? statMap[stat] : null;
+    return Number.isFinite(teamValue) ? teamValue : null;
   }
-  if (teamScope === 'home') {
-    return Number.isFinite(homeValue) ? homeValue : null;
+  if (teamScope === 'team') {
+    return Number.isFinite(teamValue) ? teamValue : null;
   }
-  return Number.isFinite(awayValue) ? awayValue : null;
+  return Number.isFinite(opponentValue) ? opponentValue : null;
 }
 
 function applyTimeframe(rows: SupportingRow[], timeframe: SoccerTimeframe): SupportingRow[] {
@@ -152,6 +166,12 @@ function getCompetitionKey(match: SoccerwayRecentMatch): string {
   return `${country}:::${competition}`;
 }
 
+function formatSupportingValue(value: number, options?: { isPercent?: boolean; usesDecimal?: boolean }): string {
+  if (options?.isPercent) return `${value.toFixed(1)}%`;
+  if (options?.usesDecimal || Math.abs(value - Math.round(value)) > 0.001) return value.toFixed(1);
+  return String(Math.round(value));
+}
+
 export function SoccerSupportingStats({
   matches,
   selectedTeamName,
@@ -168,6 +188,7 @@ export function SoccerSupportingStats({
         if (!side) return null;
 
         const statMap: Record<string, number> = {};
+        const opponentStatMap: Record<string, number> = {};
         const homeStatMap: Record<string, number> = {};
         const awayStatMap: Record<string, number> = {};
         for (const stat of getMatchPeriodStats(match)) {
@@ -175,16 +196,20 @@ export function SoccerSupportingStats({
           const homeValue = parseNumericValue(stat.homeValue);
           const awayValue = parseNumericValue(stat.awayValue);
           const value = getTeamValueForStat(match, selectedTeamName, stat);
+          const opponentValue = side === 'away' ? homeValue : awayValue;
           if (homeValue != null) homeStatMap[key] = homeValue;
           if (awayValue != null) awayStatMap[key] = awayValue;
           if (value == null) continue;
           statMap[key] = value;
+          if (opponentValue != null) opponentStatMap[key] = opponentValue;
         }
 
         const kickoff = match.kickoffUnix != null ? new Date(match.kickoffUnix * 1000) : null;
         return {
           match,
+          side,
           statMap,
+          opponentStatMap,
           homeStatMap,
           awayStatMap,
           kickoffMs: kickoff?.getTime() ?? 0,
@@ -212,10 +237,19 @@ export function SoccerSupportingStats({
   }, [filteredNormalizedRows]);
 
   const supportingOptions = useMemo(() => {
-    const preferred = SUPPORTING_OPTIONS_BY_MAIN[mainChartStat || ''] || DEFAULT_SUPPORTING_OPTIONS;
-    const filtered = preferred.filter((key) => key !== mainChartStat && availableStats.has(key));
-    if (filtered.length > 0) return filtered;
-    return Array.from(availableStats).filter((key) => key !== mainChartStat).slice(0, 4);
+    const nonBettable = Array.from(availableStats).filter((key) => key !== mainChartStat && !SOCCER_BETTABLE_STATS.has(key));
+    const preferred = (SUPPORTING_OPTIONS_BY_MAIN[mainChartStat || ''] || DEFAULT_SUPPORTING_OPTIONS)
+      .filter((key) => nonBettable.includes(key));
+    if (preferred.length > 0) return preferred;
+
+    const ordered: string[] = [];
+    for (const key of SOCCER_STAT_PRIORITY) {
+      if (nonBettable.includes(key)) ordered.push(key);
+    }
+    for (const key of nonBettable) {
+      if (!ordered.includes(key)) ordered.push(key);
+    }
+    return ordered;
   }, [availableStats, mainChartStat]);
 
   const [selectedSupportingStat, setSelectedSupportingStat] = useState('');
@@ -235,6 +269,7 @@ export function SoccerSupportingStats({
       .map((row, idx) => {
         const value = getScopedValueForStat({
           statMap: row.statMap,
+              opponentStatMap: row.opponentStatMap,
           homeStatMap: row.homeStatMap,
           awayStatMap: row.awayStatMap,
           stat: selectedSupportingStat,
@@ -246,6 +281,7 @@ export function SoccerSupportingStats({
           opponent: row.opponent,
           value: value as number,
           isPercent: PERCENT_STATS.has(selectedSupportingStat),
+          usesDecimal: Math.abs((value as number) - Math.round(value as number)) > 0.001,
           gameSeason: row.gameSeason,
           kickoffMs: row.kickoffMs,
         } satisfies SupportingRow;
@@ -262,6 +298,7 @@ export function SoccerSupportingStats({
           .map((row, idx) => {
             const value = getScopedValueForStat({
               statMap: row.statMap,
+              opponentStatMap: row.opponentStatMap,
               homeStatMap: row.homeStatMap,
               awayStatMap: row.awayStatMap,
               stat,
@@ -273,6 +310,7 @@ export function SoccerSupportingStats({
               opponent: row.opponent,
               value: value as number,
               isPercent: PERCENT_STATS.has(stat),
+              usesDecimal: Math.abs((value as number) - Math.round(value as number)) > 0.001,
               gameSeason: row.gameSeason,
               kickoffMs: row.kickoffMs,
             } satisfies SupportingRow;
@@ -359,7 +397,7 @@ export function SoccerSupportingStats({
                 isAnimationActive={false}
                 label={(props) => {
                   const { x, y, width, value } = props;
-                  const payload = (props as { payload?: { isPercent?: boolean } }).payload;
+                  const payload = (props as { payload?: { isPercent?: boolean; usesDecimal?: boolean } }).payload;
                   const numericValue = Number(value);
                   if (!Number.isFinite(numericValue)) return null;
                   return (
@@ -371,7 +409,10 @@ export function SoccerSupportingStats({
                       fontSize={12}
                       fontWeight={500}
                     >
-                      {payload?.isPercent ? `${Math.round(numericValue)}%` : String(Math.round(numericValue))}
+                      {formatSupportingValue(numericValue, {
+                        isPercent: payload?.isPercent,
+                        usesDecimal: payload?.usesDecimal,
+                      })}
                     </text>
                   );
                 }}
