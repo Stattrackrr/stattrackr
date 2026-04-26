@@ -288,7 +288,7 @@ export default function LeftSidebar({
   const sports: SportEntry[] = [
     { name: "NBA", href: "/props", logo: <SportLogo sport="nba" /> },
     { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
-    { name: "Soccer", href: "/soccer", logo: <SportLogo sport="soccer" /> },
+    { name: "Soccer", href: "/soccer", logo: <SportLogo sport="soccer" />, comingSoon: true, comingSoonText: "Est. May 15th" },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },

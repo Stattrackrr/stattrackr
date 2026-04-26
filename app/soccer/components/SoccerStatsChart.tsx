@@ -9,7 +9,7 @@ import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTe
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
 type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
-export type SoccerStatTeamScope = 'all' | 'home' | 'away';
+export type SoccerStatTeamScope = 'all' | 'team' | 'opp';
 
 type SoccerChartRow = {
   key: string;
@@ -38,7 +38,7 @@ type SoccerStatsChartProps = {
   onSelectedCompetitionChange?: (competition: string) => void;
 };
 
-const SOCCER_STAT_PRIORITY = [
+export const SOCCER_STAT_PRIORITY = [
   'moneyline',
   'total_goals',
   'expected_goals_xg',
@@ -78,6 +78,46 @@ const SOCCER_STAT_PRIORITY = [
   'hit_the_woodwork',
 ];
 
+export const SOCCER_TOP_STAT_PRIORITY = [
+  'moneyline',
+  'total_goals',
+  'total_shots',
+  'shots_on_target',
+  'shots_off_target',
+  'blocked_shots',
+  'big_chances',
+  'corner_kicks',
+  'yellow_cards',
+  'red_cards',
+  'fouls',
+  'free_kicks',
+  'touches_in_opposition_box',
+  'tackles',
+  'goalkeeper_saves',
+  'shots_inside_the_box',
+  'shots_outside_the_box',
+] as const;
+
+export const SOCCER_BETTABLE_STATS = new Set([
+  'moneyline',
+  'total_goals',
+  'total_shots',
+  'shots_on_target',
+  'shots_off_target',
+  'blocked_shots',
+  'big_chances',
+  'corner_kicks',
+  'yellow_cards',
+  'red_cards',
+  'fouls',
+  'free_kicks',
+  'touches_in_opposition_box',
+  'tackles',
+  'goalkeeper_saves',
+  'shots_inside_the_box',
+  'shots_outside_the_box',
+]);
+
 function normalizeTeamName(value: string): string {
   return value
     .trim()
@@ -107,6 +147,14 @@ function formatStatLabel(label: string): string {
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
     .trim();
+}
+
+function roundToSoccerDecimal(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function formatSoccerAxisValue(value: number, useDecimal: boolean): string {
+  return useDecimal ? value.toFixed(1) : `${Math.round(value)}`;
 }
 
 function getSelectedTeamSide(match: SoccerwayRecentMatch, selectedTeamName: string): 'home' | 'away' | null {
@@ -405,16 +453,19 @@ export function SoccerStatsChart({
         const awayStatMap: Record<string, number> = {};
         const comparisonMap: Record<string, string | null> = {};
         const labelMap: Record<string, string> = {};
+        const opponentStatMap: Record<string, number> = {};
 
         for (const stat of getMatchPeriodStats(match)) {
           const key = formatStatKey(stat.name);
           const homeValue = parseNumericValue(stat.homeValue);
           const awayValue = parseNumericValue(stat.awayValue);
           const value = getTeamValueForStat(match, selectedTeamName, stat);
+          const opponentValue = side === 'away' ? homeValue : awayValue;
           if (homeValue != null) homeStatMap[key] = homeValue;
           if (awayValue != null) awayStatMap[key] = awayValue;
           if (value == null) continue;
           statMap[key] = value;
+          if (opponentValue != null) opponentStatMap[key] = opponentValue;
           comparisonMap[key] = getOpponentValueForStat(match, selectedTeamName, stat);
           labelMap[key] = stat.name;
         }
@@ -425,12 +476,14 @@ export function SoccerStatsChart({
           ? kickoff.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
           : 'Unknown date';
         const perspective = getSelectedTeamPerspective(match, selectedTeamName);
-        statMap.total_goals = match.homeScore + match.awayScore;
+        statMap.total_goals = perspective.teamScore;
+        opponentStatMap.total_goals = perspective.opponentScore;
         homeStatMap.total_goals = match.homeScore;
         awayStatMap.total_goals = match.awayScore;
         comparisonMap.total_goals = `${match.homeScore}-${match.awayScore}`;
         labelMap.total_goals = 'Total goals';
         statMap.moneyline = perspective.result === 'W' ? 1 : perspective.result === 'L' ? -1 : 0;
+        opponentStatMap.moneyline = perspective.result === 'W' ? -1 : perspective.result === 'L' ? 1 : 0;
         comparisonMap.moneyline = null;
         labelMap.moneyline = 'H2H';
 
@@ -444,6 +497,7 @@ export function SoccerStatsChart({
           competitionLabel: getCompetitionLabel(match),
           ...perspective,
           statMap,
+          opponentStatMap,
           homeStatMap,
           awayStatMap,
           comparisonMap,
@@ -468,12 +522,12 @@ export function SoccerStatsChart({
     const keys = new Set<string>();
     for (const row of normalizedRows) {
       for (const [key, value] of Object.entries(row.statMap)) {
-        if (Number.isFinite(value)) keys.add(key);
+        if (Number.isFinite(value) && SOCCER_BETTABLE_STATS.has(key)) keys.add(key);
       }
     }
 
     const ordered: string[] = [];
-    for (const key of SOCCER_STAT_PRIORITY) {
+    for (const key of SOCCER_TOP_STAT_PRIORITY) {
       if (keys.has(key)) ordered.push(key);
     }
     for (const key of keys) {
@@ -498,30 +552,23 @@ export function SoccerStatsChart({
   const statSupportsTeamScope = useMemo(() => {
     if (!selectedStat) return false;
     return normalizedRows.some((row) => {
-      const homeValue = row.homeStatMap[selectedStat];
-      const awayValue = row.awayStatMap[selectedStat];
-      return Number.isFinite(homeValue) || Number.isFinite(awayValue);
+      const teamValue = row.statMap[selectedStat];
+      const opponentValue = row.opponentStatMap[selectedStat];
+      return Number.isFinite(teamValue) || Number.isFinite(opponentValue);
     });
   }, [normalizedRows, selectedStat]);
 
   const statTeamScopeOptions = useMemo(() => {
-    if (selectedStat === 'ball_possession') {
-      return [
-        { key: 'home' as const, label: 'Home' },
-        { key: 'away' as const, label: 'Away' },
-      ];
-    }
-
     return [
       { key: 'all' as const, label: 'All' },
-      { key: 'home' as const, label: 'Home' },
-      { key: 'away' as const, label: 'Away' },
+      { key: 'team' as const, label: selectedTeamName || 'Team' },
+      { key: 'opp' as const, label: 'Opp' },
     ];
-  }, [selectedStat]);
+  }, [selectedTeamName]);
 
   useEffect(() => {
     if (!selectedStat) return;
-    setSelectedStatTeamScope(statTeamScopeOptions[0].key);
+    setSelectedStatTeamScope(selectedStat === 'ball_possession' ? 'team' : 'all');
   }, [selectedStat, statTeamScopeOptions]);
 
   useEffect(() => {
@@ -611,6 +658,8 @@ export function SoccerStatsChart({
       .map((row, idx) => {
         const homeValue = row.homeStatMap[selectedStat];
         const awayValue = row.awayStatMap[selectedStat];
+        const teamValue = row.statMap[selectedStat];
+        const opponentValue = row.opponentStatMap[selectedStat];
         let value: number | null = null;
         let comparisonValue: string | null = null;
 
@@ -618,19 +667,19 @@ export function SoccerStatsChart({
           if (Number.isFinite(homeValue) && Number.isFinite(awayValue)) {
             value = homeValue + awayValue;
             comparisonValue = `${homeValue}-${awayValue}`;
-          } else if (Number.isFinite(row.statMap[selectedStat])) {
-            value = row.statMap[selectedStat];
+          } else if (Number.isFinite(teamValue)) {
+            value = teamValue;
             comparisonValue = row.comparisonMap[selectedStat] ?? null;
           }
-        } else if (selectedStatTeamScope === 'home') {
-          if (Number.isFinite(homeValue)) {
-            value = homeValue;
-            comparisonValue = Number.isFinite(awayValue) ? String(awayValue) : null;
+        } else if (selectedStatTeamScope === 'team') {
+          if (Number.isFinite(teamValue)) {
+            value = teamValue;
+            comparisonValue = Number.isFinite(opponentValue) ? String(opponentValue) : null;
           }
-        } else if (selectedStatTeamScope === 'away') {
-          if (Number.isFinite(awayValue)) {
-            value = awayValue;
-            comparisonValue = Number.isFinite(homeValue) ? String(homeValue) : null;
+        } else if (selectedStatTeamScope === 'opp') {
+          if (Number.isFinite(opponentValue)) {
+            value = opponentValue;
+            comparisonValue = Number.isFinite(teamValue) ? String(teamValue) : null;
           }
         }
 
@@ -672,13 +721,21 @@ export function SoccerStatsChart({
     return baseChartData.reduce((sum, row) => sum + row.value, 0) / baseChartData.length;
   }, [baseChartData]);
 
+  const statUsesDecimals = useMemo(() => {
+    if (selectedStat === 'moneyline') return false;
+    return (
+      baseChartData.some((row) => Math.abs(row.value - Math.round(row.value)) > 0.001) ||
+      Math.abs(statAverage - Math.round(statAverage)) > 0.001
+    );
+  }, [baseChartData, selectedStat, statAverage]);
+
   useEffect(() => {
     if (selectedStat === 'moneyline') {
       setLineValue(0);
       return;
     }
-    setLineValue(Number.isFinite(statAverage) ? Math.round(statAverage) : 0);
-  }, [selectedStat, selectedStatTeamScope, statAverage]);
+    setLineValue(Number.isFinite(statAverage) ? (statUsesDecimals ? roundToSoccerDecimal(statAverage) : Math.round(statAverage)) : 0);
+  }, [selectedStat, selectedStatTeamScope, statAverage, statUsesDecimals]);
 
   const yAxisConfig = useMemo(() => {
     if (selectedStat === 'moneyline') {
@@ -698,7 +755,10 @@ export function SoccerStatsChart({
     const hasDecimals = values.some((value) => Math.abs(value - Math.round(value)) > 0.001) || Math.abs(lineValue - Math.round(lineValue)) > 0.001;
 
     if (minValue < 0) {
-      const bound = Math.max(Math.ceil(Math.max(Math.abs(minValue), Math.abs(maxValue))), 1);
+      const bound = Math.max(
+        hasDecimals ? Math.ceil(Math.max(Math.abs(minValue), Math.abs(maxValue)) * 10) / 10 : Math.ceil(Math.max(Math.abs(minValue), Math.abs(maxValue))),
+        1
+      );
       const step = bound / 2;
       const ticks = [-bound, -step, 0, step, bound].map((value) =>
         hasDecimals ? Math.round(value * 10) / 10 : Math.round(value)
@@ -786,13 +846,15 @@ export function SoccerStatsChart({
               id="soccer-betting-line-input"
               key={`soccer-line-${selectedStat}`}
               type="number"
-            step={1}
+              step={statUsesDecimals ? 0.1 : 1}
               value={lineValue}
               min={yAxisConfig.domain[0]}
               max={yAxisConfig.domain[1]}
               onChange={(e) => {
                 const next = Number(e.target.value);
-              if (Number.isFinite(next)) setLineValue(Math.round(next));
+                if (Number.isFinite(next)) {
+                  setLineValue(statUsesDecimals ? roundToSoccerDecimal(next) : Math.round(next));
+                }
               }}
               className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
@@ -917,7 +979,7 @@ export function SoccerStatsChart({
                 if (value <= -1) return 'L';
                 return '0';
               }
-              return `${Math.round(value)}`;
+              return formatSoccerAxisValue(value, statUsesDecimals);
             }}
             yAxisTickStyle={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
             preservePrimaryYAxisTicks={true}
