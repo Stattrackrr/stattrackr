@@ -60,6 +60,51 @@ export type SoccerwayMatchStats = {
   raw: string;
 };
 
+export type SoccerwayLineupSide = 'home' | 'away';
+
+export type SoccerwayLineupPlayer = {
+  id: string;
+  participantId: string | null;
+  side: SoccerwayLineupSide;
+  fieldName: string;
+  listName: string;
+  number: string | null;
+  participantUrl: string | null;
+  imageUrl: string | null;
+  roleTitles: string[];
+  roleSuffixes: string[];
+};
+
+export type SoccerwayLineupFormationRow = {
+  sortKey: number;
+  players: SoccerwayLineupPlayer[];
+};
+
+export type SoccerwayLineupFormationLine = {
+  sortKey: number;
+  name: string;
+  rows: SoccerwayLineupFormationRow[];
+};
+
+export type SoccerwayLineupTeam = {
+  side: SoccerwayLineupSide;
+  participantId: string | null;
+  name: string;
+  formationName: string | null;
+  starters: SoccerwayLineupPlayer[];
+  substitutes: SoccerwayLineupPlayer[];
+  coaches: SoccerwayLineupPlayer[];
+  formationLines: SoccerwayLineupFormationLine[];
+};
+
+export type SoccerwayLineupStatus = 'predicted' | 'official' | 'unavailable';
+
+export type SoccerwayLineupBundle = {
+  status: SoccerwayLineupStatus;
+  eventId: string | null;
+  teams: SoccerwayLineupTeam[];
+};
+
 function buildSoccerwayResultDedupeKey(match: { matchId?: string | null; summaryPath?: string | null }): string {
   const matchId = String(match.matchId || '').trim();
   if (matchId) return `match:${matchId}`;
@@ -282,6 +327,209 @@ export function extractSoccerwayCountryId(html: string): string | null {
   if (env?.[1]) return env[1];
 
   return null;
+}
+
+export function extractSoccerwayEventId(html: string): string | null {
+  return html.match(/"event_id_c":"([^"]+)"/)?.[1] ?? null;
+}
+
+export function detectSoccerwayLineupStatus(html: string): SoccerwayLineupStatus {
+  if (/Predicted lineups/i.test(html)) return 'predicted';
+  if (/Official lineups are usually available 1 hour before the match starts\./i.test(html)) return 'unavailable';
+  return 'official';
+}
+
+export function buildSoccerwayLineupsPath(summaryPath: string): string {
+  const normalized = String(summaryPath || '').trim();
+  if (!normalized) return '';
+  if (/\/summary\/lineups\/?$/i.test(normalized)) return normalized.replace(/\/+$/, '/');
+  if (/\/summary\/?$/i.test(normalized)) return `${normalized.replace(/\/+$/, '')}/lineups/`;
+  return `${normalized.replace(/\/+$/, '')}/lineups/`;
+}
+
+export function buildSoccerwayLineupsGraphqlUrl(eventId: string, projectId = 2020): string {
+  return `https://2020.ds.lsapp.eu/pq_graphql?_hash=dlie2&eventId=${encodeURIComponent(eventId)}&projectId=${projectId}`;
+}
+
+export function buildSoccerwayPredictedLineupsGraphqlUrl(eventId: string, projectId = 2024): string {
+  return `https://2024.ds.lsapp.eu/pq_graphql?_hash=dplie&eventId=${encodeURIComponent(eventId)}&projectId=${projectId}`;
+}
+
+type RawSoccerwayLineupPlayer = {
+  id?: string | null;
+  participantId?: string | null;
+  fieldName?: string | null;
+  listName?: string | null;
+  number?: string | null;
+  images?: Array<{ path?: string | null; variantType?: number | null }> | null;
+  participant?: { url?: string | null } | null;
+  playerRoles?: Array<{ title?: string | null; suffix?: string | null }> | null;
+};
+
+type RawSoccerwayLineupGroup = {
+  playerIds?: string[] | null;
+  players?: RawSoccerwayLineupPlayer[] | null;
+};
+
+type RawSoccerwayLineup = {
+  players?: RawSoccerwayLineupPlayer[] | null;
+  formation?: {
+    name?: string | null;
+    lines?: Array<{
+      sortKey?: number | null;
+      name?: string | null;
+      rows?: Array<{
+        sortKey?: number | null;
+        playerIds?: Array<string | null> | null;
+      }> | null;
+    }> | null;
+  } | null;
+  groups?: Array<{
+    sortKey?: number | null;
+    name?: string | null;
+    playerIds?: string[] | null;
+  }> | null;
+  coaches?: RawSoccerwayLineupGroup | null;
+} | null;
+
+type RawSoccerwayEventParticipant = {
+  id?: string | null;
+  name?: string | null;
+  type?: { side?: string | null } | null;
+  lineup?: RawSoccerwayLineup;
+  predictedLineup?: RawSoccerwayLineup;
+};
+
+function pickSoccerwayPlayerImageUrl(
+  images: Array<{ path?: string | null; variantType?: number | null }> | null | undefined
+): string | null {
+  if (!Array.isArray(images) || images.length === 0) return null;
+  const preferred =
+    images.find((image) => image?.path && image.variantType === 83) ??
+    images.find((image) => image?.path && image.variantType === 82) ??
+    images.find((image) => image?.path);
+  const path = String(preferred?.path || '').trim();
+  return path ? `https://static.flashscore.com/res/image/data/${path}` : null;
+}
+
+function normalizeSoccerwayLineupPlayer(raw: RawSoccerwayLineupPlayer, side: SoccerwayLineupSide): SoccerwayLineupPlayer | null {
+  const id = String(raw?.id || raw?.participantId || '').trim();
+  const fieldName = String(raw?.fieldName || '').trim();
+  const listName = String(raw?.listName || fieldName).trim();
+  if (!id || !fieldName) return null;
+  return {
+    id,
+    participantId: String(raw?.participantId || '').trim() || null,
+    side,
+    fieldName,
+    listName: listName || fieldName,
+    number: String(raw?.number || '').trim() || null,
+    participantUrl: raw?.participant?.url ? `/player/${String(raw.participant.url).trim()}/${id}/` : null,
+    imageUrl: pickSoccerwayPlayerImageUrl(raw?.images),
+    roleTitles: Array.isArray(raw?.playerRoles)
+      ? raw.playerRoles.map((role) => String(role?.title || '').trim()).filter(Boolean)
+      : [],
+    roleSuffixes: Array.isArray(raw?.playerRoles)
+      ? raw.playerRoles.map((role) => String(role?.suffix || '').trim()).filter(Boolean)
+      : [],
+  };
+}
+
+function normalizeSoccerwayLineupTeam(raw: RawSoccerwayEventParticipant): SoccerwayLineupTeam | null {
+  const side = raw?.type?.side === 'AWAY' ? 'away' : raw?.type?.side === 'HOME' ? 'home' : null;
+  const name = String(raw?.name || '').trim();
+  if (!side || !name) return null;
+
+  const sourceLineup = raw.predictedLineup ?? raw.lineup;
+  if (!sourceLineup) {
+    return {
+      side,
+      participantId: String(raw?.id || '').trim() || null,
+      name,
+      formationName: null,
+      starters: [],
+      substitutes: [],
+      coaches: [],
+      formationLines: [],
+    };
+  }
+
+  const playerMap = new Map<string, SoccerwayLineupPlayer>();
+  for (const player of Array.isArray(sourceLineup.players) ? sourceLineup.players : []) {
+    const normalized = normalizeSoccerwayLineupPlayer(player, side);
+    if (normalized) playerMap.set(normalized.id, normalized);
+  }
+
+  const startingPlayerIds =
+    sourceLineup.groups?.find((group) => /starting lineups?/i.test(String(group?.name || '')))?.playerIds?.filter(Boolean) ?? [];
+  const substitutePlayerIds =
+    sourceLineup.groups?.find((group) => /substitutes/i.test(String(group?.name || '')))?.playerIds?.filter(Boolean) ?? [];
+
+  const starters = startingPlayerIds.map((id) => playerMap.get(id)).filter((player): player is SoccerwayLineupPlayer => player != null);
+  const substitutes = substitutePlayerIds.map((id) => playerMap.get(id)).filter((player): player is SoccerwayLineupPlayer => player != null);
+
+  const coaches = Array.isArray(sourceLineup.coaches?.players)
+    ? sourceLineup.coaches.players
+        .map((player) => normalizeSoccerwayLineupPlayer(player, side))
+        .filter((player): player is SoccerwayLineupPlayer => player != null)
+    : [];
+
+  const formationLines =
+    sourceLineup.formation?.lines?.map((line) => ({
+      sortKey: Number.isFinite(line?.sortKey) ? Number(line.sortKey) : 0,
+      name: String(line?.name || '').trim() || 'Line',
+      rows:
+        line?.rows?.map((row) => ({
+          sortKey: Number.isFinite(row?.sortKey) ? Number(row.sortKey) : 0,
+          players:
+            row?.playerIds
+              ?.map((playerId) => (playerId ? playerMap.get(playerId) : null))
+              .filter((player): player is SoccerwayLineupPlayer => player != null) ?? [],
+        })) ?? [],
+    })) ?? [];
+
+  return {
+    side,
+    participantId: String(raw?.id || '').trim() || null,
+    name,
+    formationName: String(sourceLineup.formation?.name || '').trim() || null,
+    starters,
+    substitutes,
+    coaches,
+    formationLines,
+  };
+}
+
+export function parseSoccerwayLineupsGraphql(raw: string, statusHint: SoccerwayLineupStatus = 'official'): SoccerwayLineupBundle | null {
+  try {
+    const parsed = JSON.parse(raw) as {
+      data?: {
+        findEventById?: {
+          eventParticipants?: RawSoccerwayEventParticipant[] | null;
+        } | null;
+      } | null;
+    };
+
+    const teams =
+      parsed?.data?.findEventById?.eventParticipants
+        ?.map((participant) => normalizeSoccerwayLineupTeam(participant))
+        .filter((team): team is SoccerwayLineupTeam => team != null)
+        .sort((a, b) => (a.side === b.side ? 0 : a.side === 'home' ? -1 : 1)) ?? [];
+
+    const hasPredictedLineup =
+      parsed?.data?.findEventById?.eventParticipants?.some((participant) => participant?.predictedLineup != null) ?? false;
+
+    const hasLineupData = teams.some(
+      (team) => team.starters.length > 0 || team.formationLines.length > 0 || team.substitutes.length > 0 || team.coaches.length > 0
+    );
+    return {
+      status: hasLineupData ? (hasPredictedLineup ? 'predicted' : statusHint) : 'unavailable',
+      eventId: null,
+      teams: hasLineupData ? teams : [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function extractParticipantIdFromTeamHref(teamHref: string): string {
