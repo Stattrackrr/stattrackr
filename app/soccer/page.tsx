@@ -10,9 +10,10 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search } from 'lucide-react';
-import type { SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+import type { SoccerwayLineupBundle, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 import { SoccerStatsChart, type SoccerStatTeamScope, type SoccerTimeframe } from '@/app/soccer/components/SoccerStatsChart';
 import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingStats';
+import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -36,6 +37,13 @@ type SoccerNextFixture = {
   competitionName: string | null;
   competitionCountry: string | null;
   competitionStage: string | null;
+};
+
+type SoccerPredictedLineupResponse = {
+  summaryPath: string | null;
+  lineupsPath: string | null;
+  eventId: string | null;
+  lineup: SoccerwayLineupBundle | null;
 };
 
 type SoccerTeamRow = {
@@ -205,6 +213,10 @@ function SoccerPageContent() {
   const [nextFixtureError, setNextFixtureError] = useState<string | null>(null);
   const [nextFixtureCacheMiss, setNextFixtureCacheMiss] = useState(false);
   const [nextFixtureCountdown, setNextFixtureCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  const [predictedLineup, setPredictedLineup] = useState<SoccerwayLineupBundle | null>(null);
+  const [predictedLineupLoading, setPredictedLineupLoading] = useState(false);
+  const [predictedLineupError, setPredictedLineupError] = useState<string | null>(null);
+  const [predictedLineupCacheMiss, setPredictedLineupCacheMiss] = useState(false);
   const [mainChartStat, setMainChartStat] = useState('');
   const [chartTimeframe, setChartTimeframe] = useState<SoccerTimeframe>('last10');
   const [chartTeamScope, setChartTeamScope] = useState<SoccerStatTeamScope>('all');
@@ -212,6 +224,7 @@ function SoccerPageContent() {
   const teamSearchWrapRef = useRef<HTMLDivElement>(null);
   const teamResultsRequestId = useRef(0);
   const nextFixtureRequestId = useRef(0);
+  const predictedLineupRequestId = useRef(0);
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } =
     useDashboardStyles({ sidebarOpen });
@@ -499,6 +512,53 @@ function SoccerPageContent() {
       .finally(() => {
         if (nextFixtureRequestId.current === requestId) {
           setNextFixtureLoading(false);
+        }
+      });
+
+    return () => ac.abort();
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    if (!selectedTeam) {
+      setPredictedLineup(null);
+      setPredictedLineupError(null);
+      setPredictedLineupCacheMiss(false);
+      setPredictedLineupLoading(false);
+      return;
+    }
+
+    const requestId = (predictedLineupRequestId.current += 1);
+    const ac = new AbortController();
+    setPredictedLineupLoading(true);
+    setPredictedLineupError(null);
+    setPredictedLineupCacheMiss(false);
+
+    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
+    void fetch(`/api/soccer/predicted-lineup?href=${encodeURIComponent(href)}&cacheOnly=1`, {
+      signal: ac.signal,
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | (SoccerPredictedLineupResponse & { error?: string; cache?: { source?: string } })
+          | null;
+        if (!response.ok) {
+          throw new Error(payload?.error || 'Failed to load lineup');
+        }
+        if (predictedLineupRequestId.current !== requestId) return;
+        setPredictedLineupCacheMiss(payload?.cache?.source === 'cache-miss');
+        setPredictedLineup(payload?.lineup ?? null);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (predictedLineupRequestId.current !== requestId) return;
+        setPredictedLineup(null);
+        setPredictedLineupCacheMiss(false);
+        setPredictedLineupError(err instanceof Error ? err.message : 'Failed to load lineup');
+      })
+      .finally(() => {
+        if (predictedLineupRequestId.current === requestId) {
+          setPredictedLineupLoading(false);
         }
       });
 
@@ -938,6 +998,29 @@ function SoccerPageContent() {
                   </div>
                 </div>
 
+                <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
+                  {!selectedTeam ? (
+                    <div className={`px-3 sm:px-4 text-sm ${emptyText}`}>Select a team above to load predicted lineups.</div>
+                  ) : predictedLineupLoading ? (
+                    <div className="px-3 sm:px-4">
+                      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                        {[0, 1].map((idx) => (
+                          <div key={idx} className={`rounded-xl border p-4 ${isDark ? 'border-white/10 bg-[#07131f]' : 'border-gray-200 bg-gray-50/80'}`}>
+                            <div className={`mb-3 h-4 w-28 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                            <div className={`h-[280px] rounded-2xl animate-pulse ${isDark ? 'bg-emerald-950/70' : 'bg-emerald-100'}`} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : predictedLineupError ? (
+                    <div className="px-3 sm:px-4 text-sm text-red-600 dark:text-red-400">{predictedLineupError}</div>
+                  ) : predictedLineupCacheMiss ? (
+                    <div className={`px-3 sm:px-4 text-sm ${emptyText}`}>No cached predicted lineup yet.</div>
+                  ) : (
+                    <SoccerPredictedLineup lineup={predictedLineup} isDark={Boolean(mounted && isDark)} />
+                  )}
+                </div>
+
                 {/* 4.5 — mobile placeholder (right-column mirror, empty) */}
                 <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
                   <div className="min-h-[200px]" />
@@ -949,11 +1032,6 @@ function SoccerPageContent() {
                     <div className="min-h-[160px]" />
                   </div>
                 )}
-
-                {/* 4.55 Lineups — mobile */}
-                <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
-                  <div className="min-h-[140px]" />
-                </div>
 
                 {/* 4.6 Injuries — mobile */}
                 {propsMode === 'player' && (

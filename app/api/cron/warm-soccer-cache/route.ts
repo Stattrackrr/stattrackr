@@ -111,10 +111,12 @@ export async function GET(request: NextRequest) {
   let warmed = 0;
   let warmedTeamResults = 0;
   let warmedNextFixtures = 0;
+  let warmedPredictedLineups = 0;
   let failed = 0;
   let totalMatches = 0;
   let totalUpcomingFixtures = 0;
-  const failures: Array<{ team: string; href: string; stage: 'team-results' | 'next-game'; error: string }> = [];
+  let totalPredictedLineups = 0;
+  const failures: Array<{ team: string; href: string; stage: 'team-results' | 'next-game' | 'predicted-lineup'; error: string }> = [];
 
   await runPool<WarmJob>(
     teams,
@@ -168,6 +170,30 @@ export async function GET(request: NextRequest) {
 
       warmedNextFixtures += 1;
       totalUpcomingFixtures += Number(fixturePayload?.count || 0);
+
+      const lineupResponse = await fetch(`${baseUrl}/api/soccer/predicted-lineup?${params.toString()}`, {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      });
+
+      const lineupPayload = (await lineupResponse.json().catch(() => null)) as
+        | { lineup?: { teams?: unknown[] | null; status?: string | null } | null; error?: string }
+        | null;
+
+      if (!lineupResponse.ok) {
+        failed += 1;
+        failures.push({
+          team: team.name,
+          href: team.href,
+          stage: 'predicted-lineup',
+          error: lineupPayload?.error || `HTTP ${lineupResponse.status}`,
+        });
+        return;
+      }
+
+      warmedPredictedLineups += 1;
+      totalPredictedLineups += Array.isArray(lineupPayload?.lineup?.teams) ? 1 : 0;
       warmed += 1;
     },
     concurrency
@@ -178,12 +204,14 @@ export async function GET(request: NextRequest) {
     warmed,
     warmedTeamResults,
     warmedNextFixtures,
+    warmedPredictedLineups,
     failed,
     totalAvailableTeams,
     totalMatchedTeams: matchedTeams.length,
     totalTeams: teams.length,
     totalMatches,
     totalUpcomingFixtures,
+    totalPredictedLineups,
     limit,
     concurrency,
     refresh,

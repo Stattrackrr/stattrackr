@@ -127,6 +127,9 @@ function getScopedValueForStat(params: {
   const opponentValue = opponentStatMap[stat];
 
   if (teamScope === 'all') {
+    if (stat === 'ball_possession') {
+      return Number.isFinite(teamValue) ? teamValue : null;
+    }
     if (Number.isFinite(homeValue) && Number.isFinite(awayValue)) return homeValue + awayValue;
     return Number.isFinite(teamValue) ? teamValue : null;
   }

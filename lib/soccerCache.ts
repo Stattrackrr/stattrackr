@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { SoccerwayMatchStats, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+import type { SoccerwayLineupBundle, SoccerwayMatchStats, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -42,7 +42,7 @@ const hotCache = new Map<string, HotCacheEntry>();
 const inflightReads = new Map<string, Promise<unknown | null>>();
 const recentWrites = new Map<string, RecentWriteEntry>();
 
-export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture';
+export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture' | 'predicted_lineup';
 
 export type SoccerTeamResultsCachePayload = {
   teamHref: string;
@@ -84,6 +84,16 @@ export type SoccerNextFixtureCachePayload = {
   fixturesUrl: string;
   fixture: SoccerNextFixtureCacheFixture | null;
   count: number;
+  source: 'soccerway';
+  generatedAt: string;
+};
+
+export type SoccerPredictedLineupCachePayload = {
+  teamHref: string;
+  summaryPath: string | null;
+  lineupsPath: string | null;
+  eventId: string | null;
+  lineup: SoccerwayLineupBundle | null;
   source: 'soccerway';
   generatedAt: string;
 };
@@ -147,6 +157,10 @@ export function buildSoccerMatchStatsCacheKey(matchId: string): string {
 
 export function buildSoccerNextFixtureCacheKey(teamHref: string): string {
   return `soccer:next-fixture:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
+}
+
+export function buildSoccerPredictedLineupCacheKey(teamHref: string): string {
+  return `soccer:predicted-lineup:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
 }
 
 function attachCacheMetadata<T>(value: T, row: Record<string, unknown>): T {
@@ -399,6 +413,33 @@ export async function setSoccerNextFixtureCache(
   return setSoccerCache(
     buildSoccerNextFixtureCacheKey(normalized),
     'next_fixture',
+    payload,
+    ttlMinutes,
+    { teamHref: normalized, fetchedAt: payload.generatedAt },
+    quiet
+  );
+}
+
+export async function getSoccerPredictedLineupCache(
+  teamHref: string,
+  options: GetCacheOptions = {}
+): Promise<SoccerPredictedLineupCachePayload | null> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return null;
+  return getSoccerCache<SoccerPredictedLineupCachePayload>(buildSoccerPredictedLineupCacheKey(normalized), options);
+}
+
+export async function setSoccerPredictedLineupCache(
+  teamHref: string,
+  payload: SoccerPredictedLineupCachePayload,
+  ttlMinutes: number,
+  quiet = false
+): Promise<boolean> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return false;
+  return setSoccerCache(
+    buildSoccerPredictedLineupCacheKey(normalized),
+    'predicted_lineup',
     payload,
     ttlMinutes,
     { teamHref: normalized, fetchedAt: payload.generatedAt },
