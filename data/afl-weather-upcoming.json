@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26T11:37:38.877Z",
+  "generatedAt": "2026-04-26T17:07:03.430Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-04-30T09:30:00Z",
       "weather": {
-        "temperatureC": 20.5,
+        "temperatureC": 20.4,
         "precipitationMm": 0,
-        "windKmh": 10.7
+        "windKmh": 10.4
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-01T09:30:00Z",
       "weather": {
-        "temperatureC": 21.8,
+        "temperatureC": 21.6,
         "precipitationMm": 0,
-        "windKmh": 7.5
+        "windKmh": 8.7
       }
     },
     {
@@ -33,7 +33,7 @@
       "weather": {
         "temperatureC": 23.3,
         "precipitationMm": 0,
-        "windKmh": 12.9
+        "windKmh": 10.7
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-05-02T02:35:43Z",
       "weather": {
-        "temperatureC": 22.9,
+        "temperatureC": 25.5,
         "precipitationMm": 0,
-        "windKmh": 13.7
+        "windKmh": 16.1
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-02T06:15:00Z",
       "weather": {
-        "temperatureC": 15.7,
+        "temperatureC": 15.9,
         "precipitationMm": 0,
-        "windKmh": 14.7
+        "windKmh": 17.8
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-05-02T06:35:53Z",
       "weather": {
-        "temperatureC": 25.5,
+        "temperatureC": 26.1,
         "precipitationMm": 0,
-        "windKmh": 15.1
+        "windKmh": 13.1
       }
     },
     {
