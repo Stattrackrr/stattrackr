@@ -50,6 +50,9 @@ export type SoccerTeamResultsCachePayload = {
   matches: SoccerwayRecentMatch[];
   count: number;
   showMorePagesFetched: number;
+  // Marks caches created after the full history pagination probe was implemented.
+  historyProbeComplete?: boolean;
+  competitionMetadataVersion?: number;
   source: 'soccerway';
   generatedAt: string;
 };
@@ -73,6 +76,7 @@ export type SoccerNextFixtureCacheFixture = {
   summaryPath: string;
   competitionName: string | null;
   competitionCountry: string | null;
+  competitionStage: string | null;
 };
 
 export type SoccerNextFixtureCachePayload = {

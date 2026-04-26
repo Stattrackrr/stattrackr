@@ -12,6 +12,8 @@ export type SoccerwayRecentMatch = {
   awayTeam: string;
   homeLogoUrl?: string | null;
   awayLogoUrl?: string | null;
+  competitionName?: string | null;
+  competitionCountry?: string | null;
   homeScore: number;
   awayScore: number;
   kickoffUnix: number | null;
@@ -27,6 +29,7 @@ export type SoccerwayUpcomingFixture = {
   summaryPath: string;
   competitionName: string | null;
   competitionCountry: string | null;
+  competitionStage: string | null;
   homeParticipantId: string | null;
   awayParticipantId: string | null;
   homeLogoUrl: string | null;
@@ -74,9 +77,20 @@ function pickUnix(raw: string | undefined): number | null {
   return n != null && n > 1_000_000_000 ? n : null;
 }
 
-function splitSoccerwayFeedChunks(raw: string): string[] {
-  if (raw.includes('~AA÷')) return raw.split('~AA÷');
-  return raw.split('~AA').map((chunk, idx) => (idx === 0 ? chunk : chunk.replace(/^[^A-Za-z0-9]+/, '')));
+type SoccerwayFeedSegment =
+  | { type: 'match'; body: string }
+  | { type: 'competition'; body: string };
+
+function splitSoccerwayFeedSegments(raw: string): SoccerwayFeedSegment[] {
+  return raw
+    .split('~')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .flatMap((segment) => {
+      if (segment.startsWith('AA÷')) return [{ type: 'match' as const, body: segment.slice(3) }];
+      if (segment.startsWith('ZA÷')) return [{ type: 'competition' as const, body: segment }];
+      return [];
+    });
 }
 
 function buildFlashscoreLogoUrl(token: string | undefined): string | null {
@@ -85,16 +99,49 @@ function buildFlashscoreLogoUrl(token: string | undefined): string | null {
   return `https://static.flashscore.com/res/image/data/${value}`;
 }
 
+function extractCompetitionHeaderTitle(segmentBody: string): string | null {
+  const raw = segmentBody.split('¬')[0] || '';
+  const value = raw.startsWith('ZA÷') ? raw.slice(3).trim() : raw.trim();
+  return value || null;
+}
+
+function deriveCompetitionStage(params: {
+  headerTitle: string | null;
+  competitionCountry: string | null;
+  competitionName: string | null;
+}): string | null {
+  const headerTitle = String(params.headerTitle || '').trim();
+  const competitionCountry = String(params.competitionCountry || '').trim();
+  const competitionName = String(params.competitionName || '').trim();
+  if (!headerTitle || !competitionName) return null;
+
+  let remainder = headerTitle;
+  if (competitionCountry && remainder.toLowerCase().startsWith(`${competitionCountry.toLowerCase()}:`)) {
+    remainder = remainder.slice(competitionCountry.length + 1).trim();
+  }
+
+  if (!remainder.toLowerCase().startsWith(competitionName.toLowerCase())) return null;
+  remainder = remainder.slice(competitionName.length).trim().replace(/^[-:]\s*/, '').trim();
+  return remainder || null;
+}
+
 export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): SoccerwayRecentMatch[] {
-  const chunks = splitSoccerwayFeedChunks(html);
+  const segments = splitSoccerwayFeedSegments(html);
   const out: SoccerwayRecentMatch[] = [];
   const seenKeys = new Set<string>();
+  let currentCompetitionName: string | null = null;
+  let currentCompetitionCountry: string | null = null;
 
-  for (let i = 1; i < chunks.length; i += 1) {
-    const chunk = chunks[i];
-    if (!chunk) continue;
-    const parts = chunk.split('¬');
-    const matchId = parts[0]?.includes('÷') ? null : parts[0];
+  for (const segment of segments) {
+    if (segment.type === 'competition') {
+      const fields = parseFeedFields(segment.body);
+      currentCompetitionName = fields.ZK ?? null;
+      currentCompetitionCountry = fields.ZY ?? null;
+      continue;
+    }
+
+    const parts = segment.body.split('¬');
+    const matchId = parts[0]?.trim() || null;
     if (!matchId) continue;
 
     const fields: Record<string, string> = {};
@@ -130,6 +177,8 @@ export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): Soc
       awayTeam: af,
       homeLogoUrl: buildFlashscoreLogoUrl(fields.OA),
       awayLogoUrl: buildFlashscoreLogoUrl(fields.OB),
+      competitionName: fields.ZK ?? currentCompetitionName,
+      competitionCountry: fields.ZY ?? currentCompetitionCountry,
       homeScore: ag,
       awayScore: ah,
       kickoffUnix: kick,
@@ -143,15 +192,30 @@ export function parseSoccerwayTeamResultsHtml(html: string, limit?: number): Soc
 }
 
 export function parseSoccerwayTeamFixturesHtml(html: string, limit?: number): SoccerwayUpcomingFixture[] {
-  const chunks = splitSoccerwayFeedChunks(html);
+  const segments = splitSoccerwayFeedSegments(html);
   const out: SoccerwayUpcomingFixture[] = [];
   const seenKeys = new Set<string>();
+  let currentCompetitionName: string | null = null;
+  let currentCompetitionCountry: string | null = null;
+  let currentCompetitionStage: string | null = null;
 
-  for (let i = 1; i < chunks.length; i += 1) {
-    const chunk = chunks[i];
-    if (!chunk) continue;
-    const parts = chunk.split('¬');
-    const matchId = parts[0]?.includes('÷') ? null : parts[0];
+  for (const segment of segments) {
+    if (segment.type === 'competition') {
+      const fields = parseFeedFields(segment.body);
+      const competitionCountry = fields.ZY ?? null;
+      const competitionName = fields.ZK ?? null;
+      currentCompetitionName = competitionName;
+      currentCompetitionCountry = competitionCountry;
+      currentCompetitionStage = deriveCompetitionStage({
+        headerTitle: extractCompetitionHeaderTitle(segment.body),
+        competitionCountry,
+        competitionName,
+      });
+      continue;
+    }
+
+    const parts = segment.body.split('¬');
+    const matchId = parts[0]?.trim() || null;
     if (!matchId) continue;
 
     const fields: Record<string, string> = {};
@@ -185,8 +249,9 @@ export function parseSoccerwayTeamFixturesHtml(html: string, limit?: number): So
       awayTeam: af,
       kickoffUnix: kick,
       summaryPath,
-      competitionName: fields.ZK ?? null,
-      competitionCountry: fields.ZY ?? null,
+      competitionName: fields.ZK ?? currentCompetitionName,
+      competitionCountry: fields.ZY ?? currentCompetitionCountry,
+      competitionStage: currentCompetitionStage,
       homeParticipantId: px,
       awayParticipantId: py,
       homeLogoUrl: buildFlashscoreLogoUrl(fields.OA),

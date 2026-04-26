@@ -7,7 +7,6 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
-type SoccerSplitResultFilter = 'all' | 'wins' | 'losses' | 'draws';
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
 type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'home' | 'away';
@@ -36,9 +35,11 @@ type SoccerStatsChartProps = {
   onSelectedStatChange?: (stat: string) => void;
   onSelectedTimeframeChange?: (timeframe: SoccerTimeframe) => void;
   onSelectedTeamScopeChange?: (scope: SoccerStatTeamScope) => void;
+  onSelectedCompetitionChange?: (competition: string) => void;
 };
 
 const SOCCER_STAT_PRIORITY = [
+  'moneyline',
   'total_goals',
   'expected_goals_xg',
   'xg_on_target_xgot',
@@ -97,6 +98,7 @@ function formatStatKey(name: string): string {
 }
 
 function formatStatLabel(label: string): string {
+  if (label === 'moneyline') return 'H2H';
   if (label === 'total_goals') return 'Total goals';
   if (label === 'expected_goals_xg') return 'xG';
   if (label === 'xg_on_target_xgot') return 'xGOT';
@@ -163,6 +165,20 @@ function getTeamAbbrev(team: string): string {
   const parts = team.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 3).toUpperCase();
   return parts.slice(0, 3).map((part) => part[0]).join('').toUpperCase();
+}
+
+function getCompetitionLabel(match: SoccerwayRecentMatch): string {
+  const competition = String(match.competitionName || '').trim();
+  if (competition) return competition;
+  const country = String(match.competitionCountry || '').trim();
+  if (country) return country;
+  return 'Unknown competition';
+}
+
+function getCompetitionKey(match: SoccerwayRecentMatch): string {
+  const country = String(match.competitionCountry || '').trim();
+  const competition = String(match.competitionName || '').trim();
+  return `${country}:::${competition}`;
 }
 
 function getTimeframeLabel(value: SoccerTimeframe): string {
@@ -255,7 +271,7 @@ function SoccerXAxisTick({ x, y, payload, data, isDark, hideTickDetails, hideVen
   );
 }
 
-function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel }: any) {
+function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStatKey }: any) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -298,6 +314,10 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as SoccerChartRow | undefined;
   if (!point) return null;
+  const displayValue =
+    selectedStatKey === 'moneyline'
+      ? point.result === 'D' ? '0' : point.result
+      : payload[0]?.value;
 
   const getTooltipPosition = () => {
     const currentPosition = mousePosition ?? (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
@@ -342,7 +362,7 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
       <div className="text-[11px] opacity-70">{point.gameDate}</div>
       <div className="mt-1">{point.result} · {point.scoreline}</div>
       <div className="mt-1">
-        {selectedStatLabel}: <span className="font-semibold">{payload[0]?.value}</span>
+        {selectedStatLabel}: <span className="font-semibold">{displayValue}</span>
         {point.comparisonValue ? <span className="opacity-70"> vs {point.comparisonValue}</span> : null}
       </div>
     </div>
@@ -362,16 +382,17 @@ export function SoccerStatsChart({
   onSelectedStatChange,
   onSelectedTimeframeChange,
   onSelectedTeamScopeChange,
+  onSelectedCompetitionChange,
 }: SoccerStatsChartProps) {
   const [selectedStat, setSelectedStat] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<SoccerTimeframe>('last10');
   const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>('all');
+  const [selectedCompetition, setSelectedCompetition] = useState('all');
   const [lineValue, setLineValue] = useState(0);
-  const [splitResultFilter, setSplitResultFilter] = useState<SoccerSplitResultFilter>('all');
-  const [splitVenueFilter, setSplitVenueFilter] = useState<SoccerVenueFilter>('all');
-  const [showSplitsFilters, setShowSplitsFilters] = useState(false);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
+  const [isCompetitionDropdownOpen, setIsCompetitionDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const competitionDropdownRef = useRef<HTMLDivElement>(null);
 
   const normalizedRows = useMemo(() => {
     return matches
@@ -409,6 +430,9 @@ export function SoccerStatsChart({
         awayStatMap.total_goals = match.awayScore;
         comparisonMap.total_goals = `${match.homeScore}-${match.awayScore}`;
         labelMap.total_goals = 'Total goals';
+        statMap.moneyline = perspective.result === 'W' ? 1 : perspective.result === 'L' ? -1 : 0;
+        comparisonMap.moneyline = null;
+        labelMap.moneyline = 'H2H';
 
         return {
           match,
@@ -416,6 +440,8 @@ export function SoccerStatsChart({
           gameSeason,
           gameDate,
           kickoffMs: kickoff?.getTime() ?? 0,
+          competitionKey: getCompetitionKey(match),
+          competitionLabel: getCompetitionLabel(match),
           ...perspective,
           statMap,
           homeStatMap,
@@ -511,25 +537,41 @@ export function SoccerStatsChart({
 
   useEffect(() => {
     const onDocMouseDown = (event: MouseEvent) => {
-      const el = timeframeDropdownRef.current;
-      if (!el) return;
-      if (event.target instanceof Node && !el.contains(event.target)) {
+      const timeframeEl = timeframeDropdownRef.current;
+      if (timeframeEl && event.target instanceof Node && !timeframeEl.contains(event.target)) {
         setIsTimeframeDropdownOpen(false);
+      }
+      const competitionEl = competitionDropdownRef.current;
+      if (competitionEl && event.target instanceof Node && !competitionEl.contains(event.target)) {
+        setIsCompetitionDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
 
+  const competitionOptions = useMemo(() => {
+    const counts = new Map<string, { label: string; count: number }>();
+    for (const row of normalizedRows) {
+      const existing = counts.get(row.competitionKey);
+      if (existing) existing.count += 1;
+      else counts.set(row.competitionKey, { label: row.competitionLabel, count: 1 });
+    }
+    return Array.from(counts.entries())
+      .map(([key, value]) => ({ key, label: value.label, count: value.count }))
+      .sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label));
+  }, [normalizedRows]);
+
+  useEffect(() => {
+    if (selectedCompetition === 'all') return;
+    if (competitionOptions.some((option) => option.key === selectedCompetition)) return;
+    setSelectedCompetition('all');
+  }, [competitionOptions, selectedCompetition]);
+
   const filteredRows = useMemo(() => {
-    return normalizedRows.filter((row) => {
-      if (splitResultFilter === 'wins' && row.result !== 'W') return false;
-      if (splitResultFilter === 'losses' && row.result !== 'L') return false;
-      if (splitResultFilter === 'draws' && row.result !== 'D') return false;
-      if (splitVenueFilter !== 'all' && row.venue !== splitVenueFilter) return false;
-      return true;
-    });
-  }, [normalizedRows, splitResultFilter, splitVenueFilter]);
+    if (selectedCompetition === 'all') return normalizedRows;
+    return normalizedRows.filter((row) => row.competitionKey === selectedCompetition);
+  }, [normalizedRows, selectedCompetition]);
 
   const seasonOptions = useMemo(() => {
     const years = [...new Set(filteredRows.map((row) => row.gameSeason).filter((year) => year >= 2008))].sort((a, b) => b - a);
@@ -553,6 +595,15 @@ export function SoccerStatsChart({
   useEffect(() => {
     onSelectedTeamScopeChange?.(selectedStatTeamScope);
   }, [onSelectedTeamScopeChange, selectedStatTeamScope]);
+
+  useEffect(() => {
+    onSelectedCompetitionChange?.(selectedCompetition);
+  }, [onSelectedCompetitionChange, selectedCompetition]);
+
+  const selectedCompetitionLabel = useMemo(() => {
+    if (selectedCompetition === 'all') return 'All comps';
+    return competitionOptions.find((option) => option.key === selectedCompetition)?.label ?? 'Competition';
+  }, [competitionOptions, selectedCompetition]);
 
   const baseChartData = useMemo(() => {
     if (!selectedStat) return [];
@@ -622,10 +673,23 @@ export function SoccerStatsChart({
   }, [baseChartData]);
 
   useEffect(() => {
+    if (selectedStat === 'moneyline') {
+      setLineValue(0);
+      return;
+    }
     setLineValue(Number.isFinite(statAverage) ? Math.round(statAverage) : 0);
   }, [selectedStat, selectedStatTeamScope, statAverage]);
 
   const yAxisConfig = useMemo(() => {
+    if (selectedStat === 'moneyline') {
+      return {
+        // Add a little extra room below losses so the -1 bar
+        // doesn't sit flush with the bottom edge of the plot.
+        domain: [-1.12, 1] as [number, number],
+        ticks: [-1, 0, 1],
+      };
+    }
+
     const values = chartData.map((row) => row.value).filter((value) => Number.isFinite(value));
     if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
@@ -655,11 +719,18 @@ export function SoccerStatsChart({
       domain: [0, bound] as [number, number],
       ticks,
     };
-  }, [chartData, lineValue]);
+  }, [chartData, lineValue, selectedStat]);
 
   const customTooltip = useMemo(() => {
     const selectedStatLabel = statLabels.get(selectedStat) || formatStatLabel(selectedStat || 'stat');
-    return (props: any) => <SoccerChartTooltip {...props} isDark={isDark} selectedStatLabel={selectedStatLabel} />;
+    return (props: any) => (
+      <SoccerChartTooltip
+        {...props}
+        isDark={isDark}
+        selectedStatLabel={selectedStatLabel}
+        selectedStatKey={selectedStat}
+      />
+    );
   }, [isDark, selectedStat, statLabels]);
 
   const hideTickDetails = useMemo(() => shouldHideSoccerTickDetails(selectedTimeframe), [selectedTimeframe]);
@@ -780,65 +851,49 @@ export function SoccerStatsChart({
               </div>
             </div>
           ) : null}
-          <button
-            type="button"
-            onClick={() => setShowSplitsFilters((prev) => !prev)}
-            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative sm:ml-auto ${
-              showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''
-            }`}
-          >
-            Splits
-          </button>
-        </div>
-      </div>
-
-      {showSplitsFilters ? (
-        <div className="mb-2 px-2 lg:-mt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Result</span>
-            {([
-              { key: 'all', label: 'All' },
-              { key: 'wins', label: 'Wins' },
-              { key: 'losses', label: 'Losses' },
-              { key: 'draws', label: 'Draws' },
-            ] as const).map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setSplitResultFilter(option.key)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  splitResultFilter === option.key
-                    ? 'bg-purple-600 text-white border-purple-400/30'
-                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-
-            <div className="flex items-center gap-1.5 w-full lg:w-auto lg:ml-auto">
-              {([
-                { key: 'all', label: 'All Venues' },
-                { key: 'HOME', label: 'Home' },
-                { key: 'AWAY', label: 'Away' },
-              ] as const).map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setSplitVenueFilter(option.key)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                    splitVenueFilter === option.key
-                      ? 'bg-purple-600 text-white border-purple-400/30'
-                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+          <div className="relative sm:ml-auto" ref={competitionDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCompetitionDropdownOpen((prev) => !prev)}
+              className={`w-36 sm:w-40 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+                isCompetitionDropdownOpen ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''
+              }`}
+            >
+              <span className="truncate">{selectedCompetitionLabel}</span>
+              <svg className="w-3 h-3 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isCompetitionDropdownOpen ? (
+              <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {[
+                  { key: 'all', label: `All competitions (${normalizedRows.length})` },
+                  ...competitionOptions.map((option) => ({
+                    key: option.key,
+                    label: `${option.label} (${option.count})`,
+                  })),
+                ].map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCompetition(option.key);
+                      setIsCompetitionDropdownOpen(false);
+                    }}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
+                      selectedCompetition === option.key
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : null}
+      </div>
 
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 ? (
@@ -856,7 +911,14 @@ export function SoccerStatsChart({
             selectedTimeframe={selectedTimeframe}
             customTooltip={customTooltip}
             customXAxisTick={soccerXAxisTick}
-            yAxisTickFormatter={(value: number) => `${Math.round(value)}`}
+            yAxisTickFormatter={(value: number) => {
+              if (selectedStat === 'moneyline') {
+                if (value >= 1) return 'W';
+                if (value <= -1) return 'L';
+                return '0';
+              }
+              return `${Math.round(value)}`;
+            }}
             yAxisTickStyle={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
             preservePrimaryYAxisTicks={true}
             centerAverageOverlay={true}
