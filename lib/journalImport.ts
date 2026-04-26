@@ -16,6 +16,9 @@ export type ImportReviewStatus =
   | 'duplicate'
   | 'failed';
 
+export type ImportConfidence = 'high' | 'medium' | 'low';
+export type ImportedBetType = 'single' | 'parlay' | 'same_game_multi' | 'unknown';
+
 export type SourceBook =
   | 'sportsbet'
   | 'tab'
@@ -67,6 +70,9 @@ export type SportsbookImportPayload = {
   source_page_url?: string | null;
   captured_at?: string | null;
   auto_add?: boolean | null;
+  parser_name?: string | null;
+  parse_confidence?: ImportConfidence | null;
+  bet_type?: ImportedBetType | null;
   parse_notes?: string | null;
   bet: JournalBetInput;
   raw_payload?: Record<string, unknown> | null;
@@ -79,6 +85,9 @@ export type NormalizedImportRecord = {
   sourcePageUrl: string | null;
   capturedAt: string;
   autoAdd: boolean;
+  parserName: string | null;
+  parseConfidence: ImportConfidence;
+  betType: ImportedBetType;
   parseNotes: string | null;
   rawPayload: Record<string, unknown> | null;
   normalizedBet: JournalBetInput;
@@ -92,6 +101,43 @@ export type BetInsertMetadata = {
   importBatchId?: string | null;
   capturedAt?: string | null;
 };
+
+function normalizeImportConfidence(value: unknown): ImportConfidence {
+  const normalized = asOptionalTrimmedString(value)?.toLowerCase();
+  if (normalized === 'high') return 'high';
+  if (normalized === 'low') return 'low';
+  return 'medium';
+}
+
+function normalizeImportedBetType(value: unknown): ImportedBetType {
+  const normalized = asOptionalTrimmedString(value)?.toLowerCase();
+  if (normalized === 'single') return 'single';
+  if (normalized === 'parlay') return 'parlay';
+  if (normalized === 'same_game_multi') return 'same_game_multi';
+  if (normalized === 'same game multi') return 'same_game_multi';
+  return 'unknown';
+}
+
+function serializeParlayLegsForDedupe(legs: JournalBetInput['parlay_legs']) {
+  if (!Array.isArray(legs) || legs.length === 0) return '';
+
+  return legs
+    .map((leg) =>
+      [
+        leg?.playerName ?? '',
+        leg?.playerId ?? '',
+        leg?.team ?? '',
+        leg?.opponent ?? '',
+        leg?.gameDate ?? '',
+        leg?.overUnder ?? '',
+        leg?.line === null || leg?.line === undefined ? '' : String(leg.line),
+        leg?.statType ?? '',
+        leg?.isGameProp === true ? 'game' : leg?.isGameProp === false ? 'player' : '',
+      ].join('|')
+    )
+    .join('||')
+    .toLowerCase();
+}
 
 function normalizeIsoDate(value: string, field: string): string {
   const trimmed = value.trim();
@@ -354,6 +400,7 @@ export function buildImportDedupeKey(record: {
     bet.stat_type ?? '',
     bet.line === null || bet.line === undefined ? '' : String(bet.line),
     bet.over_under ?? '',
+    serializeParlayLegsForDedupe(bet.parlay_legs ?? null),
   ];
   return parts.join('|').toLowerCase();
 }
@@ -376,11 +423,20 @@ export function normalizeSportsbookImportPayload(payload: Record<string, unknown
   const sourceExternalId = asOptionalTrimmedString(payload.source_external_id);
   const sourcePageUrl = asOptionalTrimmedString(payload.source_page_url);
   const autoAdd = payload.auto_add === true;
+  const parserName = asOptionalTrimmedString(payload.parser_name);
+  const parseConfidence = normalizeImportConfidence(payload.parse_confidence);
+  const betType = normalizeImportedBetType(payload.bet_type);
   const parseNotes = asOptionalTrimmedString(payload.parse_notes);
-  const rawPayload =
+  const rawPayloadBase =
     payload.raw_payload && typeof payload.raw_payload === 'object'
       ? (payload.raw_payload as Record<string, unknown>)
-      : null;
+      : {};
+  const rawPayload = {
+    ...rawPayloadBase,
+    parser_name: parserName,
+    parser_confidence: parseConfidence,
+    bet_type: betType,
+  };
 
   return {
     source,
@@ -389,6 +445,9 @@ export function normalizeSportsbookImportPayload(payload: Record<string, unknown
     sourcePageUrl,
     capturedAt,
     autoAdd,
+    parserName,
+    parseConfidence,
+    betType,
     parseNotes,
     rawPayload,
     normalizedBet: {

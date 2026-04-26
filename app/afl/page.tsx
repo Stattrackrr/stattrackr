@@ -1109,17 +1109,19 @@ export default function AFLPage() {
     setSelectedPlayer(urlFallback);
     setAflPropsMode('player');
     setAflRightTab('dvp');
-    setLoadingPlayerFromUrl(false);
     setSelectedPlayerGameLogs([]);
     setSelectedPlayerGameLogsWithQuarters([]);
     let cancelled = false;
     (async () => {
       try {
-        const params = new URLSearchParams({ query: playerParam, limit: '30' });
-        if (teamParam && teamParam.trim() !== '') params.set('team', teamParam.trim());
+        const params = new URLSearchParams({ query: playerParam, limit: '30', exact: '1' });
         const res = await fetch(`/api/afl/players?${params.toString()}`);
         const data = await res.json();
-        if (cancelled || !res.ok) return;
+        if (cancelled) return;
+        if (!res.ok) {
+          setLoadingPlayerFromUrl(false);
+          return;
+        }
         const list = Array.isArray(data?.players) ? data.players : [];
         const paramLookup = normalizePlayerNameForMatch(playerParam);
         const match = list.find((p: Record<string, unknown>) => {
@@ -1135,6 +1137,7 @@ export default function AFLPage() {
           url.searchParams.delete('team');
           url.searchParams.delete('opponent');
           window.history.replaceState({}, '', url.toString());
+          setLoadingPlayerFromUrl(false);
           return;
         }
         const record: AflPlayerRecord = {
@@ -1147,8 +1150,10 @@ export default function AFLPage() {
           (record as AflPlayerRecord & { last_opponent?: string }).last_opponent = opponentParam;
         }
         if (match.position != null) (record as AflPlayerRecord & { position?: string }).position = String(match.position);
-        // Merge into existing selectedPlayer so name/team stay the same and game-logs effect doesn't re-run (avoids stats load then re-render).
+        // Finish URL-player resolution before the logs effect runs so the first request
+        // uses the canonical player/team instead of a temporary URL fallback record.
         setSelectedPlayer((prev) => (prev ? { ...prev, ...record } : record));
+        setLoadingPlayerFromUrl(false);
         setSearchQuery('');
         // Team filter stays "All" until the user chooses; don't set from URL opponent so refresh shows full L10.
         // NBA-style URL: set mode=player&name=...&team=... so URL is shareable and matches NBA dashboard
@@ -1165,6 +1170,7 @@ export default function AFLPage() {
           url.searchParams.delete('team');
           url.searchParams.delete('opponent');
           window.history.replaceState({}, '', url.toString());
+          setLoadingPlayerFromUrl(false);
         }
       }
     })();
@@ -2130,6 +2136,7 @@ export default function AFLPage() {
   useEffect(() => {
     const playerName = selectedPlayer?.name;
     if (!playerName) return;
+    if (loadingPlayerFromUrl) return;
     setLastStatsError(null);
     const cacheKey = `${season}:${String(playerName).toLowerCase()}`;
     const cachedStats = playerStatsCacheRef.current.get(cacheKey);
@@ -2401,7 +2408,7 @@ export default function AFLPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedPlayer?.name, selectedPlayer?.team, season]);
+  }, [selectedPlayer?.name, selectedPlayer?.team, season, loadingPlayerFromUrl]);
 
   // Fetch DFS role label for top header context (e.g. MID - INS MID). Pass fantasy DvP so we can
   // still show RUC → RUCK when the DFS role JSON is empty or missing the player.
