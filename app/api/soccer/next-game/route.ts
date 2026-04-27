@@ -11,6 +11,10 @@ import {
   parseSoccerwayTeamFixturesHtml,
   type SoccerwayUpcomingFixture,
 } from '@/lib/soccerwayTeamResults';
+import {
+  getPermanentSoccerNextFixture,
+  persistPermanentSoccerNextFixture,
+} from '@/lib/soccerPermanentStore';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -122,9 +126,37 @@ export async function GET(request: NextRequest) {
   const fixturesUrl = `https://www.soccerway.com${teamHref}/fixtures/`;
 
   try {
-    if (!forceRefresh) {
-      const cached = await getSoccerNextFixtureCache(teamHref, { quiet: true });
+    if (!forceRefresh && cacheOnly) {
+      const cached = await getSoccerNextFixtureCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
       if (cached) {
+        return NextResponse.json({
+          fixturesUrl: cached.fixturesUrl,
+          fixture: cached.fixture,
+          count: cached.count,
+          cache: {
+            source: 'cache',
+            forcedRefresh: false,
+            cacheOnly: true,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        fixturesUrl,
+        fixture: null,
+        count: 0,
+        cache: {
+          source: 'cache-miss',
+          forcedRefresh: false,
+          cacheOnly: true,
+        },
+      });
+    }
+
+    if (!forceRefresh) {
+      const cached = await getSoccerNextFixtureCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
+      if (cached) {
+        await persistPermanentSoccerNextFixture(teamHref, cached);
         return NextResponse.json({
           fixturesUrl: cached.fixturesUrl,
           fixture: cached.fixture,
@@ -136,9 +168,21 @@ export async function GET(request: NextRequest) {
           },
         });
       }
-    }
 
-    if (cacheOnly) {
+      const permanent = await getPermanentSoccerNextFixture(teamHref);
+      if (permanent) {
+        return NextResponse.json({
+          fixturesUrl: permanent.fixturesUrl,
+          fixture: permanent.fixture,
+          count: permanent.count,
+          cache: {
+            source: 'permanent',
+            forcedRefresh: false,
+            cacheOnly,
+          },
+        });
+      }
+
       return NextResponse.json({
         fixturesUrl,
         fixture: null,
@@ -146,7 +190,7 @@ export async function GET(request: NextRequest) {
         cache: {
           source: 'cache-miss',
           forcedRefresh: false,
-          cacheOnly: true,
+          cacheOnly,
         },
       });
     }
@@ -192,6 +236,7 @@ export async function GET(request: NextRequest) {
       generatedAt: new Date().toISOString(),
     };
     await setSoccerNextFixtureCache(teamHref, cachePayload, FOREVER_CACHE_TTL_MINUTES, true);
+    await persistPermanentSoccerNextFixture(teamHref, cachePayload);
 
     return NextResponse.json({
       fixturesUrl,

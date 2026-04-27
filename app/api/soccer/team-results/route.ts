@@ -20,6 +20,10 @@ import {
   type SoccerwayMatchStats,
   type SoccerwayRecentMatch,
 } from '@/lib/soccerwayTeamResults';
+import {
+  getPermanentSoccerTeamResults,
+  persistPermanentSoccerTeamResults,
+} from '@/lib/soccerPermanentStore';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,6 +91,42 @@ function toTeamResultsPayload(teamHref: string, resultsUrl: string, matches: Soc
     competitionMetadataVersion: TEAM_RESULTS_COMPETITION_METADATA_VERSION,
     source: 'soccerway',
     generatedAt: new Date().toISOString(),
+  };
+}
+
+function toFastCacheTeamResultsPayload(payload: SoccerTeamResultsCachePayload): SoccerTeamResultsCachePayload {
+  return {
+    ...payload,
+    matches: payload.matches.map((match) => ({
+      ...match,
+      stats: pruneFastCacheStats(match.stats),
+    })),
+  };
+}
+
+function pruneFastCacheStats(stats: SoccerwayMatchStats | null | undefined): SoccerwayMatchStats | null {
+  if (!stats) return null;
+  const matchPeriod =
+    stats.periods.find((period) => String(period.name || '').trim().toLowerCase() === 'match') ?? stats.periods[0] ?? null;
+  if (!matchPeriod) return null;
+  return {
+    feedUrl: stats.feedUrl,
+    raw: '',
+    periods: [
+      {
+        name: matchPeriod.name,
+        categories: matchPeriod.categories.map((category) => ({
+          name: category.name,
+          stats: category.stats.map((stat) => ({
+            id: stat.id,
+            name: stat.name,
+            homeValue: stat.homeValue,
+            awayValue: stat.awayValue,
+            fields: {},
+          })),
+        })),
+      },
+    ],
   };
 }
 
@@ -254,7 +294,9 @@ export async function GET(request: NextRequest) {
 
   try {
     let teamResultsSource: 'cache' | 'live' = 'live';
-    let cachedPayload = forceRefresh ? null : await getSoccerTeamResultsCache(teamHref, { quiet: true });
+    let cachedPayload = forceRefresh
+      ? null
+      : await getSoccerTeamResultsCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
     const usableCachedPayload = canServeCachedTeamResults(cachedPayload) ? cachedPayload : null;
     let baseMatches = usableCachedPayload?.matches ?? [];
     let showMorePagesFetched = usableCachedPayload?.showMorePagesFetched ?? 0;
@@ -279,6 +321,27 @@ export async function GET(request: NextRequest) {
     }
 
     if (!usableCachedPayload && cacheOnly) {
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref);
+      const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
+      if (usablePermanentPayload) {
+        await setSoccerTeamResultsCache(teamHref, toFastCacheTeamResultsPayload(usablePermanentPayload), FOREVER_CACHE_TTL_MINUTES, true);
+        return NextResponse.json({
+          resultsUrl: usablePermanentPayload.resultsUrl || resultsUrl,
+          matches: usablePermanentPayload.matches,
+          count: usablePermanentPayload.matches.length,
+          showMorePagesFetched: usablePermanentPayload.showMorePagesFetched,
+          cache: {
+            teamResultsSource: 'permanent',
+            forcedRefresh: false,
+            cacheOnly: true,
+            statsCacheHits: 0,
+            statsFetchedLive: 0,
+            statsMissing: usablePermanentPayload.matches.filter((match) => match.stats == null).length,
+            teamResultsExpiresAt: null,
+          },
+        });
+      }
+
       return NextResponse.json({
         resultsUrl,
         matches: [],
@@ -296,14 +359,66 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (!usableCachedPayload) {
-      const live = await fetchTeamResultsFromSoccerway(teamHref);
-      baseMatches = live.matches;
-      showMorePagesFetched = live.showMorePagesFetched;
-      feedSign = live.feedSign;
-    } else {
-      teamResultsSource = 'cache';
+    if (!forceRefresh) {
+      if (usableCachedPayload) {
+        return NextResponse.json({
+          resultsUrl: usableCachedPayload.resultsUrl || resultsUrl,
+          matches: usableCachedPayload.matches,
+          count: usableCachedPayload.matches.length,
+          showMorePagesFetched: usableCachedPayload.showMorePagesFetched,
+          cache: {
+            teamResultsSource: 'cache',
+            forcedRefresh: false,
+            cacheOnly,
+            statsCacheHits: 0,
+            statsFetchedLive: 0,
+            statsMissing: usableCachedPayload.matches.filter((match) => match.stats == null).length,
+            teamResultsExpiresAt: (cachedPayload as { __cache_metadata?: { expires_at?: string } } | null)?.__cache_metadata?.expires_at ?? null,
+          },
+        });
+      }
+
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref);
+      const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
+      if (usablePermanentPayload) {
+        return NextResponse.json({
+          resultsUrl: usablePermanentPayload.resultsUrl || resultsUrl,
+          matches: usablePermanentPayload.matches,
+          count: usablePermanentPayload.matches.length,
+          showMorePagesFetched: usablePermanentPayload.showMorePagesFetched,
+          cache: {
+            teamResultsSource: 'permanent',
+            forcedRefresh: false,
+            cacheOnly,
+            statsCacheHits: 0,
+            statsFetchedLive: 0,
+            statsMissing: usablePermanentPayload.matches.filter((match) => match.stats == null).length,
+            teamResultsExpiresAt: null,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        resultsUrl,
+        matches: [],
+        count: 0,
+        showMorePagesFetched: 0,
+        cache: {
+          teamResultsSource: 'cache-miss',
+          forcedRefresh: false,
+          cacheOnly,
+          statsCacheHits: 0,
+          statsFetchedLive: 0,
+          statsMissing: 0,
+          teamResultsExpiresAt: null,
+        },
+      });
     }
+
+    const live = await fetchTeamResultsFromSoccerway(teamHref);
+    baseMatches = live.matches;
+    showMorePagesFetched = live.showMorePagesFetched;
+    feedSign = live.feedSign;
 
     const shouldHydrateStats =
       forceRefresh || teamResultsSource === 'live' || !matchesHaveEmbeddedStats(baseMatches);
@@ -317,7 +432,8 @@ export async function GET(request: NextRequest) {
         };
 
     const hydratedPayload = toTeamResultsPayload(teamHref, resultsUrl, hydrated.matches, showMorePagesFetched);
-    await setSoccerTeamResultsCache(teamHref, hydratedPayload, FOREVER_CACHE_TTL_MINUTES, true);
+    await setSoccerTeamResultsCache(teamHref, toFastCacheTeamResultsPayload(hydratedPayload), FOREVER_CACHE_TTL_MINUTES, true);
+    await persistPermanentSoccerTeamResults(teamHref, hydratedPayload);
 
     return NextResponse.json({
       resultsUrl,

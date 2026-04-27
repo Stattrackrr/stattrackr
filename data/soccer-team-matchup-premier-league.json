@@ -1,0 +1,1011 @@
+{
+  "generatedAt": "2026-04-27T16:34:39.993Z",
+  "source": "build-soccer-team-matchup-pl",
+  "sourceBaseUrl": "https://www.soccerway.com",
+  "competitionName": "Premier League",
+  "competitionCountry": "England",
+  "competitionLabel": "England · Premier League",
+  "seasonYear": 2025,
+  "teamsInLeague": 20,
+  "teamsSampled": 20,
+  "stats": [
+    {
+      "id": "goals",
+      "label": "Goals"
+    },
+    {
+      "id": "expected_goals_xg",
+      "label": "xG"
+    },
+    {
+      "id": "total_shots",
+      "label": "Shots"
+    },
+    {
+      "id": "shots_on_target",
+      "label": "SOT"
+    }
+  ],
+  "teams": [
+    {
+      "name": "Arsenal",
+      "href": "/team/arsenal/hA1Zm19f",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.8823529411764706,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6800000000000004,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.411764705882353,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.823529411764706,
+          "rank": 3,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.7647058823529411,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.7582352941176472,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 8.205882352941176,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 2.4411764705882355,
+          "rank": 1,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Manchester City",
+      "href": "/team/manchester-city/Wtn9Stg0",
+      "leagueGames": 33,
+      "attack": {
+        "goals": {
+          "perGame": 2,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.886969696969697,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.272727272727273,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.424242424242424,
+          "rank": 2,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.8787878787878788,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.1118181818181818,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.848484848484848,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.3333333333333335,
+          "rank": 2,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Manchester Utd",
+      "href": "/team/manchester-united/ppjDR086",
+      "leagueGames": 33,
+      "attack": {
+        "goals": {
+          "perGame": 1.7575757575757576,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6593939393939396,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.666666666666666,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.696969696969697,
+          "rank": 1,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3636363636363635,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2906060606060608,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.454545454545455,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.696969696969697,
+          "rank": 3,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Aston Villa",
+      "href": "/team/aston-villa/W00wmLO0",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.3823529411764706,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2582352941176471,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.764705882352942,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.352941176470588,
+          "rank": 9,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2352941176470589,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4205882352941173,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.735294117647058,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.352941176470588,
+          "rank": 15,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Liverpool",
+      "href": "/team/liverpool/lId4TMwf",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.6764705882352942,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6314705882352938,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.529411764705882,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.529411764705882,
+          "rank": 7,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2941176470588236,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2111764705882355,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.352941176470589,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.911764705882353,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Chelsea",
+      "href": "/team/chelsea/4fGZN2oK",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.5588235294117647,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.8347058823529414,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.676470588235293,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.4411764705882355,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3235294117647058,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.368529411764706,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.911764705882353,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.235294117647059,
+          "rank": 13,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Brentford",
+      "href": "/team/brentford/xYe7DwID",
+      "leagueGames": 33,
+      "attack": {
+        "goals": {
+          "perGame": 1.4545454545454546,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6130303030303033,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.606060606060606,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.9393939393939394,
+          "rank": 12,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3333333333333333,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3436363636363635,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.606060606060606,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.9393939393939394,
+          "rank": 7,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Everton",
+      "href": "/team/everton/KluSTr9s",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2058823529411764,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2032352941176472,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.029411764705882,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.676470588235294,
+          "rank": 16,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2058823529411764,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4855882352941174,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.617647058823529,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.147058823529412,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Brighton",
+      "href": "/team/brighton/2XrRecc3",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.411764705882353,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4947058823529409,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.852941176470589,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.588235294117647,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.1470588235294117,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.273529411764706,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.970588235294118,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.911764705882353,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Sunderland",
+      "href": "/team/sunderland/WSzc94ws",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.0588235294117647,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.9861764705882353,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.117647058823529,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.3823529411764706,
+          "rank": 18,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3235294117647058,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4705882352941178,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.441176470588236,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.529411764705882,
+          "rank": 17,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Bournemouth",
+      "href": "/team/bournemouth/OtpNdwrc",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.5294117647058822,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.640294117647059,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.911764705882353,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.735294117647059,
+          "rank": 4,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.5294117647058822,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.505882352941176,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.647058823529411,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.382352941176471,
+          "rank": 16,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Fulham",
+      "href": "/team/fulham/69ZiU2Om",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2941176470588236,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2729411764705882,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.558823529411764,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.7058823529411766,
+          "rank": 15,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3529411764705883,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3920588235294118,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.823529411764707,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.823529411764706,
+          "rank": 4,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Crystal Palace",
+      "href": "/team/crystal-palace/AovF1Mia",
+      "leagueGames": 33,
+      "attack": {
+        "goals": {
+          "perGame": 1.0909090909090908,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.5554545454545459,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.666666666666666,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.727272727272727,
+          "rank": 14,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.1818181818181819,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2830303030303034,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.272727272727273,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.151515151515151,
+          "rank": 11,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Newcastle",
+      "href": "/team/newcastle-utd/p6ahwuwJ",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.3529411764705883,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.483823529411765,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.970588235294118,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.5588235294117645,
+          "rank": 6,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.4705882352941178,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3508823529411764,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.882352941176471,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.235294117647059,
+          "rank": 13,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Leeds",
+      "href": "/team/leeds/tUxUbLR2",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2941176470588236,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4488235294117646,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.617647058823529,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.9705882352941178,
+          "rank": 11,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.5,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4161764705882351,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.294117647058824,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.117647058823529,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Nottingham",
+      "href": "/team/nottingham/UsushcZr",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2058823529411764,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.1541176470588237,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.558823529411764,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.029411764705882,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.3235294117647058,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.402352941176471,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.441176470588236,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.117647058823529,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "West Ham",
+      "href": "/team/west-ham/Cxq57r8g",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2352941176470589,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2011764705882353,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.352941176470589,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.4705882352941178,
+          "rank": 17,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.7058823529411764,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.5547058823529416,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.970588235294118,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.147058823529412,
+          "rank": 19,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Tottenham",
+      "href": "/team/tottenham/UDg08Ohm",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1.2647058823529411,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.04,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.205882352941176,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.911764705882353,
+          "rank": 13,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.5588235294117647,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4588235294117649,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.705882352941176,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.176470588235294,
+          "rank": 12,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Burnley",
+      "href": "/team/burnley/z3dmTMMO",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 1,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.8511764705882354,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.147058823529411,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 2.9705882352941178,
+          "rank": 20,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.026764705882353,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 16.852941176470587,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.705882352941177,
+          "rank": 20,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Wolves",
+      "href": "/team/wolves/j3Azpf5d",
+      "leagueGames": 34,
+      "attack": {
+        "goals": {
+          "perGame": 0.7058823529411765,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.8794117647058822,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.382352941176471,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.176470588235294,
+          "rank": 19,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.8235294117647058,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6005882352941179,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.029411764705882,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.647058823529412,
+          "rank": 18,
+          "rankedSize": 20
+        }
+      }
+    }
+  ]
+}

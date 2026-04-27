@@ -5,6 +5,8 @@ import type { SoccerwayLineupBundle, SoccerwayLineupPlayer, SoccerwayLineupTeam 
 type SoccerPredictedLineupProps = {
   lineup: SoccerwayLineupBundle | null;
   isDark: boolean;
+  /** When the next-fixture lineups are empty, we may show the last match instead. */
+  lineupFrom?: 'upcoming' | 'previous';
 };
 
 function formatPlayerLabel(player: SoccerwayLineupPlayer): string {
@@ -241,18 +243,23 @@ function SingleTeamPitch({ team, isDark }: { team: SoccerwayLineupTeam; isDark: 
   );
 }
 
-export function SoccerPredictedLineup({ lineup, isDark }: SoccerPredictedLineupProps) {
+export function SoccerPredictedLineup({ lineup, isDark, lineupFrom = 'upcoming' }: SoccerPredictedLineupProps) {
   const teams =
     lineup?.teams.filter(
       (team) => team.starters.length > 0 || team.formationLines.length > 0 || team.substitutes.length > 0 || team.coaches.length > 0
     ) ?? [];
+  const isPrevious = lineupFrom === 'previous';
   const statusLabel =
     lineup?.status === 'official'
       ? 'Official lineups'
       : lineup?.status === 'predicted'
         ? 'Predicted lineups'
         : 'No lineup available';
-  const titleLabel = lineup?.status === 'official' || lineup?.status === 'predicted' ? `Lineups - ${statusLabel}` : 'Lineups';
+  const titleLabel = isPrevious
+    ? 'Most Recent Lineup'
+    : lineup?.status === 'official' || lineup?.status === 'predicted'
+      ? `Lineups - ${statusLabel}`
+      : 'Lineups';
 
   return (
     <div className="flex flex-col gap-3">
@@ -261,7 +268,7 @@ export function SoccerPredictedLineup({ lineup, isDark }: SoccerPredictedLineupP
       </div>
 
       {teams.length === 0 ? (
-        <div className={`px-3 pb-2 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No lineup data available.</div>
+        <div className={`px-3 pb-2 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No data available come back later</div>
       ) : teams.length >= 2 ? (
         <CombinedPitch
           homeTeam={teams.find((team) => team.side === 'home') ?? teams[0]}
