@@ -6,6 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE_NAME = 'soccer_api_cache';
 // Bump when persistent soccer cache payload/coverage rules change.
 const SOCCER_CACHE_SCHEMA = 'v3';
+const SOCCER_TEAM_RESULTS_CACHE_SCHEMA = 'v4';
 const SOCCER_CACHE_WARNINGS = new Set<string>();
 const SOCCER_CACHE_FOREVER_EXPIRES_AT = '9999-12-31T23:59:59.999Z';
 
@@ -148,7 +149,7 @@ export function extractParticipantIdFromTeamHref(teamHref: string): string {
 }
 
 export function buildSoccerTeamResultsCacheKey(teamHref: string): string {
-  return `soccer:team-results:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
+  return `soccer:team-results:${SOCCER_TEAM_RESULTS_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
 }
 
 export function buildSoccerMatchStatsCacheKey(matchId: string): string {
@@ -186,8 +187,8 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
   if (!supabaseAdmin) return null;
 
   const quiet = options.quiet ?? false;
-  const restTimeoutMs = Math.max(3000, options.restTimeoutMs ?? 5000);
-  const jsTimeoutMs = Math.max(3000, options.jsTimeoutMs ?? 5000);
+  const restTimeoutMs = Math.max(100, options.restTimeoutMs ?? 5000);
+  const jsTimeoutMs = Math.max(100, options.jsTimeoutMs ?? 5000);
 
   const hotHit = hotCache.get(cacheKey);
   if (hotHit && hotHit.expiresAtMs > Date.now()) {
@@ -199,79 +200,92 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
 
   const readPromise = (async (): Promise<T | null> => {
     try {
-      if (!options.disableRest && supabaseUrl && supabaseServiceKey) {
-        try {
-          const restUrl =
-            `${supabaseUrl}/rest/v1/${TABLE_NAME}` +
-            `?cache_key=eq.${encodeURIComponent(cacheKey)}` +
-            '&select=data,fetched_at,expires_at,updated_at,created_at&limit=1';
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), restTimeoutMs);
+      const restPromise: Promise<T | null> =
+        !options.disableRest && supabaseUrl && supabaseServiceKey
+          ? (async () => {
+              try {
+                const restUrl =
+                  `${supabaseUrl}/rest/v1/${TABLE_NAME}` +
+                  `?cache_key=eq.${encodeURIComponent(cacheKey)}` +
+                  '&select=data,fetched_at,expires_at,updated_at,created_at&limit=1';
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), restTimeoutMs);
 
-          const response = await fetch(restUrl, {
-            method: 'GET',
-            headers: {
-              apikey: supabaseServiceKey,
-              Authorization: `Bearer ${supabaseServiceKey}`,
-              'Content-Type': 'application/json',
-              Prefer: 'return=representation',
-            },
-            signal: controller.signal,
-          });
+                const response = await fetch(restUrl, {
+                  method: 'GET',
+                  headers: {
+                    apikey: supabaseServiceKey,
+                    Authorization: `Bearer ${supabaseServiceKey}`,
+                    'Content-Type': 'application/json',
+                    Prefer: 'return=representation',
+                  },
+                  signal: controller.signal,
+                });
 
-          clearTimeout(timeoutId);
+                clearTimeout(timeoutId);
 
-          if (!response.ok) {
-            if (response.status === 404 || response.status === 406) return null;
-            throw new Error(`REST API error: ${response.status} ${response.statusText}`);
-          }
+                if (!response.ok) {
+                  if (response.status === 404 || response.status === 406) return null;
+                  throw new Error(`REST API error: ${response.status} ${response.statusText}`);
+                }
 
-          const rows = await response.json();
-          if (!Array.isArray(rows) || rows.length === 0) return null;
+                const rows = await response.json();
+                if (!Array.isArray(rows) || rows.length === 0) return null;
 
-          const row = rows[0] as Record<string, unknown>;
-          const value = attachCacheMetadata(row.data as T, row);
-          hotCache.set(cacheKey, { expiresAtMs: Date.now() + HOT_CACHE_TTL_MS, value });
-          return value;
-        } catch (error) {
+                const row = rows[0] as Record<string, unknown>;
+                return attachCacheMetadata(row.data as T, row);
+              } catch (error) {
+                if (!quiet) warnSoccerCache(`REST cache read failed for ${cacheKey}`, error);
+                return null;
+              }
+            })()
+          : Promise.resolve(null);
+
+      const jsPromise: Promise<T | null> = (async () => {
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), jsTimeoutMs);
+        });
+
+        const queryPromise = supabaseAdmin
+          .from(TABLE_NAME)
+          .select('data, fetched_at, expires_at, updated_at, created_at')
+          .eq('cache_key', cacheKey)
+          .single();
+
+        const result = await Promise.race([queryPromise, timeoutPromise]);
+        if (result === null) {
           if (!quiet) {
-            warnSoccerCache(`REST cache read failed for ${cacheKey}; falling back to JS client`, error);
+            warnSoccerCache(
+              `Supabase JS cache read timed out for ${cacheKey}; using cache miss`,
+              new Error(`timeout after ${jsTimeoutMs}ms`)
+            );
           }
+          return null;
         }
-      }
 
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), jsTimeoutMs);
+        const { data, error } = result as {
+          data: Record<string, unknown> | null;
+          error: { code?: string; message?: string } | null;
+        };
+
+        if (error) {
+          if (error.code === 'PGRST116' || error.code === 'PGRST301') return null;
+          if (!quiet) warnSoccerCache(`JS cache read failed for ${cacheKey}`, error.message ?? error.code ?? 'unknown error');
+          return null;
+        }
+        if (!data) return null;
+
+        return attachCacheMetadata(data.data as T, data);
+      })().catch((error) => {
+        if (!quiet) warnSoccerCache(`Unexpected JS cache read failure for ${cacheKey}`, error);
+        return null;
       });
 
-      const queryPromise = supabaseAdmin
-        .from(TABLE_NAME)
-        .select('data, fetched_at, expires_at, updated_at, created_at')
-        .eq('cache_key', cacheKey)
-        .single();
-
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-      if (result === null) {
-        if (!quiet) {
-          warnSoccerCache(`Supabase JS cache read timed out for ${cacheKey}; using live fetch fallback`, new Error(`timeout after ${jsTimeoutMs}ms`));
-        }
-        return null;
+      const [restValue, jsValue] = await Promise.all([restPromise, jsPromise]);
+      const value = restValue ?? jsValue;
+      if (value != null) {
+        hotCache.set(cacheKey, { expiresAtMs: Date.now() + HOT_CACHE_TTL_MS, value });
       }
-
-      const { data, error } = result as {
-        data: Record<string, unknown> | null;
-        error: { code?: string; message?: string } | null;
-      };
-
-      if (error) {
-        if (error.code === 'PGRST116' || error.code === 'PGRST301') return null;
-        if (!quiet) warnSoccerCache(`JS cache read failed for ${cacheKey}`, error.message ?? error.code ?? 'unknown error');
-        return null;
-      }
-      if (!data) return null;
-
-      const value = attachCacheMetadata(data.data as T, data);
-      hotCache.set(cacheKey, { expiresAtMs: Date.now() + HOT_CACHE_TTL_MS, value });
       return value;
     } catch (error) {
       if (!quiet) warnSoccerCache(`Unexpected cache read failure for ${cacheKey}; using live fetch fallback`, error);

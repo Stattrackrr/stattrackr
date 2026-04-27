@@ -14,6 +14,8 @@ import type { SoccerwayLineupBundle, SoccerwayRecentMatch } from '@/lib/soccerwa
 import { SoccerStatsChart, type SoccerStatTeamScope, type SoccerTimeframe } from '@/app/soccer/components/SoccerStatsChart';
 import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingStats';
 import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
+import { SoccerOpponentBreakdownPanel } from '@/app/soccer/components/SoccerOpponentBreakdownPanel';
+import { SoccerTeamMatchupCard } from '@/app/soccer/components/SoccerTeamMatchupCard';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -44,6 +46,7 @@ type SoccerPredictedLineupResponse = {
   lineupsPath: string | null;
   eventId: string | null;
   lineup: SoccerwayLineupBundle | null;
+  lineupFrom?: 'upcoming' | 'previous';
 };
 
 type SoccerTeamRow = {
@@ -59,7 +62,9 @@ type SoccerDashboardSessionState = {
 };
 
 // Bump the restore cache version when the stored match payload shape/coverage changes.
-const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v5:';
+const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v6:';
+const EMPTY_STATS_SKELETON_MS = 5000;
+const EMPTY_STATS_CACHE_RETRY_DELAY_MS = 750;
 
 function getSoccerDashboardSessionKey(teamHref: string): string {
   return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
@@ -208,12 +213,14 @@ function SoccerPageContent() {
   const [recentMatchesLoading, setRecentMatchesLoading] = useState(false);
   const [recentMatchesError, setRecentMatchesError] = useState<string | null>(null);
   const [recentMatchesCacheMiss, setRecentMatchesCacheMiss] = useState(false);
+  const [recentMatchesSettled, setRecentMatchesSettled] = useState(false);
   const [nextFixture, setNextFixture] = useState<SoccerNextFixture | null>(null);
   const [nextFixtureLoading, setNextFixtureLoading] = useState(false);
   const [nextFixtureError, setNextFixtureError] = useState<string | null>(null);
   const [nextFixtureCacheMiss, setNextFixtureCacheMiss] = useState(false);
   const [nextFixtureCountdown, setNextFixtureCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
   const [predictedLineup, setPredictedLineup] = useState<SoccerwayLineupBundle | null>(null);
+  const [predictedLineupFrom, setPredictedLineupFrom] = useState<'upcoming' | 'previous'>('upcoming');
   const [predictedLineupLoading, setPredictedLineupLoading] = useState(false);
   const [predictedLineupError, setPredictedLineupError] = useState<string | null>(null);
   const [predictedLineupCacheMiss, setPredictedLineupCacheMiss] = useState(false);
@@ -374,6 +381,7 @@ function SoccerPageContent() {
     setRecentMatchesError(null);
     setRecentMatchesCacheMiss(false);
     setRecentMatchesLoading(false);
+    setRecentMatchesSettled(true);
   }, [teamHrefFromUrl]);
 
   const updateTeamUrl = useCallback(
@@ -418,37 +426,89 @@ function SoccerPageContent() {
       setRecentMatchesError(null);
       setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
+      setRecentMatchesSettled(false);
       return;
     }
 
     const requestId = (teamResultsRequestId.current += 1);
     const ac = new AbortController();
+    const requestStartedAt = Date.now();
     const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
     const cached = readSoccerDashboardSessionState(href);
     const hasCachedMatches = Array.isArray(cached?.recentMatches) && cached.recentMatches.length > 0;
+    const waitWithAbort = async (delayMs: number) => {
+      if (delayMs <= 0) return;
+      await new Promise<void>((resolve) => {
+        const timeoutId = window.setTimeout(() => resolve(), delayMs);
+        ac.signal.addEventListener(
+          'abort',
+          () => {
+            window.clearTimeout(timeoutId);
+            resolve();
+          },
+          { once: true }
+        );
+      });
+    };
+    const fetchCachedTeamResults = async () => {
+      const response = await fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}&cacheOnly=1`, {
+        signal: ac.signal,
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        matches?: SoccerwayRecentMatch[];
+        cache?: { teamResultsSource?: string };
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to load recent matches');
+      }
+      return payload;
+    };
+    const waitForEmptyStateSkeleton = async () => {
+      if (hasCachedMatches) return;
+      const remainingMs = Math.max(0, EMPTY_STATS_SKELETON_MS - (Date.now() - requestStartedAt));
+      await waitWithAbort(remainingMs);
+    };
 
     if (hasCachedMatches) {
       setRecentMatches(cached!.recentMatches);
       setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
+      setRecentMatchesSettled(true);
     } else {
       setRecentMatchesLoading(true);
+      setRecentMatchesSettled(false);
     }
     setRecentMatchesError(null);
 
-    void fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}&cacheOnly=1`, { signal: ac.signal, cache: 'no-store' })
+    void fetchCachedTeamResults()
       .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string;
-          matches?: SoccerwayRecentMatch[];
-          cache?: { teamResultsSource?: string };
-        } | null;
-        if (!response.ok) {
-          throw new Error(payload?.error || 'Failed to load recent matches');
+        let payload = response;
+        let matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        let source = payload?.cache?.teamResultsSource ?? null;
+
+        while (
+          !hasCachedMatches &&
+          !ac.signal.aborted &&
+          (source === 'cache-miss' || matches.length === 0) &&
+          Date.now() - requestStartedAt < EMPTY_STATS_SKELETON_MS
+        ) {
+          await waitWithAbort(EMPTY_STATS_CACHE_RETRY_DELAY_MS);
+          if (ac.signal.aborted) break;
+          payload = await fetchCachedTeamResults();
+          matches = Array.isArray(payload?.matches) ? payload.matches : [];
+          source = payload?.cache?.teamResultsSource ?? null;
         }
+
+        const shouldDelayEmptyState = matches.length === 0;
+
+        if (shouldDelayEmptyState && !ac.signal.aborted) {
+          await waitForEmptyStateSkeleton();
+        }
+
         if (teamResultsRequestId.current !== requestId) return;
-        const matches = Array.isArray(payload?.matches) ? payload.matches : [];
-        setRecentMatchesCacheMiss(payload?.cache?.teamResultsSource === 'cache-miss');
+        setRecentMatchesCacheMiss(source === 'cache-miss');
         setRecentMatches(matches);
         if (matches.length > 0) {
           writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
@@ -466,6 +526,7 @@ function SoccerPageContent() {
       .finally(() => {
         if (teamResultsRequestId.current === requestId) {
           setRecentMatchesLoading(false);
+          setRecentMatchesSettled(true);
         }
       });
 
@@ -521,6 +582,7 @@ function SoccerPageContent() {
   useEffect(() => {
     if (!selectedTeam) {
       setPredictedLineup(null);
+      setPredictedLineupFrom('upcoming');
       setPredictedLineupError(null);
       setPredictedLineupCacheMiss(false);
       setPredictedLineupLoading(false);
@@ -532,6 +594,7 @@ function SoccerPageContent() {
     setPredictedLineupLoading(true);
     setPredictedLineupError(null);
     setPredictedLineupCacheMiss(false);
+    setPredictedLineupFrom('upcoming');
 
     const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
     void fetch(`/api/soccer/predicted-lineup?href=${encodeURIComponent(href)}&cacheOnly=1`, {
@@ -545,8 +608,10 @@ function SoccerPageContent() {
         if (!response.ok) {
           throw new Error(payload?.error || 'Failed to load lineup');
         }
+
         if (predictedLineupRequestId.current !== requestId) return;
         setPredictedLineupCacheMiss(payload?.cache?.source === 'cache-miss');
+        setPredictedLineupFrom(payload?.lineupFrom === 'previous' ? 'previous' : 'upcoming');
         setPredictedLineup(payload?.lineup ?? null);
       })
       .catch((err: unknown) => {
@@ -579,6 +644,39 @@ function SoccerPageContent() {
   const selectedHeaderTeamName = selectedTeam?.name ?? null;
   const headerTitle = selectedHeaderTeamName ?? 'Select a team';
   const displayOpponent = nextFixture?.opponentName?.trim() ? nextFixture.opponentName.trim() : null;
+  const nextOpponentHrefForPanel = useMemo(() => {
+    if (!displayOpponent || teamUniverse.length === 0) return null;
+    const normalizeToken = (value: string | null | undefined) =>
+      String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s*\([^)]+\)\s*/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const target = displayOpponent
+      .toLowerCase()
+      .replace(/\s*\([^)]+\)\s*$/g, '')
+      .trim();
+    const competitionToken = normalizeToken(nextFixture?.competitionName);
+    const countryToken = normalizeToken(nextFixture?.competitionCountry);
+    const inFixtureLeague = (t: SoccerTeamRow) =>
+      t.competitions.some(
+        (c) =>
+          normalizeToken(c.competition) === competitionToken &&
+          (!countryToken || normalizeToken(c.country) === countryToken)
+      );
+    const exactLeagueMatch = teamUniverse.find((t) => t.name.toLowerCase() === target && inFixtureLeague(t));
+    if (exactLeagueMatch) return normalizeTeamHref(exactLeagueMatch.href);
+    const fuzzyLeagueMatch = teamUniverse.find(
+      (t) =>
+        inFixtureLeague(t) &&
+        (t.name.toLowerCase().includes(target) || (target.length >= 3 && target.includes(t.name.toLowerCase())))
+    );
+    if (fuzzyLeagueMatch) return normalizeTeamHref(fuzzyLeagueMatch.href);
+    const anyMatch = teamUniverse.find((t) => t.name.toLowerCase() === target);
+    return anyMatch ? normalizeTeamHref(anyMatch.href) : null;
+  }, [displayOpponent, nextFixture?.competitionCountry, nextFixture?.competitionName, teamUniverse]);
   const fixturePrimaryName = nextFixture?.isHome === false ? displayOpponent : selectedHeaderTeamName;
   const fixtureSecondaryName = nextFixture?.isHome === false ? selectedHeaderTeamName : displayOpponent;
   const fixturePrimaryLogoUrl =
@@ -589,9 +687,7 @@ function SoccerPageContent() {
   const fixtureSecondaryAlt = nextFixture?.isHome === false ? selectedHeaderTeamName ?? 'Selected team' : displayOpponent ?? 'Away team';
   const fixturePrimaryLines = splitFixtureNameLines(fixturePrimaryName);
   const fixtureSecondaryLines = splitFixtureNameLines(fixtureSecondaryName);
-  const recentMatchesEmptyMessage = recentMatchesCacheMiss
-    ? 'No cached Soccerway stat history yet.'
-    : 'No Soccerway stat history parsed for this team.';
+  const recentMatchesEmptyMessage = 'No data available come back later';
   const nextFixtureMeta = useMemo(() => {
     if (!selectedTeam) return null;
     if (nextFixtureLoading) return { primary: 'Loading next fixture...', secondary: null, isError: false };
@@ -915,7 +1011,7 @@ function SoccerPageContent() {
                         <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
                           Select a team above to chart Soccerway match stats.
                         </div>
-                      ) : recentMatchesLoading ? (
+                      ) : recentMatchesLoading || !recentMatchesSettled ? (
                         <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
                           <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
                             {[...Array(20)].map((_, idx) => {
@@ -970,7 +1066,7 @@ function SoccerPageContent() {
                       <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
                         Select a team above to load supporting stats.
                       </div>
-                    ) : recentMatchesLoading ? (
+                    ) : recentMatchesLoading || !recentMatchesSettled ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="space-y-3 w-full max-w-md">
                           <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`} />
@@ -1015,9 +1111,13 @@ function SoccerPageContent() {
                   ) : predictedLineupError ? (
                     <div className="px-3 sm:px-4 text-sm text-red-600 dark:text-red-400">{predictedLineupError}</div>
                   ) : predictedLineupCacheMiss ? (
-                    <div className={`px-3 sm:px-4 text-sm ${emptyText}`}>No cached predicted lineup yet.</div>
+                    <div className={`px-3 sm:px-4 text-sm ${emptyText}`}>No data available come back later</div>
                   ) : (
-                    <SoccerPredictedLineup lineup={predictedLineup} isDark={Boolean(mounted && isDark)} />
+                    <SoccerPredictedLineup
+                      lineup={predictedLineup}
+                      isDark={Boolean(mounted && isDark)}
+                      lineupFrom={predictedLineupFrom}
+                    />
                   )}
                 </div>
 
@@ -1061,9 +1161,29 @@ function SoccerPageContent() {
                   sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
                 }`}
               >
-                <div className={`hidden lg:block min-h-[120px] rounded-lg ${AFL_DASH_CARD_GLOW}`} />
-                <div className={`hidden lg:block h-[380px] w-full min-w-0 shrink-0 rounded-lg xl:h-[420px] ${AFL_DASH_CARD_GLOW}`} />
-                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block min-h-[120px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block h-[380px] w-full min-w-0 shrink-0 rounded-lg xl:h-[420px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerOpponentBreakdownPanel
+                    isDark={Boolean(mounted && isDark)}
+                    nextCompetitionName={nextFixture?.competitionName ?? null}
+                    nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
+                    opponentName={displayOpponent}
+                    opponentHref={nextOpponentHrefForPanel}
+                    emptyTextClass={emptyText}
+                  />
+                </div>
+                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerTeamMatchupCard
+                    isDark={Boolean(mounted && isDark)}
+                    teamName={selectedTeam?.name ?? null}
+                    teamHref={selectedTeam?.href ?? null}
+                    opponentName={displayOpponent}
+                    opponentHref={nextOpponentHrefForPanel}
+                    nextCompetitionName={nextFixture?.competitionName ?? null}
+                    nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
+                    emptyTextClass={emptyText}
+                  />
+                </div>
                 <div className={`hidden lg:block min-h-[320px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
                 <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
               </div>

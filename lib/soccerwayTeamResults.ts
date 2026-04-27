@@ -105,6 +105,18 @@ export type SoccerwayLineupBundle = {
   teams: SoccerwayLineupTeam[];
 };
 
+/** True when the bundle has at least one team with starters, formation, subs, or coaches (same filter as the pitch UI). */
+export function hasDisplayableSoccerLineup(lineup: SoccerwayLineupBundle | null | undefined): boolean {
+  if (!lineup || !Array.isArray(lineup.teams)) return false;
+  return lineup.teams.some(
+    (team) =>
+      team.starters.length > 0 ||
+      team.formationLines.length > 0 ||
+      team.substitutes.length > 0 ||
+      team.coaches.length > 0
+  );
+}
+
 function buildSoccerwayResultDedupeKey(match: { matchId?: string | null; summaryPath?: string | null }): string {
   const matchId = String(match.matchId || '').trim();
   if (matchId) return `match:${matchId}`;
@@ -400,6 +412,25 @@ type RawSoccerwayEventParticipant = {
   predictedLineup?: RawSoccerwayLineup;
 };
 
+/** True when the official lineup payload can drive starters (avoid preferring predicted when both exist, e.g. after FT). */
+function rawSoccerwayLineupHasStartersData(raw: RawSoccerwayLineup | null | undefined): boolean {
+  if (!raw) return false;
+  if (Array.isArray(raw.players) && raw.players.length > 0) return true;
+  const startingGroup = raw.groups?.find((g) => /starting lineups?/i.test(String(g?.name || '')));
+  if (startingGroup?.playerIds && startingGroup.playerIds.filter(Boolean).length > 0) return true;
+  return Boolean(
+    raw.formation?.lines?.some((line) =>
+      line?.rows?.some((row) => (row?.playerIds?.filter((id) => id != null && id !== '') ?? []).length > 0)
+    )
+  );
+}
+
+function pickSourceLineup(raw: RawSoccerwayEventParticipant): RawSoccerwayLineup | null {
+  if (rawSoccerwayLineupHasStartersData(raw.lineup)) return raw.lineup ?? null;
+  if (rawSoccerwayLineupHasStartersData(raw.predictedLineup)) return raw.predictedLineup ?? null;
+  return raw.lineup ?? raw.predictedLineup ?? null;
+}
+
 function pickSoccerwayPlayerImageUrl(
   images: Array<{ path?: string | null; variantType?: number | null }> | null | undefined
 ): string | null {
@@ -440,7 +471,7 @@ function normalizeSoccerwayLineupTeam(raw: RawSoccerwayEventParticipant): Soccer
   const name = String(raw?.name || '').trim();
   if (!side || !name) return null;
 
-  const sourceLineup = raw.predictedLineup ?? raw.lineup;
+  const sourceLineup = pickSourceLineup(raw);
   if (!sourceLineup) {
     return {
       side,
@@ -516,14 +547,22 @@ export function parseSoccerwayLineupsGraphql(raw: string, statusHint: SoccerwayL
         .filter((team): team is SoccerwayLineupTeam => team != null)
         .sort((a, b) => (a.side === b.side ? 0 : a.side === 'home' ? -1 : 1)) ?? [];
 
-    const hasPredictedLineup =
-      parsed?.data?.findEventById?.eventParticipants?.some((participant) => participant?.predictedLineup != null) ?? false;
+    const participants = parsed?.data?.findEventById?.eventParticipants ?? [];
+    const hasPredictedLineup = participants.some((p) => p?.predictedLineup != null);
+    const hasOfficialLineupData = participants.some((p) => rawSoccerwayLineupHasStartersData(p?.lineup ?? null));
 
     const hasLineupData = teams.some(
       (team) => team.starters.length > 0 || team.formationLines.length > 0 || team.substitutes.length > 0 || team.coaches.length > 0
     );
+    const status: SoccerwayLineupStatus = !hasLineupData
+      ? 'unavailable'
+      : hasOfficialLineupData
+        ? 'official'
+        : hasPredictedLineup
+          ? 'predicted'
+          : statusHint;
     return {
-      status: hasLineupData ? (hasPredictedLineup ? 'predicted' : statusHint) : 'unavailable',
+      status,
       eventId: null,
       teams: hasLineupData ? teams : [],
     };

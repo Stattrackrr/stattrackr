@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import {
   getSoccerPredictedLineupCache,
+  getSoccerTeamResultsCache,
   normalizeSoccerTeamHref,
   setSoccerPredictedLineupCache,
   type SoccerPredictedLineupCachePayload,
@@ -12,9 +13,15 @@ import {
   buildSoccerwayPredictedLineupsGraphqlUrl,
   detectSoccerwayLineupStatus,
   extractSoccerwayEventId,
+  hasDisplayableSoccerLineup,
   parseSoccerwayLineupsGraphql,
   type SoccerwayLineupBundle,
 } from '@/lib/soccerwayTeamResults';
+import {
+  getPermanentSoccerPredictedLineup,
+  getPermanentSoccerTeamResults,
+  persistPermanentSoccerPredictedLineup,
+} from '@/lib/soccerPermanentStore';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,8 +55,9 @@ type PredictedLineupResponse = {
   lineupsPath: string | null;
   eventId: string | null;
   lineup: SoccerwayLineupBundle | null;
+  lineupFrom?: 'upcoming' | 'previous';
   cache: {
-    source: 'cache' | 'live' | 'cache-miss';
+    source: 'cache' | 'live' | 'cache-miss' | 'permanent';
     forcedRefresh: boolean;
     cacheOnly?: boolean;
   };
@@ -167,6 +175,99 @@ async function fetchSoccerwayLineupBundle(summaryPath: string): Promise<{
   };
 }
 
+function normalizeSummaryPath(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .replace(/\/+$/, '');
+}
+
+function pickPreviousMatchSummaryPath(matches: Array<{ summaryPath: string }>, nextSummaryPath: string | null): string | null {
+  const next = normalizeSummaryPath(nextSummaryPath);
+  for (const match of matches) {
+    const summaryPath = normalizeSummaryPath(match.summaryPath);
+    if (!summaryPath) continue;
+    if (next && summaryPath === next) continue;
+    return match.summaryPath;
+  }
+  return null;
+}
+
+async function getCachedTeamResultsSummaryPaths(teamHref: string): Promise<Array<{ summaryPath: string }>> {
+  const cached = await getSoccerTeamResultsCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
+  if (cached?.matches?.length) return cached.matches;
+  const permanent = await getPermanentSoccerTeamResults(teamHref);
+  return permanent?.matches ?? [];
+}
+
+async function tryFetchPreviousDisplayableLineup(
+  teamHref: string,
+  nextSummaryPath: string | null
+): Promise<{
+  summaryPath: string;
+  lineupsPath: string;
+  eventId: string | null;
+  lineup: SoccerwayLineupBundle;
+} | null> {
+  const matches = await getCachedTeamResultsSummaryPaths(teamHref);
+  if (!matches.length) return null;
+  const previousSummaryPath = pickPreviousMatchSummaryPath(matches, nextSummaryPath);
+  if (!previousSummaryPath) return null;
+  const previous = await fetchSoccerwayLineupBundle(previousSummaryPath);
+  if (!hasDisplayableSoccerLineup(previous.lineup)) return null;
+  return {
+    summaryPath: previousSummaryPath,
+    lineupsPath: previous.lineupsPath,
+    eventId: previous.eventId,
+    lineup: previous.lineup!,
+  };
+}
+
+async function getCachedLineupSource(
+  request: NextRequest,
+  teamHref: string,
+  summaryPath: string | null,
+  lineup: SoccerwayLineupBundle | null
+): Promise<'upcoming' | 'previous'> {
+  if (!hasDisplayableSoccerLineup(lineup) || !summaryPath) return 'upcoming';
+  const fixtureLookup = await resolveNextFixtureSummaryPath(request, teamHref, false, true);
+  const nextSummaryPath = normalizeSummaryPath(fixtureLookup.summaryPath);
+  const currentSummaryPath = normalizeSummaryPath(summaryPath);
+  if (!nextSummaryPath) return 'previous';
+  return nextSummaryPath === currentSummaryPath ? 'upcoming' : 'previous';
+}
+
+async function resolveLineupWithPreviousFallback(
+  teamHref: string,
+  nextSummaryPath: string | null,
+  primary: {
+    summaryPath: string | null;
+    lineupsPath: string | null;
+    eventId: string | null;
+    lineup: SoccerwayLineupBundle | null;
+  }
+): Promise<{
+  summaryPath: string | null;
+  lineupsPath: string | null;
+  eventId: string | null;
+  lineup: SoccerwayLineupBundle | null;
+  lineupFrom: 'upcoming' | 'previous';
+}> {
+  if (hasDisplayableSoccerLineup(primary.lineup)) {
+    return { ...primary, lineupFrom: 'upcoming' as const };
+  }
+  const previous = await tryFetchPreviousDisplayableLineup(teamHref, nextSummaryPath);
+  if (previous) {
+    return {
+      summaryPath: previous.summaryPath,
+      lineupsPath: previous.lineupsPath,
+      eventId: previous.eventId,
+      lineup: previous.lineup,
+      lineupFrom: 'previous' as const,
+    };
+  }
+  return { ...primary, lineupFrom: 'upcoming' as const };
+}
+
 export async function GET(request: NextRequest) {
   const href = request.nextUrl.searchParams.get('href')?.trim() || '';
   const teamHref = normalizeSoccerTeamHref(href);
@@ -183,24 +284,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    if (!forceRefresh) {
-      const cached = await getSoccerPredictedLineupCache(teamHref, { quiet: true });
+    if (!forceRefresh && cacheOnly) {
+      const cached = await getSoccerPredictedLineupCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
       if (cached) {
+        const lineupFrom = await getCachedLineupSource(request, teamHref, cached.summaryPath, cached.lineup);
         return NextResponse.json({
           summaryPath: cached.summaryPath,
           lineupsPath: cached.lineupsPath,
           eventId: cached.eventId,
           lineup: cached.lineup,
+          lineupFrom,
           cache: {
             source: 'cache',
             forcedRefresh: false,
-            cacheOnly,
+            cacheOnly: true,
           },
         } satisfies PredictedLineupResponse);
       }
-    }
 
-    if (cacheOnly) {
       return NextResponse.json({
         summaryPath: null,
         lineupsPath: null,
@@ -210,6 +311,55 @@ export async function GET(request: NextRequest) {
           source: 'cache-miss',
           forcedRefresh: false,
           cacheOnly: true,
+        },
+      } satisfies PredictedLineupResponse);
+    }
+
+    if (!forceRefresh) {
+      const cached = await getSoccerPredictedLineupCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
+      if (cached) {
+        await persistPermanentSoccerPredictedLineup(teamHref, cached);
+        const lineupFrom = await getCachedLineupSource(request, teamHref, cached.summaryPath, cached.lineup);
+        return NextResponse.json({
+          summaryPath: cached.summaryPath,
+          lineupsPath: cached.lineupsPath,
+          eventId: cached.eventId,
+          lineup: cached.lineup,
+          lineupFrom,
+          cache: {
+            source: 'cache',
+            forcedRefresh: false,
+            cacheOnly,
+          },
+        } satisfies PredictedLineupResponse);
+      }
+
+      const permanent = await getPermanentSoccerPredictedLineup(teamHref);
+      if (permanent) {
+        const lineupFrom = await getCachedLineupSource(request, teamHref, permanent.summaryPath, permanent.lineup);
+        return NextResponse.json({
+          summaryPath: permanent.summaryPath,
+          lineupsPath: permanent.lineupsPath,
+          eventId: permanent.eventId,
+          lineup: permanent.lineup,
+          lineupFrom,
+          cache: {
+            source: 'permanent',
+            forcedRefresh: false,
+            cacheOnly,
+          },
+        } satisfies PredictedLineupResponse);
+      }
+
+      return NextResponse.json({
+        summaryPath: null,
+        lineupsPath: null,
+        eventId: null,
+        lineup: null,
+        cache: {
+          source: 'cache-miss',
+          forcedRefresh: false,
+          cacheOnly,
         },
       } satisfies PredictedLineupResponse);
     }
@@ -226,22 +376,33 @@ export async function GET(request: NextRequest) {
     }
 
     const live = await fetchSoccerwayLineupBundle(fixtureLookup.summaryPath);
-    const cachePayload: SoccerPredictedLineupCachePayload = {
-      teamHref,
+    const resolved = await resolveLineupWithPreviousFallback(teamHref, fixtureLookup.summaryPath, {
       summaryPath: fixtureLookup.summaryPath,
       lineupsPath: live.lineupsPath,
       eventId: live.eventId,
       lineup: live.lineup,
-      source: 'soccerway',
-      generatedAt: new Date().toISOString(),
-    };
-    await setSoccerPredictedLineupCache(teamHref, cachePayload, FOREVER_CACHE_TTL_MINUTES, true);
+    });
+
+    if (hasDisplayableSoccerLineup(resolved.lineup) && resolved.summaryPath) {
+      const cachePayload: SoccerPredictedLineupCachePayload = {
+        teamHref,
+        summaryPath: resolved.summaryPath,
+        lineupsPath: resolved.lineupsPath!,
+        eventId: resolved.eventId,
+        lineup: resolved.lineup,
+        source: 'soccerway',
+        generatedAt: new Date().toISOString(),
+      };
+      await setSoccerPredictedLineupCache(teamHref, cachePayload, FOREVER_CACHE_TTL_MINUTES, true);
+      await persistPermanentSoccerPredictedLineup(teamHref, cachePayload);
+    }
 
     return NextResponse.json({
-      summaryPath: fixtureLookup.summaryPath,
-      lineupsPath: live.lineupsPath,
-      eventId: live.eventId,
-      lineup: live.lineup,
+      summaryPath: resolved.summaryPath,
+      lineupsPath: resolved.lineupsPath,
+      eventId: resolved.eventId,
+      lineup: resolved.lineup,
+      lineupFrom: resolved.lineupFrom,
       cache: {
         source: 'live',
         forcedRefresh: forceRefresh,
