@@ -572,6 +572,16 @@ export default function NBALandingPage() {
   const propTypeButtonRef = useRef<HTMLButtonElement>(null);
   const bookmakerButtonRef = useRef<HTMLButtonElement>(null);
 
+  const getMobileFilterDropdownStyle = (): React.CSSProperties => ({
+    position: 'fixed',
+    top: `${lockedPositionRef.current ?? filterBottom}px`,
+    left: '1rem',
+    right: '1rem',
+    maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
+    pointerEvents: 'auto',
+    boxSizing: 'border-box',
+  });
+
   // Lock position when dropdown opens - MOBILE ONLY - calculate once and never update
   useEffect(() => {
     if (!isMobile) return; // Desktop uses normal positioning
@@ -636,6 +646,27 @@ export default function NBALandingPage() {
       if (rafId) {
         cancelAnimationFrame(rafId);
       }
+    };
+  }, [gamesDropdownOpen, bookmakerDropdownOpen, propTypeDropdownOpen, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || typeof document === 'undefined') return;
+
+    const anyDropdownOpen = gamesDropdownOpen || bookmakerDropdownOpen || propTypeDropdownOpen;
+    if (!anyDropdownOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.touchAction = previousTouchAction;
     };
   }, [gamesDropdownOpen, bookmakerDropdownOpen, propTypeDropdownOpen, isMobile]);
 
@@ -5017,17 +5048,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               mounted && isDark
                                 ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
-                            }`} 
-                            style={{ 
-                              position: 'fixed',
-                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: gamesButtonRef.current ? `${gamesButtonRef.current.getBoundingClientRect().left}px` : '1rem',
-                              right: gamesButtonRef.current ? 'auto' : '1rem',
-                              width: gamesButtonRef.current ? `${gamesButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
-                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
-                              pointerEvents: 'auto',
-                              boxSizing: 'border-box'
-                            }}
+                            }`}
+                            style={getMobileFilterDropdownStyle()}
                           >
                           <div className="p-2 space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                             {propsSport === 'afl'
@@ -5293,6 +5315,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 {/* Prop Types Dropdown */}
                 <div className="relative flex-1" style={{ minWidth: 0, maxWidth: '100%' }}>
                   <button
+                    ref={propTypeButtonRef}
                     onClick={() => {
                       setPropTypeDropdownOpen(!propTypeDropdownOpen);
                       setBookmakerDropdownOpen(false);
@@ -5335,17 +5358,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               mounted && isDark
                                 ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
-                            }`} 
-                            style={{ 
-                              position: 'fixed',
-                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: propTypeButtonRef.current ? `${propTypeButtonRef.current.getBoundingClientRect().left}px` : '1rem',
-                              right: propTypeButtonRef.current ? 'auto' : '1rem',
-                              width: propTypeButtonRef.current ? `${propTypeButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
-                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
-                              pointerEvents: 'auto',
-                              boxSizing: 'border-box'
-                            }}
+                            }`}
+                            style={getMobileFilterDropdownStyle()}
                           >
                           <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                             {effectivePropTypes.map(propType => {
@@ -5536,17 +5550,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               mounted && isDark
                                 ? 'bg-gray-900 border-gray-700'
                                 : 'bg-white border-gray-300'
-                            }`} 
-                            style={{ 
-                              position: 'fixed',
-                              top: `${lockedPositionRef.current ?? filterBottom}px`, 
-                              left: bookmakerButtonRef.current ? `${bookmakerButtonRef.current.getBoundingClientRect().left}px` : '1rem',
-                              right: bookmakerButtonRef.current ? 'auto' : '1rem',
-                              width: bookmakerButtonRef.current ? `${bookmakerButtonRef.current.getBoundingClientRect().width}px` : 'calc(100vw - 2rem)',
-                              maxHeight: `calc(100vh - ${(lockedPositionRef.current ?? filterBottom) + 16}px)`,
-                              pointerEvents: 'auto',
-                              boxSizing: 'border-box'
-                            }}
+                            }`}
+                            style={getMobileFilterDropdownStyle()}
                           >
                             <div className="space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
                               {effectiveBookmakers.map(bookmaker => {
