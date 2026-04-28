@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
@@ -423,7 +423,7 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
   return null;
 }
 
-export function SoccerStatsChart({
+export const SoccerStatsChart = memo(function SoccerStatsChart({
   matches,
   selectedTeamName,
   isDark,
@@ -997,4 +997,4 @@ export function SoccerStatsChart({
       </div>
     </div>
   );
-}
+});

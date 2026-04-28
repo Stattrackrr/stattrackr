@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, ResponsiveContainer, XAxis, Cell } from 'recharts';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 import {
@@ -175,7 +175,7 @@ function formatSupportingValue(value: number, options?: { isPercent?: boolean; u
   return String(Math.round(value));
 }
 
-export function SoccerSupportingStats({
+export const SoccerSupportingStats = memo(function SoccerSupportingStats({
   matches,
   selectedTeamName,
   timeframe,
@@ -430,4 +430,4 @@ export function SoccerSupportingStats({
       )}
     </div>
   );
-}
+});

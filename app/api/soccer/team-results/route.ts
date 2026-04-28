@@ -80,6 +80,12 @@ function canServeCachedTeamResults(payload: SoccerTeamResultsCachePayload | null
   return true;
 }
 
+function cachePayloadIsTruncated(payload: SoccerTeamResultsCachePayload | null | undefined): boolean {
+  if (!payload || !Array.isArray(payload.matches) || payload.matches.length === 0) return false;
+  const expectedCount = Number(payload.count || payload.matches.length);
+  return Number.isFinite(expectedCount) && expectedCount > payload.matches.length;
+}
+
 function toTeamResultsPayload(teamHref: string, resultsUrl: string, matches: SoccerwayRecentMatch[], showMorePagesFetched: number): SoccerTeamResultsCachePayload {
   return {
     teamHref,
@@ -148,6 +154,17 @@ function matchesHaveCompetitionMetadata(matches: SoccerwayRecentMatch[]): boolea
       Object.prototype.hasOwnProperty.call(match, 'competitionName') &&
       Object.prototype.hasOwnProperty.call(match, 'competitionCountry')
   );
+}
+
+function parseLimitMatches(value: string | null): number | null {
+  const parsed = Number.parseInt(String(value || '').trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
+}
+
+function sliceRecentMatches(matches: SoccerwayRecentMatch[], limitMatches: number | null): SoccerwayRecentMatch[] {
+  if (!limitMatches || matches.length <= limitMatches) return matches;
+  return matches.slice(0, limitMatches);
 }
 
 async function fetchTeamResultsFromSoccerway(teamHref: string): Promise<{
@@ -280,6 +297,7 @@ export async function GET(request: NextRequest) {
   const teamHref = normalizeSoccerTeamHref(href);
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
   const cacheOnly = request.nextUrl.searchParams.get('cacheOnly') === '1';
+  const limitMatches = parseLimitMatches(request.nextUrl.searchParams.get('limitMatches'));
 
   if (!TEAM_HREF_RE.test(teamHref)) {
     return NextResponse.json({ error: 'Invalid or missing href (expected /team/{slug}/{id}/).' }, { status: 400 });
@@ -297,16 +315,21 @@ export async function GET(request: NextRequest) {
     let cachedPayload = forceRefresh
       ? null
       : await getSoccerTeamResultsCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
-    const usableCachedPayload = canServeCachedTeamResults(cachedPayload) ? cachedPayload : null;
+    const usableCachedPayload =
+      canServeCachedTeamResults(cachedPayload) && !cachePayloadIsTruncated(cachedPayload) ? cachedPayload : null;
     let baseMatches = usableCachedPayload?.matches ?? [];
     let showMorePagesFetched = usableCachedPayload?.showMorePagesFetched ?? 0;
     let feedSign: string | null = null;
 
     if (usableCachedPayload && cacheOnly) {
+      const matches = sliceRecentMatches(usableCachedPayload.matches, limitMatches);
+      const totalCount = usableCachedPayload.count ?? usableCachedPayload.matches.length;
       return NextResponse.json({
         resultsUrl: usableCachedPayload.resultsUrl || resultsUrl,
-        matches: baseMatches,
-        count: baseMatches.length,
+        matches,
+        count: matches.length,
+        totalCount,
+        hasMore: matches.length < totalCount,
         showMorePagesFetched,
         cache: {
           teamResultsSource: 'cache',
@@ -321,14 +344,20 @@ export async function GET(request: NextRequest) {
     }
 
     if (!usableCachedPayload && cacheOnly) {
-      const permanentPayload = await getPermanentSoccerTeamResults(teamHref);
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches });
       const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
       if (usablePermanentPayload) {
-        await setSoccerTeamResultsCache(teamHref, toFastCacheTeamResultsPayload(usablePermanentPayload), FOREVER_CACHE_TTL_MINUTES, true);
+        const matches = sliceRecentMatches(usablePermanentPayload.matches, limitMatches);
+        const totalCount = usablePermanentPayload.count ?? usablePermanentPayload.matches.length;
+        if (!limitMatches || matches.length >= totalCount) {
+          await setSoccerTeamResultsCache(teamHref, toFastCacheTeamResultsPayload(usablePermanentPayload), FOREVER_CACHE_TTL_MINUTES, true);
+        }
         return NextResponse.json({
           resultsUrl: usablePermanentPayload.resultsUrl || resultsUrl,
-          matches: usablePermanentPayload.matches,
-          count: usablePermanentPayload.matches.length,
+          matches,
+          count: matches.length,
+          totalCount,
+          hasMore: matches.length < totalCount,
           showMorePagesFetched: usablePermanentPayload.showMorePagesFetched,
           cache: {
             teamResultsSource: 'permanent',
@@ -361,10 +390,14 @@ export async function GET(request: NextRequest) {
 
     if (!forceRefresh) {
       if (usableCachedPayload) {
+        const matches = sliceRecentMatches(usableCachedPayload.matches, limitMatches);
+        const totalCount = usableCachedPayload.count ?? usableCachedPayload.matches.length;
         return NextResponse.json({
           resultsUrl: usableCachedPayload.resultsUrl || resultsUrl,
-          matches: usableCachedPayload.matches,
-          count: usableCachedPayload.matches.length,
+          matches,
+          count: matches.length,
+          totalCount,
+          hasMore: matches.length < totalCount,
           showMorePagesFetched: usableCachedPayload.showMorePagesFetched,
           cache: {
             teamResultsSource: 'cache',
@@ -378,13 +411,16 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const permanentPayload = await getPermanentSoccerTeamResults(teamHref);
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches });
       const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
       if (usablePermanentPayload) {
+        const totalCount = usablePermanentPayload.count ?? usablePermanentPayload.matches.length;
         return NextResponse.json({
           resultsUrl: usablePermanentPayload.resultsUrl || resultsUrl,
           matches: usablePermanentPayload.matches,
           count: usablePermanentPayload.matches.length,
+          totalCount,
+          hasMore: usablePermanentPayload.matches.length < totalCount,
           showMorePagesFetched: usablePermanentPayload.showMorePagesFetched,
           cache: {
             teamResultsSource: 'permanent',
@@ -439,6 +475,8 @@ export async function GET(request: NextRequest) {
       resultsUrl,
       matches: hydrated.matches,
       count: hydrated.matches.length,
+      totalCount: hydrated.matches.length,
+      hasMore: false,
       showMorePagesFetched,
       cache: {
         teamResultsSource,

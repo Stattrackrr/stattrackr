@@ -65,6 +65,7 @@ type SoccerDashboardSessionState = {
 const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v6:';
 const EMPTY_STATS_SKELETON_MS = 5000;
 const EMPTY_STATS_CACHE_RETRY_DELAY_MS = 750;
+const INITIAL_RECENT_MATCHES_LIMIT = 20;
 
 function getSoccerDashboardSessionKey(teamHref: string): string {
   return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
@@ -159,6 +160,20 @@ function splitFixtureNameLines(value: string | null | undefined): [string, strin
   return [parts[0], parts.slice(1).join(' ')];
 }
 
+function sortSoccerMatchesByRecency(matches: SoccerwayRecentMatch[]): SoccerwayRecentMatch[] {
+  return [...matches].sort((a, b) => {
+    const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    if (aKickoff !== bKickoff) return bKickoff - aKickoff;
+    return String(b.matchId || '').localeCompare(String(a.matchId || ''));
+  });
+}
+
+function takeRecentSoccerMatches(matches: SoccerwayRecentMatch[], limit = INITIAL_RECENT_MATCHES_LIMIT): SoccerwayRecentMatch[] {
+  if (matches.length <= limit) return matches;
+  return sortSoccerMatchesByRecency(matches).slice(0, limit);
+}
+
 function formatFixtureStageLabel(value: string | null | undefined): string | null {
   let stage = String(value || '').trim();
   if (!stage) return null;
@@ -210,6 +225,7 @@ function SoccerPageContent() {
   const [teamSearchOpen, setTeamSearchOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<SoccerTeamRow | null>(null);
   const [recentMatches, setRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
+  const [allRecentMatches, setAllRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [recentMatchesLoading, setRecentMatchesLoading] = useState(false);
   const [recentMatchesError, setRecentMatchesError] = useState<string | null>(null);
   const [recentMatchesCacheMiss, setRecentMatchesCacheMiss] = useState(false);
@@ -235,6 +251,8 @@ function SoccerPageContent() {
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } =
     useDashboardStyles({ sidebarOpen });
+
+  const displayedRecentMatches = allRecentMatches.length > 0 ? allRecentMatches : recentMatches;
 
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
 
@@ -367,6 +385,7 @@ function SoccerPageContent() {
     if (!teamHrefFromUrl) return;
     const cached = readSoccerDashboardSessionState(teamHrefFromUrl);
     if (!cached) return;
+    const cachedVisibleMatches = takeRecentSoccerMatches(cached.recentMatches);
 
     setSelectedTeam((prev) => {
       if (normalizeTeamHref(prev?.href) === cached.team.href) return prev;
@@ -377,7 +396,8 @@ function SoccerPageContent() {
       };
     });
     setTeamSearchQuery((prev) => prev || cached.team.name);
-    setRecentMatches((prev) => (prev.length > 0 ? prev : cached.recentMatches));
+    setRecentMatches((prev) => (prev.length > 0 ? prev : cachedVisibleMatches));
+    setAllRecentMatches((prev) => (prev.length > 0 ? prev : cached.recentMatches));
     setRecentMatchesError(null);
     setRecentMatchesCacheMiss(false);
     setRecentMatchesLoading(false);
@@ -423,6 +443,7 @@ function SoccerPageContent() {
   useEffect(() => {
     if (!selectedTeam) {
       setRecentMatches([]);
+      setAllRecentMatches([]);
       setRecentMatchesError(null);
       setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
@@ -435,7 +456,10 @@ function SoccerPageContent() {
     const requestStartedAt = Date.now();
     const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
     const cached = readSoccerDashboardSessionState(href);
-    const hasCachedMatches = Array.isArray(cached?.recentMatches) && cached.recentMatches.length > 0;
+    const cachedMatches = Array.isArray(cached?.recentMatches) ? cached.recentMatches : [];
+    const initialCachedMatches = takeRecentSoccerMatches(cachedMatches);
+    const hasCachedMatches = cachedMatches.length > 0;
+    const hasFullCachedMatches = cachedMatches.length > initialCachedMatches.length;
     const waitWithAbort = async (delayMs: number) => {
       if (delayMs <= 0) return;
       await new Promise<void>((resolve) => {
@@ -450,14 +474,18 @@ function SoccerPageContent() {
         );
       });
     };
-    const fetchCachedTeamResults = async () => {
-      const response = await fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}&cacheOnly=1`, {
+    const fetchCachedTeamResults = async (options?: { limitMatches?: number }) => {
+      const params = new URLSearchParams({ href, cacheOnly: '1' });
+      if (options?.limitMatches) params.set('limitMatches', String(options.limitMatches));
+      const response = await fetch(`/api/soccer/team-results?${params.toString()}`, {
         signal: ac.signal,
         cache: 'no-store',
       });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
         matches?: SoccerwayRecentMatch[];
+        totalCount?: number;
+        hasMore?: boolean;
         cache?: { teamResultsSource?: string };
       } | null;
       if (!response.ok) {
@@ -472,7 +500,8 @@ function SoccerPageContent() {
     };
 
     if (hasCachedMatches) {
-      setRecentMatches(cached!.recentMatches);
+      setRecentMatches(initialCachedMatches);
+      setAllRecentMatches(cachedMatches);
       setRecentMatchesCacheMiss(false);
       setRecentMatchesLoading(false);
       setRecentMatchesSettled(true);
@@ -482,10 +511,12 @@ function SoccerPageContent() {
     }
     setRecentMatchesError(null);
 
-    void fetchCachedTeamResults()
+    void fetchCachedTeamResults({ limitMatches: INITIAL_RECENT_MATCHES_LIMIT })
       .then(async (response) => {
         let payload = response;
         let matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        let totalCount = Number(payload?.totalCount || matches.length);
+        let hasMore = Boolean(payload?.hasMore);
         let source = payload?.cache?.teamResultsSource ?? null;
 
         while (
@@ -496,8 +527,10 @@ function SoccerPageContent() {
         ) {
           await waitWithAbort(EMPTY_STATS_CACHE_RETRY_DELAY_MS);
           if (ac.signal.aborted) break;
-          payload = await fetchCachedTeamResults();
+          payload = await fetchCachedTeamResults({ limitMatches: INITIAL_RECENT_MATCHES_LIMIT });
           matches = Array.isArray(payload?.matches) ? payload.matches : [];
+          totalCount = Number(payload?.totalCount || matches.length);
+          hasMore = Boolean(payload?.hasMore);
           source = payload?.cache?.teamResultsSource ?? null;
         }
 
@@ -509,9 +542,27 @@ function SoccerPageContent() {
 
         if (teamResultsRequestId.current !== requestId) return;
         setRecentMatchesCacheMiss(source === 'cache-miss');
-        setRecentMatches(matches);
+        setRecentMatches(takeRecentSoccerMatches(matches));
         if (matches.length > 0) {
-          writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
+          if (!hasMore || totalCount <= matches.length) {
+            setAllRecentMatches(matches);
+            writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
+          } else if (!hasCachedMatches) {
+            setAllRecentMatches([]);
+          }
+
+          if ((hasMore || totalCount > matches.length) && !hasFullCachedMatches) {
+            void fetchCachedTeamResults()
+              .then((fullPayload) => {
+                if (ac.signal.aborted) return;
+                if (teamResultsRequestId.current !== requestId) return;
+                const fullMatches = Array.isArray(fullPayload?.matches) ? fullPayload.matches : [];
+                if (fullMatches.length <= matches.length) return;
+                setAllRecentMatches(fullMatches);
+                writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, fullMatches);
+              })
+              .catch(() => undefined);
+          }
         }
       })
       .catch((err: unknown) => {
@@ -520,6 +571,7 @@ function SoccerPageContent() {
         setRecentMatchesCacheMiss(false);
         if (!hasCachedMatches) {
           setRecentMatches([]);
+          setAllRecentMatches([]);
           setRecentMatchesError(err instanceof Error ? err.message : 'Failed to load recent matches');
         }
       })
@@ -1040,11 +1092,11 @@ function SoccerPageContent() {
                         </div>
                       ) : recentMatchesError ? (
                         <div className="px-2 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
-                      ) : recentMatches.length === 0 ? (
+                      ) : displayedRecentMatches.length === 0 ? (
                         <div className={`px-2 py-6 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
                       ) : (
                         <SoccerStatsChart
-                          matches={recentMatches}
+                          matches={displayedRecentMatches}
                           selectedTeamName={selectedTeam.name}
                           isDark={Boolean(mounted && isDark)}
                           onSelectedStatChange={setMainChartStat}
@@ -1078,11 +1130,11 @@ function SoccerPageContent() {
                       </div>
                     ) : recentMatchesError ? (
                       <div className="px-3 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
-                    ) : recentMatches.length === 0 ? (
+                    ) : displayedRecentMatches.length === 0 ? (
                       <div className={`px-3 py-4 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
                     ) : (
                       <SoccerSupportingStats
-                        matches={recentMatches}
+                        matches={displayedRecentMatches}
                         selectedTeamName={selectedTeam.name}
                         timeframe={chartTimeframe}
                         teamScope={chartTeamScope}
