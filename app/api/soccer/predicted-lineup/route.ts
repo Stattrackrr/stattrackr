@@ -302,6 +302,24 @@ export async function GET(request: NextRequest) {
         } satisfies PredictedLineupResponse);
       }
 
+      const permanent = await getPermanentSoccerPredictedLineup(teamHref);
+      if (permanent) {
+        await setSoccerPredictedLineupCache(teamHref, permanent, FOREVER_CACHE_TTL_MINUTES, true);
+        const lineupFrom = await getCachedLineupSource(request, teamHref, permanent.summaryPath, permanent.lineup);
+        return NextResponse.json({
+          summaryPath: permanent.summaryPath,
+          lineupsPath: permanent.lineupsPath,
+          eventId: permanent.eventId,
+          lineup: permanent.lineup,
+          lineupFrom,
+          cache: {
+            source: 'permanent',
+            forcedRefresh: false,
+            cacheOnly: true,
+          },
+        } satisfies PredictedLineupResponse);
+      }
+
       return NextResponse.json({
         summaryPath: null,
         lineupsPath: null,

@@ -141,6 +141,21 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      const permanent = await getPermanentSoccerNextFixture(teamHref);
+      if (permanent) {
+        await setSoccerNextFixtureCache(teamHref, permanent, FOREVER_CACHE_TTL_MINUTES, true);
+        return NextResponse.json({
+          fixturesUrl: permanent.fixturesUrl,
+          fixture: permanent.fixture,
+          count: permanent.count,
+          cache: {
+            source: 'permanent',
+            forcedRefresh: false,
+            cacheOnly: true,
+          },
+        });
+      }
+
       return NextResponse.json({
         fixturesUrl,
         fixture: null,
