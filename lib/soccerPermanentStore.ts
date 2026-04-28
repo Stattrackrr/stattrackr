@@ -176,10 +176,11 @@ async function readMatchStatsByIds(matchIds: string[]): Promise<Map<string, Socc
   return out;
 }
 
-async function readTeamMatchIndex(teamHref: string): Promise<TeamMatchIndexRow[]> {
+async function readTeamMatchIndex(teamHref: string, limitMatches?: number): Promise<TeamMatchIndexRow[]> {
   const rows: TeamMatchIndexRow[] = [];
   const pageSize = 1000;
   let offset = 0;
+  const targetLimit = Number.isFinite(limitMatches as number) && (limitMatches as number) > 0 ? Math.floor(limitMatches as number) : null;
 
   while (true) {
     const { data, error } = await supabaseAdmin
@@ -195,14 +196,18 @@ async function readTeamMatchIndex(teamHref: string): Promise<TeamMatchIndexRow[]
     const page = (data ?? []) as TeamMatchIndexRow[];
     if (page.length === 0) break;
     rows.push(...page);
+    if (targetLimit && rows.length >= targetLimit) break;
     if (page.length < pageSize) break;
     offset += pageSize;
   }
 
-  return rows;
+  return targetLimit ? rows.slice(0, targetLimit) : rows;
 }
 
-export async function getPermanentSoccerTeamResults(teamHref: string): Promise<SoccerTeamResultsCachePayload | null> {
+export async function getPermanentSoccerTeamResults(
+  teamHref: string,
+  options: { limitMatches?: number } = {}
+): Promise<SoccerTeamResultsCachePayload | null> {
   const normalized = normalizeSoccerTeamHref(teamHref);
   if (!normalized) return null;
 
@@ -220,7 +225,7 @@ export async function getPermanentSoccerTeamResults(teamHref: string): Promise<S
       return null;
     }
 
-    const orderedIndexRows = (await readTeamMatchIndex(normalized))
+    const orderedIndexRows = (await readTeamMatchIndex(normalized, options.limitMatches))
       .filter((row) => typeof row.match_id === 'string' && row.match_id.trim() !== '')
       .sort((a, b) => {
         const aKickoff = a.kickoff_unix ?? Number.MIN_SAFE_INTEGER;
