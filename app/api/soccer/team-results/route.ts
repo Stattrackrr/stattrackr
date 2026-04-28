@@ -344,7 +344,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!usableCachedPayload && cacheOnly) {
-      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches });
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches: limitMatches ?? undefined });
       const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
       if (usablePermanentPayload) {
         const matches = sliceRecentMatches(usablePermanentPayload.matches, limitMatches);
@@ -411,7 +411,7 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches });
+      const permanentPayload = await getPermanentSoccerTeamResults(teamHref, { limitMatches: limitMatches ?? undefined });
       const usablePermanentPayload = canServeCachedTeamResults(permanentPayload) ? permanentPayload : null;
       if (usablePermanentPayload) {
         const totalCount = usablePermanentPayload.count ?? usablePermanentPayload.matches.length;
