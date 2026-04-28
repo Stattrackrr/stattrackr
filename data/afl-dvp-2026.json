@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26T16:41:33.203Z",
+  "generatedAt": "2026-04-27T06:29:32.485Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -8,10 +8,10 @@
     "withLogs": 541,
     "missingLogs": 237,
     "coveragePct": 69.54,
-    "eligiblePlayers": 510,
-    "withLogsEligible": 508,
-    "missingEligible": 2,
-    "coveragePctEligible": 99.61
+    "eligiblePlayers": 520,
+    "withLogsEligible": 517,
+    "missingEligible": 3,
+    "coveragePctEligible": 99.42
   },
   "leagueBaselineByPosition": {
     "DEF": {
@@ -8848,8 +8848,8 @@
       "position": "RUC",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Laitham Vandermeer",
