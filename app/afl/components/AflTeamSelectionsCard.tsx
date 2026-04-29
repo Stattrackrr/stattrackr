@@ -85,6 +85,23 @@ function lineupNameMatchesSelected(lineupName: string, selectedName: string | nu
   return aFirst === bFirst || (aFirst.length === 1 && bFirst.startsWith(aFirst)) || (bFirst.length === 1 && aFirst.startsWith(bFirst));
 }
 
+function matchIncludesExpectedOpponent(
+  m: { home_team?: string | null; away_team?: string | null },
+  team: string | null | undefined,
+  opponent: string | null | undefined
+): boolean {
+  if (!team?.trim() || !opponent?.trim() || !m.home_team || !m.away_team) return false;
+  const teamKey = getAflCanonicalTeamKey(team);
+  const opponentKey = getAflCanonicalTeamKey(opponent);
+  const homeKey = getAflCanonicalTeamKey(m.home_team);
+  const awayKey = getAflCanonicalTeamKey(m.away_team);
+  if (!teamKey || !opponentKey || !homeKey || !awayKey) return false;
+  return (
+    (teamKey === homeKey && opponentKey === awayKey) ||
+    (teamKey === awayKey && opponentKey === homeKey)
+  );
+}
+
 /** Single player chip: jumper number (or initial) in badge + name. uniformWidth = same width as largest for symmetry on oval. */
 function PlayerChip({
   name,
@@ -155,12 +172,14 @@ export function AflTeamSelectionsCard({
     const params = new URLSearchParams();
     if (refresh) params.set('refresh', '1');
     if (playerTeam?.trim()) params.set('team', playerTeam.trim());
+    if (expectedOpponentTeam?.trim()) params.set('opponent', expectedOpponentTeam.trim());
     const q = params.toString() ? `?${params.toString()}` : '';
     return fetch(`/api/afl/footywire-team-selections${q}`).then((r) => r.json());
   };
 
   useEffect(() => {
     let cancelled = false;
+    setRetried(false);
     setLoading(true);
     setError(null);
 
@@ -172,6 +191,48 @@ export function AflTeamSelectionsCard({
           setData(null);
           return;
         }
+        const initialMatchMismatch =
+          playerTeam?.trim() &&
+          expectedOpponentTeam?.trim() &&
+          json?.home_team &&
+          json?.away_team &&
+          !matchIncludesExpectedOpponent(
+            { home_team: json.home_team, away_team: json.away_team },
+            playerTeam,
+            expectedOpponentTeam
+          );
+        if (initialMatchMismatch && !retried) {
+          setRetried(true);
+          fetchLineup(true)
+            .then((retryJson) => {
+              if (cancelled) return;
+              const retryPositions = Array.isArray(retryJson?.positions) ? retryJson.positions : [];
+              const retryInterchange = retryJson?.interchange ?? { home: [], away: [] };
+              setData({
+                url: retryJson?.url ?? TEAM_SELECTIONS_URL,
+                title: retryJson?.title ?? null,
+                round_label: retryJson?.round_label ?? null,
+                match: retryJson?.match ?? null,
+                home_team: retryJson?.home_team ?? null,
+                away_team: retryJson?.away_team ?? null,
+                positions: retryPositions,
+                interchange: retryInterchange,
+                ins: retryJson?.ins ?? { home: [], away: [] },
+                outs: retryJson?.outs ?? { home: [], away: [] },
+                emergencies: retryJson?.emergencies ?? { home: [], away: [] },
+                average_attributes: retryJson?.average_attributes ?? null,
+                total_players_by_games: retryJson?.total_players_by_games ?? null,
+              });
+              setError(retryJson?.error ?? null);
+            })
+            .catch((e) => {
+              if (!cancelled) setError(e?.message ?? 'Failed to load');
+            })
+            .finally(() => {
+              if (!cancelled) setLoading(false);
+            });
+          return;
+        }
         const positions = Array.isArray(json?.positions) ? json.positions : [];
         const inter = json?.interchange ?? { home: [], away: [] };
         let hasLineup = positions.length > 0 || (inter.home?.length ?? 0) > 0 || (inter.away?.length ?? 0) > 0;
@@ -180,7 +241,8 @@ export function AflTeamSelectionsCard({
           const matches = json.matches as MatchEntry[];
           // Only use a match that strictly includes the requested team; never fall back to another game (e.g. GWS must not show Sydney v Carlton).
           const forTeam = playerTeam?.trim()
-            ? matches.find((m) => matchIncludesTeam(m, playerTeam))
+            ? matches.find((m) => matchIncludesExpectedOpponent(m, playerTeam, expectedOpponentTeam))
+              ?? matches.find((m) => matchIncludesTeam(m, playerTeam))
             : null;
           const chosen = forTeam ?? null;
           const chosenHasBothTeams = (): boolean => {
@@ -280,7 +342,7 @@ export function AflTeamSelectionsCard({
     };
   // Refetch when playerTeam changes so we show the correct match lineup
   // eslint-disable-next-line react-hooks/exhaustive-deps -- retried is internal, avoid extra runs
-  }, [playerTeam]);
+  }, [expectedOpponentTeam, playerTeam]);
 
   const borderCls = isDark ? 'border-gray-600' : 'border-gray-200';
   const bgCls = isDark ? 'bg-[#0a1929]' : 'bg-gray-50';

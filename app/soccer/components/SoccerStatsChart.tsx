@@ -149,8 +149,8 @@ function formatStatLabel(label: string): string {
     .trim();
 }
 
-function roundToSoccerDecimal(value: number): number {
-  return Math.round(value * 10) / 10;
+function roundToSoccerHalfStep(value: number): number {
+  return Math.round(value * 2) / 2;
 }
 
 function formatSoccerAxisValue(value: number): string {
@@ -770,26 +770,9 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     return baseChartData.slice(-lastN);
   }, [baseChartData, selectedTimeframe]);
 
-  const statAverage = useMemo(() => {
-    if (!baseChartData.length) return 0;
-    return baseChartData.reduce((sum, row) => sum + row.value, 0) / baseChartData.length;
-  }, [baseChartData]);
-
-  const statUsesDecimals = useMemo(() => {
-    if (selectedStat === 'moneyline') return false;
-    return (
-      baseChartData.some((row) => Math.abs(row.value - Math.round(row.value)) > 0.001) ||
-      Math.abs(statAverage - Math.round(statAverage)) > 0.001
-    );
-  }, [baseChartData, selectedStat, statAverage]);
-
   useEffect(() => {
-    if (selectedStat === 'moneyline') {
-      setLineValue(0);
-      return;
-    }
-    setLineValue(Number.isFinite(statAverage) ? (statUsesDecimals ? roundToSoccerDecimal(statAverage) : Math.round(statAverage)) : 0);
-  }, [selectedStat, selectedStatTeamScope, statAverage, statUsesDecimals]);
+    setLineValue(0.5);
+  }, [selectedStat, selectedStatTeamScope]);
 
   const yAxisConfig = useMemo(() => {
     if (selectedStat === 'moneyline') {
@@ -812,6 +795,13 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
     return buildPositiveIntegerAxis(maxValue);
   }, [chartData, lineValue, selectedStat]);
+
+  const lineInputBounds = useMemo(() => {
+    if (selectedStat === 'moneyline') {
+      return { min: -1, max: 1 };
+    }
+    return { min: yAxisConfig.domain[0], max: yAxisConfig.domain[1] };
+  }, [selectedStat, yAxisConfig]);
 
   const customTooltip = useMemo(() => {
     const selectedStatLabel = statLabels.get(selectedStat) || formatStatLabel(selectedStat || 'stat');
@@ -878,14 +868,14 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
               id="soccer-betting-line-input"
               key={`soccer-line-${selectedStat}`}
               type="number"
-              step={statUsesDecimals ? 0.1 : 1}
+              step={0.5}
               value={lineValue}
-              min={yAxisConfig.domain[0]}
-              max={yAxisConfig.domain[1]}
+              min={lineInputBounds.min}
+              max={lineInputBounds.max}
               onChange={(e) => {
                 const next = Number(e.target.value);
                 if (Number.isFinite(next)) {
-                  setLineValue(statUsesDecimals ? roundToSoccerDecimal(next) : Math.round(next));
+                  setLineValue(roundToSoccerHalfStep(next));
                 }
               }}
               className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"

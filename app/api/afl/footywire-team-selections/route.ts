@@ -1273,6 +1273,23 @@ function matchIncludesTeam(m: TeamSelectionsResponse, team: string): boolean {
   return tKey === hKey || tKey === aKey;
 }
 
+function matchIncludesExactTeams(
+  m: TeamSelectionsResponse,
+  team: string,
+  opponent: string
+): boolean {
+  if (!team || !opponent || !m.home_team || !m.away_team) return false;
+  const teamKey = getCanonicalTeamKeyForMatch(team);
+  const opponentKey = getCanonicalTeamKeyForMatch(opponent);
+  const homeKey = getCanonicalTeamKeyForMatch(m.home_team);
+  const awayKey = getCanonicalTeamKeyForMatch(m.away_team);
+  if (!teamKey || !opponentKey || !homeKey || !awayKey) return false;
+  return (
+    (teamKey === homeKey && opponentKey === awayKey) ||
+    (teamKey === awayKey && opponentKey === homeKey)
+  );
+}
+
 /** When filtering by team param, select match only by canonical key equality. Never use matchIncludesTeam so we can't accidentally pick Sydney for GWS. */
 function findMatchByCanonicalTeam(
   matches: TeamSelectionsResponse[],
@@ -1288,15 +1305,30 @@ function findMatchByCanonicalTeam(
   });
 }
 
+function findMatchByCanonicalTeams(
+  matches: TeamSelectionsResponse[],
+  teamParam: string,
+  opponentParam: string | null
+): TeamSelectionsResponse | undefined {
+  if (!opponentParam?.trim()) return undefined;
+  return matches.find((m) => matchIncludesExactTeams(m, teamParam, opponentParam));
+}
+
 export async function GET(request: Request) {
   const url = request.url ? new URL(request.url) : null;
   const skipCache = url?.searchParams.get('refresh') === '1' || url?.searchParams.get('refresh') === 'true';
   const teamParam = url?.searchParams.get('team')?.trim() || null;
+  const opponentParam = url?.searchParams.get('opponent')?.trim() || null;
 
   if (!skipCache && cached && cached.expiresAt > Date.now()) {
     const data = cached.data;
     if (teamParam && data.matches?.length) {
-      const found = findMatchByCanonicalTeam(data.matches, teamParam);
+      const exactFound = findMatchByCanonicalTeams(data.matches, teamParam, opponentParam);
+      if (opponentParam && !exactFound) {
+        // The cached round snapshot does not include the requested opponent matchup.
+        // Fetch a fresh FootyWire page below before falling back to an older lineup.
+      } else {
+        const found = exactFound ?? findMatchByCanonicalTeam(data.matches, teamParam);
       if (found) {
         if (isLikelyCorruptBenchLists(found)) {
           // Ignore stale/corrupt cache and fetch fresh page below.
@@ -1338,6 +1370,7 @@ export async function GET(request: Request) {
         });
       }
       // Found a team match in cache, but it's suspicious; fetch fresh below.
+      }
     } else {
       return NextResponse.json({ ...data, source: 'footywire.com' });
     }
@@ -1364,7 +1397,9 @@ export async function GET(request: Request) {
     }
 
     if (teamParam && roundData.matches.length > 0) {
-      const found = findMatchByCanonicalTeam(roundData.matches, teamParam);
+      const found =
+        findMatchByCanonicalTeams(roundData.matches, teamParam, opponentParam) ??
+        findMatchByCanonicalTeam(roundData.matches, teamParam);
       if (found) {
         return NextResponse.json({
           url: roundData.url,
