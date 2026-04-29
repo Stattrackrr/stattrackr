@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-27T18:09:17Z",
-  "count": 40,
+  "generatedAt": "2026-04-29T12:18:26Z",
+  "count": 41,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -4751,6 +4751,126 @@
         "brierImprovement": -0.002216,
         "logLossChange": 0.000119,
         "hitRateDelta": -0.018215
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": true,
+        "hitRateOk": true,
+        "freezeInactive": true
+      }
+    },
+    {
+      "generatedAt": "2026-04-29T12:18:26Z",
+      "sampleCount": 549,
+      "pass": false,
+      "promoted": false,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 549,
+        "hitRate": 0.570128,
+        "brierScore": 0.242293,
+        "logLoss": 0.67685,
+        "mae": 4.483374,
+        "avgClvLite": -0.000361,
+        "positiveClvRate": 0.309654,
+        "clvSampleCount": 549,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 1,
+            "avgPred": 0.0,
+            "avgActual": 0.0
+          },
+          {
+            "bin": 2,
+            "count": 6,
+            "avgPred": 0.2753,
+            "avgActual": 0.3333
+          },
+          {
+            "bin": 3,
+            "count": 178,
+            "avgPred": 0.3629,
+            "avgActual": 0.3652
+          },
+          {
+            "bin": 4,
+            "count": 74,
+            "avgPred": 0.4217,
+            "avgActual": 0.4459
+          },
+          {
+            "bin": 5,
+            "count": 289,
+            "avgPred": 0.5227,
+            "avgActual": 0.5294
+          },
+          {
+            "bin": 9,
+            "count": 1,
+            "avgPred": 1.0,
+            "avgActual": 1.0
+          }
+        ],
+        "calibrationMethod": "isotonic",
+        "modelVersion": "afl-disp-20260429-121643"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 549,
+        "hitRate": 0.550091,
+        "brierScore": 0.240582,
+        "logLoss": 0.671175,
+        "mae": 4.452948,
+        "avgClvLite": -0.001405,
+        "positiveClvRate": 0.262295,
+        "clvSampleCount": 549,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 5,
+            "avgPred": 0.0,
+            "avgActual": 0.0
+          },
+          {
+            "bin": 2,
+            "count": 27,
+            "avgPred": 0.2895,
+            "avgActual": 0.2593
+          },
+          {
+            "bin": 3,
+            "count": 43,
+            "avgPred": 0.3125,
+            "avgActual": 0.3256
+          },
+          {
+            "bin": 4,
+            "count": 403,
+            "avgPred": 0.4696,
+            "avgActual": 0.4814
+          },
+          {
+            "bin": 5,
+            "count": 68,
+            "avgPred": 0.5335,
+            "avgActual": 0.5294
+          },
+          {
+            "bin": 9,
+            "count": 3,
+            "avgPred": 1.0,
+            "avgActual": 1.0
+          }
+        ],
+        "calibrationMethod": "isotonic",
+        "modelVersion": "afl-disp-20260427-180623"
+      },
+      "deltas": {
+        "brierImprovement": -0.007112,
+        "logLossChange": 0.008455,
+        "hitRateDelta": 0.020037
       },
       "checks": {
         "sampleCountOk": true,
