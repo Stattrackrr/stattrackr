@@ -153,8 +153,62 @@ function roundToSoccerDecimal(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function formatSoccerAxisValue(value: number, useDecimal: boolean): string {
-  return useDecimal ? value.toFixed(1) : `${Math.round(value)}`;
+function formatSoccerAxisValue(value: number): string {
+  return `${Math.round(value)}`;
+}
+
+function buildPositiveIntegerAxis(maxValue: number): { domain: [number, number]; ticks: number[] } {
+  const safeMax = Math.max(1, Math.ceil(maxValue));
+  let bestOption: { bound: number; intervals: number; padding: number } | null = null;
+
+  for (const intervals of [4, 3, 2]) {
+    const bound = Math.max(intervals, Math.ceil(safeMax / intervals) * intervals);
+    const padding = bound - safeMax;
+    if (
+      !bestOption ||
+      padding < bestOption.padding ||
+      (padding === bestOption.padding && intervals > bestOption.intervals)
+    ) {
+      bestOption = { bound, intervals, padding };
+    }
+  }
+
+  const selected = bestOption ?? { bound: 2, intervals: 2, padding: 0 };
+  const step = selected.bound / selected.intervals;
+  return {
+    domain: [0, selected.bound],
+    ticks: Array.from({ length: selected.intervals + 1 }, (_, index) => index * step),
+  };
+}
+
+function buildSymmetricIntegerAxis(maxAbsValue: number): { domain: [number, number]; ticks: number[] } {
+  const safeMax = Math.max(1, Math.ceil(maxAbsValue));
+  let bestOption: { bound: number; halfIntervals: number; padding: number } | null = null;
+
+  for (const halfIntervals of [2, 1]) {
+    const step = Math.max(1, Math.ceil(safeMax / halfIntervals));
+    const bound = step * halfIntervals;
+    const padding = bound - safeMax;
+    if (
+      !bestOption ||
+      padding < bestOption.padding ||
+      (padding === bestOption.padding && halfIntervals > bestOption.halfIntervals)
+    ) {
+      bestOption = { bound, halfIntervals, padding };
+    }
+  }
+
+  const selected = bestOption ?? { bound: 1, halfIntervals: 1, padding: 0 };
+  const step = selected.bound / selected.halfIntervals;
+  const ticks: number[] = [];
+  for (let value = -selected.bound; value <= selected.bound; value += step) {
+    ticks.push(value);
+  }
+
+  return {
+    domain: [-selected.bound, selected.bound],
+    ticks,
+  };
 }
 
 function getSelectedTeamSide(match: SoccerwayRecentMatch, selectedTeamName: string): 'home' | 'away' | null {
@@ -434,7 +488,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 }: SoccerStatsChartProps) {
   const [selectedStat, setSelectedStat] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<SoccerTimeframe>('last10');
-  const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>('all');
+  const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>('team');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
@@ -560,15 +614,15 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const statTeamScopeOptions = useMemo(() => {
     return [
-      { key: 'all' as const, label: 'All' },
       { key: 'team' as const, label: selectedTeamName || 'Team' },
+      { key: 'all' as const, label: 'Combined' },
       { key: 'opp' as const, label: 'Opp' },
     ];
   }, [selectedTeamName]);
 
   useEffect(() => {
     if (!selectedStat) return;
-    setSelectedStatTeamScope(selectedStat === 'ball_possession' ? 'team' : 'all');
+    setSelectedStatTeamScope('team');
   }, [selectedStat, statTeamScopeOptions]);
 
   useEffect(() => {
@@ -748,37 +802,15 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     }
 
     const values = chartData.map((row) => row.value).filter((value) => Number.isFinite(value));
-    if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
+    if (!values.length) return buildPositiveIntegerAxis(4);
 
     const minValue = Math.min(...values, lineValue);
     const maxValue = Math.max(...values, lineValue);
-    const hasDecimals = values.some((value) => Math.abs(value - Math.round(value)) > 0.001) || Math.abs(lineValue - Math.round(lineValue)) > 0.001;
-
     if (minValue < 0) {
-      const bound = Math.max(
-        hasDecimals ? Math.ceil(Math.max(Math.abs(minValue), Math.abs(maxValue)) * 10) / 10 : Math.ceil(Math.max(Math.abs(minValue), Math.abs(maxValue))),
-        1
-      );
-      const step = bound / 2;
-      const ticks = [-bound, -step, 0, step, bound].map((value) =>
-        hasDecimals ? Math.round(value * 10) / 10 : Math.round(value)
-      );
-      return {
-        domain: [-bound, bound] as [number, number],
-        ticks,
-      };
+      return buildSymmetricIntegerAxis(Math.max(Math.abs(minValue), Math.abs(maxValue)));
     }
 
-    const bound = Math.max(hasDecimals ? Math.ceil(maxValue * 10) / 10 : Math.ceil(maxValue), 1);
-    const step = bound / 3;
-    const ticks = [0, step, step * 2, bound].map((value) =>
-      hasDecimals ? Math.round(value * 10) / 10 : Math.round(value)
-    );
-
-    return {
-      domain: [0, bound] as [number, number],
-      ticks,
-    };
+    return buildPositiveIntegerAxis(maxValue);
   }, [chartData, lineValue, selectedStat]);
 
   const customTooltip = useMemo(() => {
@@ -979,7 +1011,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
                 if (value <= -1) return 'L';
                 return '0';
               }
-              return formatSoccerAxisValue(value, statUsesDecimals);
+              return formatSoccerAxisValue(value);
             }}
             yAxisTickStyle={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
             preservePrimaryYAxisTicks={true}

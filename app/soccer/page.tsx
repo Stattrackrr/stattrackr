@@ -255,6 +255,10 @@ function SoccerPageContent() {
   const displayedRecentMatches = allRecentMatches.length > 0 ? allRecentMatches : recentMatches;
 
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
+  const mainChartLoading = recentMatchesLoading || !recentMatchesSettled;
+  const syncedStatsLoading = Boolean(selectedTeam) && mainChartLoading;
+  const syncedFixtureStatsLoading = Boolean(selectedTeam) && (mainChartLoading || nextFixtureLoading);
+  const syncedLineupLoading = Boolean(selectedTeam) && (mainChartLoading || predictedLineupLoading);
 
   useEffect(() => setMounted(true), []);
 
@@ -1063,7 +1067,7 @@ function SoccerPageContent() {
                         <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
                           Select a team above to chart Soccerway match stats.
                         </div>
-                      ) : recentMatchesLoading || !recentMatchesSettled ? (
+                      ) : mainChartLoading ? (
                         <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
                           <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
                             {[...Array(20)].map((_, idx) => {
@@ -1118,7 +1122,7 @@ function SoccerPageContent() {
                       <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
                         Select a team above to load supporting stats.
                       </div>
-                    ) : recentMatchesLoading || !recentMatchesSettled ? (
+                    ) : syncedStatsLoading ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="space-y-3 w-full max-w-md">
                           <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`} />
@@ -1149,7 +1153,7 @@ function SoccerPageContent() {
                 <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
                   {!selectedTeam ? (
                     <div className={`px-3 sm:px-4 text-sm ${emptyText}`}>Select a team above to load predicted lineups.</div>
-                  ) : predictedLineupLoading ? (
+                  ) : syncedLineupLoading ? (
                     <div className="px-3 sm:px-4">
                       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                         {[0, 1].map((idx) => (
@@ -1222,9 +1226,10 @@ function SoccerPageContent() {
                     opponentName={displayOpponent}
                     opponentHref={nextOpponentHrefForPanel}
                     emptyTextClass={emptyText}
+                    showSkeleton={syncedFixtureStatsLoading}
                   />
                 </div>
-                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                <div className={`hidden lg:block h-[360px] w-full min-w-0 shrink-0 rounded-lg xl:h-[400px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
                   <SoccerTeamMatchupCard
                     isDark={Boolean(mounted && isDark)}
                     teamName={selectedTeam?.name ?? null}
@@ -1234,6 +1239,7 @@ function SoccerPageContent() {
                     nextCompetitionName={nextFixture?.competitionName ?? null}
                     nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
                     emptyTextClass={emptyText}
+                    showSkeleton={syncedFixtureStatsLoading}
                   />
                 </div>
                 <div className={`hidden lg:block min-h-[320px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />

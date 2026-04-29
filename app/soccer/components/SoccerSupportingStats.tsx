@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect, useMemo, useState } from 'react';
-import { BarChart, Bar, ResponsiveContainer, XAxis, Cell } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Cell, ReferenceLine } from 'recharts';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 import {
   SOCCER_BETTABLE_STATS,
@@ -35,23 +35,23 @@ type SupportingRow = {
 const PERCENT_STATS = new Set(['ball_possession']);
 const DEFAULT_SUPPORTING_OPTIONS = ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'];
 const SUPPORTING_OPTIONS_BY_MAIN: Record<string, string[]> = {
-  moneyline: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
-  total_goals: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
-  total_shots: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'ball_possession'],
-  shots_on_target: ['xg_on_target_xgot', 'expected_goals_xg', 'expected_assists_xa', 'accurate_through_passes'],
-  shots_off_target: ['expected_goals_xg', 'ball_possession', 'crosses', 'hit_the_woodwork'],
-  blocked_shots: ['expected_goals_xg', 'crosses', 'passes_in_final_third', 'touches_in_opposition_box'],
+  moneyline: ['expected_goals_xg', 'xg_on_target_xgot', 'total_shots', 'shots_on_target', 'expected_assists_xa', 'ball_possession'],
+  total_goals: ['expected_goals_xg', 'xg_on_target_xgot', 'total_shots', 'shots_on_target', 'expected_assists_xa', 'ball_possession'],
+  total_shots: ['shots_on_target', 'shots_off_target', 'touches_in_opposition_box', 'shots_inside_the_box', 'shots_outside_the_box'],
+  shots_on_target: ['total_shots', 'blocked_shots', 'xg_on_target_xgot', 'expected_goals_xg', 'expected_assists_xa', 'accurate_through_passes'],
+  shots_off_target: ['total_shots', 'expected_goals_xg', 'ball_possession', 'crosses', 'hit_the_woodwork'],
+  blocked_shots: ['total_shots', 'expected_goals_xg', 'crosses', 'passes_in_final_third', 'touches_in_opposition_box'],
   big_chances: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'touches_in_opposition_box'],
   corner_kicks: ['crosses', 'passes_in_final_third', 'touches_in_opposition_box', 'ball_possession'],
-  yellow_cards: ['duels_won', 'interceptions', 'clearances', 'offsides'],
-  red_cards: ['duels_won', 'interceptions', 'clearances', 'offsides'],
-  fouls: ['duels_won', 'interceptions', 'clearances', 'offsides'],
-  free_kicks: ['offsides', 'crosses', 'passes_in_final_third', 'ball_possession'],
+  yellow_cards: ['fouls', 'free_kicks', 'tackles', 'duels_won', 'interceptions', 'clearances', 'offsides'],
+  red_cards: ['fouls', 'free_kicks', 'tackles', 'duels_won', 'interceptions', 'clearances', 'offsides'],
+  fouls: ['yellow_cards', 'red_cards', 'tackles', 'duels_won', 'interceptions', 'clearances', 'offsides'],
+  free_kicks: ['fouls', 'offsides', 'crosses', 'passes_in_final_third', 'ball_possession'],
   touches_in_opposition_box: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'passes_in_final_third'],
   tackles: ['duels_won', 'interceptions', 'clearances', 'fouls'],
-  goalkeeper_saves: ['xgot_faced', 'goals_prevented', 'clearances', 'interceptions'],
-  shots_inside_the_box: ['expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'touches_in_opposition_box'],
-  shots_outside_the_box: ['xg_on_target_xgot', 'hit_the_woodwork', 'ball_possession', 'crosses'],
+  goalkeeper_saves: ['total_shots', 'shots_on_target', 'xgot_faced', 'goals_prevented', 'clearances', 'interceptions'],
+  shots_inside_the_box: ['total_shots', 'shots_on_target', 'expected_goals_xg', 'xg_on_target_xgot', 'expected_assists_xa', 'touches_in_opposition_box'],
+  shots_outside_the_box: ['total_shots', 'shots_on_target', 'xg_on_target_xgot', 'hit_the_woodwork', 'ball_possession', 'crosses'],
 };
 
 function normalizeTeamName(value: string): string {
@@ -175,6 +175,26 @@ function formatSupportingValue(value: number, options?: { isPercent?: boolean; u
   return String(Math.round(value));
 }
 
+function getSupportingYAxisConfig(values: number[]): { domain: [number, number]; ticks: number[] } {
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  if (!finiteValues.length) {
+    return { domain: [0, 10], ticks: [0, 3, 7, 10] };
+  }
+
+  const maxValue = Math.max(...finiteValues);
+  const hasDecimals = finiteValues.some((value) => Math.abs(value - Math.round(value)) > 0.001);
+  const bound = Math.max(hasDecimals ? Math.ceil(maxValue * 10) / 10 : Math.ceil(maxValue), 1);
+  const step = bound / 3;
+  const ticks = [0, step, step * 2, bound].map((value) =>
+    hasDecimals ? Math.round(value * 10) / 10 : Math.round(value)
+  );
+
+  return {
+    domain: [0, bound],
+    ticks,
+  };
+}
+
 export const SoccerSupportingStats = memo(function SoccerSupportingStats({
   matches,
   selectedTeamName,
@@ -240,16 +260,18 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
   }, [filteredNormalizedRows]);
 
   const supportingOptions = useMemo(() => {
-    const nonBettable = Array.from(availableStats).filter((key) => key !== mainChartStat && !SOCCER_BETTABLE_STATS.has(key));
-    const preferred = (SUPPORTING_OPTIONS_BY_MAIN[mainChartStat || ''] || DEFAULT_SUPPORTING_OPTIONS)
-      .filter((key) => nonBettable.includes(key));
+    const preferredKeys = SUPPORTING_OPTIONS_BY_MAIN[mainChartStat || ''] || DEFAULT_SUPPORTING_OPTIONS;
+    const candidateStats = Array.from(availableStats).filter(
+      (key) => key !== mainChartStat && (!SOCCER_BETTABLE_STATS.has(key) || preferredKeys.includes(key))
+    );
+    const preferred = preferredKeys.filter((key) => candidateStats.includes(key));
     if (preferred.length > 0) return preferred;
 
     const ordered: string[] = [];
     for (const key of SOCCER_STAT_PRIORITY) {
-      if (nonBettable.includes(key)) ordered.push(key);
+      if (candidateStats.includes(key)) ordered.push(key);
     }
-    for (const key of nonBettable) {
+    for (const key of candidateStats) {
       if (!ordered.includes(key)) ordered.push(key);
     }
     return ordered;
@@ -332,6 +354,10 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
 
   const barFill = isDark ? '#6b7280' : '#9ca3af';
   const labelFill = isDark ? '#e5e7eb' : '#374151';
+  const supportingYAxisConfig = useMemo(
+    () => getSupportingYAxisConfig(chartData.map((row) => row.value)),
+    [chartData]
+  );
   const emptyMessage = selectedSupportingStat
     ? `No ${formatStatLabel(selectedSupportingStat).toLowerCase()} data`
     : 'No supporting stats available';
@@ -384,19 +410,29 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
       ) : (
         <div className="w-full h-[320px] min-h-[280px] flex-shrink-0 min-w-0 pointer-events-none select-none">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 24, right: 0, left: 0, bottom: 4 }} barCategoryGap="5%">
+            <BarChart data={chartData} margin={{ top: 24, right: 8, left: 0, bottom: 0 }} barCategoryGap="5%">
+              <YAxis
+                domain={supportingYAxisConfig.domain}
+                ticks={supportingYAxisConfig.ticks}
+                axisLine={false}
+                tickLine={false}
+                tick={false}
+                width={34}
+              />
               <XAxis
                 dataKey="key"
-                axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}
+                axisLine={false}
                 tickLine={false}
                 tick={false}
                 tickFormatter={() => ''}
-                height={8}
+                height={0}
+                allowDuplicatedCategory={false}
                 interval={0}
               />
+              <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeWidth={2} ifOverflow="extendDomain" />
               <Bar
                 dataKey="value"
-                radius={[10, 10, 10, 10]}
+                radius={[10, 10, 0, 0]}
                 isAnimationActive={false}
                 label={(props) => {
                   const { x, y, width, value } = props;

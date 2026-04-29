@@ -25,17 +25,23 @@ type SampleFile = {
   }>;
 };
 
-type MatchupStatId = 'goals' | 'expected_goals_xg' | 'total_shots' | 'shots_on_target';
+type MatchupStatId = 'goals' | 'expected_goals_xg' | 'total_shots' | 'shots_on_target' | 'corner_kicks';
 
 type MatchupRow = {
   id: MatchupStatId;
   label: string;
-  teamValue: number | null;
-  teamRank: number | null;
-  teamRankedSize: number;
-  opponentValue: number | null;
-  opponentRank: number | null;
-  opponentRankedSize: number;
+  teamForValue: number | null;
+  teamForRank: number | null;
+  teamForRankedSize: number;
+  teamAgainstValue: number | null;
+  teamAgainstRank: number | null;
+  teamAgainstRankedSize: number;
+  opponentForValue: number | null;
+  opponentForRank: number | null;
+  opponentForRankedSize: number;
+  opponentAgainstValue: number | null;
+  opponentAgainstRank: number | null;
+  opponentAgainstRankedSize: number;
 };
 
 type TeamSeasonAverages = {
@@ -66,10 +72,11 @@ type TeamMatchupSnapshotFile = {
 export type TeamMatchupApiResponse = {
   mode: 'matchup' | 'no-data' | 'no-roster';
   competitionLabel: string;
+  seasonYear: number | null;
   teamsSampled: number;
   teamsInLeague: number;
-  team: { name: string; href: string } | null;
-  opponent: { name: string; href: string } | null;
+  team: { name: string; href: string; games: number | null } | null;
+  opponent: { name: string; href: string; games: number | null } | null;
   rows: MatchupRow[];
   note?: string;
 };
@@ -79,6 +86,7 @@ const MATCHUP_STATS: Array<{ id: MatchupStatId; label: string; statName: string 
   { id: 'expected_goals_xg', label: 'xG', statName: 'Expected goals (xG)' },
   { id: 'total_shots', label: 'Shots', statName: 'Total shots' },
   { id: 'shots_on_target', label: 'SOT', statName: 'Shots on target' },
+  { id: 'corner_kicks', label: 'Corners', statName: 'Corner kicks' },
 ];
 
 async function readPremierLeagueTeamMatchupSnapshot(): Promise<TeamMatchupSnapshotFile | null> {
@@ -341,26 +349,35 @@ export async function GET(request: NextRequest) {
       const rows = MATCHUP_STATS.map((stat) => ({
         id: stat.id,
         label: stat.label,
-        teamValue: resolvedTeam.attack?.[stat.id]?.perGame ?? null,
-        teamRank: resolvedTeam.attack?.[stat.id]?.rank ?? null,
-        teamRankedSize: Number(resolvedTeam.attack?.[stat.id]?.rankedSize || 0),
-        opponentValue: resolvedOpponent.defence?.[stat.id]?.perGame ?? null,
-        opponentRank: resolvedOpponent.defence?.[stat.id]?.rank ?? null,
-        opponentRankedSize: Number(resolvedOpponent.defence?.[stat.id]?.rankedSize || 0),
+        teamForValue: resolvedTeam.attack?.[stat.id]?.perGame ?? null,
+        teamForRank: resolvedTeam.attack?.[stat.id]?.rank ?? null,
+        teamForRankedSize: Number(resolvedTeam.attack?.[stat.id]?.rankedSize || 0),
+        teamAgainstValue: resolvedTeam.defence?.[stat.id]?.perGame ?? null,
+        teamAgainstRank: resolvedTeam.defence?.[stat.id]?.rank ?? null,
+        teamAgainstRankedSize: Number(resolvedTeam.defence?.[stat.id]?.rankedSize || 0),
+        opponentForValue: resolvedOpponent.attack?.[stat.id]?.perGame ?? null,
+        opponentForRank: resolvedOpponent.attack?.[stat.id]?.rank ?? null,
+        opponentForRankedSize: Number(resolvedOpponent.attack?.[stat.id]?.rankedSize || 0),
+        opponentAgainstValue: resolvedOpponent.defence?.[stat.id]?.perGame ?? null,
+        opponentAgainstRank: resolvedOpponent.defence?.[stat.id]?.rank ?? null,
+        opponentAgainstRankedSize: Number(resolvedOpponent.defence?.[stat.id]?.rankedSize || 0),
       }));
 
       return NextResponse.json({
         mode: 'matchup',
         competitionLabel: String(snapshot?.competitionLabel || 'England · Premier League'),
+        seasonYear: Number(snapshot?.seasonYear || seasonYear) || null,
         teamsSampled: Number(snapshot?.teamsSampled || snapshotTeams.length),
         teamsInLeague: Number(snapshot?.teamsInLeague || snapshotTeams.length),
         team: {
           name: String(resolvedTeam.name || teamName || 'Team'),
           href: normalizeSoccerTeamHref(String(resolvedTeam.href || teamHref || '')),
+          games: Number(resolvedTeam.leagueGames || 0) || null,
         },
         opponent: {
           name: String(resolvedOpponent.name || opponentName || 'Opponent'),
           href: normalizeSoccerTeamHref(String(resolvedOpponent.href || opponentHref || '')),
+          games: Number(resolvedOpponent.leagueGames || 0) || null,
         },
         rows,
         note:
@@ -378,6 +395,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       mode: 'no-roster',
       competitionLabel,
+      seasonYear: seasonYear || null,
       teamsSampled: 0,
       teamsInLeague: 0,
       team: null,
@@ -393,10 +411,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       mode: 'no-data',
       competitionLabel,
+      seasonYear: seasonYear || null,
       teamsSampled: 0,
       teamsInLeague: roster.length,
-      team: resolvedTeam,
-      opponent: resolvedOpponent,
+      team: resolvedTeam ? { name: resolvedTeam.name, href: resolvedTeam.href, games: null } : null,
+      opponent: resolvedOpponent ? { name: resolvedOpponent.name, href: resolvedOpponent.href, games: null } : null,
       rows: [],
       note: 'Could not map the selected teams to the league roster.',
     } satisfies TeamMatchupApiResponse);
@@ -423,10 +442,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       mode: 'no-data',
       competitionLabel,
+      seasonYear: seasonYear || null,
       teamsSampled: 0,
       teamsInLeague: roster.length,
-      team: resolvedTeam,
-      opponent: resolvedOpponent,
+      team: { name: resolvedTeam.name, href: resolvedTeam.href, games: null },
+      opponent: { name: resolvedOpponent.name, href: resolvedOpponent.href, games: null },
       rows: [],
       note: `No cached ${competitionLabel} data is available yet.`,
     } satisfies TeamMatchupApiResponse);
@@ -438,10 +458,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       mode: 'no-data',
       competitionLabel,
+      seasonYear: seasonYear || null,
       teamsSampled: allAverages.length,
       teamsInLeague: roster.length,
-      team: resolvedTeam,
-      opponent: resolvedOpponent,
+      team: { name: resolvedTeam.name, href: resolvedTeam.href, games: null },
+      opponent: { name: resolvedOpponent.name, href: resolvedOpponent.href, games: null },
       rows: [],
       note: 'Not enough cached league data to build this matchup yet.',
     } satisfies TeamMatchupApiResponse);
@@ -451,26 +472,35 @@ export async function GET(request: NextRequest) {
     const attackRanks = rankValues(allAverages, stat.id, 'attack');
     const defenceRanks = rankValues(allAverages, stat.id, 'defence');
     const teamAttack = attackRanks.find((row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(teamAverage.teamHref));
+    const teamDefence = defenceRanks.find((row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(teamAverage.teamHref));
+    const opponentAttack = attackRanks.find((row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(opponentAverage.teamHref));
     const opponentDefence = defenceRanks.find((row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(opponentAverage.teamHref));
     return {
       id: stat.id,
       label: stat.label,
-      teamValue: teamAttack?.value ?? null,
-      teamRank: teamAttack?.rank ?? null,
-      teamRankedSize: attackRanks.filter((row) => row.rank != null).length,
-      opponentValue: opponentDefence?.value ?? null,
-      opponentRank: opponentDefence?.rank ?? null,
-      opponentRankedSize: defenceRanks.filter((row) => row.rank != null).length,
+      teamForValue: teamAttack?.value ?? null,
+      teamForRank: teamAttack?.rank ?? null,
+      teamForRankedSize: attackRanks.filter((row) => row.rank != null).length,
+      teamAgainstValue: teamDefence?.value ?? null,
+      teamAgainstRank: teamDefence?.rank ?? null,
+      teamAgainstRankedSize: defenceRanks.filter((row) => row.rank != null).length,
+      opponentForValue: opponentAttack?.value ?? null,
+      opponentForRank: opponentAttack?.rank ?? null,
+      opponentForRankedSize: attackRanks.filter((row) => row.rank != null).length,
+      opponentAgainstValue: opponentDefence?.value ?? null,
+      opponentAgainstRank: opponentDefence?.rank ?? null,
+      opponentAgainstRankedSize: defenceRanks.filter((row) => row.rank != null).length,
     } satisfies MatchupRow;
   });
 
   return NextResponse.json({
     mode: 'matchup',
     competitionLabel,
+    seasonYear: seasonYear || null,
     teamsSampled: allAverages.length,
     teamsInLeague: roster.length,
-    team: { name: teamAverage.teamName, href: teamAverage.teamHref },
-    opponent: { name: opponentAverage.teamName, href: opponentAverage.teamHref },
+    team: { name: teamAverage.teamName, href: teamAverage.teamHref, games: teamAverage.games },
+    opponent: { name: opponentAverage.teamName, href: opponentAverage.teamHref, games: opponentAverage.games },
     rows,
     note:
       allAverages.length < roster.length
