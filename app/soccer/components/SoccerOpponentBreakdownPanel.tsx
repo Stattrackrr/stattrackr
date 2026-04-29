@@ -10,6 +10,7 @@ type SoccerOpponentBreakdownPanelProps = {
   opponentName: string | null;
   opponentHref: string | null;
   emptyTextClass: string;
+  showSkeleton?: boolean;
 };
 
 const HIDDEN_OPPONENT_BREAKDOWN_STATS = new Set(['xg_on_target_xgot', 'crosses']);
@@ -34,6 +35,7 @@ export function SoccerOpponentBreakdownPanel({
   opponentName,
   opponentHref,
   emptyTextClass,
+  showSkeleton = false,
 }: SoccerOpponentBreakdownPanelProps) {
   const [data, setData] = useState<OpponentBreakdownApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -101,17 +103,7 @@ export function SoccerOpponentBreakdownPanel({
     };
   }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref]);
 
-  if (!canFetch) {
-    return (
-      <div className="w-full min-w-0 h-full flex flex-col">
-        <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-          <p className={`text-sm ${emptyTextClass}`}>No data available come back later</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
@@ -128,6 +120,16 @@ export function SoccerOpponentBreakdownPanel({
             <div className={`h-10 w-full rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
             <div className={`h-10 w-full rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canFetch) {
+    return (
+      <div className="w-full min-w-0 h-full flex flex-col">
+        <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
+          <p className={`text-sm ${emptyTextClass}`}>No data available come back later</p>
         </div>
       </div>
     );

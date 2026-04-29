@@ -33,6 +33,7 @@ const MATCHUP_STATS = [
   { id: 'expected_goals_xg', label: 'xG', statName: 'Expected goals (xG)' },
   { id: 'total_shots', label: 'Shots', statName: 'Total shots' },
   { id: 'shots_on_target', label: 'SOT', statName: 'Shots on target' },
+  { id: 'corner_kicks', label: 'Corners', statName: 'Corner kicks' },
 ];
 
 function normalizeTeamHref(href) {
