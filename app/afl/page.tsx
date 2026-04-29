@@ -2568,30 +2568,10 @@ export default function AFLPage() {
 
   const aflTeamGamePropsLogs = useMemo(() => {
     if (aflPropsMode !== 'team') return [];
-    const playerLogs =
-      selectedPlayerGameLogsWithQuarters.length > 0 ? selectedPlayerGameLogsWithQuarters : selectedPlayerGameLogs;
-    const ctxTeam = String(teamContextTeam ?? '').trim();
-    const playerTeamRaw = selectedPlayer?.team ? String(selectedPlayer.team).trim() : '';
-    const ctxOfficial = ctxTeam
-      ? rosterTeamToInjuryTeam(ctxTeam) || footywireNicknameToOfficial(ctxTeam) || ctxTeam
-      : '';
-    const playerOfficial = playerTeamRaw
-      ? rosterTeamToInjuryTeam(playerTeamRaw) || footywireNicknameToOfficial(playerTeamRaw) || playerTeamRaw
-      : '';
-    const selectedPlayerMatchesContextTeam =
-      Boolean(ctxOfficial && playerOfficial && ctxOfficial.toLowerCase() === playerOfficial.toLowerCase()) &&
-      playerLogs.length > 0;
-
-    // First paint often uses `playerLogs` while `teamModeSelectedTeamLogs` is still []. When the roster
-    // `limit=1` fetch lands, swapping to that player's games can drop team games they did not play in
-    // (bars / tooltips vanish a few seconds later). Prefer the selected player's full log when their club
-    // matches the Game Props context team.
-    const source = selectedPlayerMatchesContextTeam
-      ? playerLogs
-      : teamModeSelectedTeamLogs.length > 0
-        ? teamModeSelectedTeamLogs
-        : playerLogs;
-    return source.map((g, idx) => {
+    // Team mode must always chart the team's full game log, not the currently selected player's
+    // personal log. Using player logs here makes the team chart look like the club has only
+    // played as many games as that player has appeared in.
+    return teamModeSelectedTeamLogs.map((g, idx) => {
       const result = String(g.result ?? '').trim();
       const scores = parseAflScoresFromResult(result);
       const parsedGoals = parseAflGoalsFromResult(result);
@@ -2653,12 +2633,8 @@ export default function AFLPage() {
       return row;
     });
   }, [
-    selectedPlayerGameLogs,
-    selectedPlayerGameLogsWithQuarters,
     aflPropsMode,
     teamModeSelectedTeamLogs,
-    teamContextTeam,
-    selectedPlayer?.team,
   ]);
 
   // Fetch DVP batch and OA for game filters (player mode only). Use the player's position so DvP matches their role (DEF/MID/FWD/RUC).
