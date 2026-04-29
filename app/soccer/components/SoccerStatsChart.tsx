@@ -157,6 +157,12 @@ function formatSoccerAxisValue(value: number): string {
   return `${Math.round(value)}`;
 }
 
+function getSoccerMoneylineLineLabel(value: number): 'W' | 'D' | 'L' {
+  if (value <= -0.5) return 'L';
+  if (value >= 0.5) return 'W';
+  return 'D';
+}
+
 function buildPositiveIntegerAxis(maxValue: number): { domain: [number, number]; ticks: number[] } {
   const safeMax = Math.max(1, Math.ceil(maxValue));
   let bestOption: { bound: number; intervals: number; padding: number } | null = null;
@@ -605,6 +611,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const statSupportsTeamScope = useMemo(() => {
     if (!selectedStat) return false;
+    if (selectedStat === 'moneyline') return false;
     return normalizedRows.some((row) => {
       const teamValue = row.statMap[selectedStat];
       const opponentValue = row.opponentStatMap[selectedStat];
@@ -864,23 +871,54 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-            <input
-              id="soccer-betting-line-input"
-              key={`soccer-line-${selectedStat}`}
-              type="number"
-              step={0.5}
-              value={lineValue}
-              min={lineInputBounds.min}
-              max={lineInputBounds.max}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (Number.isFinite(next)) {
-                  setLineValue(roundToSoccerHalfStep(next));
-                }
-              }}
-              className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
-            />
+            {selectedStat === 'moneyline' ? (
+              <div
+                className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5"
+                aria-label="Set H2H result line"
+                role="group"
+              >
+                {[
+                  { label: 'W', value: 0.5 },
+                  { label: 'D', value: 0 },
+                  { label: 'L', value: -0.5 },
+                ].map((option) => {
+                  const isSelected = getSoccerMoneylineLineLabel(lineValue) === option.label;
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={() => setLineValue(option.value)}
+                      className={`min-w-[38px] px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${
+                        isSelected
+                          ? 'bg-purple-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <input
+                id="soccer-betting-line-input"
+                key={`soccer-line-${selectedStat}`}
+                type="number"
+                step={0.5}
+                value={lineValue}
+                min={lineInputBounds.min}
+                max={lineInputBounds.max}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (Number.isFinite(next)) {
+                    setLineValue(roundToSoccerHalfStep(next));
+                  }
+                }}
+                className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
+              />
+            )}
             <div className="relative" ref={timeframeDropdownRef}>
               <button
                 type="button"

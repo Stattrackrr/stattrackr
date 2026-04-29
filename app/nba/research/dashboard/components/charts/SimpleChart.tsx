@@ -221,6 +221,33 @@ const SimpleChart = memo(function SimpleChart({
     [selectedStat]
   );
 
+  const isThreeWayMoneylineStat = useMemo(
+    () => selectedStat === 'moneyline' && Number(yAxisConfig?.domain?.[0]) < 0,
+    [selectedStat, yAxisConfig]
+  );
+
+  const getBarState = useCallback((value: number | null, line: number): 'over' | 'push' | 'under' | 'na' => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return 'na';
+    if (isTogStat) return 'push';
+    if (isThreeWayMoneylineStat) {
+      if (line >= 0.5) {
+        if (value >= 1) return 'over';
+        if (value === 0) return 'push';
+        return 'under';
+      }
+      if (line <= -0.5) {
+        if (value <= -1) return 'over';
+        if (value === 0) return 'push';
+        return 'under';
+      }
+      return value === 0 ? 'over' : 'under';
+    }
+    if (isSpreadLikeStat) return value <= line ? 'over' : 'under';
+    if (value > line) return 'over';
+    if (value < line) return 'under';
+    return 'push';
+  }, [isTogStat, isThreeWayMoneylineStat, isSpreadLikeStat]);
+
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
   // OPTIMIZATION: Single pass through array instead of two filters
   const initialBackgroundGradient = useMemo(() => {
@@ -232,20 +259,16 @@ const SimpleChart = memo(function SimpleChart({
     let counted = 0;
     for (let i = 0; i < total; i++) {
       const value = chartData[i].value;
-      if (value === null || value === undefined || !Number.isFinite(value)) continue;
+      const state = getBarState(value, bettingLine);
+      if (state === 'na' || state === 'push') continue;
       counted++;
-      if (isSpreadLikeStat) {
-        if (value <= bettingLine) overCount++;
-        else underCount++;
-      } else {
-        if (value > bettingLine) overCount++;
-        else if (value < bettingLine) underCount++;
-      }
+      if (state === 'over') overCount++;
+      else underCount++;
     }
     const overPercent = counted > 0 ? (overCount / counted) * 100 : 0;
     const underPercent = counted > 0 ? (underCount / counted) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);
-  }, [chartData, bettingLine, getBackgroundGradient, isTogStat, isSpreadLikeStat]);
+  }, [chartData, bettingLine, getBackgroundGradient, getBarState, isTogStat]);
   
   const backgroundGradientRef = useRef(initialBackgroundGradient);
   const getBackgroundGradientRef = useRef(getBackgroundGradient);
@@ -259,12 +282,10 @@ const SimpleChart = memo(function SimpleChart({
   // Determine bar color based on value vs betting line
   const getBarColor = useCallback((value: number | null, line: number) => {
     if (value === null || value === undefined || !Number.isFinite(value)) return '#94a3b8'; // no BDL Q1 row
-    if (isTogStat) return '#6b7280'; // neutral gray for TOG%
-    if (isSpreadLikeStat) return value <= line ? '#10b981' : '#ef4444'; // cover vs no-cover
-    if (value > line) return '#10b981'; // green
-    if (value < line) return '#ef4444'; // red
-    return '#6b7280'; // gray for equal
-  }, [isTogStat, isSpreadLikeStat]);
+    const state = getBarState(value, line);
+    if (state === 'na' || state === 'push') return '#6b7280';
+    return state === 'over' ? '#10b981' : '#ef4444';
+  }, [getBarState]);
 
   const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
   const hasTeammateOverlay = (teammateFilterId != null || teammateFilterName) && !!clearTeammateFilter;
@@ -346,9 +367,8 @@ const SimpleChart = memo(function SimpleChart({
         el.setAttribute('fill', '#94a3b8');
         return;
       }
-      const isOver = isSpreadLikeStat ? (barValue <= line) : (barValue > line);
-      const isPush = !isSpreadLikeStat && barValue === line;
-      const newState = isTogStat ? 'neutral' : (isOver ? 'over' : isPush ? 'push' : 'under');
+      const barState = getBarState(barValue, line);
+      const newState = isTogStat ? 'neutral' : barState;
       const currentState = el.getAttribute('data-state');
       if (currentState === newState) return; // Skip if state hasn't changed
       
@@ -360,7 +380,7 @@ const SimpleChart = memo(function SimpleChart({
       el.setAttribute('data-state', newState);
       el.setAttribute('fill', newColor);
     });
-  }, [isTogStat, isSpreadLikeStat]);
+  }, [getBarState, isTogStat]);
 
   // Update bar colors and background glow via DOM when betting line changes (prevents re-renders)
   useEffect(() => {
@@ -380,9 +400,12 @@ const SimpleChart = memo(function SimpleChart({
         return;
       }
       const counted = chartData.filter((d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value));
-      const total = counted.length;
-      const overCount = counted.filter((d) => (isSpreadLikeStat ? (d.value as number) <= bettingLine : (d.value as number) > bettingLine)).length;
-      const underCount = counted.filter((d) => (isSpreadLikeStat ? (d.value as number) > bettingLine : (d.value as number) < bettingLine)).length;
+      const classified = counted
+        .map((d) => getBarState(d.value as number, bettingLine))
+        .filter((state) => state === 'over' || state === 'under');
+      const total = classified.length;
+      const overCount = classified.filter((state) => state === 'over').length;
+      const underCount = classified.filter((state) => state === 'under').length;
       const overPercent = total > 0 ? (overCount / total) * 100 : 0;
       const underPercent = total > 0 ? (underCount / total) * 100 : 0;
       const newGradient = getBackgroundGradient(overPercent, underPercent);
@@ -397,7 +420,7 @@ const SimpleChart = memo(function SimpleChart({
     }, 0);
     
     return () => clearTimeout(timeoutId);
-  }, [bettingLine, chartData, getBackgroundGradient, updateBarColors, isTogStat, isSpreadLikeStat]);
+  }, [bettingLine, chartData, getBackgroundGradient, getBarState, updateBarColors, isTogStat]);
 
   // Ensure colors are set correctly on initial render (after DOM is ready)
   useEffect(() => {
@@ -440,14 +463,12 @@ const SimpleChart = memo(function SimpleChart({
           const known = data.filter(
             (d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value as number)
           );
-          const total = known.length;
-          const stat = selectedStatRef.current;
-          const overCount = stat === 'spread'
-            ? known.filter((d) => (d.value as number) < value).length
-            : known.filter((d) => (d.value as number) > value).length;
-          const underCount = stat === 'spread'
-            ? known.filter((d) => (d.value as number) > value).length
-            : known.filter((d) => (d.value as number) < value).length;
+          const classified = known
+            .map((d) => getBarState(d.value as number, value))
+            .filter((state) => state === 'over' || state === 'under');
+          const total = classified.length;
+          const overCount = classified.filter((state) => state === 'over').length;
+          const underCount = classified.filter((state) => state === 'under').length;
           const overPercent = total > 0 ? (overCount / total) * 100 : 0;
           const underPercent = total > 0 ? (underCount / total) * 100 : 0;
           const newGradient = getBackgroundGradientRef.current(overPercent, underPercent);
@@ -466,7 +487,7 @@ const SimpleChart = memo(function SimpleChart({
         delete (window as any).__simpleChartRecolorBars;
       };
     }
-  }, [isTogStat]); // Use refs for runtime data; include TOG mode
+  }, [getBarState, isTogStat]); // Use refs for runtime data; include TOG mode
 
   // Listen for transient-line event for instant updates while dragging
   useEffect(() => {
@@ -486,14 +507,12 @@ const SimpleChart = memo(function SimpleChart({
         const known = data.filter(
           (d) => d.value !== null && d.value !== undefined && Number.isFinite(d.value as number)
         );
-        const total = known.length;
-        const stat = selectedStatRef.current;
-        const overCount = stat === 'spread' 
-          ? known.filter((d) => (d.value as number) < value).length
-          : known.filter((d) => (d.value as number) > value).length;
-        const underCount = stat === 'spread'
-          ? known.filter((d) => (d.value as number) > value).length
-          : known.filter((d) => (d.value as number) < value).length;
+        const classified = known
+          .map((d) => getBarState(d.value as number, value))
+          .filter((state) => state === 'over' || state === 'under');
+        const total = classified.length;
+        const overCount = classified.filter((state) => state === 'over').length;
+        const underCount = classified.filter((state) => state === 'under').length;
         const overPercent = total > 0 ? (overCount / total) * 100 : 0;
         const underPercent = total > 0 ? (underCount / total) * 100 : 0;
         const newGradient = getBackgroundGradientRef.current(overPercent, underPercent);
@@ -518,7 +537,7 @@ const SimpleChart = memo(function SimpleChart({
         window.removeEventListener('transient-line', handleTransientLine);
       };
     }
-  }, [selectedStat, isTogStat]); // Only depend on selectedStat/TOG mode for spread logic
+  }, [getBarState, selectedStat, isTogStat]); // Only depend on stat-mode helpers
 
   // Calculate Y-axis config for second axis
   const secondAxisConfig = useMemo(() => {
