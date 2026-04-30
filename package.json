@@ -33,6 +33,7 @@
     "warm:soccer:cache": "node scripts/warm-soccer-cache.js",
     "build:soccer:opponent-breakdown:pl": "node scripts/build-soccer-opponent-breakdown-pl.js",
     "build:soccer:team-matchup:pl": "node scripts/build-soccer-team-matchup-pl.js",
+    "build:soccer:last5:pl": "node scripts/build-soccer-last5-pl.js",
     "test:afl:massimo": "node scripts/test-afl-player-massimo.js",
     "test:afl:2025-2026-logs": "node scripts/test-afl-2025-2026-logs.js",
     "test:afl:2025-2026-logs:all": "node scripts/test-afl-2025-2026-logs.js --all",

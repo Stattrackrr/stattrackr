@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 
 const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
 const CONCURRENCY = 4;
+type TeamMatchupTimeframe = 'season' | 'last5';
 
 type SampleFile = {
   competitions?: Array<{
@@ -73,6 +74,7 @@ export type TeamMatchupApiResponse = {
   mode: 'matchup' | 'no-data' | 'no-roster';
   competitionLabel: string;
   seasonYear: number | null;
+  timeframe: TeamMatchupTimeframe;
   teamsSampled: number;
   teamsInLeague: number;
   team: { name: string; href: string; games: number | null } | null;
@@ -92,6 +94,16 @@ const MATCHUP_STATS: Array<{ id: MatchupStatId; label: string; statName: string 
 async function readPremierLeagueTeamMatchupSnapshot(): Promise<TeamMatchupSnapshotFile | null> {
   try {
     const filePath = path.join(process.cwd(), 'data', 'soccer-team-matchup-premier-league.json');
+    const raw = await readFile(filePath, 'utf8');
+    return JSON.parse(raw) as TeamMatchupSnapshotFile;
+  } catch {
+    return null;
+  }
+}
+
+async function readPremierLeagueTeamMatchupLast5Snapshot(): Promise<TeamMatchupSnapshotFile | null> {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'soccer-team-matchup-premier-league-last5.json');
     const raw = await readFile(filePath, 'utf8');
     return JSON.parse(raw) as TeamMatchupSnapshotFile;
   } catch {
@@ -122,6 +134,10 @@ function normalizeName(value: string): string {
     .toLowerCase()
     .replace(/\s*\([^)]+\)\s*$/g, '')
     .replace(/\s+/g, ' ');
+}
+
+function parseTimeframe(value: string | null): TeamMatchupTimeframe {
+  return String(value || '').trim().toLowerCase() === 'last5' ? 'last5' : 'season';
 }
 
 async function loadLeagueRosterFromSample(filter: OpponentBreakdownLeagueFilter): Promise<Array<{ name: string; href: string }> | null> {
@@ -306,6 +322,15 @@ function getCurrentSoccerSeasonYear(): number {
   return month >= 6 ? year : year - 1;
 }
 
+function sortMatchesByRecency(matches: SoccerwayRecentMatch[]): SoccerwayRecentMatch[] {
+  return [...matches].sort((a, b) => {
+    const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    if (aKickoff !== bKickoff) return bKickoff - aKickoff;
+    return String(b.matchId || '').localeCompare(String(a.matchId || ''));
+  });
+}
+
 export async function GET(request: NextRequest) {
   const teamName = request.nextUrl.searchParams.get('teamName')?.trim() || '';
   const teamHref = request.nextUrl.searchParams.get('teamHref')?.trim() || '';
@@ -313,6 +338,7 @@ export async function GET(request: NextRequest) {
   const opponentHref = request.nextUrl.searchParams.get('opponentHref')?.trim() || '';
   const competitionName = request.nextUrl.searchParams.get('competitionName')?.trim() || '';
   const competitionCountry = request.nextUrl.searchParams.get('competitionCountry')?.trim() || '';
+  const timeframe = parseTimeframe(request.nextUrl.searchParams.get('timeframe'));
 
   if (!competitionName) {
     return NextResponse.json({ error: 'Missing competitionName' }, { status: 400 });
@@ -334,7 +360,10 @@ export async function GET(request: NextRequest) {
   const isPremierLeagueRequest =
     valuesMatch(competitionName, 'Premier League') && (!competitionCountry || valuesMatch(competitionCountry, 'England'));
   if (isPremierLeagueRequest) {
-    const snapshot = await readPremierLeagueTeamMatchupSnapshot();
+    const snapshot =
+      timeframe === 'last5'
+        ? await readPremierLeagueTeamMatchupLast5Snapshot()
+        : await readPremierLeagueTeamMatchupSnapshot();
     const snapshotTeams = Array.isArray(snapshot?.teams) ? snapshot.teams : [];
     const resolvedTeam =
       snapshotTeams.find((team) => normalizeSoccerTeamHref(String(team?.href || '')) === normalizeSoccerTeamHref(teamHref)) ??
@@ -367,6 +396,7 @@ export async function GET(request: NextRequest) {
         mode: 'matchup',
         competitionLabel: String(snapshot?.competitionLabel || 'England · Premier League'),
         seasonYear: Number(snapshot?.seasonYear || seasonYear) || null,
+        timeframe,
         teamsSampled: Number(snapshot?.teamsSampled || snapshotTeams.length),
         teamsInLeague: Number(snapshot?.teamsInLeague || snapshotTeams.length),
         team: {
@@ -382,9 +412,9 @@ export async function GET(request: NextRequest) {
         rows,
         note:
           snapshot?.generatedAt && Number(snapshot?.seasonYear || 0) === seasonYear
-            ? `Current season snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
+            ? `Current season ${timeframe === 'last5' ? 'last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
             : snapshot?.generatedAt
-              ? `Snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
+              ? `${timeframe === 'last5' ? 'Last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
               : undefined,
       } satisfies TeamMatchupApiResponse);
     }
@@ -396,6 +426,7 @@ export async function GET(request: NextRequest) {
       mode: 'no-roster',
       competitionLabel,
       seasonYear: seasonYear || null,
+      timeframe,
       teamsSampled: 0,
       teamsInLeague: 0,
       team: null,
@@ -412,6 +443,7 @@ export async function GET(request: NextRequest) {
       mode: 'no-data',
       competitionLabel,
       seasonYear: seasonYear || null,
+      timeframe,
       teamsSampled: 0,
       teamsInLeague: roster.length,
       team: resolvedTeam ? { name: resolvedTeam.name, href: resolvedTeam.href, games: null } : null,
@@ -428,9 +460,13 @@ export async function GET(request: NextRequest) {
       batch.map(async (team) => {
         const matches = await loadCachedTeamMatches(team.href);
         if (!matches?.length) return null;
-        const seasonMatches = filterMatchesToSeasonYear(filterToCompetition(matches, leagueFilter), seasonYear);
-        if (!seasonMatches.length) return null;
-        return computeTeamSeasonAverages(team.name, team.href, seasonMatches);
+        const seasonMatches =
+          timeframe === 'last5'
+            ? filterMatchesToSeasonYear(matches, seasonYear)
+            : filterMatchesToSeasonYear(filterToCompetition(matches, leagueFilter), seasonYear);
+        const sampledMatches = timeframe === 'last5' ? sortMatchesByRecency(seasonMatches).slice(0, 5) : seasonMatches;
+        if (!sampledMatches.length) return null;
+        return computeTeamSeasonAverages(team.name, team.href, sampledMatches);
       })
     );
     for (const result of batchResults) {
@@ -443,12 +479,13 @@ export async function GET(request: NextRequest) {
       mode: 'no-data',
       competitionLabel,
       seasonYear: seasonYear || null,
+      timeframe,
       teamsSampled: 0,
       teamsInLeague: roster.length,
       team: { name: resolvedTeam.name, href: resolvedTeam.href, games: null },
       opponent: { name: resolvedOpponent.name, href: resolvedOpponent.href, games: null },
       rows: [],
-      note: `No cached ${competitionLabel} data is available yet.`,
+      note: `No cached ${competitionLabel} ${timeframe === 'last5' ? 'last 5 ' : ''}data is available yet.`,
     } satisfies TeamMatchupApiResponse);
   }
 
@@ -459,12 +496,13 @@ export async function GET(request: NextRequest) {
       mode: 'no-data',
       competitionLabel,
       seasonYear: seasonYear || null,
+      timeframe,
       teamsSampled: allAverages.length,
       teamsInLeague: roster.length,
       team: { name: resolvedTeam.name, href: resolvedTeam.href, games: null },
       opponent: { name: resolvedOpponent.name, href: resolvedOpponent.href, games: null },
       rows: [],
-      note: 'Not enough cached league data to build this matchup yet.',
+      note: `Not enough cached league data to build this ${timeframe === 'last5' ? 'last 5 ' : ''}matchup yet.`,
     } satisfies TeamMatchupApiResponse);
   }
 
@@ -497,6 +535,7 @@ export async function GET(request: NextRequest) {
     mode: 'matchup',
     competitionLabel,
     seasonYear: seasonYear || null,
+    timeframe,
     teamsSampled: allAverages.length,
     teamsInLeague: roster.length,
     team: { name: teamAverage.teamName, href: teamAverage.teamHref, games: teamAverage.games },
@@ -504,7 +543,7 @@ export async function GET(request: NextRequest) {
     rows,
     note:
       allAverages.length < roster.length
-        ? `Using ${allAverages.length} of ${roster.length} ${competitionLabel} teams with cached current-season data.`
+        ? `Using ${timeframe === 'last5' ? 'last 5 current-season matches for ' : ''}${allAverages.length} of ${roster.length} ${competitionLabel} teams with cached data.`
         : undefined,
   } satisfies TeamMatchupApiResponse);
 }

@@ -6,7 +6,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
-export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
+export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
 type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'team' | 'opp';
@@ -31,6 +31,7 @@ type SoccerChartRow = {
 type SoccerStatsChartProps = {
   matches: SoccerwayRecentMatch[];
   selectedTeamName: string;
+  nextOpponentName?: string | null;
   isDark: boolean;
   onSelectedStatChange?: (stat: string) => void;
   onSelectedTimeframeChange?: (timeframe: SoccerTimeframe) => void;
@@ -126,6 +127,24 @@ function normalizeTeamName(value: string): string {
     .replace(/\s+/g, ' ');
 }
 
+function normalizeOpponentToken(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*/g, ' ')
+    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function opponentNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = normalizeOpponentToken(a);
+  const right = normalizeOpponentToken(b);
+  if (!left || !right) return false;
+  return left === right || (left.includes(right) && right.length >= 5) || (right.includes(left) && left.length >= 5);
+}
+
 function formatStatKey(name: string): string {
   return name
     .toLowerCase()
@@ -155,6 +174,12 @@ function roundToSoccerHalfStep(value: number): number {
 
 function formatSoccerAxisValue(value: number): string {
   return `${Math.round(value)}`;
+}
+
+function getSoccerMoneylineLineLabel(value: number): 'W' | 'D' | 'L' {
+  if (value <= -0.5) return 'L';
+  if (value >= 0.5) return 'W';
+  return 'D';
 }
 
 function buildPositiveIntegerAxis(maxValue: number): { domain: [number, number]; ticks: number[] } {
@@ -288,6 +313,7 @@ function getTimeframeLabel(value: SoccerTimeframe): string {
   if (value === 'last10') return 'L10';
   if (value === 'last20') return 'L20';
   if (value === 'last50') return 'L50';
+  if (value === 'h2h') return 'H2H';
   if (value === 'all') return 'ALL';
   return value.replace('season:', '');
 }
@@ -480,6 +506,7 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
 export const SoccerStatsChart = memo(function SoccerStatsChart({
   matches,
   selectedTeamName,
+  nextOpponentName = null,
   isDark,
   onSelectedStatChange,
   onSelectedTimeframeChange,
@@ -605,6 +632,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const statSupportsTeamScope = useMemo(() => {
     if (!selectedStat) return false;
+    if (selectedStat === 'moneyline') return false;
     return normalizedRows.some((row) => {
       const teamValue = row.statMap[selectedStat];
       const opponentValue = row.opponentStatMap[selectedStat];
@@ -680,7 +708,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   }, [filteredRows]);
 
   const timeframeOptions = useMemo(() => {
-    return ['last5', 'last10', 'last20', 'last50', 'all', ...seasonOptions] as SoccerTimeframe[];
+    return ['last5', 'last10', 'last20', 'last50', 'h2h', 'all', ...seasonOptions] as SoccerTimeframe[];
   }, [seasonOptions]);
 
   useEffect(() => {
@@ -761,6 +789,11 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const chartData = useMemo(() => {
     if (selectedTimeframe === 'all') return baseChartData;
+    if (selectedTimeframe === 'h2h') {
+      const targetOpponent = String(nextOpponentName || '').trim();
+      if (!targetOpponent) return [];
+      return baseChartData.filter((row) => opponentNamesMatch(row.opponent, targetOpponent)).slice(-15);
+    }
     if (selectedTimeframe.startsWith('season:')) {
       const year = Number.parseInt(selectedTimeframe.replace('season:', ''), 10);
       return baseChartData.filter((row) => row.gameSeason === year);
@@ -768,7 +801,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     const lastN = Number.parseInt(selectedTimeframe.replace('last', ''), 10);
     if (!Number.isFinite(lastN) || lastN <= 0) return baseChartData;
     return baseChartData.slice(-lastN);
-  }, [baseChartData, selectedTimeframe]);
+  }, [baseChartData, nextOpponentName, selectedTimeframe]);
 
   useEffect(() => {
     setLineValue(0.5);
@@ -864,23 +897,54 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-            <input
-              id="soccer-betting-line-input"
-              key={`soccer-line-${selectedStat}`}
-              type="number"
-              step={0.5}
-              value={lineValue}
-              min={lineInputBounds.min}
-              max={lineInputBounds.max}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (Number.isFinite(next)) {
-                  setLineValue(roundToSoccerHalfStep(next));
-                }
-              }}
-              className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
-            />
+            {selectedStat === 'moneyline' ? (
+              <div
+                className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5"
+                aria-label="Set H2H result line"
+                role="group"
+              >
+                {[
+                  { label: 'W', value: 0.5 },
+                  { label: 'D', value: 0 },
+                  { label: 'L', value: -0.5 },
+                ].map((option) => {
+                  const isSelected = getSoccerMoneylineLineLabel(lineValue) === option.label;
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={() => setLineValue(option.value)}
+                      className={`min-w-[38px] px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${
+                        isSelected
+                          ? 'bg-purple-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <input
+                id="soccer-betting-line-input"
+                key={`soccer-line-${selectedStat}`}
+                type="number"
+                step={0.5}
+                value={lineValue}
+                min={lineInputBounds.min}
+                max={lineInputBounds.max}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (Number.isFinite(next)) {
+                    setLineValue(roundToSoccerHalfStep(next));
+                  }
+                }}
+                className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                aria-label={`Set line value for ${statLabels.get(selectedStat) || formatStatLabel(selectedStat)}`}
+              />
+            )}
             <div className="relative" ref={timeframeDropdownRef}>
               <button
                 type="button"
@@ -982,7 +1046,13 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 ? (
           <div className="h-full w-full flex items-center justify-center p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedTimeframe === 'h2h'
+                ? nextOpponentName?.trim()
+                  ? 'No cached H2H matches found for the upcoming opponent'
+                  : 'No upcoming opponent found for H2H timeframe'
+                : 'No stats match selected filters'}
+            </p>
           </div>
         ) : (
           <SimpleChart
