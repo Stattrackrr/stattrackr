@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T12:13:58.153Z",
+  "generatedAt": "2026-04-30T17:49:34.483Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-01T09:30:06Z",
       "weather": {
-        "temperatureC": 21.9,
+        "temperatureC": 22,
         "precipitationMm": 0,
-        "windKmh": 14
+        "windKmh": 13.4
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-05-01T10:10:07Z",
       "weather": {
-        "temperatureC": 24.3,
+        "temperatureC": 24.2,
         "precipitationMm": 0,
-        "windKmh": 18.1
+        "windKmh": 17.1
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-05-02T02:35:43Z",
       "weather": {
-        "temperatureC": 21.5,
+        "temperatureC": 21.6,
         "precipitationMm": 0,
-        "windKmh": 13.8
+        "windKmh": 15.2
       }
     },
     {
@@ -44,7 +44,7 @@
       "weather": {
         "temperatureC": 17.1,
         "precipitationMm": 0,
-        "windKmh": 12.6
+        "windKmh": 12.5
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-05-02T06:35:53Z",
       "weather": {
-        "temperatureC": 23.7,
+        "temperatureC": 23.6,
         "precipitationMm": 0,
-        "windKmh": 22.1
+        "windKmh": 21.1
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-05-02T09:35:29Z",
       "weather": {
-        "temperatureC": 22,
+        "temperatureC": 22.1,
         "precipitationMm": 0,
-        "windKmh": 20.8
+        "windKmh": 18.9
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-05-03T05:15:36Z",
       "weather": {
-        "temperatureC": 23.1,
+        "temperatureC": 23,
         "precipitationMm": 0,
-        "windKmh": 18.7
+        "windKmh": 18.8
       }
     },
     {
@@ -88,7 +88,7 @@
       "weather": {
         "temperatureC": 20.5,
         "precipitationMm": 0,
-        "windKmh": 12.9
+        "windKmh": 12.7
       }
     }
   ],
