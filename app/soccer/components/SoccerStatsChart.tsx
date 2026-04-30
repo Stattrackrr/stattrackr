@@ -6,7 +6,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
-export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'all' | `season:${number}`;
+export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
 type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'team' | 'opp';
@@ -31,6 +31,7 @@ type SoccerChartRow = {
 type SoccerStatsChartProps = {
   matches: SoccerwayRecentMatch[];
   selectedTeamName: string;
+  nextOpponentName?: string | null;
   isDark: boolean;
   onSelectedStatChange?: (stat: string) => void;
   onSelectedTimeframeChange?: (timeframe: SoccerTimeframe) => void;
@@ -124,6 +125,24 @@ function normalizeTeamName(value: string): string {
     .toLowerCase()
     .replace(/\s*\([^)]+\)\s*$/g, '')
     .replace(/\s+/g, ' ');
+}
+
+function normalizeOpponentToken(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*/g, ' ')
+    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function opponentNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = normalizeOpponentToken(a);
+  const right = normalizeOpponentToken(b);
+  if (!left || !right) return false;
+  return left === right || (left.includes(right) && right.length >= 5) || (right.includes(left) && left.length >= 5);
 }
 
 function formatStatKey(name: string): string {
@@ -294,6 +313,7 @@ function getTimeframeLabel(value: SoccerTimeframe): string {
   if (value === 'last10') return 'L10';
   if (value === 'last20') return 'L20';
   if (value === 'last50') return 'L50';
+  if (value === 'h2h') return 'H2H';
   if (value === 'all') return 'ALL';
   return value.replace('season:', '');
 }
@@ -486,6 +506,7 @@ function SoccerChartTooltip({ active, payload, coordinate, isDark, selectedStatL
 export const SoccerStatsChart = memo(function SoccerStatsChart({
   matches,
   selectedTeamName,
+  nextOpponentName = null,
   isDark,
   onSelectedStatChange,
   onSelectedTimeframeChange,
@@ -687,7 +708,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   }, [filteredRows]);
 
   const timeframeOptions = useMemo(() => {
-    return ['last5', 'last10', 'last20', 'last50', 'all', ...seasonOptions] as SoccerTimeframe[];
+    return ['last5', 'last10', 'last20', 'last50', 'h2h', 'all', ...seasonOptions] as SoccerTimeframe[];
   }, [seasonOptions]);
 
   useEffect(() => {
@@ -768,6 +789,11 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 
   const chartData = useMemo(() => {
     if (selectedTimeframe === 'all') return baseChartData;
+    if (selectedTimeframe === 'h2h') {
+      const targetOpponent = String(nextOpponentName || '').trim();
+      if (!targetOpponent) return [];
+      return baseChartData.filter((row) => opponentNamesMatch(row.opponent, targetOpponent)).slice(-15);
+    }
     if (selectedTimeframe.startsWith('season:')) {
       const year = Number.parseInt(selectedTimeframe.replace('season:', ''), 10);
       return baseChartData.filter((row) => row.gameSeason === year);
@@ -775,7 +801,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     const lastN = Number.parseInt(selectedTimeframe.replace('last', ''), 10);
     if (!Number.isFinite(lastN) || lastN <= 0) return baseChartData;
     return baseChartData.slice(-lastN);
-  }, [baseChartData, selectedTimeframe]);
+  }, [baseChartData, nextOpponentName, selectedTimeframe]);
 
   useEffect(() => {
     setLineValue(0.5);
@@ -1020,7 +1046,13 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 ? (
           <div className="h-full w-full flex items-center justify-center p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedTimeframe === 'h2h'
+                ? nextOpponentName?.trim()
+                  ? 'No cached H2H matches found for the upcoming opponent'
+                  : 'No upcoming opponent found for H2H timeframe'
+                : 'No stats match selected filters'}
+            </p>
           </div>
         ) : (
           <SimpleChart

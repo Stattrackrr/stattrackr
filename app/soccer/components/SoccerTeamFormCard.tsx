@@ -1,0 +1,553 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+
+type SoccerTeamFormCardProps = {
+  isDark: boolean;
+  teamName: string | null;
+  teamHref: string | null;
+  opponentName: string | null;
+  opponentHref: string | null;
+  nextCompetitionName: string | null;
+  nextCompetitionCountry: string | null;
+  emptyTextClass: string;
+  showSkeleton?: boolean;
+};
+
+type TeamResultsApiResponse = {
+  matches?: SoccerwayRecentMatch[];
+  error?: string;
+};
+
+type FormViewMode = 'selected' | 'opponent';
+type FormWindowKey = 'last5' | 'h2h';
+type FormStatId = 'goals' | 'expected_goals_xg' | 'total_shots' | 'shots_on_target';
+
+type FormWindowSummary = {
+  key: FormWindowKey;
+  label: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  stats: Array<{
+    id: FormStatId;
+    label: string;
+    recentAverage: number | null;
+    seasonAverage: number | null;
+    delta: number | null;
+  }>;
+};
+
+type TeamFormSummary = {
+  teamName: string;
+  seasonYear: number;
+  seasonGames: number;
+  windows: FormWindowSummary[];
+};
+
+const FORM_STATS: Array<{ id: FormStatId; label: string; statName: string | null }> = [
+  { id: 'goals', label: 'Goals', statName: null },
+  { id: 'expected_goals_xg', label: 'xG', statName: 'Expected goals (xG)' },
+  { id: 'total_shots', label: 'Shots', statName: 'Total shots' },
+  { id: 'shots_on_target', label: 'SOT', statName: 'Shots on target' },
+];
+
+function normalizeTeamName(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*/g, ' ')
+    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeOpponentToken(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*/g, ' ')
+    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function opponentNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = normalizeOpponentToken(a);
+  const right = normalizeOpponentToken(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+function getTeamSide(match: SoccerwayRecentMatch, teamName: string): 'home' | 'away' | null {
+  const normalizedTeam = normalizeTeamName(teamName);
+  if (normalizeTeamName(match.homeTeam) === normalizedTeam) return 'home';
+  if (normalizeTeamName(match.awayTeam) === normalizedTeam) return 'away';
+  return null;
+}
+
+function getCurrentSoccerSeasonYear(): number {
+  const now = new Date();
+  const month = now.getUTCMonth();
+  const year = now.getUTCFullYear();
+  return month >= 6 ? year : year - 1;
+}
+
+function formatSeasonLabel(seasonYear: number | null | undefined): string | null {
+  if (!seasonYear || !Number.isFinite(seasonYear)) return null;
+  return `${seasonYear}/${String(seasonYear + 1).slice(-2)}`;
+}
+
+function parseNumeric(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const match = String(raw).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const value = Number.parseFloat(match[0]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function getMatchStats(match: SoccerwayRecentMatch): SoccerwayMatchStat[] {
+  const matchPeriod = match.stats?.periods.find((period) => String(period.name || '').trim().toLowerCase() === 'match');
+  if (!matchPeriod) return [];
+  return matchPeriod.categories.flatMap((category) => category.stats);
+}
+
+function findStat(match: SoccerwayRecentMatch, statName: string): SoccerwayMatchStat | null {
+  for (const stat of getMatchStats(match)) {
+    if (String(stat.name || '').trim().toLowerCase() === statName.toLowerCase()) return stat;
+  }
+  return null;
+}
+
+function getGoalsFor(match: SoccerwayRecentMatch, teamName: string): number | null {
+  const side = getTeamSide(match, teamName);
+  if (!side) return null;
+  return side === 'home' ? match.homeScore : match.awayScore;
+}
+
+function getGoalsAgainst(match: SoccerwayRecentMatch, teamName: string): number | null {
+  const side = getTeamSide(match, teamName);
+  if (!side) return null;
+  return side === 'home' ? match.awayScore : match.homeScore;
+}
+
+function getTeamStatValue(match: SoccerwayRecentMatch, teamName: string, statName: string): number | null {
+  const side = getTeamSide(match, teamName);
+  const stat = findStat(match, statName);
+  if (!side || !stat) return null;
+  return parseNumeric(side === 'home' ? stat.homeValue : stat.awayValue);
+}
+
+function average(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function formatValue(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return value.toFixed(2);
+}
+
+function formatDelta(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  if (Math.abs(value) < 0.005) return 'EVEN';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
+}
+
+function getDeltaStyles(delta: number | null): { textClass: string; fill: string } {
+  if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 0.005) {
+    return {
+      textClass: 'text-amber-600 dark:text-amber-300',
+      fill: '#d97706',
+    };
+  }
+  if (delta > 0) {
+    return {
+      textClass: 'text-green-600 dark:text-green-400',
+      fill: '#16a34a',
+    };
+  }
+  return {
+    textClass: 'text-red-600 dark:text-red-400',
+    fill: '#ef4444',
+  };
+}
+
+function buildWindowSummary(matches: SoccerwayRecentMatch[], teamName: string, key: FormWindowKey, label: string, seasonMatches: SoccerwayRecentMatch[]): FormWindowSummary {
+  const windowMatches = matches.slice(0, 5);
+  const comparisonMatches = key === 'h2h' ? seasonMatches.slice(0, 10) : seasonMatches;
+  let wins = 0;
+  let draws = 0;
+  let losses = 0;
+
+  for (const match of windowMatches) {
+    const goalsFor = getGoalsFor(match, teamName);
+    const goalsAgainst = getGoalsAgainst(match, teamName);
+    if (goalsFor == null || goalsAgainst == null) continue;
+    if (goalsFor > goalsAgainst) wins += 1;
+    else if (goalsFor < goalsAgainst) losses += 1;
+    else draws += 1;
+  }
+
+  const stats = FORM_STATS.map((stat) => {
+    const recentValues =
+      stat.id === 'goals'
+        ? windowMatches.map((match) => getGoalsFor(match, teamName)).filter((value): value is number => value != null)
+        : windowMatches
+            .map((match) => getTeamStatValue(match, teamName, stat.statName!))
+            .filter((value): value is number => value != null);
+
+    const seasonValues =
+      stat.id === 'goals'
+        ? comparisonMatches.map((match) => getGoalsFor(match, teamName)).filter((value): value is number => value != null)
+        : comparisonMatches
+            .map((match) => getTeamStatValue(match, teamName, stat.statName!))
+            .filter((value): value is number => value != null);
+
+    const recentAverage = average(recentValues);
+    const seasonAverage = average(seasonValues);
+
+    return {
+      id: stat.id,
+      label: stat.label,
+      recentAverage,
+      seasonAverage,
+      delta:
+        recentAverage != null && seasonAverage != null && Number.isFinite(recentAverage) && Number.isFinite(seasonAverage)
+          ? recentAverage - seasonAverage
+          : null,
+    };
+  });
+
+  return {
+    key,
+    label,
+    games: windowMatches.length,
+    wins,
+    draws,
+    losses,
+    stats,
+  };
+}
+
+function buildTeamFormSummary(
+  teamName: string,
+  matches: SoccerwayRecentMatch[],
+  seasonYear: number,
+  opponentName: string
+): TeamFormSummary | null {
+  const filteredMatches = matches
+    .filter((match) => {
+      if (match.kickoffUnix == null || !Number.isFinite(match.kickoffUnix)) return false;
+      const kickoff = new Date(match.kickoffUnix * 1000);
+      const month = kickoff.getUTCMonth();
+      const year = kickoff.getUTCFullYear();
+      const matchSeasonYear = month >= 6 ? year : year - 1;
+      return matchSeasonYear === seasonYear;
+    })
+    .sort((a, b) => {
+    const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+    if (aKickoff !== bKickoff) return bKickoff - aKickoff;
+    return String(b.matchId || '').localeCompare(String(a.matchId || ''));
+  });
+
+  if (filteredMatches.length === 0) return null;
+
+  const h2hMatches = matches
+    .filter((match) => {
+      const side = getTeamSide(match, teamName);
+      if (!side) return false;
+      const otherTeam = side === 'home' ? match.awayTeam : match.homeTeam;
+      return opponentNamesMatch(otherTeam, opponentName);
+    })
+    .sort((a, b) => {
+      const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+      const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
+      if (aKickoff !== bKickoff) return bKickoff - aKickoff;
+      return String(b.matchId || '').localeCompare(String(a.matchId || ''));
+    });
+
+  return {
+    teamName,
+    seasonYear,
+    seasonGames: filteredMatches.length,
+    windows: [
+      buildWindowSummary(filteredMatches, teamName, 'last5', 'Last 5', filteredMatches),
+      buildWindowSummary(h2hMatches, teamName, 'h2h', 'Last 5 H2H', filteredMatches),
+    ],
+  };
+}
+
+function TeamFormHeader() {
+  return (
+    <div className="relative flex items-center justify-center mt-1 mb-2 flex-shrink-0">
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Form</h3>
+    </div>
+  );
+}
+
+export function SoccerTeamFormCard({
+  isDark,
+  teamName,
+  teamHref,
+  opponentName,
+  opponentHref,
+  nextCompetitionName,
+  nextCompetitionCountry,
+  emptyTextClass,
+  showSkeleton = false,
+}: SoccerTeamFormCardProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<FormViewMode>('selected');
+  const [teamMatches, setTeamMatches] = useState<SoccerwayRecentMatch[]>([]);
+  const [opponentMatches, setOpponentMatches] = useState<SoccerwayRecentMatch[]>([]);
+
+  const canFetch = Boolean(nextCompetitionName && teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
+
+  useEffect(() => {
+    if (!canFetch || !teamHref || !opponentHref) {
+      setTeamMatches([]);
+      setOpponentMatches([]);
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+
+    const fetchMatches = async (href: string) => {
+      const response = await fetch(`/api/soccer/team-results?href=${encodeURIComponent(href)}&cacheOnly=1`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      const payload = (await response.json().catch(() => null)) as TeamResultsApiResponse | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to load team form');
+      }
+      return Array.isArray(payload?.matches) ? payload.matches : [];
+    };
+
+    void Promise.all([fetchMatches(teamHref), fetchMatches(opponentHref)])
+      .then(([selectedMatches, opponentSideMatches]) => {
+        if (cancelled) return;
+        setTeamMatches(selectedMatches);
+        setOpponentMatches(opponentSideMatches);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setTeamMatches([]);
+        setOpponentMatches([]);
+        setError(err instanceof Error ? err.message : 'Failed to load team form');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [canFetch, opponentHref, teamHref]);
+
+  const leagueFilter = useMemo<OpponentBreakdownLeagueFilter | null>(() => {
+    if (!nextCompetitionName?.trim()) return null;
+    return {
+      competitionName: nextCompetitionName.trim(),
+      competitionCountry: nextCompetitionCountry?.trim() || null,
+    };
+  }, [nextCompetitionCountry, nextCompetitionName]);
+
+  const seasonYear = getCurrentSoccerSeasonYear();
+
+  const selectedSummary = useMemo(
+    () => (teamName && opponentName ? buildTeamFormSummary(teamName, teamMatches, seasonYear, opponentName) : null),
+    [opponentName, seasonYear, teamMatches, teamName]
+  );
+  const opponentSummary = useMemo(
+    () => (opponentName && teamName ? buildTeamFormSummary(opponentName, opponentMatches, seasonYear, teamName) : null),
+    [opponentMatches, opponentName, seasonYear, teamName]
+  );
+
+  const currentSummary = viewMode === 'opponent' ? opponentSummary : selectedSummary;
+  const selectedLabel = selectedSummary?.teamName ?? teamName ?? 'Selected team';
+  const opponentLabel = opponentSummary?.teamName ?? opponentName ?? 'Opponent';
+  const seasonLabel = formatSeasonLabel(currentSummary?.seasonYear ?? seasonYear);
+
+  if (showSkeleton || loading) {
+    return (
+      <div className="w-full min-w-0 h-full flex flex-col">
+        <TeamFormHeader />
+        <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
+            <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+          </div>
+          <div className={`mb-3 h-10 rounded-xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {[0, 1].map((idx) => (
+              <div key={idx} className={`h-48 rounded-xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canFetch) {
+    return (
+      <div className="w-full min-w-0 h-full flex flex-col">
+        <TeamFormHeader />
+        <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
+          <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full min-w-0 h-full flex flex-col">
+        <TeamFormHeader />
+        <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
+          <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedSummary && !opponentSummary) {
+    return (
+      <div className="w-full min-w-0 h-full flex flex-col">
+        <TeamFormHeader />
+        <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
+          <div className={`text-sm ${emptyTextClass}`}>No cached season form data found yet.</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full min-w-0 h-full flex flex-col">
+      <TeamFormHeader />
+      <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
+        <div className="mb-3">
+          <div className={`inline-flex w-full items-center rounded-xl border p-1 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-100'}`}>
+            <button
+              type="button"
+              onClick={() => setViewMode('selected')}
+              className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                viewMode === 'selected'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : isDark
+                    ? 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-600 hover:bg-white'
+              }`}
+            >
+              <span className="block truncate">{selectedLabel}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('opponent')}
+              className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                viewMode === 'opponent'
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : isDark
+                    ? 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-600 hover:bg-white'
+              }`}
+            >
+              <span className="block truncate">{opponentLabel}</span>
+            </button>
+          </div>
+          <div className={`mt-1 text-center text-[10px] font-medium uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            Recent attack form vs season average
+          </div>
+        </div>
+
+        {!currentSummary ? (
+          <div className={`text-sm py-4 ${emptyTextClass}`}>No data available come back later</div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
+            <div className={`rounded-xl border px-3 py-2 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-50/80'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <span className={`font-semibold uppercase tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentSummary.teamName}</span>
+                <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {[seasonLabel, `${currentSummary.seasonGames} matches`].filter(Boolean).join(' · ')}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+              {currentSummary.windows.map((window) => (
+                <div
+                  key={window.key}
+                  className={`rounded-xl border px-3 py-3 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-50/80'}`}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <div className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>
+                        {window.label}
+                      </div>
+                      <div className={`text-[11px] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{window.games} matches</div>
+                    </div>
+                    <div className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>
+                      {window.wins}-{window.draws}-{window.losses}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {window.stats.map((stat) => {
+                      const primary = stat.recentAverage;
+                      const secondary = stat.seasonAverage;
+                      const primaryStrength = Math.max(primary ?? 0, 0.05);
+                      const secondaryStrength = Math.max(secondary ?? 0, 0.05);
+                      const totalStrength = primaryStrength + secondaryStrength;
+                      const primaryShare = totalStrength > 0 ? (primaryStrength / totalStrength) * 100 : 50;
+                      const secondaryShare = 100 - primaryShare;
+                      const deltaStyles = getDeltaStyles(stat.delta);
+
+                      return (
+                        <div key={stat.id}>
+                          <div className="mb-1 flex items-center justify-between text-[11px] font-medium leading-none">
+                            <span className={deltaStyles.textClass}>{formatValue(primary)}</span>
+                            <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{stat.label}</span>
+                            <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatValue(secondary)}</span>
+                          </div>
+                          <div className="relative h-2 overflow-hidden rounded-full bg-gray-200/70 dark:bg-gray-700/60">
+                            <div
+                              className="absolute inset-y-0 left-0"
+                              style={{ width: `${primaryShare}%`, backgroundColor: deltaStyles.fill }}
+                            />
+                            <div
+                              className="absolute inset-y-0 right-0 bg-slate-400 dark:bg-slate-500"
+                              style={{ width: `${secondaryShare}%` }}
+                            />
+                          </div>
+                          <div className="mt-1 flex items-center justify-between text-[10px]">
+                            <span className={deltaStyles.textClass}>{formatDelta(stat.delta)}</span>
+                            <span className={`${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                              {window.key === 'h2h' ? 'vs last 10 avg' : 'vs season avg'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
