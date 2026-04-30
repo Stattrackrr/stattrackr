@@ -16,6 +16,7 @@ import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingS
 import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
 import { SoccerOpponentBreakdownPanel } from '@/app/soccer/components/SoccerOpponentBreakdownPanel';
 import { SoccerTeamMatchupCard } from '@/app/soccer/components/SoccerTeamMatchupCard';
+import { SoccerTeamFormCard } from '@/app/soccer/components/SoccerTeamFormCard';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -1102,6 +1103,7 @@ function SoccerPageContent() {
                         <SoccerStatsChart
                           matches={displayedRecentMatches}
                           selectedTeamName={selectedTeam.name}
+                          nextOpponentName={displayOpponent}
                           isDark={Boolean(mounted && isDark)}
                           onSelectedStatChange={setMainChartStat}
                           onSelectedTimeframeChange={setChartTimeframe}
@@ -1140,6 +1142,7 @@ function SoccerPageContent() {
                       <SoccerSupportingStats
                         matches={displayedRecentMatches}
                         selectedTeamName={selectedTeam.name}
+                        nextOpponentName={displayOpponent}
                         timeframe={chartTimeframe}
                         teamScope={chartTeamScope}
                         competitionFilter={chartCompetition}
@@ -1242,7 +1245,19 @@ function SoccerPageContent() {
                     showSkeleton={syncedFixtureStatsLoading}
                   />
                 </div>
-                <div className={`hidden lg:block min-h-[320px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block h-[420px] w-full min-w-0 shrink-0 rounded-lg xl:h-[460px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerTeamFormCard
+                    isDark={Boolean(mounted && isDark)}
+                    teamName={selectedTeam?.name ?? null}
+                    teamHref={selectedTeam?.href ?? null}
+                    opponentName={displayOpponent}
+                    opponentHref={nextOpponentHrefForPanel}
+                    nextCompetitionName={nextFixture?.competitionName ?? null}
+                    nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
+                    emptyTextClass={emptyText}
+                    showSkeleton={syncedFixtureStatsLoading}
+                  />
+                </div>
                 <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
               </div>
             </div>

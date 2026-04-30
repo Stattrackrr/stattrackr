@@ -28,6 +28,47 @@ function getRankColor(rank: number | null, isDark: boolean): string {
   return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
 }
 
+function OpponentBreakdownTimeframeToggle({
+  isDark,
+  timeframe,
+  onChange,
+}: {
+  isDark: boolean;
+  timeframe: 'season' | 'last5';
+  onChange: (value: 'season' | 'last5') => void;
+}) {
+  return (
+    <div className={`inline-flex items-center rounded-xl border p-1 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-100'}`}>
+      <button
+        type="button"
+        onClick={() => onChange('season')}
+        className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${
+          timeframe === 'season'
+            ? 'bg-purple-600 text-white shadow-sm'
+            : isDark
+              ? 'text-gray-300 hover:bg-gray-800'
+              : 'text-gray-600 hover:bg-white'
+        }`}
+      >
+        Season
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('last5')}
+        className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${
+          timeframe === 'last5'
+            ? 'bg-purple-600 text-white shadow-sm'
+            : isDark
+              ? 'text-gray-300 hover:bg-gray-800'
+              : 'text-gray-600 hover:bg-white'
+        }`}
+      >
+        Last 5
+      </button>
+    </div>
+  );
+}
+
 export function SoccerOpponentBreakdownPanel({
   isDark,
   nextCompetitionName,
@@ -40,6 +81,7 @@ export function SoccerOpponentBreakdownPanel({
   const [data, setData] = useState<OpponentBreakdownApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState<'season' | 'last5'>('season');
 
   const canFetch = Boolean(nextCompetitionName && (opponentName?.trim() || opponentHref));
 
@@ -59,6 +101,7 @@ export function SoccerOpponentBreakdownPanel({
 
     const p = new URLSearchParams();
     p.set('competitionName', nextCompetitionName);
+    p.set('timeframe', timeframe);
     if (nextCompetitionCountry?.trim()) p.set('competitionCountry', nextCompetitionCountry.trim());
     if (on) p.set('opponentName', on);
     if (oh) p.set('opponentHref', oh.startsWith('/') ? oh : `/${oh}`);
@@ -101,13 +144,14 @@ export function SoccerOpponentBreakdownPanel({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref]);
+  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref, timeframe]);
 
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
           <div className="flex items-center gap-2 mb-3">
@@ -140,6 +184,7 @@ export function SoccerOpponentBreakdownPanel({
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
           <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
@@ -153,6 +198,7 @@ export function SoccerOpponentBreakdownPanel({
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
           <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
@@ -169,8 +215,9 @@ export function SoccerOpponentBreakdownPanel({
 
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-center gap-2 mt-1 mb-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
 
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
@@ -181,7 +228,7 @@ export function SoccerOpponentBreakdownPanel({
             </h4>
           </div>
           <div className={`mb-3 text-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {data.competitionLabel} · {data.opponent.leagueGames} matches
+            {data.competitionLabel} · {data.opponent.leagueGames} matches · {data.timeframe === 'last5' ? 'Last 5' : 'Season'}
           </div>
 
           {visibleStats.length === 0 ? (
@@ -228,8 +275,9 @@ export function SoccerOpponentBreakdownPanel({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <div className="flex items-center justify-center gap-2 mt-1 mb-3 flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+        <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
       </div>
       <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
         <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{data.note || 'No data available come back later'}</div>

@@ -1,0 +1,1216 @@
+{
+  "generatedAt": "2026-04-30T15:43:54.350Z",
+  "source": "build-soccer-last5-pl",
+  "sourceBaseUrl": "https://www.soccerway.com",
+  "timeframe": "last5",
+  "competitionName": "Premier League",
+  "competitionCountry": "England",
+  "competitionLabel": "England · Premier League",
+  "seasonYear": 2025,
+  "teamsInLeague": 20,
+  "teamsSampled": 20,
+  "stats": [
+    {
+      "id": "goals",
+      "label": "Goals"
+    },
+    {
+      "id": "expected_goals_xg",
+      "label": "xG"
+    },
+    {
+      "id": "total_shots",
+      "label": "Shots"
+    },
+    {
+      "id": "shots_on_target",
+      "label": "SOT"
+    },
+    {
+      "id": "corner_kicks",
+      "label": "Corners"
+    }
+  ],
+  "teams": [
+    {
+      "name": "Arsenal",
+      "href": "/team/arsenal/hA1Zm19f",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 0.8,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.316,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.2,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 2.6,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6.2,
+          "rank": 4,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2100000000000002,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.4,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.2,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4,
+          "rank": 3,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Manchester City",
+      "href": "/team/manchester-city/Wtn9Stg0",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2.4,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.304,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 19.6,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 7,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 9,
+          "rank": 1,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.4,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.002,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.4,
+          "rank": 2,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Manchester Utd",
+      "href": "/team/manchester-united/ppjDR086",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.8,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.16,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.4,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6.6,
+          "rank": 3,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.624,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.6,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6.2,
+          "rank": 16,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Aston Villa",
+      "href": "/team/aston-villa/W00wmLO0",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2.4,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.7559999999999998,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.6,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.8,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.8,
+          "rank": 15,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.172,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.6,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4,
+          "rank": 3,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Liverpool",
+      "href": "/team/liverpool/lId4TMwf",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.4,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2639999999999998,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.8,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.2,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.5059999999999998,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.6,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.4,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.6,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Chelsea",
+      "href": "/team/chelsea/4fGZN2oK",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.6,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.77,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.4,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.8,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.4,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.128,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.2,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5,
+          "rank": 11,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Brentford",
+      "href": "/team/brentford/xYe7DwID",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6919999999999997,
+          "rank": 8,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.6,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.4,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.4,
+          "rank": 12,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.106,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.6,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.8,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Everton",
+      "href": "/team/everton/KluSTr9s",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.4,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 10.8,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.2,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 2.8,
+          "rank": 20,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.6,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.818,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.6,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.8,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.6,
+          "rank": 14,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Brighton",
+      "href": "/team/brighton/2XrRecc3",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.748,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.2,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.8,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4,
+          "rank": 14,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.6,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.8480000000000001,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 7,
+          "rank": 19,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Sunderland",
+      "href": "/team/sunderland/WSzc94ws",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4179999999999997,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.6,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.8,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.4,
+          "rank": 12,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2.2,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.5479999999999998,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.8,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.6,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.6,
+          "rank": 14,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Bournemouth",
+      "href": "/team/bournemouth/OtpNdwrc",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.6,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.036,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.578,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.2,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.2,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.2,
+          "rank": 12,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Fulham",
+      "href": "/team/fulham/69ZiU2Om",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 0.8,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4340000000000002,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.2,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.4,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.8,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.6,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.2280000000000002,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.2,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.4,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6.2,
+          "rank": 16,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Crystal Palace",
+      "href": "/team/crystal-palace/AovF1Mia",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.4,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.0060000000000002,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.4,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.6,
+          "rank": 18,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.048,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.8,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.6,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.4,
+          "rank": 6,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Newcastle",
+      "href": "/team/newcastle-utd/p6ahwuwJ",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3119999999999998,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.2,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.6,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.8,
+          "rank": 15,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2.8,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.554,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.8,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 6.4,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.6,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Leeds",
+      "href": "/team/leeds/tUxUbLR2",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.888,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.6,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.2,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.8,
+          "rank": 15,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3960000000000001,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 14.8,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.2,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 7.8,
+          "rank": 20,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Nottingham",
+      "href": "/team/nottingham/UsushcZr",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2.4,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.212,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.2,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.4,
+          "rank": 7,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 0.6,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.042,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.2,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.2,
+          "rank": 1,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "West Ham",
+      "href": "/team/west-ham/Cxq57r8g",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.6,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.6179999999999999,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.6,
+          "rank": 5,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.2,
+          "rank": 10,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.8,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.3719999999999999,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.6,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.4,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.2,
+          "rank": 5,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Tottenham",
+      "href": "/team/tottenham/UDg08Ohm",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1.2,
+          "rank": 13,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.296,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.4,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.8,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 7.6,
+          "rank": 2,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1.6,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.042,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.4,
+          "rank": 6,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Burnley",
+      "href": "/team/burnley/z3dmTMMO",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 0.4,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.898,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.4,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.2,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.2,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.436,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 19,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.6,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6.2,
+          "rank": 16,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Wolves",
+      "href": "/team/wolves/j3Azpf5d",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 0.6,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 0.726,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.8,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 2.8,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.6,
+          "rank": 18,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2.6,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 2.112,
+          "rank": 18,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 15.2,
+          "rank": 17,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.4,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5.4,
+          "rank": 13,
+          "rankedSize": 20
+        }
+      }
+    }
+  ]
+}

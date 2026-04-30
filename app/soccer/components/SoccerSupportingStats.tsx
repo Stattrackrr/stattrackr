@@ -15,6 +15,7 @@ type SoccerVenueFilter = 'HOME' | 'AWAY';
 type SoccerSupportingStatsProps = {
   matches: SoccerwayRecentMatch[];
   selectedTeamName: string;
+  nextOpponentName?: string | null;
   timeframe: SoccerTimeframe;
   teamScope: SoccerStatTeamScope;
   competitionFilter?: string;
@@ -60,6 +61,24 @@ function normalizeTeamName(value: string): string {
     .toLowerCase()
     .replace(/\s*\([^)]+\)\s*$/g, '')
     .replace(/\s+/g, ' ');
+}
+
+function normalizeOpponentToken(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*/g, ' ')
+    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function opponentNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = normalizeOpponentToken(a);
+  const right = normalizeOpponentToken(b);
+  if (!left || !right) return false;
+  return left === right || (left.includes(right) && right.length >= 5) || (right.includes(left) && left.length >= 5);
 }
 
 function formatStatKey(name: string): string {
@@ -139,9 +158,14 @@ function getScopedValueForStat(params: {
   return Number.isFinite(opponentValue) ? opponentValue : null;
 }
 
-function applyTimeframe(rows: SupportingRow[], timeframe: SoccerTimeframe): SupportingRow[] {
+function applyTimeframe(rows: SupportingRow[], timeframe: SoccerTimeframe, nextOpponentName?: string | null): SupportingRow[] {
   if (!rows.length) return [];
   if (timeframe === 'all') return rows;
+  if (timeframe === 'h2h') {
+    const targetOpponent = String(nextOpponentName || '').trim();
+    if (!targetOpponent) return [];
+    return rows.filter((row) => opponentNamesMatch(row.opponent, targetOpponent)).slice(-15);
+  }
   if (timeframe.startsWith('season:')) {
     const year = Number.parseInt(timeframe.replace('season:', ''), 10);
     return rows.filter((row) => row.gameSeason === year);
@@ -198,6 +222,7 @@ function getSupportingYAxisConfig(values: number[]): { domain: [number, number];
 export const SoccerSupportingStats = memo(function SoccerSupportingStats({
   matches,
   selectedTeamName,
+  nextOpponentName = null,
   timeframe,
   teamScope,
   competitionFilter = 'all',
@@ -312,8 +337,8 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
         } satisfies SupportingRow;
       })
       .filter((row): row is SupportingRow => row != null);
-    return applyTimeframe(rows, timeframe);
-  }, [filteredNormalizedRows, selectedSupportingStat, teamScope, timeframe]);
+    return applyTimeframe(rows, timeframe, nextOpponentName);
+  }, [filteredNormalizedRows, nextOpponentName, selectedSupportingStat, teamScope, timeframe]);
 
   const averagesByStat = useMemo(() => {
     const averages = new Map<string, number | null>();
@@ -341,7 +366,8 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
             } satisfies SupportingRow;
           })
           .filter((row): row is SupportingRow => row != null),
-        timeframe
+        timeframe,
+        nextOpponentName
       ).map((row) => row.value);
       if (!values.length) {
         averages.set(stat, null);
@@ -350,7 +376,7 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
       averages.set(stat, values.reduce((sum, value) => sum + value, 0) / values.length);
     }
     return averages;
-  }, [filteredNormalizedRows, supportingOptions, teamScope, timeframe]);
+  }, [filteredNormalizedRows, nextOpponentName, supportingOptions, teamScope, timeframe]);
 
   const barFill = isDark ? '#6b7280' : '#9ca3af';
   const labelFill = isDark ? '#e5e7eb' : '#374151';
@@ -359,7 +385,11 @@ export const SoccerSupportingStats = memo(function SoccerSupportingStats({
     [chartData]
   );
   const emptyMessage = selectedSupportingStat
-    ? `No ${formatStatLabel(selectedSupportingStat).toLowerCase()} data`
+    ? timeframe === 'h2h'
+      ? nextOpponentName?.trim()
+        ? `No ${formatStatLabel(selectedSupportingStat).toLowerCase()} H2H data`
+        : 'No upcoming opponent found for H2H timeframe'
+      : `No ${formatStatLabel(selectedSupportingStat).toLowerCase()} data`
     : 'No supporting stats available';
 
   return (
