@@ -358,14 +358,6 @@ export function SoccerTeamFormCard({
     };
   }, [canFetch, opponentHref, teamHref]);
 
-  const leagueFilter = useMemo<OpponentBreakdownLeagueFilter | null>(() => {
-    if (!nextCompetitionName?.trim()) return null;
-    return {
-      competitionName: nextCompetitionName.trim(),
-      competitionCountry: nextCompetitionCountry?.trim() || null,
-    };
-  }, [nextCompetitionCountry, nextCompetitionName]);
-
   const seasonYear = getCurrentSoccerSeasonYear();
 
   const selectedSummary = useMemo(
