@@ -149,12 +149,13 @@ jobs:
           git lfs install
           BRANCH="pr/afl-process-stats"
           git fetch origin master "${BRANCH}" 2>/dev/null || git fetch origin master
+          git stash --include-untracked 2>/dev/null || true
           git checkout -B "${BRANCH}" origin/master
+          git stash pop 2>/dev/null || true
           git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
           git add data/afl-player-headshots-2026.json data/afl-player-headshots.json 2>/dev/null || true
           git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
           git add data/afl-dvp-2026.json data/afl-dvp-depth-2026.json data/afl-dvp-2025.json 2>/dev/null || true
-          # Glob afl-player-headshots-*.json misses tracked data/afl-player-headshots.json (* must match after "headshots").
           for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json data/afl-player-headshots*.json data/afl-dvp*.json; do
             [ -f "$f" ] && git add "$f"
           done
