@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-05-01T13:09:22.971Z",
+  "generatedAt": "2026-05-01T14:51:38.705Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 557,
@@ -130,12 +130,12 @@
       "marks": 2.88,
       "goals": 0.38,
       "tackles": 4.38,
-      "clearances": 5.62,
+      "clearances": 5.75,
       "inside_50s": 6,
       "rebound_50s": 0.88,
       "contested_possessions": 12.25,
       "uncontested_possessions": 17.88,
-      "meters_gained": 519.12,
+      "meters_gained": 521,
       "free_kicks_for": 2.25
     },
     {
@@ -534,7 +534,7 @@
       "rebound_50s": 5.62,
       "contested_possessions": 6.62,
       "uncontested_possessions": 14.62,
-      "meters_gained": 438.88,
+      "meters_gained": 439.25,
       "free_kicks_for": 0.38
     },
     {
@@ -985,12 +985,12 @@
       "marks": 6.38,
       "goals": 0,
       "tackles": 1.5,
-      "clearances": 0.62,
+      "clearances": 0.5,
       "inside_50s": 1.88,
       "rebound_50s": 6.25,
       "contested_possessions": 6.75,
       "uncontested_possessions": 13.38,
-      "meters_gained": 499.38,
+      "meters_gained": 499.88,
       "free_kicks_for": 0.88
     },
     {
@@ -1237,8 +1237,8 @@
       "rebound_50s": 2.83,
       "contested_possessions": 5,
       "uncontested_possessions": 16,
-      "meters_gained": 282.5,
-      "free_kicks_for": 0.33
+      "meters_gained": 282.83,
+      "free_kicks_for": 0.5
     },
     {
       "name": "Harley Reid",
@@ -1275,7 +1275,7 @@
       "rebound_50s": 1.12,
       "contested_possessions": 9.38,
       "uncontested_possessions": 13.25,
-      "meters_gained": 361.25,
+      "meters_gained": 360.75,
       "free_kicks_for": 1.5
     },
     {
@@ -1327,12 +1327,12 @@
       "marks": 4.6,
       "goals": 0.4,
       "tackles": 5,
-      "clearances": 3.2,
+      "clearances": 3.4,
       "inside_50s": 2.2,
       "rebound_50s": 0.4,
       "contested_possessions": 9.6,
       "uncontested_possessions": 13.4,
-      "meters_gained": 171.6,
+      "meters_gained": 174.2,
       "free_kicks_for": 1
     },
     {
@@ -1346,12 +1346,12 @@
       "marks": 2.12,
       "goals": 0.12,
       "tackles": 8,
-      "clearances": 5.12,
+      "clearances": 5,
       "inside_50s": 3.38,
       "rebound_50s": 1.62,
       "contested_possessions": 13.38,
       "uncontested_possessions": 11,
-      "meters_gained": 358.62,
+      "meters_gained": 365.75,
       "free_kicks_for": 1.25
     },
     {
@@ -1921,7 +1921,7 @@
       "rebound_50s": 1.62,
       "contested_possessions": 8.62,
       "uncontested_possessions": 11.38,
-      "meters_gained": 386.25,
+      "meters_gained": 387,
       "free_kicks_for": 1
     },
     {
@@ -2035,7 +2035,7 @@
       "rebound_50s": 1.5,
       "contested_possessions": 9.88,
       "uncontested_possessions": 10.62,
-      "meters_gained": 321.38,
+      "meters_gained": 320.75,
       "free_kicks_for": 1.62
     },
     {
@@ -2491,7 +2491,7 @@
       "rebound_50s": 1.62,
       "contested_possessions": 6.88,
       "uncontested_possessions": 11.62,
-      "meters_gained": 284.38,
+      "meters_gained": 284.62,
       "free_kicks_for": 1.12
     },
     {
@@ -2662,7 +2662,7 @@
       "rebound_50s": 0.5,
       "contested_possessions": 10,
       "uncontested_possessions": 8.88,
-      "meters_gained": 224.5,
+      "meters_gained": 224,
       "free_kicks_for": 1.62
     },
     {
@@ -3315,7 +3315,7 @@
       "name": "Brayden Cook",
       "team": "Adelaide",
       "games": 8,
-      "number": 74,
+      "number": 76,
       "disposals": 17.62,
       "kicks": 11.38,
       "handballs": 6.25,
@@ -3327,7 +3327,7 @@
       "rebound_50s": 2.38,
       "contested_possessions": 5.5,
       "uncontested_possessions": 12,
-      "meters_gained": 381.12,
+      "meters_gained": 380.12,
       "free_kicks_for": 0.5
     },
     {
@@ -3570,11 +3570,11 @@
       "goals": 1.14,
       "tackles": 3.57,
       "clearances": 2.43,
-      "inside_50s": 3.43,
+      "inside_50s": 3.29,
       "rebound_50s": 1.29,
       "contested_possessions": 8.43,
-      "uncontested_possessions": 8.57,
-      "meters_gained": 348.14,
+      "uncontested_possessions": 8.71,
+      "meters_gained": 348.57,
       "free_kicks_for": 1
     },
     {
@@ -3777,13 +3777,13 @@
       "handballs": 5.75,
       "marks": 5.62,
       "goals": 0.5,
-      "tackles": 1.75,
+      "tackles": 2,
       "clearances": 0.62,
       "inside_50s": 1.12,
       "rebound_50s": 2.12,
       "contested_possessions": 4.25,
       "uncontested_possessions": 11.88,
-      "meters_gained": 251.25,
+      "meters_gained": 251.38,
       "free_kicks_for": 0.62
     },
     {
@@ -3859,7 +3859,7 @@
       "rebound_50s": 3.75,
       "contested_possessions": 3.38,
       "uncontested_possessions": 11.62,
-      "meters_gained": 295.88,
+      "meters_gained": 295.62,
       "free_kicks_for": 1
     },
     {
@@ -4467,7 +4467,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 7,
       "uncontested_possessions": 8.17,
-      "meters_gained": 209,
+      "meters_gained": 214.33,
       "free_kicks_for": 0.83
     },
     {
@@ -4569,7 +4569,7 @@
       "name": "Lachlan Weller",
       "team": "Gold Coast",
       "games": 7,
-      "number": 95,
+      "number": 96,
       "disposals": 15.29,
       "kicks": 7.86,
       "handballs": 7.43,
@@ -4904,7 +4904,7 @@
       "rebound_50s": 0.38,
       "contested_possessions": 5.75,
       "uncontested_possessions": 8.25,
-      "meters_gained": 203.62,
+      "meters_gained": 203.38,
       "free_kicks_for": 0.5
     },
     {
@@ -4980,7 +4980,7 @@
       "rebound_50s": 2.29,
       "contested_possessions": 4.29,
       "uncontested_possessions": 9.86,
-      "meters_gained": 307.86,
+      "meters_gained": 308.57,
       "free_kicks_for": 0.71
     },
     {
@@ -4999,7 +4999,7 @@
       "rebound_50s": 1.43,
       "contested_possessions": 5.43,
       "uncontested_possessions": 9.71,
-      "meters_gained": 263.71,
+      "meters_gained": 264.71,
       "free_kicks_for": 0.86
     },
     {
@@ -5531,7 +5531,7 @@
       "rebound_50s": 1,
       "contested_possessions": 2.62,
       "uncontested_possessions": 10.38,
-      "meters_gained": 299.25,
+      "meters_gained": 299.38,
       "free_kicks_for": 0.38
     },
     {
@@ -6019,13 +6019,13 @@
       "handballs": 6,
       "marks": 3.62,
       "goals": 0.62,
-      "tackles": 2.25,
+      "tackles": 2.12,
       "clearances": 0.75,
       "inside_50s": 3.5,
       "rebound_50s": 0.38,
       "contested_possessions": 4.88,
       "uncontested_possessions": 9,
-      "meters_gained": 192.25,
+      "meters_gained": 192.38,
       "free_kicks_for": 1.12
     },
     {
@@ -6127,7 +6127,7 @@
       "name": "Jordon Sweet",
       "team": "Port Adelaide",
       "games": 7,
-      "number": 31,
+      "number": 30,
       "disposals": 12.86,
       "kicks": 6.29,
       "handballs": 6.57,
@@ -6136,7 +6136,7 @@
       "tackles": 2.57,
       "clearances": 5,
       "inside_50s": 2,
-      "rebound_50s": 1.14,
+      "rebound_50s": 1,
       "contested_possessions": 9.57,
       "uncontested_possessions": 4.71,
       "meters_gained": 190.86,
@@ -6196,7 +6196,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3.88,
       "uncontested_possessions": 8.62,
-      "meters_gained": 198.88,
+      "meters_gained": 198.38,
       "free_kicks_for": 0.25
     },
     {
@@ -6614,7 +6614,7 @@
       "rebound_50s": 1.12,
       "contested_possessions": 3.75,
       "uncontested_possessions": 8.62,
-      "meters_gained": 254.62,
+      "meters_gained": 253.25,
       "free_kicks_for": 0.38
     },
     {
@@ -6918,7 +6918,7 @@
       "rebound_50s": 2,
       "contested_possessions": 3.33,
       "uncontested_possessions": 8.83,
-      "meters_gained": 253.5,
+      "meters_gained": 255.5,
       "free_kicks_for": 0.83
     },
     {
@@ -7355,7 +7355,7 @@
       "rebound_50s": 2.86,
       "contested_possessions": 3.57,
       "uncontested_possessions": 6.71,
-      "meters_gained": 243.86,
+      "meters_gained": 243.57,
       "free_kicks_for": 0.57
     },
     {
@@ -7400,7 +7400,7 @@
       "name": "Lloyd Meek",
       "team": "Hawthorn",
       "games": 8,
-      "number": 83,
+      "number": 84,
       "disposals": 11.25,
       "kicks": 4.88,
       "handballs": 6.38,
@@ -7786,7 +7786,7 @@
       "handballs": 4,
       "marks": 4.17,
       "goals": 0.67,
-      "tackles": 1.83,
+      "tackles": 2,
       "clearances": 0.17,
       "inside_50s": 2.5,
       "rebound_50s": 0.5,
@@ -8970,7 +8970,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3,
       "uncontested_possessions": 6,
-      "meters_gained": 176,
+      "meters_gained": 179,
       "free_kicks_for": 0
     },
     {
@@ -9274,7 +9274,7 @@
       "rebound_50s": 0,
       "contested_possessions": 3.62,
       "uncontested_possessions": 5.25,
-      "meters_gained": 118.75,
+      "meters_gained": 118.88,
       "free_kicks_for": 0.38
     },
     {
@@ -9749,7 +9749,7 @@
       "rebound_50s": 0,
       "contested_possessions": 2.38,
       "uncontested_possessions": 5.62,
-      "meters_gained": 139.88,
+      "meters_gained": 140.62,
       "free_kicks_for": 0.5
     },
     {
@@ -10053,7 +10053,7 @@
       "rebound_50s": 2,
       "contested_possessions": 3,
       "uncontested_possessions": 3.33,
-      "meters_gained": 101.67,
+      "meters_gained": 101,
       "free_kicks_for": 1
     },
     {
@@ -10357,7 +10357,7 @@
       "rebound_50s": 0.25,
       "contested_possessions": 3.75,
       "uncontested_possessions": 2,
-      "meters_gained": 43,
+      "meters_gained": 44.75,
       "free_kicks_for": 1
     },
     {
