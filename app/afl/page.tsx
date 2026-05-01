@@ -110,6 +110,8 @@ type AflTopGamePick = {
   rank: number | null;
 };
 const MODEL_NEUTRAL_LINE_GAP = 0.5; // Neutral when model is within 0.5 disposals of line
+/** When true, the Player vs Team "Prediction Model" tab is disabled (under maintenance). */
+const AFL_PREDICTION_MODEL_UNDER_MAINTENANCE = true;
 type AflTopPicksGameGroup = {
   gameKey: string;
   homeTeam: string;
@@ -513,6 +515,13 @@ export default function AFLPage() {
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
   const [playerVsContainerTab, setPlayerVsContainerTab] = useState<'comparison' | 'prediction'>('comparison');
+  const showAflPredictionPanel =
+    !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction';
+  useEffect(() => {
+    if (AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction') {
+      setPlayerVsContainerTab('comparison');
+    }
+  }, [playerVsContainerTab]);
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
   const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
   useEffect(() => {
@@ -4473,20 +4482,40 @@ export default function AFLPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('prediction')}
+                        disabled={AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
+                        title={
+                          AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                            ? 'Prediction model is under maintenance'
+                            : undefined
+                        }
+                        onClick={() => {
+                          if (!AFL_PREDICTION_MODEL_UNDER_MAINTENANCE) {
+                            setPlayerVsContainerTab('prediction');
+                          }
+                        }}
                         className={`relative flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'prediction'
+                          !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction'
                             ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                        } ${
+                          AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                            ? 'cursor-not-allowed opacity-65'
+                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         Prediction Model
-                        <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
-                          BETA
+                        <span
+                          className={`absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm ${
+                            AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                              ? 'border-amber-600 bg-amber-600 dark:border-amber-500/80 dark:bg-amber-700'
+                              : 'border-red-300 bg-red-500 dark:border-red-500/70 dark:bg-red-600'
+                          }`}
+                        >
+                          {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? 'MAINTENANCE' : 'BETA'}
                         </span>
                       </button>
                     </div>
-                    {playerVsContainerTab === 'comparison' ? (
+                    {!showAflPredictionPanel ? (
                       <>
                         <div className="flex justify-center mb-2">
                           <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
@@ -5025,20 +5054,40 @@ export default function AFLPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPlayerVsContainerTab('prediction')}
+                      disabled={AFL_PREDICTION_MODEL_UNDER_MAINTENANCE}
+                      title={
+                        AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                          ? 'Prediction model is under maintenance'
+                          : undefined
+                      }
+                      onClick={() => {
+                        if (!AFL_PREDICTION_MODEL_UNDER_MAINTENANCE) {
+                          setPlayerVsContainerTab('prediction');
+                        }
+                      }}
                       className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        playerVsContainerTab === 'prediction'
+                        !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction'
                           ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                      } ${
+                        AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                          ? 'cursor-not-allowed opacity-65'
+                          : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
                       Prediction Model
-                      <span className="absolute -top-2 -right-2 inline-flex items-center rounded-md border border-red-300 bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-red-500/70 dark:bg-red-600">
-                        BETA
+                      <span
+                        className={`absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm ${
+                          AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
+                            ? 'border-amber-600 bg-amber-600 dark:border-amber-500/80 dark:bg-amber-700'
+                            : 'border-red-300 bg-red-500 dark:border-red-500/70 dark:bg-red-600'
+                        }`}
+                      >
+                        {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? 'MAINTENANCE' : 'BETA'}
                       </span>
                     </button>
                   </div>
-                  {playerVsContainerTab === 'comparison' ? (
+                  {!showAflPredictionPanel ? (
                     <>
                       <div className="flex justify-center mb-2">
                         <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
