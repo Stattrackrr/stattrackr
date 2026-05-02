@@ -2520,7 +2520,8 @@ export default function AFLPage() {
       ? String((selectedPlayerGameLogs[selectedPlayerGameLogs.length - 1] as Record<string, unknown>)?.round ?? '')
       : '';
 
-  // Team mode: when a specific team is selected, fetch that team's own logs (via one representative player).
+  // Team mode: fetch club-level logs aggregated from multiple players on that club,
+  // so the chart reflects team games rather than one player's appearances.
   useEffect(() => {
     if (aflPropsMode !== 'team') {
       setTeamModeSelectedTeamLogs([]);
@@ -2535,22 +2536,10 @@ export default function AFLPage() {
     let cancelled = false;
     (async () => {
       try {
-        const playersRes = await fetch(`/api/afl/players?query=&team=${encodeURIComponent(selectedTeam)}&limit=1`, { cache: 'no-store' });
-        const playersJson = await playersRes.json();
-        const repPlayerName =
-          Array.isArray(playersJson?.players) && playersJson.players[0]?.name
-            ? String(playersJson.players[0].name).trim()
-            : '';
-        if (!repPlayerName) {
-          if (!cancelled) setTeamModeSelectedTeamLogs([]);
-          return;
-        }
-
-        const baseUrl = `/api/afl/player-game-logs?player_name=${encodeURIComponent(repPlayerName)}&team=${encodeURIComponent(selectedTeam)}&include_both=1`;
         const [curRes, prevRes, olderRes] = await Promise.all([
-          fetch(`${baseUrl}&season=${season}`, { cache: 'no-store' }),
-          fetch(`${baseUrl}&season=${season - 1}`, { cache: 'no-store' }),
-          fetch(`${baseUrl}&season=${season - 2}`, { cache: 'no-store' }),
+          fetch(`/api/afl/team-game-logs?season=${season}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
+          fetch(`/api/afl/team-game-logs?season=${season - 1}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
+          fetch(`/api/afl/team-game-logs?season=${season - 2}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
         ]);
         const [curJson, prevJson, olderJson] = await Promise.all([curRes.json(), prevRes.json(), olderRes.json()]);
 
@@ -2564,7 +2553,9 @@ export default function AFLPage() {
           ? (Array.isArray(olderJson?.gamesWithQuarters) ? (olderJson.gamesWithQuarters as AflGameLogRecord[]) : (Array.isArray(olderJson?.games) ? (olderJson.games as AflGameLogRecord[]) : []))
           : [];
 
-        if (!cancelled) setTeamModeSelectedTeamLogs([...curLogs, ...prevLogs, ...olderLogs]);
+        if (!cancelled) {
+          setTeamModeSelectedTeamLogs(dedupeAflGames([...curLogs, ...prevLogs, ...olderLogs] as Record<string, unknown>[]) as AflGameLogRecord[]);
+        }
       } catch {
         if (!cancelled) setTeamModeSelectedTeamLogs([]);
       }
