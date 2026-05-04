@@ -168,6 +168,8 @@ function normalizeForRankMatch(value: string): string {
 
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v6';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v1';
+const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
   disposals: 'disposals',
@@ -199,8 +201,17 @@ type CachedAflPlayerLogs = {
   mergedStats: AflPlayerRecord;
 };
 
+type CachedAflTeamLogs = {
+  createdAt: number;
+  logs: AflGameLogRecord[];
+};
+
 function getAflPlayerLogsCacheKey(season: number, playerName: string, team: string): string {
   return `${AFL_PLAYER_LOGS_CACHE_PREFIX}:${season}:${playerName.trim().toLowerCase()}:${team.trim().toLowerCase()}`;
+}
+
+function getAflTeamLogsCacheKey(season: number, team: string): string {
+  return `${AFL_TEAM_LOGS_CACHE_PREFIX}:${season}:${team.trim().toLowerCase()}`;
 }
 
 /** True if player name has apostrophe, hyphen, or Irish-style "D Ambrosio" / "O Meara" — these use AFL Tables only; we must not use stale localStorage. */
@@ -634,12 +645,14 @@ export default function AFLPage() {
   const preferredAflBookmakerRef = useRef<string | null>(null);
   const hasIncomingAflBookOrLineRef = useRef(false);
   const [teamModeSelectedTeamLogs, setTeamModeSelectedTeamLogs] = useState<AflGameLogRecord[]>([]);
+  const [teamModeSelectedTeamLogsLoading, setTeamModeSelectedTeamLogsLoading] = useState(false);
   /** Short delay before showing chart so odds have time to load and auto-select inline with chart. */
   const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
   const CHART_DISPLAY_DELAY_MS = 120;
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefetchedLogsRef = useRef<Map<string, { games: AflGameLogRecord[]; gamesWithQuarters: AflGameLogRecord[]; mergedStats: Partial<AflPlayerRecord> }>>(new Map());
+  const teamLogsCacheRef = useRef<Map<string, AflGameLogRecord[]>>(new Map());
   const matchupPlayerKeyRef = useRef<string>('');
   const prevTeamContextRef = useRef<string>('');
   const prevAflPropsModeRef = useRef<'player' | 'team'>('player');
@@ -653,14 +666,22 @@ export default function AFLPage() {
   // Reset chart delay when player changes so we show skeleton then brief delay again (keeps odds in sync with chart)
   useEffect(() => {
     setChartDelayElapsed(false);
-  }, [selectedPlayer?.id, selectedPlayer?.name]);
+  }, [aflPropsMode, aflTeamFilter, selectedPlayer?.id, selectedPlayer?.name, selectedPlayer?.team]);
 
   // After stats load, wait a short moment before showing chart so odds can load and auto-select
   useEffect(() => {
-    if (!selectedPlayer || statsLoadingForPlayer) return;
+    if (aflPropsMode === 'team') {
+      const teamSelection =
+        (aflTeamFilter && aflTeamFilter !== 'All' ? aflTeamFilter : selectedPlayer?.team)
+          ? String(aflTeamFilter && aflTeamFilter !== 'All' ? aflTeamFilter : selectedPlayer?.team)
+          : '';
+      if (!teamSelection.trim() || teamModeSelectedTeamLogsLoading) return;
+    } else if (!selectedPlayer || statsLoadingForPlayer) {
+      return;
+    }
     const t = setTimeout(() => setChartDelayElapsed(true), CHART_DISPLAY_DELAY_MS);
     return () => clearTimeout(t);
-  }, [selectedPlayer, statsLoadingForPlayer]);
+  }, [aflPropsMode, aflTeamFilter, selectedPlayer, statsLoadingForPlayer, teamModeSelectedTeamLogsLoading]);
 
   // Refetch player props when tab becomes visible so all bookmakers (e.g. PointsBet) show without full page refresh
   useEffect(() => {
@@ -2525,16 +2546,54 @@ export default function AFLPage() {
   useEffect(() => {
     if (aflPropsMode !== 'team') {
       setTeamModeSelectedTeamLogs([]);
+      setTeamModeSelectedTeamLogsLoading(false);
       return;
     }
     const selectedTeam = String(teamContextTeam ?? '').trim();
     if (!selectedTeam) {
       setTeamModeSelectedTeamLogs([]);
+      setTeamModeSelectedTeamLogsLoading(false);
       return;
     }
 
     let cancelled = false;
+    const cacheKey = getAflTeamLogsCacheKey(season, selectedTeam);
     (async () => {
+      setTeamModeSelectedTeamLogsLoading(true);
+      let hydratedFreshCache = false;
+      const hydrateFromCache = (logs: AflGameLogRecord[]) => {
+        if (cancelled) return;
+        setTeamModeSelectedTeamLogs(logs);
+      };
+
+      const cachedLogs = teamLogsCacheRef.current.get(cacheKey);
+      if (cachedLogs?.length) {
+        hydratedFreshCache = true;
+        hydrateFromCache(cachedLogs);
+      } else {
+        try {
+          const raw = localStorage.getItem(cacheKey);
+          if (raw) {
+            const parsed = JSON.parse(raw) as CachedAflTeamLogs;
+            const isFresh =
+              Number.isFinite(parsed?.createdAt) &&
+              Date.now() - Number(parsed.createdAt) <= AFL_TEAM_LOGS_CACHE_TTL_MS &&
+              Array.isArray(parsed?.logs);
+            if (isFresh) {
+              const deduped = dedupeAflGames(parsed.logs as Record<string, unknown>[]) as AflGameLogRecord[];
+              teamLogsCacheRef.current.set(cacheKey, deduped);
+              hydratedFreshCache = true;
+              hydrateFromCache(deduped);
+            }
+          }
+        } catch {
+          // Ignore malformed local cache.
+        }
+      }
+
+      if (hydratedFreshCache && !cancelled) {
+        setTeamModeSelectedTeamLogsLoading(false);
+      }
       try {
         const [curRes, prevRes, olderRes] = await Promise.all([
           fetch(`/api/afl/team-game-logs?season=${season}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
@@ -2554,10 +2613,20 @@ export default function AFLPage() {
           : [];
 
         if (!cancelled) {
-          setTeamModeSelectedTeamLogs(dedupeAflGames([...curLogs, ...prevLogs, ...olderLogs] as Record<string, unknown>[]) as AflGameLogRecord[]);
+          const deduped = dedupeAflGames([...curLogs, ...prevLogs, ...olderLogs] as Record<string, unknown>[]) as AflGameLogRecord[];
+          teamLogsCacheRef.current.set(cacheKey, deduped);
+          try {
+            const payload: CachedAflTeamLogs = { createdAt: Date.now(), logs: deduped };
+            localStorage.setItem(cacheKey, JSON.stringify(payload));
+          } catch {
+            // Ignore localStorage write failures.
+          }
+          setTeamModeSelectedTeamLogs(deduped);
         }
       } catch {
         if (!cancelled) setTeamModeSelectedTeamLogs([]);
+      } finally {
+        if (!cancelled) setTeamModeSelectedTeamLogsLoading(false);
       }
     })();
 
@@ -3386,8 +3455,15 @@ export default function AFLPage() {
   }, [nextGameTipoff]);
 
   const emptyText = mounted && isDark ? 'text-gray-500' : 'text-gray-400';
-  const showEmptyShell = !selectedPlayer && !loadingPlayerFromUrl;
-  const showStatsLoadingShell = loadingPlayerFromUrl || (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
+  const hasTeamModeSelection = !!String(teamContextTeam ?? '').trim();
+  const showEmptyShell =
+    aflPropsMode === 'team'
+      ? !hasTeamModeSelection
+      : !selectedPlayer && !loadingPlayerFromUrl;
+  const showStatsLoadingShell =
+    aflPropsMode === 'team'
+      ? hasTeamModeSelection && (teamModeSelectedTeamLogsLoading || !chartDelayElapsed)
+      : loadingPlayerFromUrl || (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
 
   // Opponent for header: only use next-game opponent so we never show "Essendon vs Essendon" from wrong fallbacks, and only one update when it loads.
   const displayOpponent =
@@ -4027,9 +4103,14 @@ export default function AFLPage() {
                         allGameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : selectedPlayerGameLogsForChart}
                         isDark={!!mounted && isDark}
                         logoByTeam={logoByTeam}
-                        isLoading={(playersLoading && !selectedPlayer) || statsLoadingForPlayer}
-                        hasSelectedPlayer={!!selectedPlayer}
-                        apiErrorHint={lastStatsError}
+                        isLoading={
+                          aflPropsMode === 'team'
+                            ? teamModeSelectedTeamLogsLoading
+                            : (playersLoading && !selectedPlayer) || statsLoadingForPlayer
+                        }
+                        hasSelectedPlayer={aflPropsMode === 'team' ? hasTeamModeSelection : !!selectedPlayer}
+                        mode={aflPropsMode}
+                        apiErrorHint={aflPropsMode === 'team' ? null : lastStatsError}
                         teammateFilterName={aflPropsMode === 'team' ? null : teammateFilterName}
                         nextOpponent={(() => {
                           if (aflPropsMode === 'player' && displayOpponent) {

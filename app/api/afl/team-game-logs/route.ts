@@ -7,6 +7,8 @@ import { footywireNicknameToOfficial, leagueTeamToOfficial, rosterTeamToInjuryTe
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 const MAX_CANDIDATE_PLAYERS = 8;
+const TEAM_GAME_LOGS_BATCH_SIZE = 3;
+const TEAM_GAME_LOGS_CACHE_TTL_MS = 1000 * 60 * 10;
 
 type AflGameLogRecord = Record<string, unknown>;
 type LeaguePlayerStatRow = {
@@ -14,6 +16,18 @@ type LeaguePlayerStatRow = {
   team: string;
   games: number;
 };
+type TeamGameLogsResponse = {
+  season: number;
+  team: string;
+  source: 'club-aggregate';
+  expectedGameCount?: number | null;
+  candidatesUsed: string[];
+  games: AflGameLogRecord[];
+  gamesWithQuarters: AflGameLogRecord[];
+  game_count: number;
+};
+
+const teamGameLogsCache = new Map<string, { expiresAt: number; payload: TeamGameLogsResponse }>();
 
 function resolveToOfficialTeam(teamRaw: string | undefined | null): string | null {
   if (!teamRaw || typeof teamRaw !== 'string') return null;
@@ -188,6 +202,10 @@ async function fetchPlayerLogsForTeamSeason(season: number, playerName: string, 
   }
 }
 
+function buildTeamGameLogsCacheKey(season: number, team: string): string {
+  return `${season}:${team.trim().toLowerCase()}`;
+}
+
 export async function GET(request: NextRequest) {
   const teamParam = request.nextUrl.searchParams.get('team')?.trim() ?? '';
   const seasonParam = request.nextUrl.searchParams.get('season');
@@ -201,6 +219,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing team parameter' }, { status: 400 });
   }
 
+  const cacheKey = buildTeamGameLogsCacheKey(season, officialTeam);
+  const cached = teamGameLogsCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return NextResponse.json(cached.payload);
+  }
   const candidates = readCachedLeaguePlayerStats(season)
     .filter((player) => resolveToOfficialTeam(player.team) === officialTeam)
     .sort((a, b) => {
@@ -211,7 +234,7 @@ export async function GET(request: NextRequest) {
     .slice(0, MAX_CANDIDATE_PLAYERS);
 
   if (candidates.length === 0) {
-    return NextResponse.json({
+    const emptyPayload: TeamGameLogsResponse = {
       season,
       team: officialTeam,
       source: 'club-aggregate',
@@ -219,7 +242,13 @@ export async function GET(request: NextRequest) {
       games: [],
       gamesWithQuarters: [],
       game_count: 0,
+    };
+    };
+    teamGameLogsCache.set(cacheKey, {
+      expiresAt: Date.now() + TEAM_GAME_LOGS_CACHE_TTL_MS,
+      payload: emptyPayload,
     });
+    return NextResponse.json(emptyPayload);
   }
 
   const expectedGameCount = readExpectedTeamGameCount(season, officialTeam);
@@ -227,21 +256,31 @@ export async function GET(request: NextRequest) {
   let gamesWithQuarters: AflGameLogRecord[] = [];
   const candidatesUsed: string[] = [];
 
-  for (const candidate of candidates) {
-    const payload = await fetchPlayerLogsForTeamSeason(season, candidate.name, officialTeam);
-    if (!payload) continue;
+  for (let i = 0; i < candidates.length; i += TEAM_GAME_LOGS_BATCH_SIZE) {
+    const batch = candidates.slice(i, i + TEAM_GAME_LOGS_BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (candidate) => ({
+        candidate,
+        payload: await fetchPlayerLogsForTeamSeason(season, candidate.name, officialTeam),
+      }))
+    );
 
-    candidatesUsed.push(candidate.name);
-    games = dedupeAflGames([...games, ...payload.games]);
-    gamesWithQuarters = dedupeAflGames([...gamesWithQuarters, ...payload.gamesWithQuarters]);
+    for (const { candidate, payload } of batchResults) {
+      if (!payload) continue;
+      candidatesUsed.push(candidate.name);
+      games = dedupeAflGames([...games, ...payload.games]);
+      gamesWithQuarters = dedupeAflGames([...gamesWithQuarters, ...payload.gamesWithQuarters]);
+    }
 
-    const currentCount = Math.max(games.length, gamesWithQuarters.length);
-    if (expectedGameCount != null && currentCount >= expectedGameCount) {
-      break;
+    if (expectedGameCount != null) {
+      const currentCount = Math.max(games.length, gamesWithQuarters.length);
+      if (currentCount >= expectedGameCount) {
+        break;
+      }
     }
   }
 
-  return NextResponse.json({
+  const payload: TeamGameLogsResponse = {
     season,
     team: officialTeam,
     source: 'club-aggregate',
@@ -250,5 +289,11 @@ export async function GET(request: NextRequest) {
     game_count: Math.max(games.length, gamesWithQuarters.length),
     games,
     gamesWithQuarters,
+  };
+  };
+  teamGameLogsCache.set(cacheKey, {
+    expiresAt: Date.now() + TEAM_GAME_LOGS_CACHE_TTL_MS,
+    payload,
   });
+  return NextResponse.json(payload);
 }

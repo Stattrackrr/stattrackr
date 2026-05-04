@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T15:19:04.530Z",
+  "generatedAt": "2026-04-30T15:33:03.452Z",
   "source": "build-soccer-opponent-breakdown-pl",
   "sourceBaseUrl": "https://www.soccerway.com",
   "competitionName": "Premier League",
@@ -21,7 +21,7 @@
           "perGame": 0.7647058823529411,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -33,7 +33,7 @@
           "perGame": 0.7582352941176472,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -45,7 +45,7 @@
           "perGame": 8.205882352941176,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -57,7 +57,7 @@
           "perGame": 2.4411764705882355,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -69,7 +69,7 @@
           "perGame": 0.698235294117647,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -81,7 +81,7 @@
           "perGame": 3.2941176470588234,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -93,7 +93,7 @@
           "perGame": 1.3823529411764706,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -105,7 +105,7 @@
           "perGame": 5.176470588235294,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -117,7 +117,7 @@
           "perGame": 16.558823529411764,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -129,7 +129,7 @@
           "perGame": 44.26470588235294,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -141,7 +141,7 @@
           "perGame": 17.676470588235293,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -172,7 +172,7 @@
           "perGame": 0.8787878787878788,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -184,7 +184,7 @@
           "perGame": 1.1118181818181818,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -196,7 +196,7 @@
           "perGame": 9.848484848484848,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -208,7 +208,7 @@
           "perGame": 3.3333333333333335,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -220,7 +220,7 @@
           "perGame": 1.0596969696969694,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -232,7 +232,7 @@
           "perGame": 3.727272727272727,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -244,7 +244,7 @@
           "perGame": 1.9696969696969697,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -256,7 +256,7 @@
           "perGame": 7,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -268,7 +268,7 @@
           "perGame": 19.424242424242426,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -280,7 +280,7 @@
           "perGame": 39.81818181818182,
           "rank": 1,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -292,7 +292,7 @@
           "perGame": 27.03030303030303,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -314,16 +314,16 @@
     {
       "name": "Manchester Utd",
       "href": "/team/manchester-united/ppjDR086",
-      "leagueGames": 33,
+      "leagueGames": 34,
       "stats": [
         {
           "id": "goals",
           "label": "Goals allowed",
           "shortLabel": "GA",
-          "perGame": 1.3636363636363635,
-          "rank": 13,
+          "perGame": 1.3529411764705883,
+          "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -332,10 +332,10 @@
           "id": "expected_goals_xg",
           "label": "xG allowed",
           "shortLabel": "xGA",
-          "perGame": 1.2906060606060608,
+          "perGame": 1.2870588235294118,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -344,10 +344,10 @@
           "id": "total_shots",
           "label": "Shots allowed",
           "shortLabel": "Shots",
-          "perGame": 11.454545454545455,
+          "perGame": 11.470588235294118,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -356,10 +356,10 @@
           "id": "shots_on_target",
           "label": "SOT allowed",
           "shortLabel": "SOT",
-          "perGame": 3.696969696969697,
+          "perGame": 3.7058823529411766,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -368,10 +368,10 @@
           "id": "xg_on_target_xgot",
           "label": "xGOT allowed",
           "shortLabel": "xGOTA",
-          "perGame": 1.4309090909090911,
+          "perGame": 1.4158823529411766,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -380,10 +380,10 @@
           "id": "corner_kicks",
           "label": "Corners conceded",
           "shortLabel": "Corners",
-          "perGame": 4.9393939393939394,
-          "rank": 10,
+          "perGame": 5.029411764705882,
+          "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -392,10 +392,10 @@
           "id": "big_chances",
           "label": "Big chances allowed",
           "shortLabel": "Big ch.",
-          "perGame": 1.9696969696969697,
-          "rank": 2,
+          "perGame": 1.9705882352941178,
+          "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -404,10 +404,10 @@
           "id": "shots_inside_the_box",
           "label": "Shots in box allowed",
           "shortLabel": "In box",
-          "perGame": 7.666666666666667,
+          "perGame": 7.705882352941177,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -416,10 +416,10 @@
           "id": "touches_in_opp_box",
           "label": "Opp. box touches",
           "shortLabel": "Box touches",
-          "perGame": 24,
-          "rank": 7,
+          "perGame": 24.529411764705884,
+          "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -428,10 +428,10 @@
           "id": "ball_possession",
           "label": "Opp. possession",
           "shortLabel": "Poss.",
-          "perGame": 47.21212121212121,
+          "perGame": 47.44117647058823,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -440,10 +440,10 @@
           "id": "crosses",
           "label": "Crosses allowed",
           "shortLabel": "Crosses",
-          "perGame": 23.03030303030303,
+          "perGame": 23.058823529411764,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -474,7 +474,7 @@
           "perGame": 1.2352941176470589,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -486,7 +486,7 @@
           "perGame": 1.4205882352941173,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -498,7 +498,7 @@
           "perGame": 12.735294117647058,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -510,7 +510,7 @@
           "perGame": 4.352941176470588,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -522,7 +522,7 @@
           "perGame": 1.3329411764705879,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -534,7 +534,7 @@
           "perGame": 4.764705882352941,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -546,7 +546,7 @@
           "perGame": 2.4705882352941178,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -558,7 +558,7 @@
           "perGame": 8.529411764705882,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -568,9 +568,9 @@
           "label": "Opp. box touches",
           "shortLabel": "Box touches",
           "perGame": 24.08823529411765,
-          "rank": 8,
+          "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -582,7 +582,7 @@
           "perGame": 46.11764705882353,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -594,7 +594,7 @@
           "perGame": 22.08823529411765,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -625,7 +625,7 @@
           "perGame": 1.2941176470588236,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -637,7 +637,7 @@
           "perGame": 1.2111764705882355,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -649,7 +649,7 @@
           "perGame": 11.352941176470589,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -661,7 +661,7 @@
           "perGame": 3.911764705882353,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -671,9 +671,9 @@
           "label": "xGOT allowed",
           "shortLabel": "xGOTA",
           "perGame": 1.2014705882352938,
-          "rank": 6,
+          "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -685,7 +685,7 @@
           "perGame": 4.588235294117647,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -697,7 +697,7 @@
           "perGame": 2.2058823529411766,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -709,7 +709,7 @@
           "perGame": 7.352941176470588,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -721,7 +721,7 @@
           "perGame": 22.294117647058822,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -733,7 +733,7 @@
           "perGame": 40.5,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -745,7 +745,7 @@
           "perGame": 22.176470588235293,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -776,7 +776,7 @@
           "perGame": 1.3235294117647058,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -788,7 +788,7 @@
           "perGame": 1.368529411764706,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -800,7 +800,7 @@
           "perGame": 10.911764705882353,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -812,7 +812,7 @@
           "perGame": 4.235294117647059,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -824,7 +824,7 @@
           "perGame": 1.388235294117647,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -836,7 +836,7 @@
           "perGame": 4.323529411764706,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -848,7 +848,7 @@
           "perGame": 2.4411764705882355,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -860,7 +860,7 @@
           "perGame": 7.647058823529412,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -872,7 +872,7 @@
           "perGame": 22.176470588235293,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -884,7 +884,7 @@
           "perGame": 42,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -896,7 +896,7 @@
           "perGame": 22.58823529411765,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -918,16 +918,16 @@
     {
       "name": "Brentford",
       "href": "/team/brentford/xYe7DwID",
-      "leagueGames": 33,
+      "leagueGames": 34,
       "stats": [
         {
           "id": "goals",
           "label": "Goals allowed",
           "shortLabel": "GA",
-          "perGame": 1.3333333333333333,
+          "perGame": 1.3529411764705883,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -936,10 +936,10 @@
           "id": "expected_goals_xg",
           "label": "xG allowed",
           "shortLabel": "xGA",
-          "perGame": 1.3436363636363635,
+          "perGame": 1.3441176470588234,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -948,10 +948,10 @@
           "id": "total_shots",
           "label": "Shots allowed",
           "shortLabel": "Shots",
-          "perGame": 12.606060606060606,
+          "perGame": 12.558823529411764,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -960,10 +960,10 @@
           "id": "shots_on_target",
           "label": "SOT allowed",
           "shortLabel": "SOT",
-          "perGame": 3.9393939393939394,
+          "perGame": 4,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -972,10 +972,10 @@
           "id": "xg_on_target_xgot",
           "label": "xGOT allowed",
           "shortLabel": "xGOTA",
-          "perGame": 1.1939393939393939,
-          "rank": 4,
+          "perGame": 1.211470588235294,
+          "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -984,10 +984,10 @@
           "id": "corner_kicks",
           "label": "Corners conceded",
           "shortLabel": "Corners",
-          "perGame": 4.9393939393939394,
-          "rank": 10,
+          "perGame": 5,
+          "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -996,10 +996,10 @@
           "id": "big_chances",
           "label": "Big chances allowed",
           "shortLabel": "Big ch.",
-          "perGame": 2.121212121212121,
+          "perGame": 2.176470588235294,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1008,10 +1008,10 @@
           "id": "shots_inside_the_box",
           "label": "Shots in box allowed",
           "shortLabel": "In box",
-          "perGame": 8,
+          "perGame": 7.970588235294118,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1020,10 +1020,10 @@
           "id": "touches_in_opp_box",
           "label": "Opp. box touches",
           "shortLabel": "Box touches",
-          "perGame": 26.151515151515152,
+          "perGame": 26,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1032,10 +1032,10 @@
           "id": "ball_possession",
           "label": "Opp. possession",
           "shortLabel": "Poss.",
-          "perGame": 52.54545454545455,
+          "perGame": 52.3235294117647,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1044,10 +1044,10 @@
           "id": "crosses",
           "label": "Crosses allowed",
           "shortLabel": "Crosses",
-          "perGame": 19.09090909090909,
+          "perGame": 19.11764705882353,
           "rank": 2,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1078,7 +1078,7 @@
           "perGame": 1.2058823529411764,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1090,7 +1090,7 @@
           "perGame": 1.4855882352941174,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1102,7 +1102,7 @@
           "perGame": 13.617647058823529,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1114,7 +1114,7 @@
           "perGame": 4.147058823529412,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1126,7 +1126,7 @@
           "perGame": 1.325588235294118,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1138,7 +1138,7 @@
           "perGame": 5.0588235294117645,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1150,7 +1150,7 @@
           "perGame": 2.3823529411764706,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1162,7 +1162,7 @@
           "perGame": 9.058823529411764,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1174,7 +1174,7 @@
           "perGame": 26.61764705882353,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1186,7 +1186,7 @@
           "perGame": 56.029411764705884,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1198,7 +1198,7 @@
           "perGame": 24.38235294117647,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1229,7 +1229,7 @@
           "perGame": 1.1470588235294117,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1241,7 +1241,7 @@
           "perGame": 1.273529411764706,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1253,7 +1253,7 @@
           "perGame": 11.970588235294118,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1265,7 +1265,7 @@
           "perGame": 3.911764705882353,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1275,9 +1275,9 @@
           "label": "xGOT allowed",
           "shortLabel": "xGOTA",
           "perGame": 1.199705882352941,
-          "rank": 5,
+          "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1287,9 +1287,9 @@
           "label": "Corners conceded",
           "shortLabel": "Corners",
           "perGame": 5,
-          "rank": 13,
+          "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1299,9 +1299,9 @@
           "label": "Big chances allowed",
           "shortLabel": "Big ch.",
           "perGame": 1.9705882352941178,
-          "rank": 4,
+          "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1313,7 +1313,7 @@
           "perGame": 8.352941176470589,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1325,7 +1325,7 @@
           "perGame": 25.441176470588236,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1337,7 +1337,7 @@
           "perGame": 47.088235294117645,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1349,7 +1349,7 @@
           "perGame": 23.61764705882353,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1380,7 +1380,7 @@
           "perGame": 1.3235294117647058,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1392,7 +1392,7 @@
           "perGame": 1.4705882352941178,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1404,7 +1404,7 @@
           "perGame": 14.441176470588236,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1416,7 +1416,7 @@
           "perGame": 4.529411764705882,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1428,7 +1428,7 @@
           "perGame": 1.2808823529411764,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1440,7 +1440,7 @@
           "perGame": 5.205882352941177,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1452,7 +1452,7 @@
           "perGame": 2.235294117647059,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1464,7 +1464,7 @@
           "perGame": 9.382352941176471,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1476,7 +1476,7 @@
           "perGame": 29.176470588235293,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1488,7 +1488,7 @@
           "perGame": 55.470588235294116,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1500,7 +1500,7 @@
           "perGame": 24.294117647058822,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1531,7 +1531,7 @@
           "perGame": 1.5294117647058822,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1543,7 +1543,7 @@
           "perGame": 1.505882352941176,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1555,7 +1555,7 @@
           "perGame": 12.647058823529411,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1567,7 +1567,7 @@
           "perGame": 4.382352941176471,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1579,7 +1579,7 @@
           "perGame": 1.4529411764705884,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1591,7 +1591,7 @@
           "perGame": 5.205882352941177,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1603,7 +1603,7 @@
           "perGame": 2.0294117647058822,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1615,7 +1615,7 @@
           "perGame": 8.852941176470589,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1627,7 +1627,7 @@
           "perGame": 28.235294117647058,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1639,7 +1639,7 @@
           "perGame": 49.470588235294116,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1651,7 +1651,7 @@
           "perGame": 25.264705882352942,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1680,9 +1680,9 @@
           "label": "Goals allowed",
           "shortLabel": "GA",
           "perGame": 1.3529411764705883,
-          "rank": 12,
+          "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1694,7 +1694,7 @@
           "perGame": 1.3920588235294118,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1706,7 +1706,7 @@
           "perGame": 11.823529411764707,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1718,7 +1718,7 @@
           "perGame": 3.823529411764706,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1730,7 +1730,7 @@
           "perGame": 1.1811764705882355,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1742,7 +1742,7 @@
           "perGame": 5.764705882352941,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1754,7 +1754,7 @@
           "perGame": 2.764705882352941,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1766,7 +1766,7 @@
           "perGame": 8.235294117647058,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1778,7 +1778,7 @@
           "perGame": 25.41176470588235,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1790,7 +1790,7 @@
           "perGame": 48.705882352941174,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1802,7 +1802,7 @@
           "perGame": 20.647058823529413,
           "rank": 3,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1833,7 +1833,7 @@
           "perGame": 1.1818181818181819,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1845,7 +1845,7 @@
           "perGame": 1.2830303030303034,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1857,7 +1857,7 @@
           "perGame": 11.272727272727273,
           "rank": 4,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1869,7 +1869,7 @@
           "perGame": 4.151515151515151,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1881,7 +1881,7 @@
           "perGame": 1.3066666666666666,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1893,7 +1893,7 @@
           "perGame": 4.848484848484849,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1905,7 +1905,7 @@
           "perGame": 2.3333333333333335,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1917,7 +1917,7 @@
           "perGame": 7.787878787878788,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1929,7 +1929,7 @@
           "perGame": 23.484848484848484,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1941,7 +1941,7 @@
           "perGame": 53.72727272727273,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -1953,7 +1953,7 @@
           "perGame": 25.727272727272727,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1984,7 +1984,7 @@
           "perGame": 1.4705882352941178,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -1996,7 +1996,7 @@
           "perGame": 1.3508823529411764,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2008,7 +2008,7 @@
           "perGame": 11.882352941176471,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2020,7 +2020,7 @@
           "perGame": 4.235294117647059,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2032,7 +2032,7 @@
           "perGame": 1.3705882352941174,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2042,9 +2042,9 @@
           "label": "Corners conceded",
           "shortLabel": "Corners",
           "perGame": 4.9411764705882355,
-          "rank": 12,
+          "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2056,7 +2056,7 @@
           "perGame": 2.2058823529411766,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2068,7 +2068,7 @@
           "perGame": 7.911764705882353,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2080,7 +2080,7 @@
           "perGame": 25,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2092,7 +2092,7 @@
           "perGame": 47.05882352941177,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2104,7 +2104,7 @@
           "perGame": 25.647058823529413,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2135,7 +2135,7 @@
           "perGame": 1.5,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2147,7 +2147,7 @@
           "perGame": 1.4161764705882351,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2159,7 +2159,7 @@
           "perGame": 12.294117647058824,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2171,7 +2171,7 @@
           "perGame": 4.117647058823529,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2183,7 +2183,7 @@
           "perGame": 1.3855882352941182,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2195,7 +2195,7 @@
           "perGame": 4.852941176470588,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2207,7 +2207,7 @@
           "perGame": 2.0588235294117645,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2219,7 +2219,7 @@
           "perGame": 8.235294117647058,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2231,7 +2231,7 @@
           "perGame": 23.941176470588236,
           "rank": 6,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2243,7 +2243,7 @@
           "perGame": 54.23529411764706,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2255,7 +2255,7 @@
           "perGame": 23.176470588235293,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2286,7 +2286,7 @@
           "perGame": 1.3235294117647058,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2298,7 +2298,7 @@
           "perGame": 1.402352941176471,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2310,7 +2310,7 @@
           "perGame": 12.441176470588236,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2322,7 +2322,7 @@
           "perGame": 4.117647058823529,
           "rank": 8,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2334,7 +2334,7 @@
           "perGame": 1.2361764705882352,
           "rank": 7,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2346,7 +2346,7 @@
           "perGame": 4.764705882352941,
           "rank": 5,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2358,7 +2358,7 @@
           "perGame": 2.3823529411764706,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2370,7 +2370,7 @@
           "perGame": 8.470588235294118,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2382,7 +2382,7 @@
           "perGame": 25.38235294117647,
           "rank": 10,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2394,7 +2394,7 @@
           "perGame": 52.911764705882355,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2406,7 +2406,7 @@
           "perGame": 26.205882352941178,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2437,7 +2437,7 @@
           "perGame": 1.7058823529411764,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2449,7 +2449,7 @@
           "perGame": 1.5547058823529416,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2461,7 +2461,7 @@
           "perGame": 14.970588235294118,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2473,7 +2473,7 @@
           "perGame": 5.147058823529412,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2485,7 +2485,7 @@
           "perGame": 1.5794117647058823,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2497,7 +2497,7 @@
           "perGame": 6.264705882352941,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2509,7 +2509,7 @@
           "perGame": 2.5294117647058822,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2521,7 +2521,7 @@
           "perGame": 10.470588235294118,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2533,7 +2533,7 @@
           "perGame": 29.41176470588235,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2545,7 +2545,7 @@
           "perGame": 57.6764705882353,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2557,7 +2557,7 @@
           "perGame": 23.235294117647058,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2588,7 +2588,7 @@
           "perGame": 1.5588235294117647,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2600,7 +2600,7 @@
           "perGame": 1.4588235294117649,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2612,7 +2612,7 @@
           "perGame": 12.705882352941176,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2624,7 +2624,7 @@
           "perGame": 4.176470588235294,
           "rank": 12,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2636,7 +2636,7 @@
           "perGame": 1.3832352941176467,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2648,7 +2648,7 @@
           "perGame": 4.882352941176471,
           "rank": 9,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2660,7 +2660,7 @@
           "perGame": 2.264705882352941,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2672,7 +2672,7 @@
           "perGame": 8.705882352941176,
           "rank": 14,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2684,7 +2684,7 @@
           "perGame": 25.676470588235293,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2696,7 +2696,7 @@
           "perGame": 50.05882352941177,
           "rank": 11,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2708,7 +2708,7 @@
           "perGame": 25.323529411764707,
           "rank": 15,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2739,7 +2739,7 @@
           "perGame": 2,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2751,7 +2751,7 @@
           "perGame": 2.026764705882353,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2763,7 +2763,7 @@
           "perGame": 16.852941176470587,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2775,7 +2775,7 @@
           "perGame": 5.705882352941177,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2787,7 +2787,7 @@
           "perGame": 1.9202941176470583,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2799,7 +2799,7 @@
           "perGame": 5.970588235294118,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2811,7 +2811,7 @@
           "perGame": 3.1176470588235294,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2823,7 +2823,7 @@
           "perGame": 11.264705882352942,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2835,7 +2835,7 @@
           "perGame": 33.73529411764706,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2847,7 +2847,7 @@
           "perGame": 58.38235294117647,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -2859,7 +2859,7 @@
           "perGame": 27.294117647058822,
           "rank": 20,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2890,7 +2890,7 @@
           "perGame": 1.8235294117647058,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 1.3658199643493762,
+          "leagueAverage": 1.3662655971479503,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2902,7 +2902,7 @@
           "perGame": 1.6005882352941179,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 1.3862780748663104,
+          "leagueAverage": 1.3861247771836007,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2914,7 +2914,7 @@
           "perGame": 14.029411764705882,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 12.403208556149732,
+          "leagueAverage": 12.401648841354723,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2926,7 +2926,7 @@
           "perGame": 4.647058823529412,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 4.150178253119429,
+          "leagueAverage": 4.153654188948305,
           "niche": false,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2938,7 +2938,7 @@
           "perGame": 1.55,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 1.3238841354723707,
+          "leagueAverage": 1.32400935828877,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2950,7 +2950,7 @@
           "perGame": 5.9411764705882355,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 4.963903743315508,
+          "leagueAverage": 4.971434937611408,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2962,7 +2962,7 @@
           "perGame": 2.8529411764705883,
           "rank": 19,
           "rankedSize": 20,
-          "leagueAverage": 2.284402852049911,
+          "leagueAverage": 2.287210338680927,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2974,7 +2974,7 @@
           "perGame": 9.323529411764707,
           "rank": 17,
           "rankedSize": 20,
-          "leagueAverage": 8.371256684491978,
+          "leagueAverage": 8.37174688057041,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2986,7 +2986,7 @@
           "perGame": 27.705882352941178,
           "rank": 16,
           "rankedSize": 20,
-          "leagueAverage": 25.195677361853836,
+          "leagueAverage": 25.214572192513373,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
@@ -2998,7 +2998,7 @@
           "perGame": 56.529411764705884,
           "rank": 18,
           "rankedSize": 20,
-          "leagueAverage": 49.99015151515151,
+          "leagueAverage": 49.99050802139037,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": true
@@ -3010,7 +3010,7 @@
           "perGame": 24.558823529411764,
           "rank": 13,
           "rankedSize": 20,
-          "leagueAverage": 23.65276292335116,
+          "leagueAverage": 23.655525846702318,
           "niche": true,
           "lowerIsBetter": true,
           "isPercent": false
