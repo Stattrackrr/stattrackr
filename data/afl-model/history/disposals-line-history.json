@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-04T12:23:02Z",
+  "generatedAt": "2026-05-04T18:17:42Z",
   "count": 877,
   "rows": [
     {
       "snapshotKey": "ed langdon|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -17,12 +17,12 @@
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-116",
-      "modelExpectedDisposals": 20.04,
-      "modelEdge": -0.0856
+      "modelExpectedDisposals": 20.46,
+      "modelEdge": -0.0209
     },
     {
       "snapshotKey": "tom sparrow|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -35,12 +35,12 @@
       "line": 21.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 21.52,
-      "modelEdge": -0.001
+      "modelExpectedDisposals": 21.35,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "wayne milera|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -53,12 +53,12 @@
       "line": 25.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 23.85,
-      "modelEdge": -0.0807
+      "modelExpectedDisposals": 23.68,
+      "modelEdge": -0.0159
     },
     {
       "snapshotKey": "jack ross|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -71,12 +71,12 @@
       "line": 24.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.82,
-      "modelEdge": -0.0864
+      "modelExpectedDisposals": 22.19,
+      "modelEdge": -0.045
     },
     {
       "snapshotKey": "kysaiah pickett|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -89,12 +89,12 @@
       "line": 25.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 25.38,
-      "modelEdge": -0.001
+      "modelExpectedDisposals": 23.97,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "izak rankine|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -107,12 +107,12 @@
       "line": 21.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 20.02,
-      "modelEdge": -0.0416
+      "modelExpectedDisposals": 20.43,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "jayden short|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -125,12 +125,12 @@
       "line": 24.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 24.28,
-      "modelEdge": -0.0076
+      "modelExpectedDisposals": 22.65,
+      "modelEdge": -0.025
     },
     {
       "snapshotKey": "tom mccarthy|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -143,12 +143,12 @@
       "line": 23.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.65,
-      "modelEdge": -0.1606
+      "modelExpectedDisposals": 20.61,
+      "modelEdge": -0.1724
     },
     {
       "snapshotKey": "harley reid|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -161,12 +161,12 @@
       "line": 23.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 23.37,
-      "modelEdge": -0.001
+      "modelExpectedDisposals": 23.38,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "elliot yeo|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -179,12 +179,12 @@
       "line": 20.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 20.66,
-      "modelEdge": -0.0141
+      "modelExpectedDisposals": 21.11,
+      "modelEdge": -0.02
     },
     {
       "snapshotKey": "tim kelly|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -197,12 +197,12 @@
       "line": 22.5,
       "overOdds": "-120",
       "underOdds": "-112",
-      "modelExpectedDisposals": 20.94,
-      "modelEdge": -0.0515
+      "modelExpectedDisposals": 21.65,
+      "modelEdge": -0.0283
     },
     {
       "snapshotKey": "rory laird|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -215,12 +215,12 @@
       "line": 23.5,
       "overOdds": "-111",
       "underOdds": "-120",
-      "modelExpectedDisposals": 22.29,
-      "modelEdge": -0.0112
+      "modelExpectedDisposals": 21.68,
+      "modelEdge": -0.0143
     },
     {
       "snapshotKey": "josh worrell|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -233,12 +233,12 @@
       "line": 24.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 23.21,
-      "modelEdge": -0.0153
+      "modelExpectedDisposals": 22.91,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "jack steele|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
@@ -251,12 +251,12 @@
       "line": 24.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.57,
-      "modelEdge": -0.0194
+      "modelExpectedDisposals": 24.35,
+      "modelEdge": -0.0226
     },
     {
       "snapshotKey": "kane mcauliffe|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -269,12 +269,12 @@
       "line": 20.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 15.68,
-      "modelEdge": -0.2125
+      "modelExpectedDisposals": 15.31,
+      "modelEdge": -0.1793
     },
     {
       "snapshotKey": "jacob hopper|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -287,48 +287,48 @@
       "line": 22.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 25.44,
-      "modelEdge": 0.0119
+      "modelExpectedDisposals": 25.34,
+      "modelEdge": 0.066
     },
     {
       "snapshotKey": "caleb daniel|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Caleb Daniel",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 22.79,
-      "modelEdge": -0.0938
+      "modelExpectedDisposals": 23.5,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "harry sheezel|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Harry Sheezel",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 30.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 27.94,
-      "modelEdge": -0.0897
+      "modelExpectedDisposals": 27.09,
+      "modelEdge": -0.1818
     },
     {
       "snapshotKey": "bodhi uwland|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -341,12 +341,12 @@
       "line": 24.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 22.34,
-      "modelEdge": -0.0873
+      "modelExpectedDisposals": 21.88,
+      "modelEdge": -0.1344
     },
     {
       "snapshotKey": "zachary merrett|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -359,12 +359,12 @@
       "line": 27.5,
       "overOdds": "-115",
       "underOdds": "-118",
-      "modelExpectedDisposals": 25.78,
-      "modelEdge": -0.084
+      "modelExpectedDisposals": 26.53,
+      "modelEdge": -0.0192
     },
     {
       "snapshotKey": "tom atkins|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -377,12 +377,12 @@
       "line": 19.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 18.66,
-      "modelEdge": -0.0153
+      "modelExpectedDisposals": 18.9,
+      "modelEdge": -0.0184
     },
     {
       "snapshotKey": "bailey smith|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -395,48 +395,48 @@
       "line": 31.5,
       "overOdds": "-108",
       "underOdds": "-123",
-      "modelExpectedDisposals": 27.89,
-      "modelEdge": -0.1482
+      "modelExpectedDisposals": 29.8,
+      "modelEdge": -0.0093
     },
     {
       "snapshotKey": "justin mcinerney|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Justin Mcinerney",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 25.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 24.05,
-      "modelEdge": -0.0573
+      "modelExpectedDisposals": 22.34,
+      "modelEdge": -0.1909
     },
     {
       "snapshotKey": "callum mills|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Callum Mills",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 22.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 21.07,
-      "modelEdge": -0.0482
+      "modelExpectedDisposals": 21.96,
+      "modelEdge": -0.025
     },
     {
       "snapshotKey": "john noble|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -449,12 +449,12 @@
       "line": 26.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 24.99,
-      "modelEdge": -0.0457
+      "modelExpectedDisposals": 24.34,
+      "modelEdge": -0.0458
     },
     {
       "snapshotKey": "clayton oliver|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -467,12 +467,12 @@
       "line": 30.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 30.06,
-      "modelEdge": -0.0311
+      "modelExpectedDisposals": 29.43,
+      "modelEdge": -0.0341
     },
     {
       "snapshotKey": "finn callaghan|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -485,48 +485,48 @@
       "line": 30.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 29.86,
-      "modelEdge": -0.0311
+      "modelExpectedDisposals": 29.41,
+      "modelEdge": -0.0341
     },
     {
       "snapshotKey": "chad warner|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Chad Warner",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 21.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 20.55,
-      "modelEdge": -0.0285
+      "modelExpectedDisposals": 20.26,
+      "modelEdge": -0.0316
     },
     {
       "snapshotKey": "luke parker|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Luke Parker",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 23.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 22.92,
-      "modelEdge": -0.026
+      "modelExpectedDisposals": 24.36,
+      "modelEdge": -0.0176
     },
     {
       "snapshotKey": "noah anderson|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -539,12 +539,12 @@
       "line": 28.5,
       "overOdds": "-119",
       "underOdds": "-112",
-      "modelExpectedDisposals": 27.59,
-      "modelEdge": -0.0244
+      "modelExpectedDisposals": 27.88,
+      "modelEdge": -0.0275
     },
     {
       "snapshotKey": "dan houston|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -557,12 +557,12 @@
       "line": 24.5,
       "overOdds": "-125",
       "underOdds": "-106",
-      "modelExpectedDisposals": 21.92,
-      "modelEdge": -0.1022
+      "modelExpectedDisposals": 22.39,
+      "modelEdge": -0.0608
     },
     {
       "snapshotKey": "lachlan ash|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -575,12 +575,12 @@
       "line": 29.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 29.53,
-      "modelEdge": -0.0167
+      "modelExpectedDisposals": 28.85,
+      "modelEdge": -0.0341
     },
     {
       "snapshotKey": "andrew mcgrath|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -593,12 +593,12 @@
       "line": 20.5,
       "overOdds": "-118",
       "underOdds": "-115",
-      "modelExpectedDisposals": 22.55,
-      "modelEdge": 0.0102
+      "modelExpectedDisposals": 21.8,
+      "modelEdge": -0.0126
     },
     {
       "snapshotKey": "christian petracca|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -611,30 +611,30 @@
       "line": 25.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 26.12,
-      "modelEdge": 0.0094
+      "modelExpectedDisposals": 26.48,
+      "modelEdge": -0.0135
     },
     {
       "snapshotKey": "nick blakey|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T03:15:39Z",
       "playerName": "Nick Blakey",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "North Melbourne Kangaroos",
-      "opponentTeam": "Sydney Swans",
+      "playerTeam": "Sydney Swans",
+      "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "SportsBet",
       "line": 23.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 23.29,
-      "modelEdge": -0.0141
+      "modelExpectedDisposals": 22.41,
+      "modelEdge": -0.0316
     },
     {
       "snapshotKey": "callum wilkie|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -647,12 +647,12 @@
       "line": 23.5,
       "overOdds": "-119",
       "underOdds": "-112",
-      "modelExpectedDisposals": 24.38,
-      "modelEdge": 0.0069
+      "modelExpectedDisposals": 22.61,
+      "modelEdge": -0.0275
     },
     {
       "snapshotKey": "lachie whitfield|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T06:15:24Z",
@@ -665,12 +665,12 @@
       "line": 30.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 30.68,
-      "modelEdge": -0.0117
+      "modelExpectedDisposals": 29.14,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "nick daicos|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -683,12 +683,12 @@
       "line": 29.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 29.16,
-      "modelEdge": -0.0117
+      "modelExpectedDisposals": 29.95,
+      "modelEdge": -0.0176
     },
     {
       "snapshotKey": "jack crisp|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -701,12 +701,12 @@
       "line": 21.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 19.16,
-      "modelEdge": -0.0963
+      "modelExpectedDisposals": 20.82,
+      "modelEdge": -0.0316
     },
     {
       "snapshotKey": "max holmes|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -719,12 +719,12 @@
       "line": 30.5,
       "overOdds": "-110",
       "underOdds": "-122",
-      "modelExpectedDisposals": 27.38,
-      "modelEdge": -0.1408
+      "modelExpectedDisposals": 27.78,
+      "modelEdge": -0.1237
     },
     {
       "snapshotKey": "nasiah wanganeen milera|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -737,12 +737,12 @@
       "line": 29.5,
       "overOdds": "-112",
       "underOdds": "-120",
-      "modelExpectedDisposals": 29.69,
-      "modelEdge": 0.0023
+      "modelExpectedDisposals": 28.78,
+      "modelEdge": -0.0151
     },
     {
       "snapshotKey": "thomas stewart|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -755,12 +755,12 @@
       "line": 21.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 17.69,
-      "modelEdge": -0.1549
+      "modelExpectedDisposals": 18.78,
+      "modelEdge": -0.1278
     },
     {
       "snapshotKey": "josh daicos|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:35:00Z",
@@ -773,12 +773,12 @@
       "line": 26.5,
       "overOdds": "-128",
       "underOdds": "-104",
-      "modelExpectedDisposals": 25.8,
-      "modelEdge": -0.0384
+      "modelExpectedDisposals": 26.42,
+      "modelEdge": -0.0415
     },
     {
       "snapshotKey": "marcus windhager|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -791,12 +791,12 @@
       "line": 22.5,
       "overOdds": "-114",
       "underOdds": "-118",
-      "modelExpectedDisposals": 22.97,
-      "modelEdge": -0.001
+      "modelExpectedDisposals": 23.06,
+      "modelEdge": -0.0069
     },
     {
       "snapshotKey": "jack sinclair|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-09",
       "commenceTime": "2026-05-09T09:10:53Z",
@@ -809,138 +809,138 @@
       "line": 29.5,
       "overOdds": "-115",
       "underOdds": "-118",
-      "modelExpectedDisposals": 30.05,
-      "modelEdge": -0.0018
+      "modelExpectedDisposals": 28.93,
+      "modelEdge": -0.0192
     },
     {
       "snapshotKey": "matthew kennedy|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Matthew Kennedy",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 25.5,
       "overOdds": "-128",
       "underOdds": "-105",
-      "modelExpectedDisposals": 25.52,
-      "modelEdge": -0.0231
+      "modelExpectedDisposals": 10.95,
+      "modelEdge": -0.2204
     },
     {
       "snapshotKey": "ryley sanders|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Ryley Sanders",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 24.44,
-      "modelEdge": -0.0167
+      "modelExpectedDisposals": 18.19,
+      "modelEdge": -0.1909
     },
     {
       "snapshotKey": "bailey williams|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Bailey Williams",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 19.5,
       "overOdds": "-123",
       "underOdds": "-109",
-      "modelExpectedDisposals": 20.06,
-      "modelEdge": -0.0158
+      "modelExpectedDisposals": 18.28,
+      "modelEdge": -0.0332
     },
     {
       "snapshotKey": "bailey dale|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Bailey Dale",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 25.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 27.11,
-      "modelEdge": 0.0028
+      "modelExpectedDisposals": 24.03,
+      "modelEdge": -0.0316
     },
     {
       "snapshotKey": "kane farrell|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Kane Farrell",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 21.5,
       "overOdds": "-114",
       "underOdds": "-119",
-      "modelExpectedDisposals": 21.44,
-      "modelEdge": -0.0002
+      "modelExpectedDisposals": 19.33,
+      "modelEdge": -0.0409
     },
     {
       "snapshotKey": "zak butters|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Zak Butters",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 31.5,
       "overOdds": "-110",
       "underOdds": "-122",
-      "modelExpectedDisposals": 30.98,
-      "modelEdge": -0.0087
+      "modelExpectedDisposals": 28.35,
+      "modelEdge": -0.1237
     },
     {
       "snapshotKey": "darcy byrne jones|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Darcy Byrne Jones",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 19.5,
       "overOdds": "-109",
       "underOdds": "-123",
-      "modelExpectedDisposals": 18.89,
-      "modelEdge": -0.0071
+      "modelExpectedDisposals": 18.67,
+      "modelEdge": -0.0102
     },
     {
       "snapshotKey": "hugh mccluggage|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -953,12 +953,12 @@
       "line": 24.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 22.93,
-      "modelEdge": -0.0482
+      "modelExpectedDisposals": 22.7,
+      "modelEdge": -0.025
     },
     {
       "snapshotKey": "patrick cripps|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -971,12 +971,12 @@
       "line": 23.5,
       "overOdds": "-108",
       "underOdds": "-123",
-      "modelExpectedDisposals": 25.17,
-      "modelEdge": 0.0251
+      "modelExpectedDisposals": 25.5,
+      "modelEdge": 0.0082
     },
     {
       "snapshotKey": "nic newman|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -989,12 +989,12 @@
       "line": 23.5,
       "overOdds": "-111",
       "underOdds": "-120",
-      "modelExpectedDisposals": 25.32,
-      "modelEdge": 0.0201
+      "modelExpectedDisposals": 25.98,
+      "modelEdge": 0.0742
     },
     {
       "snapshotKey": "lachie neale|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -1007,12 +1007,12 @@
       "line": 30.5,
       "overOdds": "-115",
       "underOdds": "-116",
-      "modelExpectedDisposals": 31.87,
-      "modelEdge": 0.0135
+      "modelExpectedDisposals": 29.9,
+      "modelEdge": -0.0209
     },
     {
       "snapshotKey": "sam walsh|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -1025,30 +1025,30 @@
       "line": 27.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 28.19,
-      "modelEdge": 0.0094
+      "modelExpectedDisposals": 28.35,
+      "modelEdge": -0.0135
     },
     {
       "snapshotKey": "jason horne francis|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T10:10:00Z",
       "playerName": "Jason Horne Francis",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Western Bulldogs",
-      "playerTeam": "Port Adelaide Power",
-      "opponentTeam": "Western Bulldogs",
+      "playerTeam": "Western Bulldogs",
+      "opponentTeam": "Port Adelaide Power",
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-112",
       "underOdds": "-120",
-      "modelExpectedDisposals": 20.37,
-      "modelEdge": -0.154
+      "modelExpectedDisposals": 23.73,
+      "modelEdge": -0.0151
     },
     {
       "snapshotKey": "darcy wilmot|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -1061,12 +1061,12 @@
       "line": 24.5,
       "overOdds": "-110",
       "underOdds": "-122",
-      "modelExpectedDisposals": 23.63,
-      "modelEdge": -0.0087
+      "modelExpectedDisposals": 22.41,
+      "modelEdge": -0.0351
     },
     {
       "snapshotKey": "will ashcroft|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -1079,12 +1079,12 @@
       "line": 30.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 30.78,
-      "modelEdge": -0.0076
+      "modelExpectedDisposals": 28.84,
+      "modelEdge": -0.025
     },
     {
       "snapshotKey": "oliver florent|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-08",
       "commenceTime": "2026-05-08T09:30:00Z",
@@ -1097,152 +1097,152 @@
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.05,
-      "modelEdge": -0.0043
+      "modelExpectedDisposals": 22.27,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "jarman impey|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Jarman Impey",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 23.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 22.87,
-      "modelEdge": -0.0128
+      "modelExpectedDisposals": 20.36,
+      "modelEdge": -0.1728
     },
     {
       "snapshotKey": "karl amon|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Karl Amon",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 23.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 22.92,
-      "modelEdge": -0.0128
+      "modelExpectedDisposals": 22.01,
+      "modelEdge": -0.0159
     },
     {
       "snapshotKey": "josh ward|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Josh Ward",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.03,
-      "modelEdge": -0.0043
+      "modelExpectedDisposals": 21.65,
+      "modelEdge": -0.0102
     },
     {
       "snapshotKey": "caleb serong|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Caleb Serong",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 25.5,
       "overOdds": "-123",
       "underOdds": "-108",
-      "modelExpectedDisposals": 25.61,
-      "modelEdge": -0.0167
+      "modelExpectedDisposals": 25.49,
+      "modelEdge": -0.0341
     },
     {
       "snapshotKey": "murphy reid|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Murphy Reid",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 22.5,
       "overOdds": "-122",
       "underOdds": "-110",
-      "modelExpectedDisposals": 22.32,
-      "modelEdge": -0.0141
+      "modelExpectedDisposals": 22.28,
+      "modelEdge": -0.0316
     },
     {
       "snapshotKey": "andrew brayshaw|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Andrew Brayshaw",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 24.44,
-      "modelEdge": -0.0117
+      "modelExpectedDisposals": 24.02,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "shai bolton|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Shai Bolton",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-119",
       "underOdds": "-112",
-      "modelExpectedDisposals": 24.78,
-      "modelEdge": -0.01
+      "modelExpectedDisposals": 24.25,
+      "modelEdge": -0.0275
     },
     {
       "snapshotKey": "jai newcombe|2026-W19",
-      "capturedAt": "2026-05-04T12:23:02Z",
+      "capturedAt": "2026-05-04T18:17:42Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-07",
       "commenceTime": "2026-05-07T10:10:00Z",
       "playerName": "Jai Newcombe",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Hawthorn Hawks",
-      "playerTeam": "Fremantle Dockers",
-      "opponentTeam": "Hawthorn Hawks",
+      "playerTeam": "Hawthorn Hawks",
+      "opponentTeam": "Fremantle Dockers",
       "bookmaker": "SportsBet",
       "line": 25.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 25.61,
-      "modelEdge": -0.0051
+      "modelExpectedDisposals": 25.8,
+      "modelEdge": -0.0202
     },
     {
       "snapshotKey": "matthew roberts|2026-W18",
