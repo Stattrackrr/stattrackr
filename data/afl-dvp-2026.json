@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T22:40:23.144Z",
+  "generatedAt": "2026-05-04T02:31:49.856Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -8,8 +8,8 @@
     "withLogs": 550,
     "missingLogs": 228,
     "coveragePct": 70.69,
-    "eligiblePlayers": 520,
-    "withLogsEligible": 518,
+    "eligiblePlayers": 527,
+    "withLogsEligible": 525,
     "missingEligible": 2,
     "coveragePctEligible": 99.62
   },
@@ -120,8 +120,8 @@
         "marks_inside_50": 1.23,
         "one_percenters": 1.13,
         "goal_assists": 0.56,
-        "meters_gained": 203.63,
-        "percent_played": 74.93,
+        "meters_gained": 203.75,
+        "percent_played": 74.98,
         "free_kicks_for": 0.82,
         "free_kicks_against": 0.73
       }
@@ -335,7 +335,7 @@
         "one_percenters": 1.035,
         "goal_assists": 0.875,
         "meters_gained": 1.066,
-        "percent_played": 1.034,
+        "percent_played": 1.033,
         "free_kicks_for": 0.902,
         "free_kicks_against": 0.986
       }
@@ -758,8 +758,8 @@
         "marks_inside_50": 0.959,
         "one_percenters": 1.044,
         "goal_assists": 0.929,
-        "meters_gained": 0.953,
-        "percent_played": 0.912,
+        "meters_gained": 0.952,
+        "percent_played": 0.911,
         "free_kicks_for": 0.878,
         "free_kicks_against": 0.781
       }
@@ -1182,7 +1182,7 @@
         "marks_inside_50": 1.098,
         "one_percenters": 1.301,
         "goal_assists": 1.125,
-        "meters_gained": 1.087,
+        "meters_gained": 1.086,
         "percent_played": 1.018,
         "free_kicks_for": 1.171,
         "free_kicks_against": 1.068
@@ -1606,7 +1606,7 @@
         "marks_inside_50": 0.878,
         "one_percenters": 0.735,
         "goal_assists": 0.946,
-        "meters_gained": 1,
+        "meters_gained": 0.999,
         "percent_played": 0.987,
         "free_kicks_for": 0.976,
         "free_kicks_against": 1
@@ -2030,8 +2030,8 @@
         "marks_inside_50": 1.285,
         "one_percenters": 1.08,
         "goal_assists": 1.232,
-        "meters_gained": 0.983,
-        "percent_played": 0.963,
+        "meters_gained": 0.982,
+        "percent_played": 0.962,
         "free_kicks_for": 0.683,
         "free_kicks_against": 1.027
       }
@@ -2878,8 +2878,8 @@
         "marks_inside_50": 1.049,
         "one_percenters": 0.956,
         "goal_assists": 1.107,
-        "meters_gained": 0.87,
-        "percent_played": 0.996,
+        "meters_gained": 0.869,
+        "percent_played": 0.995,
         "free_kicks_for": 0.732,
         "free_kicks_against": 1.164
       }
@@ -3303,7 +3303,7 @@
         "one_percenters": 1.257,
         "goal_assists": 0.875,
         "meters_gained": 1.062,
-        "percent_played": 1.025,
+        "percent_played": 1.024,
         "free_kicks_for": 0.951,
         "free_kicks_against": 0.849
       }
@@ -3727,7 +3727,7 @@
         "one_percenters": 0.956,
         "goal_assists": 1.089,
         "meters_gained": 0.985,
-        "percent_played": 1.037,
+        "percent_played": 1.036,
         "free_kicks_for": 1.268,
         "free_kicks_against": 0.781
       }
@@ -4151,7 +4151,7 @@
         "one_percenters": 1.035,
         "goal_assists": 1.018,
         "meters_gained": 0.914,
-        "percent_played": 0.99,
+        "percent_played": 0.989,
         "free_kicks_for": 1.085,
         "free_kicks_against": 1.247
       }
@@ -4490,17 +4490,17 @@
         "hitouts": 16,
         "inside_50s": 132,
         "clearances": 48,
-        "intercepts": 60,
+        "intercepts": 61,
         "tackles_inside_50": 33,
-        "score_involvements": 289,
-        "contested_possessions": 260,
-        "uncontested_possessions": 420,
+        "score_involvements": 294,
+        "contested_possessions": 266,
+        "uncontested_possessions": 426,
         "contested_marks": 32,
-        "marks_inside_50": 79,
-        "one_percenters": 66,
+        "marks_inside_50": 81,
+        "one_percenters": 67,
         "goal_assists": 35,
-        "meters_gained": 11471,
-        "percent_played": 4170,
+        "meters_gained": 11585,
+        "percent_played": 4219,
         "free_kicks_for": 49,
         "free_kicks_against": 43
       },
@@ -4515,17 +4515,17 @@
         "hitouts": 0.29,
         "inside_50s": 2.36,
         "clearances": 0.86,
-        "intercepts": 1.07,
+        "intercepts": 1.09,
         "tackles_inside_50": 0.59,
-        "score_involvements": 5.16,
-        "contested_possessions": 4.64,
-        "uncontested_possessions": 7.5,
+        "score_involvements": 5.25,
+        "contested_possessions": 4.75,
+        "uncontested_possessions": 7.61,
         "contested_marks": 0.57,
-        "marks_inside_50": 1.41,
-        "one_percenters": 1.18,
+        "marks_inside_50": 1.45,
+        "one_percenters": 1.2,
         "goal_assists": 0.63,
-        "meters_gained": 204.84,
-        "percent_played": 74.46,
+        "meters_gained": 206.88,
+        "percent_played": 75.34,
         "free_kicks_for": 0.88,
         "free_kicks_against": 0.77
       },
@@ -4540,17 +4540,17 @@
         "hitouts": 2,
         "inside_50s": 16.5,
         "clearances": 6,
-        "intercepts": 7.5,
+        "intercepts": 7.63,
         "tackles_inside_50": 4.13,
-        "score_involvements": 36.13,
-        "contested_possessions": 32.5,
-        "uncontested_possessions": 52.5,
+        "score_involvements": 36.75,
+        "contested_possessions": 33.25,
+        "uncontested_possessions": 53.25,
         "contested_marks": 4,
-        "marks_inside_50": 9.88,
-        "one_percenters": 8.25,
+        "marks_inside_50": 10.13,
+        "one_percenters": 8.38,
         "goal_assists": 4.38,
-        "meters_gained": 1433.88,
-        "percent_played": 521.25,
+        "meters_gained": 1448.13,
+        "percent_played": 527.38,
         "free_kicks_for": 6.13,
         "free_kicks_against": 5.38
       },
@@ -4565,17 +4565,17 @@
         "hitouts": 0.659,
         "inside_50s": 1.093,
         "clearances": 1.089,
-        "intercepts": 0.793,
+        "intercepts": 0.807,
         "tackles_inside_50": 0.747,
-        "score_involvements": 1.079,
-        "contested_possessions": 1,
-        "uncontested_possessions": 1.045,
+        "score_involvements": 1.098,
+        "contested_possessions": 1.024,
+        "uncontested_possessions": 1.06,
         "contested_marks": 1.075,
-        "marks_inside_50": 1.146,
-        "one_percenters": 1.044,
+        "marks_inside_50": 1.179,
+        "one_percenters": 1.062,
         "goal_assists": 1.125,
-        "meters_gained": 1.006,
-        "percent_played": 0.994,
+        "meters_gained": 1.015,
+        "percent_played": 1.005,
         "free_kicks_for": 1.073,
         "free_kicks_against": 1.055
       }
@@ -4998,8 +4998,8 @@
         "marks_inside_50": 0.886,
         "one_percenters": 0.85,
         "goal_assists": 0.893,
-        "meters_gained": 1.008,
-        "percent_played": 1.017,
+        "meters_gained": 1.007,
+        "percent_played": 1.016,
         "free_kicks_for": 1.049,
         "free_kicks_against": 0.973
       }
@@ -5423,7 +5423,7 @@
         "one_percenters": 0.805,
         "goal_assists": 0.839,
         "meters_gained": 0.94,
-        "percent_played": 1.044,
+        "percent_played": 1.043,
         "free_kicks_for": 1.293,
         "free_kicks_against": 1.055
       }
@@ -5847,7 +5847,7 @@
         "one_percenters": 1.274,
         "goal_assists": 1.036,
         "meters_gained": 1.082,
-        "percent_played": 1.038,
+        "percent_played": 1.037,
         "free_kicks_for": 1.22,
         "free_kicks_against": 0.822
       }
@@ -6270,8 +6270,8 @@
         "marks_inside_50": 1.033,
         "one_percenters": 1.027,
         "goal_assists": 0.643,
-        "meters_gained": 1.041,
-        "percent_played": 1.012,
+        "meters_gained": 1.04,
+        "percent_played": 1.011,
         "free_kicks_for": 1.073,
         "free_kicks_against": 0.877
       }
@@ -6694,8 +6694,8 @@
         "marks_inside_50": 0.61,
         "one_percenters": 0.92,
         "goal_assists": 0.643,
-        "meters_gained": 1.042,
-        "percent_played": 0.967,
+        "meters_gained": 1.041,
+        "percent_played": 0.966,
         "free_kicks_for": 1.073,
         "free_kicks_against": 1.466
       }
@@ -7118,8 +7118,8 @@
         "marks_inside_50": 1.463,
         "one_percenters": 0.779,
         "goal_assists": 1.625,
-        "meters_gained": 0.949,
-        "percent_played": 0.965,
+        "meters_gained": 0.948,
+        "percent_played": 0.964,
         "free_kicks_for": 0.89,
         "free_kicks_against": 0.973
       }
@@ -7542,8 +7542,8 @@
         "marks_inside_50": 1.081,
         "one_percenters": 0.885,
         "goal_assists": 1.25,
-        "meters_gained": 1.016,
-        "percent_played": 0.998,
+        "meters_gained": 1.015,
+        "percent_played": 0.997,
         "free_kicks_for": 0.988,
         "free_kicks_against": 1.082
       }
