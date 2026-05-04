@@ -224,7 +224,6 @@ export async function GET(request: NextRequest) {
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.payload);
   }
-
   const candidates = readCachedLeaguePlayerStats(season)
     .filter((player) => resolveToOfficialTeam(player.team) === officialTeam)
     .sort((a, b) => {
@@ -243,6 +242,7 @@ export async function GET(request: NextRequest) {
       games: [],
       gamesWithQuarters: [],
       game_count: 0,
+    };
     };
     teamGameLogsCache.set(cacheKey, {
       expiresAt: Date.now() + TEAM_GAME_LOGS_CACHE_TTL_MS,
@@ -289,6 +289,7 @@ export async function GET(request: NextRequest) {
     game_count: Math.max(games.length, gamesWithQuarters.length),
     games,
     gamesWithQuarters,
+  };
   };
   teamGameLogsCache.set(cacheKey, {
     expiresAt: Date.now() + TEAM_GAME_LOGS_CACHE_TTL_MS,

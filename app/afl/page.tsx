@@ -2594,7 +2594,6 @@ export default function AFLPage() {
       if (hydratedFreshCache && !cancelled) {
         setTeamModeSelectedTeamLogsLoading(false);
       }
-
       try {
         const [curRes, prevRes, olderRes] = await Promise.all([
           fetch(`/api/afl/team-game-logs?season=${season}&team=${encodeURIComponent(selectedTeam)}`, { cache: 'no-store' }),
