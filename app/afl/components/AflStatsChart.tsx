@@ -569,6 +569,7 @@ interface AflStatsChartProps {
   logoByTeam?: Record<string, string>;
   isLoading?: boolean;
   hasSelectedPlayer?: boolean;
+  mode?: 'player' | 'team';
   apiErrorHint?: string | null;
   teammateFilterName?: string | null;
   withWithoutMode?: 'with' | 'without';
@@ -610,6 +611,7 @@ export function AflStatsChart({
   logoByTeam: externalLogoByTeam,
   isLoading,
   hasSelectedPlayer,
+  mode = 'player',
   apiErrorHint,
   teammateFilterName,
   withWithoutMode = 'with',
@@ -1307,6 +1309,8 @@ export function AflStatsChart({
     return chartLoadingSkeleton;
   }
 
+  const subjectLabel = mode === 'team' ? 'team' : 'player';
+
   if (!logsForStatOptions.length) {
     return (
       <div className="h-full w-full flex items-center justify-center p-4">
@@ -1316,14 +1320,14 @@ export function AflStatsChart({
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {isLoading
                   ? 'Loading game data…'
-                  : 'No game data for this player'}
+                  : `No game data for this ${subjectLabel}`}
               </p>
               {apiErrorHint && !isLoading && (
                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{apiErrorHint}</p>
               )}
             </>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Select a player to see game chart</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{`Select a ${subjectLabel} to see game chart`}</p>
           )}
         </div>
       </div>
@@ -1336,7 +1340,7 @@ export function AflStatsChart({
     }
     return (
       <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">No game stat data for this player this season</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{`No game stat data for this ${subjectLabel} this season`}</p>
         {apiErrorHint && (
           <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 max-w-md break-words">
             {apiErrorHint}
