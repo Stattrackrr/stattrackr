@@ -15,6 +15,7 @@ const memoryCache = new Map<string, { expiresAt: number; payload: unknown }>();
 
 /** Long TTL so cache persists until the next successful warm overwrites it; stats always available. */
 export const AFL_PLAYER_LOGS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+export const AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
 export type AflPlayerLogsCachePayload = {
   season: number;
@@ -88,20 +89,23 @@ export async function getAflPlayerLogsCache(
 /** Only write when we have a successful payload with at least one game; never overwrite with empty. */
 export async function setAflPlayerLogsCache(
   key: string,
-  payload: AflPlayerLogsCachePayload
+  payload: AflPlayerLogsCachePayload,
+  options?: { allowEmpty?: boolean; ttlSeconds?: number }
 ): Promise<void> {
   const games = payload?.games;
-  if (!Array.isArray(games) || games.length === 0) return;
+  const allowEmpty = options?.allowEmpty === true;
+  if (!Array.isArray(games) || (!allowEmpty && games.length === 0)) return;
+  const ttlSeconds = Math.max(1, Number(options?.ttlSeconds || AFL_PLAYER_LOGS_CACHE_TTL_SECONDS));
 
   memoryCache.set(key, {
-    expiresAt: nowMs() + AFL_PLAYER_LOGS_CACHE_TTL_SECONDS * 1000,
+    expiresAt: nowMs() + ttlSeconds * 1000,
     payload,
   });
 
   if (!redis) return;
 
   try {
-    await redis.set(key, payload, { ex: AFL_PLAYER_LOGS_CACHE_TTL_SECONDS });
+    await redis.set(key, payload, { ex: ttlSeconds });
   } catch {
     // Ignore cache write failures and continue with source response.
   }

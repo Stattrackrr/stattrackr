@@ -9,6 +9,7 @@ import {
   getAflPlayerLogsCache,
   setAflPlayerLogsCache,
   isAflPlayerLogsCacheEnabled,
+  AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
   type AflPlayerLogsCachePayload,
 } from '@/lib/cache/aflPlayerLogsCache';
 
@@ -1464,6 +1465,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
       }
     }
+    if (
+      cachedBase &&
+      Array.isArray(cachedBase.games) &&
+      cachedBase.games.length === 0 &&
+      season < currentYear &&
+      !isWarmRequest &&
+      !forceFetch
+    ) {
+      const payload = {
+        ...cachedBase,
+        gamesWithQuarters: Array.isArray(cachedQuarters?.games) ? cachedQuarters.games : [],
+        ...(teamFull ? { team: teamFull } : {}),
+      };
+      return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
+    }
     // Warm request: skip Redis so we always fetch live 2026 from FootyWire
     if (cachedBase && hasBaseGames && !skipCacheWrongData && !skipCacheStale2025 && !isWarmRequest && !forceFetch) {
       const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
@@ -1577,6 +1593,33 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } });
     }
+    if (cacheEnabled && season < currentYear) {
+      const emptyBase: AflPlayerLogsCachePayload = {
+        season,
+        source: 'footywire.com',
+        player_name: effectivePlayerName,
+        games: [],
+        game_count: 0,
+      };
+      await Promise.all([
+        setAflPlayerLogsCache(keyBase, emptyBase, {
+          allowEmpty: true,
+          ttlSeconds: AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
+        }),
+        setAflPlayerLogsCache(keyQuarters, emptyBase, {
+          allowEmpty: true,
+          ttlSeconds: AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
+        }),
+      ]);
+      return NextResponse.json(
+        {
+          ...emptyBase,
+          gamesWithQuarters: [] as Record<string, unknown>[],
+          ...(teamFull ? { team: teamFull } : {}),
+        },
+        { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } }
+      );
+    }
   }
 
   const cachedResponse = cacheEnabled ? await getAflPlayerLogsCache(responseCacheKey) : null;
@@ -1597,6 +1640,19 @@ export async function GET(request: NextRequest) {
     if (cachedResponse && Array.isArray(cachedGames) && cachedGames.length > 0 && !skipCacheWrongDataSingle && !skipCacheForSymbolSingle) {
       return NextResponse.json({ ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) }, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
+  }
+  if (
+    cachedResponse &&
+    Array.isArray(cachedGames) &&
+    cachedGames.length === 0 &&
+    season < currentYear &&
+    !isWarmRequest &&
+    !forceFetch
+  ) {
+    return NextResponse.json(
+      { ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) },
+      { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } }
+    );
   }
   // Warm: skip Redis so we fetch live 2026; dashboard uses cache when present
   if (
@@ -1693,8 +1749,15 @@ export async function GET(request: NextRequest) {
       { status: 502, headers: sourceHeaders }
     );
   }
+  const emptyPayload = { season, source: 'footywire.com', player_name: effectivePlayerName, games: [], game_count: 0 };
+  if (cacheEnabled && season < currentYear) {
+    await setAflPlayerLogsCache(responseCacheKey, emptyPayload as AflPlayerLogsCachePayload, {
+      allowEmpty: true,
+      ttlSeconds: AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
+    });
+  }
   return NextResponse.json(
-    { season, source: 'footywire.com', player_name: effectivePlayerName, games: [], game_count: 0 },
+    emptyPayload,
     { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } }
   );
 }

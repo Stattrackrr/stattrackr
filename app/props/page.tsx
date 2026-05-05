@@ -7606,9 +7606,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   const currentSeason = new Date().getFullYear();
 
                                   // Warm key AFL endpoints before navigating so player mode can render faster.
+                                  const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
+                                  const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
                                   const prefetchUrls = [
                                     `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                    `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`,
+                                    `${logsBase}&season=2026`,
+                                    `${logsBase}&season=2025`,
+                                    `${logsBase}&season=2024`,
                                     `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
                                     `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
                                   ];
@@ -8513,6 +8517,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           setFindPlayerOpen(false);
                           if (propsSport === 'afl') {
                             const team = player.team ?? '';
+                            const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(player.name)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`;
+                            [
+                              `${logsBase}&season=2026`,
+                              `${logsBase}&season=2025`,
+                              `${logsBase}&season=2024`,
+                              `/api/afl/fantasy-positions?season=${new Date().getFullYear()}&player=${encodeURIComponent(player.name)}`,
+                              `/api/afl/players?query=${encodeURIComponent(player.name)}&limit=30`,
+                            ].forEach((url) => {
+                              fetch(url, { cache: 'default' }).catch(() => {
+                                // Ignore prefetch errors - navigation should still continue.
+                              });
+                            });
                             if (team) {
                               fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)
                                 .then((r) => r.json())
