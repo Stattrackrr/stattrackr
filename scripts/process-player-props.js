@@ -1212,37 +1212,32 @@ async function processPlayerProps() {
         
         if (playerId) {
           try {
-            // Fetch stats for current and previous season (regular + playoffs)
-            // EXACT SAME LOGIC AS CLIENT-SIDE: fetch regular first, then playoffs sequentially with delay
+            // Fetch stats for current and previous season, including playoffs.
+            // Keep requests sequential with short delays to stay under the stats API rate limits.
             const currentSeason = currentNbaSeason();
             const allStats = [];
-            
-            // Fetch current season: regular only (playoffs don't start for months)
-            let currSeasonReg;
-            try {
-              await new Promise(resolve => setTimeout(resolve, 300)); // Delay before first request
-              currSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason}&per_page=100&max_pages=3&postseason=false`);
-              if (currSeasonReg?.data && Array.isArray(currSeasonReg.data)) {
-                allStats.push(...currSeasonReg.data);
-                console.log(`[GitHub Actions] ✅ Fetched ${currSeasonReg.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason}, regular`);
+            const seasonsToFetch = [currentSeason, currentSeason - 1];
+
+            for (const season of seasonsToFetch) {
+              for (const postseason of [false, true]) {
+                try {
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                  const seasonStats = await callAPI(
+                    `/api/stats?player_id=${playerId}&season=${season}&per_page=100&max_pages=3&postseason=${postseason}`
+                  );
+
+                  if (seasonStats?.data && Array.isArray(seasonStats.data)) {
+                    allStats.push(...seasonStats.data);
+                    console.log(
+                      `[GitHub Actions] ✅ Fetched ${seasonStats.data.length} stats for ${prop.playerName} (${playerId}), season ${season}, ${postseason ? 'playoffs' : 'regular'}`
+                    );
+                  }
+                } catch (e) {
+                  console.warn(
+                    `[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${season}, ${postseason ? 'playoffs' : 'regular'}: API error: ${e.message}`
+                  );
+                }
               }
-            } catch (e) {
-              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason}, regular: API error: ${e.message}`);
-            }
-            
-            // Delay between seasons
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Fetch previous season regular only (no playoffs)
-            let prevSeasonReg;
-            try {
-              prevSeasonReg = await callAPI(`/api/stats?player_id=${playerId}&season=${currentSeason - 1}&per_page=100&max_pages=3&postseason=false`);
-              if (prevSeasonReg?.data && Array.isArray(prevSeasonReg.data)) {
-                allStats.push(...prevSeasonReg.data);
-                console.log(`[GitHub Actions] ✅ Fetched ${prevSeasonReg.data.length} stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, regular`);
-              }
-            } catch (e) {
-              console.warn(`[GitHub Actions] ⚠️ Failed to fetch stats for ${prop.playerName} (${playerId}), season ${currentSeason - 1}, regular: API error: ${e.message}`);
             }
             
             console.log(`[GitHub Actions] 📊 Total stats fetched for ${prop.playerName}: ${allStats.length}`);
