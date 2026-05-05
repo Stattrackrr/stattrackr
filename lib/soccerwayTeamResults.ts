@@ -105,6 +105,20 @@ export type SoccerwayLineupBundle = {
   teams: SoccerwayLineupTeam[];
 };
 
+export type SoccerwaySquadAbsence = {
+  player: string;
+  status: 'injury' | 'suspension' | 'absence';
+  reason: string;
+  estimatedReturn: string | null;
+  playerUrl: string | null;
+};
+
+export type SoccerwayPlayerInjuryHistoryRow = {
+  from: string;
+  until: string;
+  injury: string;
+};
+
 /** True when the bundle has at least one team with starters, formation, subs, or coaches (same filter as the pitch UI). */
 export function hasDisplayableSoccerLineup(lineup: SoccerwayLineupBundle | null | undefined): boolean {
   if (!lineup || !Array.isArray(lineup.teams)) return false;
@@ -601,6 +615,18 @@ export function buildSoccerwayMatchStatsFeedUrl(matchId: string, sportId = 1) {
   return `https://global.flashscore.ninja/2020/x/feed/df_st_${sportId}_${matchId}`;
 }
 
+export function buildSoccerwayTeamSquadUrl(teamHref: string): string {
+  const normalized = String(teamHref || '').trim().replace(/\/+$/, '');
+  if (!normalized) return '';
+  return `https://www.soccerway.com${normalized}/squad/`;
+}
+
+export function buildSoccerwayPlayerInjuryHistoryUrl(playerUrl: string | null | undefined): string {
+  const normalized = String(playerUrl || '').trim().replace(/\/+$/, '');
+  if (!normalized) return '';
+  return `${normalized}/injury-history/`;
+}
+
 function parseFeedFields(segment: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const part of segment.split('¬')) {
@@ -675,4 +701,71 @@ export function parseSoccerwayMatchStatsFeed(raw: string, feedUrl: string): Socc
     periods,
     raw,
   };
+}
+
+export function parseSoccerwaySquadAbsencesHtml(html: string): SoccerwaySquadAbsence[] {
+  const rows = [...html.matchAll(/<div class="lineupTable__row">([\s\S]*?)<\/div>\s*<\/div>/gi)];
+  const out: SoccerwaySquadAbsence[] = [];
+  const seen = new Set<string>();
+
+  for (const match of rows) {
+    const rowHtml = match[1];
+    const playerMatch = rowHtml.match(/<a class="lineupTable__cell--name" href="([^"]+)">([\s\S]*?)<\/a>/i);
+    const absenceMatch = rowHtml.match(/<svg class="lineupTable__cell--absence\s+([^"\s]+)[^"]*">[\s\S]*?<title>([\s\S]*?)<\/title>/i);
+    if (!playerMatch || !absenceMatch) continue;
+
+    const player = String(playerMatch[2] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!player) continue;
+
+    const rawStatus = String(absenceMatch[1] || '').trim().toLowerCase();
+    const status: SoccerwaySquadAbsence['status'] =
+      rawStatus.includes('suspend') ? 'suspension' : rawStatus.includes('injur') ? 'injury' : 'absence';
+    const reason = String(absenceMatch[2] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const playerUrl = playerMatch[1]?.trim() ? `https://www.soccerway.com${playerMatch[1].trim()}` : null;
+    const dedupeKey = `${player.toLowerCase()}::${status}::${reason.toLowerCase()}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    out.push({
+      player,
+      status,
+      reason,
+      estimatedReturn: null,
+      playerUrl,
+    });
+  }
+
+  return out;
+}
+
+export function parseSoccerwayPlayerInjuryHistoryHtml(html: string): SoccerwayPlayerInjuryHistoryRow[] {
+  const rowBlocks = [...html.matchAll(/<div class="injuryTable__row[^"]*">([\s\S]*?)<\/div>/gi)];
+
+  return rowBlocks
+    .map((match) => {
+      const rowHtml = String(match[1] || '');
+      const dates = [...rowHtml.matchAll(/<span[^>]*class="[^"]*injuryTable__date[^"]*"[^>]*>([\s\S]*?)<\/span>/gi)].map((dateMatch) =>
+        String(dateMatch[1] || '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      );
+      const injury = String(rowHtml.match(/<span class="injuryTable__typeInfo">([\s\S]*?)<\/span>/i)?.[1] || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      return {
+        from: dates[0] || '',
+        until: dates[1] || '',
+        injury,
+      };
+    })
+    .filter((row) => row.from && row.until && row.injury);
 }

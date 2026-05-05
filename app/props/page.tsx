@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { fetchProfileProStatusWithRetries, isProFromUserMetadata } from '@/lib/profileSubscriptionGate';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
@@ -1404,9 +1405,15 @@ export default function NBALandingPage() {
     let isMounted = true;
 
     const checkSubscription = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
+      const {
+        data: { user: verifiedUser },
+      } = await supabase.auth.getUser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = verifiedUser ?? session?.user ?? null;
+
+      if (!user) {
         if (isMounted) {
           setViewerId(null);
           setSubscriptionChecked(true);
@@ -1419,45 +1426,41 @@ export default function NBALandingPage() {
 
       if (!isMounted) return;
 
-      // Don't set email/username/avatar until we have profile — set all together below to avoid flash of email before name
-
       try {
-        const { data: profile } = await (supabase
-          .from('profiles') as any)
-          .select('subscription_status, subscription_tier, avatar_url, full_name, username')
-          .eq('id', session.user.id)
-          .single();
+        const { profile: profileData, isPro: proStatus } = await fetchProfileProStatusWithRetries(supabase, user);
 
         if (!isMounted) return;
 
-        const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
-        const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
-        const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null;
-        setViewerId(session.user.id);
-        setUserEmail(session.user.email || null);
+        const displayName =
+          profileData?.full_name ||
+          profileData?.username ||
+          user.user_metadata?.username ||
+          user.user_metadata?.full_name ||
+          null;
+        const avatarFromProfile =
+          profileData?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
+        setViewerId(user.id);
+        setUserEmail(user.email || null);
         setUsername(displayName);
         setAvatarUrl(avatarFromProfile);
-        
-        let isActive = false;
-        let isProTier = false;
-        
-        if (profileData) {
-          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-          isProTier = profileData.subscription_tier === 'pro';
-        }
-        
-        const proStatus = isActive && isProTier;
         if (isMounted) {
           setIsPro(proStatus);
           setSubscriptionChecked(true);
-          if (!proStatus) {
-            // Redirect happens in useEffect when cache has loaded
-            return;
-          }
         }
       } catch (error) {
         console.error('Error checking subscription:', error);
-        if (isMounted) setSubscriptionChecked(true);
+        if (isMounted) {
+          const displayName =
+            user.user_metadata?.username || user.user_metadata?.full_name || null;
+          const avatarFromProfile =
+            user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null;
+          setViewerId(user.id);
+          setUserEmail(user.email || null);
+          setUsername(displayName);
+          setAvatarUrl(avatarFromProfile);
+          setIsPro(isProFromUserMetadata(user));
+          setSubscriptionChecked(true);
+        }
       }
     };
     
@@ -1470,7 +1473,7 @@ export default function NBALandingPage() {
           setIsPro(false);
           router.push('/login?redirect=/props');
         }
-      } else if (event === 'SIGNED_IN' && isMounted && session?.user) {
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMounted && session?.user) {
         checkSubscription();
       }
     });

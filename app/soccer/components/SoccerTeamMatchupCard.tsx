@@ -76,10 +76,23 @@ function getViewModeSummary(
     : `${selectedLabel} attack vs ${opponentLabel} defense`;
 }
 
-function TeamMatchupHeader() {
+function TeamMatchupHeaderRow({
+  isDark,
+  timeframe,
+  onTimeframeChange,
+  showTimeframeToggle,
+}: {
+  isDark: boolean;
+  timeframe: MatchupTimeframe;
+  onTimeframeChange: (value: MatchupTimeframe) => void;
+  showTimeframeToggle: boolean;
+}) {
   return (
-    <div className="relative flex items-center justify-center mt-1 mb-2 flex-shrink-0">
+    <div className="mt-1 mb-2 flex flex-shrink-0 items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Matchup</h3>
+      {showTimeframeToggle ? (
+        <TeamMatchupTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={onTimeframeChange} />
+      ) : null}
     </div>
   );
 }
@@ -218,11 +231,10 @@ export function SoccerTeamMatchupCard({
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <TeamMatchupHeader />
+        <div className="px-3">
+          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+        </div>
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
-          <div className="mb-2 flex justify-end">
-            <TeamMatchupTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-          </div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
             <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
@@ -240,7 +252,9 @@ export function SoccerTeamMatchupCard({
   if (!canFetch) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <TeamMatchupHeader />
+        <div className="px-3">
+          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle={false} />
+        </div>
         <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
           <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
         </div>
@@ -251,13 +265,12 @@ export function SoccerTeamMatchupCard({
   if (error) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <TeamMatchupHeader />
+        <div className="px-3">
+          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+        </div>
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
-          <div className="mb-2 flex justify-end">
-            <TeamMatchupTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-          </div>
           <div className="flex-1 min-h-0 flex items-center">
-          <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+            <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
           </div>
         </div>
       </div>
@@ -266,11 +279,10 @@ export function SoccerTeamMatchupCard({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <TeamMatchupHeader />
+      <div className="px-3">
+        <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+      </div>
       <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
-        <div className="mb-2 flex justify-end">
-          <TeamMatchupTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-        </div>
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className={`inline-flex w-full items-center rounded-xl border p-1 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-100'}`}>
@@ -301,7 +313,7 @@ export function SoccerTeamMatchupCard({
                 <span className="block truncate">{opponentLabel}</span>
               </button>
             </div>
-            <div className={`mt-1 text-center text-[10px] font-medium uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            <div className={`mt-1 text-center text-[10px] font-medium uppercase tracking-wide ${isDark ? 'text-white' : 'text-gray-500'}`}>
               {getViewModeSummary(viewMode, selectedLabel, opponentLabel)}
             </div>
           </div>

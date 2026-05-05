@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { fetchProfileProStatusWithRetries, isProFromUserMetadata } from '@/lib/profileSubscriptionGate';
 import { useTheme } from '@/contexts/ThemeContext';
 import { DashboardStyles } from '@/app/nba/research/dashboard/components/DashboardStyles';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
@@ -16,7 +17,8 @@ import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingS
 import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
 import { SoccerOpponentBreakdownPanel } from '@/app/soccer/components/SoccerOpponentBreakdownPanel';
 import { SoccerTeamMatchupCard } from '@/app/soccer/components/SoccerTeamMatchupCard';
-import { SoccerTeamFormCard } from '@/app/soccer/components/SoccerTeamFormCard';
+import { SoccerTeamFormHomeAwayPanel } from '@/app/soccer/components/SoccerTeamFormHomeAwayPanel';
+import { SoccerInjuriesCard } from '@/app/soccer/components/SoccerInjuriesCard';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -268,9 +270,14 @@ function SoccerPageContent() {
 
     const checkSubscription = async () => {
       const {
+        data: { user: verifiedUser },
+      } = await supabase.auth.getUser();
+      const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session?.user) {
+      const user = verifiedUser ?? session?.user ?? null;
+
+      if (!user) {
         if (isMounted) {
           setIsPro(false);
           setUsername(null);
@@ -284,31 +291,23 @@ function SoccerPageContent() {
         return;
       }
 
-      const user = session.user;
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, username, avatar_url, subscription_status, subscription_tier')
-          .eq('id', user.id)
-          .single();
+        const { profile: p, isPro: pro } = await fetchProfileProStatusWithRetries(supabase, user);
         if (!isMounted) return;
-        const p = profile as {
-          full_name?: string;
-          username?: string;
-          avatar_url?: string;
-          subscription_status?: string;
-          subscription_tier?: string;
-        } | null;
         setUserEmail(user.email ?? null);
         setUsername(p?.full_name || p?.username || user.user_metadata?.username || user.user_metadata?.full_name || null);
         setAvatarUrl(p?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null);
-        const active = p?.subscription_status === 'active' || p?.subscription_status === 'trialing';
-        const proTier = p?.subscription_tier === 'pro';
-        setIsPro(Boolean(active && proTier));
+        setIsPro(pro);
         setSubscriptionChecked(true);
       } catch (e) {
         console.error('Soccer page: profile load failed', e);
-        if (isMounted) setSubscriptionChecked(true);
+        if (isMounted) {
+          setUserEmail(user.email ?? null);
+          setUsername(user.user_metadata?.username || user.user_metadata?.full_name || null);
+          setAvatarUrl(user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null);
+          setIsPro(isProFromUserMetadata(user));
+          setSubscriptionChecked(true);
+        }
       }
     };
     void checkSubscription();
@@ -323,7 +322,7 @@ function SoccerPageContent() {
           setSubscriptionChecked(true);
           router.push('/login?redirect=/soccer');
         }
-      } else if (event === 'SIGNED_IN' && isMounted && session?.user) {
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && isMounted && session?.user) {
         void checkSubscription();
       }
     });
@@ -1245,8 +1244,8 @@ function SoccerPageContent() {
                     showSkeleton={syncedFixtureStatsLoading}
                   />
                 </div>
-                <div className={`hidden lg:block h-[420px] w-full min-w-0 shrink-0 rounded-lg xl:h-[460px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
-                  <SoccerTeamFormCard
+                <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerTeamFormHomeAwayPanel
                     isDark={Boolean(mounted && isDark)}
                     teamName={selectedTeam?.name ?? null}
                     teamHref={selectedTeam?.href ?? null}
@@ -1258,7 +1257,17 @@ function SoccerPageContent() {
                     showSkeleton={syncedFixtureStatsLoading}
                   />
                 </div>
-                <div className={`hidden lg:block min-h-[240px] w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW}`} />
+                <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerInjuriesCard
+                    isDark={Boolean(mounted && isDark)}
+                    teamName={selectedTeam?.name ?? null}
+                    teamHref={selectedTeam?.href ?? null}
+                    opponentName={displayOpponent}
+                    opponentHref={nextOpponentHrefForPanel}
+                    emptyTextClass={emptyText}
+                    showSkeleton={syncedFixtureStatsLoading}
+                  />
+                </div>
               </div>
             </div>
           </div>

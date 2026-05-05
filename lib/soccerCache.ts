@@ -7,6 +7,7 @@ const TABLE_NAME = 'soccer_api_cache';
 // Bump when persistent soccer cache payload/coverage rules change.
 const SOCCER_CACHE_SCHEMA = 'v3';
 const SOCCER_TEAM_RESULTS_CACHE_SCHEMA = 'v4';
+const SOCCER_INJURIES_CACHE_SCHEMA = 'v4';
 const SOCCER_CACHE_WARNINGS = new Set<string>();
 const SOCCER_CACHE_FOREVER_EXPIRES_AT = '9999-12-31T23:59:59.999Z';
 
@@ -43,7 +44,7 @@ const hotCache = new Map<string, HotCacheEntry>();
 const inflightReads = new Map<string, Promise<unknown | null>>();
 const recentWrites = new Map<string, RecentWriteEntry>();
 
-export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture' | 'predicted_lineup';
+export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture' | 'predicted_lineup' | 'injuries';
 
 export type SoccerTeamResultsCachePayload = {
   teamHref: string;
@@ -97,6 +98,24 @@ export type SoccerPredictedLineupCachePayload = {
   lineup: SoccerwayLineupBundle | null;
   source: 'soccerway';
   generatedAt: string;
+};
+
+export type SoccerInjuryRow = {
+  player: string;
+  status: 'injury' | 'suspension' | 'absence';
+  reason: string;
+  estimatedReturn: string | null;
+  playerUrl: string | null;
+};
+
+export type SoccerInjuriesCachePayload = {
+  teamHref: string;
+  teamName: string;
+  sourcePage: string;
+  supported: boolean;
+  source: 'soccerway';
+  generatedAt: string;
+  injuries: SoccerInjuryRow[];
 };
 
 export interface SoccerCacheEntry<T = unknown> {
@@ -162,6 +181,10 @@ export function buildSoccerNextFixtureCacheKey(teamHref: string): string {
 
 export function buildSoccerPredictedLineupCacheKey(teamHref: string): string {
   return `soccer:predicted-lineup:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
+}
+
+export function buildSoccerInjuriesCacheKey(teamHref: string): string {
+  return `soccer:injuries:${SOCCER_INJURIES_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
 }
 
 function attachCacheMetadata<T>(value: T, row: Record<string, unknown>): T {
@@ -454,6 +477,33 @@ export async function setSoccerPredictedLineupCache(
   return setSoccerCache(
     buildSoccerPredictedLineupCacheKey(normalized),
     'predicted_lineup',
+    payload,
+    ttlMinutes,
+    { teamHref: normalized, fetchedAt: payload.generatedAt },
+    quiet
+  );
+}
+
+export async function getSoccerInjuriesCache(
+  teamHref: string,
+  options: GetCacheOptions = {}
+): Promise<SoccerInjuriesCachePayload | null> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return null;
+  return getSoccerCache<SoccerInjuriesCachePayload>(buildSoccerInjuriesCacheKey(normalized), options);
+}
+
+export async function setSoccerInjuriesCache(
+  teamHref: string,
+  payload: SoccerInjuriesCachePayload,
+  ttlMinutes: number,
+  quiet = false
+): Promise<boolean> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  if (!normalized) return false;
+  return setSoccerCache(
+    buildSoccerInjuriesCacheKey(normalized),
+    'injuries',
     payload,
     ttlMinutes,
     { teamHref: normalized, fetchedAt: payload.generatedAt },

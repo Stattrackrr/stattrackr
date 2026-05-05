@@ -36,6 +36,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Suspense, lazy } fro
 
 const AddToJournalModal = lazy(() => import('@/components/AddToJournalModal').then((mod) => ({ default: mod.default })));
 import { supabase } from '@/lib/supabaseClient';
+import { fetchProfileProStatusWithRetries, isProFromUserMetadata } from '@/lib/profileSubscriptionGate';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search, Loader2 } from 'lucide-react';
@@ -1355,34 +1356,36 @@ export default function AFLPage() {
 
   useEffect(() => {
     const loadUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
+      const {
+        data: { user: verifiedUser },
+      } = await supabase.auth.getUser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = verifiedUser ?? session?.user ?? null;
+
+      if (!user) {
         setSubscriptionChecked(true);
         router.replace('/login?redirect=/afl');
         return;
       }
-      const user = session.user;
+
       setUserEmail(user.email ?? null);
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, username, avatar_url, subscription_status, subscription_tier')
-          .eq('id', user.id)
-          .single();
-        const p = profile as { full_name?: string; username?: string; avatar_url?: string; subscription_status?: string; subscription_tier?: string } | null;
-        // Match props/dashboard behavior: prefer full_name, then username
+        const { profile: p, isPro: pro } = await fetchProfileProStatusWithRetries(supabase, user);
         setUsername(p?.full_name || p?.username || null);
         setAvatarUrl(p?.avatar_url ?? null);
-        const active = p?.subscription_status === 'active' || p?.subscription_status === 'trialing';
-        const proTier = p?.subscription_tier === 'pro';
-        setIsPro(Boolean(active && proTier));
+        setIsPro(pro);
       } catch (e) {
         console.error('Error loading profile:', e);
+        setUsername(user.user_metadata?.username || user.user_metadata?.full_name || null);
+        setAvatarUrl((user.user_metadata?.avatar_url as string | undefined) ?? (user.user_metadata?.picture as string | undefined) ?? null);
+        setIsPro(isProFromUserMetadata(user));
       } finally {
         setSubscriptionChecked(true);
       }
     };
-    loadUser();
+    void loadUser();
   }, [router]);
 
   useEffect(() => {

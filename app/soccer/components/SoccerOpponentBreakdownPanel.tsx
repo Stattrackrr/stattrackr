@@ -149,7 +149,7 @@ export function SoccerOpponentBreakdownPanel({
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 px-3 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
           <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
@@ -182,7 +182,7 @@ export function SoccerOpponentBreakdownPanel({
   if (error) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 px-3 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
           <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
@@ -196,7 +196,7 @@ export function SoccerOpponentBreakdownPanel({
   if (!data) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 px-3 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
           <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
@@ -215,7 +215,7 @@ export function SoccerOpponentBreakdownPanel({
 
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 px-3 mt-1 mb-3 flex-shrink-0">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
           <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
         </div>
@@ -275,7 +275,7 @@ export function SoccerOpponentBreakdownPanel({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 px-3 mt-1 mb-3 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
         <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
       </div>
