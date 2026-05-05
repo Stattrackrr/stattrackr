@@ -251,7 +251,25 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Check for split cache keys first (part1, part2, part3) - new parallel processing approach
+    const cacheKey = getPlayerPropsCacheKey(gameDate);
+
+    // Prefer the date-specific cache written by the manual/server ingest route.
+    // If it exists, it is the freshest source for the currently selected slate.
+    const cacheOptions = {
+      restTimeoutMs: 30000,
+      jsTimeoutMs: 30000,
+      quiet: false,
+    };
+
+    let cachedProps: any = await getNBACache<any>(cacheKey, cacheOptions);
+    if (!forceRefresh && !cachedProps) {
+      cachedProps = cache.get<any>(cacheKey);
+    }
+    if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
+      console.log(`[Player Props API] ✅ Using date-specific cache key ${cacheKey} (${cachedProps.length} props)`);
+    }
+
+    // Otherwise, check the all-dates caches used by the GitHub Actions processor.
     // If split caches exist, combine them. Otherwise fall back to unified cache key.
     const part1CacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part1`;
     const part2CacheKey = `${PLAYER_PROPS_CACHE_PREFIX}-all-dates-part2`;
@@ -260,62 +278,56 @@ export async function GET(request: NextRequest) {
     
     console.log(`[Player Props API] 🔑 GET: Checking for split cache keys (part1, part2, part3) or unified cache`);
     
-    // Try to read all 3 part caches
-    const cacheOptions = {
-      restTimeoutMs: 30000,
-      jsTimeoutMs: 30000,
-      quiet: false,
-    };
-    
-    let cachedProps: any = null;
-    let [part1Props, part2Props, part3Props] = await Promise.all([
-      getNBACache<any>(part1CacheKey, cacheOptions),
-      getNBACache<any>(part2CacheKey, cacheOptions),
-      getNBACache<any>(part3CacheKey, cacheOptions),
-    ]);
+    if (!cachedProps) {
+      let [part1Props, part2Props, part3Props] = await Promise.all([
+        getNBACache<any>(part1CacheKey, cacheOptions),
+        getNBACache<any>(part2CacheKey, cacheOptions),
+        getNBACache<any>(part3CacheKey, cacheOptions),
+      ]);
 
-    if (!forceRefresh) {
-      if (!part1Props) part1Props = cache.get<any>(part1CacheKey);
-      if (!part2Props) part2Props = cache.get<any>(part2CacheKey);
-      if (!part3Props) part3Props = cache.get<any>(part3CacheKey);
-    }
-    
-    // If any part cache exists, combine them (even if some are missing)
-    if (part1Props || part2Props || part3Props) {
-      const parts: any[] = [];
-      if (part1Props && Array.isArray(part1Props)) parts.push(...part1Props);
-      if (part2Props && Array.isArray(part2Props)) parts.push(...part2Props);
-      if (part3Props && Array.isArray(part3Props)) parts.push(...part3Props);
+      if (!forceRefresh) {
+        if (!part1Props) part1Props = cache.get<any>(part1CacheKey);
+        if (!part2Props) part2Props = cache.get<any>(part2CacheKey);
+        if (!part3Props) part3Props = cache.get<any>(part3CacheKey);
+      }
       
-      if (parts.length > 0) {
-        // Deduplicate props (same player|stat|line)
-        const propsMap = new Map<string, any>();
-        for (const prop of parts) {
-          if (!prop.playerName || !prop.statType || prop.line === undefined || prop.line === null) continue;
-          const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
-          // Keep the first one we see (or could prioritize by some criteria)
-          if (!propsMap.has(key)) {
-            propsMap.set(key, prop);
+      // If any part cache exists, combine them (even if some are missing)
+      if (part1Props || part2Props || part3Props) {
+        const parts: any[] = [];
+        if (part1Props && Array.isArray(part1Props)) parts.push(...part1Props);
+        if (part2Props && Array.isArray(part2Props)) parts.push(...part2Props);
+        if (part3Props && Array.isArray(part3Props)) parts.push(...part3Props);
+        
+        if (parts.length > 0) {
+          // Deduplicate props (same player|stat|line)
+          const propsMap = new Map<string, any>();
+          for (const prop of parts) {
+            if (!prop.playerName || !prop.statType || prop.line === undefined || prop.line === null) continue;
+            const key = `${prop.playerName}|${prop.statType}|${Math.round(prop.line * 2) / 2}`;
+            // Keep the first one we see (or could prioritize by some criteria)
+            if (!propsMap.has(key)) {
+              propsMap.set(key, prop);
+            }
+          }
+          cachedProps = Array.from(propsMap.values());
+          console.log(`[Player Props API] ✅ Combined split caches: part1=${part1Props?.length || 0}, part2=${part2Props?.length || 0}, part3=${part3Props?.length || 0}, total=${cachedProps.length}`);
+        }
+      } else {
+        // No split caches found, try unified cache key (backward compatibility)
+        if (forceRefresh) {
+          cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
+        } else {
+          cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
+          if (!cachedProps) {
+            cachedProps = cache.get<any>(allDatesCacheKey);
           }
         }
-        cachedProps = Array.from(propsMap.values());
-        console.log(`[Player Props API] ✅ Combined split caches: part1=${part1Props?.length || 0}, part2=${part2Props?.length || 0}, part3=${part3Props?.length || 0}, total=${cachedProps.length}`);
-      }
-    } else {
-      // No split caches found, try unified cache key (backward compatibility)
-      if (forceRefresh) {
-        cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
-      } else {
-        cachedProps = await getNBACache<any>(allDatesCacheKey, cacheOptions);
-        if (!cachedProps) {
-          cachedProps = cache.get<any>(allDatesCacheKey);
+        
+        if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
+          console.log(`[Player Props API] ✅ Using unified all-dates cache (${cachedProps.length} props from all games)`);
+        } else {
+          console.log(`[Player Props API] ⚠️ No cache found (checked date-specific, split keys, and unified key)`);
         }
-      }
-      
-      if (cachedProps && Array.isArray(cachedProps) && cachedProps.length > 0) {
-        console.log(`[Player Props API] ✅ Using unified all-dates cache (${cachedProps.length} props from all games)`);
-      } else {
-        console.log(`[Player Props API] ⚠️ No cache found (checked split keys and unified key)`);
       }
     }
     
