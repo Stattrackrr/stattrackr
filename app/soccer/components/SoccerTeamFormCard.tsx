@@ -9,8 +9,6 @@ type SoccerTeamFormCardProps = {
   teamHref: string | null;
   opponentName: string | null;
   opponentHref: string | null;
-  nextCompetitionName: string | null;
-  nextCompetitionCountry: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
   /** Hide the centered "Team Form" title (e.g. when embedded in a tabbed shell). */
@@ -55,6 +53,39 @@ const FORM_STATS: Array<{ id: FormStatId; label: string; statName: string | null
   { id: 'total_shots', label: 'Shots', statName: 'Total shots' },
   { id: 'shots_on_target', label: 'SOT', statName: 'Shots on target' },
 ];
+const TEAM_FORM_MATCHES_SESSION_PREFIX = 'soccer-team-form-matches:v1:';
+
+function getTeamFormMatchesSessionKey(teamHref: string): string {
+  return `${TEAM_FORM_MATCHES_SESSION_PREFIX}${teamHref}`;
+}
+
+function readCachedTeamFormMatches(teamHref: string | null | undefined): SoccerwayRecentMatch[] {
+  if (typeof window === 'undefined') return [];
+  const normalizedHref = String(teamHref || '').trim();
+  if (!normalizedHref) return [];
+  try {
+    const raw = window.sessionStorage.getItem(getTeamFormMatchesSessionKey(normalizedHref));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { matches?: SoccerwayRecentMatch[] } | null;
+    return Array.isArray(parsed?.matches) ? parsed.matches : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedTeamFormMatches(teamHref: string | null | undefined, matches: SoccerwayRecentMatch[]): void {
+  if (typeof window === 'undefined') return;
+  const normalizedHref = String(teamHref || '').trim();
+  if (!normalizedHref || matches.length === 0) return;
+  try {
+    window.sessionStorage.setItem(
+      getTeamFormMatchesSessionKey(normalizedHref),
+      JSON.stringify({ matches, cachedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function normalizeTeamName(value: string | null | undefined): string {
   return String(value || '')
@@ -294,8 +325,6 @@ export function SoccerTeamFormCard({
   teamHref,
   opponentName,
   opponentHref,
-  nextCompetitionName,
-  nextCompetitionCountry,
   emptyTextClass,
   showSkeleton = false,
   hideTitle = false,
@@ -306,7 +335,7 @@ export function SoccerTeamFormCard({
   const [teamMatches, setTeamMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [opponentMatches, setOpponentMatches] = useState<SoccerwayRecentMatch[]>([]);
 
-  const canFetch = Boolean(nextCompetitionName && teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
+  const canFetch = Boolean(teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
 
   useEffect(() => {
     if (!canFetch || !teamHref || !opponentHref) {
@@ -318,7 +347,13 @@ export function SoccerTeamFormCard({
 
     let cancelled = false;
     const controller = new AbortController();
-    setLoading(true);
+    const cachedSelectedMatches = readCachedTeamFormMatches(teamHref);
+    const cachedOpponentMatches = readCachedTeamFormMatches(opponentHref);
+    const hasCachedSelectedMatches = cachedSelectedMatches.length > 0;
+    const hasCachedOpponentMatches = cachedOpponentMatches.length > 0;
+    if (hasCachedSelectedMatches) setTeamMatches(cachedSelectedMatches);
+    if (hasCachedOpponentMatches) setOpponentMatches(cachedOpponentMatches);
+    setLoading(!hasCachedSelectedMatches && !hasCachedOpponentMatches);
     setError(null);
 
     const fetchMatches = async (href: string) => {
@@ -338,13 +373,17 @@ export function SoccerTeamFormCard({
         if (cancelled) return;
         setTeamMatches(selectedMatches);
         setOpponentMatches(opponentSideMatches);
+        writeCachedTeamFormMatches(teamHref, selectedMatches);
+        writeCachedTeamFormMatches(opponentHref, opponentSideMatches);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof Error && err.name === 'AbortError') return;
-        setTeamMatches([]);
-        setOpponentMatches([]);
-        setError(err instanceof Error ? err.message : 'Failed to load team form');
+        if (!hasCachedSelectedMatches && !hasCachedOpponentMatches) {
+          setTeamMatches([]);
+          setOpponentMatches([]);
+          setError(err instanceof Error ? err.message : 'Failed to load team form');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

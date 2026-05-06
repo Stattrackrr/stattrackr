@@ -39,8 +39,37 @@ function formatSeasonLabel(seasonYear: number | null | undefined): string | null
 
 const MATCHUP_INFO_TEXT =
   'This shows the selected team averages going forward (attacking) versus what the opponent allows (defending).';
+const TEAM_MATCHUP_SESSION_PREFIX = 'soccer-team-matchup:v1:';
 
 type MatchupViewMode = 'selected-for' | 'opponent-for';
+
+function getTeamMatchupSessionKey(key: string): string {
+  return `${TEAM_MATCHUP_SESSION_PREFIX}${key}`;
+}
+
+function readCachedTeamMatchup(key: string): TeamMatchupApiResponse | null {
+  if (typeof window === 'undefined' || !key) return null;
+  try {
+    const raw = window.sessionStorage.getItem(getTeamMatchupSessionKey(key));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data?: TeamMatchupApiResponse } | null;
+    return parsed?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedTeamMatchup(key: string, data: TeamMatchupApiResponse): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    window.sessionStorage.setItem(
+      getTeamMatchupSessionKey(key),
+      JSON.stringify({ data, cachedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function getMatchupInfoText(viewMode: MatchupViewMode): string {
   return viewMode === 'opponent-for'
@@ -88,6 +117,14 @@ export function SoccerTeamMatchupCard({
   const [viewMode, setViewMode] = useState<MatchupViewMode>('selected-for');
 
   const canFetch = Boolean(nextCompetitionName && (teamName?.trim() || teamHref) && (opponentName?.trim() || opponentHref));
+  const cacheKey = [
+    String(nextCompetitionName || '').trim(),
+    String(nextCompetitionCountry || '').trim(),
+    String(teamName || '').trim(),
+    String(teamHref || '').trim(),
+    String(opponentName || '').trim(),
+    String(opponentHref || '').trim(),
+  ].join('|');
 
   useEffect(() => {
     if (!canFetch || !nextCompetitionName) {
@@ -97,7 +134,9 @@ export function SoccerTeamMatchupCard({
     }
 
     let cancelled = false;
-    setLoading(true);
+    const cachedData = readCachedTeamMatchup(cacheKey);
+    if (cachedData) setData(cachedData);
+    setLoading(!cachedData);
     setError(null);
 
     const fetchMatchup = async () => {
@@ -122,12 +161,15 @@ export function SoccerTeamMatchupCard({
         if (cancelled) return;
         const primaryPayload = payloads[0] ?? null;
         setData(primaryPayload);
+        if (primaryPayload) writeCachedTeamMatchup(cacheKey, primaryPayload);
         setError(null);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setData(null);
-        setError(err instanceof Error ? err.message : 'Failed to load team matchup');
+        if (!cachedData) {
+          setData(null);
+          setError(err instanceof Error ? err.message : 'Failed to load team matchup');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -136,7 +178,7 @@ export function SoccerTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentHref, opponentName, teamHref, teamName]);
+  }, [cacheKey, canFetch, nextCompetitionCountry, nextCompetitionName, opponentHref, opponentName, teamHref, teamName]);
 
   const rows = data?.rows ?? [];
   const seasonLabel = formatSeasonLabel(data?.seasonYear);

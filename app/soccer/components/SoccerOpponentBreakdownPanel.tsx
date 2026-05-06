@@ -14,6 +14,35 @@ type SoccerOpponentBreakdownPanelProps = {
 };
 
 const HIDDEN_OPPONENT_BREAKDOWN_STATS = new Set(['xg_on_target_xgot', 'crosses']);
+const OPPONENT_BREAKDOWN_SESSION_PREFIX = 'soccer-opponent-breakdown:v1:';
+
+function getOpponentBreakdownSessionKey(key: string): string {
+  return `${OPPONENT_BREAKDOWN_SESSION_PREFIX}${key}`;
+}
+
+function readCachedOpponentBreakdown(key: string): OpponentBreakdownApiResponse | null {
+  if (typeof window === 'undefined' || !key) return null;
+  try {
+    const raw = window.sessionStorage.getItem(getOpponentBreakdownSessionKey(key));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data?: OpponentBreakdownApiResponse } | null;
+    return parsed?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedOpponentBreakdown(key: string, data: OpponentBreakdownApiResponse): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    window.sessionStorage.setItem(
+      getOpponentBreakdownSessionKey(key),
+      JSON.stringify({ data, cachedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function formatNumber(v: number | null, isPercent = false): string {
   if (v == null) return '—';
@@ -84,6 +113,13 @@ export function SoccerOpponentBreakdownPanel({
   const [timeframe, setTimeframe] = useState<'season' | 'last5'>('season');
 
   const canFetch = Boolean(nextCompetitionName && (opponentName?.trim() || opponentHref));
+  const cacheKey = [
+    String(nextCompetitionName || '').trim(),
+    String(nextCompetitionCountry || '').trim(),
+    String(opponentName || '').trim(),
+    String(opponentHref || '').trim(),
+    timeframe,
+  ].join('|');
 
   useEffect(() => {
     if (!canFetch || !nextCompetitionName) {
@@ -109,7 +145,9 @@ export function SoccerOpponentBreakdownPanel({
     let cancelled = false;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-    setLoading(true);
+    const cachedData = readCachedOpponentBreakdown(cacheKey);
+    if (cachedData) setData(cachedData);
+    setLoading(!cachedData);
     setError(null);
 
     void fetch(`/api/soccer/opponent-breakdown?${p.toString()}`, { cache: 'no-store', signal: controller.signal })
@@ -124,14 +162,17 @@ export function SoccerOpponentBreakdownPanel({
       .then((j) => {
         if (!cancelled) {
           setData(j);
+          writeCachedOpponentBreakdown(cacheKey, j);
           setError(null);
         }
       })
       .catch((e) => {
         if (!cancelled) {
           const isAbort = e instanceof Error && e.name === 'AbortError';
-          setError(isAbort ? 'Opponent breakdown is still warming data. Try again in a few seconds.' : e instanceof Error ? e.message : 'Failed to load');
-          setData(null);
+          if (!cachedData) {
+            setError(isAbort ? 'Opponent breakdown is still warming data. Try again in a few seconds.' : e instanceof Error ? e.message : 'Failed to load');
+            setData(null);
+          }
         }
       })
       .finally(() => {
@@ -144,7 +185,7 @@ export function SoccerOpponentBreakdownPanel({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref, timeframe]);
+  }, [cacheKey, canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref, timeframe]);
 
   if (showSkeleton || loading) {
     return (

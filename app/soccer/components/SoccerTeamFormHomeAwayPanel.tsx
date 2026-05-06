@@ -13,8 +13,6 @@ type SoccerTeamFormHomeAwayPanelProps = {
   teamHref: string | null;
   opponentName: string | null;
   opponentHref: string | null;
-  nextCompetitionName: string | null;
-  nextCompetitionCountry: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
 };
@@ -28,8 +26,6 @@ export function SoccerTeamFormHomeAwayPanel({
   teamHref,
   opponentName,
   opponentHref,
-  nextCompetitionName,
-  nextCompetitionCountry,
   emptyTextClass,
   showSkeleton = false,
 }: SoccerTeamFormHomeAwayPanelProps) {
@@ -81,8 +77,6 @@ export function SoccerTeamFormHomeAwayPanel({
           <div className={tab === 'team_form' ? 'flex min-w-0 flex-col' : 'hidden'}>
             <SoccerTeamFormCard
               {...sharedCardProps}
-              nextCompetitionName={nextCompetitionName}
-              nextCompetitionCountry={nextCompetitionCountry}
             />
           </div>
         ) : null}

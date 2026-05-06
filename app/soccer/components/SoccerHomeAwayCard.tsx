@@ -141,11 +141,11 @@ function getDeltaStyles(delta: number | null): { textClass: string; fill: string
   };
 }
 
-function getLastCompletedSoccerSeasonYear(): number {
+function getCurrentSoccerSeasonYear(): number {
   const now = new Date();
   const month = now.getUTCMonth();
   const year = now.getUTCFullYear();
-  return month >= 6 ? year - 1 : year - 2;
+  return month >= 6 ? year : year - 1;
 }
 
 function buildVenueSummary(
@@ -314,7 +314,7 @@ export function SoccerHomeAwayCard({
     };
   }, [canFetch, opponentHref, teamHref]);
 
-  const seasonYear = getLastCompletedSoccerSeasonYear();
+  const seasonYear = getCurrentSoccerSeasonYear();
   const selectedSummary = useMemo(
     () => (teamName ? buildTeamHomeAwaySummary(teamName, teamMatches, seasonYear) : null),
     [seasonYear, teamMatches, teamName]
@@ -436,7 +436,7 @@ export function SoccerHomeAwayCard({
                       </div>
                     </div>
                     <div className={`mt-0.5 text-xs leading-none ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {venue.games} matches
+                      {venue.games} {venue.key} games
                     </div>
                   </div>
 

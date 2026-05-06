@@ -32,6 +32,46 @@ type SoccerInjuriesCardProps = {
 };
 
 type ViewMode = 'selected' | 'opponent';
+const SOCCER_INJURIES_SESSION_PREFIX = 'soccer-injuries:v1:';
+
+function getSoccerInjuriesSessionKey(key: string): string {
+  return `${SOCCER_INJURIES_SESSION_PREFIX}${key}`;
+}
+
+function readCachedInjuries(
+  key: string
+): { teamData: SoccerInjuriesResponse | null; opponentData: SoccerInjuriesResponse | null } | null {
+  if (typeof window === 'undefined' || !key) return null;
+  try {
+    const raw = window.sessionStorage.getItem(getSoccerInjuriesSessionKey(key));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      teamData?: SoccerInjuriesResponse | null;
+      opponentData?: SoccerInjuriesResponse | null;
+    } | null;
+    return {
+      teamData: parsed?.teamData ?? null,
+      opponentData: parsed?.opponentData ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedInjuries(
+  key: string,
+  payload: { teamData: SoccerInjuriesResponse | null; opponentData: SoccerInjuriesResponse | null }
+): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    window.sessionStorage.setItem(
+      getSoccerInjuriesSessionKey(key),
+      JSON.stringify({ ...payload, cachedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function formatDisplayPlayerName(value: string): string {
   const parts = String(value || '')
@@ -133,6 +173,12 @@ export function SoccerInjuriesCard({
   const [opponentData, setOpponentData] = useState<SoccerInjuriesResponse | null>(null);
 
   const canFetch = Boolean(teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
+  const cacheKey = [
+    String(teamName || '').trim(),
+    String(teamHref || '').trim(),
+    String(opponentName || '').trim(),
+    String(opponentHref || '').trim(),
+  ].join('|');
 
   useEffect(() => {
     if (!canFetch || !teamHref || !opponentHref) {
@@ -144,7 +190,10 @@ export function SoccerInjuriesCard({
 
     let cancelled = false;
     const controller = new AbortController();
-    setLoading(true);
+    const cachedPayload = readCachedInjuries(cacheKey);
+    if (cachedPayload?.teamData) setTeamData(cachedPayload.teamData);
+    if (cachedPayload?.opponentData) setOpponentData(cachedPayload.opponentData);
+    setLoading(!cachedPayload?.teamData && !cachedPayload?.opponentData);
     setError(null);
 
     const fetchInjuries = async (href: string) => {
@@ -169,13 +218,16 @@ export function SoccerInjuriesCard({
         if (cancelled) return;
         setTeamData(selectedPayload);
         setOpponentData(opponentPayload);
+        writeCachedInjuries(cacheKey, { teamData: selectedPayload, opponentData: opponentPayload });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof Error && err.name === 'AbortError') return;
-        setTeamData(null);
-        setOpponentData(null);
-        setError(err instanceof Error ? err.message : 'Failed to load injuries');
+        if (!cachedPayload?.teamData && !cachedPayload?.opponentData) {
+          setTeamData(null);
+          setOpponentData(null);
+          setError(err instanceof Error ? err.message : 'Failed to load injuries');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -185,7 +237,7 @@ export function SoccerInjuriesCard({
       cancelled = true;
       controller.abort();
     };
-  }, [canFetch, opponentHref, teamHref]);
+  }, [cacheKey, canFetch, opponentHref, teamHref]);
 
   const currentData = viewMode === 'opponent' ? opponentData : teamData;
   const selectedLabel = teamData?.teamName || teamName || 'Selected team';
