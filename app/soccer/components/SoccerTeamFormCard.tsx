@@ -357,7 +357,6 @@ export function SoccerTeamFormCard({
   }, [canFetch, opponentHref, teamHref]);
 
   const seasonYear = getCurrentSoccerSeasonYear();
-
   const selectedSummary = useMemo(
     () => (teamName && opponentName ? buildTeamFormSummary(teamName, teamMatches, seasonYear, opponentName) : null),
     [opponentName, seasonYear, teamMatches, teamName]

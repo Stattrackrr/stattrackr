@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAflOddsCache, refreshAflOddsData } from '@/lib/refreshAflOdds';
+import { getAflOddsCache } from '@/lib/refreshAflOdds';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 const AFL_ODDS_EXCLUDED_BOOKMAKERS = ['tabtouch', 'playup', 'betrivers', 'bet rivers'];
@@ -92,8 +92,8 @@ function findMatchingGame(
 
 /**
  * GET /api/afl/odds?team=...&opponent=...&game_date=...
- * Returns game odds (H2H, Spread, Total) for the matching AFL game.
- * Tries cache first; if no match (e.g. cache had wrong team names), fetches canonical from Odds API.
+ * Returns cached game odds (H2H, Spread, Total) for the matching AFL game.
+ * User-facing loads are cache-only, mirroring the AFL player props route.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -109,21 +109,10 @@ export async function GET(request: NextRequest) {
     const gameDate = searchParams.get('game_date');
     const requestedDateKey = dateKey(gameDate);
 
-    // When game_id is provided (e.g. from next-game API), look up by ID. Prefer canonical so we get fresh bookmakers (cache may have empty/stale).
+    // When game_id is provided (e.g. from next-game API), resolve strictly from cache.
     if (gameIdParam && gameIdParam.trim()) {
       const id = gameIdParam.trim();
-      let byId: { homeTeam: string; awayTeam: string; bookmakers?: unknown[] } | null = null;
-      const canonical = await refreshAflOddsData({ skipWrite: true });
-      if (canonical.success && canonical.games?.length) {
-        byId = canonical.games.find((g) => g.gameId === id) ?? null;
-        if (byId) {
-          lastUpdated = canonical.lastUpdated ?? lastUpdated;
-          nextUpdate = canonical.nextUpdate ?? nextUpdate;
-        }
-      }
-      if (!byId) {
-        byId = games.find((g) => g.gameId === id) ?? null;
-      }
+      const byId = games.find((g) => g.gameId === id) ?? null;
       if (byId) {
         const filtered = filterExcludedBookmakers((byId.bookmakers ?? []) as { name?: string }[]);
         const bookmakers = filtered.length > 0 ? filtered : (byId.bookmakers ?? []);
@@ -136,6 +125,15 @@ export async function GET(request: NextRequest) {
           nextUpdate,
         });
       }
+      return NextResponse.json({
+        success: true,
+        data: [],
+        homeTeam: undefined,
+        awayTeam: undefined,
+        lastUpdated,
+        nextUpdate,
+        message: 'No cached AFL game for that game_id. Run /api/afl/odds/refresh to repopulate the cache.',
+      });
     }
 
     if (!team) {
@@ -145,7 +143,7 @@ export async function GET(request: NextRequest) {
           data: [],
           lastUpdated,
           nextUpdate,
-          message: 'No AFL games in cache.',
+          message: 'No AFL games in cache. Cache is refreshed by the AFL odds refresh job or /api/afl/odds/refresh.',
         });
       }
       const gamesWithDate = games.map((g) => ({
@@ -160,35 +158,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Normalize so "GWS", "Bulldogs" etc match canonical games (GWS Giants, Western Bulldogs).
+    // Normalize so "GWS", "Bulldogs" etc match cached games (GWS Giants, Western Bulldogs).
     const teamNorm = team ? toOfficialAflTeamDisplayName(team) || team : null;
     const opponentNorm = opponent ? toOfficialAflTeamDisplayName(opponent) || opponent : null;
 
-    // When we have both team and opponent, try canonical (Odds API) first so we never show "no odds" for a matchup that has them.
-    let game: { homeTeam: string; awayTeam: string; bookmakers?: unknown[]; commenceTime?: string } | null = null;
-    if (teamNorm && opponentNorm) {
-      const canonical = await refreshAflOddsData({ skipWrite: true });
-      if (canonical.success && canonical.games?.length) {
-        game = findMatchingGame(canonical.games, teamNorm, opponentNorm, requestedDateKey);
-        if (game) {
-          games = canonical.games;
-          lastUpdated = canonical.lastUpdated ?? lastUpdated;
-          nextUpdate = canonical.nextUpdate ?? nextUpdate;
-        }
-      }
-    }
-    if (!game) {
-      game = findMatchingGame(games, teamNorm ?? team, opponentNorm ?? opponent, requestedDateKey);
-    }
-    if (!game && (teamNorm || team) && games.length >= 0) {
-      const canonical = await refreshAflOddsData({ skipWrite: true });
-      if (canonical.success && canonical.games?.length) {
-        games = canonical.games;
-        lastUpdated = canonical.lastUpdated ?? lastUpdated;
-        nextUpdate = canonical.nextUpdate ?? nextUpdate;
-        game = findMatchingGame(games, teamNorm ?? team, opponentNorm ?? opponent, requestedDateKey);
-      }
-    }
+    const game = findMatchingGame(games, teamNorm ?? team, opponentNorm ?? opponent, requestedDateKey);
 
     if (!games.length && !game) {
       return NextResponse.json({
@@ -198,7 +172,7 @@ export async function GET(request: NextRequest) {
         awayTeam: undefined,
         lastUpdated,
         nextUpdate,
-        message: 'No AFL games in cache. Odds refresh runs every 90 min (cron or /api/afl/odds/refresh).',
+        message: 'No AFL games in cache. Run /api/afl/odds/refresh to repopulate the AFL game props cache.',
       });
     }
 
@@ -210,7 +184,7 @@ export async function GET(request: NextRequest) {
         awayTeam: undefined,
         lastUpdated,
         nextUpdate,
-        message: 'No matching AFL game',
+        message: 'No matching AFL game in cache',
       });
     }
 

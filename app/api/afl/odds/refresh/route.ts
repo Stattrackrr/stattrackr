@@ -34,8 +34,13 @@ const AFL_DVP_BUILD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 export async function GET(request: NextRequest) {
   console.log('[AFL cron] /api/afl/odds/refresh started');
   const dvpBaseUrlParam = request.nextUrl.searchParams.get('dvpBaseUrl')?.trim();
+  const includeDvpParam = request.nextUrl.searchParams.get('includeDvp')?.trim();
   const dvpBaseUrlOverride =
     dvpBaseUrlParam && /^https?:\/\//i.test(dvpBaseUrlParam) ? dvpBaseUrlParam.replace(/\/+$/, '') : null;
+  const shouldRunDvpBuild =
+    process.env.NODE_ENV === 'production' ||
+    includeDvpParam === '1' ||
+    includeDvpParam === 'true';
 
   if (process.env.NODE_ENV === 'production') {
     const auth = authorizeCronRequest(request);
@@ -106,49 +111,53 @@ export async function GET(request: NextRequest) {
     let statsWarmError: string | undefined;
 
     try {
-      const tmpDir = os.tmpdir();
-      const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
-      try {
-          const cwd = process.cwd();
-          const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
-          const baseUrl =
-            dvpBaseUrlOverride ||
-            process.env.DVP_BUILD_BASE_URL?.trim() ||
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-          if (dvpBaseUrlOverride) console.log('[AFL cron] DvP build using baseUrl from query:', baseUrl);
-          const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
-          const bypassSecret =
-            (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '').replace(
-              /\r\n|\r|\n/g,
-              ''
-            ).trim();
-          const env = { ...process.env };
-          if (bypassSecret) env.DVP_BYPASS_SECRET = bypassSecret;
-          execSync(
-            `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
-            {
-              cwd,
-              timeout: AFL_DVP_BUILD_TIMEOUT_MS,
-              stdio: 'pipe',
-              encoding: 'utf8',
-              env,
-            }
-          );
-          const raw = await fs.readFile(tmpDvpPath, 'utf8');
-          const payload = JSON.parse(raw) as Record<string, unknown>;
-          await sharedCache.setJSON(
-            getAflDvpPayloadCacheKey(AFL_DVP_BUILD_SEASON),
-            payload,
-            AFL_DVP_CACHE_TTL_SECONDS
-          );
-          await fs.unlink(tmpDvpPath).catch(() => {});
-          dvpBuildOk = true;
-          console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.warn('[AFL cron] DvP build failed:', msg);
-          await fs.unlink(tmpDvpPath).catch(() => {});
-        }
+      if (shouldRunDvpBuild) {
+        const tmpDir = os.tmpdir();
+        const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
+        try {
+            const cwd = process.cwd();
+            const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
+            const baseUrl =
+              dvpBaseUrlOverride ||
+              process.env.DVP_BUILD_BASE_URL?.trim() ||
+              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+            if (dvpBaseUrlOverride) console.log('[AFL cron] DvP build using baseUrl from query:', baseUrl);
+            const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
+            const bypassSecret =
+              (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '').replace(
+                /\r\n|\r|\n/g,
+                ''
+              ).trim();
+            const env = { ...process.env };
+            if (bypassSecret) env.DVP_BYPASS_SECRET = bypassSecret;
+            execSync(
+              `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
+              {
+                cwd,
+                timeout: AFL_DVP_BUILD_TIMEOUT_MS,
+                stdio: 'pipe',
+                encoding: 'utf8',
+                env,
+              }
+            );
+            const raw = await fs.readFile(tmpDvpPath, 'utf8');
+            const payload = JSON.parse(raw) as Record<string, unknown>;
+            await sharedCache.setJSON(
+              getAflDvpPayloadCacheKey(AFL_DVP_BUILD_SEASON),
+              payload,
+              AFL_DVP_CACHE_TTL_SECONDS
+            );
+            await fs.unlink(tmpDvpPath).catch(() => {});
+            dvpBuildOk = true;
+            console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.warn('[AFL cron] DvP build failed:', msg);
+            await fs.unlink(tmpDvpPath).catch(() => {});
+          }
+      } else {
+        console.log('[AFL cron] Skipping DvP build locally (pass ?includeDvp=1 to run it)');
+      }
 
       if (result.gamesCount > 0) {
         const warmBaseUrl = process.env.VERCEL_URL

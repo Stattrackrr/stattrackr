@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { readSoccerPilotTeams } from '@/lib/soccerPilotTeams';
+import { rebuildPremierLeagueLast5SnapshotsFromCache } from '@/lib/soccerLast5Snapshots';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,10 +15,17 @@ function normalizeSearchToken(value: string): string {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+function normalizeHrefToken(value: string): string {
+  return String(value || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
 function parseRequestedTeams(raw: string | null): string[] {
   return String(raw || '')
     .split(',')
-    .map((value) => normalizeSearchToken(value))
+    .map((value) => String(value || '').trim())
     .filter(Boolean);
 }
 
@@ -34,8 +42,16 @@ function filterTeamsByRequest(teams: WarmJob[], requestedTeams: string[]): WarmJ
 
   return teams.filter((team) => {
     const normalizedName = normalizeSearchToken(team.name);
-    const normalizedHref = normalizeSearchToken(team.href);
-    return requestedTeams.some((token) => normalizedName === token || normalizedHref === token || normalizedName.includes(token));
+    const normalizedHref = normalizeHrefToken(team.href);
+    return requestedTeams.some((token) => {
+      const normalizedToken = normalizeSearchToken(token);
+      const normalizedHrefToken = normalizeHrefToken(token);
+      return (
+        normalizedName === normalizedToken ||
+        normalizedHref === normalizedHrefToken ||
+        normalizedName.includes(normalizedToken)
+      );
+    });
   });
 }
 
@@ -80,6 +96,8 @@ export async function GET(request: NextRequest) {
   const limit = parseWarmLimit(request.nextUrl.searchParams.get('limit'), totalAvailableTeams);
   const concurrency = Math.max(1, Math.min(6, Number.parseInt(request.nextUrl.searchParams.get('concurrency') || '2', 10) || 2));
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
+  const incremental = request.nextUrl.searchParams.get('incremental') !== '0';
+  const pages = Math.max(0, Math.min(8, Number.parseInt(request.nextUrl.searchParams.get('pages') || '2', 10) || 2));
   const matchedTeams = filterTeamsByRequest(allTeams, requestedTeams);
   const teams = matchedTeams.slice(0, limit);
 
@@ -116,13 +134,25 @@ export async function GET(request: NextRequest) {
   let totalMatches = 0;
   let totalUpcomingFixtures = 0;
   let totalPredictedLineups = 0;
+  let last5Snapshot: {
+    matchupTeamsSampled: number;
+    breakdownTeamsSampled: number;
+    teamsInLeague: number;
+    seasonYear: number;
+  } | null = null;
   const failures: Array<{ team: string; href: string; stage: 'team-results' | 'next-game' | 'predicted-lineup'; error: string }> = [];
 
   await runPool<WarmJob>(
     teams,
     async (team) => {
       const params = new URLSearchParams({ href: team.href });
-      if (refresh) params.set('refresh', '1');
+      if (refresh) {
+        params.set('refresh', '1');
+        if (incremental) {
+          params.set('incremental', '1');
+          params.set('pages', String(pages));
+        }
+      }
       const response = await fetch(`${baseUrl}/api/soccer/team-results?${params.toString()}`, {
         method: 'GET',
         headers,
@@ -199,6 +229,20 @@ export async function GET(request: NextRequest) {
     concurrency
   );
 
+  if (refresh && incremental && failed === 0) {
+    try {
+      last5Snapshot = await rebuildPremierLeagueLast5SnapshotsFromCache();
+    } catch (error) {
+      failed += 1;
+      failures.push({
+        team: 'Premier League last5 snapshot',
+        href: '/league/premier-league',
+        stage: 'team-results',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   return NextResponse.json({
     success: failed === 0,
     warmed,
@@ -215,6 +259,9 @@ export async function GET(request: NextRequest) {
     limit,
     concurrency,
     refresh,
+    incremental,
+    pages,
+    last5Snapshot,
     requestedTeams,
     teams,
     failures,

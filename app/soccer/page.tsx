@@ -464,6 +464,8 @@ function SoccerPageContent() {
     const initialCachedMatches = takeRecentSoccerMatches(cachedMatches);
     const hasCachedMatches = cachedMatches.length > 0;
     const hasFullCachedMatches = cachedMatches.length > initialCachedMatches.length;
+    const cachedLatestMatchKey =
+      cachedMatches[0] != null ? `${String(cachedMatches[0].matchId || '')}:${String(cachedMatches[0].summaryPath || '')}` : '';
     const waitWithAbort = async (delayMs: number) => {
       if (delayMs <= 0) return;
       await new Promise<void>((resolve) => {
@@ -548,6 +550,12 @@ function SoccerPageContent() {
         setRecentMatchesCacheMiss(source === 'cache-miss');
         setRecentMatches(takeRecentSoccerMatches(matches));
         if (matches.length > 0) {
+          const latestFetchedMatchKey =
+            matches[0] != null ? `${String(matches[0].matchId || '')}:${String(matches[0].summaryPath || '')}` : '';
+          const shouldRefreshFullCachedMatches =
+            (hasMore || totalCount > matches.length) &&
+            (!hasFullCachedMatches || totalCount !== cachedMatches.length || latestFetchedMatchKey !== cachedLatestMatchKey);
+
           if (!hasMore || totalCount <= matches.length) {
             setAllRecentMatches(matches);
             writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, matches);
@@ -555,7 +563,7 @@ function SoccerPageContent() {
             setAllRecentMatches([]);
           }
 
-          if ((hasMore || totalCount > matches.length) && !hasFullCachedMatches) {
+          if (shouldRefreshFullCachedMatches) {
             void fetchCachedTeamResults()
               .then((fullPayload) => {
                 if (ac.signal.aborted) return;

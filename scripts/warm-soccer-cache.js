@@ -4,6 +4,8 @@ const baseUrl = String(process.env.PROD_URL || 'http://localhost:3000').trim().r
 const limit = String(process.env.SOCCER_WARM_LIMIT || 'all').trim();
 const concurrency = Math.max(1, parseInt(process.env.SOCCER_WARM_CONCURRENCY || '2', 10));
 const refresh = String(process.env.SOCCER_WARM_REFRESH || '1') === '1';
+const incremental = String(process.env.SOCCER_WARM_INCREMENTAL || '1') !== '0';
+const pages = Math.max(0, parseInt(process.env.SOCCER_WARM_PAGES || '2', 10) || 2);
 const team = String(process.env.SOCCER_WARM_TEAM || '').trim();
 const cronSecret = String(process.env.CRON_SECRET || '').trim();
 
@@ -17,6 +19,8 @@ async function main() {
     limit,
     concurrency: String(concurrency),
     refresh: refresh ? '1' : '0',
+    incremental: incremental ? '1' : '0',
+    pages: String(pages),
   });
   if (team) params.set('team', team);
   const headers = { Accept: 'application/json' };

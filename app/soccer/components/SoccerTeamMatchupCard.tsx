@@ -21,21 +21,6 @@ function formatValue(value: number | null): string {
   return value.toFixed(2);
 }
 
-function formatDelta(value: number | null): string {
-  if (value == null || !Number.isFinite(value)) return '—';
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
-}
-
-function getDeltaTextClass(delta: number | null, isAttack: boolean): string {
-  if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 0.005) {
-    return 'text-amber-600 dark:text-amber-300';
-  }
-  if (isAttack) {
-    return delta > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-  }
-  return delta > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
-}
-
 function getRankTierStyles(rank: number | null, isOpposingAllowed: boolean): { textClass: string; fill: string } {
   return isOpposingAllowed
     ? { textClass: 'text-red-600 dark:text-red-400', fill: '#ef4444' }
@@ -56,7 +41,6 @@ const MATCHUP_INFO_TEXT =
   'This shows the selected team averages going forward (attacking) versus what the opponent allows (defending).';
 
 type MatchupViewMode = 'selected-for' | 'opponent-for';
-type MatchupTimeframe = 'season' | 'last5';
 
 function getMatchupInfoText(viewMode: MatchupViewMode): string {
   return viewMode === 'opponent-for'
@@ -77,63 +61,12 @@ function getViewModeSummary(
 }
 
 function TeamMatchupHeaderRow({
-  isDark,
-  timeframe,
-  onTimeframeChange,
-  showTimeframeToggle,
 }: {
   isDark: boolean;
-  timeframe: MatchupTimeframe;
-  onTimeframeChange: (value: MatchupTimeframe) => void;
-  showTimeframeToggle: boolean;
 }) {
   return (
     <div className="mt-1 mb-2 flex flex-shrink-0 items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Matchup</h3>
-      {showTimeframeToggle ? (
-        <TeamMatchupTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={onTimeframeChange} />
-      ) : null}
-    </div>
-  );
-}
-
-function TeamMatchupTimeframeToggle({
-  isDark,
-  timeframe,
-  onChange,
-}: {
-  isDark: boolean;
-  timeframe: MatchupTimeframe;
-  onChange: (value: MatchupTimeframe) => void;
-}) {
-  return (
-    <div className={`inline-flex items-center rounded-xl border p-1 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-100'}`}>
-      <button
-        type="button"
-        onClick={() => onChange('season')}
-        className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${
-          timeframe === 'season'
-            ? 'bg-purple-600 text-white shadow-sm'
-            : isDark
-              ? 'text-gray-300 hover:bg-gray-800'
-              : 'text-gray-600 hover:bg-white'
-        }`}
-      >
-        Season
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('last5')}
-        className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${
-          timeframe === 'last5'
-            ? 'bg-purple-600 text-white shadow-sm'
-            : isDark
-              ? 'text-gray-300 hover:bg-gray-800'
-              : 'text-gray-600 hover:bg-white'
-        }`}
-      >
-        Last 5
-      </button>
     </div>
   );
 }
@@ -150,18 +83,15 @@ export function SoccerTeamMatchupCard({
   showSkeleton = false,
 }: SoccerTeamMatchupCardProps) {
   const [data, setData] = useState<TeamMatchupApiResponse | null>(null);
-  const [seasonBaseline, setSeasonBaseline] = useState<TeamMatchupApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<MatchupViewMode>('selected-for');
-  const [timeframe, setTimeframe] = useState<MatchupTimeframe>('season');
 
   const canFetch = Boolean(nextCompetitionName && (teamName?.trim() || teamHref) && (opponentName?.trim() || opponentHref));
 
   useEffect(() => {
     if (!canFetch || !nextCompetitionName) {
       setData(null);
-      setSeasonBaseline(null);
       setError(null);
       return;
     }
@@ -170,10 +100,10 @@ export function SoccerTeamMatchupCard({
     setLoading(true);
     setError(null);
 
-    const fetchMatchup = async (targetTimeframe: MatchupTimeframe) => {
+    const fetchMatchup = async () => {
       const params = new URLSearchParams();
       params.set('competitionName', nextCompetitionName);
-      params.set('timeframe', targetTimeframe);
+      params.set('timeframe', 'season');
       if (nextCompetitionCountry?.trim()) params.set('competitionCountry', nextCompetitionCountry.trim());
       if (teamName?.trim()) params.set('teamName', teamName.trim());
       if (teamHref?.trim()) params.set('teamHref', teamHref.trim());
@@ -187,21 +117,16 @@ export function SoccerTeamMatchupCard({
         return payload as TeamMatchupApiResponse;
     };
 
-    void (timeframe === 'last5'
-      ? Promise.all([fetchMatchup('last5'), fetchMatchup('season')])
-      : Promise.all([fetchMatchup('season')]))
+    void Promise.all([fetchMatchup()])
       .then((payloads) => {
         if (cancelled) return;
         const primaryPayload = payloads[0] ?? null;
-        const baselinePayload = timeframe === 'last5' ? payloads[1] ?? null : primaryPayload;
         setData(primaryPayload);
-        setSeasonBaseline(baselinePayload);
         setError(null);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setData(null);
-        setSeasonBaseline(null);
         setError(err instanceof Error ? err.message : 'Failed to load team matchup');
       })
       .finally(() => {
@@ -211,14 +136,12 @@ export function SoccerTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentHref, opponentName, teamHref, teamName, timeframe]);
+  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentHref, opponentName, teamHref, teamName]);
 
   const rows = data?.rows ?? [];
-  const seasonRowsById = new Map((seasonBaseline?.rows ?? []).map((row) => [row.id, row]));
   const seasonLabel = formatSeasonLabel(data?.seasonYear);
   const selectedLabel = data?.team?.name ?? teamName ?? 'Selected team';
   const opponentLabel = data?.opponent?.name ?? opponentName ?? 'Opponent';
-  const timeframeLabel = data?.timeframe === 'last5' ? 'Last 5' : 'Season';
   const matchupGamesLabel =
     data?.team?.games && data?.opponent?.games
       ? `${data.team.games}/${data.opponent.games} games`
@@ -232,7 +155,7 @@ export function SoccerTeamMatchupCard({
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+          <TeamMatchupHeaderRow isDark={isDark} />
         </div>
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -253,7 +176,7 @@ export function SoccerTeamMatchupCard({
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle={false} />
+          <TeamMatchupHeaderRow isDark={isDark} />
         </div>
         <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
           <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
@@ -266,7 +189,7 @@ export function SoccerTeamMatchupCard({
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+          <TeamMatchupHeaderRow isDark={isDark} />
         </div>
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
           <div className="flex-1 min-h-0 flex items-center">
@@ -280,7 +203,7 @@ export function SoccerTeamMatchupCard({
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
       <div className="px-3">
-        <TeamMatchupHeaderRow isDark={isDark} timeframe={timeframe} onTimeframeChange={setTimeframe} showTimeframeToggle />
+        <TeamMatchupHeaderRow isDark={isDark} />
       </div>
       <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
         <div className="mb-2 flex items-start justify-between gap-2">
@@ -366,23 +289,6 @@ export function SoccerTeamMatchupCard({
                 : getRankTierStyles(selectedRow.opponentAgainstRank, true);
               const primaryValue = isOpponentPrimary ? selectedRow.opponentForValue : selectedRow.teamForValue;
               const secondaryValue = isOpponentPrimary ? selectedRow.teamAgainstValue : selectedRow.opponentAgainstValue;
-              const seasonRow = seasonRowsById.get(selectedRow.id);
-              const primarySeasonValue =
-                timeframe === 'last5'
-                  ? isOpponentPrimary
-                    ? seasonRow?.opponentForValue ?? null
-                    : seasonRow?.teamForValue ?? null
-                  : null;
-              const secondarySeasonValue =
-                timeframe === 'last5'
-                  ? isOpponentPrimary
-                    ? seasonRow?.teamAgainstValue ?? null
-                    : seasonRow?.opponentAgainstValue ?? null
-                  : null;
-              const primaryDelta =
-                primaryValue != null && primarySeasonValue != null ? primaryValue - primarySeasonValue : null;
-              const secondaryDelta =
-                secondaryValue != null && secondarySeasonValue != null ? secondaryValue - secondarySeasonValue : null;
 
               return (
                 <div
@@ -407,21 +313,16 @@ export function SoccerTeamMatchupCard({
                         style={{ width: `${secondaryShare}%`, backgroundColor: secondaryTier.fill }}
                       />
                     </div>
-                    {timeframe === 'last5' ? (
-                      <div className="mt-1 flex items-center justify-between text-[10px]">
-                        <span className={getDeltaTextClass(primaryDelta, true)}>{formatDelta(primaryDelta)}</span>
-                        <span className={getDeltaTextClass(secondaryDelta, false)}>{formatDelta(secondaryDelta)}</span>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               );
             })}
             {matchupGamesLabel || seasonLabel ? (
               <div className="pt-0.5 text-center text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                {[matchupGamesLabel, seasonLabel, timeframeLabel].filter(Boolean).join(' · ')}
+                {[matchupGamesLabel, seasonLabel].filter(Boolean).join(' · ')}
               </div>
             ) : null}
+            <div className="pt-0.5 text-center text-[10px] font-medium text-gray-500 dark:text-gray-400">Premier League</div>
           </div>
         )}
       </div>

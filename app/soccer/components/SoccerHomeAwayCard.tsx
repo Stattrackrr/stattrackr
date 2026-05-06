@@ -148,12 +148,6 @@ function getLastCompletedSoccerSeasonYear(): number {
   return month >= 6 ? year - 1 : year - 2;
 }
 
-function isPremierLeagueMatch(match: SoccerwayRecentMatch): boolean {
-  const competition = String(match.competitionName || '').trim().toLowerCase();
-  const country = String(match.competitionCountry || '').trim().toLowerCase();
-  return competition === 'premier league' && (!country || country === 'england');
-}
-
 function buildVenueSummary(
   seasonMatches: SoccerwayRecentMatch[],
   teamName: string,
@@ -219,7 +213,6 @@ function buildVenueSummary(
 function buildTeamHomeAwaySummary(teamName: string, matches: SoccerwayRecentMatch[], seasonYear: number): TeamHomeAwaySummary | null {
   const filteredMatches = matches
     .filter((match) => {
-      if (!isPremierLeagueMatch(match)) return false;
       if (match.kickoffUnix == null || !Number.isFinite(match.kickoffUnix)) return false;
       const kickoff = new Date(match.kickoffUnix * 1000);
       const month = kickoff.getUTCMonth();
@@ -378,7 +371,7 @@ export function SoccerHomeAwayCard({
       <div className="w-full min-w-0 h-full flex flex-col">
         {!hideTitle ? <HomeAwayHeader /> : null}
         <div className="flex-1 min-h-0 flex items-center px-2 pb-1.5">
-          <div className={`text-sm ${emptyTextClass}`}>No cached Premier League split data found yet.</div>
+          <div className={`text-sm ${emptyTextClass}`}>No cached split data found yet.</div>
         </div>
       </div>
     );
