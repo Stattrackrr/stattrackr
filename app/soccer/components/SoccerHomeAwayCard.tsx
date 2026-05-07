@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+
+import { SoccerStatsCustomizer } from '@/app/soccer/components/SoccerStatsCustomizer';
+import { SOCCER_BETTABLE_STATS } from '@/app/soccer/components/SoccerStatsChart';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
 type SoccerHomeAwayCardProps = {
@@ -22,7 +25,7 @@ type TeamResultsApiResponse = {
 
 type ViewMode = 'selected' | 'opponent';
 type VenueMode = 'home' | 'away';
-type VenueStatId = 'goals' | 'expected_goals_xg' | 'total_shots' | 'shots_on_target';
+type VenueStatId = string;
 
 type VenueSummary = {
   key: VenueMode;
@@ -47,11 +50,26 @@ type TeamHomeAwaySummary = {
   venues: VenueSummary[];
 };
 
-const VENUE_STATS: Array<{ id: VenueStatId; label: string; statName: string | null }> = [
-  { id: 'goals', label: 'Goals', statName: null },
-  { id: 'expected_goals_xg', label: 'xG', statName: 'Expected goals (xG)' },
-  { id: 'total_shots', label: 'Shots', statName: 'Total shots' },
-  { id: 'shots_on_target', label: 'SOT', statName: 'Shots on target' },
+const VENUE_STAT_PRIORITY: VenueStatId[] = [
+  'total_goals',
+  'expected_goals_xg',
+  'total_shots',
+  'shots_on_target',
+  'shots_off_target',
+  'big_chances',
+  'corner_kicks',
+  'ball_possession',
+  'touches_in_opposition_box',
+  'yellow_cards',
+  'red_cards',
+  'fouls',
+  'goalkeeper_saves',
+];
+const VENUE_DEFAULT_VISIBLE_STATS: VenueStatId[] = [
+  'total_goals',
+  'expected_goals_xg',
+  'total_shots',
+  'shots_on_target',
 ];
 
 function normalizeTeamName(value: string | null | undefined): string {
@@ -104,6 +122,77 @@ function getTeamStatValue(match: SoccerwayRecentMatch, teamName: string, statNam
   const stat = findStat(match, statName);
   if (!side || !stat) return null;
   return parseNumeric(side === 'home' ? stat.homeValue : stat.awayValue);
+}
+
+function formatStatKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\(xg\)/g, ' xg')
+    .replace(/%/g, ' percent ')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function formatStatLabel(key: string): string {
+  if (key === 'total_goals') return 'Goals';
+  if (key === 'expected_goals_xg') return 'xG';
+  if (key === 'xg_on_target_xgot') return 'xGOT';
+  if (key === 'expected_assists_xa') return 'xA';
+  if (key === 'ball_possession') return 'Possession';
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
+}
+
+function isComparableStat(key: string): boolean {
+  return key === 'total_goals' || key === 'expected_goals_xg' || key === 'ball_possession' || SOCCER_BETTABLE_STATS.has(key);
+}
+
+function buildTeamStatAverages(matches: SoccerwayRecentMatch[], teamName: string): Record<string, number> {
+  const sums: Record<string, number> = {};
+  const counts: Record<string, number> = {};
+
+  for (const match of matches) {
+    const side = getTeamSide(match, teamName);
+    if (!side) continue;
+
+    const goals = getGoalsFor(match, teamName);
+    if (goals != null) {
+      sums.total_goals = (sums.total_goals ?? 0) + goals;
+      counts.total_goals = (counts.total_goals ?? 0) + 1;
+    }
+
+    for (const stat of getMatchStats(match)) {
+      const key = formatStatKey(stat.name);
+      if (!isComparableStat(key) || key === 'total_goals') continue;
+      const rawValue = side === 'home' ? stat.homeValue : stat.awayValue;
+      const parsedValue = parseNumeric(rawValue);
+      if (parsedValue == null) continue;
+      sums[key] = (sums[key] ?? 0) + parsedValue;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(sums)
+      .filter(([key]) => (counts[key] ?? 0) > 0)
+      .map(([key, sum]) => [key, sum / (counts[key] ?? 1)])
+  );
+}
+
+function orderComparableStatKeys(keys: Iterable<string>): string[] {
+  const keySet = new Set<string>(keys);
+  const ordered: string[] = [];
+
+  for (const key of VENUE_STAT_PRIORITY) {
+    if (keySet.has(key)) ordered.push(key);
+  }
+  for (const key of keySet) {
+    if (!ordered.includes(key)) ordered.push(key);
+  }
+
+  return ordered;
 }
 
 function average(values: number[]): number | null {
@@ -169,27 +258,16 @@ function buildVenueSummary(
     else draws += 1;
   }
 
-  const stats = VENUE_STATS.map((stat) => {
-    const venueValues =
-      stat.id === 'goals'
-        ? venueMatches.map((match) => getGoalsFor(match, teamName)).filter((value): value is number => value != null)
-        : venueMatches
-            .map((match) => getTeamStatValue(match, teamName, stat.statName!))
-            .filter((value): value is number => value != null);
-
-    const comparisonValues =
-      stat.id === 'goals'
-        ? comparisonMatches.map((match) => getGoalsFor(match, teamName)).filter((value): value is number => value != null)
-        : comparisonMatches
-            .map((match) => getTeamStatValue(match, teamName, stat.statName!))
-            .filter((value): value is number => value != null);
-
-    const venueAverage = average(venueValues);
-    const comparisonAverage = average(comparisonValues);
+  const venueAverages = buildTeamStatAverages(venueMatches, teamName);
+  const comparisonAverages = buildTeamStatAverages(comparisonMatches, teamName);
+  const statKeys = orderComparableStatKeys([...Object.keys(venueAverages), ...Object.keys(comparisonAverages)]);
+  const stats = statKeys.map((statKey) => {
+    const venueAverage = venueAverages[statKey] ?? null;
+    const comparisonAverage = comparisonAverages[statKey] ?? null;
 
     return {
-      id: stat.id,
-      label: stat.label,
+      id: statKey,
+      label: formatStatLabel(statKey),
       venueAverage,
       comparisonAverage,
       delta:
@@ -263,6 +341,8 @@ export function SoccerHomeAwayCard({
   const [viewMode, setViewMode] = useState<ViewMode>('selected');
   const [teamMatches, setTeamMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [opponentMatches, setOpponentMatches] = useState<SoccerwayRecentMatch[]>([]);
+  const [selectedStats, setSelectedStats] = useState<VenueStatId[]>([]);
+  const [showStatPicker, setShowStatPicker] = useState(false);
 
   const canFetch = Boolean(teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
 
@@ -327,6 +407,38 @@ export function SoccerHomeAwayCard({
   const currentSummary = viewMode === 'opponent' ? opponentSummary : selectedSummary;
   const selectedLabel = selectedSummary?.teamName ?? teamName ?? 'Selected team';
   const opponentLabel = opponentSummary?.teamName ?? opponentName ?? 'Opponent';
+  const availableStats = useMemo<VenueStatId[]>(() => {
+    if (!currentSummary) return [];
+    return orderComparableStatKeys(currentSummary.venues.flatMap((venue) => venue.stats.map((stat) => stat.id)));
+  }, [currentSummary]);
+  const defaultVisibleStats = useMemo(() => {
+    const preferredDefaults = VENUE_DEFAULT_VISIBLE_STATS.filter((statId) => availableStats.includes(statId));
+    return preferredDefaults.length > 0 ? preferredDefaults : availableStats.slice(0, 4);
+  }, [availableStats]);
+  const visibleStats = useMemo(() => {
+    const validSelectedStats = selectedStats.filter((statId) => availableStats.includes(statId));
+    return validSelectedStats.length > 0 ? validSelectedStats : defaultVisibleStats;
+  }, [availableStats, defaultVisibleStats, selectedStats]);
+  const visibleStatSet = useMemo(() => new Set<VenueStatId>(visibleStats), [visibleStats]);
+  const statCustomizerOptions = useMemo(
+    () => availableStats.map((statId) => ({ key: statId, label: formatStatLabel(statId) })),
+    [availableStats]
+  );
+
+  useEffect(() => {
+    setSelectedStats((current) => current.filter((statId) => availableStats.includes(statId)));
+  }, [availableStats]);
+
+  const toggleVisibleStat = (statId: string) => {
+    setSelectedStats((current) => {
+      const validCurrent = current.filter((key) => availableStats.includes(key));
+      const base = validCurrent.length > 0 ? validCurrent : defaultVisibleStats;
+      if (base.includes(statId as VenueStatId)) {
+        return base.length > 1 ? base.filter((key) => key !== statId) : base;
+      }
+      return [...base, statId as VenueStatId];
+    });
+  };
 
   if (showSkeleton || loading) {
     return (
@@ -441,7 +553,7 @@ export function SoccerHomeAwayCard({
                   </div>
 
                   <div className="flex flex-col gap-2.5">
-                    {venue.stats.map((stat) => {
+                    {venue.stats.filter((stat) => visibleStatSet.has(stat.id)).map((stat) => {
                       const primary = stat.venueAverage;
                       const secondary = stat.comparisonAverage;
                       const primaryStrength = Math.max(primary ?? 0, 0.05);
@@ -481,6 +593,17 @@ export function SoccerHomeAwayCard({
                 </div>
               ))}
             </div>
+            <SoccerStatsCustomizer
+              isDark={isDark}
+              open={showStatPicker}
+              options={statCustomizerOptions}
+              selectedKeys={visibleStats}
+              onToggleOpen={() => setShowStatPicker((current) => !current)}
+              onToggleKey={toggleVisibleStat}
+              onSelectAll={() => setSelectedStats(availableStats)}
+              onReset={() => setSelectedStats(defaultVisibleStats)}
+              resetLabel="Top stats"
+            />
           </div>
         )}
       </div>

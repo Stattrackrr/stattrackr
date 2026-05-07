@@ -15,8 +15,7 @@ import type { SoccerwayLineupBundle, SoccerwayRecentMatch } from '@/lib/soccerwa
 import { SoccerStatsChart, type SoccerStatTeamScope, type SoccerTimeframe } from '@/app/soccer/components/SoccerStatsChart';
 import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingStats';
 import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
-import { SoccerOpponentBreakdownPanel } from '@/app/soccer/components/SoccerOpponentBreakdownPanel';
-import { SoccerTeamMatchupCard } from '@/app/soccer/components/SoccerTeamMatchupCard';
+import { SoccerOpponentBreakdownMatchupPanel } from '@/app/soccer/components/SoccerOpponentBreakdownMatchupPanel';
 import { SoccerTeamFormHomeAwayPanel } from '@/app/soccer/components/SoccerTeamFormHomeAwayPanel';
 import { SoccerInjuriesCard } from '@/app/soccer/components/SoccerInjuriesCard';
 
@@ -1297,19 +1296,8 @@ function SoccerPageContent() {
                     {propsMode === 'player' ? 'Analyze individual player statistics and props' : 'Analyze game totals, spreads, and game-based props'}
                   </p>
                 </div>
-                <div className={`hidden lg:block h-[380px] w-full min-w-0 shrink-0 rounded-lg xl:h-[420px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
-                  <SoccerOpponentBreakdownPanel
-                    isDark={Boolean(mounted && isDark)}
-                    nextCompetitionName={nextFixture?.competitionName ?? null}
-                    nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
-                    opponentName={displayOpponent}
-                    opponentHref={nextOpponentHrefForPanel}
-                    emptyTextClass={emptyText}
-                    showSkeleton={showFixtureDependentSkeleton}
-                  />
-                </div>
-                <div className={`hidden lg:block h-[360px] w-full min-w-0 shrink-0 rounded-lg xl:h-[400px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
-                  <SoccerTeamMatchupCard
+                <div className={`hidden lg:block h-[420px] w-full min-w-0 shrink-0 rounded-lg xl:h-[460px] ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
+                  <SoccerOpponentBreakdownMatchupPanel
                     isDark={Boolean(mounted && isDark)}
                     teamName={selectedTeam?.name ?? null}
                     teamHref={selectedTeam?.href ?? null}
@@ -1328,8 +1316,13 @@ function SoccerPageContent() {
                     teamHref={selectedTeam?.href ?? null}
                     opponentName={displayOpponent}
                     opponentHref={nextOpponentHrefForPanel}
+                    matches={displayedRecentMatches}
+                    teamCompetitions={selectedTeam?.competitions ?? []}
+                    nextCompetitionName={nextFixture?.competitionName ?? null}
+                    nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
                     emptyTextClass={emptyText}
                     showSkeleton={showFixtureDependentSkeleton}
+                    comparisonShowSkeleton={syncedStatsLoading}
                   />
                 </div>
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>

@@ -14,6 +14,7 @@ type SoccerTeamMatchupCardProps = {
   nextCompetitionCountry: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
+  hideTitle?: boolean;
 };
 
 function formatValue(value: number | null): string {
@@ -110,6 +111,7 @@ export function SoccerTeamMatchupCard({
   nextCompetitionCountry,
   emptyTextClass,
   showSkeleton = false,
+  hideTitle = false,
 }: SoccerTeamMatchupCardProps) {
   const [data, setData] = useState<TeamMatchupApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -196,9 +198,11 @@ export function SoccerTeamMatchupCard({
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} />
-        </div>
+        {!hideTitle ? (
+          <div className="px-3">
+            <TeamMatchupHeaderRow isDark={isDark} />
+          </div>
+        ) : null}
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
@@ -217,9 +221,11 @@ export function SoccerTeamMatchupCard({
   if (!canFetch) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} />
-        </div>
+        {!hideTitle ? (
+          <div className="px-3">
+            <TeamMatchupHeaderRow isDark={isDark} />
+          </div>
+        ) : null}
         <div className="flex-1 min-h-0 flex items-center px-3 pb-2.5">
           <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
         </div>
@@ -230,9 +236,11 @@ export function SoccerTeamMatchupCard({
   if (error) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="px-3">
-          <TeamMatchupHeaderRow isDark={isDark} />
-        </div>
+        {!hideTitle ? (
+          <div className="px-3">
+            <TeamMatchupHeaderRow isDark={isDark} />
+          </div>
+        ) : null}
         <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
           <div className="flex-1 min-h-0 flex items-center">
             <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
@@ -244,9 +252,11 @@ export function SoccerTeamMatchupCard({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <div className="px-3">
-        <TeamMatchupHeaderRow isDark={isDark} />
-      </div>
+      {!hideTitle ? (
+        <div className="px-3">
+          <TeamMatchupHeaderRow isDark={isDark} />
+        </div>
+      ) : null}
       <div className="flex-1 min-h-0 flex flex-col px-3 pb-2.5">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">

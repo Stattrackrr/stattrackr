@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 
+import { SoccerTeamComparisonPanel } from '@/app/soccer/components/SoccerTeamComparisonPanel';
 import { SoccerHomeAwayCard } from '@/app/soccer/components/SoccerHomeAwayCard';
 import { SoccerTeamFormCard } from '@/app/soccer/components/SoccerTeamFormCard';
+import type { SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
-export type SoccerTeamFormHomeAwayTab = 'team_form' | 'home_away';
+export type SoccerTeamFormHomeAwayTab = 'team_form' | 'compare' | 'home_away';
 
 type SoccerTeamFormHomeAwayPanelProps = {
   isDark: boolean;
@@ -13,8 +15,13 @@ type SoccerTeamFormHomeAwayPanelProps = {
   teamHref: string | null;
   opponentName: string | null;
   opponentHref: string | null;
+  matches: SoccerwayRecentMatch[];
+  teamCompetitions?: Array<{ country: string; competition: string }>;
+  nextCompetitionName?: string | null;
+  nextCompetitionCountry?: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
+  comparisonShowSkeleton?: boolean;
 };
 
 const TAB_BTN_BASE =
@@ -26,8 +33,13 @@ export function SoccerTeamFormHomeAwayPanel({
   teamHref,
   opponentName,
   opponentHref,
+  matches,
+  teamCompetitions = [],
+  nextCompetitionName = null,
+  nextCompetitionCountry = null,
   emptyTextClass,
   showSkeleton = false,
+  comparisonShowSkeleton = false,
 }: SoccerTeamFormHomeAwayPanelProps) {
   const [tab, setTab] = useState<SoccerTeamFormHomeAwayTab>('team_form');
   const [tabsVisited, setTabsVisited] = useState<Set<SoccerTeamFormHomeAwayTab>>(() => new Set(['team_form']));
@@ -63,6 +75,16 @@ export function SoccerTeamFormHomeAwayPanel({
         <button
           type="button"
           onClick={() => {
+            setTab('compare');
+            setTabsVisited((prev) => new Set(prev).add('compare'));
+          }}
+          className={`${TAB_BTN_BASE} ${tab === 'compare' ? activeTab : inactiveTab}`}
+        >
+          Compare
+        </button>
+        <button
+          type="button"
+          onClick={() => {
             setTab('home_away');
             setTabsVisited((prev) => new Set(prev).add('home_away'));
           }}
@@ -75,8 +97,21 @@ export function SoccerTeamFormHomeAwayPanel({
       <div className="relative flex flex-col">
         {tabsVisited.has('team_form') ? (
           <div className={tab === 'team_form' ? 'flex min-w-0 flex-col' : 'hidden'}>
-            <SoccerTeamFormCard
-              {...sharedCardProps}
+            <SoccerTeamFormCard {...sharedCardProps} />
+          </div>
+        ) : null}
+        {tabsVisited.has('compare') ? (
+          <div className={tab === 'compare' ? 'flex min-w-0 flex-col' : 'hidden'}>
+            <SoccerTeamComparisonPanel
+              isDark={isDark}
+              teamName={teamName}
+              matches={matches}
+              teamCompetitions={teamCompetitions}
+              nextCompetitionName={nextCompetitionName}
+              nextCompetitionCountry={nextCompetitionCountry}
+              emptyTextClass={emptyTextClass}
+              showSkeleton={comparisonShowSkeleton}
+              hideTitle={true}
             />
           </div>
         ) : null}
