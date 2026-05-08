@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ProfileDropdown, SettingsDropdown, ProfileAvatar } from './index';
+import { ProfileAvatar } from './ProfileAvatar';
+import { ProfileDropdown } from './ProfileDropdown';
+import { SettingsDropdown } from './SettingsDropdown';
 
 interface MobileBottomNavigationProps {
   hasPremium: boolean;
@@ -185,6 +187,17 @@ export function MobileBottomNavigation({
           }}
           className={navButtonClass(!!isChatActive, !hasPremium)}
         >
+          <span className={iconChipClass(!!isChatActive, !hasPremium)}>
+            {!hasPremium ? (
+              <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5m-9 6l2.2-3.3A2 2 0 013 15V6a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H7.8a2 2 0 00-1.664.89L4 20z" />
+              </svg>
+            )}
+          </span>
           <span className="text-[10px] font-semibold tracking-[0.01em]">Chat</span>
         </button>
         
