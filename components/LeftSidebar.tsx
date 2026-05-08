@@ -435,6 +435,24 @@ export default function LeftSidebar({
                   </svg>
                 )}
               </Link>
+              <Link
+                href={hasPremium ? "/chat" : "/subscription"}
+                className={`mt-1 flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === "/chat"
+                    ? "bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
+                    : !hasPremium
+                      ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                      : "text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-black dark:hover:text-white"
+                }`}
+                onClick={(e) => {
+                  if (!hasPremium) {
+                    e.preventDefault();
+                    window.location.href = '/subscription';
+                  }
+                }}
+              >
+                <span>Chat</span>
+              </Link>
             </div>
           </div>
         ) : null}
