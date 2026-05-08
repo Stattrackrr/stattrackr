@@ -40,7 +40,7 @@ BEGIN
     RAISE EXCEPTION 'Chat room not found';
   END IF;
 
-  NEW.body := btrim(regexp_replace(COALESCE(NEW.body, ''), '\s+', ' ', 'g'));
+  NEW.body := btrim(COALESCE(NEW.body, ''));
 
   IF NEW.body = '' THEN
     RAISE EXCEPTION 'Message cannot be empty';

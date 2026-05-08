@@ -10,6 +10,7 @@ import {
   ChatMessageReaction,
   ChatRoom,
   deleteChatMessage,
+  editChatMessage,
   fetchChatReactions,
   fetchChatMessages,
   fetchChatRooms,
@@ -238,6 +239,9 @@ export default function ChatPageClient() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [confirmDeleteMessageId, setConfirmDeleteMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageValue, setEditingMessageValue] = useState('');
+  const [savingEditMessageId, setSavingEditMessageId] = useState<string | null>(null);
   const [pinningMessageId, setPinningMessageId] = useState<string | null>(null);
   const [togglingReactionKey, setTogglingReactionKey] = useState<string | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
@@ -840,6 +844,57 @@ export default function ChatPageClient() {
     [deletingMessageId, loadMessages, selectedRoomId]
   );
 
+  const startEditingMessage = useCallback((message: ChatMessage) => {
+    setReactionPickerMessageId(null);
+    setConfirmDeleteMessageId(null);
+    setEditingMessageId(message.id);
+    setEditingMessageValue(message.body);
+    setComposerError(null);
+  }, []);
+
+  const cancelEditingMessage = useCallback(() => {
+    setEditingMessageId(null);
+    setEditingMessageValue('');
+  }, []);
+
+  const handleSaveEditedMessage = useCallback(
+    async (messageId: string) => {
+      if (!selectedRoomId || savingEditMessageId) {
+        return;
+      }
+
+      const trimmedMessage = editingMessageValue.trim();
+      if (!trimmedMessage) {
+        setComposerError('Message cannot be empty.');
+        return;
+      }
+
+      if (trimmedMessage.length > CHAT_MAX_MESSAGE_LENGTH) {
+        setComposerError(`Messages must be ${CHAT_MAX_MESSAGE_LENGTH} characters or less.`);
+        return;
+      }
+
+      setSavingEditMessageId(messageId);
+      setComposerError(null);
+
+      try {
+        const updatedMessage = await editChatMessage(messageId, trimmedMessage);
+        setMessages((current) =>
+          current.map((message) => (message.id === updatedMessage.id ? updatedMessage : message))
+        );
+        setEditingMessageId(null);
+        setEditingMessageValue('');
+        void loadMessages(selectedRoomId, { silent: true, preserveError: true });
+      } catch (error) {
+        console.error('Chat page: failed to edit message', error);
+        setComposerError(getChatErrorMessage(error) || 'Unable to edit this message right now.');
+      } finally {
+        setSavingEditMessageId(null);
+      }
+    },
+    [editingMessageValue, loadMessages, savingEditMessageId, selectedRoomId]
+  );
+
   const handleTogglePinMessage = useCallback(
     async (messageId: string) => {
       if (!selectedRoomId || pinningMessageId || !viewer.isAdmin) {
@@ -1101,6 +1156,8 @@ export default function ChatPageClient() {
                         const canDeleteMessage = isOwnMessage || viewer.isAdmin;
                         const isPinned = Boolean(message.pinned_at);
                         const isConfirmingDelete = confirmDeleteMessageId === message.id;
+                        const isEditingMessage = editingMessageId === message.id;
+                        const isEditedMessage = Boolean(message.edited_at);
                         const authorName = message.display_name || 'Member';
                         const messageReactions = reactionsByMessage.get(message.id) ?? [];
                         const repliedToMessage = message.reply_to_message_id
@@ -1159,12 +1216,61 @@ export default function ChatPageClient() {
                                     </span>
                                   ) : null}
                                 </div>
-                                <p className={`mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
-                                  {message.body}
-                                </p>
+                                {isEditingMessage ? (
+                                  <div className="mt-2 space-y-2">
+                                    <textarea
+                                      value={editingMessageValue}
+                                      onChange={(event) => {
+                                        setEditingMessageValue(event.target.value);
+                                        if (composerError) {
+                                          setComposerError(null);
+                                        }
+                                      }}
+                                      maxLength={CHAT_MAX_MESSAGE_LENGTH}
+                                      rows={4}
+                                      className="w-full resize-none rounded-xl border border-purple-300 bg-white px-3 py-2 text-[13px] leading-5 text-gray-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-purple-700 dark:bg-[#111c2d] dark:text-white"
+                                    />
+                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                      <span className={`mr-auto text-[11px] ${isOwnMessage ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        {editingMessageValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={cancelEditingMessage}
+                                        disabled={savingEditMessageId === message.id}
+                                        className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338]"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleSaveEditedMessage(message.id)}
+                                        disabled={
+                                          savingEditMessageId === message.id ||
+                                          !editingMessageValue.trim() ||
+                                          editingMessageValue.trim() === message.body
+                                        }
+                                        className="rounded-full bg-purple-700 px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-purple-800 disabled:cursor-not-allowed disabled:bg-purple-400"
+                                      >
+                                        {savingEditMessageId === message.id ? 'Saving...' : 'Save'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <p className={`mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                                      {message.body}
+                                    </p>
+                                    {isEditedMessage ? (
+                                      <span className={`mt-1 block text-[10px] ${isOwnMessage ? 'text-purple-100/80' : 'text-gray-400 dark:text-gray-500'}`}>
+                                        Edited
+                                      </span>
+                                    ) : null}
+                                  </>
+                                )}
                               </div>
 
-                              {messageReactions.length > 0 ? (
+                              {messageReactions.length > 0 && !isEditingMessage ? (
                                 <div className="mt-2 flex flex-wrap justify-start gap-2.5">
                                   {messageReactions.map((reaction) => {
                                     const reactionKey = `${message.id}:${reaction.emoji}`;
@@ -1190,6 +1296,7 @@ export default function ChatPageClient() {
                                 </div>
                               ) : null}
 
+                              {!isEditingMessage ? (
                               <div
                                 className={`mt-2 hidden lg:flex items-center gap-1 transition-opacity ${
                                   reactionPickerMessageId === message.id || isConfirmingDelete
@@ -1238,6 +1345,15 @@ export default function ChatPageClient() {
                                       <CornerUpLeft className="h-3 w-3" />
                                       Reply
                                     </button>
+                                    {isOwnMessage ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditingMessage(message)}
+                                        className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      >
+                                        Edit
+                                      </button>
+                                    ) : null}
                                     {viewer.isAdmin ? (
                                       <button
                                         type="button"
@@ -1266,8 +1382,9 @@ export default function ChatPageClient() {
                                   </>
                                 )}
                               </div>
+                              ) : null}
 
-                              {reactionPickerMessageId === message.id ? (
+                              {reactionPickerMessageId === message.id && !isEditingMessage ? (
                                 <div
                                   data-reaction-picker
                                   className={`mt-2 hidden lg:flex max-w-full flex-wrap items-center gap-1.5 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${

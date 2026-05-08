@@ -633,6 +633,7 @@ export interface Database {
           reply_to_message_id: string | null
           pinned_at: string | null
           pinned_by: string | null
+          edited_at: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -648,6 +649,7 @@ export interface Database {
           reply_to_message_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          edited_at?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -663,6 +665,7 @@ export interface Database {
           reply_to_message_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          edited_at?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -711,6 +714,7 @@ export interface Database {
           reply_to_message_id: string | null
           pinned_at: string | null
           pinned_by: string | null
+          edited_at: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -731,6 +735,29 @@ export interface Database {
           reply_to_message_id: string | null
           pinned_at: string | null
           pinned_by: string | null
+          edited_at: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+      }
+      edit_chat_message: {
+        Args: {
+          target_message_id: string
+          next_body: string
+        }
+        Returns: {
+          id: string
+          room_id: string
+          user_id: string
+          body: string
+          display_name: string
+          avatar_url: string | null
+          reply_to_message_id: string | null
+          pinned_at: string | null
+          pinned_by: string | null
+          edited_at: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null

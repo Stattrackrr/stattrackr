@@ -1,3 +1,6 @@
+ALTER TABLE public.chat_messages
+  ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+
 CREATE OR REPLACE FUNCTION public.prepare_chat_message()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -86,3 +89,49 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION public.edit_chat_message(target_message_id UUID, next_body TEXT)
+RETURNS public.chat_messages
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  edited_message public.chat_messages%ROWTYPE;
+  cleaned_body TEXT;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  cleaned_body := btrim(COALESCE(next_body, ''));
+
+  IF cleaned_body = '' THEN
+    RAISE EXCEPTION 'Message cannot be empty';
+  END IF;
+
+  IF char_length(cleaned_body) > 1500 THEN
+    RAISE EXCEPTION 'Message cannot exceed 1500 characters';
+  END IF;
+
+  UPDATE public.chat_messages
+  SET
+    body = cleaned_body,
+    edited_at = NOW(),
+    updated_at = NOW()
+  WHERE id = target_message_id
+    AND user_id = auth.uid()
+    AND deleted_at IS NULL
+  RETURNING *
+  INTO edited_message;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Message not found or cannot be edited';
+  END IF;
+
+  RETURN edited_message;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.edit_chat_message(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.edit_chat_message(UUID, TEXT) TO authenticated;

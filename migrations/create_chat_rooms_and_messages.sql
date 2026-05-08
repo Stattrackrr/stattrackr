@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   reply_to_message_id UUID REFERENCES public.chat_messages(id) ON DELETE SET NULL,
   pinned_at TIMESTAMPTZ,
   pinned_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  edited_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ,
@@ -205,7 +206,7 @@ BEGIN
     RAISE EXCEPTION 'Chat room not found';
   END IF;
 
-  NEW.body := btrim(regexp_replace(COALESCE(NEW.body, ''), '\s+', ' ', 'g'));
+  NEW.body := btrim(COALESCE(NEW.body, ''));
 
   IF NEW.body = '' THEN
     RAISE EXCEPTION 'Message cannot be empty';

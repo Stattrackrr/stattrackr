@@ -26,6 +26,7 @@ export type ChatMessage = {
   reply_to_message_id: string | null;
   pinned_at: string | null;
   pinned_by: string | null;
+  edited_at: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -43,7 +44,7 @@ export type ChatMessageReaction = {
 const CHAT_MESSAGE_BASE_SELECT =
   'id, room_id, user_id, body, display_name, avatar_url, reply_to_message_id, created_at, updated_at, deleted_at, deleted_by';
 const CHAT_MESSAGE_PIN_SELECT =
-  'id, room_id, user_id, body, display_name, avatar_url, reply_to_message_id, pinned_at, pinned_by, created_at, updated_at, deleted_at, deleted_by';
+  'id, room_id, user_id, body, display_name, avatar_url, reply_to_message_id, pinned_at, pinned_by, edited_at, created_at, updated_at, deleted_at, deleted_by';
 
 function isMissingPinnedColumnError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
@@ -59,6 +60,7 @@ function isMissingPinnedColumnError(error: unknown): boolean {
     maybeError.code === 'PGRST205' ||
     combinedText.includes('pinned_at') ||
     combinedText.includes('pinned_by') ||
+    combinedText.includes('edited_at') ||
     combinedText.includes('schema cache')
   );
 }
@@ -68,6 +70,7 @@ function normalizeChatMessages(messages: ChatMessage[]): ChatMessage[] {
     ...message,
     pinned_at: message.pinned_at ?? null,
     pinned_by: message.pinned_by ?? null,
+    edited_at: message.edited_at ?? null,
   }));
 }
 
@@ -196,6 +199,19 @@ export async function deleteChatMessage(messageId: string): Promise<ChatMessage>
   }
 
   return data as ChatMessage;
+}
+
+export async function editChatMessage(messageId: string, body: string): Promise<ChatMessage> {
+  const { data, error } = await ((supabase as any).rpc('edit_chat_message', {
+    target_message_id: messageId,
+    next_body: body.trim(),
+  }) as any);
+
+  if (error) {
+    throw error;
+  }
+
+  return normalizeChatMessages([data as ChatMessage])[0];
 }
 
 export async function toggleChatMessagePin(messageId: string): Promise<ChatMessage> {
