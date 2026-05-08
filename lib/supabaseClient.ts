@@ -593,12 +593,122 @@ export interface Database {
           updated_at?: string
         }
       }
+      chat_rooms: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          is_premium: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          is_premium?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string | null
+          is_premium?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string
+          body: string
+          display_name: string
+          avatar_url: string | null
+          reply_to_message_id: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id?: string
+          body: string
+          display_name?: string
+          avatar_url?: string | null
+          reply_to_message_id?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string
+          body?: string
+          display_name?: string
+          avatar_url?: string | null
+          reply_to_message_id?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+      }
+      chat_message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id?: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          user_id?: string
+          emoji?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      soft_delete_chat_message: {
+        Args: {
+          target_message_id: string
+        }
+        Returns: {
+          id: string
+          room_id: string
+          user_id: string
+          body: string
+          display_name: string
+          avatar_url: string | null
+          reply_to_message_id: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+      }
     }
     Enums: {
       [_ in never]: never

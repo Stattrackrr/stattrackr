@@ -70,6 +70,7 @@ export function MobileBottomNavigation({
 
   const isPropsActive = pathname?.startsWith('/props');
   const isJournalActive = pathname?.startsWith('/journal');
+  const isChatActive = pathname?.startsWith('/chat');
   const isProfileActive = showProfileDropdown;
   const isSettingsActive = showSettingsDropdown;
 
@@ -121,7 +122,7 @@ export function MobileBottomNavigation({
       )}
       
       {/* Mobile Navigation */}
-      <div className="relative grid grid-cols-4 h-14 lg:hidden rounded-full border border-white/40 dark:border-white/25 bg-white/20 dark:bg-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-hidden px-1">
+      <div className="relative grid grid-cols-5 h-14 lg:hidden rounded-full border border-white/40 dark:border-white/25 bg-white/20 dark:bg-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-hidden px-1">
         <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent dark:via-white/20" />
         {/* Props */}
         <button
@@ -171,6 +172,20 @@ export function MobileBottomNavigation({
             )}
           </span>
           <span className="text-[10px] font-semibold tracking-[0.01em]">Journal</span>
+        </button>
+
+        {/* Chat */}
+        <button
+          onClick={() => {
+            if (!hasPremium) {
+              router.push('/subscription');
+              return;
+            }
+            router.push('/chat');
+          }}
+          className={navButtonClass(!!isChatActive, !hasPremium)}
+        >
+          <span className="text-[10px] font-semibold tracking-[0.01em]">Chat</span>
         </button>
         
         {/* Profile */}
