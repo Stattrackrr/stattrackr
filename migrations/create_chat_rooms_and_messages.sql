@@ -52,6 +52,41 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.soft_delete_chat_message(target_message_id UUID)
+RETURNS public.chat_messages
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  deleted_message public.chat_messages%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  UPDATE public.chat_messages
+  SET
+    deleted_at = NOW(),
+    deleted_by = auth.uid(),
+    updated_at = NOW()
+  WHERE id = target_message_id
+    AND user_id = auth.uid()
+    AND deleted_at IS NULL
+  RETURNING *
+  INTO deleted_message;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Message not found or cannot be deleted';
+  END IF;
+
+  RETURN deleted_message;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.soft_delete_chat_message(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.soft_delete_chat_message(UUID) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.prepare_chat_message()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -61,6 +96,7 @@ AS $$
 DECLARE
   sender_profile public.profiles%ROWTYPE;
   target_room public.chat_rooms%ROWTYPE;
+  recent_message_count_5s INTEGER;
   recent_message_count INTEGER;
 BEGIN
   IF auth.uid() IS NULL THEN
@@ -107,13 +143,14 @@ BEGIN
     RAISE EXCEPTION 'Premium chat requires an active premium subscription';
   END IF;
 
-  IF EXISTS (
-    SELECT 1
-    FROM public.chat_messages
-    WHERE user_id = NEW.user_id
-      AND created_at > NOW() - INTERVAL '2 seconds'
-  ) THEN
-    RAISE EXCEPTION 'Please wait a moment before sending another message';
+  SELECT COUNT(*)
+  INTO recent_message_count_5s
+  FROM public.chat_messages
+  WHERE user_id = NEW.user_id
+    AND created_at > NOW() - INTERVAL '5 seconds';
+
+  IF recent_message_count_5s >= 3 THEN
+    RAISE EXCEPTION 'Message cooldown, wait 5 seconds';
   END IF;
 
   SELECT COUNT(*)

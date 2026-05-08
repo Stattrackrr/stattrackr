@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export const CHAT_MESSAGE_LIMIT = 50;
 export const CHAT_MAX_MESSAGE_LENGTH = 500;
+export const CHAT_REACTION_OPTIONS = ['👍', '🔥', '😂', '👀', '💰', '✅'] as const;
 
 export type ChatRoomSlug = 'general' | 'picks';
 
@@ -27,6 +28,14 @@ export type ChatMessage = {
   updated_at: string;
   deleted_at: string | null;
   deleted_by: string | null;
+};
+
+export type ChatMessageReaction = {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
 };
 
 export async function fetchChatRooms(): Promise<ChatRoom[]> {
@@ -79,4 +88,81 @@ export async function sendChatMessage(
   }
 
   return data as ChatMessage;
+}
+
+export async function deleteChatMessage(messageId: string): Promise<ChatMessage> {
+  const { data, error } = await ((supabase as any).rpc('soft_delete_chat_message', {
+    target_message_id: messageId,
+  }) as any);
+
+  if (error) {
+    throw error;
+  }
+
+  return data as ChatMessage;
+}
+
+export async function fetchChatReactions(messageIds: string[]): Promise<ChatMessageReaction[]> {
+  if (messageIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await (supabase
+    .from('chat_message_reactions') as any)
+    .select('id, message_id, user_id, emoji, created_at')
+    .in('message_id', messageIds)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ChatMessageReaction[];
+}
+
+export async function toggleChatReaction(
+  messageId: string,
+  userId: string,
+  emoji: string
+): Promise<{ action: 'added'; reaction: ChatMessageReaction } | { action: 'removed' }> {
+  const { data: existingReaction, error: existingError } = await (supabase
+    .from('chat_message_reactions') as any)
+    .select('id')
+    .eq('message_id', messageId)
+    .eq('user_id', userId)
+    .eq('emoji', emoji)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existingReaction?.id) {
+    const { error: deleteError } = await (supabase
+      .from('chat_message_reactions') as any)
+      .delete()
+      .eq('id', existingReaction.id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return { action: 'removed' };
+  }
+
+  const { data, error } = await (supabase
+    .from('chat_message_reactions') as any)
+    .insert({
+      message_id: messageId,
+      user_id: userId,
+      emoji,
+    })
+    .select('id, message_id, user_id, emoji, created_at')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return { action: 'added', reaction: data as ChatMessageReaction };
 }
