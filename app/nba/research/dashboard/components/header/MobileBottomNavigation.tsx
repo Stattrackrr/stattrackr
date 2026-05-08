@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
 import { ProfileDropdown } from './ProfileDropdown';
 import { SettingsDropdown } from './SettingsDropdown';
@@ -61,7 +62,7 @@ export function MobileBottomNavigation({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const dismissed = window.localStorage.getItem('readMeNotificationDismissed') === 'true';
+    const dismissed = getLocalStorage('readMeNotificationDismissed') === 'true';
     setShowReadMeBadge(!dismissed);
   }, []);
   const prefetchProps = () => {
@@ -155,9 +156,7 @@ export function MobileBottomNavigation({
               return;
             }
             // Set flag to show loading bar on journal page
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem('navigating-to-journal', 'true');
-            }
+            setSessionStorage('navigating-to-journal', 'true');
             router.push('/journal');
           }}
           className={navButtonClass(!!isJournalActive, !hasPremium)}
