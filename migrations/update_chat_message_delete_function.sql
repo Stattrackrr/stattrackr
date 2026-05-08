@@ -6,19 +6,24 @@ SET search_path = public
 AS $$
 DECLARE
   deleted_message public.chat_messages%ROWTYPE;
+  is_admin BOOLEAN;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Authentication required';
   END IF;
 
+  SELECT public.chat_user_is_admin(auth.uid()) INTO is_admin;
+
   UPDATE public.chat_messages
   SET
     deleted_at = NOW(),
     deleted_by = auth.uid(),
+    pinned_at = NULL,
+    pinned_by = NULL,
     updated_at = NOW()
   WHERE id = target_message_id
-    AND user_id = auth.uid()
     AND deleted_at IS NULL
+    AND (user_id = auth.uid() OR is_admin)
   RETURNING *
   INTO deleted_message;
 

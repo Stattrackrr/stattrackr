@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { useChatUnread } from '@/lib/chatUnread';
 import { ProfileAvatar } from './ProfileAvatar';
 
 interface HeaderNavigationProps {
@@ -33,6 +34,8 @@ export function HeaderNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const isDesktop = variant === 'desktop';
+  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const prefetchProps = () => {
     router.prefetch('/props');
     void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
@@ -111,7 +114,14 @@ export function HeaderNavigation({
         }}
         className={navButtonClass(!!isChatActive, !hasPremium)}
       >
-        <span className="text-xs font-medium">Chat</span>
+        <span className="relative inline-flex items-center justify-center">
+          <span className="text-xs font-medium">Chat</span>
+          {unreadChatCount > 0 ? (
+            <span className="absolute -right-7 -top-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#0f172a]">
+              {unreadChatLabel}
+            </span>
+          ) : null}
+        </span>
       </button>
       
       {/* Profile */}

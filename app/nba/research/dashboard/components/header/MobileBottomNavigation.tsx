@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useChatUnread } from '@/lib/chatUnread';
 import { usePathname, useRouter } from 'next/navigation';
 import { getLocalStorage, setSessionStorage } from '../../utils/storageUtils';
 import { ProfileAvatar } from './ProfileAvatar';
@@ -59,6 +60,8 @@ export function MobileBottomNavigation({
   const router = useRouter();
   const pathname = usePathname();
   const [showReadMeBadge, setShowReadMeBadge] = useState(false);
+  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -186,7 +189,12 @@ export function MobileBottomNavigation({
           }}
           className={navButtonClass(!!isChatActive, !hasPremium)}
         >
-          <span className={iconChipClass(!!isChatActive, !hasPremium)}>
+          <span className={`${iconChipClass(!!isChatActive, !hasPremium)} relative`}>
+            {unreadChatCount > 0 ? (
+              <span className="absolute -right-3 -top-1 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white ring-2 ring-white/90 dark:ring-[#111827]">
+                {unreadChatLabel}
+              </span>
+            ) : null}
             {!hasPremium ? (
               <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />

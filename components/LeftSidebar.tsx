@@ -6,6 +6,7 @@ import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode }
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
 import { useTheme } from "../contexts/ThemeContext";
+import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
 
 type OddsFormat = 'american' | 'decimal';
@@ -50,6 +51,8 @@ export default function LeftSidebar({
   showDashboardNavLinks = false,
 }: LeftSidebarProps) {
   const pathname = usePathname();
+  const unreadChatCount = useChatUnread(hasPremium);
+  const unreadChatLabel = unreadChatCount > 9 ? '9+' : unreadChatCount.toString();
   const [showSettings, setShowSettings] = useState(false);
   const [showSportsDropdown, setShowSportsDropdown] = useState(false);
   // Dropdown below profile card (name click toggles this)
@@ -451,7 +454,14 @@ export default function LeftSidebar({
                   }
                 }}
               >
-                <span>Chat</span>
+                <span className="flex items-center gap-2">
+                  <span>Chat</span>
+                  {unreadChatCount > 0 ? (
+                    <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {unreadChatLabel}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             </div>
           </div>

@@ -14,14 +14,16 @@ import {
   fetchChatMessages,
   fetchChatRooms,
   sendChatMessage,
+  toggleChatMessagePin,
   toggleChatReaction,
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CornerUpLeft, Loader2, MessageSquareText, Plus, Send, Trash2, X } from 'lucide-react';
+import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
+const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
 
 type ViewerState = {
   userId: string | null;
@@ -29,6 +31,7 @@ type ViewerState = {
   userEmail: string | null;
   avatarUrl: string | null;
   hasPremium: boolean;
+  isAdmin: boolean;
   loading: boolean;
 };
 
@@ -38,6 +41,7 @@ const DEFAULT_VIEWER: ViewerState = {
   userEmail: null,
   avatarUrl: null,
   hasPremium: false,
+  isAdmin: false,
   loading: true,
 };
 
@@ -96,22 +100,6 @@ function isExpectedChatRateLimitError(error: unknown): boolean {
 function isFiveSecondCooldownError(error: unknown): boolean {
   const message = getChatErrorMessage(error)?.toLowerCase() ?? '';
   return message.includes('message cooldown');
-}
-
-function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-  const messageMap = new Map<string, ChatMessage>();
-
-  for (const message of current) {
-    messageMap.set(message.id, message);
-  }
-
-  for (const message of incoming) {
-    messageMap.set(message.id, message);
-  }
-
-  return Array.from(messageMap.values()).sort(
-    (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
-  );
 }
 
 function buildReactionMap(
@@ -250,6 +238,7 @@ export default function ChatPageClient() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [confirmDeleteMessageId, setConfirmDeleteMessageId] = useState<string | null>(null);
+  const [pinningMessageId, setPinningMessageId] = useState<string | null>(null);
   const [togglingReactionKey, setTogglingReactionKey] = useState<string | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
   const [threadError, setThreadError] = useState<string | null>(null);
@@ -275,6 +264,13 @@ export default function ChatPageClient() {
   const reactionsByMessage = useMemo(
     () => buildReactionMap(reactions, viewer.userId),
     [reactions, viewer.userId]
+  );
+  const pinnedMessages = useMemo(
+    () =>
+      messages
+        .filter((message) => message.pinned_at)
+        .sort((left, right) => new Date(right.pinned_at ?? 0).getTime() - new Date(left.pinned_at ?? 0).getTime()),
+    [messages]
   );
   const isMessageCooldownActive = Boolean(messageCooldownUntil && messageCooldownUntil > Date.now());
   const timelineItems = useMemo(() => {
@@ -337,7 +333,7 @@ export default function ChatPageClient() {
           setReactions([]);
           console.warn('Chat page: reactions unavailable while loading messages', reactionError);
         }
-        setMessages((current) => mergeMessages(current, loadedMessages));
+        setMessages(loadedMessages);
         return loadedMessages;
       } catch (error) {
         console.error('Chat page: failed to load messages', error);
@@ -397,6 +393,7 @@ export default function ChatPageClient() {
           profileData?.subscription_status === 'active' || profileData?.subscription_status === 'trialing';
         const premiumTier =
           profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'pro';
+        const isAdmin = (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL;
 
         setViewer({
           userId: session.user.id,
@@ -412,7 +409,8 @@ export default function ChatPageClient() {
             session.user.user_metadata?.avatar_url ??
             session.user.user_metadata?.picture ??
             null,
-          hasPremium: Boolean(isActive && premiumTier),
+          hasPremium: Boolean((isActive && premiumTier) || isAdmin),
+          isAdmin,
           loading: false,
         });
       } catch (error) {
@@ -430,7 +428,8 @@ export default function ChatPageClient() {
             session.user.user_metadata?.avatar_url ??
             session.user.user_metadata?.picture ??
             null,
-          hasPremium: false,
+          hasPremium: (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL,
+          isAdmin: (session.user.email ?? '').toLowerCase() === CHAT_ADMIN_EMAIL,
           loading: false,
         });
       }
@@ -560,7 +559,9 @@ export default function ChatPageClient() {
               if (current.some((message) => message.id === nextMessage.id)) {
                 return current;
               }
-              return [...current, nextMessage];
+              return [...current, nextMessage].sort(
+                (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+              );
             });
           }
         )
@@ -574,11 +575,20 @@ export default function ChatPageClient() {
           },
           (payload) => {
             const nextMessage = payload.new as ChatMessage;
-            setMessages((current) =>
-              nextMessage.deleted_at
-                ? current.filter((message) => message.id !== nextMessage.id)
-                : current.map((message) => (message.id === nextMessage.id ? nextMessage : message))
-            );
+            setMessages((current) => {
+              if (nextMessage.deleted_at) {
+                return current.filter((message) => message.id !== nextMessage.id);
+              }
+
+              const hasMessage = current.some((message) => message.id === nextMessage.id);
+              const nextMessages = hasMessage
+                ? current.map((message) => (message.id === nextMessage.id ? nextMessage : message))
+                : [...current, nextMessage];
+
+              return nextMessages.sort(
+                (left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime()
+              );
+            });
           }
         )
         .subscribe((status, error) => {
@@ -606,8 +616,24 @@ export default function ChatPageClient() {
       void loadMessages(selectedRoomId, { silent: true, preserveError: true });
     }, 3000);
 
+    const syncMessages = () => {
+      if (document.visibilityState === 'hidden') return;
+      void loadMessages(selectedRoomId, { silent: true, preserveError: true });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncMessages();
+      }
+    };
+
+    window.addEventListener('focus', syncMessages);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       window.clearInterval(intervalId);
+      window.removeEventListener('focus', syncMessages);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [loadMessages, selectedRoomId, viewer.hasPremium]);
 
@@ -814,6 +840,34 @@ export default function ChatPageClient() {
     [deletingMessageId, loadMessages, selectedRoomId]
   );
 
+  const handleTogglePinMessage = useCallback(
+    async (messageId: string) => {
+      if (!selectedRoomId || pinningMessageId || !viewer.isAdmin) {
+        return;
+      }
+
+      setPinningMessageId(messageId);
+      setReactionPickerMessageId(null);
+      setConfirmDeleteMessageId(null);
+
+      try {
+        const updatedMessage = await toggleChatMessagePin(messageId);
+        setMessages((current) =>
+          current
+            .map((message) => (message.id === updatedMessage.id ? updatedMessage : message))
+            .sort((left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime())
+        );
+        void loadMessages(selectedRoomId, { silent: true, preserveError: true });
+      } catch (error) {
+        console.error('Chat page: failed to toggle pinned message', error);
+        setComposerError('Unable to update pinned message right now.');
+      } finally {
+        setPinningMessageId(null);
+      }
+    },
+    [loadMessages, pinningMessageId, selectedRoomId, viewer.isAdmin]
+  );
+
   return (
     <div className="dashboard-container h-[100dvh] overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
       <style jsx global>{`
@@ -912,7 +966,7 @@ export default function ChatPageClient() {
         }}
       >
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pb-28 pt-1.5 sm:px-4 sm:pt-4 lg:pb-4">
+          <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pb-28 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4">
           {viewer.loading ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
@@ -951,7 +1005,7 @@ export default function ChatPageClient() {
               </div>
             </div>
           ) : (
-            <section className="flex h-[calc(100dvh-8.5rem)] min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-4">
+            <section className="flex h-[calc(100dvh-8.5rem)] min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-3">
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] lg:h-full">
                 <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                   {loadingRooms ? (
@@ -997,6 +1051,38 @@ export default function ChatPageClient() {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {pinnedMessages.length > 0 ? (
+                        <div className="rounded-2xl border border-purple-200 bg-purple-50/80 p-3 text-sm text-purple-800 dark:border-purple-800/60 dark:bg-purple-950/25 dark:text-purple-100">
+                          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-purple-600 dark:text-purple-300">
+                            <Pin className="h-3.5 w-3.5" />
+                            Pinned
+                          </div>
+                          <div className="space-y-2">
+                            {pinnedMessages.map((message) => (
+                              <button
+                                key={message.id}
+                                type="button"
+                                onClick={() => {
+                                  document
+                                    .getElementById(`chat-message-${message.id}`)
+                                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }}
+                                className="block w-full rounded-xl bg-white/80 px-3 py-2 text-left transition-colors hover:bg-white dark:bg-[#111c2d]/80 dark:hover:bg-[#162338]"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="min-w-0 truncate text-xs font-semibold">
+                                    {message.display_name || 'Member'}
+                                  </span>
+                                  <span className="shrink-0 text-[11px] text-purple-500 dark:text-purple-300">
+                                    {formatMessageTime(message.created_at)}
+                                  </span>
+                                </div>
+                                <p className="mt-1 line-clamp-2 text-xs text-gray-700 dark:text-gray-200">{message.body}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                       {timelineItems.map((item) => {
                         if (item.type === 'divider') {
                           return (
@@ -1012,6 +1098,8 @@ export default function ChatPageClient() {
 
                         const { message } = item;
                         const isOwnMessage = message.user_id === viewer.userId;
+                        const canDeleteMessage = isOwnMessage || viewer.isAdmin;
+                        const isPinned = Boolean(message.pinned_at);
                         const isConfirmingDelete = confirmDeleteMessageId === message.id;
                         const authorName = message.display_name || 'Member';
                         const messageReactions = reactionsByMessage.get(message.id) ?? [];
@@ -1021,6 +1109,7 @@ export default function ChatPageClient() {
 
                         return (
                           <div
+                            id={`chat-message-${message.id}`}
                             key={item.key}
                             className={`group flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                           >
@@ -1057,6 +1146,18 @@ export default function ChatPageClient() {
                                   <span className={`text-xs ${isOwnMessage ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
                                     {formatMessageTime(message.created_at)}
                                   </span>
+                                  {isPinned ? (
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                        isOwnMessage
+                                          ? 'bg-white/15 text-purple-50'
+                                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900/35 dark:text-purple-200'
+                                      }`}
+                                    >
+                                      <Pin className="h-3 w-3" />
+                                      Pinned
+                                    </span>
+                                  ) : null}
                                 </div>
                                 <p className={`mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
                                   {message.body}
@@ -1064,7 +1165,7 @@ export default function ChatPageClient() {
                               </div>
 
                               {messageReactions.length > 0 ? (
-                                <div className="mt-2 flex flex-wrap justify-start gap-2">
+                                <div className="mt-2 flex flex-wrap justify-start gap-2.5">
                                   {messageReactions.map((reaction) => {
                                     const reactionKey = `${message.id}:${reaction.emoji}`;
 
@@ -1074,14 +1175,14 @@ export default function ChatPageClient() {
                                         type="button"
                                         onClick={() => void handleToggleReaction(message.id, reaction.emoji)}
                                         disabled={togglingReactionKey === reactionKey}
-                                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                           reaction.reacted
                                             ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-700/60 dark:bg-purple-900/20 dark:text-purple-200'
                                             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338]'
                                         }`}
                                         aria-label={`Toggle ${reaction.emoji} reaction`}
                                       >
-                                        <span>{reaction.emoji}</span>
+                                        <span className="text-base leading-none">{reaction.emoji}</span>
                                         <span>{reaction.count}</span>
                                       </button>
                                     );
@@ -1137,7 +1238,18 @@ export default function ChatPageClient() {
                                       <CornerUpLeft className="h-3 w-3" />
                                       Reply
                                     </button>
-                                    {isOwnMessage ? (
+                                    {viewer.isAdmin ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleTogglePinMessage(message.id)}
+                                        disabled={pinningMessageId === message.id}
+                                        className="flex items-center gap-1 rounded-full border border-purple-200 bg-white px-2.5 py-1 text-[11px] font-medium text-purple-600 shadow-sm transition-colors hover:bg-purple-50 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-800/70 dark:bg-[#111c2d] dark:text-purple-300 dark:hover:bg-purple-950/20 dark:hover:text-purple-200"
+                                      >
+                                        <Pin className="h-3 w-3" />
+                                        {pinningMessageId === message.id ? 'Saving...' : isPinned ? 'Unpin' : 'Pin'}
+                                      </button>
+                                    ) : null}
+                                    {canDeleteMessage ? (
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -1148,7 +1260,7 @@ export default function ChatPageClient() {
                                         className="flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
                                       >
                                         <Trash2 className="h-3 w-3" />
-                                        Delete
+                                        {isOwnMessage ? 'Delete' : 'Admin delete'}
                                       </button>
                                     ) : null}
                                   </>
@@ -1158,7 +1270,7 @@ export default function ChatPageClient() {
                               {reactionPickerMessageId === message.id ? (
                                 <div
                                   data-reaction-picker
-                                  className={`mt-2 hidden lg:flex max-w-full flex-wrap items-center gap-1 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${
+                                  className={`mt-2 hidden lg:flex max-w-full flex-wrap items-center gap-1.5 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${
                                     isOwnMessage ? 'justify-start' : 'justify-end'
                                   }`}
                                 >
@@ -1171,7 +1283,7 @@ export default function ChatPageClient() {
                                         type="button"
                                         onClick={() => void handleToggleReaction(message.id, emoji)}
                                         disabled={togglingReactionKey === reactionKey}
-                                        className="flex h-9 w-9 items-center justify-center rounded-xl text-base transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#162338]"
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl text-[20px] transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#162338]"
                                         aria-label={`React with ${emoji}`}
                                       >
                                         {emoji}
@@ -1181,7 +1293,7 @@ export default function ChatPageClient() {
                                 </div>
                               ) : null}
 
-                              {isOwnMessage ? (
+                              {canDeleteMessage || viewer.isAdmin ? (
                                 <div className="mt-2 lg:hidden">
                                   {isConfirmingDelete ? (
                                     <div className="flex flex-wrap items-center gap-2">
@@ -1204,18 +1316,33 @@ export default function ChatPageClient() {
                                       </button>
                                     </div>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setReactionPickerMessageId(null);
-                                        setConfirmDeleteMessageId(message.id);
-                                      }}
-                                      disabled={deletingMessageId === message.id}
-                                      className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                      Delete
-                                    </button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      {viewer.isAdmin ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleTogglePinMessage(message.id)}
+                                          disabled={pinningMessageId === message.id}
+                                          className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-white px-2.5 py-1 text-[11px] font-medium text-purple-600 transition-colors hover:bg-purple-50 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-800/70 dark:bg-[#111c2d] dark:text-purple-300 dark:hover:bg-purple-950/20 dark:hover:text-purple-200"
+                                        >
+                                          <Pin className="h-3 w-3" />
+                                          {pinningMessageId === message.id ? 'Saving...' : isPinned ? 'Unpin' : 'Pin'}
+                                        </button>
+                                      ) : null}
+                                      {canDeleteMessage ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setReactionPickerMessageId(null);
+                                            setConfirmDeleteMessageId(message.id);
+                                          }}
+                                          disabled={deletingMessageId === message.id}
+                                          className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                          {isOwnMessage ? 'Delete' : 'Admin delete'}
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   )}
                                 </div>
                               ) : null}
@@ -1250,20 +1377,30 @@ export default function ChatPageClient() {
                         </button>
                       </div>
                     ) : null}
-                    <textarea
-                      value={composerValue}
-                      onChange={(event) => {
-                        setComposerValue(event.target.value);
-                        if (composerError) {
-                          setComposerError(null);
-                        }
-                      }}
-                      onKeyDown={handleComposerKeyDown}
-                      placeholder="Share something with the community..."
-                      maxLength={CHAT_MAX_MESSAGE_LENGTH}
-                      rows={3}
-                      className="w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white"
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={composerValue}
+                        onChange={(event) => {
+                          setComposerValue(event.target.value);
+                          if (composerError) {
+                            setComposerError(null);
+                          }
+                        }}
+                        onKeyDown={handleComposerKeyDown}
+                        placeholder="Share something with the community..."
+                        maxLength={CHAT_MAX_MESSAGE_LENGTH}
+                        rows={3}
+                        className="w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:pr-4"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
+                        className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:hidden"
+                        aria-label="Send message"
+                      >
+                        {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      </button>
+                    </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="order-2 text-xs text-gray-500 dark:text-gray-400 sm:order-1">
                         {composerValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH} characters
@@ -1275,7 +1412,7 @@ export default function ChatPageClient() {
                         <button
                           type="submit"
                           disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
-                          className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
+                          className="hidden items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:inline-flex"
                         >
                           {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                           Send message
