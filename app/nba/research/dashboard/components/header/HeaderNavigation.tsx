@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ProfileAvatar } from './ProfileAvatar';
 
 interface HeaderNavigationProps {
@@ -31,27 +31,28 @@ export function HeaderNavigation({
   variant = 'mobile',
 }: HeaderNavigationProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const isDesktop = variant === 'desktop';
   const prefetchProps = () => {
     router.prefetch('/props');
     void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
   };
+  const isPropsActive = pathname?.startsWith('/props');
+  const isJournalActive = pathname?.startsWith('/journal');
+  const isChatActive = pathname?.startsWith('/chat');
 
-  const journalButtonClasses = `flex flex-col items-center justify-center gap-1 transition-all duration-300 ${
-    !hasPremium
-      ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-      : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
-  } ${
-    isDesktop && typeof document !== 'undefined' && document.body.hasAttribute('data-parlay-active')
-      ? 'absolute left-4'
-      : isDesktop
-      ? 'absolute left-1/2 -translate-x-1/2'
-      : ''
-  }`;
+  const navButtonClass = (active: boolean, disabled = false) =>
+    `flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${
+      disabled
+        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+        : active
+          ? 'text-purple-600 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-900/35'
+          : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'
+    }`;
 
   return (
-    <div className={isDesktop ? 'hidden lg:flex items-center justify-between h-16 px-4 relative' : 'flex items-center justify-between h-16 px-4'}>
+    <div className={isDesktop ? 'hidden lg:grid grid-cols-5 items-center h-16 px-4 gap-2' : 'grid grid-cols-5 items-center h-16 px-4 gap-2'}>
       {/* Props */}
       <button
         onMouseEnter={prefetchProps}
@@ -61,7 +62,7 @@ export function HeaderNavigation({
           prefetchProps();
           router.push('/props');
         }}
-        className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400"
+        className={navButtonClass(!!isPropsActive)}
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" strokeWidth={2} />
@@ -85,7 +86,7 @@ export function HeaderNavigation({
           }
           router.push('/journal');
         }}
-        className={journalButtonClasses}
+        className={navButtonClass(!!isJournalActive, !hasPremium)}
       >
         {!hasPremium ? (
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -98,12 +99,26 @@ export function HeaderNavigation({
         )}
         <span className="text-xs font-medium">Journal</span>
       </button>
+
+      {/* Chat */}
+      <button
+        onClick={() => {
+          if (!hasPremium) {
+            router.push('/subscription');
+            return;
+          }
+          router.push('/chat');
+        }}
+        className={navButtonClass(!!isChatActive, !hasPremium)}
+      >
+        <span className="text-xs font-medium">Chat</span>
+      </button>
       
       {/* Profile */}
       <button
         data-profile-button
         onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-        className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+        className={navButtonClass(showProfileDropdown)}
       >
         <ProfileAvatar username={username} userEmail={userEmail} avatarUrl={avatarUrl} />
         <span className="text-xs font-medium">Profile</span>
@@ -113,7 +128,7 @@ export function HeaderNavigation({
       <button
         data-settings-button
         onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-        className="flex flex-col items-center justify-center gap-1 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+        className={navButtonClass(showSettingsDropdown)}
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
