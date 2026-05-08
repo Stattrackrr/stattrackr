@@ -7,7 +7,11 @@ import { SESSION_KEY } from '../types';
  */
 export function getSessionStorage(key: string): string | null {
   if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem(key);
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -15,7 +19,11 @@ export function getSessionStorage(key: string): string | null {
  */
 export function setSessionStorage(key: string, value: string): void {
   if (typeof window === 'undefined') return;
-  sessionStorage.setItem(key, value);
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore storage access failures on restricted browsers.
+  }
 }
 
 /**
@@ -23,7 +31,11 @@ export function setSessionStorage(key: string, value: string): void {
  */
 export function getLocalStorage(key: string): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(key);
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -31,7 +43,11 @@ export function getLocalStorage(key: string): string | null {
  */
 export function setLocalStorage(key: string, value: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(key, value);
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage access failures on restricted browsers.
+  }
 }
 
 /**
@@ -67,6 +83,10 @@ export function updateSessionProperty(key: string, value: any): void {
  */
 export function removeSession(): void {
   if (typeof window === 'undefined') return;
-  sessionStorage.removeItem(SESSION_KEY);
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Ignore storage access failures on restricted browsers.
+  }
 }
 
