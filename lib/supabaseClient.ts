@@ -593,6 +593,76 @@ export interface Database {
           updated_at?: string
         }
       }
+      chat_rooms: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          is_premium: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          is_premium?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string | null
+          is_premium?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          room_id: string
+          user_id: string
+          body: string
+          display_name: string
+          avatar_url: string | null
+          reply_to_message_id: string | null
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          user_id?: string
+          body: string
+          display_name?: string
+          avatar_url?: string | null
+          reply_to_message_id?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          user_id?: string
+          body?: string
+          display_name?: string
+          avatar_url?: string | null
+          reply_to_message_id?: string | null
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never
