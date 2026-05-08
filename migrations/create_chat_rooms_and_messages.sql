@@ -211,8 +211,8 @@ BEGIN
     RAISE EXCEPTION 'Message cannot be empty';
   END IF;
 
-  IF char_length(NEW.body) > 500 THEN
-    RAISE EXCEPTION 'Message cannot exceed 500 characters';
+  IF char_length(NEW.body) > 1500 THEN
+    RAISE EXCEPTION 'Message cannot exceed 1500 characters';
   END IF;
 
   IF target_room.is_premium AND NOT public.chat_user_has_premium_access(NEW.user_id) THEN

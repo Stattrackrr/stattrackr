@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 
 export const CHAT_MESSAGE_LIMIT = 50;
-export const CHAT_MAX_MESSAGE_LENGTH = 500;
+export const CHAT_MAX_MESSAGE_LENGTH = 1500;
 export const CHAT_REACTION_OPTIONS = ['👍', '🔥', '😂', '👀', '💰', '✅'] as const;
 
 export type ChatRoomSlug = 'general' | 'picks';
