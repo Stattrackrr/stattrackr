@@ -541,47 +541,60 @@ export default function ChatPageClient() {
   useEffect(() => {
     if (!viewer.hasPremium || !selectedRoomId) return;
 
-    const channel = supabase
-      .channel(`chat-room-${selectedRoomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `room_id=eq.${selectedRoomId}`,
-        },
-        (payload) => {
-          const nextMessage = payload.new as ChatMessage;
-          setMessages((current) => {
-            if (current.some((message) => message.id === nextMessage.id)) {
-              return current;
-            }
-            return [...current, nextMessage];
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `room_id=eq.${selectedRoomId}`,
-        },
-        (payload) => {
-          const nextMessage = payload.new as ChatMessage;
-          setMessages((current) =>
-            nextMessage.deleted_at
-              ? current.filter((message) => message.id !== nextMessage.id)
-              : current.map((message) => (message.id === nextMessage.id ? nextMessage : message))
-          );
-        }
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(`chat-room-${selectedRoomId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `room_id=eq.${selectedRoomId}`,
+          },
+          (payload) => {
+            const nextMessage = payload.new as ChatMessage;
+            setMessages((current) => {
+              if (current.some((message) => message.id === nextMessage.id)) {
+                return current;
+              }
+              return [...current, nextMessage];
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `room_id=eq.${selectedRoomId}`,
+          },
+          (payload) => {
+            const nextMessage = payload.new as ChatMessage;
+            setMessages((current) =>
+              nextMessage.deleted_at
+                ? current.filter((message) => message.id !== nextMessage.id)
+                : current.map((message) => (message.id === nextMessage.id ? nextMessage : message))
+            );
+          }
+        )
+        .subscribe((status, error) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('Chat page: realtime unavailable, polling fallback remains active', error ?? status);
+          }
+        });
+    } catch (error) {
+      console.warn('Chat page: failed to start realtime subscription, polling fallback remains active', error);
+      channel = null;
+    }
 
     return () => {
-      void supabase.removeChannel(channel);
+      if (channel) {
+        void supabase.removeChannel(channel);
+      }
     };
   }, [selectedRoomId, viewer.hasPremium]);
 
