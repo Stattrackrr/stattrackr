@@ -5,16 +5,21 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { useTheme } from '@/contexts/ThemeContext';
 import {
   CHAT_MAX_MESSAGE_LENGTH,
+  CHAT_REACTION_OPTIONS,
   ChatMessage,
+  ChatMessageReaction,
   ChatRoom,
+  deleteChatMessage,
+  fetchChatReactions,
   fetchChatMessages,
   fetchChatRooms,
   sendChatMessage,
+  toggleChatReaction,
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CornerUpLeft, Loader2, MessageSquareText, Send, X } from 'lucide-react';
+import { CornerUpLeft, Loader2, MessageSquareText, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
 
@@ -36,6 +41,63 @@ const DEFAULT_VIEWER: ViewerState = {
   loading: true,
 };
 
+type ChatTimelineItem =
+  | { type: 'divider'; key: string; label: string }
+  | { type: 'message'; key: string; message: ChatMessage };
+
+type ChatReactionSummary = {
+  emoji: string;
+  count: number;
+  reacted: boolean;
+};
+
+const MESSAGE_COOLDOWN_MS = 5000;
+const MESSAGE_COOLDOWN_TEXT = 'Message cooldown, wait 5 seconds.';
+
+function isMissingReactionTableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const maybeError = error as { code?: string; message?: string; details?: string; hint?: string };
+  const combinedText = [maybeError.message, maybeError.details, maybeError.hint].filter(Boolean).join(' ').toLowerCase();
+
+  return (
+    maybeError.code === '42P01' ||
+    maybeError.code === 'PGRST205' ||
+    combinedText.includes('chat_message_reactions') ||
+    combinedText.includes('schema cache')
+  );
+}
+
+function getChatErrorMessage(error: unknown): string | null {
+  if (error instanceof Error) {
+    return error.message || null;
+  }
+
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const maybeError = error as { message?: string };
+  return typeof maybeError.message === 'string' ? maybeError.message : null;
+}
+
+function isExpectedChatRateLimitError(error: unknown): boolean {
+  const message = getChatErrorMessage(error)?.toLowerCase() ?? '';
+
+  return (
+    message.includes('message cooldown') ||
+    message.includes('wait a moment before sending another message') ||
+    message.includes('sending messages too quickly')
+  );
+}
+
+function isFiveSecondCooldownError(error: unknown): boolean {
+  const message = getChatErrorMessage(error)?.toLowerCase() ?? '';
+  return message.includes('message cooldown');
+}
+
 function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
   const messageMap = new Map<string, ChatMessage>();
 
@@ -52,6 +114,46 @@ function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMes
   );
 }
 
+function buildReactionMap(
+  reactions: ChatMessageReaction[],
+  viewerUserId: string | null
+): Map<string, ChatReactionSummary[]> {
+  const messageReactionMap = new Map<string, Map<string, ChatReactionSummary>>();
+
+  for (const reaction of reactions) {
+    const emojiMap = messageReactionMap.get(reaction.message_id) ?? new Map<string, ChatReactionSummary>();
+    const existingSummary = emojiMap.get(reaction.emoji);
+
+    if (existingSummary) {
+      existingSummary.count += 1;
+      existingSummary.reacted = existingSummary.reacted || reaction.user_id === viewerUserId;
+    } else {
+      emojiMap.set(reaction.emoji, {
+        emoji: reaction.emoji,
+        count: 1,
+        reacted: reaction.user_id === viewerUserId,
+      });
+    }
+
+    messageReactionMap.set(reaction.message_id, emojiMap);
+  }
+
+  const summarizedMap = new Map<string, ChatReactionSummary[]>();
+  for (const [messageId, emojiMap] of messageReactionMap.entries()) {
+    summarizedMap.set(
+      messageId,
+      Array.from(emojiMap.values()).sort((left, right) => {
+        if (right.count !== left.count) {
+          return right.count - left.count;
+        }
+        return left.emoji.localeCompare(right.emoji);
+      })
+    );
+  }
+
+  return summarizedMap;
+}
+
 function getAvatarColor(seed: string): string {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
@@ -64,19 +166,46 @@ function getAvatarColor(seed: string): string {
 
 function formatMessageTime(value: string): string {
   const date = new Date(value);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 
-  if (sameDay) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getOrdinal(day: number): string {
+  const mod10 = day % 10;
+  const mod100 = day % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return `${day}st`;
+  if (mod10 === 2 && mod100 !== 12) return `${day}nd`;
+  if (mod10 === 3 && mod100 !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
+function formatTimelineDivider(date: Date, now: Date): string {
+  const todayKey = getLocalDateKey(now);
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterdayKey = getLocalDateKey(yesterday);
+  const dateKey = getLocalDateKey(date);
+
+  if (dateKey === todayKey) {
+    return 'Today';
   }
 
-  return date.toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  if (dateKey === yesterdayKey) {
+    return 'Yesterday';
+  }
+
+  const baseLabel = `${getOrdinal(date.getDate())} of ${date.toLocaleString([], { month: 'long' })}`;
+  if (date.getFullYear() !== now.getFullYear()) {
+    return `${baseLabel} ${date.getFullYear()}`;
+  }
+
+  return baseLabel;
 }
 
 function ChatAvatar({
@@ -115,13 +244,20 @@ export default function ChatPageClient() {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [reactions, setReactions] = useState<ChatMessageReaction[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [confirmDeleteMessageId, setConfirmDeleteMessageId] = useState<string | null>(null);
+  const [togglingReactionKey, setTogglingReactionKey] = useState<string | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
-  const [messageError, setMessageError] = useState<string | null>(null);
+  const [threadError, setThreadError] = useState<string | null>(null);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [messageCooldownUntil, setMessageCooldownUntil] = useState<number | null>(null);
   const [composerValue, setComposerValue] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -130,15 +266,57 @@ export default function ChatPageClient() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const messageCooldownTimeoutRef = useRef<number | null>(null);
 
-  const selectedRoom = useMemo(
-    () => rooms.find((room) => room.id === selectedRoomId) ?? null,
-    [rooms, selectedRoomId]
-  );
   const replyTarget = useMemo(
     () => messages.find((message) => message.id === replyTargetId) ?? null,
     [messages, replyTargetId]
   );
+  const reactionsByMessage = useMemo(
+    () => buildReactionMap(reactions, viewer.userId),
+    [reactions, viewer.userId]
+  );
+  const isMessageCooldownActive = Boolean(messageCooldownUntil && messageCooldownUntil > Date.now());
+  const timelineItems = useMemo(() => {
+    const now = new Date();
+    const items: ChatTimelineItem[] = [];
+    let previousDateKey: string | null = null;
+
+    for (const message of messages) {
+      const messageDate = new Date(message.created_at);
+      const messageDateKey = getLocalDateKey(messageDate);
+
+      if (messageDateKey !== previousDateKey) {
+        items.push({
+          type: 'divider',
+          key: `divider-${messageDateKey}`,
+          label: formatTimelineDivider(messageDate, now),
+        });
+        previousDateKey = messageDateKey;
+      }
+
+      items.push({
+        type: 'message',
+        key: message.id,
+        message,
+      });
+    }
+
+    return items;
+  }, [messages]);
+
+  const refreshReactions = useCallback(async (nextMessages: ChatMessage[]) => {
+    const messageIds = nextMessages.map((message) => message.id);
+
+    if (messageIds.length === 0) {
+      setReactions([]);
+      return [];
+    }
+
+    const loadedReactions = await fetchChatReactions(messageIds);
+    setReactions(loadedReactions);
+    return loadedReactions;
+  }, []);
 
   const loadMessages = useCallback(
     async (roomId: string, options?: { silent?: boolean; preserveError?: boolean }) => {
@@ -148,16 +326,22 @@ export default function ChatPageClient() {
         setLoadingMessages(true);
       }
       if (!preserveError) {
-        setMessageError(null);
+        setThreadError(null);
       }
 
       try {
         const loadedMessages = await fetchChatMessages(roomId);
+        try {
+          await refreshReactions(loadedMessages);
+        } catch (reactionError) {
+          setReactions([]);
+          console.warn('Chat page: reactions unavailable while loading messages', reactionError);
+        }
         setMessages((current) => mergeMessages(current, loadedMessages));
         return loadedMessages;
       } catch (error) {
         console.error('Chat page: failed to load messages', error);
-        setMessageError('Unable to load messages for this room.');
+        setThreadError('Unable to load messages for this room.');
         return null;
       } finally {
         if (!silent) {
@@ -165,7 +349,7 @@ export default function ChatPageClient() {
         }
       }
     },
-    []
+    [refreshReactions]
   );
 
   useEffect(() => {
@@ -310,7 +494,9 @@ export default function ChatPageClient() {
   useEffect(() => {
     if (!viewer.hasPremium || !selectedRoomId) {
       setMessages([]);
+      setReactions([]);
       setReplyTargetId(null);
+      setReactionPickerMessageId(null);
       return;
     }
 
@@ -323,6 +509,34 @@ export default function ChatPageClient() {
       isMounted = false;
     };
   }, [loadMessages, selectedRoomId, viewer.hasPremium]);
+
+  useEffect(() => {
+    if (!reactionPickerMessageId) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target.closest('[data-reaction-picker]') || target.closest('[data-reaction-toggle]')) {
+        return;
+      }
+
+      setReactionPickerMessageId(null);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [reactionPickerMessageId]);
+
+  useEffect(() => {
+    return () => {
+      if (messageCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(messageCooldownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!viewer.hasPremium || !selectedRoomId) return;
@@ -432,9 +646,34 @@ export default function ChatPageClient() {
     router.push('/');
   };
 
+  const startMessageCooldown = useCallback((durationMs = MESSAGE_COOLDOWN_MS) => {
+    if (messageCooldownTimeoutRef.current !== null) {
+      window.clearTimeout(messageCooldownTimeoutRef.current);
+    }
+
+    const nextCooldownUntil = Date.now() + durationMs;
+    setMessageCooldownUntil(nextCooldownUntil);
+    setComposerError(MESSAGE_COOLDOWN_TEXT);
+
+    messageCooldownTimeoutRef.current = window.setTimeout(() => {
+      setMessageCooldownUntil((current) => (current === nextCooldownUntil ? null : current));
+      setComposerError((current) => (current === MESSAGE_COOLDOWN_TEXT ? null : current));
+      messageCooldownTimeoutRef.current = null;
+    }, durationMs);
+  }, []);
+
   const submitMessage = useCallback(async () => {
     if (!selectedRoomId || !viewer.hasPremium || sendingMessage) {
       return;
+    }
+
+    if (messageCooldownUntil && messageCooldownUntil > Date.now()) {
+      setComposerError(MESSAGE_COOLDOWN_TEXT);
+      return;
+    }
+
+    if (messageCooldownUntil) {
+      setMessageCooldownUntil(null);
     }
 
     const trimmedMessage = composerValue.trim();
@@ -443,12 +682,12 @@ export default function ChatPageClient() {
     }
 
     if (trimmedMessage.length > CHAT_MAX_MESSAGE_LENGTH) {
-      setMessageError(`Messages must be ${CHAT_MAX_MESSAGE_LENGTH} characters or less.`);
+      setComposerError(`Messages must be ${CHAT_MAX_MESSAGE_LENGTH} characters or less.`);
       return;
     }
 
     setSendingMessage(true);
-    setMessageError(null);
+    setComposerError(null);
 
     try {
       const createdMessage = await sendChatMessage(selectedRoomId, trimmedMessage, replyTargetId);
@@ -462,13 +701,33 @@ export default function ChatPageClient() {
       setReplyTargetId(null);
       void loadMessages(selectedRoomId, { silent: true, preserveError: true });
     } catch (error) {
-      console.error('Chat page: failed to send message', error);
       const fallbackError = 'Unable to send your message right now.';
-      setMessageError(error instanceof Error ? error.message || fallbackError : fallbackError);
+      const errorMessage = getChatErrorMessage(error);
+
+      if (isExpectedChatRateLimitError(error)) {
+        if (isFiveSecondCooldownError(error)) {
+          startMessageCooldown();
+        } else {
+          setComposerError(errorMessage || fallbackError);
+        }
+        return;
+      }
+
+      console.error('Chat page: failed to send message', error);
+      setComposerError(errorMessage || fallbackError);
     } finally {
       setSendingMessage(false);
     }
-  }, [composerValue, loadMessages, replyTargetId, selectedRoomId, sendingMessage, viewer.hasPremium]);
+  }, [
+    composerValue,
+    loadMessages,
+    messageCooldownUntil,
+    replyTargetId,
+    selectedRoomId,
+    sendingMessage,
+    startMessageCooldown,
+    viewer.hasPremium,
+  ]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -484,8 +743,66 @@ export default function ChatPageClient() {
     await submitMessage();
   };
 
+  const handleToggleReaction = useCallback(
+    async (messageId: string, emoji: string) => {
+      if (!viewer.userId || !viewer.hasPremium || togglingReactionKey) {
+        return;
+      }
+
+      const reactionKey = `${messageId}:${emoji}`;
+      setTogglingReactionKey(reactionKey);
+      setReactionPickerMessageId(null);
+
+      try {
+        await toggleChatReaction(messageId, viewer.userId, emoji);
+        try {
+          await refreshReactions(messages);
+        } catch (reactionError) {
+          setReactions([]);
+          console.warn('Chat page: reactions unavailable after toggle', reactionError);
+        }
+      } catch (error) {
+        console.error('Chat page: failed to toggle reaction', error);
+        setComposerError(
+          isMissingReactionTableError(error)
+            ? 'Run the chat reactions SQL migration to enable reactions.'
+            : 'Unable to update your reaction right now.'
+        );
+      } finally {
+        setTogglingReactionKey(null);
+      }
+    },
+    [messages, refreshReactions, togglingReactionKey, viewer.hasPremium, viewer.userId]
+  );
+
+  const handleDeleteMessage = useCallback(
+    async (messageId: string) => {
+      if (!selectedRoomId || deletingMessageId) {
+        return;
+      }
+
+      setDeletingMessageId(messageId);
+      setConfirmDeleteMessageId(null);
+      setReactionPickerMessageId(null);
+
+      try {
+        await deleteChatMessage(messageId);
+        setMessages((current) => current.filter((message) => message.id !== messageId));
+        setReactions((current) => current.filter((reaction) => reaction.message_id !== messageId));
+        setReplyTargetId((current) => (current === messageId ? null : current));
+        void loadMessages(selectedRoomId, { silent: true, preserveError: true });
+      } catch (error) {
+        console.error('Chat page: failed to delete message', error);
+        setComposerError('Unable to delete this message right now.');
+      } finally {
+        setDeletingMessageId(null);
+      }
+    },
+    [deletingMessageId, loadMessages, selectedRoomId]
+  );
+
   return (
-    <div className="dashboard-container min-h-screen bg-gray-50 dark:bg-[#050d1a] text-gray-900 dark:text-white transition-colors lg:overflow-x-auto lg:overflow-y-hidden">
+    <div className="dashboard-container h-[100dvh] overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -526,6 +843,30 @@ export default function ChatPageClient() {
             --content-padding-right: 0px;
           }
         }
+
+        .chat-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(168, 85, 247, 0.65) transparent;
+        }
+
+        .chat-scrollbar::-webkit-scrollbar {
+          width: 10px;
+        }
+
+        .chat-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .chat-scrollbar::-webkit-scrollbar-thumb {
+          border-radius: 9999px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+          background-color: rgba(148, 163, 184, 0.38);
+        }
+
+        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(168, 85, 247, 0.68);
+        }
       `}</style>
 
       <DashboardLeftSidebarWrapper
@@ -550,15 +891,15 @@ export default function ChatPageClient() {
       />
 
       <main
-        className="dashboard-container px-0 transition-[margin,width] duration-300"
+        className="dashboard-container h-full overflow-hidden px-0 transition-[margin,width] duration-300"
         style={{
           marginLeft: sidebarOpen ? 'calc(var(--sidebar-width, 0px) + var(--gap, 2px))' : '0px',
           width: sidebarOpen ? 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 2px)))' : '100%',
           paddingLeft: 0,
         }}
       >
-        <div className="mx-auto w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div className="dashboard-container flex min-h-screen w-full flex-col px-4 pb-28 pt-4 lg:pb-4">
+        <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
+          <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-4 pb-28 pt-4 lg:pb-4">
           {viewer.loading ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
@@ -597,7 +938,7 @@ export default function ChatPageClient() {
               </div>
             </div>
           ) : (
-            <section className="flex min-h-0 flex-1 flex-col lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-4">
+            <section className="flex h-[calc(100dvh-8.5rem)] min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-4">
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] lg:h-full">
                 <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                   {loadingRooms ? (
@@ -618,59 +959,60 @@ export default function ChatPageClient() {
                             Discuss bets, share slips, talk through plays, and hang out with the community.
                           </p>
                         </div>
-                        <div className="text-xs uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500">
-                          {messages.length} message{messages.length === 1 ? '' : 's'}
-                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div ref={messageListRef} className="flex-1 overflow-y-auto px-5 py-4">
+                <div ref={messageListRef} className="chat-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
                   {loadingMessages ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading messages...
                     </div>
-                  ) : messageError ? (
+                  ) : threadError ? (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
-                      {messageError}
+                      {threadError}
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 px-6 text-center dark:border-gray-700">
+                    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                       <MessageSquareText className="h-8 w-8 text-purple-500" />
                       <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">No messages yet</h3>
                       <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
-                        Start the conversation and your message will appear live for other members.
+                        Start the conversation!
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {messages.map((message) => {
+                      {timelineItems.map((item) => {
+                        if (item.type === 'divider') {
+                          return (
+                            <div key={item.key} className="flex items-center gap-3 py-2">
+                              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+                                {item.label}
+                              </span>
+                              <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                            </div>
+                          );
+                        }
+
+                        const { message } = item;
                         const isOwnMessage = message.user_id === viewer.userId;
+                        const isConfirmingDelete = confirmDeleteMessageId === message.id;
                         const authorName = message.display_name || 'Member';
+                        const messageReactions = reactionsByMessage.get(message.id) ?? [];
                         const repliedToMessage = message.reply_to_message_id
                           ? messages.find((entry) => entry.id === message.reply_to_message_id) ?? null
                           : null;
 
                         return (
                           <div
-                            key={message.id}
+                            key={item.key}
                             className={`group flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                           >
                             {!isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
-                            <div className="relative max-w-[76%] sm:max-w-[78%]">
-                              <button
-                                type="button"
-                                onClick={() => setReplyTargetId(message.id)}
-                                className={`absolute -top-3 hidden lg:flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-600 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 ${
-                                  isOwnMessage ? 'left-0' : 'right-0'
-                                }`}
-                              >
-                                <CornerUpLeft className="h-3 w-3" />
-                                Reply
-                              </button>
-
+                            <div className="max-w-[76%] sm:max-w-[78%]">
                               <div
                                 className={`rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 ${
                                   isOwnMessage
@@ -707,6 +1049,163 @@ export default function ChatPageClient() {
                                   {message.body}
                                 </p>
                               </div>
+
+                              {messageReactions.length > 0 ? (
+                                <div className="mt-2 flex flex-wrap justify-start gap-2">
+                                  {messageReactions.map((reaction) => {
+                                    const reactionKey = `${message.id}:${reaction.emoji}`;
+
+                                    return (
+                                      <button
+                                        key={reaction.emoji}
+                                        type="button"
+                                        onClick={() => void handleToggleReaction(message.id, reaction.emoji)}
+                                        disabled={togglingReactionKey === reactionKey}
+                                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                          reaction.reacted
+                                            ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-700/60 dark:bg-purple-900/20 dark:text-purple-200'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338]'
+                                        }`}
+                                        aria-label={`Toggle ${reaction.emoji} reaction`}
+                                      >
+                                        <span>{reaction.emoji}</span>
+                                        <span>{reaction.count}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+
+                              <div
+                                className={`mt-2 hidden lg:flex items-center gap-1 transition-opacity ${
+                                  reactionPickerMessageId === message.id || isConfirmingDelete
+                                    ? 'opacity-100'
+                                    : 'opacity-0 group-hover:opacity-100'
+                                } ${isOwnMessage ? 'justify-start' : 'justify-end'}`}
+                              >
+                                {isConfirmingDelete ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleDeleteMessage(message.id)}
+                                      disabled={deletingMessageId === message.id}
+                                      className="flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      {deletingMessageId === message.id ? 'Deleting...' : 'Confirm'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteMessageId(null)}
+                                      disabled={deletingMessageId === message.id}
+                                      className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      data-reaction-toggle
+                                      onClick={() =>
+                                        setReactionPickerMessageId((current) => (current === message.id ? null : message.id))
+                                      }
+                                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      aria-label="Add reaction"
+                                    >
+                                      <Plus className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setReplyTargetId(message.id)}
+                                      className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                    >
+                                      <CornerUpLeft className="h-3 w-3" />
+                                      Reply
+                                    </button>
+                                    {isOwnMessage ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReactionPickerMessageId(null);
+                                          setConfirmDeleteMessageId(message.id);
+                                        }}
+                                        disabled={deletingMessageId === message.id}
+                                        className="flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                        Delete
+                                      </button>
+                                    ) : null}
+                                  </>
+                                )}
+                              </div>
+
+                              {reactionPickerMessageId === message.id ? (
+                                <div
+                                  data-reaction-picker
+                                  className={`mt-2 hidden lg:flex max-w-full flex-wrap items-center gap-1 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${
+                                    isOwnMessage ? 'justify-start' : 'justify-end'
+                                  }`}
+                                >
+                                  {CHAT_REACTION_OPTIONS.map((emoji) => {
+                                    const reactionKey = `${message.id}:${emoji}`;
+
+                                    return (
+                                      <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => void handleToggleReaction(message.id, emoji)}
+                                        disabled={togglingReactionKey === reactionKey}
+                                        className="flex h-9 w-9 items-center justify-center rounded-xl text-base transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#162338]"
+                                        aria-label={`React with ${emoji}`}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+
+                              {isOwnMessage ? (
+                                <div className="mt-2 lg:hidden">
+                                  {isConfirmingDelete ? (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDeleteMessage(message.id)}
+                                        disabled={deletingMessageId === message.id}
+                                        className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                        {deletingMessageId === message.id ? 'Deleting...' : 'Confirm'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteMessageId(null)}
+                                        disabled={deletingMessageId === message.id}
+                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReactionPickerMessageId(null);
+                                        setConfirmDeleteMessageId(message.id);
+                                      }}
+                                      disabled={deletingMessageId === message.id}
+                                      className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:bg-[#111c2d] dark:text-red-300 dark:hover:bg-red-950/20 dark:hover:text-red-200"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
                             {isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
                           </div>
@@ -742,8 +1241,8 @@ export default function ChatPageClient() {
                       value={composerValue}
                       onChange={(event) => {
                         setComposerValue(event.target.value);
-                        if (messageError) {
-                          setMessageError(null);
+                        if (composerError) {
+                          setComposerError(null);
                         }
                       }}
                       onKeyDown={handleComposerKeyDown}
@@ -757,12 +1256,12 @@ export default function ChatPageClient() {
                         {composerValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH} characters
                       </div>
                       <div className="order-1 flex items-center gap-3 sm:order-2">
-                        {messageError ? (
-                          <span className="text-xs text-red-600 dark:text-red-300">{messageError}</span>
+                        {composerError ? (
+                          <span className="text-xs text-red-600 dark:text-red-300">{composerError}</span>
                         ) : null}
                         <button
                           type="submit"
-                          disabled={!selectedRoomId || !composerValue.trim() || sendingMessage}
+                          disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
                           className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
                         >
                           {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
