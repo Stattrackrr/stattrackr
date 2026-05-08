@@ -1171,7 +1171,7 @@ export default function ChatPageClient() {
                             className={`group flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                           >
                             {!isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
-                            <div className="max-w-[76%] sm:max-w-[78%]">
+                            <div className={isEditingMessage ? 'w-[92%] max-w-[720px] sm:w-[78%]' : 'max-w-[76%] sm:max-w-[78%]'}>
                               <div
                                 className={`rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 ${
                                   isOwnMessage
@@ -1227,8 +1227,8 @@ export default function ChatPageClient() {
                                         }
                                       }}
                                       maxLength={CHAT_MAX_MESSAGE_LENGTH}
-                                      rows={4}
-                                      className="w-full resize-none rounded-xl border border-purple-300 bg-white px-3 py-2 text-[13px] leading-5 text-gray-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-purple-700 dark:bg-[#111c2d] dark:text-white"
+                                      rows={5}
+                                      className="min-h-[132px] w-full resize-y rounded-xl border border-purple-300 bg-white px-3 py-2 text-[13px] leading-5 text-gray-900 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-purple-700 dark:bg-[#111c2d] dark:text-white"
                                     />
                                     <div className="flex flex-wrap items-center justify-end gap-2">
                                       <span className={`mr-auto text-[11px] ${isOwnMessage ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
