@@ -70,8 +70,8 @@ export class ErrorBoundary extends Component<Props, State> {
               We're sorry, but something unexpected happened. The error has been logged and we'll look into it.
             </p>
 
-            {/* Error details only shown in development */}
-            {this.state.error && process.env.NODE_ENV === 'development' && (
+            {/* Always show the captured error message so mobile-only crashes are debuggable */}
+            {this.state.error && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
                 <p className="text-sm font-mono text-red-800 dark:text-red-300 break-all">
                   {this.state.error.message}
