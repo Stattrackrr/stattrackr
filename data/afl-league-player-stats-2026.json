@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-05-08T13:21:41.157Z",
+  "generatedAt": "2026-05-08T15:17:52.936Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 565,
@@ -339,7 +339,7 @@
       "marks": 4,
       "goals": 0.22,
       "tackles": 5,
-      "clearances": 7.11,
+      "clearances": 7.22,
       "inside_50s": 3.33,
       "rebound_50s": 1.89,
       "contested_possessions": 10.89,
@@ -456,9 +456,9 @@
       "clearances": 4.62,
       "inside_50s": 3,
       "rebound_50s": 1,
-      "contested_possessions": 10.62,
-      "uncontested_possessions": 15.38,
-      "meters_gained": 180.62,
+      "contested_possessions": 10.5,
+      "uncontested_possessions": 15.5,
+      "meters_gained": 180.75,
       "free_kicks_for": 1.25
     },
     {
@@ -642,13 +642,13 @@
       "handballs": 8.88,
       "marks": 3.88,
       "goals": 0.62,
-      "tackles": 5.88,
+      "tackles": 5.75,
       "clearances": 5.5,
       "inside_50s": 6.12,
       "rebound_50s": 2.25,
       "contested_possessions": 10.25,
       "uncontested_possessions": 14.25,
-      "meters_gained": 504,
+      "meters_gained": 504.62,
       "free_kicks_for": 0.88
     },
     {
@@ -1659,6 +1659,25 @@
       "free_kicks_for": 0.89
     },
     {
+      "name": "Bailey Williams",
+      "team": "Western Bulldogs",
+      "games": 9,
+      "number": 87,
+      "disposals": 21.33,
+      "kicks": 12.56,
+      "handballs": 8.78,
+      "marks": 6.89,
+      "goals": 0.56,
+      "tackles": 2.56,
+      "clearances": 1,
+      "inside_50s": 2.56,
+      "rebound_50s": 2.11,
+      "contested_possessions": 4.78,
+      "uncontested_possessions": 16.56,
+      "meters_gained": 373.78,
+      "free_kicks_for": 1.11
+    },
+    {
       "name": "Oliver Wines",
       "team": "Port Adelaide",
       "games": 6,
@@ -1700,7 +1719,7 @@
       "name": "Dylan Stephens",
       "team": "North Melbourne",
       "games": 8,
-      "number": 90,
+      "number": 91,
       "disposals": 21.25,
       "kicks": 13.62,
       "handballs": 7.62,
@@ -1714,25 +1733,6 @@
       "uncontested_possessions": 16.38,
       "meters_gained": 420.88,
       "free_kicks_for": 0.88
-    },
-    {
-      "name": "Bailey Williams",
-      "team": "Western Bulldogs",
-      "games": 9,
-      "number": 91,
-      "disposals": 21.22,
-      "kicks": 12.44,
-      "handballs": 8.78,
-      "marks": 6.89,
-      "goals": 0.56,
-      "tackles": 2.56,
-      "clearances": 1,
-      "inside_50s": 2.56,
-      "rebound_50s": 2.11,
-      "contested_possessions": 4.89,
-      "uncontested_possessions": 16.56,
-      "meters_gained": 373.78,
-      "free_kicks_for": 1.11
     },
     {
       "name": "Riley Bice",
@@ -2016,7 +2016,7 @@
       "rebound_50s": 4.11,
       "contested_possessions": 3.89,
       "uncontested_possessions": 12.89,
-      "meters_gained": 512.67,
+      "meters_gained": 514,
       "free_kicks_for": 0.67
     },
     {
@@ -3315,7 +3315,7 @@
       "name": "Ryan Lester",
       "team": "Brisbane",
       "games": 9,
-      "number": 87,
+      "number": 88,
       "disposals": 17.56,
       "kicks": 12.44,
       "handballs": 5.11,
@@ -4252,7 +4252,7 @@
       "handballs": 7,
       "marks": 4.33,
       "goals": 0.33,
-      "tackles": 2.33,
+      "tackles": 2.5,
       "clearances": 2.83,
       "inside_50s": 3,
       "rebound_50s": 1.17,
@@ -5143,16 +5143,16 @@
       "disposals": 14.44,
       "kicks": 7.89,
       "handballs": 6.56,
-      "marks": 2.78,
+      "marks": 2.67,
       "goals": 0.44,
       "tackles": 1.33,
       "clearances": 0.56,
       "inside_50s": 2.56,
       "rebound_50s": 1.78,
-      "contested_possessions": 3,
-      "uncontested_possessions": 9.89,
+      "contested_possessions": 3.11,
+      "uncontested_possessions": 9.78,
       "meters_gained": 267.44,
-      "free_kicks_for": 0.11
+      "free_kicks_for": 0.22
     },
     {
       "name": "Nick Watson",
@@ -5947,9 +5947,9 @@
       "clearances": 0.22,
       "inside_50s": 1,
       "rebound_50s": 3.67,
-      "contested_possessions": 5.33,
+      "contested_possessions": 5.44,
       "uncontested_possessions": 7.56,
-      "meters_gained": 216,
+      "meters_gained": 216.56,
       "free_kicks_for": 1
     },
     {
@@ -6443,7 +6443,7 @@
       "rebound_50s": 1,
       "contested_possessions": 9,
       "uncontested_possessions": 4.75,
-      "meters_gained": 178.25,
+      "meters_gained": 177.88,
       "free_kicks_for": 1.75
     },
     {
@@ -6918,7 +6918,7 @@
       "rebound_50s": 0,
       "contested_possessions": 4,
       "uncontested_possessions": 8.5,
-      "meters_gained": 173.25,
+      "meters_gained": 178.5,
       "free_kicks_for": 1
     },
     {
@@ -7431,7 +7431,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 3.33,
       "uncontested_possessions": 7.67,
-      "meters_gained": 197.33,
+      "meters_gained": 192,
       "free_kicks_for": 1.33
     },
     {
@@ -8096,7 +8096,7 @@
       "rebound_50s": 0.67,
       "contested_possessions": 5,
       "uncontested_possessions": 5.33,
-      "meters_gained": 109.67,
+      "meters_gained": 108,
       "free_kicks_for": 1.33
     },
     {
@@ -8642,7 +8642,7 @@
       "marks": 4.67,
       "goals": 2.56,
       "tackles": 2,
-      "clearances": 0.22,
+      "clearances": 0.11,
       "inside_50s": 1.33,
       "rebound_50s": 0,
       "contested_possessions": 4.44,
