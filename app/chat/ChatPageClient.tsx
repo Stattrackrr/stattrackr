@@ -242,6 +242,7 @@ export default function ChatPageClient() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [roomUnreadCounts, setRoomUnreadCounts] = useState<Record<string, number>>({});
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<ChatMessageReaction[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
@@ -529,6 +530,13 @@ export default function ChatPageClient() {
     }
 
     let isMounted = true;
+    setRoomUnreadCounts((current) => {
+      if (!current[selectedRoomId]) return current;
+      const nextCounts = { ...current };
+      delete nextCounts[selectedRoomId];
+      return nextCounts;
+    });
+
     void loadMessages(selectedRoomId).then(() => {
       if (!isMounted) return;
     });
@@ -537,6 +545,59 @@ export default function ChatPageClient() {
       isMounted = false;
     };
   }, [loadMessages, selectedRoomId, viewer.hasPremium]);
+
+  useEffect(() => {
+    if (!viewer.hasPremium || rooms.length === 0) return;
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel('chat-room-unread-indicators')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+          },
+          (payload) => {
+            const nextMessage = payload.new as ChatMessage;
+            if (!rooms.some((room) => room.id === nextMessage.room_id)) {
+              return;
+            }
+
+            setRoomUnreadCounts((current) => {
+              if (nextMessage.room_id === selectedRoomId) {
+                if (!current[nextMessage.room_id]) return current;
+                const nextCounts = { ...current };
+                delete nextCounts[nextMessage.room_id];
+                return nextCounts;
+              }
+
+              return {
+                ...current,
+                [nextMessage.room_id]: (current[nextMessage.room_id] ?? 0) + 1,
+              };
+            });
+          }
+        )
+        .subscribe((status, error) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('Chat page: room unread indicators unavailable', error ?? status);
+          }
+        });
+    } catch (error) {
+      console.warn('Chat page: failed to start room unread indicator subscription', error);
+      channel = null;
+    }
+
+    return () => {
+      if (channel) {
+        void supabase.removeChannel(channel);
+      }
+    };
+  }, [rooms, selectedRoomId, viewer.hasPremium]);
 
   useEffect(() => {
     if (!reactionPickerMessageId) return;
@@ -1231,19 +1292,26 @@ export default function ChatPageClient() {
                           {rooms.map((room) => {
                             const isSelected = room.id === selectedRoomId;
                             const label = room.slug === 'general' ? 'Community' : room.name;
+                            const unreadCount = roomUnreadCounts[room.id] ?? 0;
+                            const unreadLabel = unreadCount > 9 ? '9+' : unreadCount.toString();
 
                             return (
                               <button
                                 key={room.id}
                                 type="button"
                                 onClick={() => handleSelectRoom(room.id)}
-                                className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                                className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
                                   isSelected
                                     ? 'bg-purple-600 text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
                                 }`}
                               >
                                 {label}
+                                {unreadCount > 0 ? (
+                                  <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-[#111827]">
+                                    {unreadLabel}
+                                  </span>
+                                ) : null}
                               </button>
                             );
                           })}
@@ -1684,7 +1752,7 @@ export default function ChatPageClient() {
                 <div className="border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
                   {!canSendInSelectedRoom ? (
                     <div className="rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-xs text-purple-100">
-                      Picks are posted by StatTrackr only. You can still react to any pick.
+                      Read only.
                     </div>
                   ) : (
                   <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-3">
