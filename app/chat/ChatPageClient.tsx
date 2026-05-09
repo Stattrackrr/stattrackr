@@ -20,7 +20,7 @@ import {
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
@@ -260,6 +260,9 @@ export default function ChatPageClient() {
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
+  const isMessageListNearBottomRef = useRef(true);
+  const shouldScrollToBottomRef = useRef(true);
+  const previousRoomIdRef = useRef<string | null>(null);
 
   const replyTarget = useMemo(
     () => messages.find((message) => message.id === replyTargetId) ?? null,
@@ -645,8 +648,22 @@ export default function ChatPageClient() {
     const container = messageListRef.current;
     if (!container) return;
 
-    container.scrollTop = container.scrollHeight;
+    const roomChanged = previousRoomIdRef.current !== selectedRoomId;
+    previousRoomIdRef.current = selectedRoomId;
+
+    if (roomChanged || shouldScrollToBottomRef.current || isMessageListNearBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+      isMessageListNearBottomRef.current = true;
+    }
+
+    shouldScrollToBottomRef.current = false;
   }, [messages, selectedRoomId]);
+
+  const handleMessageListScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
+    const container = event.currentTarget;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    isMessageListNearBottomRef.current = distanceFromBottom < 120;
+  }, []);
 
   const handleSubscriptionClick = async () => {
     if (!viewer.hasPremium) {
@@ -734,6 +751,7 @@ export default function ChatPageClient() {
 
     try {
       const createdMessage = await sendChatMessage(selectedRoomId, trimmedMessage, replyTargetId);
+      shouldScrollToBottomRef.current = true;
       setMessages((current) => {
         if (current.some((message) => message.id === createdMessage.id)) {
           return current;
@@ -1086,7 +1104,11 @@ export default function ChatPageClient() {
                   )}
                 </div>
 
-                <div ref={messageListRef} className="chat-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                <div
+                  ref={messageListRef}
+                  onScroll={handleMessageListScroll}
+                  className="chat-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4"
+                >
                   {loadingMessages ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1387,7 +1409,7 @@ export default function ChatPageClient() {
                               {reactionPickerMessageId === message.id && !isEditingMessage ? (
                                 <div
                                   data-reaction-picker
-                                  className={`mt-2 hidden lg:flex max-w-full flex-wrap items-center gap-1.5 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${
+                                  className={`mt-2 flex max-w-full flex-wrap items-center gap-1.5 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-[#111c2d] ${
                                     isOwnMessage ? 'justify-start' : 'justify-end'
                                   }`}
                                 >
@@ -1410,7 +1432,7 @@ export default function ChatPageClient() {
                                 </div>
                               ) : null}
 
-                              {canDeleteMessage || viewer.isAdmin ? (
+                              {!isEditingMessage ? (
                                 <div className="mt-2 lg:hidden">
                                   {isConfirmingDelete ? (
                                     <div className="flex flex-wrap items-center gap-2">
@@ -1434,6 +1456,39 @@ export default function ChatPageClient() {
                                     </div>
                                   ) : (
                                     <div className="flex flex-wrap items-center gap-2">
+                                      <button
+                                        type="button"
+                                        data-reaction-toggle
+                                        onClick={() =>
+                                          setReactionPickerMessageId((current) => (current === message.id ? null : message.id))
+                                        }
+                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                        aria-label="Add reaction"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        React
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setReactionPickerMessageId(null);
+                                          setConfirmDeleteMessageId(null);
+                                          setReplyTargetId(message.id);
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      >
+                                        <CornerUpLeft className="h-3 w-3" />
+                                        Reply
+                                      </button>
+                                      {isOwnMessage ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => startEditingMessage(message)}
+                                          className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                        >
+                                          Edit
+                                        </button>
+                                      ) : null}
                                       {viewer.isAdmin ? (
                                         <button
                                           type="button"
