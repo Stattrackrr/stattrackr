@@ -25,6 +25,7 @@ import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } 
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
+const CHAT_ROOM_LAST_READ_PREFIX = 'chat:room-last-read:';
 
 type ViewerState = {
   userId: string | null;
@@ -231,6 +232,30 @@ function moveCaretToEnd(element: HTMLElement) {
   const selection = window.getSelection();
   selection?.removeAllRanges();
   selection?.addRange(range);
+}
+
+function getChatRoomLastReadKey(userId: string, roomId: string): string {
+  return `${CHAT_ROOM_LAST_READ_PREFIX}${userId}:${roomId}`;
+}
+
+function getChatRoomLastRead(userId: string, roomId: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return window.localStorage.getItem(getChatRoomLastReadKey(userId, roomId));
+  } catch {
+    return null;
+  }
+}
+
+function markChatRoomAsRead(userId: string, roomId: string, timestamp = new Date().toISOString()) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(getChatRoomLastReadKey(userId, roomId), timestamp);
+  } catch {
+    // Ignore storage access failures on restricted browsers.
+  }
 }
 
 export default function ChatPageClient() {
@@ -530,6 +555,9 @@ export default function ChatPageClient() {
     }
 
     let isMounted = true;
+    if (viewer.userId) {
+      markChatRoomAsRead(viewer.userId, selectedRoomId);
+    }
     setRoomUnreadCounts((current) => {
       if (!current[selectedRoomId]) return current;
       const nextCounts = { ...current };
@@ -544,7 +572,55 @@ export default function ChatPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [loadMessages, selectedRoomId, viewer.hasPremium]);
+  }, [loadMessages, selectedRoomId, viewer.hasPremium, viewer.userId]);
+
+  useEffect(() => {
+    if (!viewer.hasPremium || !viewer.userId || !selectedRoomId || rooms.length === 0) return;
+
+    let isMounted = true;
+
+    const loadRoomUnreadCounts = async () => {
+      const nextCounts: Record<string, number> = {};
+
+      await Promise.all(
+        rooms.map(async (room) => {
+          if (room.id === selectedRoomId) {
+            return;
+          }
+
+          try {
+            const lastReadAt = getChatRoomLastRead(viewer.userId!, room.id);
+            let query = (supabase
+              .from('chat_messages') as any)
+              .select('id', { count: 'exact', head: true })
+              .eq('room_id', room.id)
+              .is('deleted_at', null);
+
+            if (lastReadAt) {
+              query = query.gt('created_at', lastReadAt);
+            }
+
+            const { count, error } = await query;
+            if (!error && count && count > 0) {
+              nextCounts[room.id] = count;
+            }
+          } catch {
+            // Room badges are a hint only; realtime and polling can refresh later.
+          }
+        })
+      );
+
+      if (isMounted) {
+        setRoomUnreadCounts(nextCounts);
+      }
+    };
+
+    void loadRoomUnreadCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rooms, selectedRoomId, viewer.hasPremium, viewer.userId]);
 
   useEffect(() => {
     if (!viewer.hasPremium || rooms.length === 0) return;
