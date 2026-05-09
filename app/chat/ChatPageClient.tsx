@@ -286,6 +286,13 @@ export default function ChatPageClient() {
     () => buildReactionMap(reactions, viewer.userId),
     [reactions, viewer.userId]
   );
+  const selectedRoom = useMemo(
+    () => rooms.find((room) => room.id === selectedRoomId) ?? null,
+    [rooms, selectedRoomId]
+  );
+  const selectedRoomSlug = selectedRoom?.slug ?? 'general';
+  const isPicksRoom = selectedRoomSlug === 'picks';
+  const canSendInSelectedRoom = !isPicksRoom || viewer.isAdmin;
   const pinnedMessages = useMemo(
     () =>
       messages
@@ -783,6 +790,11 @@ export default function ChatPageClient() {
       return;
     }
 
+    if (!canSendInSelectedRoom) {
+      setComposerError('Only StatTrackr can post in Picks.');
+      return;
+    }
+
     if (messageCooldownUntil && messageCooldownUntil > Date.now()) {
       setComposerError(MESSAGE_COOLDOWN_TEXT);
       return;
@@ -836,6 +848,7 @@ export default function ChatPageClient() {
       setSendingMessage(false);
     }
   }, [
+    canSendInSelectedRoom,
     composerValue,
     loadMessages,
     messageCooldownUntil,
@@ -885,6 +898,17 @@ export default function ChatPageClient() {
     if (!pastedText) return;
 
     document.execCommand('insertText', false, pastedText.slice(0, CHAT_MAX_MESSAGE_LENGTH));
+  }, []);
+
+  const handleSelectRoom = useCallback((roomId: string) => {
+    setSelectedRoomId(roomId);
+    setComposerValue('');
+    setComposerError(null);
+    setReplyTargetId(null);
+    setReactionPickerMessageId(null);
+    setConfirmDeleteMessageId(null);
+    setEditingMessageId(null);
+    setEditingMessageValue('');
   }, []);
 
   const handleToggleReaction = useCallback(
@@ -1181,9 +1205,13 @@ export default function ChatPageClient() {
                     <div className="flex flex-col gap-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Community Chat</h2>
+                          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {isPicksRoom ? 'Picks' : 'Community Chat'}
+                          </h2>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Discuss bets, share slips, talk through plays, and hang out with the community.
+                            {isPicksRoom
+                              ? 'Follow official StatTrackr plays and react with the community.'
+                              : 'Discuss bets, share slips, talk through plays, and hang out with the community.'}
                           </p>
                         </div>
                         {pinnedMessages.length > 0 ? (
@@ -1198,6 +1226,29 @@ export default function ChatPageClient() {
                           </button>
                         ) : null}
                       </div>
+                      {rooms.length > 1 ? (
+                        <div className="flex rounded-2xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-[#111827]">
+                          {rooms.map((room) => {
+                            const isSelected = room.id === selectedRoomId;
+                            const label = room.slug === 'general' ? 'Community' : room.name;
+
+                            return (
+                              <button
+                                key={room.id}
+                                type="button"
+                                onClick={() => handleSelectRoom(room.id)}
+                                className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
@@ -1219,9 +1270,11 @@ export default function ChatPageClient() {
                   ) : messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                       <MessageSquareText className="h-8 w-8 text-purple-500" />
-                      <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">No messages yet</h3>
+                      <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
+                        {isPicksRoom ? 'No picks yet' : 'No messages yet'}
+                      </h3>
                       <p className="mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
-                        Start the conversation!
+                        {isPicksRoom ? 'StatTrackr picks will show here.' : 'Start the conversation!'}
                       </p>
                     </div>
                   ) : (
@@ -1456,15 +1509,17 @@ export default function ChatPageClient() {
                                     >
                                       <Plus className="h-3.5 w-3.5" />
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setReplyTargetId(message.id)}
-                                      className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
-                                    >
-                                      <CornerUpLeft className="h-3 w-3" />
-                                      Reply
-                                    </button>
-                                    {isOwnMessage ? (
+                                    {canSendInSelectedRoom ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setReplyTargetId(message.id)}
+                                        className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                      >
+                                        <CornerUpLeft className="h-3 w-3" />
+                                        Reply
+                                      </button>
+                                    ) : null}
+                                    {isOwnMessage && canSendInSelectedRoom ? (
                                       <button
                                         type="button"
                                         onClick={() => startEditingMessage(message)}
@@ -1565,19 +1620,21 @@ export default function ChatPageClient() {
                                         <Plus className="h-3 w-3" />
                                         React
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setReactionPickerMessageId(null);
-                                          setConfirmDeleteMessageId(null);
-                                          setReplyTargetId(message.id);
-                                        }}
-                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
-                                      >
-                                        <CornerUpLeft className="h-3 w-3" />
-                                        Reply
-                                      </button>
-                                      {isOwnMessage ? (
+                                      {canSendInSelectedRoom ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setReactionPickerMessageId(null);
+                                            setConfirmDeleteMessageId(null);
+                                            setReplyTargetId(message.id);
+                                          }}
+                                          className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-[#111c2d] dark:text-gray-300 dark:hover:bg-[#162338] dark:hover:text-white"
+                                        >
+                                          <CornerUpLeft className="h-3 w-3" />
+                                          Reply
+                                        </button>
+                                      ) : null}
+                                      {isOwnMessage && canSendInSelectedRoom ? (
                                         <button
                                           type="button"
                                           onClick={() => startEditingMessage(message)}
@@ -1625,6 +1682,11 @@ export default function ChatPageClient() {
                 </div>
 
                 <div className="border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
+                  {!canSendInSelectedRoom ? (
+                    <div className="rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-xs text-purple-100">
+                      Picks are posted by StatTrackr only. You can still react to any pick.
+                    </div>
+                  ) : (
                   <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-3">
                     {replyTarget ? (
                       <div className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-[#111c2d]">
@@ -1663,7 +1725,7 @@ export default function ChatPageClient() {
                       />
                       {!composerValue ? (
                         <span className="pointer-events-none absolute left-4 top-2.5 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
-                          Message...
+                          {isPicksRoom ? 'Post a pick...' : 'Message...'}
                         </span>
                       ) : null}
                       <textarea
@@ -1677,7 +1739,7 @@ export default function ChatPageClient() {
                         onKeyDown={handleComposerKeyDown}
                         onFocus={() => setComposerFocused(true)}
                         onBlur={() => setComposerFocused(false)}
-                        placeholder="Message..."
+                        placeholder={isPicksRoom ? 'Post a pick...' : 'Message...'}
                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
                         rows={3}
                         className="hidden h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:block sm:h-auto sm:py-3 sm:pr-4"
@@ -1710,6 +1772,7 @@ export default function ChatPageClient() {
                       </div>
                     </div>
                   </form>
+                  )}
                 </div>
               </div>
             </section>
