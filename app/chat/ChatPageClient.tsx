@@ -1692,7 +1692,7 @@ export default function ChatPageClient() {
                       </button>
                     </div>
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                      <div className="order-2 text-[10px] leading-none text-gray-500 dark:text-gray-400 sm:order-1 sm:text-xs sm:leading-normal">
+                      <div className="order-2 mt-1 text-[10px] leading-none text-gray-500 dark:text-gray-400 sm:order-1 sm:mt-0 sm:text-xs sm:leading-normal">
                         {composerValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH} characters
                       </div>
                       <div className="order-1 flex items-center gap-3 sm:order-2">
