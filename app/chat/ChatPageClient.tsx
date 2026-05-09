@@ -1123,7 +1123,7 @@ export default function ChatPageClient() {
       >
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
           <div
-            className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
+            className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
               mobileKeyboardOpen ? 'pb-2' : 'pb-24'
             }`}
           >
