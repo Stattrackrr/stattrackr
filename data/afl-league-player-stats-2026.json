@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-05-09T09:14:36.303Z",
+  "generatedAt": "2026-05-09T10:53:07.737Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 568,
@@ -116,7 +116,7 @@
       "rebound_50s": 5.11,
       "contested_possessions": 5.11,
       "uncontested_possessions": 19.78,
-      "meters_gained": 483.89,
+      "meters_gained": 484.78,
       "free_kicks_for": 0.33
     },
     {
@@ -192,7 +192,7 @@
       "rebound_50s": 6,
       "contested_possessions": 5,
       "uncontested_possessions": 22.44,
-      "meters_gained": 609.78,
+      "meters_gained": 610.33,
       "free_kicks_for": 0.89
     },
     {
@@ -211,7 +211,7 @@
       "rebound_50s": 3.11,
       "contested_possessions": 9.22,
       "uncontested_possessions": 20,
-      "meters_gained": 516.89,
+      "meters_gained": 517.22,
       "free_kicks_for": 0.89
     },
     {
@@ -895,7 +895,7 @@
       "rebound_50s": 1.12,
       "contested_possessions": 9.25,
       "uncontested_possessions": 14.75,
-      "meters_gained": 348,
+      "meters_gained": 347.5,
       "free_kicks_for": 0.75
     },
     {
@@ -1289,7 +1289,7 @@
       "marks": 3.33,
       "goals": 1,
       "tackles": 3,
-      "clearances": 3.89,
+      "clearances": 4,
       "inside_50s": 6,
       "rebound_50s": 1.44,
       "contested_possessions": 9.67,
@@ -2130,7 +2130,7 @@
       "rebound_50s": 4.33,
       "contested_possessions": 6.11,
       "uncontested_possessions": 13,
-      "meters_gained": 246.56,
+      "meters_gained": 246.11,
       "free_kicks_for": 0.44
     },
     {
@@ -2320,7 +2320,7 @@
       "rebound_50s": 1.56,
       "contested_possessions": 8.67,
       "uncontested_possessions": 11.78,
-      "meters_gained": 348.44,
+      "meters_gained": 348.33,
       "free_kicks_for": 1.22
     },
     {
@@ -3096,10 +3096,10 @@
       "tackles": 0.2,
       "clearances": 0.2,
       "inside_50s": 0.8,
-      "rebound_50s": 2.6,
+      "rebound_50s": 2.8,
       "contested_possessions": 2.4,
       "uncontested_possessions": 13.6,
-      "meters_gained": 255.2,
+      "meters_gained": 255.4,
       "free_kicks_for": 0
     },
     {
@@ -3346,7 +3346,7 @@
       "rebound_50s": 0.5,
       "contested_possessions": 7.5,
       "uncontested_possessions": 10.25,
-      "meters_gained": 337.5,
+      "meters_gained": 348.25,
       "free_kicks_for": 0.75
     },
     {
@@ -3631,7 +3631,7 @@
       "rebound_50s": 3.38,
       "contested_possessions": 4.62,
       "uncontested_possessions": 12.38,
-      "meters_gained": 297.75,
+      "meters_gained": 304,
       "free_kicks_for": 0.62
     },
     {
@@ -3666,7 +3666,7 @@
       "tackles": 2.25,
       "clearances": 0.38,
       "inside_50s": 1.88,
-      "rebound_50s": 2.88,
+      "rebound_50s": 2.75,
       "contested_possessions": 5,
       "uncontested_possessions": 10.88,
       "meters_gained": 331.75,
@@ -4087,7 +4087,7 @@
       "rebound_50s": 2.67,
       "contested_possessions": 4.56,
       "uncontested_possessions": 10.44,
-      "meters_gained": 247.11,
+      "meters_gained": 246.78,
       "free_kicks_for": 0.22
     },
     {
@@ -4201,7 +4201,7 @@
       "rebound_50s": 5.33,
       "contested_possessions": 3,
       "uncontested_possessions": 9.33,
-      "meters_gained": 353.67,
+      "meters_gained": 354.67,
       "free_kicks_for": 1.67
     },
     {
@@ -4353,7 +4353,7 @@
       "rebound_50s": 3.33,
       "contested_possessions": 4.44,
       "uncontested_possessions": 10.67,
-      "meters_gained": 230.22,
+      "meters_gained": 229.67,
       "free_kicks_for": 0.44
     },
     {
@@ -5450,7 +5450,7 @@
       "marks": 4.8,
       "goals": 0.6,
       "tackles": 1.4,
-      "clearances": 0.2,
+      "clearances": 0,
       "inside_50s": 2.6,
       "rebound_50s": 0.2,
       "contested_possessions": 3.2,
@@ -5474,7 +5474,7 @@
       "rebound_50s": 1.33,
       "contested_possessions": 6.33,
       "uncontested_possessions": 7.89,
-      "meters_gained": 215.44,
+      "meters_gained": 218.44,
       "free_kicks_for": 1.44
     },
     {
@@ -5512,7 +5512,7 @@
       "rebound_50s": 1.75,
       "contested_possessions": 3.75,
       "uncontested_possessions": 9.75,
-      "meters_gained": 161.75,
+      "meters_gained": 160.25,
       "free_kicks_for": 0
     },
     {
@@ -5928,9 +5928,9 @@
       "clearances": 2.2,
       "inside_50s": 3.2,
       "rebound_50s": 0,
-      "contested_possessions": 6.2,
-      "uncontested_possessions": 8,
-      "meters_gained": 217.2,
+      "contested_possessions": 6.4,
+      "uncontested_possessions": 7.8,
+      "meters_gained": 217.4,
       "free_kicks_for": 0.6
     },
     {
@@ -5949,7 +5949,7 @@
       "rebound_50s": 0.14,
       "contested_possessions": 3.86,
       "uncontested_possessions": 9.71,
-      "meters_gained": 219.86,
+      "meters_gained": 219.71,
       "free_kicks_for": 0.57
     },
     {
@@ -6557,7 +6557,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5.5,
       "uncontested_possessions": 7,
-      "meters_gained": 254,
+      "meters_gained": 255.75,
       "free_kicks_for": 1.25
     },
     {
@@ -6614,7 +6614,7 @@
       "rebound_50s": 2.62,
       "contested_possessions": 4.25,
       "uncontested_possessions": 8.25,
-      "meters_gained": 223.5,
+      "meters_gained": 226.88,
       "free_kicks_for": 1
     },
     {
@@ -7074,25 +7074,6 @@
       "free_kicks_for": 0.5
     },
     {
-      "name": "Jayden Nguyen",
-      "team": "Essendon",
-      "games": 4,
-      "number": null,
-      "disposals": 11.75,
-      "kicks": 3.75,
-      "handballs": 8,
-      "marks": 2.75,
-      "goals": 0,
-      "tackles": 1,
-      "clearances": 0.25,
-      "inside_50s": 1.25,
-      "rebound_50s": 1,
-      "contested_possessions": 3.75,
-      "uncontested_possessions": 7.75,
-      "meters_gained": 132,
-      "free_kicks_for": 0.75
-    },
-    {
       "name": "Archer Day-Wicks",
       "team": "Essendon",
       "games": 7,
@@ -7108,7 +7089,7 @@
       "rebound_50s": 1,
       "contested_possessions": 3.86,
       "uncontested_possessions": 8.29,
-      "meters_gained": 234.29,
+      "meters_gained": 234.43,
       "free_kicks_for": 1
     },
     {
@@ -7356,6 +7337,25 @@
       "contested_possessions": 3.25,
       "uncontested_possessions": 8,
       "meters_gained": 259.75,
+      "free_kicks_for": 0.75
+    },
+    {
+      "name": "Jayden Nguyen",
+      "team": "Essendon",
+      "games": 4,
+      "number": null,
+      "disposals": 11.5,
+      "kicks": 3.5,
+      "handballs": 8,
+      "marks": 2.75,
+      "goals": 0,
+      "tackles": 1,
+      "clearances": 0.25,
+      "inside_50s": 1.25,
+      "rebound_50s": 1,
+      "contested_possessions": 3.75,
+      "uncontested_possessions": 7.75,
+      "meters_gained": 132,
       "free_kicks_for": 0.75
     },
     {
@@ -7773,7 +7773,7 @@
       "rebound_50s": 0,
       "contested_possessions": 8,
       "uncontested_possessions": 5,
-      "meters_gained": 172,
+      "meters_gained": 188,
       "free_kicks_for": 1
     },
     {
