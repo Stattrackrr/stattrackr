@@ -20,7 +20,7 @@ import {
 } from '@/lib/chat';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
@@ -223,6 +223,16 @@ function ChatAvatar({
   );
 }
 
+function moveCaretToEnd(element: HTMLElement) {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
 export default function ChatPageClient() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -261,6 +271,7 @@ export default function ChatPageClient() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const mobileComposerRef = useRef<HTMLDivElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
   const mobileViewportHeightRef = useRef<number | null>(null);
   const isMessageListNearBottomRef = useRef(true);
@@ -549,6 +560,12 @@ export default function ChatPageClient() {
   }, []);
 
   useEffect(() => {
+    if (composerValue === '' && mobileComposerRef.current) {
+      mobileComposerRef.current.textContent = '';
+    }
+  }, [composerValue]);
+
+  useEffect(() => {
     const getViewportHeight = () => window.visualViewport?.height ?? window.innerHeight;
 
     const updateMobileKeyboardState = () => {
@@ -834,7 +851,7 @@ export default function ChatPageClient() {
     await submitMessage();
   };
 
-  const handleComposerKeyDown = async (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleComposerKeyDown = async (event: KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
     if (event.key !== 'Enter' || event.shiftKey) {
       return;
     }
@@ -842,6 +859,33 @@ export default function ChatPageClient() {
     event.preventDefault();
     await submitMessage();
   };
+
+  const handleMobileComposerInput = useCallback(
+    (event: FormEvent<HTMLDivElement>) => {
+      const nextValue = event.currentTarget.innerText.replace(/\u00a0/g, ' ');
+      const limitedValue = nextValue.slice(0, CHAT_MAX_MESSAGE_LENGTH);
+
+      if (nextValue !== limitedValue) {
+        event.currentTarget.innerText = limitedValue;
+        moveCaretToEnd(event.currentTarget);
+      }
+
+      setComposerValue(limitedValue);
+      if (composerError) {
+        setComposerError(null);
+      }
+    },
+    [composerError]
+  );
+
+  const handleMobileComposerPaste = useCallback((event: ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const pastedText = event.clipboardData.getData('text/plain');
+    if (!pastedText) return;
+
+    document.execCommand('insertText', false, pastedText.slice(0, CHAT_MAX_MESSAGE_LENGTH));
+  }, []);
 
   const handleToggleReaction = useCallback(
     async (messageId: string, emoji: string) => {
@@ -981,7 +1025,7 @@ export default function ChatPageClient() {
   );
 
   return (
-    <div className="dashboard-container h-[100dvh] overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
+    <div className="dashboard-container fixed inset-0 h-[100dvh] overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -1080,7 +1124,7 @@ export default function ChatPageClient() {
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
           <div
             className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
-              shouldHideMobileNavigation ? 'pb-3' : 'pb-28'
+              shouldHideMobileNavigation ? 'pb-3' : 'pb-24'
             }`}
           >
           {viewer.loading ? (
@@ -1603,6 +1647,25 @@ export default function ChatPageClient() {
                       </div>
                     ) : null}
                     <div className="relative translate-y-2 sm:translate-y-0">
+                      <div
+                        ref={mobileComposerRef}
+                        contentEditable
+                        role="textbox"
+                        aria-label="Message"
+                        aria-multiline="true"
+                        tabIndex={0}
+                        onInput={handleMobileComposerInput}
+                        onPaste={handleMobileComposerPaste}
+                        onKeyDown={handleComposerKeyDown}
+                        onFocus={() => setComposerFocused(true)}
+                        onBlur={() => setComposerFocused(false)}
+                        className="chat-scrollbar h-16 w-full overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:hidden"
+                      />
+                      {!composerValue ? (
+                        <span className="pointer-events-none absolute left-4 top-2.5 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
+                          Message...
+                        </span>
+                      ) : null}
                       <textarea
                         value={composerValue}
                         onChange={(event) => {
@@ -1617,7 +1680,7 @@ export default function ChatPageClient() {
                         placeholder="Message..."
                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
                         rows={3}
-                        className="h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:h-auto sm:py-3 sm:pr-4"
+                        className="hidden h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:block sm:h-auto sm:py-3 sm:pr-4"
                       />
                       <button
                         type="submit"
