@@ -1,46 +1,46 @@
 {
-  "generatedAt": "2026-05-08T18:11:17Z",
+  "generatedAt": "2026-05-09T11:59:36Z",
   "count": 967,
   "rows": [
     {
       "snapshotKey": "ed langdon|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Ed Langdon",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 20.5,
-      "modelEdge": -0.0537
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 17.31,
+      "modelEdge": -0.1681
     },
     {
       "snapshotKey": "tom sparrow|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Tom Sparrow",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 21.79,
-      "modelEdge": -0.0288
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 19.16,
+      "modelEdge": -0.0355
     },
     {
       "snapshotKey": "wayne milera|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -51,14 +51,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 22.38,
-      "modelEdge": -0.1716
+      "overOdds": "-125",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 22.42,
+      "modelEdge": -0.1701
     },
     {
       "snapshotKey": "jack ross|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -72,29 +72,29 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 23.5,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0496
     },
     {
       "snapshotKey": "kysaiah pickett|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Kysaiah Pickett",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
       "overOdds": "-125",
       "underOdds": "-105",
-      "modelExpectedDisposals": 24.27,
-      "modelEdge": -0.0605
+      "modelExpectedDisposals": 22.67,
+      "modelEdge": -0.1701
     },
     {
       "snapshotKey": "izak rankine|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -108,11 +108,11 @@
       "overOdds": "-102",
       "underOdds": "-132",
       "modelExpectedDisposals": 21.27,
-      "modelEdge": 0.0023
+      "modelEdge": 0.0131
     },
     {
       "snapshotKey": "jayden short|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -121,88 +121,88 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Adelaide Crows",
       "opponentTeam": "Richmond Tigers",
-      "bookmaker": "SportsBet",
+      "bookmaker": "PointsBet (AU)",
       "line": 24.5,
-      "overOdds": "-128",
+      "overOdds": "-125",
       "underOdds": "-105",
-      "modelExpectedDisposals": 24.32,
-      "modelEdge": -0.041
+      "modelExpectedDisposals": 24.31,
+      "modelEdge": -0.0281
     },
     {
       "snapshotKey": "tom mccarthy|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Tom Mccarthy",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
       "overOdds": "-125",
       "underOdds": "-105",
-      "modelExpectedDisposals": 21.23,
-      "modelEdge": -0.0623
+      "modelExpectedDisposals": 22.58,
+      "modelEdge": -0.0496
     },
     {
       "snapshotKey": "harley reid|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Harley Reid",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
-      "bookmaker": "PointsBet (AU)",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
+      "bookmaker": "SportsBet",
       "line": 23.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 23.79,
-      "modelEdge": -0.0389
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 23.59,
+      "modelEdge": -0.0187
     },
     {
       "snapshotKey": "elliot yeo|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Elliot Yeo",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 21.26,
-      "modelEdge": -0.0321
+      "overOdds": "-125",
+      "underOdds": "-106",
+      "modelExpectedDisposals": 21.35,
+      "modelEdge": -0.0172
     },
     {
       "snapshotKey": "tim kelly|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Tim Kelly",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
-      "bookmaker": "SportsBet",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
+      "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 22.0,
-      "modelEdge": -0.0537
+      "overOdds": "-125",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 23.82,
+      "modelEdge": -0.0181
     },
     {
       "snapshotKey": "rory laird|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -215,12 +215,12 @@
       "line": 23.5,
       "overOdds": "-125",
       "underOdds": "-105",
-      "modelExpectedDisposals": 22.63,
-      "modelEdge": -0.0605
+      "modelExpectedDisposals": 22.65,
+      "modelEdge": -0.0496
     },
     {
       "snapshotKey": "josh worrell|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -229,34 +229,34 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Adelaide Crows",
       "opponentTeam": "Richmond Tigers",
-      "bookmaker": "PointsBet (AU)",
+      "bookmaker": "SportsBet",
       "line": 24.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 24.76,
-      "modelEdge": -0.0389
+      "overOdds": "-112",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 24.69,
+      "modelEdge": -0.0048
     },
     {
       "snapshotKey": "jack steele|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Jack Steele",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
-      "bookmaker": "PointsBet (AU)",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
+      "bookmaker": "SportsBet",
       "line": 24.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 24.82,
-      "modelEdge": -0.0389
+      "overOdds": "-115",
+      "underOdds": "-116",
+      "modelExpectedDisposals": 23.77,
+      "modelEdge": -0.0321
     },
     {
       "snapshotKey": "kane mcauliffe|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -270,11 +270,11 @@
       "overOdds": "-122",
       "underOdds": "-110",
       "modelExpectedDisposals": 21.8,
-      "modelEdge": -0.0221
+      "modelEdge": -0.0113
     },
     {
       "snapshotKey": "jacob hopper|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -283,178 +283,178 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Adelaide Crows",
       "opponentTeam": "Richmond Tigers",
-      "bookmaker": "PointsBet (AU)",
+      "bookmaker": "SportsBet",
       "line": 22.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 23.38,
-      "modelEdge": -0.029
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 23.35,
+      "modelEdge": -0.0113
     },
     {
       "snapshotKey": "josh lindsay|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Josh Lindsay",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-125",
-      "underOdds": "-133",
-      "modelExpectedDisposals": 19.88,
-      "modelEdge": -0.1587
+      "overOdds": "+100",
+      "underOdds": "-130",
+      "modelExpectedDisposals": 20.88,
+      "modelEdge": -0.0077
     },
     {
       "snapshotKey": "willem duursma|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Willem Duursma",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
       "overOdds": "+100",
       "underOdds": "-130",
-      "modelExpectedDisposals": 17.27,
-      "modelEdge": -0.139
+      "modelExpectedDisposals": 18.99,
+      "modelEdge": -0.0077
     },
     {
       "snapshotKey": "liam baker|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Liam Baker",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
       "overOdds": "-105",
       "underOdds": "-125",
-      "modelExpectedDisposals": 18.14,
-      "modelEdge": -0.0271
+      "modelExpectedDisposals": 18.99,
+      "modelEdge": -0.0163
     },
     {
       "snapshotKey": "max gawn|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Max Gawn",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 20.5,
       "overOdds": "-119",
       "underOdds": "-112",
-      "modelExpectedDisposals": 20.79,
-      "modelEdge": -0.028
+      "modelExpectedDisposals": 21.63,
+      "modelEdge": -0.0071
     },
     {
       "snapshotKey": "jake bowey|2026-W19",
-      "capturedAt": "2026-05-07T18:22:56Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Jake Bowey",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 21.83,
-      "modelEdge": -0.0479
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 21.76,
+      "modelEdge": -0.0403
     },
     {
       "snapshotKey": "koltyn tholstrup|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Koltyn Tholstrup",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 16.67,
-      "modelEdge": -0.0438
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 16.34,
+      "modelEdge": -0.0274
     },
     {
       "snapshotKey": "caleb windsor|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Caleb Windsor",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.06,
-      "modelEdge": -0.0222
+      "modelExpectedDisposals": 16.04,
+      "modelEdge": -0.0329
     },
     {
       "snapshotKey": "harvey langford|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Harvey Langford",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-118",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 16.79,
-      "modelEdge": -0.0147
+      "overOdds": "-120",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 17.17,
+      "modelEdge": -0.0079
     },
     {
       "snapshotKey": "liam duggan|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Liam Duggan",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 19.21,
-      "modelEdge": -0.0321
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 19.27,
+      "modelEdge": -0.0229
     },
     {
       "snapshotKey": "tim taranto|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -465,14 +465,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 23.64,
-      "modelEdge": -0.0512
+      "overOdds": "-125",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 23.67,
+      "modelEdge": -0.0496
     },
     {
       "snapshotKey": "jordan dawson|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -481,16 +481,16 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Adelaide Crows",
       "opponentTeam": "Richmond Tigers",
-      "bookmaker": "SportsBet",
+      "bookmaker": "PointsBet (AU)",
       "line": 25.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 22.78,
-      "modelEdge": -0.161
+      "overOdds": "-125",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 22.84,
+      "modelEdge": -0.1701
     },
     {
       "snapshotKey": "jake soligo|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -501,14 +501,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "overOdds": "+100",
-      "underOdds": "-130",
-      "modelExpectedDisposals": 17.22,
-      "modelEdge": -0.0204
+      "overOdds": "-105",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 17.27,
+      "modelEdge": -0.018
     },
     {
       "snapshotKey": "james peatling|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -519,14 +519,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "overOdds": "-105",
-      "underOdds": "-125",
-      "modelExpectedDisposals": 20.08,
-      "modelEdge": -0.0271
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 20.16,
+      "modelEdge": -0.0256
     },
     {
       "snapshotKey": "josh rachele|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -537,14 +537,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
-      "overOdds": "-105",
-      "underOdds": "-125",
-      "modelExpectedDisposals": 18.86,
-      "modelEdge": -0.0604
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 18.89,
+      "modelEdge": -0.0589
     },
     {
       "snapshotKey": "sam berry|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -555,14 +555,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-125",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 21.05,
-      "modelEdge": -0.0605
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 21.02,
+      "modelEdge": -0.0403
     },
     {
       "snapshotKey": "tyler sonsie|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -575,12 +575,12 @@
       "line": 17.5,
       "overOdds": "-111",
       "underOdds": "-120",
-      "modelExpectedDisposals": 17.01,
-      "modelEdge": -0.0364
+      "modelExpectedDisposals": 17.03,
+      "modelEdge": -0.004
     },
     {
       "snapshotKey": "tom brown|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -591,50 +591,50 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 15.93,
-      "modelEdge": -0.0364
+      "overOdds": "-115",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 15.96,
+      "modelEdge": -0.0329
     },
     {
       "snapshotKey": "milan murdock|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Milan Murdock",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 18.5,
       "overOdds": "-123",
       "underOdds": "-109",
-      "modelExpectedDisposals": 18.19,
-      "modelEdge": -0.0337
+      "modelExpectedDisposals": 18.25,
+      "modelEdge": -0.0229
     },
     {
       "snapshotKey": "ryan maric|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Ryan Maric",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
-      "bookmaker": "SportsBet",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
+      "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 19.8,
-      "modelEdge": -0.0288
+      "overOdds": "-105",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 19.83,
+      "modelEdge": 0.0053
     },
     {
       "snapshotKey": "seth campbell|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -648,11 +648,11 @@
       "overOdds": "-112",
       "underOdds": "-120",
       "modelExpectedDisposals": 14.47,
-      "modelEdge": -0.0157
+      "modelEdge": -0.0048
     },
     {
       "snapshotKey": "brayden cook|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -663,14 +663,14 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 17.63,
-      "modelEdge": -0.0438
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 17.62,
+      "modelEdge": -0.0256
     },
     {
       "snapshotKey": "alex neal bullen|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T05:15:00Z",
@@ -681,28 +681,28 @@
       "opponentTeam": "Richmond Tigers",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
-      "overOdds": "-105",
-      "underOdds": "-125",
-      "modelExpectedDisposals": 17.15,
-      "modelEdge": -0.0056
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 17.18,
+      "modelEdge": -0.004
     },
     {
       "snapshotKey": "kade chandler|2026-W19",
-      "capturedAt": "2026-05-08T18:11:17Z",
+      "capturedAt": "2026-05-09T11:56:23Z",
       "weekKey": "2026-W19",
       "gameDate": "2026-05-10",
       "commenceTime": "2026-05-10T03:10:04Z",
       "playerName": "Kade Chandler",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "West Coast Eagles",
-      "playerTeam": "West Coast Eagles",
-      "opponentTeam": "Melbourne Demons",
+      "playerTeam": "Melbourne Demons",
+      "opponentTeam": "West Coast Eagles",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 14.99,
-      "modelEdge": -0.0321
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 15.12,
+      "modelEdge": -0.0146
     },
     {
       "snapshotKey": "caleb daniel|2026-W19",
@@ -720,7 +720,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 23.41,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0605,
+      "actualDisposals": 25.0,
+      "actualTog": 87.0,
+      "differenceLine": 0.5,
+      "differenceModel": 1.59,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:14Z"
     },
     {
       "snapshotKey": "harry sheezel|2026-W19",
@@ -738,7 +746,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 27.99,
-      "modelEdge": -0.053
+      "modelEdge": -0.053,
+      "actualDisposals": 31.0,
+      "actualTog": 79.0,
+      "differenceLine": 0.5,
+      "differenceModel": 3.01,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:14Z"
     },
     {
       "snapshotKey": "bodhi uwland|2026-W19",
@@ -756,7 +772,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 22.6,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0605,
+      "actualDisposals": 29.0,
+      "actualTog": 88.0,
+      "differenceLine": 4.5,
+      "differenceModel": 6.4,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:41Z"
     },
     {
       "snapshotKey": "zachary merrett|2026-W19",
@@ -774,7 +798,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 27.77,
-      "modelEdge": -0.0222
+      "modelEdge": -0.0222,
+      "actualDisposals": 31.0,
+      "actualTog": 83.0,
+      "differenceLine": 3.5,
+      "differenceModel": 3.23,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:41Z"
     },
     {
       "snapshotKey": "tom atkins|2026-W19",
@@ -828,7 +860,15 @@
       "overOdds": "-119",
       "underOdds": "-112",
       "modelExpectedDisposals": 24.52,
-      "modelEdge": -0.028
+      "modelEdge": -0.028,
+      "actualDisposals": 22.0,
+      "actualTog": 85.0,
+      "differenceLine": -2.5,
+      "differenceModel": -2.52,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:53Z"
     },
     {
       "snapshotKey": "callum mills|2026-W19",
@@ -846,7 +886,15 @@
       "overOdds": "-118",
       "underOdds": "-114",
       "modelExpectedDisposals": 21.76,
-      "modelEdge": -0.0471
+      "modelEdge": -0.0471,
+      "actualDisposals": 22.0,
+      "actualTog": 81.0,
+      "differenceLine": -0.5,
+      "differenceModel": 0.24,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:53Z"
     },
     {
       "snapshotKey": "john noble|2026-W19",
@@ -864,7 +912,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 24.77,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 31.0,
+      "actualTog": 87.0,
+      "differenceLine": 4.5,
+      "differenceModel": 6.23,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:58Z"
     },
     {
       "snapshotKey": "clayton oliver|2026-W19",
@@ -882,7 +938,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 28.87,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0605,
+      "actualDisposals": 26.0,
+      "actualTog": 81.0,
+      "differenceLine": -4.5,
+      "differenceModel": -2.87,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:58Z"
     },
     {
       "snapshotKey": "finn callaghan|2026-W19",
@@ -900,7 +964,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 30.05,
-      "modelEdge": -0.0222
+      "modelEdge": -0.0222,
+      "actualDisposals": 30.0,
+      "actualTog": 82.0,
+      "differenceLine": -0.5,
+      "differenceModel": -0.05,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:49:59Z"
     },
     {
       "snapshotKey": "chad warner|2026-W19",
@@ -918,7 +990,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 20.96,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 18.0,
+      "actualTog": 82.0,
+      "differenceLine": -3.5,
+      "differenceModel": -2.96,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:50:00Z"
     },
     {
       "snapshotKey": "luke parker|2026-W19",
@@ -936,7 +1016,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 23.43,
-      "modelEdge": -0.0389
+      "modelEdge": -0.0389,
+      "actualDisposals": 29.0,
+      "actualTog": 80.0,
+      "differenceLine": 5.5,
+      "differenceModel": 5.57,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:50:01Z"
     },
     {
       "snapshotKey": "noah anderson|2026-W19",
@@ -954,7 +1042,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 27.84,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 31.0,
+      "actualTog": 81.0,
+      "differenceLine": 2.5,
+      "differenceModel": 3.16,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:50:05Z"
     },
     {
       "snapshotKey": "dan houston|2026-W19",
@@ -990,7 +1086,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 28.03,
-      "modelEdge": -0.0438
+      "modelEdge": -0.0438,
+      "actualDisposals": 23.0,
+      "actualTog": 81.0,
+      "differenceLine": -6.5,
+      "differenceModel": -5.03,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:50:32Z"
     },
     {
       "snapshotKey": "andrew mcgrath|2026-W19",
@@ -1008,7 +1112,15 @@
       "overOdds": "-123",
       "underOdds": "-108",
       "modelExpectedDisposals": 20.25,
-      "modelEdge": -0.0346
+      "modelEdge": -0.0346,
+      "actualDisposals": 20.0,
+      "actualTog": 83.0,
+      "differenceLine": -0.5,
+      "differenceModel": -0.25,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:50:33Z"
     },
     {
       "snapshotKey": "christian petracca|2026-W19",
@@ -1026,7 +1138,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 26.13,
-      "modelEdge": -0.0389
+      "modelEdge": -0.0389,
+      "actualDisposals": 23.0,
+      "actualTog": 89.0,
+      "differenceLine": -2.5,
+      "differenceModel": -3.13,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:51:20Z"
     },
     {
       "snapshotKey": "nick blakey|2026-W19",
@@ -1044,7 +1164,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 23.36,
-      "modelEdge": -0.0196
+      "modelEdge": -0.0196,
+      "actualDisposals": 26.0,
+      "actualTog": 79.0,
+      "differenceLine": 3.5,
+      "differenceModel": 2.64,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:51:21Z"
     },
     {
       "snapshotKey": "callum wilkie|2026-W19",
@@ -1062,7 +1190,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 21.92,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0605,
+      "actualDisposals": 5.0,
+      "actualTog": 37.0,
+      "differenceLine": -18.5,
+      "differenceModel": -16.92,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:51:48Z"
     },
     {
       "snapshotKey": "lachie whitfield|2026-W19",
@@ -1080,7 +1216,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 29.2,
-      "modelEdge": -0.0605
+      "modelEdge": -0.0605,
+      "actualDisposals": 35.0,
+      "actualTog": 81.0,
+      "differenceLine": 4.5,
+      "differenceModel": 5.8,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:51:49Z"
     },
     {
       "snapshotKey": "nick daicos|2026-W19",
@@ -1152,7 +1296,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 27.95,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 29.5,
+      "actualTog": null,
+      "differenceLine": 0.0,
+      "differenceModel": 1.55,
+      "resultColor": "gray",
+      "isVoid": true,
+      "voidReason": "no_player_log_after_game_complete",
+      "settledAt": "2026-05-09T11:52:09Z"
     },
     {
       "snapshotKey": "thomas stewart|2026-W19",
@@ -1206,7 +1358,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 22.7,
-      "modelEdge": -0.0389
+      "modelEdge": -0.0389,
+      "actualDisposals": 21.0,
+      "actualTog": 85.0,
+      "differenceLine": -1.5,
+      "differenceModel": -1.7,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:23Z"
     },
     {
       "snapshotKey": "jack sinclair|2026-W19",
@@ -1224,7 +1384,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 28.66,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 25.0,
+      "actualTog": 88.0,
+      "differenceLine": -4.5,
+      "differenceModel": -3.66,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:28Z"
     },
     {
       "snapshotKey": "isaac heeney|2026-W19",
@@ -1242,7 +1410,15 @@
       "overOdds": "-118",
       "underOdds": "-114",
       "modelExpectedDisposals": 23.96,
-      "modelEdge": -0.0471
+      "modelEdge": -0.0471,
+      "actualDisposals": 24.0,
+      "actualTog": 82.0,
+      "differenceLine": -0.5,
+      "differenceModel": 0.04,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:29Z"
     },
     {
       "snapshotKey": "brodie grundy|2026-W19",
@@ -1260,7 +1436,15 @@
       "overOdds": "-112",
       "underOdds": "-119",
       "modelExpectedDisposals": 20.24,
-      "modelEdge": -0.0165
+      "modelEdge": -0.0165,
+      "actualDisposals": 14.0,
+      "actualTog": 77.0,
+      "differenceLine": -6.5,
+      "differenceModel": -6.24,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:29Z"
     },
     {
       "snapshotKey": "sam durham|2026-W19",
@@ -1278,7 +1462,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 20.43,
-      "modelEdge": -0.0056
+      "modelEdge": -0.0056,
+      "actualDisposals": 26.0,
+      "actualTog": 77.0,
+      "differenceLine": 5.5,
+      "differenceModel": 5.57,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:30Z"
     },
     {
       "snapshotKey": "angus sheldrick|2026-W19",
@@ -1296,7 +1488,15 @@
       "overOdds": "-122",
       "underOdds": "-110",
       "modelExpectedDisposals": 19.33,
-      "modelEdge": -0.0537
+      "modelEdge": -0.0537,
+      "actualDisposals": 18.0,
+      "actualTog": 67.0,
+      "differenceLine": -2.5,
+      "differenceModel": -1.33,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:31Z"
     },
     {
       "snapshotKey": "darcy parish|2026-W19",
@@ -1314,7 +1514,15 @@
       "overOdds": "-120",
       "underOdds": "-112",
       "modelExpectedDisposals": 26.78,
-      "modelEdge": 0.0072
+      "modelEdge": 0.0072,
+      "actualDisposals": 23.0,
+      "actualTog": 75.0,
+      "differenceLine": -1.5,
+      "differenceModel": -3.78,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:32Z"
     },
     {
       "snapshotKey": "tristan xerri|2026-W19",
@@ -1332,7 +1540,15 @@
       "overOdds": "-119",
       "underOdds": "-112",
       "modelExpectedDisposals": 20.41,
-      "modelEdge": -0.028
+      "modelEdge": -0.028,
+      "actualDisposals": 19.0,
+      "actualTog": 67.0,
+      "differenceLine": -1.5,
+      "differenceModel": -1.41,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:33Z"
     },
     {
       "snapshotKey": "archie roberts|2026-W19",
@@ -1350,7 +1566,15 @@
       "overOdds": "-119",
       "underOdds": "-112",
       "modelExpectedDisposals": 29.34,
-      "modelEdge": -0.028
+      "modelEdge": -0.028,
+      "actualDisposals": 42.0,
+      "actualTog": 82.0,
+      "differenceLine": 12.5,
+      "differenceModel": 12.66,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:34Z"
     },
     {
       "snapshotKey": "touk miller|2026-W19",
@@ -1368,7 +1592,15 @@
       "overOdds": "-127",
       "underOdds": "-106",
       "modelExpectedDisposals": 23.67,
-      "modelEdge": -0.061
+      "modelEdge": -0.061,
+      "actualDisposals": 31.0,
+      "actualTog": 85.0,
+      "differenceLine": 6.5,
+      "differenceModel": 7.33,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:38Z"
     },
     {
       "snapshotKey": "james rowbottom|2026-W19",
@@ -1386,7 +1618,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.71,
-      "modelEdge": -0.0222
+      "modelEdge": -0.0222,
+      "actualDisposals": 9.0,
+      "actualTog": 77.0,
+      "differenceLine": -7.5,
+      "differenceModel": -7.71,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:39Z"
     },
     {
       "snapshotKey": "jack bowes|2026-W19",
@@ -1422,7 +1662,15 @@
       "overOdds": "-122",
       "underOdds": "-110",
       "modelExpectedDisposals": 20.72,
-      "modelEdge": -0.0321
+      "modelEdge": -0.0321,
+      "actualDisposals": 23.0,
+      "actualTog": 87.0,
+      "differenceLine": 2.5,
+      "differenceModel": 2.28,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:45Z"
     },
     {
       "snapshotKey": "brayden maynard|2026-W19",
@@ -1458,7 +1706,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 19.35,
-      "modelEdge": -0.0289
+      "modelEdge": -0.0289,
+      "actualDisposals": 28.0,
+      "actualTog": 90.0,
+      "differenceLine": 6.5,
+      "differenceModel": 8.65,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:52:54Z"
     },
     {
       "snapshotKey": "tanner bruhn|2026-W19",
@@ -1494,7 +1750,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 21.32,
-      "modelEdge": -0.0271
+      "modelEdge": -0.0271,
+      "actualDisposals": 28.0,
+      "actualTog": 82.0,
+      "differenceLine": 5.5,
+      "differenceModel": 6.68,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:08Z"
     },
     {
       "snapshotKey": "finn o sullivan|2026-W19",
@@ -1512,7 +1776,15 @@
       "overOdds": "-130",
       "underOdds": "+100",
       "modelExpectedDisposals": 19.44,
-      "modelEdge": -0.0347
+      "modelEdge": -0.0347,
+      "actualDisposals": 22.0,
+      "actualTog": 86.0,
+      "differenceLine": 3.5,
+      "differenceModel": 2.56,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:09Z"
     },
     {
       "snapshotKey": "toby greene|2026-W19",
@@ -1530,7 +1802,15 @@
       "overOdds": "+100",
       "underOdds": "-130",
       "modelExpectedDisposals": 21.13,
-      "modelEdge": 0.0029
+      "modelEdge": 0.0029,
+      "actualDisposals": 18.0,
+      "actualTog": 79.0,
+      "differenceLine": -3.5,
+      "differenceModel": -3.13,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:09Z"
     },
     {
       "snapshotKey": "luke davies uniacke|2026-W19",
@@ -1548,7 +1828,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 25.89,
-      "modelEdge": -0.029
+      "modelEdge": -0.029,
+      "actualDisposals": 34.0,
+      "actualTog": 80.0,
+      "differenceLine": 9.5,
+      "differenceModel": 8.11,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:10Z"
     },
     {
       "snapshotKey": "jacob farrow|2026-W19",
@@ -1566,7 +1854,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 18.37,
-      "modelEdge": -0.0048
+      "modelEdge": -0.0048,
+      "actualDisposals": 13.0,
+      "actualTog": 71.0,
+      "differenceLine": -4.5,
+      "differenceModel": -5.37,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:13Z"
     },
     {
       "snapshotKey": "mac andrew|2026-W19",
@@ -1584,7 +1880,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 18.09,
-      "modelEdge": -0.0149
+      "modelEdge": -0.0149,
+      "actualDisposals": 22.0,
+      "actualTog": 92.0,
+      "differenceLine": 4.5,
+      "differenceModel": 3.91,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:18Z"
     },
     {
       "snapshotKey": "lawson humphries|2026-W19",
@@ -1638,7 +1942,15 @@
       "overOdds": "+100",
       "underOdds": "-130",
       "modelExpectedDisposals": 20.24,
-      "modelEdge": -0.0186
+      "modelEdge": -0.0186,
+      "actualDisposals": 6.0,
+      "actualTog": 57.0,
+      "differenceLine": -15.5,
+      "differenceModel": -14.24,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:27Z"
     },
     {
       "snapshotKey": "dyson sharp|2026-W19",
@@ -1656,7 +1968,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 13.62,
-      "modelEdge": -0.1569
+      "modelEdge": -0.1569,
+      "actualDisposals": 17.0,
+      "actualTog": 50.0,
+      "differenceLine": 0.5,
+      "differenceModel": 3.38,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:30Z"
     },
     {
       "snapshotKey": "connor o sullivan|2026-W19",
@@ -1692,7 +2012,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 19.75,
-      "modelEdge": -0.0271
+      "modelEdge": -0.0271,
+      "actualDisposals": 18.0,
+      "actualTog": 84.0,
+      "differenceLine": -2.5,
+      "differenceModel": -1.75,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:36Z"
     },
     {
       "snapshotKey": "riley bice|2026-W19",
@@ -1710,7 +2038,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 18.27,
-      "modelEdge": -0.0271
+      "modelEdge": -0.0271,
+      "actualDisposals": 22.0,
+      "actualTog": 87.0,
+      "differenceLine": 2.5,
+      "differenceModel": 3.73,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:37Z"
     },
     {
       "snapshotKey": "ned long|2026-W19",
@@ -1746,7 +2082,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.17,
-      "modelEdge": -0.0438
+      "modelEdge": -0.0438,
+      "actualDisposals": 9.0,
+      "actualTog": 57.0,
+      "differenceLine": -8.5,
+      "differenceModel": -7.17,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:46Z"
     },
     {
       "snapshotKey": "mason redman|2026-W19",
@@ -1764,7 +2108,15 @@
       "overOdds": "-125",
       "underOdds": "-105",
       "modelExpectedDisposals": 24.44,
-      "modelEdge": -0.029
+      "modelEdge": -0.029,
+      "actualDisposals": 18.0,
+      "actualTog": 70.0,
+      "differenceLine": -4.5,
+      "differenceModel": -6.44,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:47Z"
     },
     {
       "snapshotKey": "luke mcdonald|2026-W19",
@@ -1782,7 +2134,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 15.36,
-      "modelEdge": -0.0438
+      "modelEdge": -0.0438,
+      "actualDisposals": 16.0,
+      "actualTog": 88.0,
+      "differenceLine": -0.5,
+      "differenceModel": 0.64,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:48Z"
     },
     {
       "snapshotKey": "wil powell|2026-W19",
@@ -1800,7 +2160,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.67,
-      "modelEdge": -0.0222
+      "modelEdge": -0.0222,
+      "actualDisposals": 13.0,
+      "actualTog": 87.0,
+      "differenceLine": -5.5,
+      "differenceModel": -5.67,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:53:53Z"
     },
     {
       "snapshotKey": "ollie dempsey|2026-W19",
@@ -1854,7 +2222,15 @@
       "overOdds": "-111",
       "underOdds": "-120",
       "modelExpectedDisposals": 18.3,
-      "modelEdge": -0.0048
+      "modelEdge": -0.0048,
+      "actualDisposals": 16.0,
+      "actualTog": 82.0,
+      "differenceLine": -1.5,
+      "differenceModel": -2.3,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:23Z"
     },
     {
       "snapshotKey": "zach guthrie|2026-W19",
@@ -1890,7 +2266,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 24.83,
-      "modelEdge": 0.0064
+      "modelEdge": 0.0064,
+      "actualDisposals": 25.0,
+      "actualTog": 84.0,
+      "differenceLine": 2.5,
+      "differenceModel": 0.17,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:29Z"
     },
     {
       "snapshotKey": "connor idun|2026-W19",
@@ -1908,7 +2292,15 @@
       "overOdds": "-115",
       "underOdds": "-116",
       "modelExpectedDisposals": 19.25,
-      "modelEdge": -0.043
+      "modelEdge": -0.043,
+      "actualDisposals": 24.0,
+      "actualTog": 100.0,
+      "differenceLine": 3.5,
+      "differenceModel": 4.75,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:29Z"
     },
     {
       "snapshotKey": "hugo garcia|2026-W19",
@@ -1926,7 +2318,15 @@
       "overOdds": "-110",
       "underOdds": "-122",
       "modelExpectedDisposals": 21.06,
-      "modelEdge": -0.0124
+      "modelEdge": -0.0124,
+      "actualDisposals": 27.0,
+      "actualTog": 80.0,
+      "differenceLine": 5.5,
+      "differenceModel": 5.94,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:35Z"
     },
     {
       "snapshotKey": "bradley hill|2026-W19",
@@ -1944,7 +2344,15 @@
       "overOdds": "-109",
       "underOdds": "-123",
       "modelExpectedDisposals": 21.05,
-      "modelEdge": -0.0108
+      "modelEdge": -0.0108,
+      "actualDisposals": 25.0,
+      "actualTog": 89.0,
+      "differenceLine": 3.5,
+      "differenceModel": 3.95,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:40Z"
     },
     {
       "snapshotKey": "darcy wilson|2026-W19",
@@ -1962,7 +2370,15 @@
       "overOdds": "-105",
       "underOdds": "-125",
       "modelExpectedDisposals": 19.18,
-      "modelEdge": -0.0289
+      "modelEdge": -0.0289,
+      "actualDisposals": 22.0,
+      "actualTog": 83.0,
+      "differenceLine": 0.5,
+      "differenceModel": 2.82,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:44Z"
     },
     {
       "snapshotKey": "joel jeffrey|2026-W19",
@@ -1980,7 +2396,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 18.96,
-      "modelEdge": -0.0512
+      "modelEdge": -0.0512,
+      "actualDisposals": 22.0,
+      "actualTog": 58.0,
+      "differenceLine": 1.5,
+      "differenceModel": 3.04,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:49Z"
     },
     {
       "snapshotKey": "max hall|2026-W19",
@@ -1998,7 +2422,15 @@
       "overOdds": "-108",
       "underOdds": "-125",
       "modelExpectedDisposals": 17.64,
-      "modelEdge": -0.0299
+      "modelEdge": -0.0299,
+      "actualDisposals": 23.0,
+      "actualTog": 84.0,
+      "differenceLine": 4.5,
+      "differenceModel": 5.36,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:54Z"
     },
     {
       "snapshotKey": "jordan de goey|2026-W19",
@@ -2034,7 +2466,15 @@
       "overOdds": "-118",
       "underOdds": "-114",
       "modelExpectedDisposals": 20.6,
-      "modelEdge": -0.0155
+      "modelEdge": -0.0155,
+      "actualDisposals": 23.0,
+      "actualTog": 83.0,
+      "differenceLine": 3.5,
+      "differenceModel": 2.4,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:54:59Z"
     },
     {
       "snapshotKey": "brent daniels|2026-W19",
@@ -2052,7 +2492,15 @@
       "overOdds": "-110",
       "underOdds": "-122",
       "modelExpectedDisposals": 16.22,
-      "modelEdge": -0.0268
+      "modelEdge": -0.0268,
+      "actualDisposals": 17.0,
+      "actualTog": 77.0,
+      "differenceLine": -0.5,
+      "differenceModel": 0.78,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-05-09T11:55:00Z"
     },
     {
       "snapshotKey": "matthew kennedy|2026-W19",
