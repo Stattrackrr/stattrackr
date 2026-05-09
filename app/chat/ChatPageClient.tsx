@@ -1122,11 +1122,7 @@ export default function ChatPageClient() {
         }}
       >
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div
-            className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
-              shouldHideMobileNavigation ? 'pb-3' : 'pb-24'
-            }`}
-          >
+          <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pb-24 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4">
           {viewer.loading ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
