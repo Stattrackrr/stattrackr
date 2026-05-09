@@ -251,6 +251,8 @@ export default function ChatPageClient() {
   const [composerValue, setComposerValue] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const [mobileKeyboardOpen, setMobileKeyboardOpen] = useState(false);
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -260,6 +262,7 @@ export default function ChatPageClient() {
   const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
+  const mobileViewportHeightRef = useRef<number | null>(null);
   const isMessageListNearBottomRef = useRef(true);
   const shouldScrollToBottomRef = useRef(true);
   const previousRoomIdRef = useRef<string | null>(null);
@@ -280,6 +283,7 @@ export default function ChatPageClient() {
     [messages]
   );
   const isMessageCooldownActive = Boolean(messageCooldownUntil && messageCooldownUntil > Date.now());
+  const shouldHideMobileNavigation = composerFocused || mobileKeyboardOpen;
   const timelineItems = useMemo(() => {
     const now = new Date();
     const items: ChatTimelineItem[] = [];
@@ -545,6 +549,29 @@ export default function ChatPageClient() {
   }, []);
 
   useEffect(() => {
+    const getViewportHeight = () => window.visualViewport?.height ?? window.innerHeight;
+
+    const updateMobileKeyboardState = () => {
+      const viewportHeight = getViewportHeight();
+      const baselineHeight = mobileViewportHeightRef.current ?? viewportHeight;
+      mobileViewportHeightRef.current = Math.max(baselineHeight, viewportHeight);
+      setMobileKeyboardOpen(mobileViewportHeightRef.current - viewportHeight > 140);
+    };
+
+    updateMobileKeyboardState();
+
+    window.visualViewport?.addEventListener('resize', updateMobileKeyboardState);
+    window.addEventListener('resize', updateMobileKeyboardState);
+    window.addEventListener('orientationchange', updateMobileKeyboardState);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateMobileKeyboardState);
+      window.removeEventListener('resize', updateMobileKeyboardState);
+      window.removeEventListener('orientationchange', updateMobileKeyboardState);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!viewer.hasPremium || !selectedRoomId) return;
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -663,6 +690,18 @@ export default function ChatPageClient() {
     const container = event.currentTarget;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     isMessageListNearBottomRef.current = distanceFromBottom < 120;
+  }, []);
+
+  const scrollToMessage = useCallback((messageId: string) => {
+    document
+      .getElementById(`chat-message-${messageId}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  const scrollToPinnedMessages = useCallback(() => {
+    document
+      .getElementById('chat-pinned-messages')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const handleSubscriptionClick = async () => {
@@ -1039,7 +1078,11 @@ export default function ChatPageClient() {
         }}
       >
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pb-28 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4">
+          <div
+            className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-1.5 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
+              shouldHideMobileNavigation ? 'pb-3' : 'pb-[5.5rem]'
+            }`}
+          >
           {viewer.loading ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm text-gray-600 shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] dark:text-gray-300">
@@ -1078,7 +1121,7 @@ export default function ChatPageClient() {
               </div>
             </div>
           ) : (
-            <section className="flex h-[calc(100dvh-8.5rem)] min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-3">
+            <section className="flex min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-3">
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] lg:h-full">
                 <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                   {loadingRooms ? (
@@ -1092,13 +1135,24 @@ export default function ChatPageClient() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
                           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Community Chat</h2>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             Discuss bets, share slips, talk through plays, and hang out with the community.
                           </p>
                         </div>
+                        {pinnedMessages.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={scrollToPinnedMessages}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-purple-400/50 bg-purple-500/15 px-2.5 py-1 text-[11px] font-semibold text-purple-200 transition-colors hover:bg-purple-500/25 sm:hidden"
+                            aria-label={`View ${pinnedMessages.length} pinned chat ${pinnedMessages.length === 1 ? 'message' : 'messages'}`}
+                          >
+                            <Pin className="h-3 w-3" />
+                            {pinnedMessages.length}+ pinned
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -1129,7 +1183,10 @@ export default function ChatPageClient() {
                   ) : (
                     <div className="space-y-4">
                       {pinnedMessages.length > 0 ? (
-                        <div className="rounded-2xl border border-purple-200 bg-purple-50/80 p-3 text-sm text-purple-800 dark:border-purple-800/60 dark:bg-purple-950/25 dark:text-purple-100">
+                        <div
+                          id="chat-pinned-messages"
+                          className="rounded-2xl border border-purple-200 bg-purple-50/80 p-3 text-sm text-purple-800 dark:border-purple-800/60 dark:bg-purple-950/25 dark:text-purple-100"
+                        >
                           <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-purple-600 dark:text-purple-300">
                             <Pin className="h-3.5 w-3.5" />
                             Pinned
@@ -1139,11 +1196,7 @@ export default function ChatPageClient() {
                               <button
                                 key={message.id}
                                 type="button"
-                                onClick={() => {
-                                  document
-                                    .getElementById(`chat-message-${message.id}`)
-                                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }}
+                                onClick={() => scrollToMessage(message.id)}
                                 className="block w-full rounded-xl bg-white/80 px-3 py-2 text-left transition-colors hover:bg-white dark:bg-[#111c2d]/80 dark:hover:bg-[#162338]"
                               >
                                 <div className="flex items-center justify-between gap-3">
@@ -1527,8 +1580,8 @@ export default function ChatPageClient() {
                   )}
                 </div>
 
-                <div className="border-t border-gray-200 px-5 py-4 dark:border-gray-700">
-                  <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
+                  <form onSubmit={handleSubmit} className="space-y-1 sm:space-y-3">
                     {replyTarget ? (
                       <div className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-[#111c2d]">
                         <div className="min-w-0">
@@ -1549,7 +1602,7 @@ export default function ChatPageClient() {
                         </button>
                       </div>
                     ) : null}
-                    <div className="relative">
+                    <div className="relative translate-y-2 sm:translate-y-0">
                       <textarea
                         value={composerValue}
                         onChange={(event) => {
@@ -1559,22 +1612,24 @@ export default function ChatPageClient() {
                           }
                         }}
                         onKeyDown={handleComposerKeyDown}
-                        placeholder="Share something with the community..."
+                        onFocus={() => setComposerFocused(true)}
+                        onBlur={() => setComposerFocused(false)}
+                        placeholder="Message..."
                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
                         rows={3}
-                        className="w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-3 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:pr-4"
+                        className="h-16 w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:h-auto sm:py-3 sm:pr-4"
                       />
                       <button
                         type="submit"
                         disabled={!selectedRoomId || !composerValue.trim() || sendingMessage || isMessageCooldownActive}
-                        className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:hidden"
+                        className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400 sm:hidden"
                         aria-label="Send message"
                       >
-                        {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {sendingMessage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                       </button>
                     </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="order-2 text-xs text-gray-500 dark:text-gray-400 sm:order-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                      <div className="order-2 text-[10px] leading-none text-gray-500 dark:text-gray-400 sm:order-1 sm:text-xs sm:leading-normal">
                         {composerValue.trim().length}/{CHAT_MAX_MESSAGE_LENGTH} characters
                       </div>
                       <div className="order-1 flex items-center gap-3 sm:order-2">
@@ -1600,35 +1655,37 @@ export default function ChatPageClient() {
         </div>
       </main>
 
-      <MobileBottomNavigation
-        hasPremium={viewer.hasPremium}
-        username={viewer.username}
-        userEmail={viewer.userEmail}
-        avatarUrl={viewer.avatarUrl}
-        showJournalDropdown={showJournalDropdown}
-        showProfileDropdown={showProfileDropdown}
-        showSettingsDropdown={showSettingsDropdown}
-        setShowJournalDropdown={setShowJournalDropdown}
-        setShowProfileDropdown={setShowProfileDropdown}
-        setShowSettingsDropdown={setShowSettingsDropdown}
-        profileDropdownRef={profileDropdownRef}
-        journalDropdownRef={journalDropdownRef}
-        settingsDropdownRef={settingsDropdownRef}
-        onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
-        onSubscription={handleSubscriptionClick}
-        onLogout={handleLogout}
-        theme={theme}
-        oddsFormat={oddsFormat}
-        setTheme={setTheme}
-        setOddsFormat={(nextFormat) => {
-          setOddsFormat(nextFormat);
-          try {
-            window.localStorage.setItem('oddsFormat', nextFormat);
-          } catch {
-            // Ignore local storage access issues.
-          }
-        }}
-      />
+      {!shouldHideMobileNavigation ? (
+        <MobileBottomNavigation
+          hasPremium={viewer.hasPremium}
+          username={viewer.username}
+          userEmail={viewer.userEmail}
+          avatarUrl={viewer.avatarUrl}
+          showJournalDropdown={showJournalDropdown}
+          showProfileDropdown={showProfileDropdown}
+          showSettingsDropdown={showSettingsDropdown}
+          setShowJournalDropdown={setShowJournalDropdown}
+          setShowProfileDropdown={setShowProfileDropdown}
+          setShowSettingsDropdown={setShowSettingsDropdown}
+          profileDropdownRef={profileDropdownRef}
+          journalDropdownRef={journalDropdownRef}
+          settingsDropdownRef={settingsDropdownRef}
+          onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
+          onSubscription={handleSubscriptionClick}
+          onLogout={handleLogout}
+          theme={theme}
+          oddsFormat={oddsFormat}
+          setTheme={setTheme}
+          setOddsFormat={(nextFormat) => {
+            setOddsFormat(nextFormat);
+            try {
+              window.localStorage.setItem('oddsFormat', nextFormat);
+            } catch {
+              // Ignore local storage access issues.
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }
