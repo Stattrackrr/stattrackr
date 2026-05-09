@@ -3840,7 +3840,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           if (aVal === null && bVal === null) return 0;
           if (aVal === null) return 1;
           if (bVal === null) return -1;
-          return direction === 'asc' ? aVal - bVal : bVal - aVal;
+          return direction === 'asc' ? bVal - aVal : aVal - bVal;
         }
         if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
         else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
@@ -3931,7 +3931,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           if (aVal === null && bVal === null) return 0;
           if (aVal === null) return 1;
           if (bVal === null) return -1;
-          return direction === 'asc' ? aVal - bVal : bVal - aVal;
+          return direction === 'asc' ? bVal - aVal : aVal - bVal;
         }
         if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
         else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
@@ -4231,15 +4231,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
         switch (column) {
           case 'dvp':
-            // Sort by DvP rank (lower rank = better)
+            // Sort by DvP rank (higher rank = easier matchup)
             aValue = a.dvpRating ?? null;
             bValue = b.dvpRating ?? null;
-            // Lower rank is better, so for "asc" (best) we want lower numbers first
-            // Handle nulls: nulls go to end (treated as rank 31)
+            // First click uses "asc", which means best/easiest DvP first.
             if (aValue === null && bValue === null) return 0;
             if (aValue === null) return 1;
             if (bValue === null) return -1;
-            return direction === 'asc' ? aValue - bValue : bValue - aValue;
+            return direction === 'asc' ? bValue - aValue : aValue - bValue;
           
           case 'l5':
             aValue = percent(a.last5HitRate);
