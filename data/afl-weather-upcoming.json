@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-10T11:48:15.717Z",
+  "generatedAt": "2026-05-10T17:27:50.774Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-05-14T09:30:00Z",
       "weather": {
-        "temperatureC": 17.2,
+        "temperatureC": 17.3,
         "precipitationMm": 0,
-        "windKmh": 9.4
+        "windKmh": 9.2
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-05-15T09:30:00Z",
       "weather": {
-        "temperatureC": 15.9,
+        "temperatureC": 17.3,
         "precipitationMm": 0,
-        "windKmh": 3
+        "windKmh": 6.9
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-05-15T10:10:00Z",
       "weather": {
-        "temperatureC": 18.1,
+        "temperatureC": 17.9,
         "precipitationMm": 0,
-        "windKmh": 14.1
+        "windKmh": 13.3
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-05-16T03:15:20Z",
       "weather": {
-        "temperatureC": 16.5,
+        "temperatureC": 17.2,
         "precipitationMm": 0.1,
-        "windKmh": 4
+        "windKmh": 4.8
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-05-16T06:15:46Z",
       "weather": {
-        "temperatureC": 19,
+        "temperatureC": 21.5,
         "precipitationMm": 0,
-        "windKmh": 11.5
+        "windKmh": 14.4
       }
     },
     {
