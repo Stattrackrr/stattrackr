@@ -285,7 +285,17 @@ function SoccerPageContent() {
   const syncedLineupLoading = Boolean(selectedTeam) && (mainChartLoading || predictedLineupLoading);
   const showFixtureDependentSkeleton = Boolean(selectedTeam) && !nextFixture && nextFixtureLoading;
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem('oddsFormat');
+      if (stored === 'american' || stored === 'decimal') {
+        setOddsFormat(stored);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1148,6 +1158,9 @@ function SoccerPageContent() {
                           matches={displayedRecentMatches}
                           selectedTeamName={selectedTeam.name}
                           nextOpponentName={displayOpponent}
+                          selectedTeamHref={selectedTeamHref}
+                          nextFixtureMatchId={nextFixture?.matchId ?? null}
+                          oddsFormat={oddsFormat}
                           isDark={Boolean(mounted && isDark)}
                           onSelectedStatChange={setMainChartStat}
                           onSelectedTimeframeChange={setChartTimeframe}

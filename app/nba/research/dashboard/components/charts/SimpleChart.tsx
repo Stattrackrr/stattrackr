@@ -74,6 +74,8 @@ interface SimpleChartProps {
   chartBottomMargin?: number;
   /** When true, hide numeric labels drawn on bars. */
   hideBarValueLabels?: boolean;
+  /** When true, hide the horizontal betting/reference line overlay. */
+  hideBettingLineOverlay?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -117,6 +119,7 @@ const SimpleChart = memo(function SimpleChart({
   xAxisHeight = 40,
   chartBottomMargin = 19,
   hideBarValueLabels = false,
+  hideBettingLineOverlay = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -1005,28 +1008,30 @@ const SimpleChart = memo(function SimpleChart({
         </div>
       )}
       {/* Betting line overlay - updates via DOM, no re-renders; on mobile match chart margin + x-axis so line aligns with bar area */}
-      <div 
-        id="simple-chart-betting-line-container"
-        className="absolute pointer-events-none"
-        style={{
-          left: isMobile ? '0px' : `${desktopChartLeftInset}px`, // Full width on mobile, yAxis width on desktop
-          right: isMobile ? '0px' : `${desktopChartRightInset}px`, // Full width on mobile, updated via DOM when second axis changes on desktop
-          top: isMobile ? '44px' : '22px',   // Match chart margin.top (mobile 44, desktop 22)
-          bottom: isMobile ? '59px' : '57px', // Match chart margin.bottom (19) + XAxis height (40) so overlay = bar area only
-          zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
-        }}
-      >
+      {!hideBettingLineOverlay && (
         <div
-          id="simple-chart-betting-line-fast"
-          className="absolute w-full"
+          id="simple-chart-betting-line-container"
+          className="absolute pointer-events-none"
           style={{
-            bottom: '50%', // Initial position
-            opacity: 1,
-            height: isMobile ? '2px' : '3px',
-            background: isDark ? '#ffffff' : '#000000'
+            left: isMobile ? '0px' : `${desktopChartLeftInset}px`, // Full width on mobile, yAxis width on desktop
+            right: isMobile ? '0px' : `${desktopChartRightInset}px`, // Full width on mobile, updated via DOM when second axis changes on desktop
+            top: isMobile ? '44px' : '22px',   // Match chart margin.top (mobile 44, desktop 22)
+            bottom: isMobile ? '59px' : '57px', // Match chart margin.bottom (19) + XAxis height (40) so overlay = bar area only
+            zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
           }}
-        />
-      </div>
+        >
+          <div
+            id="simple-chart-betting-line-fast"
+            className="absolute w-full"
+            style={{
+              bottom: '50%', // Initial position
+              opacity: 1,
+              height: isMobile ? '2px' : '3px',
+              background: isDark ? '#ffffff' : '#000000'
+            }}
+          />
+        </div>
+      )}
       
       <div 
         className="relative z-20 w-full h-full"

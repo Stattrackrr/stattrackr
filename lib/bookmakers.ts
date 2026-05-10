@@ -131,6 +131,30 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: getLogoUrl('bet365.com'),
     color: '#1C6E38',
   },
+  'bet 365': {
+    name: 'Bet365',
+    logo: '365',
+    logoUrl: getLogoUrl('bet365.com'),
+    color: '#1C6E38',
+  },
+  'bet 385': {
+    name: 'Bet365',
+    logo: '365',
+    logoUrl: getLogoUrl('bet365.com'),
+    color: '#1C6E38',
+  },
+  'bet365.nl': {
+    name: 'Bet365',
+    logo: '365',
+    logoUrl: getLogoUrl('bet365.com'),
+    color: '#1C6E38',
+  },
+  'bet365 au': {
+    name: 'Bet365',
+    logo: '365',
+    logoUrl: getLogoUrl('bet365.com'),
+    color: '#1C6E38',
+  },
   'unibet': {
     name: 'Unibet',
     logo: 'UB',
@@ -260,6 +284,12 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     color: '#7C3AED',
   },
   'unibet_au': {
+    name: 'Unibet',
+    logo: 'UB',
+    logoUrl: '/images/unibet.jpg',
+    color: '#43B649',
+  },
+  'unibet au': {
     name: 'Unibet',
     logo: 'UB',
     logoUrl: '/images/unibet.jpg',

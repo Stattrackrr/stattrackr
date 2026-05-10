@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T15:43:54.350Z",
+  "generatedAt": "2026-05-10T16:54:08.918Z",
   "source": "build-soccer-last5-pl",
   "sourceBaseUrl": "https://www.soccerway.com",
   "timeframe": "last5",
@@ -38,55 +38,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 0.8,
-          "rank": 17,
+          "perGame": 1.2,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.316,
-          "rank": 12,
+          "perGame": 1.53,
+          "rank": 9,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12.2,
-          "rank": 12,
+          "perGame": 13,
+          "rank": 4,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 2.6,
-          "rank": 20,
+          "perGame": 3.8,
+          "rank": 15,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6.2,
-          "rank": 4,
+          "perGame": 3.8,
+          "rank": 14,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1,
-          "rank": 5,
+          "perGame": 0.2,
+          "rank": 1,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.2100000000000002,
-          "rank": 9,
+          "perGame": 0.9879999999999999,
+          "rank": 3,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12.4,
-          "rank": 8,
+          "perGame": 11,
+          "rank": 5,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.2,
-          "rank": 2,
+          "perGame": 2.4,
+          "rank": 1,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4,
-          "rank": 3,
+          "perGame": 3,
+          "rank": 1,
           "rankedSize": 20
         }
       }
@@ -97,55 +97,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 2.4,
+          "perGame": 2.2,
           "rank": 1,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.304,
+          "perGame": 2.258,
           "rank": 1,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 19.6,
+          "perGame": 23,
           "rank": 1,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 7,
+          "perGame": 6.8,
           "rank": 1,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 9,
+          "perGame": 9.6,
           "rank": 1,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 0.4,
-          "rank": 1,
+          "perGame": 1,
+          "rank": 4,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.002,
-          "rank": 2,
+          "perGame": 1.076,
+          "rank": 4,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 9,
+          "perGame": 8,
           "rank": 1,
           "rankedSize": 20
         },
         "shots_on_target": {
           "perGame": 3,
-          "rank": 1,
+          "rank": 3,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.4,
-          "rank": 2,
+          "perGame": 3.6,
+          "rank": 6,
           "rankedSize": 20
         }
       }
@@ -156,55 +156,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.8,
-          "rank": 6,
+          "perGame": 1.4,
+          "rank": 9,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.16,
-          "rank": 18,
+          "perGame": 1.168,
+          "rank": 13,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13,
-          "rank": 10,
+          "perGame": 12.8,
+          "rank": 6,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 5.4,
-          "rank": 4,
+          "perGame": 4.6,
+          "rank": 6,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6.6,
-          "rank": 3,
+          "perGame": 5.8,
+          "rank": 6,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
+          "perGame": 1,
+          "rank": 4,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.624,
-          "rank": 16,
+          "perGame": 1.472,
+          "rank": 13,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 14.6,
-          "rank": 14,
+          "perGame": 15.2,
+          "rank": 17,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4,
-          "rank": 6,
+          "perGame": 4.4,
+          "rank": 9,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6.2,
-          "rank": 16,
+          "perGame": 5.4,
+          "rank": 14,
           "rankedSize": 20
         }
       }
@@ -215,55 +215,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 2.4,
-          "rank": 1,
+          "perGame": 1.4,
+          "rank": 9,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.7559999999999998,
-          "rank": 6,
+          "perGame": 1.208,
+          "rank": 11,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 11.6,
-          "rank": 15,
+          "perGame": 12.2,
+          "rank": 13,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.8,
-          "rank": 7,
+          "perGame": 4.6,
+          "rank": 6,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.8,
-          "rank": 15,
+          "perGame": 6.2,
+          "rank": 3,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
           "perGame": 1.2,
-          "rank": 6,
+          "rank": 8,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.172,
+          "perGame": 1.254,
           "rank": 8,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13.6,
-          "rank": 12,
+          "perGame": 11.2,
+          "rank": 6,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 5,
-          "rank": 14,
+          "perGame": 4.8,
+          "rank": 13,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4,
-          "rank": 3,
+          "perGame": 3.4,
+          "rank": 4,
           "rankedSize": 20
         }
       }
@@ -274,23 +274,23 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.4,
-          "rank": 10,
+          "perGame": 1.6,
+          "rank": 7,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.2639999999999998,
-          "rank": 15,
+          "perGame": 1.198,
+          "rank": 12,
           "rankedSize": 20
         },
         "total_shots": {
           "perGame": 13,
-          "rank": 10,
+          "rank": 4,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.8,
-          "rank": 13,
+          "perGame": 4.4,
+          "rank": 11,
           "rankedSize": 20
         },
         "corner_kicks": {
@@ -301,28 +301,28 @@
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
-          "rankedSize": 20
-        },
-        "expected_goals_xg": {
-          "perGame": 1.5059999999999998,
-          "rank": 13,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 14.6,
+          "perGame": 1.6,
           "rank": 14,
           "rankedSize": 20
         },
+        "expected_goals_xg": {
+          "perGame": 1.396,
+          "rank": 11,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12,
+          "rank": 8,
+          "rankedSize": 20
+        },
         "shots_on_target": {
-          "perGame": 5.4,
+          "perGame": 5.2,
           "rank": 16,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.6,
-          "rank": 8,
+          "perGame": 3.2,
+          "rank": 3,
           "rankedSize": 20
         }
       }
@@ -333,55 +333,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.6,
-          "rank": 7,
+          "perGame": 0.6,
+          "rank": 18,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.77,
-          "rank": 5,
+          "perGame": 0.994,
+          "rank": 17,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13.4,
-          "rank": 7,
+          "perGame": 12.4,
+          "rank": 10,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.8,
-          "rank": 13,
+          "perGame": 2.6,
+          "rank": 19,
           "rankedSize": 20
         },
         "corner_kicks": {
           "perGame": 6,
-          "rank": 5,
+          "rank": 4,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.4,
+          "perGame": 1.6,
           "rank": 14,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.128,
-          "rank": 7,
+          "perGame": 1.172,
+          "rank": 5,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 10.2,
-          "rank": 3,
+          "perGame": 8.6,
+          "rank": 2,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.2,
-          "rank": 9,
+          "perGame": 4,
+          "rank": 7,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 5,
-          "rank": 11,
+          "perGame": 3.4,
+          "rank": 4,
           "rankedSize": 20
         }
       }
@@ -392,55 +392,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1,
-          "rank": 15,
+          "perGame": 1.2,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.6919999999999997,
-          "rank": 8,
+          "perGame": 1.5899999999999999,
+          "rank": 7,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 11.6,
+          "perGame": 12,
           "rank": 15,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.4,
-          "rank": 16,
+          "perGame": 4,
+          "rank": 13,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.4,
-          "rank": 12,
+          "perGame": 4.6,
+          "rank": 10,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
+          "perGame": 1.4,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.106,
-          "rank": 6,
+          "perGame": 1.516,
+          "rank": 14,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12.6,
-          "rank": 9,
+          "perGame": 14.8,
+          "rank": 16,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.2,
-          "rank": 9,
+          "perGame": 5.4,
+          "rank": 17,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.8,
-          "rank": 10,
+          "perGame": 5.8,
+          "rank": 16,
           "rankedSize": 20
         }
       }
@@ -451,146 +451,28 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.4,
-          "rank": 10,
+          "perGame": 1.8,
+          "rank": 6,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.2,
-          "rank": 17,
+          "perGame": 1.61,
+          "rank": 6,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 10.8,
-          "rank": 18,
+          "perGame": 12.4,
+          "rank": 10,
           "rankedSize": 20
         },
         "shots_on_target": {
           "perGame": 5.2,
-          "rank": 5,
-          "rankedSize": 20
-        },
-        "corner_kicks": {
-          "perGame": 2.8,
-          "rank": 20,
-          "rankedSize": 20
-        }
-      },
-      "defence": {
-        "goals": {
-          "perGame": 1.6,
-          "rank": 15,
-          "rankedSize": 20
-        },
-        "expected_goals_xg": {
-          "perGame": 1.818,
-          "rank": 17,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 15.6,
-          "rank": 18,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 4.8,
-          "rank": 13,
-          "rankedSize": 20
-        },
-        "corner_kicks": {
-          "perGame": 5.6,
-          "rank": 14,
-          "rankedSize": 20
-        }
-      }
-    },
-    {
-      "name": "Brighton",
-      "href": "/team/brighton/2XrRecc3",
-      "leagueGames": 5,
-      "attack": {
-        "goals": {
-          "perGame": 2,
           "rank": 4,
           "rankedSize": 20
         },
-        "expected_goals_xg": {
-          "perGame": 1.748,
-          "rank": 7,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 13.2,
-          "rank": 9,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 5.8,
-          "rank": 2,
-          "rankedSize": 20
-        },
         "corner_kicks": {
-          "perGame": 4,
-          "rank": 14,
-          "rankedSize": 20
-        }
-      },
-      "defence": {
-        "goals": {
-          "perGame": 0.6,
-          "rank": 2,
-          "rankedSize": 20
-        },
-        "expected_goals_xg": {
-          "perGame": 0.8480000000000001,
-          "rank": 1,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 11,
-          "rank": 4,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 4,
-          "rank": 6,
-          "rankedSize": 20
-        },
-        "corner_kicks": {
-          "perGame": 7,
-          "rank": 19,
-          "rankedSize": 20
-        }
-      }
-    },
-    {
-      "name": "Sunderland",
-      "href": "/team/sunderland/WSzc94ws",
-      "leagueGames": 5,
-      "attack": {
-        "goals": {
-          "perGame": 1.2,
-          "rank": 13,
-          "rankedSize": 20
-        },
-        "expected_goals_xg": {
-          "perGame": 1.4179999999999997,
-          "rank": 11,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 13.6,
-          "rank": 5,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 4.8,
-          "rank": 7,
-          "rankedSize": 20
-        },
-        "corner_kicks": {
-          "perGame": 4.4,
-          "rank": 12,
+          "perGame": 4.6,
+          "rank": 10,
           "rankedSize": 20
         }
       },
@@ -601,13 +483,131 @@
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.5479999999999998,
-          "rank": 14,
+          "perGame": 1.932,
+          "rank": 20,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 16.6,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 5,
+          "rank": 10,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Brighton",
+      "href": "/team/brighton/2XrRecc3",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 2.2,
+          "rank": 1,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.574,
+          "rank": 8,
           "rankedSize": 20
         },
         "total_shots": {
           "perGame": 12.8,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 5.6,
+          "rank": 2,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 6,
+          "rank": 4,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 1,
+          "rank": 4,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.1800000000000002,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 9.4,
+          "rank": 3,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.6,
+          "rank": 6,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 4.6,
+          "rank": 8,
+          "rankedSize": 20
+        }
+      }
+    },
+    {
+      "name": "Sunderland",
+      "href": "/team/sunderland/WSzc94ws",
+      "leagueGames": 5,
+      "attack": {
+        "goals": {
+          "perGame": 1,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.1179999999999999,
+          "rank": 14,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 12.4,
           "rank": 10,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 3.8,
+          "rank": 15,
+          "rankedSize": 20
+        },
+        "corner_kicks": {
+          "perGame": 3.8,
+          "rank": 14,
+          "rankedSize": 20
+        }
+      },
+      "defence": {
+        "goals": {
+          "perGame": 2,
+          "rank": 16,
+          "rankedSize": 20
+        },
+        "expected_goals_xg": {
+          "perGame": 1.4120000000000001,
+          "rank": 12,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 13.4,
+          "rank": 12,
           "rankedSize": 20
         },
         "shots_on_target": {
@@ -616,8 +616,8 @@
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 5.6,
-          "rank": 14,
+          "perGame": 5.8,
+          "rank": 16,
           "rankedSize": 20
         }
       }
@@ -628,55 +628,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.6,
-          "rank": 7,
+          "perGame": 2,
+          "rank": 3,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.036,
-          "rank": 2,
+          "perGame": 1.7259999999999998,
+          "rank": 4,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 15,
-          "rank": 2,
+          "perGame": 12.6,
+          "rank": 8,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.2,
-          "rank": 10,
+          "perGame": 4.6,
+          "rank": 6,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6,
-          "rank": 5,
+          "perGame": 5,
+          "rank": 9,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
-          "rankedSize": 20
-        },
-        "expected_goals_xg": {
-          "perGame": 1.578,
-          "rank": 15,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 13.2,
-          "rank": 11,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 3.2,
+          "perGame": 0.8,
           "rank": 2,
           "rankedSize": 20
         },
+        "expected_goals_xg": {
+          "perGame": 1.3699999999999999,
+          "rank": 9,
+          "rankedSize": 20
+        },
+        "total_shots": {
+          "perGame": 11.6,
+          "rank": 7,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 2.4,
+          "rank": 1,
+          "rankedSize": 20
+        },
         "corner_kicks": {
-          "perGame": 5.2,
-          "rank": 12,
+          "perGame": 5,
+          "rank": 10,
           "rankedSize": 20
         }
       }
@@ -687,55 +687,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 0.8,
-          "rank": 17,
+          "perGame": 0.2,
+          "rank": 19,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.4340000000000002,
-          "rank": 10,
+          "perGame": 0.9199999999999999,
+          "rank": 18,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 14.2,
-          "rank": 4,
+          "perGame": 13.4,
+          "rank": 3,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.4,
-          "rank": 16,
+          "perGame": 2.6,
+          "rank": 19,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.8,
-          "rank": 10,
+          "perGame": 5.8,
+          "rank": 6,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 0.6,
-          "rank": 2,
+          "perGame": 1.2,
+          "rank": 8,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.2280000000000002,
-          "rank": 10,
+          "perGame": 1.5819999999999999,
+          "rank": 16,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12.2,
-          "rank": 7,
+          "perGame": 13.8,
+          "rank": 13,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.4,
-          "rank": 4,
+          "perGame": 4.8,
+          "rank": 13,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6.2,
-          "rank": 16,
+          "perGame": 5,
+          "rank": 10,
           "rankedSize": 20
         }
       }
@@ -746,55 +746,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.4,
-          "rank": 10,
+          "perGame": 1.6,
+          "rank": 7,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.0060000000000002,
-          "rank": 3,
+          "perGame": 1.8780000000000001,
+          "rank": 2,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12,
-          "rank": 14,
+          "perGame": 12.6,
+          "rank": 8,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.4,
-          "rank": 9,
+          "perGame": 5.6,
+          "rank": 2,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.6,
-          "rank": 18,
+          "perGame": 3.2,
+          "rank": 19,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
+          "perGame": 2,
+          "rank": 16,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.048,
-          "rank": 5,
+          "perGame": 1.392,
+          "rank": 10,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 9.8,
-          "rank": 2,
+          "perGame": 14.2,
+          "rank": 15,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.6,
-          "rank": 5,
+          "perGame": 4.2,
+          "rank": 8,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.4,
-          "rank": 6,
+          "perGame": 8,
+          "rank": 20,
           "rankedSize": 20
         }
       }
@@ -805,55 +805,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1,
-          "rank": 15,
+          "perGame": 1.2,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.3119999999999998,
-          "rank": 13,
+          "perGame": 1.684,
+          "rank": 5,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 11.2,
-          "rank": 17,
+          "perGame": 12.2,
+          "rank": 13,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.6,
-          "rank": 15,
+          "perGame": 4.2,
+          "rank": 12,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.8,
-          "rank": 15,
+          "perGame": 2.2,
+          "rank": 20,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 2.8,
-          "rank": 20,
+          "perGame": 1.4,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.554,
-          "rank": 20,
+          "perGame": 1.7420000000000002,
+          "rank": 18,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13.8,
-          "rank": 13,
+          "perGame": 12.8,
+          "rank": 11,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 6.4,
-          "rank": 20,
+          "perGame": 4.4,
+          "rank": 9,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.6,
-          "rank": 8,
+          "perGame": 4.8,
+          "rank": 9,
           "rankedSize": 20
         }
       }
@@ -865,54 +865,54 @@
       "attack": {
         "goals": {
           "perGame": 2,
-          "rank": 4,
+          "rank": 3,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.888,
-          "rank": 4,
+          "perGame": 1.736,
+          "rank": 3,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 14.6,
-          "rank": 3,
+          "perGame": 14,
+          "rank": 2,
           "rankedSize": 20
         },
         "shots_on_target": {
           "perGame": 5.2,
-          "rank": 5,
+          "rank": 4,
           "rankedSize": 20
         },
         "corner_kicks": {
           "perGame": 3.8,
-          "rank": 15,
+          "rank": 14,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
+          "perGame": 1,
+          "rank": 4,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.3960000000000001,
-          "rank": 12,
+          "perGame": 0.8879999999999999,
+          "rank": 1,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 14.8,
-          "rank": 16,
+          "perGame": 12.2,
+          "rank": 10,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 5.2,
-          "rank": 15,
+          "perGame": 4.6,
+          "rank": 11,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 7.8,
-          "rank": 20,
+          "perGame": 7,
+          "rank": 19,
           "rankedSize": 20
         }
       }
@@ -923,55 +923,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 2.4,
-          "rank": 1,
+          "perGame": 2,
+          "rank": 3,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.212,
-          "rank": 16,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 12.2,
-          "rank": 12,
-          "rankedSize": 20
-        },
-        "shots_on_target": {
-          "perGame": 4.2,
+          "perGame": 1.3259999999999998,
           "rank": 10,
           "rankedSize": 20
         },
+        "total_shots": {
+          "perGame": 10.2,
+          "rank": 19,
+          "rankedSize": 20
+        },
+        "shots_on_target": {
+          "perGame": 4.6,
+          "rank": 6,
+          "rankedSize": 20
+        },
         "corner_kicks": {
-          "perGame": 5.4,
-          "rank": 7,
+          "perGame": 3.4,
+          "rank": 17,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 0.6,
-          "rank": 2,
+          "perGame": 1.2,
+          "rank": 8,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.042,
-          "rank": 3,
+          "perGame": 1.552,
+          "rank": 15,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 11.2,
-          "rank": 5,
+          "perGame": 15.8,
+          "rank": 18,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.2,
-          "rank": 9,
+          "perGame": 5.8,
+          "rank": 19,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.2,
-          "rank": 1,
+          "perGame": 5.4,
+          "rank": 14,
           "rankedSize": 20
         }
       }
@@ -982,55 +982,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.6,
-          "rank": 7,
+          "perGame": 1.2,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.6179999999999999,
-          "rank": 9,
+          "perGame": 1.084,
+          "rank": 15,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13.6,
-          "rank": 5,
+          "perGame": 11,
+          "rank": 18,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.2,
-          "rank": 10,
+          "perGame": 4,
+          "rank": 13,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.8,
-          "rank": 10,
+          "perGame": 4.2,
+          "rank": 12,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 6,
+          "perGame": 0.8,
+          "rank": 2,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.3719999999999999,
-          "rank": 11,
+          "perGame": 1.1800000000000002,
+          "rank": 6,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 15.6,
-          "rank": 18,
+          "perGame": 12,
+          "rank": 8,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4.4,
-          "rank": 12,
+          "perGame": 3,
+          "rank": 3,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.2,
-          "rank": 5,
+          "perGame": 3,
+          "rank": 1,
           "rankedSize": 20
         }
       }
@@ -1041,55 +1041,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 1.2,
-          "rank": 13,
+          "perGame": 1,
+          "rank": 15,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.296,
-          "rank": 14,
+          "perGame": 1.016,
+          "rank": 16,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 13.4,
-          "rank": 7,
+          "perGame": 11.8,
+          "rank": 16,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 5.8,
-          "rank": 2,
+          "perGame": 4.6,
+          "rank": 6,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 7.6,
+          "perGame": 7.2,
           "rank": 2,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 1.6,
-          "rank": 15,
+          "perGame": 1.4,
+          "rank": 11,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 1.042,
-          "rank": 3,
+          "perGame": 0.9040000000000001,
+          "rank": 2,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 12,
-          "rank": 6,
+          "perGame": 9.4,
+          "rank": 3,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 4,
-          "rank": 6,
+          "perGame": 3,
+          "rank": 3,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 4.4,
-          "rank": 6,
+          "perGame": 4,
+          "rank": 7,
           "rankedSize": 20
         }
       }
@@ -1100,12 +1100,12 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 0.4,
-          "rank": 20,
+          "perGame": 0.8,
+          "rank": 17,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 0.898,
+          "perGame": 0.8379999999999999,
           "rank": 19,
           "rankedSize": 20
         },
@@ -1115,40 +1115,40 @@
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 3.2,
-          "rank": 18,
+          "perGame": 3.6,
+          "rank": 17,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 5.2,
-          "rank": 8,
+          "perGame": 3.4,
+          "rank": 17,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 2,
-          "rank": 17,
+          "perGame": 2.4,
+          "rank": 19,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.436,
+          "perGame": 1.908,
           "rank": 19,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 19,
+          "perGame": 17.4,
           "rank": 20,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 5.6,
-          "rank": 18,
+          "perGame": 6.8,
+          "rank": 20,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 6.2,
-          "rank": 16,
+          "perGame": 6,
+          "rank": 18,
           "rankedSize": 20
         }
       }
@@ -1159,55 +1159,55 @@
       "leagueGames": 5,
       "attack": {
         "goals": {
-          "perGame": 0.6,
+          "perGame": 0.2,
           "rank": 19,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 0.726,
+          "perGame": 0.8,
           "rank": 20,
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 9.8,
-          "rank": 19,
+          "perGame": 11.4,
+          "rank": 17,
           "rankedSize": 20
         },
         "shots_on_target": {
-          "perGame": 2.8,
-          "rank": 19,
+          "perGame": 3,
+          "rank": 18,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 3.6,
-          "rank": 18,
+          "perGame": 4,
+          "rank": 13,
           "rankedSize": 20
         }
       },
       "defence": {
         "goals": {
-          "perGame": 2.6,
+          "perGame": 2.4,
           "rank": 19,
           "rankedSize": 20
         },
         "expected_goals_xg": {
-          "perGame": 2.112,
-          "rank": 18,
-          "rankedSize": 20
-        },
-        "total_shots": {
-          "perGame": 15.2,
+          "perGame": 1.642,
           "rank": 17,
           "rankedSize": 20
         },
+        "total_shots": {
+          "perGame": 13.8,
+          "rank": 13,
+          "rankedSize": 20
+        },
         "shots_on_target": {
-          "perGame": 5.4,
-          "rank": 16,
+          "perGame": 4.6,
+          "rank": 11,
           "rankedSize": 20
         },
         "corner_kicks": {
-          "perGame": 5.4,
-          "rank": 13,
+          "perGame": 5,
+          "rank": 10,
           "rankedSize": 20
         }
       }

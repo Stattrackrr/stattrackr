@@ -5,11 +5,14 @@ import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+import { getBookmakerInfo } from '@/lib/bookmakers';
 
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
 type SoccerMatchVenue = Exclude<SoccerVenueFilter, 'all'>;
 export type SoccerStatTeamScope = 'all' | 'team' | 'opp';
+type SoccerResultLabel = 'W' | 'D' | 'L';
+const SOCCER_CHART_TEAM_SCOPE_STORAGE_KEY = 'soccer-chart-team-scope';
 
 type SoccerChartRow = {
   key: string;
@@ -20,23 +23,74 @@ type SoccerChartRow = {
   opponentLogoUrl: string | null;
   result: string;
   venue: SoccerMatchVenue;
-  value: number;
+  value: number | null;
   comparisonValue: string | null;
   gameDate: string;
   scoreline: string;
   sourceMatch: SoccerwayRecentMatch;
   gameSeason: number;
+  moneylineLabel?: string;
 };
 
 type SoccerStatsChartProps = {
   matches: SoccerwayRecentMatch[];
   selectedTeamName: string;
   nextOpponentName?: string | null;
+  selectedTeamHref?: string | null;
+  nextFixtureMatchId?: string | null;
+  oddsFormat?: 'american' | 'decimal';
   isDark: boolean;
   onSelectedStatChange?: (stat: string) => void;
   onSelectedTimeframeChange?: (timeframe: SoccerTimeframe) => void;
   onSelectedTeamScopeChange?: (scope: SoccerStatTeamScope) => void;
   onSelectedCompetitionChange?: (competition: string) => void;
+};
+
+type SoccerOddsOutcome = {
+  participant: string | null;
+  side: 'home' | 'away' | null;
+  selection: string | null;
+  value: string | null;
+  handicap: string | null;
+  active: boolean;
+};
+
+type SoccerOddsOffer = {
+  bookmakerId: number | string | null;
+  bookmakerName: string | null;
+  odds: SoccerOddsOutcome[];
+};
+
+type SoccerOddsMarket = {
+  key: string;
+  bettingType: string | null;
+  bettingScope: string | null;
+  offers: SoccerOddsOffer[];
+};
+
+type SoccerOddsPayload = {
+  success?: boolean;
+  error?: string;
+  groupedMarkets?: SoccerOddsMarket[];
+};
+
+type SoccerOddsBookRow = {
+  name: string;
+  moneyline: {
+    home: string | null;
+    draw: string | null;
+    away: string | null;
+  };
+  doubleChance: {
+    winDraw: string | null;
+    winLoss: string | null;
+    drawLoss: string | null;
+  };
+  totalGoals: Array<{
+    line: string;
+    over: string | null;
+    under: string | null;
+  }>;
 };
 
 export const SOCCER_STAT_PRIORITY = [
@@ -172,6 +226,11 @@ function roundToSoccerHalfStep(value: number): number {
   return Math.round(value * 2) / 2;
 }
 
+function clampSoccerLineValue(value: number, minValue = 0): number {
+  const rounded = roundToSoccerHalfStep(value);
+  return Math.max(minValue, rounded);
+}
+
 function formatSoccerAxisValue(value: number): string {
   return `${Math.round(value)}`;
 }
@@ -180,6 +239,137 @@ function getSoccerMoneylineLineLabel(value: number): 'W' | 'D' | 'L' {
   if (value <= -0.5) return 'L';
   if (value >= 0.5) return 'W';
   return 'D';
+}
+
+function isSoccerTeamScope(value: string | null | undefined): value is SoccerStatTeamScope {
+  return value === 'all' || value === 'team' || value === 'opp';
+}
+
+function readStoredSoccerTeamScope(): SoccerStatTeamScope | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = window.localStorage.getItem(SOCCER_CHART_TEAM_SCOPE_STORAGE_KEY);
+    return isSoccerTeamScope(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredSoccerTeamScope(scope: SoccerStatTeamScope): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SOCCER_CHART_TEAM_SCOPE_STORAGE_KEY, scope);
+  } catch {
+    /* ignore */
+  }
+}
+
+function getDoubleChanceKey(results: SoccerResultLabel[]): keyof SoccerOddsBookRow['doubleChance'] {
+  const selected = new Set(results);
+  if (selected.has('W') && selected.has('L')) return 'winLoss';
+  if (selected.has('D') && selected.has('L')) return 'drawLoss';
+  return 'winDraw';
+}
+
+function getDoubleChanceLabel(results: SoccerResultLabel[]): string {
+  const key = getDoubleChanceKey(results);
+  if (key === 'winLoss') return 'W/L';
+  if (key === 'drawLoss') return 'D/L';
+  return 'W/D';
+}
+
+function getDoubleChanceValue(book: SoccerOddsBookRow | undefined, results: SoccerResultLabel[]): string | null {
+  return book?.doubleChance[getDoubleChanceKey(results)] ?? null;
+}
+
+function getMoneylineValue(book: SoccerOddsBookRow | undefined, result: SoccerResultLabel): string | null {
+  if (!book) return null;
+  if (result === 'W') return book.moneyline.home;
+  if (result === 'D') return book.moneyline.draw;
+  return book.moneyline.away;
+}
+
+function getSoccerResultButtonClass(result: SoccerResultLabel, selected: boolean, doubleChanceMode: boolean): string {
+  if (!selected) return 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800';
+  if (!doubleChanceMode) return 'bg-purple-600 text-white';
+  if (result === 'W') return 'bg-green-600 text-white';
+  if (result === 'D') return 'bg-slate-600 text-white';
+  return 'bg-red-600 text-white';
+}
+
+function parseSoccerOddsNumber(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const cleaned = String(value).replace(/,/g, '').trim();
+  const n = Number.parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function decimalToAmerican(decimal: number): number | null {
+  if (!Number.isFinite(decimal) || decimal <= 1) return null;
+  if (decimal >= 2) return Math.round((decimal - 1) * 100);
+  return Math.round(-100 / (decimal - 1));
+}
+
+function formatSoccerOddsValue(value: string | null | undefined, format: 'american' | 'decimal'): string {
+  const decimal = parseSoccerOddsNumber(value);
+  if (decimal == null) return 'N/A';
+  if (format === 'decimal') return decimal.toFixed(2);
+  const american = decimalToAmerican(decimal);
+  if (american == null) return 'N/A';
+  return american > 0 ? `+${american}` : String(american);
+}
+
+function normalizeSoccerMarketText(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractSoccerLine(outcome: SoccerOddsOutcome): string | null {
+  const raw = outcome.handicap ?? outcome.selection ?? '';
+  const match = String(raw).match(/-?\d+(?:\.\d+)?/);
+  return match ? match[0] : null;
+}
+
+function isSoccerOverOutcome(outcome: SoccerOddsOutcome): boolean {
+  const text = normalizeSoccerMarketText(`${outcome.selection || ''} ${outcome.participant || ''}`);
+  return /\bover\b/.test(text);
+}
+
+function isSoccerUnderOutcome(outcome: SoccerOddsOutcome): boolean {
+  const text = normalizeSoccerMarketText(`${outcome.selection || ''} ${outcome.participant || ''}`);
+  return /\bunder\b/.test(text);
+}
+
+function soccerLineToNumber(value: string | null | undefined): number | null {
+  if (!value || value === 'N/A') return null;
+  const n = Number.parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function isSameSoccerLine(left: string | null | undefined, right: number | null | undefined): boolean {
+  const n = soccerLineToNumber(left);
+  return n != null && right != null && Number.isFinite(right) && Math.abs(n - right) < 0.01;
+}
+
+function isHalfGoalLine(value: string | null | undefined): boolean {
+  const n = soccerLineToNumber(value);
+  if (n == null || n < 0) return false;
+  return Math.abs(n - (Math.floor(n) + 0.5)) < 0.01;
+}
+
+function getPreferredSoccerTotalLine(lines: Array<{ line: string; over: string | null; under: string | null }>): number | null {
+  if (!lines.length) return null;
+  const parsed = lines
+    .map((item) => soccerLineToNumber(item.line))
+    .filter((value): value is number => value != null);
+  if (!parsed.length) return null;
+  const mainLine = parsed.find((value) => Math.abs(value - 2.5) < 0.01);
+  if (mainLine != null) return mainLine;
+  return parsed.reduce((best, value) => (Math.abs(value - 2.5) < Math.abs(best - 2.5) ? value : best), parsed[0]);
 }
 
 function buildPositiveIntegerAxis(maxValue: number): { domain: [number, number]; ticks: number[] } {
@@ -234,6 +424,375 @@ function buildSymmetricIntegerAxis(maxAbsValue: number): { domain: [number, numb
     domain: [-selected.bound, selected.bound],
     ticks,
   };
+}
+
+function buildSoccerOddsBooks(markets: SoccerOddsMarket[] | null | undefined): SoccerOddsBookRow[] {
+  const rows = new Map<string, SoccerOddsBookRow>();
+
+  const getRow = (offer: SoccerOddsOffer) => {
+    const rawName = (offer.bookmakerName || '').trim() || 'Unknown';
+    const name = getBookmakerInfo(rawName).name;
+    const key = name.toLowerCase();
+    const row = rows.get(key) ?? {
+      name,
+      moneyline: { home: null, draw: null, away: null },
+      doubleChance: { winDraw: null, winLoss: null, drawLoss: null },
+      totalGoals: [],
+    };
+    rows.set(key, row);
+    return row;
+  };
+
+  for (const market of markets ?? []) {
+    const bettingType = String(market.bettingType || '').trim().toUpperCase();
+    const bettingScope = String(market.bettingScope || '').trim().toUpperCase();
+    const marketKey = String(market.key || '').trim().toUpperCase();
+    const isMoneylineMarket =
+      marketKey === 'HOME_DRAW_AWAY__FULL_TIME' ||
+      (bettingType === 'HOME_DRAW_AWAY' && (!bettingScope || bettingScope === 'FULL_TIME'));
+    const isDoubleChanceMarket =
+      marketKey === 'DOUBLE_CHANCE__FULL_TIME' ||
+      (bettingType === 'DOUBLE_CHANCE' && (!bettingScope || bettingScope === 'FULL_TIME'));
+    const isTotalGoalsMarket =
+      marketKey === 'OVER_UNDER__FULL_TIME' ||
+      (bettingType === 'OVER_UNDER' && (!bettingScope || bettingScope === 'FULL_TIME'));
+
+    if (!isMoneylineMarket && !isDoubleChanceMarket && !isTotalGoalsMarket) continue;
+
+    for (const offer of market.offers ?? []) {
+      const row = getRow(offer);
+
+      if (isMoneylineMarket) {
+        for (const outcome of offer.odds ?? []) {
+          if (!outcome.active || !outcome.value) continue;
+          const selection = normalizeSoccerMarketText(`${outcome.selection || ''} ${outcome.participant || ''}`);
+          if (outcome.side === 'home' || selection === '1' || selection.includes('home')) row.moneyline.home = outcome.value;
+          else if (outcome.side === 'away' || selection === '2' || selection.includes('away')) row.moneyline.away = outcome.value;
+          else if (selection === 'x' || selection.includes('draw')) row.moneyline.draw = outcome.value;
+        }
+      }
+
+      if (isDoubleChanceMarket) {
+        for (const outcome of offer.odds ?? []) {
+          if (!outcome.active || !outcome.value) continue;
+          if (outcome.side === 'home') row.doubleChance.winDraw = outcome.value;
+          else if (outcome.side === 'away') row.doubleChance.drawLoss = outcome.value;
+          else row.doubleChance.winLoss = outcome.value;
+        }
+      }
+
+      if (isTotalGoalsMarket) {
+        const byLine = new Map<string, { line: string; over: string | null; under: string | null }>();
+        for (const outcome of offer.odds ?? []) {
+          if (!outcome.active || !outcome.value) continue;
+          const line = extractSoccerLine(outcome);
+          if (!line) continue;
+          if (!isHalfGoalLine(line)) continue;
+          const item = byLine.get(line) ?? { line, over: null, under: null };
+          if (isSoccerOverOutcome(outcome)) item.over = outcome.value;
+          if (isSoccerUnderOutcome(outcome)) item.under = outcome.value;
+          byLine.set(line, item);
+        }
+        for (const item of byLine.values()) {
+          if (!item.over && !item.under) continue;
+          const existing = row.totalGoals.find((line) => isSameSoccerLine(line.line, soccerLineToNumber(item.line)));
+          if (existing) {
+            existing.over ??= item.over;
+            existing.under ??= item.under;
+          } else {
+            row.totalGoals.push(item);
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(rows.values())
+    .map((row) => ({
+      ...row,
+      totalGoals: row.totalGoals.sort((a, b) => (soccerLineToNumber(a.line) ?? 0) - (soccerLineToNumber(b.line) ?? 0)),
+    }))
+    .filter((row) =>
+      row.moneyline.home ||
+      row.moneyline.draw ||
+      row.moneyline.away ||
+      row.doubleChance.winDraw ||
+      row.doubleChance.winLoss ||
+      row.doubleChance.drawLoss ||
+      row.totalGoals.length > 0
+    );
+}
+
+function SoccerBookmakerIcon({ info, className = 'w-6 h-6' }: { info: ReturnType<typeof getBookmakerInfo>; className?: string }) {
+  return (
+    <span className="relative inline-flex flex-shrink-0 items-center justify-center">
+      {info.logoUrl ? (
+        <img
+          src={info.logoUrl}
+          alt={info.name}
+          className={`${className} rounded object-contain flex-shrink-0`}
+          onError={(event) => {
+            (event.target as HTMLImageElement).style.display = 'none';
+            const fallback = (event.target as HTMLImageElement).nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = 'flex';
+          }}
+        />
+      ) : null}
+      <span
+        className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${info.logoUrl ? 'hidden' : 'flex'}`}
+        style={{ backgroundColor: info.color }}
+      >
+        {info.logo}
+      </span>
+    </span>
+  );
+}
+
+function SoccerOddsPill({
+  label,
+  value,
+  className,
+  textClassName = 'text-[10px]',
+}: {
+  label: string;
+  value: string | null | undefined;
+  className: string;
+  textClassName?: string;
+}) {
+  if (!value || value === 'N/A') return null;
+  return (
+    <span className={`px-1.5 py-0.5 rounded ${textClassName} font-mono whitespace-nowrap ${className}`}>
+      {label} {value}
+    </span>
+  );
+}
+
+function SoccerOddsLineSelector({
+  books,
+  selectedStat,
+  selectedBookIndex,
+  onSelectBookIndex,
+  onSelectLineValue,
+  currentLineValue,
+  doubleChanceMode = false,
+  selectedDoubleChance = ['W', 'D'],
+  noOddsAvailable = false,
+  oddsFormat,
+  isDark,
+  disabled = false,
+}: {
+  books: SoccerOddsBookRow[];
+  selectedStat: string;
+  selectedBookIndex: number;
+  onSelectBookIndex: (index: number) => void;
+  onSelectLineValue: (line: number) => void;
+  currentLineValue: number;
+  doubleChanceMode?: boolean;
+  selectedDoubleChance?: SoccerResultLabel[];
+  noOddsAvailable?: boolean;
+  oddsFormat: 'american' | 'decimal';
+  isDark: boolean;
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedBook = books[selectedBookIndex];
+  const isMoneyline = selectedStat === 'moneyline';
+  const selectedMoneylineResult = getSoccerMoneylineLineLabel(currentLineValue);
+  const selectedMoneylineValue = getMoneylineValue(selectedBook, selectedMoneylineResult);
+  const doubleChanceLabel = getDoubleChanceLabel(selectedDoubleChance);
+  const selectedDoubleChanceValue = getDoubleChanceValue(selectedBook, selectedDoubleChance);
+  const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
+  const totalItems = noOddsAvailable
+    ? []
+    : books
+      .flatMap((book, bookIndex) => book.totalGoals.map((line) => ({ book, bookIndex, line })))
+      .sort((a, b) => (soccerLineToNumber(a.line.line) ?? 0) - (soccerLineToNumber(b.line.line) ?? 0));
+  const selectedTotal = !isMoneyline && selectedBook
+    ? selectedBook.totalGoals.find((item) => isSameSoccerLine(item.line, currentLineValue))
+    : null;
+  const hasSelectedTotalLine = isMoneyline ? false : totalItems.some((item) => isSameSoccerLine(item.line.line, currentLineValue));
+  const showNoLineState = noOddsAvailable || (!isMoneyline && !hasSelectedTotalLine);
+  const hasOdds = showNoLineState ? false : isMoneyline
+    ? doubleChanceMode
+      ? Boolean(selectedDoubleChanceValue)
+      : Boolean(selectedMoneylineValue)
+    : Boolean(totalItems.length > 0);
+  const showSkeleton = !disabled && !showNoLineState && (!selectedBook || !hasOdds);
+
+  return (
+    <div className="relative flex-shrink-0 w-[116px] sm:w-[128px]" ref={ref}>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen((prev) => !prev)}
+        disabled={disabled}
+        className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden disabled:opacity-60"
+      >
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+          {showSkeleton ? (
+            <div className={`h-4 w-20 rounded animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+          ) : showNoLineState ? (
+            <div className={`h-4 w-16 rounded flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+          ) : bookmakerInfo && selectedBook && hasOdds ? (
+            <>
+              <SoccerBookmakerIcon info={bookmakerInfo} className="w-6 h-6" />
+              <div className={`flex flex-col gap-0.5 min-w-0 ${isMoneyline ? 'flex-1 items-center text-center' : 'items-start'}`}>
+                {isMoneyline ? (
+                  <>
+                    <span className={`${isMoneyline ? 'text-[11px] sm:text-xs' : 'text-[10px] sm:text-[11px]'} font-semibold text-gray-900 dark:text-white whitespace-nowrap truncate max-w-full`}>
+                      {doubleChanceMode
+                        ? `${doubleChanceLabel} ${formatSoccerOddsValue(selectedDoubleChanceValue, oddsFormat)}`
+                        : `${selectedMoneylineResult} ${formatSoccerOddsValue(selectedMoneylineValue, oddsFormat)}`}
+                    </span>
+                  </>
+                ) : selectedTotal ? (
+                  <>
+                    <span className="text-[11px] sm:text-xs text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                      O {formatSoccerOddsValue(selectedTotal.over, oddsFormat)}
+                    </span>
+                    <span className="text-[11px] sm:text-xs text-red-600 dark:text-red-400 font-mono whitespace-nowrap">
+                      U {formatSoccerOddsValue(selectedTotal.under, oddsFormat)}
+                    </span>
+                  </>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-start gap-0.5 min-w-0">
+              <span className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium">Odds</span>
+            </div>
+          )}
+        </div>
+        <svg className="w-3 h-3 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && !disabled ? (
+        <div className={`absolute top-full left-0 mt-1 ${isMoneyline ? 'w-48' : 'w-56'} bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-[80] max-h-80 overflow-y-auto`}>
+          <div className={isMoneyline ? 'p-1.5' : 'p-2'}>
+          {showNoLineState && !totalItems.length ? (
+            <>
+              <div className="px-3 py-3 border-b border-gray-200 dark:border-gray-600">
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
+              </div>
+              <div className="px-3 py-8 text-center text-xs text-gray-500 dark:text-gray-400">No alternative lines available</div>
+            </>
+          ) : isMoneyline ? (
+            books.map((book, index) => {
+              const info = getBookmakerInfo(book.name);
+              const isSelected = index === selectedBookIndex;
+              const moneylineValue = getMoneylineValue(book, selectedMoneylineResult);
+              const doubleChanceValue = getDoubleChanceValue(book, selectedDoubleChance);
+              return (
+                <button
+                  key={`${book.name}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    onSelectBookIndex(index);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-2 py-1.5 rounded-lg mb-1 last:mb-0 flex items-center justify-between gap-1.5 transition-colors border ${
+                    isSelected
+                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-800 dark:text-purple-200'
+                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <SoccerBookmakerIcon info={info} className="w-6 h-6" />
+                    <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                      {doubleChanceMode ? doubleChanceLabel : 'H2H'}
+                    </span>
+                  </div>
+                  <div className="flex min-w-0 items-center justify-end gap-1.5">
+                    {doubleChanceMode ? (
+                      <SoccerOddsPill
+                        label={doubleChanceLabel}
+                        value={formatSoccerOddsValue(doubleChanceValue, oddsFormat)}
+                        className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                        textClassName="text-[11px]"
+                      />
+                    ) : (
+                      <SoccerOddsPill
+                        label={selectedMoneylineResult}
+                        value={formatSoccerOddsValue(moneylineValue, oddsFormat)}
+                        textClassName="text-[11px]"
+                        className={
+                          selectedMoneylineResult === 'W'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : selectedMoneylineResult === 'D'
+                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        }
+                      />
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          ) : totalItems.length ? (
+            <>
+              {showNoLineState ? (
+                <div className="px-3 py-3 mb-1 border-b border-gray-200 dark:border-gray-600">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Alt Lines</div>
+                </div>
+              ) : null}
+              {totalItems.map(({ book, bookIndex, line }, index) => {
+              const info = getBookmakerInfo(book.name);
+              const isSelected = isSameSoccerLine(line.line, currentLineValue);
+              return (
+                <button
+                  key={`${book.name}-${line.line}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    const parsedLine = soccerLineToNumber(line.line);
+                    onSelectBookIndex(bookIndex);
+                    if (parsedLine != null) onSelectLineValue(parsedLine);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg mb-1 last:mb-0 flex items-center justify-between gap-2 transition-colors border ${
+                    isSelected
+                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 text-purple-800 dark:text-purple-200'
+                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <SoccerBookmakerIcon info={info} className="w-5 h-5" />
+                    <span className="font-semibold text-sm text-gray-900 dark:text-white">{line.line}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <SoccerOddsPill
+                      label="O"
+                      value={formatSoccerOddsValue(line.over, oddsFormat)}
+                      className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                    />
+                    <SoccerOddsPill
+                      label="U"
+                      value={formatSoccerOddsValue(line.under, oddsFormat)}
+                      className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                    />
+                  </div>
+                </button>
+              );
+              })}
+            </>
+          ) : (
+            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">No matching total goals lines</div>
+          )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function getSelectedTeamSide(match: SoccerwayRecentMatch, selectedTeamName: string): 'home' | 'away' | null {
@@ -507,6 +1066,9 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   matches,
   selectedTeamName,
   nextOpponentName = null,
+  selectedTeamHref,
+  nextFixtureMatchId,
+  oddsFormat = 'american',
   isDark,
   onSelectedStatChange,
   onSelectedTimeframeChange,
@@ -515,13 +1077,63 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
 }: SoccerStatsChartProps) {
   const [selectedStat, setSelectedStat] = useState('');
   const [selectedTimeframe, setSelectedTimeframe] = useState<SoccerTimeframe>('last10');
-  const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>('team');
+  const storedTeamScopeRef = useRef<SoccerStatTeamScope | null>(readStoredSoccerTeamScope());
+  const [selectedStatTeamScope, setSelectedStatTeamScope] = useState<SoccerStatTeamScope>(storedTeamScopeRef.current ?? 'team');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const [lineValue, setLineValue] = useState(0);
+  const [oddsBooks, setOddsBooks] = useState<SoccerOddsBookRow[]>([]);
+  const [oddsLoading, setOddsLoading] = useState(false);
+  const [selectedBookIndex, setSelectedBookIndex] = useState(0);
+  const [doubleChanceMode, setDoubleChanceMode] = useState(false);
+  const [selectedDoubleChance, setSelectedDoubleChance] = useState<SoccerResultLabel[]>(['W', 'D']);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [isCompetitionDropdownOpen, setIsCompetitionDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const competitionDropdownRef = useRef<HTMLDivElement>(null);
+  const previousSelectedStatRef = useRef(selectedStat);
+
+  useEffect(() => {
+    const href = String(selectedTeamHref || '').trim();
+    const matchId = String(nextFixtureMatchId || '').trim();
+    if (!href || !matchId) {
+      setOddsBooks([]);
+      setOddsLoading(false);
+      setSelectedBookIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setOddsLoading(true);
+
+    const params = new URLSearchParams({ href, matchId });
+    fetch(`/api/soccer/odds?${params.toString()}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async (response) => {
+        const json = (await response.json().catch(() => null)) as SoccerOddsPayload | null;
+        if (!response.ok || json?.success === false) {
+          throw new Error(json?.error || `Soccer odds request failed (${response.status})`);
+        }
+        return json;
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setOddsBooks(buildSoccerOddsBooks(json?.groupedMarkets ?? []));
+        setSelectedBookIndex(0);
+      })
+      .catch((error) => {
+        if (cancelled || error?.name === 'AbortError') return;
+        setOddsBooks([]);
+        setSelectedBookIndex(0);
+      })
+      .finally(() => {
+        if (!cancelled) setOddsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [nextFixtureMatchId, selectedTeamHref]);
 
   const normalizedRows = useMemo(() => {
     return matches
@@ -630,6 +1242,12 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     if (selectedStat) onSelectedStatChange?.(selectedStat);
   }, [selectedStat, onSelectedStatChange]);
 
+  useEffect(() => {
+    if (selectedStat !== 'moneyline') {
+      setDoubleChanceMode(false);
+    }
+  }, [selectedStat]);
+
   const statSupportsTeamScope = useMemo(() => {
     if (!selectedStat) return false;
     if (selectedStat === 'moneyline') return false;
@@ -647,11 +1265,6 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       { key: 'opp' as const, label: 'Opp' },
     ];
   }, [selectedTeamName]);
-
-  useEffect(() => {
-    if (!selectedStat) return;
-    setSelectedStatTeamScope('team');
-  }, [selectedStat, statTeamScopeOptions]);
 
   useEffect(() => {
     if (!statSupportsTeamScope) {
@@ -725,6 +1338,12 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     onSelectedTeamScopeChange?.(selectedStatTeamScope);
   }, [onSelectedTeamScopeChange, selectedStatTeamScope]);
 
+  const selectStatTeamScope = (scope: SoccerStatTeamScope) => {
+    storedTeamScopeRef.current = scope;
+    writeStoredSoccerTeamScope(scope);
+    setSelectedStatTeamScope(scope);
+  };
+
   useEffect(() => {
     onSelectedCompetitionChange?.(selectedCompetition);
   }, [onSelectedCompetitionChange, selectedCompetition]);
@@ -737,7 +1356,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   const baseChartData = useMemo(() => {
     if (!selectedStat) return [];
     return filteredRows
-      .map((row, idx) => {
+      .map((row, idx): SoccerChartRow | null => {
         const homeValue = row.homeStatMap[selectedStat];
         const awayValue = row.awayStatMap[selectedStat];
         const teamValue = row.statMap[selectedStat];
@@ -766,6 +1385,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
         }
 
         if (!Number.isFinite(value)) return null;
+        const numericValue = value as number;
 
         return {
           key: `${row.match.matchId}-${idx}`,
@@ -776,13 +1396,13 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
           opponentLogoUrl: row.opponentLogoUrl,
           result: row.result,
           venue: row.venue,
-          value: value as number,
+          value: numericValue,
           comparisonValue,
           gameDate: row.gameDate,
           scoreline: `${row.teamScore}-${row.opponentScore}`,
           sourceMatch: row.match,
           gameSeason: row.gameSeason,
-        } satisfies SoccerChartRow;
+        };
       })
       .filter((row): row is SoccerChartRow => row != null);
   }, [filteredRows, selectedStat, selectedStatTeamScope]);
@@ -803,12 +1423,60 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     return baseChartData.slice(-lastN);
   }, [baseChartData, nextOpponentName, selectedTimeframe]);
 
+  const isMoneylineDrawMode = selectedStat === 'moneyline' && getSoccerMoneylineLineLabel(lineValue) === 'D';
+  const isMoneylineDoubleChanceMode = selectedStat === 'moneyline' && doubleChanceMode;
+  const displayChartData = useMemo(() => {
+    if (isMoneylineDoubleChanceMode) {
+      return chartData.map((row) => (
+        selectedDoubleChance.includes(row.result as SoccerResultLabel)
+          ? { ...row, value: 1, moneylineLabel: row.result }
+          : { ...row, value: null, moneylineLabel: undefined }
+      ));
+    }
+    if (!isMoneylineDrawMode) return chartData;
+    return chartData.map((row) => (
+      row.result === 'D'
+        ? { ...row, value: 1, moneylineLabel: '0' }
+        : { ...row, value: null, moneylineLabel: undefined }
+    ));
+  }, [chartData, isMoneylineDoubleChanceMode, isMoneylineDrawMode, selectedDoubleChance]);
+
   useEffect(() => {
-    setLineValue(0.5);
-  }, [selectedStat, selectedStatTeamScope]);
+    if (previousSelectedStatRef.current === selectedStat) return;
+    previousSelectedStatRef.current = selectedStat;
+    if (selectedStat === 'total_goals') {
+      setSelectedStatTeamScope('all');
+      setLineValue(2.5);
+    } else {
+      setLineValue(0.5);
+    }
+  }, [selectedStat]);
+
+  useEffect(() => {
+    if (selectedStat !== 'total_goals' || !oddsBooks.length) return;
+    const selectedBook = oddsBooks[selectedBookIndex];
+    const preferredLine = getPreferredSoccerTotalLine(selectedBook?.totalGoals ?? []);
+    if (preferredLine != null) {
+      setLineValue(preferredLine);
+      return;
+    }
+
+    const firstBookWithTotal = oddsBooks.findIndex((book) => book.totalGoals.length > 0);
+    if (firstBookWithTotal >= 0) {
+      setSelectedBookIndex(firstBookWithTotal);
+      const firstLine = getPreferredSoccerTotalLine(oddsBooks[firstBookWithTotal].totalGoals);
+      if (firstLine != null) setLineValue(firstLine);
+    }
+  }, [oddsBooks, selectedStat]);
 
   const yAxisConfig = useMemo(() => {
     if (selectedStat === 'moneyline') {
+      if (isMoneylineDrawMode || isMoneylineDoubleChanceMode) {
+        return {
+          domain: [0, 1] as [number, number],
+          ticks: [0, 1],
+        };
+      }
       return {
         // Add a little extra room below losses so the -1 bar
         // doesn't sit flush with the bottom edge of the plot.
@@ -817,7 +1485,9 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       };
     }
 
-    const values = chartData.map((row) => row.value).filter((value) => Number.isFinite(value));
+    const values = displayChartData
+      .map((row) => row.value)
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
     if (!values.length) return buildPositiveIntegerAxis(4);
 
     const minValue = Math.min(...values, lineValue);
@@ -827,7 +1497,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     }
 
     return buildPositiveIntegerAxis(maxValue);
-  }, [chartData, lineValue, selectedStat]);
+  }, [displayChartData, isMoneylineDoubleChanceMode, isMoneylineDrawMode, lineValue, selectedStat]);
 
   const lineInputBounds = useMemo(() => {
     if (selectedStat === 'moneyline') {
@@ -835,6 +1505,29 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
     }
     return { min: yAxisConfig.domain[0], max: yAxisConfig.domain[1] };
   }, [selectedStat, yAxisConfig]);
+
+  const selectMoneylineResult = (result: SoccerResultLabel) => {
+    if (!doubleChanceMode) {
+      setLineValue(result === 'W' ? 0.5 : result === 'D' ? 0 : -0.5);
+      return;
+    }
+
+    setSelectedDoubleChance((prev) => {
+      if (prev.includes(result)) return prev;
+      const next = [...prev, result];
+      return next.length > 2 ? next.slice(1) : next;
+    });
+  };
+
+  const enableDoubleChanceMode = () => {
+    if (doubleChanceMode) {
+      setDoubleChanceMode(false);
+      return;
+    }
+    const current = getSoccerMoneylineLineLabel(lineValue);
+    setSelectedDoubleChance(current === 'L' ? ['D', 'L'] : ['W', 'D']);
+    setDoubleChanceMode(true);
+  };
 
   const customTooltip = useMemo(() => {
     const selectedStatLabel = statLabels.get(selectedStat) || formatStatLabel(selectedStat || 'stat');
@@ -897,35 +1590,67 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
       <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+            {(selectedStat === 'moneyline' || selectedStat === 'total_goals') ? (
+              oddsLoading ? (
+                <div className={`h-8 w-[132px] sm:w-[150px] rounded-lg animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+              ) : (
+                <SoccerOddsLineSelector
+                  books={oddsBooks}
+                  selectedStat={selectedStat}
+                  selectedBookIndex={selectedBookIndex}
+                  onSelectBookIndex={setSelectedBookIndex}
+                  onSelectLineValue={setLineValue}
+                  currentLineValue={lineValue}
+                  doubleChanceMode={doubleChanceMode}
+                  selectedDoubleChance={selectedDoubleChance}
+                  noOddsAvailable={selectedStat === 'total_goals' && selectedStatTeamScope !== 'all'}
+                  oddsFormat={oddsFormat}
+                  isDark={isDark}
+                />
+              )
+            ) : null}
             {selectedStat === 'moneyline' ? (
-              <div
-                className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5"
-                aria-label="Set H2H result line"
-                role="group"
-              >
-                {[
-                  { label: 'W', value: 0.5 },
-                  { label: 'D', value: 0 },
-                  { label: 'L', value: -0.5 },
-                ].map((option) => {
-                  const isSelected = getSoccerMoneylineLineLabel(lineValue) === option.label;
-                  return (
-                    <button
-                      key={option.label}
-                      type="button"
-                      onClick={() => setLineValue(option.value)}
-                      className={`min-w-[38px] px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${
-                        isSelected
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                      aria-pressed={isSelected}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div
+                  className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5"
+                  aria-label="Set H2H result line"
+                  role="group"
+                >
+                  {[
+                    { label: 'W', value: 0.5 },
+                    { label: 'D', value: 0 },
+                    { label: 'L', value: -0.5 },
+                  ].map((option) => {
+                    const label = option.label as SoccerResultLabel;
+                    const isSelected = doubleChanceMode
+                      ? selectedDoubleChance.includes(label)
+                      : getSoccerMoneylineLineLabel(lineValue) === label;
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        onClick={() => selectMoneylineResult(label)}
+                        className={`min-w-[38px] px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${getSoccerResultButtonClass(label, isSelected, doubleChanceMode)}`}
+                        aria-pressed={isSelected}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={enableDoubleChanceMode}
+                  className={`h-[32px] px-2.5 rounded-lg border text-[11px] sm:text-xs font-medium transition-colors ${
+                    doubleChanceMode
+                      ? 'bg-blue-600 text-white border-blue-500'
+                      : 'bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  aria-pressed={doubleChanceMode}
+                >
+                  Double chance
+                </button>
+              </>
             ) : (
               <input
                 id="soccer-betting-line-input"
@@ -934,11 +1659,10 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
                 step={0.5}
                 value={lineValue}
                 min={lineInputBounds.min}
-                max={lineInputBounds.max}
                 onChange={(e) => {
                   const next = Number(e.target.value);
                   if (Number.isFinite(next)) {
-                    setLineValue(roundToSoccerHalfStep(next));
+                    setLineValue(clampSoccerLineValue(next, selectedStat === 'moneyline' ? -1 : 0));
                   }
                 }}
                 className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
@@ -986,7 +1710,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
                   <button
                     key={option.key}
                     type="button"
-                    onClick={() => setSelectedStatTeamScope(option.key)}
+                    onClick={() => selectStatTeamScope(option.key)}
                     className={`px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${
                       selectedStatTeamScope === option.key
                         ? 'bg-purple-600 text-white'
@@ -1057,7 +1781,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
         ) : (
           <SimpleChart
             key={`soccer-chart-${selectedStat}`}
-            chartData={chartData}
+            chartData={displayChartData}
             yAxisConfig={yAxisConfig}
             isDark={isDark}
             bettingLine={lineValue}
@@ -1067,6 +1791,12 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
             customXAxisTick={soccerXAxisTick}
             yAxisTickFormatter={(value: number) => {
               if (selectedStat === 'moneyline') {
+                if (isMoneylineDoubleChanceMode) {
+                  return value >= 1 ? getDoubleChanceLabel(selectedDoubleChance) : '';
+                }
+                if (isMoneylineDrawMode) {
+                  return value >= 1 ? 'D' : '';
+                }
                 if (value >= 1) return 'W';
                 if (value <= -1) return 'L';
                 return '0';
@@ -1084,6 +1814,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
             xAxisHeight={hideTickDetails ? 28 : 56}
             chartBottomMargin={8}
             hideBarValueLabels={selectedTimeframe === 'all'}
+            hideBettingLineOverlay={selectedStat === 'moneyline'}
           />
         )}
       </div>
