@@ -70,6 +70,8 @@ type TeamMatchupSnapshotFile = {
   }>;
 };
 
+type SnapshotTeamEntry = NonNullable<TeamMatchupSnapshotFile['teams']>[number];
+
 export type TeamMatchupApiResponse = {
   mode: 'matchup' | 'no-data' | 'no-roster';
   competitionLabel: string;
@@ -296,6 +298,42 @@ function rankValues(
   });
 }
 
+function snapshotTeamToSeasonAverages(team: SnapshotTeamEntry): TeamSeasonAverages {
+  const attack = {} as TeamSeasonAverages['attack'];
+  const defence = {} as TeamSeasonAverages['defence'];
+
+  for (const stat of MATCHUP_STATS) {
+    attack[stat.id] = team.attack?.[stat.id]?.perGame ?? null;
+    defence[stat.id] = team.defence?.[stat.id]?.perGame ?? null;
+  }
+
+  return {
+    teamName: String(team.name || '').trim() || 'Team',
+    teamHref: normalizeSoccerTeamHref(String(team.href || '')),
+    games: Number(team.leagueGames || 0),
+    attack,
+    defence,
+  };
+}
+
+async function buildRequestedTeamAverageFromCache(
+  teamName: string,
+  teamHref: string,
+  timeframe: TeamMatchupTimeframe,
+  seasonYear: number,
+  leagueFilter: OpponentBreakdownLeagueFilter
+): Promise<TeamSeasonAverages | null> {
+  const matches = await loadCachedTeamMatches(teamHref);
+  if (!matches?.length) return null;
+  const seasonMatches =
+    timeframe === 'last5'
+      ? filterMatchesToSeasonYear(matches, seasonYear)
+      : filterMatchesToSeasonYear(filterToCompetition(matches, leagueFilter), seasonYear);
+  const sampledMatches = timeframe === 'last5' ? sortMatchesByRecency(seasonMatches).slice(0, 5) : seasonMatches;
+  if (!sampledMatches.length) return null;
+  return computeTeamSeasonAverages(teamName, teamHref, sampledMatches);
+}
+
 function resolveRosterTeam(
   roster: Array<{ name: string; href: string }>,
   href: string,
@@ -374,23 +412,66 @@ export async function GET(request: NextRequest) {
       snapshotTeams.find((team) => normalizeName(String(team?.name || '')) === normalizeName(opponentName)) ??
       null;
 
-    if (resolvedTeam && resolvedOpponent) {
-      const rows = MATCHUP_STATS.map((stat) => ({
-        id: stat.id,
-        label: stat.label,
-        teamForValue: resolvedTeam.attack?.[stat.id]?.perGame ?? null,
-        teamForRank: resolvedTeam.attack?.[stat.id]?.rank ?? null,
-        teamForRankedSize: Number(resolvedTeam.attack?.[stat.id]?.rankedSize || 0),
-        teamAgainstValue: resolvedTeam.defence?.[stat.id]?.perGame ?? null,
-        teamAgainstRank: resolvedTeam.defence?.[stat.id]?.rank ?? null,
-        teamAgainstRankedSize: Number(resolvedTeam.defence?.[stat.id]?.rankedSize || 0),
-        opponentForValue: resolvedOpponent.attack?.[stat.id]?.perGame ?? null,
-        opponentForRank: resolvedOpponent.attack?.[stat.id]?.rank ?? null,
-        opponentForRankedSize: Number(resolvedOpponent.attack?.[stat.id]?.rankedSize || 0),
-        opponentAgainstValue: resolvedOpponent.defence?.[stat.id]?.perGame ?? null,
-        opponentAgainstRank: resolvedOpponent.defence?.[stat.id]?.rank ?? null,
-        opponentAgainstRankedSize: Number(resolvedOpponent.defence?.[stat.id]?.rankedSize || 0),
-      }));
+    const computedTeamAverage =
+      resolvedTeam || !teamHref
+        ? null
+        : await buildRequestedTeamAverageFromCache(teamName || 'Team', teamHref, timeframe, seasonYear, leagueFilter);
+    const computedOpponentAverage =
+      resolvedOpponent || !opponentHref
+        ? null
+        : await buildRequestedTeamAverageFromCache(opponentName || 'Opponent', opponentHref, timeframe, seasonYear, leagueFilter);
+
+    const effectiveTeamAverage = resolvedTeam ? snapshotTeamToSeasonAverages(resolvedTeam) : computedTeamAverage;
+    const effectiveOpponentAverage = resolvedOpponent ? snapshotTeamToSeasonAverages(resolvedOpponent) : computedOpponentAverage;
+
+    if (effectiveTeamAverage && effectiveOpponentAverage) {
+      const rankingPool = snapshotTeams.map(snapshotTeamToSeasonAverages);
+      if (
+        !rankingPool.some((team) => normalizeSoccerTeamHref(team.teamHref) === normalizeSoccerTeamHref(effectiveTeamAverage.teamHref))
+      ) {
+        rankingPool.push(effectiveTeamAverage);
+      }
+      if (
+        !rankingPool.some((team) => normalizeSoccerTeamHref(team.teamHref) === normalizeSoccerTeamHref(effectiveOpponentAverage.teamHref))
+      ) {
+        rankingPool.push(effectiveOpponentAverage);
+      }
+
+      const rows = MATCHUP_STATS.map((stat) => {
+        const attackRanks = rankValues(rankingPool, stat.id, 'attack');
+        const defenceRanks = rankValues(rankingPool, stat.id, 'defence');
+        const teamAttack = attackRanks.find(
+          (row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(effectiveTeamAverage.teamHref)
+        );
+        const teamDefence = defenceRanks.find(
+          (row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(effectiveTeamAverage.teamHref)
+        );
+        const opponentAttack = attackRanks.find(
+          (row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(effectiveOpponentAverage.teamHref)
+        );
+        const opponentDefence = defenceRanks.find(
+          (row) => normalizeSoccerTeamHref(row.teamHref) === normalizeSoccerTeamHref(effectiveOpponentAverage.teamHref)
+        );
+
+        return {
+          id: stat.id,
+          label: stat.label,
+          teamForValue: effectiveTeamAverage.attack[stat.id] ?? null,
+          teamForRank: teamAttack?.rank ?? null,
+          teamForRankedSize: attackRanks.filter((row) => row.rank != null).length,
+          teamAgainstValue: effectiveTeamAverage.defence[stat.id] ?? null,
+          teamAgainstRank: teamDefence?.rank ?? null,
+          teamAgainstRankedSize: defenceRanks.filter((row) => row.rank != null).length,
+          opponentForValue: effectiveOpponentAverage.attack[stat.id] ?? null,
+          opponentForRank: opponentAttack?.rank ?? null,
+          opponentForRankedSize: attackRanks.filter((row) => row.rank != null).length,
+          opponentAgainstValue: effectiveOpponentAverage.defence[stat.id] ?? null,
+          opponentAgainstRank: opponentDefence?.rank ?? null,
+          opponentAgainstRankedSize: defenceRanks.filter((row) => row.rank != null).length,
+        };
+      });
+
+      const usedCachedFallback = (!resolvedTeam && !!computedTeamAverage) || (!resolvedOpponent && !!computedOpponentAverage);
 
       return NextResponse.json({
         mode: 'matchup',
@@ -400,22 +481,24 @@ export async function GET(request: NextRequest) {
         teamsSampled: Number(snapshot?.teamsSampled || snapshotTeams.length),
         teamsInLeague: Number(snapshot?.teamsInLeague || snapshotTeams.length),
         team: {
-          name: String(resolvedTeam.name || teamName || 'Team'),
-          href: normalizeSoccerTeamHref(String(resolvedTeam.href || teamHref || '')),
-          games: Number(resolvedTeam.leagueGames || 0) || null,
+          name: effectiveTeamAverage.teamName,
+          href: normalizeSoccerTeamHref(effectiveTeamAverage.teamHref || teamHref || ''),
+          games: effectiveTeamAverage.games || null,
         },
         opponent: {
-          name: String(resolvedOpponent.name || opponentName || 'Opponent'),
-          href: normalizeSoccerTeamHref(String(resolvedOpponent.href || opponentHref || '')),
-          games: Number(resolvedOpponent.leagueGames || 0) || null,
+          name: effectiveOpponentAverage.teamName,
+          href: normalizeSoccerTeamHref(effectiveOpponentAverage.teamHref || opponentHref || ''),
+          games: effectiveOpponentAverage.games || null,
         },
         rows,
         note:
-          snapshot?.generatedAt && Number(snapshot?.seasonYear || 0) === seasonYear
-            ? `Current season ${timeframe === 'last5' ? 'last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
-            : snapshot?.generatedAt
-              ? `${timeframe === 'last5' ? 'Last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
-              : undefined,
+          usedCachedFallback
+            ? `Used ${timeframe === 'last5' ? 'last 5 ' : ''}snapshot league context with direct cached team fallback for missing snapshot coverage.`
+            : snapshot?.generatedAt && Number(snapshot?.seasonYear || 0) === seasonYear
+              ? `Current season ${timeframe === 'last5' ? 'last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
+              : snapshot?.generatedAt
+                ? `${timeframe === 'last5' ? 'Last 5 ' : ''}snapshot built ${new Date(snapshot.generatedAt).toLocaleString()}`
+                : undefined,
       } satisfies TeamMatchupApiResponse);
     }
   }

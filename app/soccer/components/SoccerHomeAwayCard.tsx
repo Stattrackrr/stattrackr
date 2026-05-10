@@ -6,7 +6,7 @@ import { SoccerStatsCustomizer } from '@/app/soccer/components/SoccerStatsCustom
 import { SOCCER_BETTABLE_STATS } from '@/app/soccer/components/SoccerStatsChart';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
-type SoccerTeamFormCardProps = {
+type SoccerHomeAwayCardProps = {
   isDark: boolean;
   teamName: string | null;
   teamHref: string | null;
@@ -14,7 +14,7 @@ type SoccerTeamFormCardProps = {
   opponentHref: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
-  /** Hide the centered "Team Form" title (e.g. when embedded in a tabbed shell). */
+  /** Hide the centered "Home vs Away" title (e.g. when embedded in a tabbed shell). */
   hideTitle?: boolean;
 };
 
@@ -23,34 +23,34 @@ type TeamResultsApiResponse = {
   error?: string;
 };
 
-type FormViewMode = 'selected' | 'opponent';
-type FormWindowKey = 'last5' | 'h2h';
-type FormStatId = string;
+type ViewMode = 'selected' | 'opponent';
+type VenueMode = 'home' | 'away';
+type VenueStatId = string;
 
-type FormWindowSummary = {
-  key: FormWindowKey;
+type VenueSummary = {
+  key: VenueMode;
   label: string;
   games: number;
   wins: number;
   draws: number;
   losses: number;
   stats: Array<{
-    id: FormStatId;
+    id: VenueStatId;
     label: string;
-    recentAverage: number | null;
-    seasonAverage: number | null;
+    venueAverage: number | null;
+    comparisonAverage: number | null;
     delta: number | null;
   }>;
 };
 
-type TeamFormSummary = {
+type TeamHomeAwaySummary = {
   teamName: string;
   seasonYear: number;
   seasonGames: number;
-  windows: FormWindowSummary[];
+  venues: VenueSummary[];
 };
 
-const FORM_STAT_PRIORITY: FormStatId[] = [
+const VENUE_STAT_PRIORITY: VenueStatId[] = [
   'total_goals',
   'expected_goals_xg',
   'total_shots',
@@ -65,45 +65,12 @@ const FORM_STAT_PRIORITY: FormStatId[] = [
   'fouls',
   'goalkeeper_saves',
 ];
-const FORM_DEFAULT_VISIBLE_STATS: FormStatId[] = [
+const VENUE_DEFAULT_VISIBLE_STATS: VenueStatId[] = [
   'total_goals',
   'expected_goals_xg',
   'total_shots',
   'shots_on_target',
 ];
-const TEAM_FORM_MATCHES_SESSION_PREFIX = 'soccer-team-form-matches:v1:';
-
-function getTeamFormMatchesSessionKey(teamHref: string): string {
-  return `${TEAM_FORM_MATCHES_SESSION_PREFIX}${teamHref}`;
-}
-
-function readCachedTeamFormMatches(teamHref: string | null | undefined): SoccerwayRecentMatch[] {
-  if (typeof window === 'undefined') return [];
-  const normalizedHref = String(teamHref || '').trim();
-  if (!normalizedHref) return [];
-  try {
-    const raw = window.sessionStorage.getItem(getTeamFormMatchesSessionKey(normalizedHref));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as { matches?: SoccerwayRecentMatch[] } | null;
-    return Array.isArray(parsed?.matches) ? parsed.matches : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeCachedTeamFormMatches(teamHref: string | null | undefined, matches: SoccerwayRecentMatch[]): void {
-  if (typeof window === 'undefined') return;
-  const normalizedHref = String(teamHref || '').trim();
-  if (!normalizedHref || matches.length === 0) return;
-  try {
-    window.sessionStorage.setItem(
-      getTeamFormMatchesSessionKey(normalizedHref),
-      JSON.stringify({ matches, cachedAt: Date.now() })
-    );
-  } catch {
-    /* ignore */
-  }
-}
 
 function normalizeTeamName(value: string | null | undefined): string {
   return String(value || '')
@@ -116,24 +83,6 @@ function normalizeTeamName(value: string | null | undefined): string {
     .trim();
 }
 
-function normalizeOpponentToken(value: string | null | undefined): string {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s*\([^)]+\)\s*/g, ' ')
-    .replace(/\b(fc|afc|cf|sc|ac|club)\b/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function opponentNamesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
-  const left = normalizeOpponentToken(a);
-  const right = normalizeOpponentToken(b);
-  if (!left || !right) return false;
-  return left === right || left.includes(right) || right.includes(left);
-}
-
 function getTeamSide(match: SoccerwayRecentMatch, teamName: string): 'home' | 'away' | null {
   const normalizedTeam = normalizeTeamName(teamName);
   if (normalizeTeamName(match.homeTeam) === normalizedTeam) return 'home';
@@ -141,11 +90,10 @@ function getTeamSide(match: SoccerwayRecentMatch, teamName: string): 'home' | 'a
   return null;
 }
 
-function getCurrentSoccerSeasonYear(): number {
-  const now = new Date();
-  const month = now.getUTCMonth();
-  const year = now.getUTCFullYear();
-  return month >= 6 ? year : year - 1;
+function getGoalsFor(match: SoccerwayRecentMatch, teamName: string): number | null {
+  const side = getTeamSide(match, teamName);
+  if (!side) return null;
+  return side === 'home' ? match.homeScore : match.awayScore;
 }
 
 function parseNumeric(raw: string | null | undefined): number | null {
@@ -167,18 +115,6 @@ function findStat(match: SoccerwayRecentMatch, statName: string): SoccerwayMatch
     if (String(stat.name || '').trim().toLowerCase() === statName.toLowerCase()) return stat;
   }
   return null;
-}
-
-function getGoalsFor(match: SoccerwayRecentMatch, teamName: string): number | null {
-  const side = getTeamSide(match, teamName);
-  if (!side) return null;
-  return side === 'home' ? match.homeScore : match.awayScore;
-}
-
-function getGoalsAgainst(match: SoccerwayRecentMatch, teamName: string): number | null {
-  const side = getTeamSide(match, teamName);
-  if (!side) return null;
-  return side === 'home' ? match.awayScore : match.homeScore;
 }
 
 function getTeamStatValue(match: SoccerwayRecentMatch, teamName: string, statName: string): number | null {
@@ -249,7 +185,7 @@ function orderComparableStatKeys(keys: Iterable<string>): string[] {
   const keySet = new Set<string>(keys);
   const ordered: string[] = [];
 
-  for (const key of FORM_STAT_PRIORITY) {
+  for (const key of VENUE_STAT_PRIORITY) {
     if (keySet.has(key)) ordered.push(key);
   }
   for (const key of keySet) {
@@ -260,7 +196,7 @@ function orderComparableStatKeys(keys: Iterable<string>): string[] {
 }
 
 function average(values: number[]): number | null {
-  if (values.length === 0) return null;
+  if (!values.length) return null;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
@@ -294,45 +230,57 @@ function getDeltaStyles(delta: number | null): { textClass: string; fill: string
   };
 }
 
-function buildWindowSummary(matches: SoccerwayRecentMatch[], teamName: string, key: FormWindowKey, label: string, seasonMatches: SoccerwayRecentMatch[]): FormWindowSummary {
-  const windowMatches = matches.slice(0, 5);
-  const comparisonMatches = key === 'h2h' ? seasonMatches.slice(0, 10) : seasonMatches;
+function getCurrentSoccerSeasonYear(): number {
+  const now = new Date();
+  const month = now.getUTCMonth();
+  const year = now.getUTCFullYear();
+  return month >= 6 ? year : year - 1;
+}
+
+function buildVenueSummary(
+  seasonMatches: SoccerwayRecentMatch[],
+  teamName: string,
+  venue: VenueMode,
+  label: string
+): VenueSummary {
+  const venueMatches = seasonMatches.filter((match) => getTeamSide(match, teamName) === venue);
+  const comparisonMatches = seasonMatches.filter((match) => getTeamSide(match, teamName) !== venue);
   let wins = 0;
   let draws = 0;
   let losses = 0;
 
-  for (const match of windowMatches) {
+  for (const match of venueMatches) {
     const goalsFor = getGoalsFor(match, teamName);
-    const goalsAgainst = getGoalsAgainst(match, teamName);
+    const goalsAgainst = venue === 'home' ? match.awayScore : match.homeScore;
     if (goalsFor == null || goalsAgainst == null) continue;
     if (goalsFor > goalsAgainst) wins += 1;
     else if (goalsFor < goalsAgainst) losses += 1;
     else draws += 1;
   }
 
-  const recentAverages = buildTeamStatAverages(windowMatches, teamName);
+  const venueAverages = buildTeamStatAverages(venueMatches, teamName);
   const comparisonAverages = buildTeamStatAverages(comparisonMatches, teamName);
-  const statKeys = orderComparableStatKeys([...Object.keys(recentAverages), ...Object.keys(comparisonAverages)]);
+  const statKeys = orderComparableStatKeys([...Object.keys(venueAverages), ...Object.keys(comparisonAverages)]);
   const stats = statKeys.map((statKey) => {
-    const recentAverage = recentAverages[statKey] ?? null;
-    const seasonAverage = comparisonAverages[statKey] ?? null;
+    const venueAverage = venueAverages[statKey] ?? null;
+    const comparisonAverage = comparisonAverages[statKey] ?? null;
 
     return {
       id: statKey,
       label: formatStatLabel(statKey),
-      recentAverage,
-      seasonAverage,
+      venueAverage,
+      comparisonAverage,
       delta:
-        recentAverage != null && seasonAverage != null && Number.isFinite(recentAverage) && Number.isFinite(seasonAverage)
-          ? recentAverage - seasonAverage
+        venueAverage != null && comparisonAverage != null && Number.isFinite(venueAverage) && Number.isFinite(comparisonAverage)
+          ? venueAverage - comparisonAverage
           : null,
     };
   });
 
   return {
-    key,
+    key: venue,
     label,
-    games: windowMatches.length,
+    games: venueMatches.length,
     wins,
     draws,
     losses,
@@ -340,12 +288,7 @@ function buildWindowSummary(matches: SoccerwayRecentMatch[], teamName: string, k
   };
 }
 
-function buildTeamFormSummary(
-  teamName: string,
-  matches: SoccerwayRecentMatch[],
-  seasonYear: number,
-  opponentName: string
-): TeamFormSummary | null {
+function buildTeamHomeAwaySummary(teamName: string, matches: SoccerwayRecentMatch[], seasonYear: number): TeamHomeAwaySummary | null {
   const filteredMatches = matches
     .filter((match) => {
       if (match.kickoffUnix == null || !Number.isFinite(match.kickoffUnix)) return false;
@@ -356,48 +299,34 @@ function buildTeamFormSummary(
       return matchSeasonYear === seasonYear;
     })
     .sort((a, b) => {
-    const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
-    const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
-    if (aKickoff !== bKickoff) return bKickoff - aKickoff;
-    return String(b.matchId || '').localeCompare(String(a.matchId || ''));
-  });
-
-  if (filteredMatches.length === 0) return null;
-
-  const h2hMatches = matches
-    .filter((match) => {
-      const side = getTeamSide(match, teamName);
-      if (!side) return false;
-      const otherTeam = side === 'home' ? match.awayTeam : match.homeTeam;
-      return opponentNamesMatch(otherTeam, opponentName);
-    })
-    .sort((a, b) => {
       const aKickoff = a.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
       const bKickoff = b.kickoffUnix ?? Number.MIN_SAFE_INTEGER;
       if (aKickoff !== bKickoff) return bKickoff - aKickoff;
       return String(b.matchId || '').localeCompare(String(a.matchId || ''));
     });
 
+  if (!filteredMatches.length) return null;
+
   return {
     teamName,
     seasonYear,
     seasonGames: filteredMatches.length,
-    windows: [
-      buildWindowSummary(filteredMatches, teamName, 'last5', 'Last 5', filteredMatches),
-      buildWindowSummary(h2hMatches, teamName, 'h2h', 'Last 5 H2H', filteredMatches),
+    venues: [
+      buildVenueSummary(filteredMatches, teamName, 'home', 'Home'),
+      buildVenueSummary(filteredMatches, teamName, 'away', 'Away'),
     ],
   };
 }
 
-function TeamFormHeader() {
+function HomeAwayHeader() {
   return (
     <div className="relative flex items-center justify-center mt-1 mb-2 flex-shrink-0">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Form</h3>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Home vs Away</h3>
     </div>
   );
 }
 
-export function SoccerTeamFormCard({
+export function SoccerHomeAwayCard({
   isDark,
   teamName,
   teamHref,
@@ -406,13 +335,13 @@ export function SoccerTeamFormCard({
   emptyTextClass,
   showSkeleton = false,
   hideTitle = false,
-}: SoccerTeamFormCardProps) {
+}: SoccerHomeAwayCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<FormViewMode>('selected');
+  const [viewMode, setViewMode] = useState<ViewMode>('selected');
   const [teamMatches, setTeamMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [opponentMatches, setOpponentMatches] = useState<SoccerwayRecentMatch[]>([]);
-  const [selectedStats, setSelectedStats] = useState<FormStatId[]>([]);
+  const [selectedStats, setSelectedStats] = useState<VenueStatId[]>([]);
   const [showStatPicker, setShowStatPicker] = useState(false);
 
   const canFetch = Boolean(teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
@@ -427,13 +356,7 @@ export function SoccerTeamFormCard({
 
     let cancelled = false;
     const controller = new AbortController();
-    const cachedSelectedMatches = readCachedTeamFormMatches(teamHref);
-    const cachedOpponentMatches = readCachedTeamFormMatches(opponentHref);
-    const hasCachedSelectedMatches = cachedSelectedMatches.length > 0;
-    const hasCachedOpponentMatches = cachedOpponentMatches.length > 0;
-    if (hasCachedSelectedMatches) setTeamMatches(cachedSelectedMatches);
-    if (hasCachedOpponentMatches) setOpponentMatches(cachedOpponentMatches);
-    setLoading(!hasCachedSelectedMatches && !hasCachedOpponentMatches);
+    setLoading(true);
     setError(null);
 
     const fetchMatches = async (href: string) => {
@@ -443,7 +366,7 @@ export function SoccerTeamFormCard({
       });
       const payload = (await response.json().catch(() => null)) as TeamResultsApiResponse | null;
       if (!response.ok) {
-        throw new Error(payload?.error || 'Failed to load team form');
+        throw new Error(payload?.error || 'Failed to load home vs away');
       }
       return Array.isArray(payload?.matches) ? payload.matches : [];
     };
@@ -453,17 +376,13 @@ export function SoccerTeamFormCard({
         if (cancelled) return;
         setTeamMatches(selectedMatches);
         setOpponentMatches(opponentSideMatches);
-        writeCachedTeamFormMatches(teamHref, selectedMatches);
-        writeCachedTeamFormMatches(opponentHref, opponentSideMatches);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         if (err instanceof Error && err.name === 'AbortError') return;
-        if (!hasCachedSelectedMatches && !hasCachedOpponentMatches) {
-          setTeamMatches([]);
-          setOpponentMatches([]);
-          setError(err instanceof Error ? err.message : 'Failed to load team form');
-        }
+        setTeamMatches([]);
+        setOpponentMatches([]);
+        setError(err instanceof Error ? err.message : 'Failed to load home vs away');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -477,30 +396,30 @@ export function SoccerTeamFormCard({
 
   const seasonYear = getCurrentSoccerSeasonYear();
   const selectedSummary = useMemo(
-    () => (teamName && opponentName ? buildTeamFormSummary(teamName, teamMatches, seasonYear, opponentName) : null),
-    [opponentName, seasonYear, teamMatches, teamName]
+    () => (teamName ? buildTeamHomeAwaySummary(teamName, teamMatches, seasonYear) : null),
+    [seasonYear, teamMatches, teamName]
   );
   const opponentSummary = useMemo(
-    () => (opponentName && teamName ? buildTeamFormSummary(opponentName, opponentMatches, seasonYear, teamName) : null),
-    [opponentMatches, opponentName, seasonYear, teamName]
+    () => (opponentName ? buildTeamHomeAwaySummary(opponentName, opponentMatches, seasonYear) : null),
+    [opponentMatches, opponentName, seasonYear]
   );
 
   const currentSummary = viewMode === 'opponent' ? opponentSummary : selectedSummary;
   const selectedLabel = selectedSummary?.teamName ?? teamName ?? 'Selected team';
   const opponentLabel = opponentSummary?.teamName ?? opponentName ?? 'Opponent';
-  const availableStats = useMemo<FormStatId[]>(() => {
+  const availableStats = useMemo<VenueStatId[]>(() => {
     if (!currentSummary) return [];
-    return orderComparableStatKeys(currentSummary.windows.flatMap((window) => window.stats.map((stat) => stat.id)));
+    return orderComparableStatKeys(currentSummary.venues.flatMap((venue) => venue.stats.map((stat) => stat.id)));
   }, [currentSummary]);
   const defaultVisibleStats = useMemo(() => {
-    const preferredDefaults = FORM_DEFAULT_VISIBLE_STATS.filter((statId) => availableStats.includes(statId));
+    const preferredDefaults = VENUE_DEFAULT_VISIBLE_STATS.filter((statId) => availableStats.includes(statId));
     return preferredDefaults.length > 0 ? preferredDefaults : availableStats.slice(0, 4);
   }, [availableStats]);
   const visibleStats = useMemo(() => {
     const validSelectedStats = selectedStats.filter((statId) => availableStats.includes(statId));
     return validSelectedStats.length > 0 ? validSelectedStats : defaultVisibleStats;
   }, [availableStats, defaultVisibleStats, selectedStats]);
-  const visibleStatSet = useMemo(() => new Set<FormStatId>(visibleStats), [visibleStats]);
+  const visibleStatSet = useMemo(() => new Set<VenueStatId>(visibleStats), [visibleStats]);
   const statCustomizerOptions = useMemo(
     () => availableStats.map((statId) => ({ key: statId, label: formatStatLabel(statId) })),
     [availableStats]
@@ -514,22 +433,18 @@ export function SoccerTeamFormCard({
     setSelectedStats((current) => {
       const validCurrent = current.filter((key) => availableStats.includes(key));
       const base = validCurrent.length > 0 ? validCurrent : defaultVisibleStats;
-      if (base.includes(statId as FormStatId)) {
+      if (base.includes(statId as VenueStatId)) {
         return base.length > 1 ? base.filter((key) => key !== statId) : base;
       }
-      return [...base, statId as FormStatId];
+      return [...base, statId as VenueStatId];
     });
   };
 
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        {!hideTitle ? <TeamFormHeader /> : null}
+        {!hideTitle ? <HomeAwayHeader /> : null}
         <div className="flex-1 min-h-0 flex flex-col px-2 pb-1.5">
-          <div className="flex items-center justify-center gap-2 mb-1.5">
-            <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
-            <div className={`h-4 w-36 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
-          </div>
           <div className={`mb-1.5 h-9 rounded-xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
           <div className="grid min-h-0 grid-cols-1 gap-1 lg:grid-cols-2">
             {[0, 1].map((idx) => (
@@ -544,7 +459,7 @@ export function SoccerTeamFormCard({
   if (!canFetch) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        {!hideTitle ? <TeamFormHeader /> : null}
+        {!hideTitle ? <HomeAwayHeader /> : null}
         <div className="flex-1 min-h-0 flex items-center px-2 pb-1.5">
           <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
         </div>
@@ -555,7 +470,7 @@ export function SoccerTeamFormCard({
   if (error) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        {!hideTitle ? <TeamFormHeader /> : null}
+        {!hideTitle ? <HomeAwayHeader /> : null}
         <div className="flex-1 min-h-0 flex items-center px-2 pb-1.5">
           <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
         </div>
@@ -566,9 +481,9 @@ export function SoccerTeamFormCard({
   if (!selectedSummary && !opponentSummary) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        {!hideTitle ? <TeamFormHeader /> : null}
+        {!hideTitle ? <HomeAwayHeader /> : null}
         <div className="flex-1 min-h-0 flex items-center px-2 pb-1.5">
-          <div className={`text-sm ${emptyTextClass}`}>No cached season form data found yet.</div>
+          <div className={`text-sm ${emptyTextClass}`}>No cached split data found yet.</div>
         </div>
       </div>
     );
@@ -576,7 +491,7 @@ export function SoccerTeamFormCard({
 
   return (
     <div className="w-full min-w-0 flex flex-col">
-      {!hideTitle ? <TeamFormHeader /> : null}
+      {!hideTitle ? <HomeAwayHeader /> : null}
       <div className="flex flex-col px-2 pb-1.5">
         <div className="mb-1">
           <div className={`inline-flex w-full items-center rounded-xl border p-0.5 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-100'}`}>
@@ -614,30 +529,33 @@ export function SoccerTeamFormCard({
         ) : (
           <div className="overflow-x-hidden pr-0.5">
             <div className="grid grid-cols-1 gap-1 lg:grid-cols-2 lg:items-start">
-              {currentSummary.windows.map((window) => (
+              {currentSummary.venues.map((venue) => (
                 <div
-                  key={window.key}
+                  key={venue.key}
                   className={`flex flex-col rounded-lg border px-2.5 py-2.5 ${isDark ? 'border-gray-700 bg-[#0f172a]' : 'border-gray-200 bg-gray-50/80'}`}
                 >
                   <div className="mb-2">
                     <div className="flex items-center gap-2">
                       <div className={`text-sm font-semibold uppercase tracking-wide ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>
-                        {window.label}
+                        {venue.label}
                       </div>
                       <div className="ml-auto text-xs font-semibold leading-none tabular-nums">
-                        <span className="text-green-500 dark:text-green-400">{window.wins}</span>
+                        <span className="text-green-500 dark:text-green-400">{venue.wins}</span>
                         <span className="text-gray-400 dark:text-gray-500">-</span>
-                        <span className="text-slate-500 dark:text-slate-300">{window.draws}</span>
+                        <span className="text-slate-500 dark:text-slate-300">{venue.draws}</span>
                         <span className="text-gray-400 dark:text-gray-500">-</span>
-                        <span className="text-red-500 dark:text-red-400">{window.losses}</span>
+                        <span className="text-red-500 dark:text-red-400">{venue.losses}</span>
                       </div>
+                    </div>
+                    <div className={`mt-0.5 text-xs leading-none ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {venue.games} {venue.key} games
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2.5">
-                    {window.stats.filter((stat) => visibleStatSet.has(stat.id)).map((stat) => {
-                      const primary = stat.recentAverage;
-                      const secondary = stat.seasonAverage;
+                    {venue.stats.filter((stat) => visibleStatSet.has(stat.id)).map((stat) => {
+                      const primary = stat.venueAverage;
+                      const secondary = stat.comparisonAverage;
                       const primaryStrength = Math.max(primary ?? 0, 0.05);
                       const secondaryStrength = Math.max(secondary ?? 0, 0.05);
                       const totalStrength = primaryStrength + secondaryStrength;
@@ -665,7 +583,7 @@ export function SoccerTeamFormCard({
                           <div className="flex items-center justify-between text-[11px] leading-none">
                             <span className={deltaStyles.textClass}>{formatDelta(stat.delta)}</span>
                             <span className={`${isDark ? 'text-white' : 'text-gray-500'}`}>
-                              {window.key === 'h2h' ? 'vs last 10 avg' : 'vs season avg'}
+                              {venue.key === 'home' ? 'vs away avg' : 'vs home avg'}
                             </span>
                           </div>
                         </div>

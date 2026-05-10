@@ -11,9 +11,39 @@ type SoccerOpponentBreakdownPanelProps = {
   opponentHref: string | null;
   emptyTextClass: string;
   showSkeleton?: boolean;
+  hideTitle?: boolean;
 };
 
 const HIDDEN_OPPONENT_BREAKDOWN_STATS = new Set(['xg_on_target_xgot', 'crosses']);
+const OPPONENT_BREAKDOWN_SESSION_PREFIX = 'soccer-opponent-breakdown:v1:';
+
+function getOpponentBreakdownSessionKey(key: string): string {
+  return `${OPPONENT_BREAKDOWN_SESSION_PREFIX}${key}`;
+}
+
+function readCachedOpponentBreakdown(key: string): OpponentBreakdownApiResponse | null {
+  if (typeof window === 'undefined' || !key) return null;
+  try {
+    const raw = window.sessionStorage.getItem(getOpponentBreakdownSessionKey(key));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data?: OpponentBreakdownApiResponse } | null;
+    return parsed?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedOpponentBreakdown(key: string, data: OpponentBreakdownApiResponse): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    window.sessionStorage.setItem(
+      getOpponentBreakdownSessionKey(key),
+      JSON.stringify({ data, cachedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function formatNumber(v: number | null, isPercent = false): string {
   if (v == null) return '—';
@@ -77,6 +107,7 @@ export function SoccerOpponentBreakdownPanel({
   opponentHref,
   emptyTextClass,
   showSkeleton = false,
+  hideTitle = false,
 }: SoccerOpponentBreakdownPanelProps) {
   const [data, setData] = useState<OpponentBreakdownApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,6 +115,13 @@ export function SoccerOpponentBreakdownPanel({
   const [timeframe, setTimeframe] = useState<'season' | 'last5'>('season');
 
   const canFetch = Boolean(nextCompetitionName && (opponentName?.trim() || opponentHref));
+  const cacheKey = [
+    String(nextCompetitionName || '').trim(),
+    String(nextCompetitionCountry || '').trim(),
+    String(opponentName || '').trim(),
+    String(opponentHref || '').trim(),
+    timeframe,
+  ].join('|');
 
   useEffect(() => {
     if (!canFetch || !nextCompetitionName) {
@@ -109,7 +147,9 @@ export function SoccerOpponentBreakdownPanel({
     let cancelled = false;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-    setLoading(true);
+    const cachedData = readCachedOpponentBreakdown(cacheKey);
+    if (cachedData) setData(cachedData);
+    setLoading(!cachedData);
     setError(null);
 
     void fetch(`/api/soccer/opponent-breakdown?${p.toString()}`, { cache: 'no-store', signal: controller.signal })
@@ -124,14 +164,17 @@ export function SoccerOpponentBreakdownPanel({
       .then((j) => {
         if (!cancelled) {
           setData(j);
+          writeCachedOpponentBreakdown(cacheKey, j);
           setError(null);
         }
       })
       .catch((e) => {
         if (!cancelled) {
           const isAbort = e instanceof Error && e.name === 'AbortError';
-          setError(isAbort ? 'Opponent breakdown is still warming data. Try again in a few seconds.' : e instanceof Error ? e.message : 'Failed to load');
-          setData(null);
+          if (!cachedData) {
+            setError(isAbort ? 'Opponent breakdown is still warming data. Try again in a few seconds.' : e instanceof Error ? e.message : 'Failed to load');
+            setData(null);
+          }
         }
       })
       .finally(() => {
@@ -144,15 +187,11 @@ export function SoccerOpponentBreakdownPanel({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref, timeframe]);
+  }, [cacheKey, canFetch, nextCompetitionCountry, nextCompetitionName, opponentName, opponentHref, timeframe]);
 
   if (showSkeleton || loading) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-        </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
           <div className="flex items-center gap-2 mb-3">
             <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
@@ -182,12 +221,10 @@ export function SoccerOpponentBreakdownPanel({
   if (error) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-        </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-          <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+          <div className="flex w-full flex-col">
+            <div className="text-sm text-red-600 dark:text-red-400">{error}</div>
+          </div>
         </div>
       </div>
     );
@@ -196,12 +233,10 @@ export function SoccerOpponentBreakdownPanel({
   if (!data) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-        </div>
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-          <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
+          <div className="flex w-full flex-col">
+            <div className={`text-sm ${emptyTextClass}`}>No data available come back later</div>
+          </div>
         </div>
       </div>
     );
@@ -215,20 +250,20 @@ export function SoccerOpponentBreakdownPanel({
 
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
-        <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-          <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-        </div>
-
         <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-          <div className="flex items-center justify-center gap-2 mb-1 text-center">
-            <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
-            <h4 className={`text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              {data.opponent.name} allowed averages
-            </h4>
-          </div>
-          <div className={`mb-3 text-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {data.competitionLabel} · {data.opponent.leagueGames} matches · {data.timeframe === 'last5' ? 'Last 5' : 'Season'}
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
+                <h4 className={`min-w-0 truncate text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {data.opponent.name} allowed averages
+                </h4>
+              </div>
+              <div className={`mt-1 pl-4 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                {data.competitionLabel} · {data.opponent.leagueGames} matches · {data.timeframe === 'last5' ? 'Last 5' : 'Season'}
+              </div>
+            </div>
+            <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
           </div>
 
           {visibleStats.length === 0 ? (
@@ -275,12 +310,10 @@ export function SoccerOpponentBreakdownPanel({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col">
-      <div className="flex items-center justify-between gap-2 mt-1 mb-3 flex-shrink-0">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
-        <OpponentBreakdownTimeframeToggle isDark={isDark} timeframe={timeframe} onChange={setTimeframe} />
-      </div>
       <div className={`rounded-lg border p-3 flex-1 min-h-0 flex items-center ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-        <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{data.note || 'No data available come back later'}</div>
+        <div className="flex w-full flex-col">
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{data.note || 'No data available come back later'}</div>
+        </div>
       </div>
     </div>
   );
