@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-10T17:27:50.774Z",
+  "generatedAt": "2026-05-11T13:46:16.135Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-05-14T09:30:00Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 17.5,
         "precipitationMm": 0,
-        "windKmh": 9.2
+        "windKmh": 10.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-05-15T09:30:00Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 16.5,
         "precipitationMm": 0,
-        "windKmh": 6.9
+        "windKmh": 2
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-05-15T10:10:00Z",
       "weather": {
-        "temperatureC": 17.9,
-        "precipitationMm": 0,
-        "windKmh": 13.3
+        "temperatureC": 17.5,
+        "precipitationMm": 0.1,
+        "windKmh": 17.2
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-05-16T03:15:20Z",
       "weather": {
-        "temperatureC": 17.2,
+        "temperatureC": 16.5,
         "precipitationMm": 0.1,
-        "windKmh": 4.8
+        "windKmh": 7.6
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-05-16T06:15:46Z",
       "weather": {
-        "temperatureC": 21.5,
+        "temperatureC": 21,
         "precipitationMm": 0,
-        "windKmh": 14.4
+        "windKmh": 12.5
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-05-16T09:35:00Z",
       "weather": {
-        "temperatureC": 17.4,
-        "precipitationMm": 0.3,
-        "windKmh": 12.5
+        "temperatureC": 18.5,
+        "precipitationMm": 0,
+        "windKmh": 7.3
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-17T03:10:00Z",
       "weather": {
-        "temperatureC": 14.7,
-        "precipitationMm": 1.1,
-        "windKmh": 3.7
+        "temperatureC": 15.9,
+        "precipitationMm": 0.6,
+        "windKmh": 14.4
       }
     },
     {
@@ -86,9 +86,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-17T05:15:17Z",
       "weather": {
-        "temperatureC": 14.9,
-        "precipitationMm": 1.1,
-        "windKmh": 2.7
+        "temperatureC": 15.7,
+        "precipitationMm": 0.5,
+        "windKmh": 13.8
       }
     },
     {
@@ -97,9 +97,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-17T08:15:45Z",
       "weather": {
-        "temperatureC": 19.8,
+        "temperatureC": 19.2,
         "precipitationMm": 0,
-        "windKmh": 8.6
+        "windKmh": 7.8
       }
     }
   ],
