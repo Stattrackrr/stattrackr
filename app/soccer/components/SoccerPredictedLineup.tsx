@@ -7,6 +7,8 @@ type SoccerPredictedLineupProps = {
   isDark: boolean;
   /** When the next-fixture lineups are empty, we may show the last match instead. */
   lineupFrom?: 'upcoming' | 'previous';
+  /** Opens player props for this squad member when set (e.g. dashboard hands off to cached roster). */
+  onLineupPlayerClick?: (payload: { player: SoccerwayLineupPlayer; teamName: string }) => void;
 };
 
 function formatPlayerLabel(player: SoccerwayLineupPlayer): string {
@@ -71,9 +73,11 @@ function getPlayerPosition(
 function PositionedTeam({
   team,
   isDark,
+  onLineupPlayerClick,
 }: {
   team: SoccerwayLineupTeam;
   isDark: boolean;
+  onLineupPlayerClick?: SoccerPredictedLineupProps['onLineupPlayerClick'];
 }) {
   const rows = getFormationRows(team);
 
@@ -98,7 +102,7 @@ function PositionedTeam({
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              <PlayerMarker player={player} isDark={isDark} />
+              <PlayerMarker player={player} teamName={team.name} isDark={isDark} onLineupPlayerClick={onLineupPlayerClick} />
             </div>
           );
         })
@@ -107,26 +111,62 @@ function PositionedTeam({
   );
 }
 
-function PlayerMarker({ player, isDark }: { player: SoccerwayLineupPlayer; isDark: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div
-        className={`relative h-9 w-9 overflow-hidden rounded-full border-2 shadow-[0_8px_18px_rgba(0,0,0,0.3)] sm:h-10 sm:w-10 ${
-          isDark ? 'border-white/20 bg-slate-800' : 'border-white/70 bg-slate-700'
-        }`}
-      >
-        {player.imageUrl ? (
-          <img src={player.imageUrl} alt={player.listName} className="h-full w-full object-cover" loading="lazy" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-white sm:text-xs">
-            {getPlayerInitials(player)}
-          </div>
-        )}
-      </div>
-      <div className="max-w-[76px] rounded-md bg-black/80 px-1.5 py-1 text-center text-white shadow-[0_6px_14px_rgba(0,0,0,0.25)] sm:max-w-[92px]">
-        <div className="truncate text-[10px] font-semibold leading-none sm:text-[11px]">{formatPlayerLabel(player)}</div>
-      </div>
+function PlayerMarker({
+  player,
+  teamName,
+  isDark,
+  onLineupPlayerClick,
+}: {
+  player: SoccerwayLineupPlayer;
+  teamName: string;
+  isDark: boolean;
+  onLineupPlayerClick?: SoccerPredictedLineupProps['onLineupPlayerClick'];
+}) {
+  const interactive = Boolean(onLineupPlayerClick);
+  const label = formatPlayerLabel(player);
+  const avatar = (
+    <div
+      className={`relative h-9 w-9 overflow-hidden rounded-full border-2 shadow-[0_8px_18px_rgba(0,0,0,0.3)] transition-[box-shadow,transform] sm:h-10 sm:w-10 ${
+        isDark ? 'border-white/20 bg-slate-800' : 'border-white/70 bg-slate-700'
+      } ${interactive ? 'group-hover:ring-2 group-hover:ring-white/50 group-hover:ring-offset-2 group-hover:ring-offset-transparent group-active:scale-95' : ''}`}
+    >
+      {player.imageUrl ? (
+        <img src={player.imageUrl} alt={player.listName} className="h-full w-full object-cover" loading="lazy" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-white sm:text-xs">
+          {getPlayerInitials(player)}
+        </div>
+      )}
     </div>
+  );
+  const nameTag = (
+    <div className="max-w-[76px] rounded-md bg-black/80 px-1.5 py-1 text-center text-white shadow-[0_6px_14px_rgba(0,0,0,0.25)] sm:max-w-[92px]">
+      <div className="truncate text-[10px] font-semibold leading-none sm:text-[11px]">{label}</div>
+    </div>
+  );
+
+  if (!interactive) {
+    return (
+      <div className="flex flex-col items-center gap-1.5">
+        {avatar}
+        {nameTag}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onLineupPlayerClick?.({ player, teamName });
+      }}
+      className="group flex flex-col items-center gap-1.5 rounded-lg p-0.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f5f36] dark:focus-visible:ring-offset-[#1f5f36]"
+      aria-label={`View stats for ${player.listName || player.fieldName}`}
+    >
+      {avatar}
+      {nameTag}
+    </button>
   );
 }
 
@@ -134,10 +174,12 @@ function CombinedPitch({
   homeTeam,
   awayTeam,
   isDark,
+  onLineupPlayerClick,
 }: {
   homeTeam: SoccerwayLineupTeam;
   awayTeam: SoccerwayLineupTeam;
   isDark: boolean;
+  onLineupPlayerClick?: SoccerPredictedLineupProps['onLineupPlayerClick'];
 }) {
   return (
     <div className="px-3 sm:px-4">
@@ -177,8 +219,8 @@ function CombinedPitch({
           </div>
 
           <div className="relative h-[300px] sm:h-[340px] lg:h-[380px]">
-            <PositionedTeam team={homeTeam} isDark={isDark} />
-            <PositionedTeam team={awayTeam} isDark={isDark} />
+            <PositionedTeam team={homeTeam} isDark={isDark} onLineupPlayerClick={onLineupPlayerClick} />
+            <PositionedTeam team={awayTeam} isDark={isDark} onLineupPlayerClick={onLineupPlayerClick} />
           </div>
         </div>
       </div>
@@ -186,7 +228,15 @@ function CombinedPitch({
   );
 }
 
-function SingleTeamPitch({ team, isDark }: { team: SoccerwayLineupTeam; isDark: boolean }) {
+function SingleTeamPitch({
+  team,
+  isDark,
+  onLineupPlayerClick,
+}: {
+  team: SoccerwayLineupTeam;
+  isDark: boolean;
+  onLineupPlayerClick?: SoccerPredictedLineupProps['onLineupPlayerClick'];
+}) {
   return (
     <div className="px-3 sm:px-4">
       <div
@@ -226,7 +276,7 @@ function SingleTeamPitch({ team, isDark }: { team: SoccerwayLineupTeam; isDark: 
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    <PlayerMarker player={player} isDark={isDark} />
+                    <PlayerMarker player={player} teamName={team.name} isDark={isDark} onLineupPlayerClick={onLineupPlayerClick} />
                   </div>
                 );
               })
@@ -243,7 +293,12 @@ function SingleTeamPitch({ team, isDark }: { team: SoccerwayLineupTeam; isDark: 
   );
 }
 
-export function SoccerPredictedLineup({ lineup, isDark, lineupFrom = 'upcoming' }: SoccerPredictedLineupProps) {
+export function SoccerPredictedLineup({
+  lineup,
+  isDark,
+  lineupFrom = 'upcoming',
+  onLineupPlayerClick,
+}: SoccerPredictedLineupProps) {
   const teams =
     lineup?.teams.filter(
       (team) => team.starters.length > 0 || team.formationLines.length > 0 || team.substitutes.length > 0 || team.coaches.length > 0
@@ -274,9 +329,10 @@ export function SoccerPredictedLineup({ lineup, isDark, lineupFrom = 'upcoming' 
           homeTeam={teams.find((team) => team.side === 'home') ?? teams[0]}
           awayTeam={teams.find((team) => team.side === 'away') ?? teams[1]}
           isDark={isDark}
+          onLineupPlayerClick={onLineupPlayerClick}
         />
       ) : (
-        <SingleTeamPitch team={teams[0]} isDark={isDark} />
+        <SingleTeamPitch team={teams[0]} isDark={isDark} onLineupPlayerClick={onLineupPlayerClick} />
       )}
     </div>
   );

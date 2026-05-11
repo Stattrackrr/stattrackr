@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchProfileProStatusWithRetries, isProFromUserMetadata } from '@/lib/profileSubscriptionGate';
@@ -11,13 +11,19 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search } from 'lucide-react';
-import type { SoccerwayLineupBundle, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+import {
+  hasDisplayableSoccerLineup,
+  type SoccerwayLineupBundle,
+  type SoccerwayLineupPlayer,
+  type SoccerwayRecentMatch,
+} from '@/lib/soccerwayTeamResults';
 import { SoccerStatsChart, type SoccerStatTeamScope, type SoccerTimeframe } from '@/app/soccer/components/SoccerStatsChart';
 import { SoccerSupportingStats } from '@/app/soccer/components/SoccerSupportingStats';
 import { SoccerPredictedLineup } from '@/app/soccer/components/SoccerPredictedLineup';
 import { SoccerOpponentBreakdownMatchupPanel } from '@/app/soccer/components/SoccerOpponentBreakdownMatchupPanel';
 import { SoccerTeamFormHomeAwayPanel } from '@/app/soccer/components/SoccerTeamFormHomeAwayPanel';
 import { SoccerInjuriesCard } from '@/app/soccer/components/SoccerInjuriesCard';
+import { SoccerPlayerPropsTestCard } from '@/app/soccer/components/SoccerPlayerPropsTestCard';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -51,27 +57,175 @@ type SoccerPredictedLineupResponse = {
   lineupFrom?: 'upcoming' | 'previous';
 };
 
+type SoccerOddsOutcome = {
+  participant: string | null;
+  side: 'home' | 'away' | null;
+  selection: string | null;
+  value: string | null;
+  active: boolean;
+};
+
+type SoccerOddsOffer = {
+  odds: SoccerOddsOutcome[];
+};
+
+type SoccerOddsMarket = {
+  key: string;
+  bettingType: string | null;
+  bettingScope: string | null;
+  offers: SoccerOddsOffer[];
+};
+
 type SoccerTeamRow = {
   name: string;
   href: string;
   competitions: Array<{ country: string; competition: string }>;
 };
 
+type SoccerPlayerOption = {
+  id: string;
+  name: string;
+  shortName: string;
+  teamName: string;
+  teamHref: string | null;
+  number: string | null;
+  imageUrl: string | null;
+  role: string | null;
+  status: 'starter' | 'substitute' | 'test' | 'cached';
+  /** From player-stats-roster-report when status is cached */
+  cachedMatchCount?: number;
+};
+
+type CachedSoccerRosterRow = { playerKey: string; displayName: string; matchCount: number };
+
+function extractSoccerwayPlayerSlugFromParticipantUrl(url: string | null | undefined): string | null {
+  const m = String(url || '').trim().match(/\/player\/([^/]+)\//i);
+  return m?.[1] ? m[1].trim().toLowerCase() : null;
+}
+
+function findCachedRosterRowFromLineupPick(
+  roster: CachedSoccerRosterRow[],
+  pending: { playerKey: string; displayName: string }
+): CachedSoccerRosterRow | undefined {
+  if (pending.playerKey) {
+    const byKey = roster.find((r) => r.playerKey === pending.playerKey);
+    if (byKey) return byKey;
+  }
+  const label = foldSoccerPlayerSearchText(pending.displayName);
+  if (!label) return undefined;
+  return (
+    roster.find((r) => foldSoccerPlayerSearchText(r.displayName) === label) ??
+    roster.find((r) => {
+      const h = foldSoccerPlayerSearchText(r.displayName);
+      return h.length >= 3 && label.length >= 3 && (h.includes(label) || label.includes(h));
+    })
+  );
+}
+
+function findCachedRosterRowForLineupPlayer(roster: CachedSoccerRosterRow[], player: SoccerwayLineupPlayer): CachedSoccerRosterRow | undefined {
+  const slug = extractSoccerwayPlayerSlugFromParticipantUrl(player.participantUrl);
+  if (slug) {
+    const bySlug = roster.find((r) => r.playerKey === slug);
+    if (bySlug) return bySlug;
+  }
+  return findCachedRosterRowFromLineupPick(roster, {
+    playerKey: '',
+    displayName: player.listName || player.fieldName,
+  });
+}
+
+function buildSoccerPlayerOptionFromRosterRow(
+  row: CachedSoccerRosterRow,
+  team: SoccerTeamRow,
+  lineupImageByNormalizedName: Map<string, string>
+): SoccerPlayerOption {
+  const href = normalizeTeamHref(team.href);
+  const parts = row.displayName.trim().split(/\s+/).filter(Boolean);
+  const shortName =
+    parts.length >= 2
+      ? `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase() || row.displayName.slice(0, 3)
+      : row.displayName.slice(0, 3);
+  const norm = normalizeSoccerName(row.displayName);
+  return {
+    id: row.playerKey,
+    name: row.displayName,
+    shortName,
+    teamName: team.name,
+    teamHref: href || null,
+    number: null,
+    imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
+    role: null,
+    status: row.matchCount > 0 ? ('cached' as const) : ('test' as const),
+    cachedMatchCount: row.matchCount > 0 ? row.matchCount : undefined,
+  };
+}
+
 type SoccerDashboardSessionState = {
   team: Pick<SoccerTeamRow, 'name' | 'href'>;
   recentMatches: SoccerwayRecentMatch[];
   nextFixture?: SoccerNextFixture | null;
   cachedAt: number;
+  /** When set, restore Player props + this roster row after refresh (same keys as cache playerKey). */
+  playerProps?: { playerKey: string; displayName: string } | null;
 };
 
 // Bump the restore cache version when the stored match payload shape/coverage changes.
-const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v7:';
+const SOCCER_DASHBOARD_SESSION_PREFIX = 'soccer-dashboard:v8:';
+const SOCCER_LINEUP_UI_SNAP_PREFIX = 'soccer-lineup-ui:v1:';
+
+function readLineupUiSnap(teamHref: string): { lineup: SoccerwayLineupBundle; lineupFrom: 'upcoming' | 'previous' } | null {
+  if (typeof window === 'undefined') return null;
+  const key = normalizeTeamHref(teamHref);
+  if (!key) return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${SOCCER_LINEUP_UI_SNAP_PREFIX}${key}`);
+    if (!raw) return null;
+    const o = JSON.parse(raw) as { lineup?: SoccerwayLineupBundle; lineupFrom?: string } | null;
+    if (!o?.lineup || typeof o.lineup !== 'object') return null;
+    if (!hasDisplayableSoccerLineup(o.lineup)) return null;
+    return {
+      lineup: o.lineup,
+      lineupFrom: o.lineupFrom === 'previous' ? 'previous' : 'upcoming',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeLineupUiSnap(
+  teamHref: string,
+  payload: { lineup: SoccerwayLineupBundle | null; lineupFrom: 'upcoming' | 'previous' }
+): void {
+  if (typeof window === 'undefined') return;
+  const key = normalizeTeamHref(teamHref);
+  if (!key) return;
+  try {
+    if (!payload.lineup || !hasDisplayableSoccerLineup(payload.lineup)) {
+      window.sessionStorage.removeItem(`${SOCCER_LINEUP_UI_SNAP_PREFIX}${key}`);
+      return;
+    }
+    const str = JSON.stringify({ lineup: payload.lineup, lineupFrom: payload.lineupFrom });
+    if (str.length > 4_500_000) return;
+    window.sessionStorage.setItem(`${SOCCER_LINEUP_UI_SNAP_PREFIX}${key}`, str);
+  } catch {
+    /* ignore quota */
+  }
+}
 const EMPTY_STATS_SKELETON_MS = 5000;
 const EMPTY_STATS_CACHE_RETRY_DELAY_MS = 750;
 const INITIAL_RECENT_MATCHES_LIMIT = 20;
 
 function getSoccerDashboardSessionKey(teamHref: string): string {
   return `${SOCCER_DASHBOARD_SESSION_PREFIX}${normalizeTeamHref(teamHref)}`;
+}
+
+function parseSessionPlayerPropsField(raw: unknown): { playerKey: string; displayName: string } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const pk = String(o.playerKey || '').trim().toLowerCase();
+  const dn = String(o.displayName || '').trim();
+  if (!/^[a-z0-9-]{2,80}$/.test(pk) || !dn) return null;
+  return { playerKey: pk, displayName: dn };
 }
 
 function readSoccerDashboardSessionState(teamHref: string): SoccerDashboardSessionState | null {
@@ -90,12 +244,20 @@ function readSoccerDashboardSessionState(teamHref: string): SoccerDashboardSessi
       parsed.nextFixture && typeof parsed.nextFixture === 'object'
         ? (parsed.nextFixture as SoccerNextFixture)
         : null;
-    if (!teamName || !teamStoredHref || teamStoredHref !== normalizedHref || recentMatches.length === 0) return null;
+    const playerProps = parseSessionPlayerPropsField((parsed as { playerProps?: unknown }).playerProps);
+    const hasRecent = recentMatches.length > 0;
+    const hasNextFixture =
+      nextFixture != null &&
+      (String(nextFixture.matchId || '').trim() !== '' || String(nextFixture.summaryPath || '').trim() !== '');
+    if (!teamName || !teamStoredHref || teamStoredHref !== normalizedHref) return null;
+    // Do not require recentMatches: session can still carry playerProps / next fixture after partial writes or TTL.
+    if (!hasRecent && !hasNextFixture && !playerProps) return null;
     return {
       team: { name: teamName, href: teamStoredHref },
       recentMatches,
       nextFixture,
       cachedAt: typeof parsed.cachedAt === 'number' ? parsed.cachedAt : Date.now(),
+      ...(playerProps ? { playerProps } : {}),
     };
   } catch {
     return null;
@@ -104,7 +266,12 @@ function readSoccerDashboardSessionState(teamHref: string): SoccerDashboardSessi
 
 function writeSoccerDashboardSessionState(
   team: Pick<SoccerTeamRow, 'name' | 'href'>,
-  data: { recentMatches?: SoccerwayRecentMatch[]; nextFixture?: SoccerNextFixture | null }
+  data: {
+    recentMatches?: SoccerwayRecentMatch[];
+    nextFixture?: SoccerNextFixture | null;
+    /** Pass null to clear saved Player props selection. Omit to leave previous value. */
+    playerProps?: SoccerDashboardSessionState['playerProps'] | null;
+  }
 ): void {
   if (typeof window === 'undefined') return;
   const normalizedHref = normalizeTeamHref(team.href);
@@ -122,11 +289,16 @@ function writeSoccerDashboardSessionState(
     const recentMatches = data.recentMatches ?? existingRecentMatches;
     const nextFixture = data.nextFixture !== undefined ? data.nextFixture : existingNextFixture;
     if (recentMatches.length === 0 && !nextFixture) return;
+    const mergedPlayerProps =
+      data.playerProps !== undefined
+        ? data.playerProps
+        : parseSessionPlayerPropsField((existingParsed as { playerProps?: unknown })?.playerProps);
     const payload: SoccerDashboardSessionState = {
       team: { name: team.name.trim(), href: normalizedHref },
       recentMatches,
       nextFixture,
       cachedAt: Date.now(),
+      ...(mergedPlayerProps ? { playerProps: mergedPlayerProps } : {}),
     };
     window.sessionStorage.setItem(getSoccerDashboardSessionKey(normalizedHref), JSON.stringify(payload));
   } catch {
@@ -176,6 +348,108 @@ function normalizeTeamHref(value: string | null | undefined): string {
   return (href.startsWith('/') ? href : `/${href}`).replace(/\/+$/, '');
 }
 
+function normalizeSoccerName(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*$/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+/** Lowercase + strip accents + hyphens→spaces for player search (ASCII queries vs Soccerway diacritics). */
+function foldSoccerPlayerSearchText(value: string | null | undefined): string {
+  const base = String(value || '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+  return base
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]+\)\s*$/g, '')
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeSoccerMarketText(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseSoccerDecimalOdds(value: string | null | undefined): number | null {
+  const n = Number.parseFloat(String(value || '').replace(/,/g, '').trim());
+  return Number.isFinite(n) && n > 1 ? n : null;
+}
+
+function medianNumber(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function getSelectedSoccerSide(teamName: string | null | undefined, fixture: SoccerNextFixture | null): 'home' | 'away' | null {
+  if (!teamName || !fixture) return null;
+  if (fixture.isHome === true) return 'home';
+  if (fixture.isHome === false) return 'away';
+  const selected = normalizeSoccerName(teamName);
+  if (normalizeSoccerName(fixture.homeTeam) === selected) return 'home';
+  if (normalizeSoccerName(fixture.awayTeam) === selected) return 'away';
+  return null;
+}
+
+function calculateSoccerWinPercentageFromOdds(
+  markets: SoccerOddsMarket[] | null | undefined,
+  selectedSide: 'home' | 'away' | null
+): number | null {
+  if (!selectedSide) return null;
+
+  const bookPercentages: number[] = [];
+
+  for (const market of markets ?? []) {
+    const bettingType = String(market.bettingType || '').trim().toUpperCase();
+    const bettingScope = String(market.bettingScope || '').trim().toUpperCase();
+    const marketKey = String(market.key || '').trim().toUpperCase();
+    const isMoneylineMarket =
+      marketKey === 'HOME_DRAW_AWAY__FULL_TIME' ||
+      (bettingType === 'HOME_DRAW_AWAY' && (!bettingScope || bettingScope === 'FULL_TIME'));
+    if (!isMoneylineMarket) continue;
+
+    for (const offer of market.offers ?? []) {
+      let homeDecimal: number | null = null;
+      let drawDecimal: number | null = null;
+      let awayDecimal: number | null = null;
+
+      for (const outcome of offer.odds ?? []) {
+        if (!outcome.active || !outcome.value) continue;
+        const selection = normalizeSoccerMarketText(`${outcome.selection || ''} ${outcome.participant || ''}`);
+        const decimal = parseSoccerDecimalOdds(outcome.value);
+        if (decimal == null) continue;
+
+        if (outcome.side === 'home' || selection === '1' || selection.includes('home')) homeDecimal = decimal;
+        else if (outcome.side === 'away' || selection === '2' || selection.includes('away')) awayDecimal = decimal;
+        else if (selection === 'x' || selection.includes('draw')) drawDecimal = decimal;
+      }
+
+      const selectedDecimal = selectedSide === 'home' ? homeDecimal : awayDecimal;
+      if (selectedDecimal == null) continue;
+
+      const selectedImplied = 1 / selectedDecimal;
+      const marketImpliedTotal =
+        (homeDecimal != null ? 1 / homeDecimal : 0) +
+        (drawDecimal != null ? 1 / drawDecimal : 0) +
+        (awayDecimal != null ? 1 / awayDecimal : 0);
+      const normalized = marketImpliedTotal > 0 ? (selectedImplied / marketImpliedTotal) * 100 : selectedImplied * 100;
+      if (Number.isFinite(normalized)) bookPercentages.push(normalized);
+    }
+  }
+
+  return medianNumber(bookPercentages);
+}
+
 function splitFixtureNameLines(value: string | null | undefined): [string, string?] {
   const name = String(value || '').trim();
   if (!name) return ['-'];
@@ -219,6 +493,92 @@ function formatFixtureStageLabel(value: string | null | undefined): string | nul
   return stage;
 }
 
+function SoccerWinPercentageWheel({
+  isDark,
+  winPercentage,
+  size = 100,
+}: {
+  isDark: boolean;
+  winPercentage: number | null;
+  size?: number;
+}) {
+  if (winPercentage == null) return null;
+
+  const clampedWinPercentage = Math.max(0, Math.min(100, winPercentage));
+  const radius = size / 2 - 14;
+  const strokeWidth = 8;
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const startAngle = 270;
+  const winAngle = (clampedWinPercentage / 100) * 360;
+  const percentFontSize = size <= 90 ? 'text-sm' : 'text-lg';
+  const labelFontSize = size <= 90 ? 'text-[9px]' : 'text-[10px]';
+
+  const createArcPath = (startAngleDeg: number, endAngleDeg: number) => {
+    const startAngleRad = (startAngleDeg * Math.PI) / 180;
+    const endAngleRad = (endAngleDeg * Math.PI) / 180;
+    const x1 = centerX + radius * Math.cos(startAngleRad);
+    const y1 = centerY + radius * Math.sin(startAngleRad);
+    const x2 = centerX + radius * Math.cos(endAngleRad);
+    const y2 = centerY + radius * Math.sin(endAngleRad);
+    const largeArcFlag = endAngleDeg - startAngleDeg > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
+  };
+
+  return (
+    <div className="flex items-center justify-center" aria-label={`Win percentage ${clampedWinPercentage.toFixed(1)}%`}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        <g>
+          <circle
+            cx={centerX}
+            cy={centerY}
+            r={radius}
+            fill="none"
+            stroke={isDark ? '#374151' : '#e5e7eb'}
+            strokeWidth={strokeWidth}
+          />
+          <path
+            d={createArcPath(startAngle, startAngle + winAngle)}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth={strokeWidth}
+            strokeLinecap="butt"
+          />
+          <path
+            d={createArcPath(startAngle + winAngle, startAngle + 360)}
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth={strokeWidth}
+            strokeLinecap="butt"
+          />
+          <g transform={`rotate(90 ${centerX} ${centerY})`}>
+            <text
+              x={centerX}
+              y={centerY - 4}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className={`${percentFontSize} font-semibold ${isDark ? 'fill-white' : 'fill-gray-900'}`}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              {clampedWinPercentage.toFixed(1)}%
+            </text>
+            <text
+              x={centerX}
+              y={centerY + 12}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className={`${labelFontSize} ${isDark ? 'fill-gray-400' : 'fill-gray-600'}`}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
+              Win
+            </text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 function SoccerPageContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -248,6 +608,13 @@ function SoccerPageContent() {
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [teamSearchOpen, setTeamSearchOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<SoccerTeamRow | null>(null);
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const [selectedSoccerPlayer, setSelectedSoccerPlayer] = useState<SoccerPlayerOption | null>(null);
+  /** Until roster resolves, feed chart from session so player-props fetch runs immediately on refresh. */
+  const [chartBootstrapPlayer, setChartBootstrapPlayer] = useState<{ playerKey: string; displayName: string } | null>(
+    null
+  );
   const [recentMatches, setRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [allRecentMatches, setAllRecentMatches] = useState<SoccerwayRecentMatch[]>([]);
   const [recentMatchesLoading, setRecentMatchesLoading] = useState(false);
@@ -264,14 +631,23 @@ function SoccerPageContent() {
   const [predictedLineupLoading, setPredictedLineupLoading] = useState(false);
   const [predictedLineupError, setPredictedLineupError] = useState<string | null>(null);
   const [predictedLineupCacheMiss, setPredictedLineupCacheMiss] = useState(false);
+  const [cachedSoccerPlayerRoster, setCachedSoccerPlayerRoster] = useState<
+    Array<{ playerKey: string; displayName: string; matchCount: number }>
+  >([]);
+  const [soccerOddsMarkets, setSoccerOddsMarkets] = useState<SoccerOddsMarket[]>([]);
   const [mainChartStat, setMainChartStat] = useState('');
   const [chartTimeframe, setChartTimeframe] = useState<SoccerTimeframe>('last10');
   const [chartTeamScope, setChartTeamScope] = useState<SoccerStatTeamScope>('all');
   const [chartCompetition, setChartCompetition] = useState('all');
   const teamSearchWrapRef = useRef<HTMLDivElement>(null);
+  const playerSearchWrapRef = useRef<HTMLDivElement>(null);
   const teamResultsRequestId = useRef(0);
   const nextFixtureRequestId = useRef(0);
   const predictedLineupRequestId = useRef(0);
+  const playerRosterFetchedForHrefRef = useRef<string>('');
+  const rosterPlayerStatsFetchSettledRef = useRef(false);
+  const lineupPickPendingRef = useRef<{ teamHref: string; playerKey: string; displayName: string } | null>(null);
+  const prevPropsModeRef = useRef<'player' | 'team' | null>(null);
 
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } =
     useDashboardStyles({ sidebarOpen });
@@ -282,8 +658,13 @@ function SoccerPageContent() {
   const mainChartLoading = recentMatchesLoading || !recentMatchesSettled;
   const syncedStatsLoading = Boolean(selectedTeam) && mainChartLoading;
   const syncedFixtureStatsLoading = Boolean(selectedTeam) && (mainChartLoading || nextFixtureLoading);
-  const syncedLineupLoading = Boolean(selectedTeam) && (mainChartLoading || predictedLineupLoading);
+  /** In player props the main chart is player-scoped; do not block lineup on team-results fetch. */
+  const syncedLineupLoading =
+    Boolean(selectedTeam) &&
+    (propsMode === 'player' ? predictedLineupLoading : mainChartLoading || predictedLineupLoading);
   const showFixtureDependentSkeleton = Boolean(selectedTeam) && !nextFixture && nextFixtureLoading;
+  /** Right-column panels: in player mode do not wait on fixture skeleton (they own loading); game mode stays synced. */
+  const fixtureGatedPanelSkeleton = propsMode === 'team' && showFixtureDependentSkeleton;
 
   useEffect(() => {
     setMounted(true);
@@ -414,16 +795,142 @@ function SoccerPageContent() {
     return teamUniverse.filter((t) => teamMatchesQuery(t, q)).slice(0, 24);
   }, [teamUniverse, teamSearchQuery]);
 
-  const teamHrefFromUrl = normalizeTeamHref(searchParams.get('team'));
-  const selectedTeamHref = normalizeTeamHref(selectedTeam?.href);
+  const lineupImageByNormalizedName = useMemo(() => {
+    const map = new Map<string, string>();
+    const add = (name: string | null | undefined, url: string | null | undefined) => {
+      const n = normalizeSoccerName(name || '');
+      if (!n || !url) return;
+      if (!map.has(n)) map.set(n, url);
+    };
+    for (const team of predictedLineup?.teams ?? []) {
+      for (const player of team.starters) {
+        add(player.listName || player.fieldName, player.imageUrl);
+        add(player.fieldName, player.imageUrl);
+      }
+      for (const player of team.substitutes) {
+        add(player.listName || player.fieldName, player.imageUrl);
+        add(player.fieldName, player.imageUrl);
+      }
+    }
+    return map;
+  }, [predictedLineup?.teams]);
+
+  const soccerPlayerUniverse = useMemo(() => {
+    const href = normalizeTeamHref(selectedTeam?.href ?? '');
+    const teamName = selectedTeam?.name ?? '';
+    return cachedSoccerPlayerRoster
+      .filter((row) => row.playerKey && row.displayName)
+      .map((row) => {
+        const parts = row.displayName.trim().split(/\s+/).filter(Boolean);
+        const shortName =
+          parts.length >= 2
+            ? `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase() || row.displayName.slice(0, 3)
+            : row.displayName.slice(0, 3);
+        const norm = normalizeSoccerName(row.displayName);
+        const matchCount = row.matchCount > 0 ? row.matchCount : 0;
+        return {
+          id: row.playerKey,
+          name: row.displayName,
+          shortName,
+          teamName,
+          teamHref: href || null,
+          number: null,
+          imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
+          role: null,
+          status: matchCount > 0 ? ('cached' as const) : ('test' as const),
+          cachedMatchCount: matchCount > 0 ? matchCount : undefined,
+        };
+      })
+      .sort((a, b) => {
+        const ac = a.cachedMatchCount ?? 0;
+        const bc = b.cachedMatchCount ?? 0;
+        if (bc !== ac) return bc - ac;
+        return a.name.localeCompare(b.name);
+      });
+  }, [cachedSoccerPlayerRoster, selectedTeam?.href, selectedTeam?.name, lineupImageByNormalizedName]);
+
+  const filteredSoccerPlayers = useMemo(() => {
+    const q = foldSoccerPlayerSearchText(playerSearchQuery);
+    const source = soccerPlayerUniverse;
+    if (!q) return source.slice(0, 48);
+    return source
+      .filter((player) => {
+        const haystack = foldSoccerPlayerSearchText(
+          `${player.name} ${player.shortName} ${player.teamName} ${player.role ?? ''} ${player.id}`
+        );
+        return haystack.includes(q);
+      })
+      .slice(0, 48);
+  }, [playerSearchQuery, soccerPlayerUniverse]);
 
   useEffect(() => {
-    if (!teamHrefFromUrl) return;
-    const cached = readSoccerDashboardSessionState(teamHrefFromUrl);
-    if (!cached) return;
-    const cachedVisibleMatches = takeRecentSoccerMatches(cached.recentMatches);
+    if (propsMode !== 'player') return;
+    const href = normalizeTeamHref(selectedTeam?.href ?? '');
+    if (!href) {
+      setCachedSoccerPlayerRoster([]);
+      playerRosterFetchedForHrefRef.current = '';
+      rosterPlayerStatsFetchSettledRef.current = false;
+      return;
+    }
+    if (playerRosterFetchedForHrefRef.current !== href) {
+      setCachedSoccerPlayerRoster([]);
+      playerRosterFetchedForHrefRef.current = href;
+      rosterPlayerStatsFetchSettledRef.current = false;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/soccer/player-stats-roster-report?href=${encodeURIComponent(href)}&limit=100&categories=top`,
+          { cache: 'no-store' }
+        );
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          players?: Array<{ playerKey?: string; displayName?: string; matchCount?: number }>;
+        } | null;
+        if (!res.ok || !data?.success || !Array.isArray(data.players)) {
+          if (!cancelled) setCachedSoccerPlayerRoster([]);
+          return;
+        }
+        const list = data.players
+          .map((p) => ({
+            playerKey: String(p.playerKey || '').trim().toLowerCase(),
+            displayName: String(p.displayName || '').trim(),
+            matchCount: Number(p.matchCount) || 0,
+          }))
+          .filter((p) => p.playerKey && p.displayName);
+        if (!cancelled) setCachedSoccerPlayerRoster(list);
+      } catch {
+        if (!cancelled) setCachedSoccerPlayerRoster([]);
+      } finally {
+        if (!cancelled) rosterPlayerStatsFetchSettledRef.current = true;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [propsMode, selectedTeam?.href]);
 
-    setPropsMode('team');
+  const teamHrefFromUrl = normalizeTeamHref(searchParams.get('team'));
+  const propsFromUrl = (searchParams.get('props') ?? '').trim().toLowerCase();
+  const selectedTeamHref = normalizeTeamHref(selectedTeam?.href);
+
+  useLayoutEffect(() => {
+    if (propsFromUrl === 'player') {
+      setPropsMode('player');
+    }
+    if (!teamHrefFromUrl) {
+      setChartBootstrapPlayer(null);
+      return;
+    }
+    const cached = readSoccerDashboardSessionState(teamHrefFromUrl);
+    if (!cached) {
+      setChartBootstrapPlayer(null);
+      return;
+    }
+    const cachedVisibleMatches = takeRecentSoccerMatches(cached.recentMatches);
+    const sessionPlayer = cached.playerProps;
+
     setSelectedTeam((prev) => {
       if (normalizeTeamHref(prev?.href) === cached.team.href) return prev;
       return {
@@ -441,9 +948,57 @@ function SoccerPageContent() {
     setNextFixtureLoading(false);
     setRecentMatchesError(null);
     setRecentMatchesCacheMiss(false);
-    setRecentMatchesLoading(false);
     setRecentMatchesSettled(true);
-  }, [teamHrefFromUrl]);
+
+    if (sessionPlayer?.playerKey) {
+      setPropsMode('player');
+      setPlayerSearchQuery(sessionPlayer.displayName);
+      setChartBootstrapPlayer({
+        playerKey: sessionPlayer.playerKey,
+        displayName: sessionPlayer.displayName,
+      });
+      lineupPickPendingRef.current = {
+        teamHref: normalizeTeamHref(cached.team.href),
+        playerKey: sessionPlayer.playerKey,
+        displayName: sessionPlayer.displayName,
+      };
+      setSelectedSoccerPlayer(null);
+    } else {
+      setChartBootstrapPlayer(null);
+      if (propsFromUrl !== 'player') {
+        setPropsMode('team');
+      }
+    }
+  }, [teamHrefFromUrl, propsFromUrl]);
+
+  useLayoutEffect(() => {
+    const raw = selectedTeam?.href;
+    if (!raw) return;
+    const href = raw.startsWith('/') ? raw : `/${raw}`;
+    const snap = readLineupUiSnap(href);
+    if (!snap) return;
+    setPredictedLineup(snap.lineup);
+    setPredictedLineupFrom(snap.lineupFrom);
+    setPredictedLineupLoading(false);
+  }, [selectedTeam?.href]);
+
+  useEffect(() => {
+    if (!teamHrefFromUrl) return;
+    const current = (searchParams.get('props') ?? '').trim().toLowerCase();
+    if (propsMode === 'player' && current !== 'player') {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('props', 'player');
+      const next = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(next, { scroll: false });
+      return;
+    }
+    if (propsMode === 'team' && current === 'player') {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('props');
+      const next = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(next, { scroll: false });
+    }
+  }, [pathname, propsMode, router, searchParams, teamHrefFromUrl]);
 
   const updateTeamUrl = useCallback(
     (teamHref: string | null) => {
@@ -457,30 +1012,150 @@ function SoccerPageContent() {
     [pathname, router, searchParams]
   );
 
+  const handleLineupPlayerClick = useCallback(
+    ({ player, teamName }: { player: SoccerwayLineupPlayer; teamName: string }) => {
+      const matchedTeam =
+        teamUniverse.find((t) => normalizeSoccerName(t.name) === normalizeSoccerName(teamName)) ?? null;
+      if (!matchedTeam?.href) return;
+
+      const teamHrefNorm = normalizeTeamHref(matchedTeam.href);
+      const slug = extractSoccerwayPlayerSlugFromParticipantUrl(player.participantUrl) ?? '';
+      const displayName = (player.listName || player.fieldName).trim() || slug;
+
+      setSelectedTeam(matchedTeam);
+      setTeamSearchQuery(matchedTeam.name);
+      updateTeamUrl(matchedTeam.href);
+      setPropsMode('player');
+      setPlayerSearchOpen(true);
+
+      const currentHref = normalizeTeamHref(selectedTeam?.href ?? '');
+      if (currentHref === teamHrefNorm) {
+        const row = findCachedRosterRowForLineupPlayer(cachedSoccerPlayerRoster, player);
+        if (row) {
+          setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, matchedTeam, lineupImageByNormalizedName));
+          setPlayerSearchQuery(row.displayName);
+          lineupPickPendingRef.current = null;
+          return;
+        }
+      }
+
+      lineupPickPendingRef.current = {
+        teamHref: teamHrefNorm,
+        playerKey: slug,
+        displayName: displayName || slug,
+      };
+      setSelectedSoccerPlayer(null);
+      setPlayerSearchQuery(displayName || slug);
+    },
+    [cachedSoccerPlayerRoster, lineupImageByNormalizedName, selectedTeam?.href, teamUniverse, updateTeamUrl]
+  );
+
+  useEffect(() => {
+    const pending = lineupPickPendingRef.current;
+    if (!pending) return;
+    if (normalizeTeamHref(selectedTeam?.href ?? '') !== pending.teamHref) {
+      lineupPickPendingRef.current = null;
+    }
+  }, [selectedTeam?.href]);
+
+  useEffect(() => {
+    const pending = lineupPickPendingRef.current;
+    if (!pending || propsMode !== 'player') return;
+    const href = normalizeTeamHref(selectedTeam?.href ?? '');
+    if (href !== pending.teamHref || !selectedTeam) return;
+
+    if (cachedSoccerPlayerRoster.length === 0) {
+      if (!rosterPlayerStatsFetchSettledRef.current) return;
+      lineupPickPendingRef.current = null;
+      return;
+    }
+
+    const row = findCachedRosterRowFromLineupPick(cachedSoccerPlayerRoster, pending);
+    if (row) {
+      setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, selectedTeam, lineupImageByNormalizedName));
+      setPlayerSearchQuery(row.displayName);
+      lineupPickPendingRef.current = null;
+      return;
+    }
+
+    lineupPickPendingRef.current = null;
+  }, [cachedSoccerPlayerRoster, lineupImageByNormalizedName, propsMode, selectedTeam]);
+
   useEffect(() => {
     if (teamUniverse.length === 0) return;
     if (!teamHrefFromUrl) return;
+    if (readSoccerDashboardSessionState(teamHrefFromUrl)?.playerProps?.playerKey) return;
 
     const matchedTeam = teamUniverse.find((team) => normalizeTeamHref(team.href) === teamHrefFromUrl) ?? null;
     if (!matchedTeam) return;
     if (selectedTeamHref === teamHrefFromUrl) return;
 
-    setPropsMode('team');
+    if (propsFromUrl !== 'player') {
+      setPropsMode('team');
+    }
     setSelectedTeam(matchedTeam);
     setTeamSearchQuery(matchedTeam.name);
-  }, [selectedTeam, selectedTeamHref, teamHrefFromUrl, teamUniverse]);
+  }, [propsFromUrl, selectedTeam, selectedTeamHref, teamHrefFromUrl, teamUniverse]);
+
+  useEffect(() => {
+    if (propsMode !== 'player') return;
+    if (!selectedSoccerPlayer) return;
+    // Roster can be empty briefly after toggling back from game props; keep selection until list exists.
+    if (soccerPlayerUniverse.length === 0) return;
+    const validIds = new Set(soccerPlayerUniverse.map((p) => p.id));
+    if (validIds.has(selectedSoccerPlayer.id)) return;
+    setSelectedSoccerPlayer(null);
+    setPlayerSearchQuery('');
+  }, [propsMode, selectedSoccerPlayer, soccerPlayerUniverse]);
+
+  useEffect(() => {
+    const prev = prevPropsModeRef.current;
+    if (prev === 'player' && propsMode === 'team') {
+      lineupPickPendingRef.current = null;
+      const href = normalizeTeamHref(selectedTeam?.href ?? '');
+      if (href && selectedTeam?.name.trim() && readSoccerDashboardSessionState(href)) {
+        writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, { playerProps: null });
+      }
+    }
+    prevPropsModeRef.current = propsMode;
+
+    const href = normalizeTeamHref(selectedTeam?.href ?? '');
+    if (!href || !selectedTeam?.name.trim()) return;
+    if (!readSoccerDashboardSessionState(href)) return;
+    if (propsMode !== 'player' || !selectedSoccerPlayer?.id) return;
+    const pk = selectedSoccerPlayer.id.trim().toLowerCase();
+    if (!/^[a-z0-9-]{2,80}$/.test(pk)) return;
+    const dn = selectedSoccerPlayer.name.trim();
+    if (!dn) return;
+    writeSoccerDashboardSessionState({ name: selectedTeam.name, href }, { playerProps: { playerKey: pk, displayName: dn } });
+  }, [propsMode, selectedSoccerPlayer?.id, selectedSoccerPlayer?.name, selectedTeam?.href, selectedTeam?.name]);
+
+  useEffect(() => {
+    if (propsMode !== 'player') {
+      setChartBootstrapPlayer(null);
+    }
+  }, [propsMode]);
+
+  useEffect(() => {
+    const id = selectedSoccerPlayer?.id?.trim().toLowerCase();
+    if (!id) return;
+    setChartBootstrapPlayer((prev) => (prev && prev.playerKey === id ? null : prev));
+  }, [selectedSoccerPlayer?.id]);
 
   useEffect(() => {
     const onDocMouseDown = (e: MouseEvent) => {
       const el = teamSearchWrapRef.current;
-      if (!el || !teamSearchOpen) return;
-      if (e.target instanceof Node && !el.contains(e.target)) {
+      const playerEl = playerSearchWrapRef.current;
+      if (el && teamSearchOpen && e.target instanceof Node && !el.contains(e.target)) {
         setTeamSearchOpen(false);
+      }
+      if (playerEl && playerSearchOpen && e.target instanceof Node && !playerEl.contains(e.target)) {
+        setPlayerSearchOpen(false);
       }
     };
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, [teamSearchOpen]);
+  }, [playerSearchOpen, teamSearchOpen]);
 
   useEffect(() => {
     if (!selectedTeam) {
@@ -701,12 +1376,21 @@ function SoccerPageContent() {
 
     const requestId = (predictedLineupRequestId.current += 1);
     const ac = new AbortController();
-    setPredictedLineupLoading(true);
+    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
+    const lineupSnap = readLineupUiSnap(href);
+    if (lineupSnap) {
+      setPredictedLineup(lineupSnap.lineup);
+      setPredictedLineupFrom(lineupSnap.lineupFrom);
+      setPredictedLineupLoading(false);
+    } else {
+      setPredictedLineupLoading(true);
+    }
     setPredictedLineupError(null);
     setPredictedLineupCacheMiss(false);
-    setPredictedLineupFrom('upcoming');
+    if (!lineupSnap) {
+      setPredictedLineupFrom('upcoming');
+    }
 
-    const href = selectedTeam.href.startsWith('/') ? selectedTeam.href : `/${selectedTeam.href}`;
     void fetch(`/api/soccer/predicted-lineup?href=${encodeURIComponent(href)}&cacheOnly=1`, {
       signal: ac.signal,
       cache: 'no-store',
@@ -721,13 +1405,18 @@ function SoccerPageContent() {
 
         if (predictedLineupRequestId.current !== requestId) return;
         setPredictedLineupCacheMiss(payload?.cache?.source === 'cache-miss');
-        setPredictedLineupFrom(payload?.lineupFrom === 'previous' ? 'previous' : 'upcoming');
-        setPredictedLineup(payload?.lineup ?? null);
+        const from = payload?.lineupFrom === 'previous' ? 'previous' : 'upcoming';
+        setPredictedLineupFrom(from);
+        const lineup = payload?.lineup ?? null;
+        setPredictedLineup(lineup);
+        writeLineupUiSnap(href, { lineup, lineupFrom: from });
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         if (predictedLineupRequestId.current !== requestId) return;
-        setPredictedLineup(null);
+        if (!readLineupUiSnap(href)) {
+          setPredictedLineup(null);
+        }
         setPredictedLineupCacheMiss(false);
         setPredictedLineupError(err instanceof Error ? err.message : 'Failed to load lineup');
       })
@@ -739,6 +1428,44 @@ function SoccerPageContent() {
 
     return () => ac.abort();
   }, [selectedTeam]);
+
+  useEffect(() => {
+    const href = String(selectedTeamHref || '').trim();
+    const matchId = String(nextFixture?.matchId || '').trim();
+    if (!href || !matchId) {
+      setSoccerOddsMarkets([]);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    const params = new URLSearchParams({ href, matchId });
+
+    fetch(`/api/soccer/odds?${params.toString()}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async (response) => {
+        const json = (await response.json().catch(() => null)) as {
+          success?: boolean;
+          error?: string;
+          groupedMarkets?: SoccerOddsMarket[];
+        } | null;
+        if (!response.ok || json?.success === false) {
+          throw new Error(json?.error || `Soccer odds request failed (${response.status})`);
+        }
+        return json;
+      })
+      .then((json) => {
+        if (!cancelled) setSoccerOddsMarkets(Array.isArray(json?.groupedMarkets) ? json.groupedMarkets : []);
+      })
+      .catch((error) => {
+        if (cancelled || error?.name === 'AbortError') return;
+        setSoccerOddsMarkets([]);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [nextFixture?.matchId, selectedTeamHref]);
 
   const nextFixtureKickoff = useMemo(
     () => (nextFixture?.kickoffUnix != null ? new Date(nextFixture.kickoffUnix * 1000) : null),
@@ -752,8 +1479,17 @@ function SoccerPageContent() {
   });
 
   const selectedHeaderTeamName = selectedTeam?.name ?? null;
-  const headerTitle = selectedHeaderTeamName ?? 'Select a team';
+  const headerTitle =
+    propsMode === 'player'
+      ? selectedSoccerPlayer?.name ?? 'Select a player'
+      : selectedHeaderTeamName ?? 'Select a team';
   const displayOpponent = nextFixture?.opponentName?.trim() ? nextFixture.opponentName.trim() : null;
+  const selectedTeamWinPercentage = useMemo(() => {
+    return calculateSoccerWinPercentageFromOdds(
+      soccerOddsMarkets,
+      getSelectedSoccerSide(selectedHeaderTeamName, nextFixture)
+    );
+  }, [nextFixture, selectedHeaderTeamName, soccerOddsMarkets]);
   const nextOpponentHrefForPanel = useMemo(() => {
     if (!displayOpponent || teamUniverse.length === 0) return null;
     const normalizeToken = (value: string | null | undefined) =>
@@ -901,14 +1637,28 @@ function SoccerPageContent() {
                     <div className="hidden lg:flex items-center gap-3 min-w-0">
                       <div className="flex flex-1 min-w-0 items-center">
                         <div className="flex items-center gap-2 min-w-0">
-                          {nextFixture?.teamLogoUrl ? (
+                          {propsMode === 'player' && selectedSoccerPlayer?.imageUrl ? (
+                            <img
+                              src={selectedSoccerPlayer.imageUrl}
+                              alt={selectedSoccerPlayer.name}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : propsMode !== 'player' && nextFixture?.teamLogoUrl ? (
                             <img
                               src={nextFixture.teamLogoUrl}
                               alt={selectedHeaderTeamName ?? 'Selected team'}
                               className="w-6 h-6 xl:w-7 xl:h-7 object-contain flex-shrink-0"
                             />
                           ) : null}
-                          <h1 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{headerTitle}</h1>
+                          <div className="min-w-0">
+                            <h1 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{headerTitle}</h1>
+                            {propsMode === 'player' && selectedSoccerPlayer ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                {selectedSoccerPlayer.teamName}
+                                {selectedSoccerPlayer.role ? ` · ${selectedSoccerPlayer.role}` : ''}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                       <div className="flex min-w-0 flex-1 justify-center">
@@ -967,12 +1717,31 @@ function SoccerPageContent() {
                           ) : null}
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0" />
+                      <div className="flex flex-1 min-w-0 justify-end">
+                        {selectedTeamWinPercentage != null ? (
+                          <div className="flex-shrink-0">
+                            <SoccerWinPercentageWheel
+                              isDark={Boolean(mounted && isDark)}
+                              winPercentage={selectedTeamWinPercentage}
+                              size={100}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="lg:hidden flex flex-col gap-0.5">
-                      <div className="w-full min-w-0">
+                    <div className="lg:hidden flex flex-col gap-0.5 relative">
+                      <div className={`w-full min-w-0 ${selectedTeamWinPercentage != null ? 'pr-[5.75rem]' : ''}`}>
                         <h1 className="text-base font-bold text-gray-900 dark:text-white text-center">{headerTitle}</h1>
                       </div>
+                      {selectedTeamWinPercentage != null ? (
+                        <div className="absolute right-0 -top-2 z-20 flex-shrink-0 pointer-events-auto">
+                          <SoccerWinPercentageWheel
+                            isDark={Boolean(mounted && isDark)}
+                            winPercentage={selectedTeamWinPercentage}
+                            size={85}
+                          />
+                        </div>
+                      ) : null}
                       <div className="flex flex-col gap-0.5 w-full min-w-0 items-center">
                         <div className="flex justify-center">
                           <div className="flex items-center gap-2 sm:gap-2.5 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-2 py-1 sm:px-2.5 sm:py-1.5 min-w-0">
@@ -1022,84 +1791,165 @@ function SoccerPageContent() {
                       </div>
                     </div>
 
-                    <div
-                      ref={teamSearchWrapRef}
-                      className="w-full min-w-0 border-t border-gray-200 dark:border-gray-700/80 pt-2 mt-1.5 lg:mt-2 lg:pt-2"
-                    >
-                      <div className="relative mx-auto max-w-xl lg:max-w-lg">
-                        <Search
-                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                          aria-hidden
-                        />
-                        <input
-                          id="soccer-team-search"
-                          type="search"
-                          autoComplete="off"
-                          value={teamSearchQuery}
-                          onChange={(e) => {
-                            setTeamSearchQuery(e.target.value);
-                            setTeamSearchOpen(true);
-                          }}
-                          onFocus={() => setTeamSearchOpen(true)}
-                          placeholder={
-                            teamUniverse.length
-                              ? `Search ${teamUniverse.length} teams by name, league, or country…`
-                              : 'Teams load with the sample — refresh if empty…'
-                          }
-                          className={`w-full rounded-lg border py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:placeholder-gray-400 ${
-                            mounted && isDark
-                              ? 'border-gray-600 bg-[#0f172a] text-white'
-                              : 'border-gray-300 bg-gray-50 text-gray-900'
-                          }`}
-                        />
-                        {teamSearchOpen && teamSearchQuery.trim() ? (
-                          <div
-                            className={`absolute left-0 right-0 top-full z-[80] mt-1 max-h-64 overflow-y-auto rounded-lg border shadow-lg custom-scrollbar ${
-                              mounted && isDark ? 'border-gray-600 bg-[#0f172a]' : 'border-gray-200 bg-white'
+                    <div className="w-full min-w-0 border-t border-gray-200 dark:border-gray-700/80 pt-2 mt-1.5 lg:mt-2 lg:pt-2">
+                      {propsMode === 'player' ? (
+                        <div ref={playerSearchWrapRef} className="relative mx-auto max-w-xl lg:max-w-lg">
+                          <Search
+                            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                            aria-hidden
+                          />
+                          <input
+                            id="soccer-player-search"
+                            type="search"
+                            autoComplete="off"
+                            value={playerSearchQuery}
+                            onChange={(e) => {
+                              setPlayerSearchQuery(e.target.value);
+                              setPlayerSearchOpen(true);
+                            }}
+                            onFocus={() => setPlayerSearchOpen(true)}
+                            placeholder="Search soccer players..."
+                            className={`w-full rounded-lg border py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:placeholder-gray-400 ${
+                              mounted && isDark
+                                ? 'border-gray-600 bg-[#0f172a] text-white'
+                                : 'border-gray-300 bg-gray-50 text-gray-900'
                             }`}
-                          >
-                            {filteredTeams.length === 0 ? (
-                              <div className={`px-3 py-3 text-sm ${emptyText}`}>No teams match</div>
-                            ) : (
-                              <ul className="py-1">
-                                {filteredTeams.map((team) => {
-                                  const meta =
-                                    team.competitions.length > 0
-                                      ? team.competitions
-                                          .map((c) => [c.country, c.competition].filter(Boolean).join(' · '))
-                                          .join(' | ')
-                                      : '';
-                                  return (
-                                    <li key={team.href}>
+                          />
+                          {playerSearchOpen ? (
+                            <div
+                              className={`absolute left-0 right-0 top-full z-[80] mt-1 max-h-64 overflow-y-auto rounded-lg border shadow-lg custom-scrollbar ${
+                                mounted && isDark ? 'border-gray-600 bg-[#0f172a]' : 'border-gray-200 bg-white'
+                              }`}
+                            >
+                              {filteredSoccerPlayers.length === 0 ? (
+                                <div className={`px-3 py-3 text-sm ${emptyText}`}>
+                                  {soccerPlayerUniverse.length === 0
+                                    ? 'No squad list loaded yet — wait a moment, or refresh. Charts need batch-scraped games for stats.'
+                                    : 'No players match'}
+                                </div>
+                              ) : (
+                                <ul className="py-1">
+                                  {filteredSoccerPlayers.map((player) => (
+                                    <li key={`${player.id}-${player.teamName}`}>
                                       <button
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => {
-                                          setPropsMode('team');
-                                          setSelectedTeam(team);
-                                          setTeamSearchQuery(team.name);
-                                          setTeamSearchOpen(false);
-                                          updateTeamUrl(team.href);
+                                          setSelectedSoccerPlayer(player);
+                                          setPlayerSearchQuery(player.name);
+                                          setPlayerSearchOpen(false);
+                                          if (player.teamHref) {
+                                            const matchedTeam = teamUniverse.find((team) => normalizeTeamHref(team.href) === normalizeTeamHref(player.teamHref)) ?? null;
+                                            if (matchedTeam) {
+                                              setSelectedTeam(matchedTeam);
+                                              setTeamSearchQuery(matchedTeam.name);
+                                              updateTeamUrl(matchedTeam.href);
+                                            }
+                                          }
                                         }}
-                                        className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
-                                          selectedTeam?.href === team.href
-                                            ? 'bg-purple-50 dark:bg-purple-950/40'
-                                            : ''
+                                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
+                                          selectedSoccerPlayer?.id === player.id ? 'bg-purple-50 dark:bg-purple-950/40' : ''
                                         }`}
                                       >
-                                        <span className="font-medium text-gray-900 dark:text-white">{team.name}</span>
-                                        {meta ? (
-                                          <span className="text-xs text-gray-500 dark:text-gray-400">{meta}</span>
-                                        ) : null}
+                                        {player.imageUrl ? (
+                                          <img src={player.imageUrl} alt={player.name} className="h-8 w-8 rounded-full object-cover" />
+                                        ) : (
+                                          <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${mounted && isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-700'}`}>
+                                            {player.name
+                                              .split(/\s+/)
+                                              .filter(Boolean)
+                                              .map((w) => w[0])
+                                              .join('')
+                                              .slice(0, 2)
+                                              .toUpperCase() || '?'}
+                                          </span>
+                                        )}
+                                        <span className="min-w-0">
+                                          <span className="block truncate font-medium text-gray-900 dark:text-white">{player.name}</span>
+                                          <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+                                            {player.teamName}
+                                            {player.role ? ` · ${player.role}` : ''}
+                                          </span>
+                                        </span>
                                       </button>
                                     </li>
-                                  );
-                                })}
-                              </ul>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div ref={teamSearchWrapRef} className="relative mx-auto max-w-xl lg:max-w-lg">
+                          <Search
+                            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                            aria-hidden
+                          />
+                          <input
+                            id="soccer-team-search"
+                            type="search"
+                            autoComplete="off"
+                            value={teamSearchQuery}
+                            onChange={(e) => {
+                              setTeamSearchQuery(e.target.value);
+                              setTeamSearchOpen(true);
+                            }}
+                            onFocus={() => setTeamSearchOpen(true)}
+                            placeholder={
+                              teamUniverse.length
+                                ? `Search ${teamUniverse.length} teams by name, league, or country...`
+                                : 'Teams load with the sample - refresh if empty...'
+                            }
+                            className={`w-full rounded-lg border py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:placeholder-gray-400 ${
+                              mounted && isDark
+                                ? 'border-gray-600 bg-[#0f172a] text-white'
+                                : 'border-gray-300 bg-gray-50 text-gray-900'
+                            }`}
+                          />
+                          {teamSearchOpen && teamSearchQuery.trim() ? (
+                            <div
+                              className={`absolute left-0 right-0 top-full z-[80] mt-1 max-h-64 overflow-y-auto rounded-lg border shadow-lg custom-scrollbar ${
+                                mounted && isDark ? 'border-gray-600 bg-[#0f172a]' : 'border-gray-200 bg-white'
+                              }`}
+                            >
+                              {filteredTeams.length === 0 ? (
+                                <div className={`px-3 py-3 text-sm ${emptyText}`}>No teams match</div>
+                              ) : (
+                                <ul className="py-1">
+                                  {filteredTeams.map((team) => {
+                                    const meta =
+                                      team.competitions.length > 0
+                                        ? team.competitions
+                                            .map((c) => [c.country, c.competition].filter(Boolean).join(' · '))
+                                            .join(' | ')
+                                        : '';
+                                    return (
+                                      <li key={team.href}>
+                                        <button
+                                          type="button"
+                                          onMouseDown={(e) => e.preventDefault()}
+                                          onClick={() => {
+                                            setSelectedTeam(team);
+                                            setTeamSearchQuery(team.name);
+                                            setTeamSearchOpen(false);
+                                            updateTeamUrl(team.href);
+                                          }}
+                                          className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
+                                            selectedTeam?.href === team.href ? 'bg-purple-50 dark:bg-purple-950/40' : ''
+                                          }`}
+                                        >
+                                          <span className="font-medium text-gray-900 dark:text-white">{team.name}</span>
+                                          {meta ? <span className="text-xs text-gray-500 dark:text-gray-400">{meta}</span> : null}
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1110,15 +1960,26 @@ function SoccerPageContent() {
                   style={{ outline: 'none' }}
                 >
                   <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                    <div
-                      className={`flex-shrink-0 border-b px-3 py-2.5 text-sm font-semibold ${
-                        mounted && isDark ? 'border-gray-700 text-gray-100' : 'border-gray-200 text-gray-900'
-                      }`}
-                    >
-                      Team stats chart{selectedTeam ? ` · ${selectedTeam.name}` : ''}
-                    </div>
+                    {propsMode === 'team' ? (
+                      <div
+                        className={`flex-shrink-0 border-b px-3 py-2.5 text-sm font-semibold ${
+                          mounted && isDark ? 'border-gray-700 text-gray-100' : 'border-gray-200 text-gray-900'
+                        }`}
+                      >
+                        Team stats chart{selectedTeam ? ` · ${selectedTeam.name}` : ''}
+                      </div>
+                    ) : null}
                     <div className="min-h-0 flex-1 overflow-hidden px-1 py-1 sm:px-2 sm:py-2">
-                      {!selectedTeam ? (
+                      {propsMode === 'player' ? (
+                        <SoccerPlayerPropsTestCard
+                          teamHref={selectedTeamHref || null}
+                          playerKey={selectedSoccerPlayer?.id ?? chartBootstrapPlayer?.playerKey ?? null}
+                          displayName={selectedSoccerPlayer?.name ?? chartBootstrapPlayer?.displayName ?? null}
+                          nextOpponentName={displayOpponent}
+                          isDark={Boolean(mounted && isDark)}
+                          emptyTextClass={emptyText}
+                        />
+                      ) : !selectedTeam ? (
                         <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
                           Select a team above to chart Soccerway match stats.
                         </div>
@@ -1172,43 +2033,45 @@ function SoccerPageContent() {
                   </div>
                 </div>
 
-                <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
-                  <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                    Supporting stats
-                  </h3>
-                  <div className="min-h-[220px] px-0 sm:px-0">
-                    {!selectedTeam ? (
-                      <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
-                        Select a team above to load supporting stats.
-                      </div>
-                    ) : syncedStatsLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="space-y-3 w-full max-w-md">
-                          <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`} />
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
-                            <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                {propsMode === 'team' && (
+                  <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
+                    <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      Supporting stats
+                    </h3>
+                    <div className="min-h-[220px] px-0 sm:px-0">
+                      {!selectedTeam ? (
+                        <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
+                          Select a team above to load supporting stats.
+                        </div>
+                      ) : syncedStatsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="space-y-3 w-full max-w-md">
+                            <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`} />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                              <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : recentMatchesError ? (
-                      <div className="px-3 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
-                    ) : displayedRecentMatches.length === 0 ? (
-                      <div className={`px-3 py-4 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
-                    ) : (
-                      <SoccerSupportingStats
-                        matches={displayedRecentMatches}
-                        selectedTeamName={selectedTeam.name}
-                        nextOpponentName={displayOpponent}
-                        timeframe={chartTimeframe}
-                        teamScope={chartTeamScope}
-                        competitionFilter={chartCompetition}
-                        mainChartStat={mainChartStat}
-                        isDark={Boolean(mounted && isDark)}
-                      />
-                    )}
+                      ) : recentMatchesError ? (
+                        <div className="px-3 py-4 text-sm text-red-600 dark:text-red-400">{recentMatchesError}</div>
+                      ) : displayedRecentMatches.length === 0 ? (
+                        <div className={`px-3 py-4 text-center text-sm ${emptyText}`}>{recentMatchesEmptyMessage}</div>
+                      ) : (
+                        <SoccerSupportingStats
+                          matches={displayedRecentMatches}
+                          selectedTeamName={selectedTeam.name}
+                          nextOpponentName={displayOpponent}
+                          timeframe={chartTimeframe}
+                          teamScope={chartTeamScope}
+                          competitionFilter={chartCompetition}
+                          mainChartStat={mainChartStat}
+                          isDark={Boolean(mounted && isDark)}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
                   {!selectedTeam ? (
@@ -1233,6 +2096,7 @@ function SoccerPageContent() {
                       lineup={predictedLineup}
                       isDark={Boolean(mounted && isDark)}
                       lineupFrom={predictedLineupFrom}
+                      onLineupPlayerClick={handleLineupPlayerClick}
                     />
                   )}
                 </div>
@@ -1319,7 +2183,7 @@ function SoccerPageContent() {
                     nextCompetitionName={nextFixture?.competitionName ?? null}
                     nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
                     emptyTextClass={emptyText}
-                    showSkeleton={showFixtureDependentSkeleton}
+                    showSkeleton={fixtureGatedPanelSkeleton}
                   />
                 </div>
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
@@ -1334,8 +2198,8 @@ function SoccerPageContent() {
                     nextCompetitionName={nextFixture?.competitionName ?? null}
                     nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
                     emptyTextClass={emptyText}
-                    showSkeleton={showFixtureDependentSkeleton}
-                    comparisonShowSkeleton={syncedStatsLoading}
+                    showSkeleton={fixtureGatedPanelSkeleton}
+                    comparisonShowSkeleton={propsMode === 'team' && syncedStatsLoading}
                   />
                 </div>
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${AFL_DASH_CARD_GLOW} overflow-hidden`}>
@@ -1346,7 +2210,7 @@ function SoccerPageContent() {
                     opponentName={displayOpponent}
                     opponentHref={nextOpponentHrefForPanel}
                     emptyTextClass={emptyText}
-                    showSkeleton={showFixtureDependentSkeleton}
+                    showSkeleton={fixtureGatedPanelSkeleton}
                   />
                 </div>
               </div>

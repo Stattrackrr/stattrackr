@@ -44,7 +44,14 @@ const hotCache = new Map<string, HotCacheEntry>();
 const inflightReads = new Map<string, Promise<unknown | null>>();
 const recentWrites = new Map<string, RecentWriteEntry>();
 
-export type SoccerCacheType = 'team_results' | 'match_stats' | 'team_index' | 'next_fixture' | 'predicted_lineup' | 'injuries';
+export type SoccerCacheType =
+  | 'team_results'
+  | 'match_stats'
+  | 'team_index'
+  | 'next_fixture'
+  | 'predicted_lineup'
+  | 'injuries'
+  | 'player_stats';
 
 export type SoccerTeamResultsCachePayload = {
   teamHref: string;
@@ -118,6 +125,17 @@ export type SoccerInjuriesCachePayload = {
   injuries: SoccerInjuryRow[];
 };
 
+export type SoccerPlayerStatsCachePayload<TMatch = unknown> = {
+  teamHref: string;
+  playerName: string;
+  playerKey: string;
+  limit: number;
+  categories: string[];
+  matches: TMatch[];
+  source: 'soccerway';
+  generatedAt: string;
+};
+
 export interface SoccerCacheEntry<T = unknown> {
   cache_key: string;
   cache_type: SoccerCacheType;
@@ -185,6 +203,12 @@ export function buildSoccerPredictedLineupCacheKey(teamHref: string): string {
 
 export function buildSoccerInjuriesCacheKey(teamHref: string): string {
   return `soccer:injuries:${SOCCER_INJURIES_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}`;
+}
+
+export function buildSoccerPlayerStatsCacheKey(teamHref: string, playerKey: string, limit: number, categories: string[] = []): string {
+  const limitKey = limit > 0 ? `l${limit}` : 'all';
+  const categoryKey = categories.length ? categories.map((category) => String(category).trim().toLowerCase()).filter(Boolean).join('-') : 'all';
+  return `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}:${String(playerKey || '').trim().toLowerCase()}:${limitKey}:${categoryKey}`;
 }
 
 function attachCacheMetadata<T>(value: T, row: Record<string, unknown>): T {
@@ -504,6 +528,44 @@ export async function setSoccerInjuriesCache(
   return setSoccerCache(
     buildSoccerInjuriesCacheKey(normalized),
     'injuries',
+    payload,
+    ttlMinutes,
+    { teamHref: normalized, fetchedAt: payload.generatedAt },
+    quiet
+  );
+}
+
+export async function getSoccerPlayerStatsCache<TMatch = unknown>(
+  teamHref: string,
+  playerKey: string,
+  limit: number,
+  categories: string[] = [],
+  options: GetCacheOptions = {}
+): Promise<SoccerPlayerStatsCachePayload<TMatch> | null> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  const normalizedPlayerKey = String(playerKey || '').trim().toLowerCase();
+  if (!normalized || !normalizedPlayerKey) return null;
+  return getSoccerCache<SoccerPlayerStatsCachePayload<TMatch>>(
+    buildSoccerPlayerStatsCacheKey(normalized, normalizedPlayerKey, limit, categories),
+    options
+  );
+}
+
+export async function setSoccerPlayerStatsCache<TMatch = unknown>(
+  teamHref: string,
+  playerKey: string,
+  limit: number,
+  categories: string[],
+  payload: SoccerPlayerStatsCachePayload<TMatch>,
+  ttlMinutes: number,
+  quiet = false
+): Promise<boolean> {
+  const normalized = normalizeSoccerTeamHref(teamHref);
+  const normalizedPlayerKey = String(playerKey || '').trim().toLowerCase();
+  if (!normalized || !normalizedPlayerKey || !Array.isArray(payload?.matches)) return false;
+  return setSoccerCache(
+    buildSoccerPlayerStatsCacheKey(normalized, normalizedPlayerKey, limit, categories),
+    'player_stats',
     payload,
     ttlMinutes,
     { teamHref: normalized, fetchedAt: payload.generatedAt },

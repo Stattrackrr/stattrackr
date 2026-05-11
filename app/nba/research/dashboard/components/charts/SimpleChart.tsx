@@ -76,6 +76,8 @@ interface SimpleChartProps {
   hideBarValueLabels?: boolean;
   /** When true, hide the horizontal betting/reference line overlay. */
   hideBettingLineOverlay?: boolean;
+  /** When true, prevent Recharts from replaying bar animations on parent re-renders. */
+  disableBarAnimation?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -120,6 +122,7 @@ const SimpleChart = memo(function SimpleChart({
   chartBottomMargin = 19,
   hideBarValueLabels = false,
   hideBettingLineOverlay = false,
+  disableBarAnimation = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -1110,6 +1113,8 @@ const SimpleChart = memo(function SimpleChart({
             <Bar
               key={`bar-${selectedStat}-${mergedChartData.length}`}
               dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
+              isAnimationActive={!disableBarAnimation}
+              animationDuration={disableBarAnimation ? 0 : undefined}
               radius={[10, 10, 10, 10]}
               shape={isCompositeStat ? (props: any) => {
                 const { x, y, width, height, payload } = props;

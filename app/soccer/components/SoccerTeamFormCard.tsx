@@ -415,25 +415,35 @@ export function SoccerTeamFormCard({
   const [selectedStats, setSelectedStats] = useState<FormStatId[]>([]);
   const [showStatPicker, setShowStatPicker] = useState(false);
 
-  const canFetch = Boolean(teamHref?.trim() && opponentHref?.trim() && teamName?.trim() && opponentName?.trim());
+  const hasTeamContext = Boolean(teamHref?.trim() && teamName?.trim());
+  const opponentFetchReady = Boolean(opponentHref?.trim() && opponentName?.trim());
 
   useEffect(() => {
-    if (!canFetch || !teamHref || !opponentHref) {
+    if (!hasTeamContext || !teamHref) {
       setTeamMatches([]);
       setOpponentMatches([]);
       setError(null);
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
     const controller = new AbortController();
     const cachedSelectedMatches = readCachedTeamFormMatches(teamHref);
-    const cachedOpponentMatches = readCachedTeamFormMatches(opponentHref);
     const hasCachedSelectedMatches = cachedSelectedMatches.length > 0;
-    const hasCachedOpponentMatches = cachedOpponentMatches.length > 0;
     if (hasCachedSelectedMatches) setTeamMatches(cachedSelectedMatches);
-    if (hasCachedOpponentMatches) setOpponentMatches(cachedOpponentMatches);
-    setLoading(!hasCachedSelectedMatches && !hasCachedOpponentMatches);
+
+    let cachedOpponentMatches: SoccerwayRecentMatch[] = [];
+    let hasCachedOpponentMatches = false;
+    if (opponentFetchReady && opponentHref) {
+      cachedOpponentMatches = readCachedTeamFormMatches(opponentHref);
+      hasCachedOpponentMatches = cachedOpponentMatches.length > 0;
+      if (hasCachedOpponentMatches) setOpponentMatches(cachedOpponentMatches);
+    } else {
+      setOpponentMatches([]);
+    }
+
+    setLoading(!hasCachedSelectedMatches && (!opponentFetchReady || !hasCachedOpponentMatches));
     setError(null);
 
     const fetchMatches = async (href: string) => {
@@ -448,32 +458,43 @@ export function SoccerTeamFormCard({
       return Array.isArray(payload?.matches) ? payload.matches : [];
     };
 
-    void Promise.all([fetchMatches(teamHref), fetchMatches(opponentHref)])
-      .then(([selectedMatches, opponentSideMatches]) => {
-        if (cancelled) return;
-        setTeamMatches(selectedMatches);
-        setOpponentMatches(opponentSideMatches);
-        writeCachedTeamFormMatches(teamHref, selectedMatches);
-        writeCachedTeamFormMatches(opponentHref, opponentSideMatches);
-      })
-      .catch((err: unknown) => {
+    void (async () => {
+      try {
+        if (opponentFetchReady && opponentHref) {
+          const [selectedMatches, opponentSideMatches] = await Promise.all([
+            fetchMatches(teamHref),
+            fetchMatches(opponentHref),
+          ]);
+          if (cancelled) return;
+          setTeamMatches(selectedMatches);
+          setOpponentMatches(opponentSideMatches);
+          writeCachedTeamFormMatches(teamHref, selectedMatches);
+          writeCachedTeamFormMatches(opponentHref, opponentSideMatches);
+        } else {
+          const selectedMatches = await fetchMatches(teamHref);
+          if (cancelled) return;
+          setTeamMatches(selectedMatches);
+          writeCachedTeamFormMatches(teamHref, selectedMatches);
+          setOpponentMatches([]);
+        }
+      } catch (err: unknown) {
         if (cancelled) return;
         if (err instanceof Error && err.name === 'AbortError') return;
-        if (!hasCachedSelectedMatches && !hasCachedOpponentMatches) {
+        if (!hasCachedSelectedMatches && (!opponentFetchReady || !hasCachedOpponentMatches)) {
           setTeamMatches([]);
           setOpponentMatches([]);
           setError(err instanceof Error ? err.message : 'Failed to load team form');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [canFetch, opponentHref, teamHref]);
+  }, [hasTeamContext, opponentFetchReady, opponentHref, teamHref, teamName]);
 
   const seasonYear = getCurrentSoccerSeasonYear();
   const selectedSummary = useMemo(
@@ -541,7 +562,7 @@ export function SoccerTeamFormCard({
     );
   }
 
-  if (!canFetch) {
+  if (!hasTeamContext) {
     return (
       <div className="w-full min-w-0 h-full flex flex-col">
         {!hideTitle ? <TeamFormHeader /> : null}
