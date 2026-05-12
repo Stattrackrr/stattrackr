@@ -1,8 +1,6 @@
 'use client';
 
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
-import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
-import { useTheme } from '@/contexts/ThemeContext';
 import {
   CHAT_MAX_MESSAGE_LENGTH,
   CHAT_REACTION_OPTIONS,
@@ -21,7 +19,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
@@ -260,7 +258,6 @@ function markChatRoomAsRead(userId: string, roomId: string, timestamp = new Date
 
 export default function ChatPageClient() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
 
   const [viewer, setViewer] = useState<ViewerState>(DEFAULT_VIEWER);
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>('american');
@@ -289,13 +286,7 @@ export default function ChatPageClient() {
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
   const [composerFocused, setComposerFocused] = useState(false);
   const [mobileKeyboardOpen, setMobileKeyboardOpen] = useState(false);
-  const [showJournalDropdown, setShowJournalDropdown] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
 
-  const journalDropdownRef = useRef<HTMLDivElement>(null);
-  const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const mobileComposerRef = useRef<HTMLDivElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
@@ -327,7 +318,6 @@ export default function ChatPageClient() {
     [messages]
   );
   const isMessageCooldownActive = Boolean(messageCooldownUntil && messageCooldownUntil > Date.now());
-  const shouldHideMobileNavigation = composerFocused || mobileKeyboardOpen;
   const timelineItems = useMemo(() => {
     const now = new Date();
     const items: ChatTimelineItem[] = [];
@@ -1284,9 +1274,7 @@ export default function ChatPageClient() {
       >
         <div className="mx-auto h-full w-full max-w-[1550px]" style={{ paddingLeft: 0, paddingRight: '0px' }}>
           <div
-            className={`dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-3 sm:pt-4 lg:px-3 lg:pb-4 ${
-              mobileKeyboardOpen ? 'pb-2' : 'pb-24'
-            }`}
+            className="dashboard-container flex h-full min-h-0 w-full flex-col px-1.5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 sm:px-3 sm:pt-4 lg:px-3 lg:pb-4"
           >
           {viewer.loading ? (
             <div className="flex flex-1 items-center justify-center">
@@ -1327,8 +1315,8 @@ export default function ChatPageClient() {
             </div>
           ) : (
             <section className="flex min-h-0 flex-1 flex-col sm:h-[calc(100dvh-9rem)] lg:h-[calc(100vh-1rem)] lg:max-w-[1480px] lg:pr-3">
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#0f1a2b] lg:h-full">
-                <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent dark:bg-transparent lg:h-full lg:rounded-3xl lg:border lg:border-gray-200 lg:bg-white lg:shadow-sm dark:lg:border-gray-700 dark:lg:bg-[#0f1a2b]">
+                <div className="border-b border-gray-200 px-2 py-3 dark:border-gray-700 sm:px-5 sm:py-4">
                   {loadingRooms ? (
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1340,11 +1328,29 @@ export default function ChatPageClient() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {isPicksRoom ? 'Picks' : 'Community Chat'}
-                          </h2>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="lg:hidden">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof window !== 'undefined' && window.history.length > 1) {
+                                router.back();
+                              } else {
+                                router.push('/props');
+                              }
+                            }}
+                            aria-label="Return to previous page"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:bg-[#111c2d] dark:text-gray-200 dark:hover:bg-[#162338]"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                            Return
+                          </button>
+                        </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {isPicksRoom ? 'Picks' : 'Community Chat'}
+                            </h2>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {isPicksRoom
                               ? 'Follow official StatTrackr plays and react with the community.'
@@ -1362,6 +1368,7 @@ export default function ChatPageClient() {
                             {pinnedMessages.length}+ pinned
                           </button>
                         ) : null}
+                      </div>
                       </div>
                       {rooms.length > 1 ? (
                         <div className="flex rounded-2xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-[#111827]">
@@ -1422,7 +1429,7 @@ export default function ChatPageClient() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {pinnedMessages.length > 0 ? (
                         <div
                           id="chat-pinned-messages"
@@ -1489,7 +1496,7 @@ export default function ChatPageClient() {
                             {!isOwnMessage && <ChatAvatar name={authorName} avatarUrl={message.avatar_url} />}
                             <div className={isEditingMessage ? 'w-[92%] max-w-[720px] sm:w-[78%]' : 'max-w-[76%] sm:max-w-[78%]'}>
                               <div
-                                className={`rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 ${
+                                className={`rounded-2xl px-2.5 py-1.5 sm:px-3 sm:py-2 ${
                                   isOwnMessage
                                     ? 'bg-purple-600 text-white'
                                     : 'bg-gray-100 text-gray-900 dark:bg-[#162338] dark:text-white'
@@ -1574,7 +1581,7 @@ export default function ChatPageClient() {
                                   </div>
                                 ) : (
                                   <>
-                                    <p className={`mt-1 whitespace-pre-wrap break-words text-[13px] leading-5 ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                                    <p className={`mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-snug ${isOwnMessage ? 'text-white' : 'text-gray-700 dark:text-gray-200'}`}>
                                       {message.body}
                                     </p>
                                     {isEditedMessage ? (
@@ -1924,38 +1931,6 @@ export default function ChatPageClient() {
           </div>
         </div>
       </main>
-
-      {!shouldHideMobileNavigation ? (
-        <MobileBottomNavigation
-          hasPremium={viewer.hasPremium}
-          username={viewer.username}
-          userEmail={viewer.userEmail}
-          avatarUrl={viewer.avatarUrl}
-          showJournalDropdown={showJournalDropdown}
-          showProfileDropdown={showProfileDropdown}
-          showSettingsDropdown={showSettingsDropdown}
-          setShowJournalDropdown={setShowJournalDropdown}
-          setShowProfileDropdown={setShowProfileDropdown}
-          setShowSettingsDropdown={setShowSettingsDropdown}
-          profileDropdownRef={profileDropdownRef}
-          journalDropdownRef={journalDropdownRef}
-          settingsDropdownRef={settingsDropdownRef}
-          onProfileClick={() => window.dispatchEvent(new CustomEvent('open-profile-modal'))}
-          onSubscription={handleSubscriptionClick}
-          onLogout={handleLogout}
-          theme={theme}
-          oddsFormat={oddsFormat}
-          setTheme={setTheme}
-          setOddsFormat={(nextFormat) => {
-            setOddsFormat(nextFormat);
-            try {
-              window.localStorage.setItem('oddsFormat', nextFormat);
-            } catch {
-              // Ignore local storage access issues.
-            }
-          }}
-        />
-      ) : null}
     </div>
   );
 }
