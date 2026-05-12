@@ -40,7 +40,8 @@ export function AflPropsPlayerAvatar({
           alt=""
           className="w-full h-full object-cover object-top"
           loading="eager"
-          fetchPriority="low"
+          fetchPriority="auto"
+          decoding="async"
           onError={() => setImgFailed(true)}
         />
       ) : (

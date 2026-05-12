@@ -5,7 +5,7 @@ import { MobileBottomNavigation } from "@/app/nba/research/dashboard/components/
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, preload as reactPreload } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
@@ -411,6 +411,9 @@ function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl'; i
           src={src}
           alt={isAfl ? 'AFL' : 'NBA'}
           className={imgClass}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           onError={() => setImgError(true)}
         />
       ) : (
@@ -487,6 +490,48 @@ const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list in
 const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
 const AFL_TEAM_LOGOS_CACHE_TS_KEY = 'afl_team_logos_cache_ts_v1';
 const AFL_TEAM_LOGOS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+/** Mirror of AFL team logos in localStorage so they survive tab close/refresh (cache key + TS share TTL). */
+const AFL_TEAM_LOGOS_LS_KEY = 'afl_team_logos_ls_v1';
+const AFL_TEAM_LOGOS_LS_TS_KEY = 'afl_team_logos_ls_ts_v1';
+const AFL_TEAM_LOGOS_LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/** Mirror of resolved AFL portrait URLs (player name -> url) for fast cross-session paint. */
+const AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX = 'st_afl_portrait_extras_ls_v';
+const AFL_PORTRAIT_EXTRAS_LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Tell the browser to prefetch an image URL so it lands in the HTTP cache before
+ * the corresponding <img> renders. No-op for empty/invalid URLs and on the server.
+ * Uses React 19's preload() to inject <link rel="preload" as="image"> when possible,
+ * and falls back to a detached Image() so cache-warming still works in older runtimes.
+ */
+function warmImage(href: string | null | undefined): void {
+  if (!href || typeof href !== 'string') return;
+  const trimmed = href.trim();
+  if (!trimmed) return;
+  try {
+    if (typeof reactPreload === 'function') {
+      reactPreload(trimmed, { as: 'image' });
+      return;
+    }
+  } catch {
+    // fall through to Image() warm
+  }
+  if (typeof window === 'undefined') return;
+  try {
+    const img = new window.Image();
+    img.decoding = 'async';
+    img.src = trimmed;
+  } catch {
+    // ignore
+  }
+}
+
+// Static sport logos used above the fold on the props page – warm immediately at module load
+// so the browser fetches them in parallel with the JS bundle and they're ready on first paint.
+if (typeof window !== 'undefined') {
+  warmImage('/images/nba-logo.png');
+  warmImage('/images/afl-logo.png');
+}
 
 export default function NBALandingPage() {
   const router = useRouter();
@@ -1325,8 +1370,11 @@ export default function NBALandingPage() {
         combinedPropsFetchCompleteRef.current = restoredCombinedCache;
         setCombinedPropsLoading(!restoredCombinedCache);
       }
-      // 5) AFL team logos cache for instant logo-only matchup rendering
+      // 5) AFL team logos cache for instant logo-only matchup rendering.
+      //    Prefer sessionStorage (fresh-this-tab), then fall back to localStorage so a
+      //    fresh tab open still gets logos painted from cache instead of waiting on the API.
       try {
+        let logoMap: Record<string, string> | null = null;
         const logosRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
         const logosTsRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_TS_KEY);
         const logosTs = logosTsRaw ? parseInt(logosTsRaw, 10) : 0;
@@ -1334,8 +1382,25 @@ export default function NBALandingPage() {
         if (logosRaw && logosAge < AFL_TEAM_LOGOS_CACHE_TTL_MS) {
           const parsed = JSON.parse(logosRaw);
           if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-            setAflLogoByTeam(parsed as Record<string, string>);
+            logoMap = parsed as Record<string, string>;
           }
+        }
+        if (!logoMap) {
+          const lsRaw = localStorage.getItem(AFL_TEAM_LOGOS_LS_KEY);
+          const lsTsRaw = localStorage.getItem(AFL_TEAM_LOGOS_LS_TS_KEY);
+          const lsTs = lsTsRaw ? parseInt(lsTsRaw, 10) : 0;
+          const lsAge = Number.isFinite(lsTs) ? Date.now() - lsTs : Infinity;
+          if (lsRaw && lsAge < AFL_TEAM_LOGOS_LS_TTL_MS) {
+            const parsed = JSON.parse(lsRaw);
+            if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+              logoMap = parsed as Record<string, string>;
+            }
+          }
+        }
+        if (logoMap) {
+          setAflLogoByTeam(logoMap);
+          // Warm every team logo URL up-front so matchups paint instantly the moment rows render.
+          for (const url of Object.values(logoMap)) warmImage(url);
         }
       } catch {
         // ignore
@@ -2023,6 +2088,7 @@ export default function NBALandingPage() {
     if (propsSport !== 'afl' && propsSport !== 'combined') return;
     let hasFreshCache = false;
     try {
+      let cachedMap: Record<string, string> | null = null;
       const cachedRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
       const cachedTsRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_TS_KEY);
       const cachedTs = cachedTsRaw ? parseInt(cachedTsRaw, 10) : 0;
@@ -2030,9 +2096,34 @@ export default function NBALandingPage() {
       if (cachedRaw && age < AFL_TEAM_LOGOS_CACHE_TTL_MS) {
         const parsed = JSON.parse(cachedRaw);
         if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-          setAflLogoByTeam(parsed as Record<string, string>);
-          hasFreshCache = true;
+          cachedMap = parsed as Record<string, string>;
         }
+      }
+      // Fall back to longer-lived localStorage mirror so refreshed/new tabs still paint logos
+      // from cache (sessionStorage is scoped per-tab).
+      if (!cachedMap) {
+        const lsRaw = localStorage.getItem(AFL_TEAM_LOGOS_LS_KEY);
+        const lsTsRaw = localStorage.getItem(AFL_TEAM_LOGOS_LS_TS_KEY);
+        const lsTs = lsTsRaw ? parseInt(lsTsRaw, 10) : 0;
+        const lsAge = Number.isFinite(lsTs) ? Date.now() - lsTs : Infinity;
+        if (lsRaw && lsAge < AFL_TEAM_LOGOS_LS_TTL_MS) {
+          const parsed = JSON.parse(lsRaw);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            cachedMap = parsed as Record<string, string>;
+            // Re-seed session cache for the rest of this tab's lifetime.
+            try {
+              sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_KEY, JSON.stringify(cachedMap));
+              sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_TS_KEY, Date.now().toString());
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+      if (cachedMap) {
+        setAflLogoByTeam(cachedMap);
+        for (const url of Object.values(cachedMap)) warmImage(url);
+        hasFreshCache = true;
       }
     } catch {
       // ignore cache read errors
@@ -2046,9 +2137,15 @@ export default function NBALandingPage() {
       .then((data: { logos?: Record<string, string> } | null) => {
         if (data?.logos && typeof data.logos === 'object' && Object.keys(data.logos).length > 0) {
           setAflLogoByTeam(data.logos);
+          // Warm every logo URL the moment we know it so rows paint without a per-image delay.
+          for (const url of Object.values(data.logos)) warmImage(url);
           try {
-            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_KEY, JSON.stringify(data.logos));
-            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_TS_KEY, Date.now().toString());
+            const serialized = JSON.stringify(data.logos);
+            const now = Date.now().toString();
+            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_KEY, serialized);
+            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_TS_KEY, now);
+            localStorage.setItem(AFL_TEAM_LOGOS_LS_KEY, serialized);
+            localStorage.setItem(AFL_TEAM_LOGOS_LS_TS_KEY, now);
           } catch {
             // ignore cache write errors
           }
@@ -4512,6 +4609,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const AFL_PORTRAIT_RESOLVER_VERSION = '9';
   const AFL_PORTRAIT_VERSION_KEY = 'st_afl_portrait_resolver_v';
   const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v9';
+  const AFL_PORTRAIT_EXTRAS_LS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX}${AFL_PORTRAIT_RESOLVER_VERSION}`;
+  const AFL_PORTRAIT_EXTRAS_LS_TS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY}_ts`;
   const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
   const AFL_PORTRAIT_RETRY_DELAY_MS = 2 * 60 * 1000;
 
@@ -4520,16 +4619,44 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AFL_PORTRAIT_VERSION_KEY) !== AFL_PORTRAIT_RESOLVER_VERSION) {
         sessionStorage.setItem(AFL_PORTRAIT_VERSION_KEY, AFL_PORTRAIT_RESOLVER_VERSION);
         sessionStorage.removeItem(AFL_PORTRAIT_EXTRAS_KEY);
+        // Clear stale localStorage mirrors from older resolver versions so we don't paint dead URLs.
+        try {
+          if (typeof localStorage !== 'undefined') {
+            for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith(AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX) && key !== AFL_PORTRAIT_EXTRAS_LS_KEY && key !== AFL_PORTRAIT_EXTRAS_LS_TS_KEY) {
+                localStorage.removeItem(key);
+              }
+            }
+          }
+        } catch {
+          /* ignore */
+        }
         aflPortraitFetchedRef.current = new Set();
         aflPortraitMissUntilRef.current = new Map();
         setAflPortraitExtras({});
         return;
       }
 
-      const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AFL_PORTRAIT_EXTRAS_KEY) : null;
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Record<string, string>;
-      if (!parsed || typeof parsed !== 'object') return;
+      // Prefer sessionStorage (same tab) then fall back to localStorage so a refresh / new
+      // tab still paints AFL portraits from cache without waiting on the batch API.
+      let parsed: Record<string, string> | null = null;
+      const sessionRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AFL_PORTRAIT_EXTRAS_KEY) : null;
+      if (sessionRaw) {
+        const maybe = JSON.parse(sessionRaw) as Record<string, string> | null;
+        if (maybe && typeof maybe === 'object') parsed = maybe;
+      }
+      if (!parsed && typeof localStorage !== 'undefined') {
+        const lsRaw = localStorage.getItem(AFL_PORTRAIT_EXTRAS_LS_KEY);
+        const lsTsRaw = localStorage.getItem(AFL_PORTRAIT_EXTRAS_LS_TS_KEY);
+        const lsTs = lsTsRaw ? parseInt(lsTsRaw, 10) : 0;
+        const lsAge = Number.isFinite(lsTs) ? Date.now() - lsTs : Infinity;
+        if (lsRaw && lsAge < AFL_PORTRAIT_EXTRAS_LS_TTL_MS) {
+          const maybe = JSON.parse(lsRaw) as Record<string, string> | null;
+          if (maybe && typeof maybe === 'object') parsed = maybe;
+        }
+      }
+      if (!parsed) return;
       const next: Record<string, string> = {};
       for (const [name, url] of Object.entries(parsed)) {
         if (typeof name !== 'string' || !name.trim()) continue;
@@ -4540,6 +4667,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         setAflPortraitExtras(next);
         aflPortraitFetchedRef.current = new Set(Object.keys(next));
         aflPortraitMissUntilRef.current = new Map();
+        // Warm browser cache so the actual <img> tags paint without a per-image round-trip.
+        for (const url of Object.values(next)) warmImage(url);
       }
     } catch {
       /* ignore */
@@ -4548,13 +4677,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   useEffect(() => {
     try {
-      if (typeof sessionStorage === 'undefined') return;
       if (Object.keys(aflPortraitExtras).length === 0) return;
-      sessionStorage.setItem(AFL_PORTRAIT_EXTRAS_KEY, JSON.stringify(aflPortraitExtras));
+      const serialized = JSON.stringify(aflPortraitExtras);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(AFL_PORTRAIT_EXTRAS_KEY, serialized);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(AFL_PORTRAIT_EXTRAS_LS_KEY, serialized);
+        localStorage.setItem(AFL_PORTRAIT_EXTRAS_LS_TS_KEY, Date.now().toString());
+      }
     } catch {
       /* ignore */
     }
-  }, [aflPortraitExtras]);
+  }, [aflPortraitExtras, AFL_PORTRAIT_EXTRAS_LS_KEY, AFL_PORTRAIT_EXTRAS_LS_TS_KEY]);
 
   const aflPortraitFetchKey = useMemo(() => {
     if (propsSport !== 'afl' && propsSport !== 'combined') return '';
@@ -4653,7 +4788,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           setAflPortraitExtras((prev) => {
             const next = { ...prev };
             for (const [name, url] of Object.entries(portraits)) {
-              if (url) next[name] = url;
+              if (url) {
+                next[name] = url;
+                // Warm the browser image cache as soon as the URL is known so the row's <img> paints instantly.
+                warmImage(url);
+              }
             }
             return next;
           });
@@ -4671,6 +4810,61 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       cancelled = true;
     };
   }, [aflPortraitFetchKey, propsSport, activePaginatedProps]);
+
+  // Warm the browser image cache for every logo / headshot URL that will appear in the
+  // current page of rows. Runs whenever the visible row set, sport, or AFL logo map changes.
+  // This is the main lever for "logos / headshots feel delayed on first paint" — the URLs
+  // become known as soon as the props payload arrives, so we kick off the network fetches
+  // before React even mounts the row's <img>.
+  useEffect(() => {
+    if (!activePaginatedProps || activePaginatedProps.length === 0) return;
+    const aflLogoLookup = (name: string): string | null => {
+      if (!name) return null;
+      const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const key = n(name);
+      if (aflLogoByTeam[key]) return aflLogoByTeam[key];
+      for (const w of name.split(/\s+/)) {
+        const wk = n(w);
+        if (aflLogoByTeam[wk]) return aflLogoByTeam[wk];
+      }
+      return null;
+    };
+    for (const prop of activePaginatedProps) {
+      const rowSport =
+        propsSport === 'combined'
+          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          : propsSport;
+      if (rowSport === 'nba') {
+        const bdlId = getPlayerIdFromName(prop.playerName);
+        const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
+        if (nbaId) warmImage(getPlayerHeadshotUrl(nbaId));
+        const teamAbbr = (() => {
+          if (!prop.team) return '';
+          if (prop.team.length <= 3) return prop.team.toUpperCase();
+          return TEAM_FULL_TO_ABBR[prop.team] || prop.team.toUpperCase();
+        })();
+        const opponentAbbr = (() => {
+          if (!prop.opponent) return '';
+          if (prop.opponent.length <= 3) return prop.opponent.toUpperCase();
+          return TEAM_FULL_TO_ABBR[prop.opponent] || prop.opponent.toUpperCase();
+        })();
+        if (teamAbbr) warmImage(getEspnLogoUrl(teamAbbr));
+        if (opponentAbbr) warmImage(getEspnLogoUrl(opponentAbbr));
+      } else if (rowSport === 'afl') {
+        const staticHeadshot = getAflPlayerHeadshotUrl(prop.playerName);
+        const headshotUrl = staticHeadshot ?? aflPortraitExtras[prop.playerName] ?? null;
+        if (headshotUrl) warmImage(headshotUrl);
+        // Matchup logos – use same official-name normalization the renderer uses.
+        const homeDisp = toOfficialAflTeamDisplayName(prop.team || prop.homeTeam || '');
+        const awayDispRaw = toOfficialAflTeamDisplayName(prop.opponent || prop.awayTeam || '');
+        const awayDisp = homeDisp && awayDispRaw && homeDisp === awayDispRaw ? '' : awayDispRaw;
+        const homeLogo = homeDisp ? aflLogoLookup(homeDisp) : null;
+        const awayLogo = awayDisp ? aflLogoLookup(awayDisp) : null;
+        if (homeLogo) warmImage(homeLogo);
+        if (awayLogo) warmImage(awayLogo);
+      }
+    }
+  }, [activePaginatedProps, propsSport, aflLogoByTeam, aflPortraitExtras]);
 
   const applySportMode = useCallback((nextMode: 'nba' | 'afl' | 'combined') => {
     setPropsSport(nextMode);
@@ -4950,7 +5144,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 }`}
                 aria-label="NBA"
               >
-                <img src="/images/nba-logo.png" alt="" className="w-10 h-10 lg:w-12 lg:h-12 object-contain" />
+                <img
+                  src="/images/nba-logo.png"
+                  alt=""
+                  className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
               </button>
               <button
                 type="button"
@@ -4962,7 +5163,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 }`}
                 aria-label="AFL"
               >
-                <img src="/images/afl-logo.png" alt="" className="w-10 h-10 lg:w-12 lg:h-12 object-contain" />
+                <img
+                  src="/images/afl-logo.png"
+                  alt=""
+                  className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
               </button>
             </div>
 
@@ -6416,7 +6624,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         alt={prop.playerName}
                                         className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-gray-200 dark:border-gray-700"
                                         style={{ imageRendering: 'auto' }}
-                                        loading="lazy"
+                                        loading="eager"
+                                        decoding="async"
                                         onError={(e) => {
                                           (e.target as HTMLImageElement).style.display = 'none';
                                         }}
@@ -7756,7 +7965,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         width={40}
                                         height={40}
                                         className="object-cover"
-                                        loading="lazy"
+                                        loading="eager"
                                         unoptimized={false}
                                         onError={(e) => {
                                           (e.target as HTMLImageElement).style.display = 'none';
