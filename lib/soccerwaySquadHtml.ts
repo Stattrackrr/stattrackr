@@ -1,7 +1,7 @@
 import { buildSoccerwayTeamSquadUrl } from '@/lib/soccerwayTeamResults';
 import { normalizeSoccerTeamHref } from '@/lib/soccerCache';
 
-const SOCCERWAY_HTML_HEADERS = {
+export const SOCCERWAY_HTML_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   Accept: 'text/html,application/xhtml+xml',
@@ -13,10 +13,15 @@ export type SoccerwaySquadListPlayer = {
   displayName: string;
 };
 
+export type ParseSoccerwaySquadOptions = {
+  /** `name` (default): A–Z for roster UIs. `document`: first appearance in HTML (squad table order on Soccerway). */
+  sort?: 'name' | 'document';
+};
+
 /**
  * Parses squad tables from a Soccerway /team/{slug}/{id}/squad/ HTML page.
  */
-export function parseSoccerwaySquadPlayerTableHtml(html: string): SoccerwaySquadListPlayer[] {
+export function parseSoccerwaySquadPlayerTableHtml(html: string, opts?: ParseSoccerwaySquadOptions): SoccerwaySquadListPlayer[] {
   const re = /<a class="lineupTable__cell--name" href="\/player\/([^/]+)\/[^/"]+\/">\s*([\s\S]*?)<\/a>/gi;
   const byKey = new Map<string, SoccerwaySquadListPlayer>();
   let m: RegExpExecArray | null;
@@ -31,10 +36,15 @@ export function parseSoccerwaySquadPlayerTableHtml(html: string): SoccerwaySquad
     if (!playerKey || !displayName) continue;
     if (!byKey.has(playerKey)) byKey.set(playerKey, { playerKey, displayName });
   }
-  return [...byKey.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const list = [...byKey.values()];
+  if (opts?.sort === 'document') return list;
+  return list.sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
-export async function fetchSoccerwaySquadPlayers(teamHref: string): Promise<SoccerwaySquadListPlayer[]> {
+export async function fetchSoccerwaySquadPlayers(
+  teamHref: string,
+  opts?: ParseSoccerwaySquadOptions
+): Promise<SoccerwaySquadListPlayer[]> {
   const normalized = normalizeSoccerTeamHref(teamHref);
   const url = buildSoccerwayTeamSquadUrl(normalized);
   if (!url) return [];
@@ -43,5 +53,5 @@ export async function fetchSoccerwaySquadPlayers(teamHref: string): Promise<Socc
     cache: 'no-store',
   });
   if (!response.ok) throw new Error(`Soccerway squad page returned ${response.status}`);
-  return parseSoccerwaySquadPlayerTableHtml(await response.text());
+  return parseSoccerwaySquadPlayerTableHtml(await response.text(), opts);
 }

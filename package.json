@@ -32,6 +32,8 @@
     "warm:afl:player-logs": "node scripts/warm-afl-player-logs.js",
     "warm:soccer:cache": "node scripts/warm-soccer-cache.js",
     "soccer:player-stats:one": "powershell -ExecutionPolicy Bypass -File scripts/run-soccer-player-stats-single.ps1",
+    "soccer:player-stats:batch": "powershell -ExecutionPolicy Bypass -File scripts/run-soccer-player-stats-batch.ps1",
+    "soccer:player-stats:inspect": "powershell -ExecutionPolicy Bypass -File scripts/inspect-soccer-player-stats.ps1",
     "repair:soccer:dashboard": "node scripts/repair-soccer-dashboard-cache.js",
     "build:soccer:opponent-breakdown:pl": "node scripts/build-soccer-opponent-breakdown-pl.js",
     "build:soccer:team-matchup:pl": "node scripts/build-soccer-team-matchup-pl.js",

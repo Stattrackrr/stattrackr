@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
+import { canonicalSoccerStatKey, readCanonicalSoccerStatValue } from '@/lib/soccerStatKeyAliases';
 
 type PlayerStatRow = {
   player: string | null;
@@ -63,6 +64,50 @@ const PREFERRED_STAT_TILES: StatTile[] = [
   { id: 'top:touches', label: 'Touches', category: 'top', key: 'touches' },
   { id: 'top:accurate_passes', label: 'Passes', category: 'top', key: 'accurate_passes' },
 ];
+
+const STAT_CATEGORY_ORDER: PlayerStatCategory[] = ['top', 'shots', 'attack', 'passes', 'defense', 'goalkeeping', 'general'];
+
+function countNumericStatInCategory(
+  matches: PlayerMatchStats[],
+  category: PlayerStatCategory,
+  statKey: string
+): number {
+  let n = 0;
+  for (const match of matches) {
+    const raw = readCanonicalSoccerStatValue(match.categories[category]?.stats, statKey);
+    if (parseLeadingNumber(raw) != null) n += 1;
+  }
+  return n;
+}
+
+/** Best category tab to read this canonical stat from (most populated across the squad scrape). */
+function bestCategoryForCanonicalStat(matches: PlayerMatchStats[], canonicalKey: string): PlayerStatCategory {
+  let best: PlayerStatCategory = 'top';
+  let bestScore = -1;
+  for (const category of STAT_CATEGORY_ORDER) {
+    const score = countNumericStatInCategory(matches, category, canonicalKey);
+    if (score > bestScore) {
+      bestScore = score;
+      best = category;
+    }
+  }
+  return best;
+}
+
+function preferredStatTileIndex(tile: StatTile): number {
+  return PREFERRED_STAT_TILES.findIndex(
+    (p) => p.category === tile.category && canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(tile.key)
+  );
+}
+
+function pickBetterStatTileOnTie(a: StatTile, b: StatTile): StatTile {
+  const ia = preferredStatTileIndex(a);
+  const ib = preferredStatTileIndex(b);
+  if (ia !== -1 && ib !== -1) return ia <= ib ? a : b;
+  if (ia !== -1) return a;
+  if (ib !== -1) return b;
+  return a.id.localeCompare(b.id) <= 0 ? a : b;
+}
 
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last20', 'last50', 'h2h', 'thisSeason', 'lastSeason', 'all'] as const;
 
@@ -334,7 +379,8 @@ function SoccerPlayerXAxisTick({ x, y, payload, data, isDark, hideTickDetails }:
 
 const PLAYER_KEY_PARAM_RE = /^[a-z0-9-]{2,80}$/;
 
-const PLAYER_PROPS_CHART_CACHE_PREFIX = 'soccer-player-props-chart:v1:';
+// v2: switched from `top`-only to full-category (all 7 Soccerway tabs) payloads. Bump invalidates stale top-only entries.
+const PLAYER_PROPS_CHART_CACHE_PREFIX = 'soccer-player-props-chart:v2:';
 
 function normalizeChartCacheHref(raw: string): string {
   const href = String(raw || '').trim();
@@ -461,8 +507,8 @@ export function SoccerPlayerPropsTestCard({
 
     let cancelled = false;
     const controller = new AbortController();
-    // Keep defaults aligned with `player-stats-roster-report` + batch script (`limit=100`, `categories=top`).
-    const params = new URLSearchParams({ href, cacheOnly: '1', limit: '100', categories: 'top' });
+    // Request all 7 Soccerway tabs; UI filters which keys it surfaces dynamically.
+    const params = new URLSearchParams({ href, cacheOnly: '1', limit: '30', categories: 'all' });
     params.set('playerKey', pk);
     const dn = String(displayName || '').trim();
     if (dn) params.set('player', dn);
@@ -515,11 +561,16 @@ export function SoccerPlayerPropsTestCard({
   }, []);
 
   const availableStatTiles = useMemo(() => {
-    const seen = new Map<string, StatTile>();
+    const canonicalKey = (tile: StatTile) => canonicalSoccerStatKey(tile.key);
+
+    const candidates: StatTile[] = [];
 
     for (const preferred of PREFERRED_STAT_TILES) {
-      const hasNumericValue = matches.some((match) => parseLeadingNumber(match.categories[preferred.category]?.stats[preferred.key]) != null);
-      if (hasNumericValue) seen.set(preferred.id, preferred);
+      const hasNumericValue = matches.some(
+        (match) =>
+          parseLeadingNumber(readCanonicalSoccerStatValue(match.categories[preferred.category]?.stats, preferred.key)) != null
+      );
+      if (hasNumericValue) candidates.push(preferred);
     }
 
     for (const match of matches) {
@@ -527,15 +578,57 @@ export function SoccerPlayerPropsTestCard({
         if (!row?.stats) continue;
         for (const [key, rawValue] of Object.entries(row.stats)) {
           if (parseLeadingNumber(rawValue) == null) continue;
-          const id = `${category}:${key}`;
-          if (!seen.has(id)) {
-            seen.set(id, { id, label: labelFromStatKey(key), category, key });
-          }
+          const canon = canonicalSoccerStatKey(key);
+          candidates.push({
+            id: `${category}:${canon}`,
+            label: labelFromStatKey(canon),
+            category,
+            key: canon,
+          });
         }
       }
     }
 
-    return Array.from(seen.values());
+    const byCanon = new Map<string, StatTile[]>();
+    for (const tile of candidates) {
+      const k = canonicalKey(tile);
+      if (!byCanon.has(k)) byCanon.set(k, []);
+      byCanon.get(k)!.push(tile);
+    }
+
+    const winners: StatTile[] = [];
+    for (const [canon, group] of byCanon) {
+      let best = group[0];
+      let bestScore = countNumericStatInCategory(matches, best.category, canon);
+      for (const t of group.slice(1)) {
+        const score = countNumericStatInCategory(matches, t.category, canon);
+        if (score > bestScore) {
+          best = t;
+          bestScore = score;
+        } else if (score === bestScore) {
+          best = pickBetterStatTileOnTie(t, best);
+        }
+      }
+      const category = bestCategoryForCanonicalStat(matches, canon);
+      const pref = PREFERRED_STAT_TILES.find((p) => canonicalSoccerStatKey(p.key) === canon);
+      winners.push({
+        id: `${category}:${canon}`,
+        category,
+        key: canon,
+        label: pref?.label ?? labelFromStatKey(canon),
+      });
+    }
+
+    winners.sort((a, b) => {
+      const ia = PREFERRED_STAT_TILES.findIndex((p) => canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(a.key));
+      const ib = PREFERRED_STAT_TILES.findIndex((p) => canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(b.key));
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a.label.localeCompare(b.label);
+    });
+
+    return winners;
   }, [matches]);
 
   useEffect(() => {
@@ -615,7 +708,7 @@ export function SoccerPlayerPropsTestCard({
 
   const chartData = useMemo(() => {
     return chartMatches.map((match) => {
-      const raw = match.categories[selectedStatMeta.category]?.stats[selectedStatMeta.key] ?? null;
+      const raw = readCanonicalSoccerStatValue(match.categories[selectedStatMeta.category]?.stats, selectedStatMeta.key);
       const value = parseLeadingNumber(raw);
       return {
         key: match.matchId,

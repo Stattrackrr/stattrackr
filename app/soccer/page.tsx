@@ -134,10 +134,64 @@ function findCachedRosterRowForLineupPlayer(roster: CachedSoccerRosterRow[], pla
   });
 }
 
+type SoccerLineupPlayerInfo = { number: string | null; position: string | null };
+type SoccerLineupInfoLookup = {
+  bySlug: Map<string, SoccerLineupPlayerInfo>;
+  byName: Map<string, SoccerLineupPlayerInfo>;
+};
+
+const EMPTY_LINEUP_INFO_LOOKUP: SoccerLineupInfoLookup = {
+  bySlug: new Map(),
+  byName: new Map(),
+};
+
+/**
+ * Map Soccerway formation-line names (e.g. "Goalkeeper", "Defenders", "Midfielders", "Forwards") to short tags.
+ * Returns null when the name is generic ("Line") or unrecognised — caller should fall back to index-based derivation.
+ */
+function abbreviateFormationLineName(name: string | null | undefined): string | null {
+  const n = String(name || '').trim().toLowerCase();
+  if (!n) return null;
+  if (n.startsWith('goal') || n === 'gk' || n.startsWith('keeper')) return 'GK';
+  if (n.startsWith('def') || n.startsWith('back') || n === 'd') return 'DEF';
+  if (n.startsWith('mid') || n === 'm') return 'MID';
+  if (n.startsWith('forw') || n.startsWith('att') || n.startsWith('str') || n.startsWith('fw') || n === 'f') return 'FWD';
+  return null;
+}
+
+/**
+ * Derive a position abbreviation from a player's formation-row index.
+ * Used when Soccerway only returns generic "Line" names. `gkAtStart` flips the mapping
+ * because some Soccerway payloads list formation lines from FWD→GK rather than GK→FWD.
+ */
+function derivePositionFromFormationIndex(idx: number, total: number, gkAtStart: boolean): string | null {
+  if (total <= 0 || idx < 0) return null;
+  if (total === 1) return null;
+  const gkIdx = gkAtStart ? 0 : total - 1;
+  const fwdIdx = gkAtStart ? total - 1 : 0;
+  const defIdx = gkAtStart ? 1 : total - 2;
+  if (idx === gkIdx) return 'GK';
+  if (idx === fwdIdx) return 'FWD';
+  if (idx === defIdx) return 'DEF';
+  return 'MID';
+}
+
+function lookupSoccerLineupPlayerInfo(
+  lookup: SoccerLineupInfoLookup,
+  playerKey: string,
+  displayName: string
+): SoccerLineupPlayerInfo | null {
+  const bySlug = lookup.bySlug.get(playerKey.toLowerCase());
+  if (bySlug) return bySlug;
+  const norm = normalizeSoccerName(displayName);
+  return (norm && lookup.byName.get(norm)) || null;
+}
+
 function buildSoccerPlayerOptionFromRosterRow(
   row: CachedSoccerRosterRow,
   team: SoccerTeamRow,
-  lineupImageByNormalizedName: Map<string, string>
+  lineupImageByNormalizedName: Map<string, string>,
+  lineupInfoLookup: SoccerLineupInfoLookup = EMPTY_LINEUP_INFO_LOOKUP
 ): SoccerPlayerOption {
   const href = normalizeTeamHref(team.href);
   const parts = row.displayName.trim().split(/\s+/).filter(Boolean);
@@ -146,15 +200,16 @@ function buildSoccerPlayerOptionFromRosterRow(
       ? `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase() || row.displayName.slice(0, 3)
       : row.displayName.slice(0, 3);
   const norm = normalizeSoccerName(row.displayName);
+  const info = lookupSoccerLineupPlayerInfo(lineupInfoLookup, row.playerKey, row.displayName);
   return {
     id: row.playerKey,
     name: row.displayName,
     shortName,
     teamName: team.name,
     teamHref: href || null,
-    number: null,
+    number: info?.number ?? null,
     imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-    role: null,
+    role: info?.position ?? null,
     status: row.matchCount > 0 ? ('cached' as const) : ('test' as const),
     cachedMatchCount: row.matchCount > 0 ? row.matchCount : undefined,
   };
@@ -815,6 +870,50 @@ function SoccerPageContent() {
     return map;
   }, [predictedLineup?.teams]);
 
+  const lineupPlayerInfoLookup = useMemo<SoccerLineupInfoLookup>(() => {
+    const bySlug = new Map<string, SoccerLineupPlayerInfo>();
+    const byName = new Map<string, SoccerLineupPlayerInfo>();
+    const addByName = (rawName: string | null | undefined, info: SoccerLineupPlayerInfo) => {
+      const n = normalizeSoccerName(rawName || '');
+      if (!n || byName.has(n)) return;
+      byName.set(n, info);
+    };
+    for (const team of predictedLineup?.teams ?? []) {
+      const positionByPlayerId = new Map<string, string>();
+      const sortedLines = [...team.formationLines].sort((a, b) => a.sortKey - b.sortKey);
+      const countPlayersInLine = (line: typeof sortedLines[number]) =>
+        line.rows.reduce((sum, row) => sum + row.players.length, 0);
+      // Auto-detect direction by locating the 1-player (goalkeeper) line.
+      const firstCount = sortedLines.length > 0 ? countPlayersInLine(sortedLines[0]) : 0;
+      const lastCount = sortedLines.length > 0 ? countPlayersInLine(sortedLines[sortedLines.length - 1]) : 0;
+      const gkAtStart = firstCount === 1 ? true : lastCount === 1 ? false : true;
+      sortedLines.forEach((line, lineIdx) => {
+        const pos =
+          abbreviateFormationLineName(line.name) ??
+          derivePositionFromFormationIndex(lineIdx, sortedLines.length, gkAtStart);
+        if (!pos) return;
+        for (const row of line.rows) {
+          for (const p of row.players) {
+            if (p.id && !positionByPlayerId.has(p.id)) positionByPlayerId.set(p.id, pos);
+          }
+        }
+      });
+      const register = (player: SoccerwayLineupPlayer, fallbackPosition: string | null) => {
+        const slug = extractSoccerwayPlayerSlugFromParticipantUrl(player.participantUrl);
+        const info: SoccerLineupPlayerInfo = {
+          number: player.number,
+          position: positionByPlayerId.get(player.id) ?? fallbackPosition,
+        };
+        if (slug && !bySlug.has(slug)) bySlug.set(slug, info);
+        addByName(player.listName, info);
+        addByName(player.fieldName, info);
+      };
+      for (const player of team.starters) register(player, null);
+      for (const player of team.substitutes) register(player, 'SUB');
+    }
+    return { bySlug, byName };
+  }, [predictedLineup?.teams]);
+
   const soccerPlayerUniverse = useMemo(() => {
     const href = normalizeTeamHref(selectedTeam?.href ?? '');
     const teamName = selectedTeam?.name ?? '';
@@ -828,15 +927,16 @@ function SoccerPageContent() {
             : row.displayName.slice(0, 3);
         const norm = normalizeSoccerName(row.displayName);
         const matchCount = row.matchCount > 0 ? row.matchCount : 0;
+        const info = lookupSoccerLineupPlayerInfo(lineupPlayerInfoLookup, row.playerKey, row.displayName);
         return {
           id: row.playerKey,
           name: row.displayName,
           shortName,
           teamName,
           teamHref: href || null,
-          number: null,
+          number: info?.number ?? null,
           imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-          role: null,
+          role: info?.position ?? null,
           status: matchCount > 0 ? ('cached' as const) : ('test' as const),
           cachedMatchCount: matchCount > 0 ? matchCount : undefined,
         };
@@ -847,7 +947,7 @@ function SoccerPageContent() {
         if (bc !== ac) return bc - ac;
         return a.name.localeCompare(b.name);
       });
-  }, [cachedSoccerPlayerRoster, selectedTeam?.href, selectedTeam?.name, lineupImageByNormalizedName]);
+  }, [cachedSoccerPlayerRoster, selectedTeam?.href, selectedTeam?.name, lineupImageByNormalizedName, lineupPlayerInfoLookup]);
 
   const filteredSoccerPlayers = useMemo(() => {
     const q = foldSoccerPlayerSearchText(playerSearchQuery);
@@ -881,7 +981,7 @@ function SoccerPageContent() {
     void (async () => {
       try {
         const res = await fetch(
-          `/api/soccer/player-stats-roster-report?href=${encodeURIComponent(href)}&limit=100&categories=top`,
+          `/api/soccer/player-stats-roster-report?href=${encodeURIComponent(href)}&limit=30&categories=all`,
           { cache: 'no-store' }
         );
         const data = (await res.json().catch(() => null)) as {
@@ -1032,7 +1132,7 @@ function SoccerPageContent() {
       if (currentHref === teamHrefNorm) {
         const row = findCachedRosterRowForLineupPlayer(cachedSoccerPlayerRoster, player);
         if (row) {
-          setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, matchedTeam, lineupImageByNormalizedName));
+          setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, matchedTeam, lineupImageByNormalizedName, lineupPlayerInfoLookup));
           setPlayerSearchQuery(row.displayName);
           lineupPickPendingRef.current = null;
           return;
@@ -1072,14 +1172,14 @@ function SoccerPageContent() {
 
     const row = findCachedRosterRowFromLineupPick(cachedSoccerPlayerRoster, pending);
     if (row) {
-      setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, selectedTeam, lineupImageByNormalizedName));
+      setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, selectedTeam, lineupImageByNormalizedName, lineupPlayerInfoLookup));
       setPlayerSearchQuery(row.displayName);
       lineupPickPendingRef.current = null;
       return;
     }
 
     lineupPickPendingRef.current = null;
-  }, [cachedSoccerPlayerRoster, lineupImageByNormalizedName, propsMode, selectedTeam]);
+  }, [cachedSoccerPlayerRoster, lineupImageByNormalizedName, lineupPlayerInfoLookup, propsMode, selectedTeam]);
 
   useEffect(() => {
     if (teamUniverse.length === 0) return;
@@ -1651,11 +1751,19 @@ function SoccerPageContent() {
                             />
                           ) : null}
                           <div className="min-w-0">
-                            <h1 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{headerTitle}</h1>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h1 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate min-w-0">{headerTitle}</h1>
+                              {propsMode === 'player' && selectedSoccerPlayer?.number ? (
+                                <span className="text-xs md:text-sm font-semibold text-purple-600 dark:text-purple-300 flex-shrink-0">
+                                  #{selectedSoccerPlayer.number}
+                                </span>
+                              ) : null}
+                            </div>
                             {propsMode === 'player' && selectedSoccerPlayer ? (
                               <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                {selectedSoccerPlayer.teamName}
-                                {selectedSoccerPlayer.role ? ` · ${selectedSoccerPlayer.role}` : ''}
+                                {selectedSoccerPlayer.role
+                                  ? `${selectedSoccerPlayer.role}${selectedSoccerPlayer.teamName ? ` · ${selectedSoccerPlayer.teamName}` : ''}`
+                                  : selectedSoccerPlayer.teamName}
                               </div>
                             ) : null}
                           </div>
@@ -1731,7 +1839,21 @@ function SoccerPageContent() {
                     </div>
                     <div className="lg:hidden flex flex-col gap-0.5 relative">
                       <div className={`w-full min-w-0 ${selectedTeamWinPercentage != null ? 'pr-[5.75rem]' : ''}`}>
-                        <h1 className="text-base font-bold text-gray-900 dark:text-white text-center">{headerTitle}</h1>
+                        <div className="flex items-center justify-center gap-2 min-w-0">
+                          <h1 className="text-base font-bold text-gray-900 dark:text-white text-center truncate min-w-0">{headerTitle}</h1>
+                          {propsMode === 'player' && selectedSoccerPlayer?.number ? (
+                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-300 flex-shrink-0">
+                              #{selectedSoccerPlayer.number}
+                            </span>
+                          ) : null}
+                        </div>
+                        {propsMode === 'player' && selectedSoccerPlayer ? (
+                          <div className="text-[11px] text-gray-600 dark:text-gray-400 text-center truncate">
+                            {selectedSoccerPlayer.role
+                              ? `${selectedSoccerPlayer.role}${selectedSoccerPlayer.teamName ? ` · ${selectedSoccerPlayer.teamName}` : ''}`
+                              : selectedSoccerPlayer.teamName}
+                          </div>
+                        ) : null}
                       </div>
                       {selectedTeamWinPercentage != null ? (
                         <div className="absolute right-0 -top-2 z-20 flex-shrink-0 pointer-events-auto">

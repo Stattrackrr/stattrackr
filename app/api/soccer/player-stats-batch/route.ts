@@ -3,7 +3,7 @@ import { authorizeCronRequest } from '@/lib/cronAuth';
 import { normalizeSoccerTeamHref, setSoccerPlayerStatsCache } from '@/lib/soccerCache';
 import {
   buildPlayerAliasesFromDisplayName,
-  buildPlayerStatsForAliases,
+  buildSquadPlayerStats,
   loadRecentMatchesForScrape,
   parseRequestedPlayerStatCategories,
   DEFAULT_MATCH_LIMIT,
@@ -21,15 +21,27 @@ const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
 const PLAYER_STATS_CACHE_TTL_MINUTES = 24 * 60;
 const DEFAULT_PLAYER_CONCURRENCY = 3;
 const MAX_PLAYER_CONCURRENCY = 6;
-const DEFAULT_MAX_PLAYERS = 40;
-const MAX_MAX_PLAYERS = 55;
-const DEFAULT_MATCH_SCRAPE_CONCURRENCY = 5;
-const MAX_MATCH_SCRAPE_CONCURRENCY = 10;
+/** First N in squad table order (see fetchSoccerwaySquadPlayers sort=document); cap 35 = senior/top slice only. */
+const DEFAULT_MAX_PLAYERS = 35;
+const MAX_MAX_PLAYERS = 35;
+const DEFAULT_MATCH_SCRAPE_CONCURRENCY = 12;
+const MAX_MATCH_SCRAPE_CONCURRENCY = 25;
+const DEFAULT_FETCH_CONCURRENCY = 30;
+const MAX_FETCH_CONCURRENCY = 60;
 
 function parsePositiveInt(value: string | null, fallback: number, max: number): number {
   const n = Number.parseInt(String(value || '').trim(), 10);
   if (!Number.isFinite(n) || n < 1) return fallback;
   return Math.min(max, n);
+}
+
+/** Soccerway player-stats pages are client-rendered; plain fetch returns a shell. Defaults favor Puppeteer. */
+function parseQueryBool(value: string | null, defaultValue: boolean): boolean {
+  if (value == null || value === '') return defaultValue;
+  const v = value.trim().toLowerCase();
+  if (v === '0' || v === 'false' || v === 'no') return false;
+  if (v === '1' || v === 'true' || v === 'yes') return true;
+  return defaultValue;
 }
 
 function filterSquadByKeys(players: SoccerwaySquadListPlayer[], keysParam: string | null): SoccerwaySquadListPlayer[] {
@@ -65,6 +77,13 @@ export async function GET(request: NextRequest) {
     DEFAULT_MATCH_SCRAPE_CONCURRENCY,
     MAX_MATCH_SCRAPE_CONCURRENCY
   );
+  const fetchConcurrency = parsePositiveInt(
+    request.nextUrl.searchParams.get('fetchConcurrency'),
+    DEFAULT_FETCH_CONCURRENCY,
+    MAX_FETCH_CONCURRENCY
+  );
+  const puppeteerOnly = parseQueryBool(request.nextUrl.searchParams.get('puppeteerOnly'), true);
+  const puppeteerFallback = parseQueryBool(request.nextUrl.searchParams.get('puppeteerFallback'), true);
   const keysFilter = request.nextUrl.searchParams.get('keys');
 
   if (!TEAM_HREF_RE.test(teamHref)) {
@@ -75,7 +94,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Batch scrape is explicit: add refresh=1 (long-running, many browser tabs).',
-        hint: 'Optional: keys=slug1,slug2 (Soccerway /player/{slug}/) to scrape only those players — see scripts/run-soccer-player-stats-single.ps1 | playerConcurrency | matchConcurrency | maxPlayers.',
+        hint: 'Optional: keys=slug1,slug2 — default maxPlayers=35. Player-stats HTML is JS-rendered; batch defaults puppeteerOnly=1 (skip dead fetch). Try fetch first: puppeteerOnly=0&puppeteerFallback=1.',
       },
       { status: 400 }
     );
@@ -89,7 +108,10 @@ export async function GET(request: NextRequest) {
   const startedAt = new Date().toISOString();
 
   try {
-    const squad = filterSquadByKeys(await fetchSoccerwaySquadPlayers(teamHref), keysFilter).slice(0, maxPlayers);
+    const squad = filterSquadByKeys(await fetchSoccerwaySquadPlayers(teamHref, { sort: 'document' }), keysFilter).slice(
+      0,
+      maxPlayers
+    );
     if (!squad.length) {
       return NextResponse.json(
         { success: false, error: 'No squad players found (check href or keys filter).', players: [], startedAt },
@@ -117,29 +139,56 @@ export async function GET(request: NextRequest) {
       hint?: string;
     }> = [];
 
-    for (let offset = 0; offset < squad.length; offset += playerConcurrency) {
-      const chunk = squad.slice(offset, offset + playerConcurrency);
+    const squadInputs = squad.map((p) => ({
+      playerKey: p.playerKey,
+      displayName: p.displayName,
+      aliases: buildPlayerAliasesFromDisplayName(p.displayName),
+    }));
+
+    let scrapeError: string | null = null;
+    let perPlayer: Awaited<ReturnType<typeof buildSquadPlayerStats>> = [];
+    try {
+      perPlayer = await buildSquadPlayerStats(teamHref, limit, categories, squadInputs, {
+        prefetchedMatches,
+        matchConcurrency,
+        fetchConcurrency,
+        disablePuppeteerFallback: !(puppeteerFallback || puppeteerOnly),
+        puppeteerOnly,
+      });
+    } catch (err) {
+      scrapeError = err instanceof Error ? err.message : String(err);
+    }
+
+    const perPlayerByKey = new Map(perPlayer.map((r) => [r.playerKey, r] as const));
+
+    for (let offset = 0; offset < squadInputs.length; offset += playerConcurrency) {
+      const chunk = squadInputs.slice(offset, offset + playerConcurrency);
       const chunkOut = await Promise.all(
         chunk.map(async (p) => {
-          const aliases = buildPlayerAliasesFromDisplayName(p.displayName);
-          try {
-            const matches = await buildPlayerStatsForAliases(teamHref, limit, categories, aliases, {
-              prefetchedMatches,
-              matchConcurrency,
-            });
-            const generatedAt = new Date().toISOString();
-            const cachePayload = {
-              teamHref,
-              playerName: p.displayName,
+          if (scrapeError) {
+            return {
               playerKey: p.playerKey,
-              limit,
-              categories: [...categories],
-              matches,
-              source: 'soccerway' as const,
-              generatedAt,
+              displayName: p.displayName,
+              matchCount: 0,
+              writeOk: false,
+              error: scrapeError,
             };
-            let writeOk = false;
-            if (matches.length > 0) {
+          }
+          const matches = perPlayerByKey.get(p.playerKey)?.matches ?? [];
+          const generatedAt = new Date().toISOString();
+          const cachePayload = {
+            teamHref,
+            playerName: p.displayName,
+            playerKey: p.playerKey,
+            limit,
+            categories: [...categories],
+            matches,
+            source: 'soccerway' as const,
+            generatedAt,
+          };
+          let writeOk = false;
+          if (matches.length > 0) {
+            try {
               writeOk = await setSoccerPlayerStatsCache(
                 teamHref,
                 p.playerKey,
@@ -149,24 +198,23 @@ export async function GET(request: NextRequest) {
                 PLAYER_STATS_CACHE_TTL_MINUTES,
                 false
               );
+            } catch (err) {
+              return {
+                playerKey: p.playerKey,
+                displayName: p.displayName,
+                matchCount: matches.length,
+                writeOk: false,
+                error: err instanceof Error ? err.message : String(err),
+              };
             }
-            return {
-              playerKey: p.playerKey,
-              displayName: p.displayName,
-              matchCount: matches.length,
-              writeOk,
-              ...(matches.length === 0 ? { hint: ZERO_MATCH_HINT } : {}),
-            };
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            return {
-              playerKey: p.playerKey,
-              displayName: p.displayName,
-              matchCount: 0,
-              writeOk: false,
-              error: message,
-            };
           }
+          return {
+            playerKey: p.playerKey,
+            displayName: p.displayName,
+            matchCount: matches.length,
+            writeOk,
+            ...(matches.length === 0 ? { hint: ZERO_MATCH_HINT } : {}),
+          };
         })
       );
       results.push(...chunkOut);
@@ -175,7 +223,9 @@ export async function GET(request: NextRequest) {
     const finishedAt = new Date().toISOString();
     const ok = results.filter((r) => r.matchCount > 0 && r.writeOk).length;
     const partial = results.filter((r) => r.matchCount > 0 && !r.writeOk).length;
-    const failed = results.filter((r) => r.matchCount === 0 || r.error).length;
+    const errored = results.filter((r) => typeof r.error === 'string' && r.error.trim().length > 0).length;
+    /** "Did not play" — squad member with no rows in any of the scraped matches (manager/reserve/injured/etc). */
+    const noAppearances = results.filter((r) => r.matchCount === 0 && !r.error).length;
 
     return NextResponse.json({
       success: true,
@@ -189,10 +239,14 @@ export async function GET(request: NextRequest) {
         prefetchedMatchCount: prefetchedMatches.length,
         playerConcurrency,
         matchConcurrency,
+        fetchConcurrency,
+        puppeteerFallback,
+        puppeteerOnly,
         limit,
         cacheWritesOk: ok,
         cacheWritesPartial: partial,
-        scrapeOrWriteFailed: failed,
+        scrapeErrors: errored,
+        noAppearances,
       },
       players: results,
     });

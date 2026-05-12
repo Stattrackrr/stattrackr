@@ -19,7 +19,7 @@ param(
     [int]$PlayerConcurrency = 1,
     [int]$MatchConcurrency = 5,
     [int]$Limit = 100,
-    [string]$Categories = "top",
+    [string]$Categories = "all",
     [string]$AuthToken = $null,
     [int]$TimeoutSec = 3600
 )
@@ -45,7 +45,7 @@ $parts = @(
     "keys=$([uri]::EscapeDataString($key))",
     "playerConcurrency=$PlayerConcurrency",
     "matchConcurrency=$MatchConcurrency",
-    "maxPlayers=55",
+    "maxPlayers=35",
     "limit=$Limit",
     "categories=$([uri]::EscapeDataString($Categories))"
 )
