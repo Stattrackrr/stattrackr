@@ -284,13 +284,10 @@ export default function ChatPageClient() {
   const [composerValue, setComposerValue] = useState('');
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
-  const [composerFocused, setComposerFocused] = useState(false);
-  const [mobileKeyboardOpen, setMobileKeyboardOpen] = useState(false);
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const mobileComposerRef = useRef<HTMLDivElement>(null);
   const messageCooldownTimeoutRef = useRef<number | null>(null);
-  const mobileViewportHeightRef = useRef<number | null>(null);
   const isMessageListNearBottomRef = useRef(true);
   const shouldScrollToBottomRef = useRef(true);
   const previousRoomIdRef = useRef<string | null>(null);
@@ -698,29 +695,6 @@ export default function ChatPageClient() {
       mobileComposerRef.current.textContent = '';
     }
   }, [composerValue]);
-
-  useEffect(() => {
-    const getViewportHeight = () => window.visualViewport?.height ?? window.innerHeight;
-
-    const updateMobileKeyboardState = () => {
-      const viewportHeight = getViewportHeight();
-      const baselineHeight = mobileViewportHeightRef.current ?? viewportHeight;
-      mobileViewportHeightRef.current = Math.max(baselineHeight, viewportHeight);
-      setMobileKeyboardOpen(mobileViewportHeightRef.current - viewportHeight > 140);
-    };
-
-    updateMobileKeyboardState();
-
-    window.visualViewport?.addEventListener('resize', updateMobileKeyboardState);
-    window.addEventListener('resize', updateMobileKeyboardState);
-    window.addEventListener('orientationchange', updateMobileKeyboardState);
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', updateMobileKeyboardState);
-      window.removeEventListener('resize', updateMobileKeyboardState);
-      window.removeEventListener('orientationchange', updateMobileKeyboardState);
-    };
-  }, []);
 
   useEffect(() => {
     if (!viewer.hasPremium || !selectedRoomId) return;
@@ -1176,7 +1150,7 @@ export default function ChatPageClient() {
   );
 
   return (
-    <div className="dashboard-container fixed inset-0 h-[100dvh] overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
+    <div className="dashboard-container fixed inset-0 min-h-0 overflow-hidden bg-gray-50 text-gray-900 transition-colors dark:bg-[#050d1a] dark:text-white">
       <style jsx global>{`
         .dashboard-container {
           --sidebar-margin: 0px;
@@ -1221,6 +1195,7 @@ export default function ChatPageClient() {
         .chat-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgba(168, 85, 247, 0.65) transparent;
+          -webkit-overflow-scrolling: touch;
         }
 
         .chat-scrollbar::-webkit-scrollbar {
@@ -1407,7 +1382,7 @@ export default function ChatPageClient() {
                 <div
                   ref={messageListRef}
                   onScroll={handleMessageListScroll}
-                  className="chat-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4"
+                  className="chat-scrollbar relative z-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 py-4"
                 >
                   {loadingMessages ? (
                     <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -1832,7 +1807,7 @@ export default function ChatPageClient() {
                   )}
                 </div>
 
-                <div className="border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
+                <div className="shrink-0 border-t border-gray-200 px-5 pb-3 pt-1 dark:border-gray-700 sm:py-4">
                   {!canSendInSelectedRoom ? (
                     <div className="rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-xs text-purple-100">
                       Read only.
@@ -1859,7 +1834,7 @@ export default function ChatPageClient() {
                         </button>
                       </div>
                     ) : null}
-                    <div className="relative translate-y-2 sm:translate-y-0">
+                    <div className="relative">
                       <div
                         ref={mobileComposerRef}
                         contentEditable
@@ -1870,9 +1845,7 @@ export default function ChatPageClient() {
                         onInput={handleMobileComposerInput}
                         onPaste={handleMobileComposerPaste}
                         onKeyDown={handleComposerKeyDown}
-                        onFocus={() => setComposerFocused(true)}
-                        onBlur={() => setComposerFocused(false)}
-                        className="chat-scrollbar h-16 w-full overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:hidden"
+                        className="chat-scrollbar h-16 w-full touch-manipulation overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-gray-300 bg-white px-4 py-2.5 pr-20 text-sm text-gray-900 outline-none transition-colors focus:border-purple-500 focus:ring-2 focus:ring-purple-500/25 dark:border-gray-600 dark:bg-[#111c2d] dark:text-white sm:hidden"
                       />
                       {!composerValue ? (
                         <span className="pointer-events-none absolute left-4 top-2.5 text-sm text-gray-500 dark:text-gray-400 sm:hidden">
@@ -1888,8 +1861,6 @@ export default function ChatPageClient() {
                           }
                         }}
                         onKeyDown={handleComposerKeyDown}
-                        onFocus={() => setComposerFocused(true)}
-                        onBlur={() => setComposerFocused(false)}
                         placeholder={isPicksRoom ? 'Post a pick...' : 'Message...'}
                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
                         rows={3}
