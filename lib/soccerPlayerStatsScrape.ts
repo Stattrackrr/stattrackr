@@ -453,17 +453,17 @@ export async function buildPlayerStatsForAliases(
     (await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true }));
   if (!matches.length) return [];
 
-  let browser: Browser | null = null;
+  const browserHolder: { current: Browser | null } = { current: null };
   const puppeteerOnly = process.env.SOCCER_PLAYER_STATS_PUPPETEER_ONLY === '1';
 
   const ensureBrowser = async (): Promise<Browser> => {
-    if (!browser) {
-      browser = await puppeteer.launch({
+    if (!browserHolder.current) {
+      browserHolder.current = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
     }
-    return browser;
+    return browserHolder.current;
   };
 
   try {
@@ -531,7 +531,7 @@ export async function buildPlayerStatsForAliases(
     }
     return output.sort((a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER));
   } finally {
-    await browser?.close();
+    if (browserHolder.current) await browserHolder.current.close().catch(() => undefined);
   }
 }
 
@@ -582,15 +582,15 @@ export async function buildSquadPlayerStats(
   const puppeteerOnly = options?.puppeteerOnly === true || process.env.SOCCER_PLAYER_STATS_PUPPETEER_ONLY === '1';
   const fallbackEnv = process.env.SOCCER_PLAYER_STATS_PUPPETEER_FALLBACK === '1';
   const fallbackEnabled = puppeteerOnly || fallbackEnv || options?.disablePuppeteerFallback === false;
-  let browser: Browser | null = null;
+  const browserHolder: { current: Browser | null } = { current: null };
   const ensureBrowser = async (): Promise<Browser> => {
-    if (!browser) {
-      browser = await puppeteer.launch({
+    if (!browserHolder.current) {
+      browserHolder.current = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
     }
-    return browser;
+    return browserHolder.current;
   };
 
   // playerKey -> matchId -> PlayerMatchStats
@@ -722,7 +722,7 @@ export async function buildSquadPlayerStats(
       return { playerKey: p.playerKey, displayName: p.displayName, matches: sorted };
     });
   } finally {
-    await browser?.close();
+    if (browserHolder.current) await browserHolder.current.close().catch(() => undefined);
   }
 }
 
