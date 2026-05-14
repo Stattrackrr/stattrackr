@@ -595,7 +595,10 @@ export default function AflDvpCard({
   };
   const depthHasData = DEPTH_ROLE_OPTIONS.some((r) => Object.keys(depthPerStat[r.key]).length > 0);
   const hasDepthTarget = Boolean((oppSel || opponentTeam).trim());
-  const showDepthSkeleton = hasDepthTarget && !depthError && !depthHasData && (!hasResolvedDepthLoad || depthLoading);
+  const showDepthSkeleton =
+    !depthError &&
+    !depthHasData &&
+    (!hasResolvedDepthLoad || depthLoading || !hasDepthTarget || selectedSeason === 2026);
   const basicHasData = Object.keys(perStat).length > 0;
   const showBasicSkeleton = !!posSel && !error && !basicHasData && (!hasResolvedBasicLoad || loading);
 
