@@ -1367,7 +1367,7 @@ export default function NBALandingPage() {
       aflPropsFetchCompleteRef.current = restoredAflCache;
       setAflPropsLoading(!restoredAflCache);
       if (requiresCombinedFirstPaint) {
-        const restoredCombinedCache = restoredNbaCache && restoredAflCache;
+        const restoredCombinedCache = restoredCombinedSnapshot || (restoredNbaCache && restoredAflCache);
         combinedPropsFetchCompleteRef.current = restoredCombinedCache;
         setCombinedPropsLoading(!restoredCombinedCache);
       }
@@ -2250,7 +2250,7 @@ export default function NBALandingPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const forceRefresh = urlParams.get('refresh') === '1';
       const debugStats = urlParams.get('debugStats') === '1';
-      const hasWarmCombinedCache = propsLoadedRef.current && aflPropsFetchCompleteRef.current;
+      const hasWarmCombinedCache = initialFetchCompletedRef.current && aflPropsFetchCompleteRef.current;
 
       if (!hasWarmCombinedCache) {
         setCombinedPropsLoading(true);
