@@ -3748,6 +3748,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     });
     return todaysGames.filter((game) => idsWithProps.has(game.id));
   }, [playerProps, todaysGames, getGameForProp]);
+  const shouldApplyNbaGameFilter = selectedGames.size > 0 && gamesWithProps.length > 0;
 
   // AFL: games that have at least one prop, and filtered AFL props
   const aflGamesWithProps = useMemo(() => {
@@ -4182,7 +4183,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       }
 
       // Game filter - check if prop belongs to a selected game
-      if (selectedGames.size > 0) {
+      if (shouldApplyNbaGameFilter) {
         const game = getGameForProp(prop);
         if (!game || !selectedGames.has(game.id)) {
           return false;
@@ -4191,7 +4192,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
       return true;
     });
-  }, [playerProps, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel]);
+  }, [playerProps, debouncedSearchQuery, selectedBookmakers, selectedPropTypes, selectedGames, shouldApplyNbaGameFilter, getStatLabel, getGameForProp]);
 
   // Apply prop line sorting (highest/lowest)
   // IMPORTANT: Sort ALL playerProps first (across all pages), then filter
@@ -4245,7 +4246,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         }
 
         // Game filter
-        if (selectedGames.size > 0) {
+        if (shouldApplyNbaGameFilter) {
           const game = getGameForProp(prop);
           if (!game || !selectedGames.has(game.id)) {
             return false;
@@ -4258,7 +4259,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     
     // If no prop line sort, just return filtered props (will be sorted by L10% later)
     return filteredPlayerProps;
-  }, [playerProps, propLineSort, filteredPlayerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, todaysGames, getStatLabel, getGameForProp]);
+  }, [playerProps, propLineSort, filteredPlayerProps, searchQuery, selectedBookmakers, selectedPropTypes, selectedGames, shouldApplyNbaGameFilter, getStatLabel, getGameForProp]);
 
   // Deduplicate props: same player + stat + line + opponent should only appear once
   // Keep the one with the most bookmakers or best odds
@@ -5880,7 +5881,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   </details>
                 )}
                 
-                {(propsSport === 'combined' && combinedPropsLoading) || activeFilteredCount === 0 ? (
+                {activeFilteredCount === 0 ? (
                     ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
