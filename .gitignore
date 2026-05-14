@@ -65,3 +65,4 @@ data/afl-model/cache/
 data/afl-model/local/
 data/afl-model/latest-disposals-projections-localtest.json
 data/afl-model/projections/*-localtest.json
+.env*.local
