@@ -168,6 +168,7 @@ export default function AflDvpCard({
   const [loading, setLoading] = useState(false);
   const [depthLoading, setDepthLoading] = useState(false);
   const [hasResolvedBasicLoad, setHasResolvedBasicLoad] = useState(false);
+  const [hasResolvedDepthLoad, setHasResolvedDepthLoad] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [depthError, setDepthError] = useState<string | null>(null);
   const [perStat, setPerStat] = useState<Record<string, number | null>>({});
@@ -356,8 +357,11 @@ export default function AflDvpCard({
       if (!targetOpp) {
         setDepthPerStat({ key_fwd: {}, gen_fwd: {}, ins_mid: {}, ruck: {}, wng_def: {}, gen_def: {}, des_kck: {} });
         setDepthPerRank({ key_fwd: {}, gen_fwd: {}, ins_mid: {}, ruck: {}, wng_def: {}, gen_def: {}, des_kck: {} });
+        setHasResolvedDepthLoad(false);
+        setDepthLoading(false);
         return;
       }
+      setHasResolvedDepthLoad(false);
       const statsCsv = DVP_METRICS.map((m) => m.key).join(',');
       const bust = process.env.NODE_ENV === 'development' ? '&bust=1' : '';
       const skipClientCache = process.env.NODE_ENV === 'development';
@@ -432,6 +436,7 @@ export default function AflDvpCard({
 
         const rolesToFetch = roleRequests.filter((r) => !r.isFresh);
         if (rolesToFetch.length === 0) {
+          setHasResolvedDepthLoad(true);
           setDepthLoading(false);
           return;
         }
@@ -469,7 +474,10 @@ export default function AflDvpCard({
       } catch {
         if (!abort) setDepthError('Unable to load depth DvP data.');
       } finally {
-        if (!abort) setDepthLoading(false);
+        if (!abort) {
+          setHasResolvedDepthLoad(true);
+          setDepthLoading(false);
+        }
       }
     };
     run();
@@ -586,6 +594,8 @@ export default function AflDvpCard({
     };
   };
   const depthHasData = DEPTH_ROLE_OPTIONS.some((r) => Object.keys(depthPerStat[r.key]).length > 0);
+  const hasDepthTarget = Boolean((oppSel || opponentTeam).trim());
+  const showDepthSkeleton = hasDepthTarget && !depthError && !depthHasData && (!hasResolvedDepthLoad || depthLoading);
   const basicHasData = Object.keys(perStat).length > 0;
   const showBasicSkeleton = !!posSel && !error && !basicHasData && (!hasResolvedBasicLoad || loading);
 
@@ -724,7 +734,7 @@ export default function AflDvpCard({
         {viewMode === 'depth' ? (
           depthError ? (
             <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading depth DvP stats: {depthError}</div>
-          ) : depthLoading && !depthHasData ? (
+          ) : showDepthSkeleton ? (
             <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
               {DVP_METRICS.map((m, index) => (
                 <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${mounted && isDark ? 'border-slate-700' : 'border-slate-300'} px-3 py-2.5`}>
