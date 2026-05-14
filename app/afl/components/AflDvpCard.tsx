@@ -167,6 +167,7 @@ export default function AflDvpCard({
   const [selectedSeason, setSelectedSeason] = useState<2025 | 2026>(2026);
   const [loading, setLoading] = useState(false);
   const [depthLoading, setDepthLoading] = useState(false);
+  const [hasResolvedBasicLoad, setHasResolvedBasicLoad] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [depthError, setDepthError] = useState<string | null>(null);
   const [perStat, setPerStat] = useState<Record<string, number | null>>({});
@@ -254,9 +255,11 @@ export default function AflDvpCard({
       if (!targetPos) {
         setPerStat({});
         setPerRank({});
+        setHasResolvedBasicLoad(false);
         return;
       }
 
+      setHasResolvedBasicLoad(false);
       const cacheKey = `${DVP_CLIENT_CACHE_VERSION}:${selectedSeason}:${targetPos}`;
       const cached = dvpBatchCache.get(cacheKey);
       const now = Date.now();
@@ -293,6 +296,7 @@ export default function AflDvpCard({
 
       if (isFresh && cached) {
         applyFromData(cached.data);
+        setHasResolvedBasicLoad(true);
         setLoading(false);
         return;
       }
@@ -324,6 +328,7 @@ export default function AflDvpCard({
         if (abort) return;
         if (!data?.success) {
           if (!cached?.data) setError('Unable to load DvP data.');
+          setHasResolvedBasicLoad(true);
           setLoading(false);
           return;
         }
@@ -332,7 +337,10 @@ export default function AflDvpCard({
       } catch {
         if (!abort && !cached?.data) setError('Unable to load DvP data.');
       } finally {
-        if (!abort) setLoading(false);
+        if (!abort) {
+          setHasResolvedBasicLoad(true);
+          setLoading(false);
+        }
       }
     };
     run();
@@ -578,6 +586,8 @@ export default function AflDvpCard({
     };
   };
   const depthHasData = DEPTH_ROLE_OPTIONS.some((r) => Object.keys(depthPerStat[r.key]).length > 0);
+  const basicHasData = Object.keys(perStat).length > 0;
+  const showBasicSkeleton = !!posSel && !error && !basicHasData && (!hasResolvedBasicLoad || loading);
 
   if (!playerName) {
     return <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Select a player to view DvP.</div>;
@@ -749,15 +759,7 @@ export default function AflDvpCard({
               ))}
             </div>
           )
-        ) : selectedSeason === 2026 && (error || (posSel && !loading && Object.keys(perStat).length === 0)) ? (
-          <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            2026 DvP will show once the AFL Process Stats workflow has run (builds DvP and caches it).
-          </div>
-        ) : error ? (
-          <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading DvP stats: {error}</div>
-        ) : !posSel ? (
-          <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>
-        ) : loading && Object.keys(perStat).length === 0 ? (
+        ) : showBasicSkeleton ? (
           <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
             {DVP_METRICS.map((m, index) => (
               <div key={m.key} className={`mx-3 my-2 rounded-lg border-2 ${mounted && isDark ? 'border-slate-700' : 'border-slate-300'} px-3 py-2.5`}>
@@ -773,6 +775,14 @@ export default function AflDvpCard({
               </div>
             ))}
           </div>
+        ) : selectedSeason === 2026 && (error || (posSel && hasResolvedBasicLoad && !loading && !basicHasData)) ? (
+          <div className={`px-3 py-3 text-sm ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            2026 DvP will show once the AFL Process Stats workflow has run (builds DvP and caches it).
+          </div>
+        ) : error ? (
+          <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading DvP stats: {error}</div>
+        ) : !posSel ? (
+          <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">Select a position above to view DvP stats.</div>
         ) : (
           <div className="overflow-y-scroll overscroll-contain custom-scrollbar max-h-64 pr-1 pb-2" onWheel={(e) => e.stopPropagation()}>
             {DVP_METRICS.map((m) => {
