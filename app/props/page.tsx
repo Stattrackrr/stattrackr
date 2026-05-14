@@ -1009,6 +1009,7 @@ export default function NBALandingPage() {
     const nbaRows = Array.isArray(combinedSnapshot?.nba?.props) ? combinedSnapshot.nba.props : [];
     const aflGamesNext = Array.isArray(combinedSnapshot?.afl?.games) ? combinedSnapshot.afl.games : [];
     const aflPropsNext = Array.isArray(combinedSnapshot?.afl?.props) ? combinedSnapshot.afl.props : [];
+    const noAflOdds = combinedSnapshot?.afl?.noAflOdds === true;
     const mergedNba = mergeNbaPropsWithStoredCalculatedStats(nbaRows);
 
     setPlayerProps(mergedNba.props);
@@ -1019,8 +1020,8 @@ export default function NBALandingPage() {
     setPropsLoading(false);
     setPropsProcessing(false);
 
-    setAflGames(aflGamesNext);
-    setAflProps(aflPropsNext);
+    setAflGames((prev) => (noAflOdds || aflGamesNext.length > 0 ? aflGamesNext : prev));
+    setAflProps((prev) => (noAflOdds || aflPropsNext.length > 0 ? aflPropsNext : prev));
     setAflIngestMessage(combinedSnapshot?.afl?.ingestMessage ?? null);
     setAflLastUpdated(combinedSnapshot?.afl?.lastUpdated ?? null);
     if (combinedSnapshot?.afl?.debugMeta) {
@@ -1029,7 +1030,7 @@ export default function NBALandingPage() {
       setAflListDebugMeta(null);
     }
 
-    if (combinedSnapshot?.afl?.noAflOdds) {
+    if (noAflOdds) {
       userModifiedAflGamesRef.current = false;
       syncSelectedAflGames([]);
     } else {
@@ -1810,7 +1811,7 @@ export default function NBALandingPage() {
   // Fetch AFL games + player props when sport is AFL or combined. No sessionStorage paint: list API + no-store are source of truth (avoids stale Swans v Hawks after a game).
   // When API returns empty and we never got props this run, retry once after 2s (transient) before empty / delayed retries.
   useEffect(() => {
-    if (propsSport !== 'afl') return;
+    if (propsSport !== 'afl' && propsSport !== 'combined') return;
     let cancelled = false;
     let hadNonEmptyFresh = false;
     // Keep cached rows visible while we refresh in background.
