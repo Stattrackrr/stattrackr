@@ -1,39 +1,17 @@
 {
-  "generatedAt": "2026-05-14T18:14:19.926Z",
+  "generatedAt": "2026-05-15T12:29:54.870Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "87b89380cc5782e10c04e601ee5d30d0",
-      "homeTeam": "Sydney Swans",
-      "awayTeam": "Collingwood Magpies",
-      "commenceTime": "2026-05-15T09:30:00Z",
-      "weather": {
-        "temperatureC": 16.9,
-        "precipitationMm": 0,
-        "windKmh": 4
-      }
-    },
-    {
-      "gameId": "cc58ca66d1ea43464c769f94ec5b60e7",
-      "homeTeam": "Gold Coast Suns",
-      "awayTeam": "Port Adelaide Power",
-      "commenceTime": "2026-05-15T10:10:00Z",
-      "weather": {
-        "temperatureC": 17.9,
-        "precipitationMm": 0.1,
-        "windKmh": 14.6
-      }
-    },
     {
       "gameId": "cb06048c1a7cb679f440df9d7d4ea256",
       "homeTeam": "Adelaide Crows",
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-05-16T03:15:20Z",
       "weather": {
-        "temperatureC": 18.8,
-        "precipitationMm": 0,
-        "windKmh": 10.2
+        "temperatureC": 18.1,
+        "precipitationMm": 0.1,
+        "windKmh": 12.9
       }
     },
     {
@@ -42,9 +20,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-05-16T06:15:46Z",
       "weather": {
-        "temperatureC": 20.2,
+        "temperatureC": 20.9,
         "precipitationMm": 0,
-        "windKmh": 12.6
+        "windKmh": 14.1
       }
     },
     {
@@ -53,9 +31,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-05-16T09:35:00Z",
       "weather": {
-        "temperatureC": 17.5,
+        "temperatureC": 18.4,
         "precipitationMm": 0,
-        "windKmh": 10
+        "windKmh": 8.6
       }
     },
     {
@@ -64,9 +42,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-17T03:10:00Z",
       "weather": {
-        "temperatureC": 15.2,
-        "precipitationMm": 1.2,
-        "windKmh": 11.5
+        "temperatureC": 16.1,
+        "precipitationMm": 0,
+        "windKmh": 2.3
       }
     },
     {
@@ -75,9 +53,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-17T05:15:17Z",
       "weather": {
-        "temperatureC": 15.9,
-        "precipitationMm": 0.1,
-        "windKmh": 10.2
+        "temperatureC": 16.9,
+        "precipitationMm": 0,
+        "windKmh": 8.6
       }
     },
     {
@@ -86,11 +64,11 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-17T08:15:45Z",
       "weather": {
-        "temperatureC": 18.4,
+        "temperatureC": 18,
         "precipitationMm": 0,
-        "windKmh": 8.5
+        "windKmh": 7
       }
     }
   ],
-  "count": 8
+  "count": 6
 }
