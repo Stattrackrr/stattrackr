@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-16T11:48:00.384Z",
+  "generatedAt": "2026-05-16T17:30:16.263Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-17T03:10:00Z",
       "weather": {
-        "temperatureC": 16.1,
-        "precipitationMm": 1.8,
-        "windKmh": 11.4
+        "temperatureC": 15.9,
+        "precipitationMm": 0.8,
+        "windKmh": 14.8
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-17T05:15:17Z",
       "weather": {
-        "temperatureC": 15.8,
-        "precipitationMm": 0.3,
-        "windKmh": 11
+        "temperatureC": 15.6,
+        "precipitationMm": 0.9,
+        "windKmh": 12.5
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-17T08:15:45Z",
       "weather": {
-        "temperatureC": 18.5,
+        "temperatureC": 18.6,
         "precipitationMm": 0,
-        "windKmh": 7.1
+        "windKmh": 6.7
       }
     }
   ],

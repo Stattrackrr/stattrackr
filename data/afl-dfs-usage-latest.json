@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-05-16T11:47:56.023Z",
+  "generatedAt": "2026-05-16T17:29:58.860Z",
   "source": "dfsaustralia.com/wp-admin/admin-ajax.php",
   "actions": {
     "cba": "afl_cbas_call_new_mysql",
@@ -28,9 +28,9 @@
   ],
   "rowsFetched": {
     "cbaRows": 280,
-    "kickinRows": 164
+    "kickinRows": 166
   },
-  "count": 388,
+  "count": 390,
   "players": [
     {
       "name": "Lachlan McAndrew",
@@ -357,35 +357,28 @@
     {
       "name": "Patrick Cripps",
       "normalizedName": "patrick cripps",
-      "cbaPct": 79.7,
+      "cbaPct": 79.2,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Marc Pittonet",
       "normalizedName": "marc pittonet",
-      "cbaPct": 75.5,
+      "cbaPct": 75.8,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Sam Walsh",
       "normalizedName": "sam walsh",
-      "cbaPct": 71.8,
+      "cbaPct": 72.3,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "George Hewett",
       "normalizedName": "george hewett",
-      "cbaPct": 61.1,
-      "kickIns": null,
-      "kickInPlayOnPct": null
-    },
-    {
-      "name": "Adam Cerra",
-      "normalizedName": "adam cerra",
-      "cbaPct": 53.3,
+      "cbaPct": 59.9,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -397,9 +390,16 @@
       "kickInPlayOnPct": null
     },
     {
+      "name": "Adam Cerra",
+      "normalizedName": "adam cerra",
+      "cbaPct": 50.2,
+      "kickIns": null,
+      "kickInPlayOnPct": null
+    },
+    {
       "name": "Jagga Smith",
       "normalizedName": "jagga smith",
-      "cbaPct": 39.5,
+      "cbaPct": 40.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -420,16 +420,9 @@
     {
       "name": "Zac Williams",
       "normalizedName": "zac williams",
-      "cbaPct": 16.5,
+      "cbaPct": 15.1,
       "kickIns": 12,
       "kickInPlayOnPct": 91.6667
-    },
-    {
-      "name": "Lachlan Cowan",
-      "normalizedName": "lachlan cowan",
-      "cbaPct": 6.8,
-      "kickIns": 2,
-      "kickInPlayOnPct": 100
     },
     {
       "name": "Lewis Young",
@@ -439,9 +432,23 @@
       "kickInPlayOnPct": 100
     },
     {
+      "name": "Lachlan Cowan",
+      "normalizedName": "lachlan cowan",
+      "cbaPct": 6.2,
+      "kickIns": 2,
+      "kickInPlayOnPct": 100
+    },
+    {
       "name": "Ben Ainsworth",
       "normalizedName": "ben ainsworth",
-      "cbaPct": 3.8,
+      "cbaPct": 4.8,
+      "kickIns": null,
+      "kickInPlayOnPct": null
+    },
+    {
+      "name": "Harry McKay",
+      "normalizedName": "harry mckay",
+      "cbaPct": 4.7,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -453,16 +460,9 @@
       "kickInPlayOnPct": null
     },
     {
-      "name": "Harry McKay",
-      "normalizedName": "harry mckay",
-      "cbaPct": 3,
-      "kickIns": null,
-      "kickInPlayOnPct": null
-    },
-    {
       "name": "Oliver Hollands",
       "normalizedName": "oliver hollands",
-      "cbaPct": 1.7,
+      "cbaPct": 1.6,
       "kickIns": 5,
       "kickInPlayOnPct": 80
     },
@@ -476,23 +476,23 @@
     {
       "name": "Brodie Kemp",
       "normalizedName": "brodie kemp",
-      "cbaPct": 0.8,
+      "cbaPct": 0.7,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Oliver Florent",
       "normalizedName": "oliver florent",
-      "cbaPct": 0.4,
-      "kickIns": 29,
-      "kickInPlayOnPct": 82.7586
+      "cbaPct": 0.3,
+      "kickIns": 30,
+      "kickInPlayOnPct": 83.3333
     },
     {
       "name": "Nic Newman",
       "normalizedName": "nic newman",
       "cbaPct": null,
-      "kickIns": 30,
-      "kickInPlayOnPct": 93.3333
+      "kickIns": 35,
+      "kickInPlayOnPct": 91.4286
     },
     {
       "name": "Adam Saad",
@@ -516,6 +516,13 @@
       "kickInPlayOnPct": 33.3333
     },
     {
+      "name": "Billy Wilson",
+      "normalizedName": "billy wilson",
+      "cbaPct": null,
+      "kickIns": 3,
+      "kickInPlayOnPct": 100
+    },
+    {
       "name": "Mitch McGovern",
       "normalizedName": "mitch mcgovern",
       "cbaPct": null,
@@ -527,13 +534,6 @@
       "normalizedName": "matthew carroll",
       "cbaPct": null,
       "kickIns": 2,
-      "kickInPlayOnPct": 100
-    },
-    {
-      "name": "Billy Wilson",
-      "normalizedName": "billy wilson",
-      "cbaPct": null,
-      "kickIns": 1,
       "kickInPlayOnPct": 100
     },
     {
@@ -2471,7 +2471,7 @@
     {
       "name": "Ed Richards",
       "normalizedName": "ed richards",
-      "cbaPct": 76.3,
+      "cbaPct": 77.6,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2485,14 +2485,14 @@
     {
       "name": "Marcus Bontempelli",
       "normalizedName": "marcus bontempelli",
-      "cbaPct": 70.2,
+      "cbaPct": 71.5,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Matthew Kennedy",
       "normalizedName": "matthew kennedy",
-      "cbaPct": 62.1,
+      "cbaPct": 60,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2520,23 +2520,30 @@
     {
       "name": "Ryley Sanders",
       "normalizedName": "ryley sanders",
-      "cbaPct": 40.1,
+      "cbaPct": 41.9,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Louis Emmett",
       "normalizedName": "louis emmett",
-      "cbaPct": 37.9,
+      "cbaPct": 34,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Joel Freijah",
       "normalizedName": "joel freijah",
-      "cbaPct": 27.2,
+      "cbaPct": 27.1,
       "kickIns": null,
       "kickInPlayOnPct": null
+    },
+    {
+      "name": "Rory Lobb",
+      "normalizedName": "rory lobb",
+      "cbaPct": 17.5,
+      "kickIns": 2,
+      "kickInPlayOnPct": 100
     },
     {
       "name": "Jordan Croft",
@@ -2553,23 +2560,16 @@
       "kickInPlayOnPct": null
     },
     {
-      "name": "Rory Lobb",
-      "normalizedName": "rory lobb",
-      "cbaPct": 8.7,
-      "kickIns": 2,
-      "kickInPlayOnPct": 100
-    },
-    {
       "name": "Rhylee West",
       "normalizedName": "rhylee west",
-      "cbaPct": 5.1,
+      "cbaPct": 4.7,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
     {
       "name": "Cooper Hynes",
       "normalizedName": "cooper hynes",
-      "cbaPct": 3.8,
+      "cbaPct": 3.4,
       "kickIns": null,
       "kickInPlayOnPct": null
     },
@@ -2577,22 +2577,22 @@
       "name": "Bailey Dale",
       "normalizedName": "bailey dale",
       "cbaPct": null,
-      "kickIns": 76,
-      "kickInPlayOnPct": 90.7895
+      "kickIns": 83,
+      "kickInPlayOnPct": 90.3614
     },
     {
       "name": "Lachlan Bramble",
       "normalizedName": "lachlan bramble",
       "cbaPct": null,
-      "kickIns": 17,
-      "kickInPlayOnPct": 88.2353
+      "kickIns": 19,
+      "kickInPlayOnPct": 89.4737
     },
     {
       "name": "Connor Budarick",
       "normalizedName": "connor budarick",
       "cbaPct": null,
-      "kickIns": 16,
-      "kickInPlayOnPct": 93.75
+      "kickIns": 18,
+      "kickInPlayOnPct": 94.4444
     },
     {
       "name": "Lachie Jaques",
@@ -2600,6 +2600,20 @@
       "cbaPct": null,
       "kickIns": 7,
       "kickInPlayOnPct": 85.7143
+    },
+    {
+      "name": "Nick Coffield",
+      "normalizedName": "nick coffield",
+      "cbaPct": null,
+      "kickIns": 2,
+      "kickInPlayOnPct": 50
+    },
+    {
+      "name": "Buku Khamis",
+      "normalizedName": "buku khamis",
+      "cbaPct": null,
+      "kickIns": 1,
+      "kickInPlayOnPct": 100
     },
     {
       "name": "Bailey J. Williams",
