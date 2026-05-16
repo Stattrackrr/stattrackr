@@ -1,41 +1,8 @@
 {
-  "generatedAt": "2026-05-15T17:57:53.912Z",
+  "generatedAt": "2026-05-16T11:48:00.384Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "cb06048c1a7cb679f440df9d7d4ea256",
-      "homeTeam": "Adelaide Crows",
-      "awayTeam": "North Melbourne Kangaroos",
-      "commenceTime": "2026-05-16T03:15:20Z",
-      "weather": {
-        "temperatureC": 18.1,
-        "precipitationMm": 0.1,
-        "windKmh": 14.4
-      }
-    },
-    {
-      "gameId": "01669639b9cf8339e67a3443548d7d8d",
-      "homeTeam": "Melbourne Demons",
-      "awayTeam": "Hawthorn Hawks",
-      "commenceTime": "2026-05-16T06:15:46Z",
-      "weather": {
-        "temperatureC": 20.9,
-        "precipitationMm": 0,
-        "windKmh": 13.5
-      }
-    },
-    {
-      "gameId": "f436616887b737e10f106ef8a57610eb",
-      "homeTeam": "Carlton Blues",
-      "awayTeam": "Western Bulldogs",
-      "commenceTime": "2026-05-16T09:35:00Z",
-      "weather": {
-        "temperatureC": 18.4,
-        "precipitationMm": 0,
-        "windKmh": 12.4
-      }
-    },
     {
       "gameId": "c972e94b36ecb6633351582d2ec4b3b8",
       "homeTeam": "Essendon Bombers",
@@ -43,8 +10,8 @@
       "commenceTime": "2026-05-17T03:10:00Z",
       "weather": {
         "temperatureC": 16.1,
-        "precipitationMm": 0,
-        "windKmh": 10.3
+        "precipitationMm": 1.8,
+        "windKmh": 11.4
       }
     },
     {
@@ -53,9 +20,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-17T05:15:17Z",
       "weather": {
-        "temperatureC": 16.9,
-        "precipitationMm": 0,
-        "windKmh": 10.5
+        "temperatureC": 15.8,
+        "precipitationMm": 0.3,
+        "windKmh": 11
       }
     },
     {
@@ -64,11 +31,11 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-17T08:15:45Z",
       "weather": {
-        "temperatureC": 18,
+        "temperatureC": 18.5,
         "precipitationMm": 0,
-        "windKmh": 6.5
+        "windKmh": 7.1
       }
     }
   ],
-  "count": 6
+  "count": 3
 }
