@@ -121,3 +121,31 @@ export function readCanonicalSoccerStatValue(
   }
   return null;
 }
+
+/** Soccerway uses "-" for zero in player match tables; treat as 0 for charts. */
+export function parseSoccerPlayerStatNumber(value: string | null | undefined): number | null {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  if (trimmed === '-' || trimmed === '—' || trimmed.toLowerCase() === 'n/a') return 0;
+  const match = trimmed.match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const n = Number.parseFloat(match[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+const PLAYER_STAT_CATEGORY_ORDER = ['top', 'shots', 'attack', 'passes', 'defense', 'goalkeeping', 'general'] as const;
+
+/** First numeric value for a canonical stat across Soccerway player tabs (missing key → null, "-" → 0). */
+export function readPlayerMatchStatNumber(
+  categories: Partial<Record<string, { stats?: Record<string, string | null> }>> | undefined,
+  canonicalKey: string
+): number | null {
+  if (!categories) return null;
+  for (const category of PLAYER_STAT_CATEGORY_ORDER) {
+    const raw = readCanonicalSoccerStatValue(categories[category]?.stats, canonicalKey);
+    const n = parseSoccerPlayerStatNumber(raw);
+    if (n != null) return n;
+  }
+  return null;
+}

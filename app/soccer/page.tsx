@@ -24,6 +24,8 @@ import { SoccerOpponentBreakdownMatchupPanel } from '@/app/soccer/components/Soc
 import { SoccerTeamFormHomeAwayPanel } from '@/app/soccer/components/SoccerTeamFormHomeAwayPanel';
 import { SoccerInjuriesCard } from '@/app/soccer/components/SoccerInjuriesCard';
 import { SoccerPlayerPropsTestCard } from '@/app/soccer/components/SoccerPlayerPropsTestCard';
+import { SoccerPlayerSupportingStats } from '@/app/soccer/components/SoccerPlayerSupportingStats';
+import type { SoccerPlayerPropsChartSnapshot } from '@/app/soccer/components/soccerPlayerPropsTypes';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -96,7 +98,7 @@ type SoccerPlayerOption = {
   cachedMatchCount?: number;
 };
 
-type CachedSoccerRosterRow = { playerKey: string; displayName: string; matchCount: number };
+type CachedSoccerRosterRow = { playerKey: string; displayName: string; matchCount: number; teamHref?: string };
 
 function extractSoccerwayPlayerSlugFromParticipantUrl(url: string | null | undefined): string | null {
   const m = String(url || '').trim().match(/\/player\/([^/]+)\//i);
@@ -122,13 +124,21 @@ function findCachedRosterRowFromLineupPick(
   );
 }
 
-function findCachedRosterRowForLineupPlayer(roster: CachedSoccerRosterRow[], player: SoccerwayLineupPlayer): CachedSoccerRosterRow | undefined {
+function findCachedRosterRowForLineupPlayer(
+  roster: CachedSoccerRosterRow[],
+  player: SoccerwayLineupPlayer,
+  teamHref?: string | null
+): CachedSoccerRosterRow | undefined {
+  const normalizedHref = normalizeTeamHref(teamHref ?? '');
+  const scoped = normalizedHref
+    ? roster.filter((r) => !r.teamHref || normalizeTeamHref(r.teamHref) === normalizedHref)
+    : roster;
   const slug = extractSoccerwayPlayerSlugFromParticipantUrl(player.participantUrl);
   if (slug) {
-    const bySlug = roster.find((r) => r.playerKey === slug);
+    const bySlug = scoped.find((r) => r.playerKey === slug);
     if (bySlug) return bySlug;
   }
-  return findCachedRosterRowFromLineupPick(roster, {
+  return findCachedRosterRowFromLineupPick(scoped, {
     playerKey: '',
     displayName: player.listName || player.fieldName,
   });
@@ -686,11 +696,12 @@ function SoccerPageContent() {
   const [predictedLineupLoading, setPredictedLineupLoading] = useState(false);
   const [predictedLineupError, setPredictedLineupError] = useState<string | null>(null);
   const [predictedLineupCacheMiss, setPredictedLineupCacheMiss] = useState(false);
-  const [cachedSoccerPlayerRoster, setCachedSoccerPlayerRoster] = useState<
-    Array<{ playerKey: string; displayName: string; matchCount: number }>
-  >([]);
+  const [cachedSoccerPlayerRoster, setCachedSoccerPlayerRoster] = useState<CachedSoccerRosterRow[]>([]);
+  const [globalCachedPlayers, setGlobalCachedPlayers] = useState<CachedSoccerRosterRow[]>([]);
+  const [globalCachedPlayersLoading, setGlobalCachedPlayersLoading] = useState(false);
   const [soccerOddsMarkets, setSoccerOddsMarkets] = useState<SoccerOddsMarket[]>([]);
   const [mainChartStat, setMainChartStat] = useState('');
+  const [playerPropsChartSnapshot, setPlayerPropsChartSnapshot] = useState<SoccerPlayerPropsChartSnapshot | null>(null);
   const [chartTimeframe, setChartTimeframe] = useState<SoccerTimeframe>('last10');
   const [chartTeamScope, setChartTeamScope] = useState<SoccerStatTeamScope>('all');
   const [chartCompetition, setChartCompetition] = useState('all');
@@ -914,12 +925,44 @@ function SoccerPageContent() {
     return { bySlug, byName };
   }, [predictedLineup?.teams]);
 
+  const teamNameByHref = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const team of teamUniverse) {
+      const href = normalizeTeamHref(team.href);
+      if (href) map.set(href, team.name);
+    }
+    return map;
+  }, [teamUniverse]);
+
+  const playerRosterForLookup = useMemo(() => {
+    const byKey = new Map<string, CachedSoccerRosterRow>();
+    for (const row of globalCachedPlayers) {
+      if (!row.playerKey || !row.displayName) continue;
+      const teamHref = normalizeTeamHref(row.teamHref ?? '');
+      byKey.set(`${teamHref}:${row.playerKey}`, { ...row, teamHref: teamHref || row.teamHref });
+    }
+    const selectedHref = normalizeTeamHref(selectedTeam?.href ?? '');
+    for (const row of cachedSoccerPlayerRoster) {
+      if (!row.playerKey || !row.displayName || !selectedHref) continue;
+      byKey.set(`${selectedHref}:${row.playerKey}`, { ...row, teamHref: selectedHref });
+    }
+    return [...byKey.values()];
+  }, [globalCachedPlayers, cachedSoccerPlayerRoster, selectedTeam?.href]);
+
+  const searchableCachedPlayers = useMemo(() => {
+    if (globalCachedPlayers.length > 0) {
+      return globalCachedPlayers.filter((row) => row.playerKey && row.displayName && row.matchCount > 0);
+    }
+    return cachedSoccerPlayerRoster.filter((row) => row.playerKey && row.displayName && row.matchCount > 0);
+  }, [globalCachedPlayers, cachedSoccerPlayerRoster]);
+
   const soccerPlayerUniverse = useMemo(() => {
-    const href = normalizeTeamHref(selectedTeam?.href ?? '');
-    const teamName = selectedTeam?.name ?? '';
-    return cachedSoccerPlayerRoster
-      .filter((row) => row.playerKey && row.displayName)
+    const selectedHref = normalizeTeamHref(selectedTeam?.href ?? '');
+    const selectedTeamName = selectedTeam?.name ?? '';
+    return searchableCachedPlayers
       .map((row) => {
+        const rowTeamHref = normalizeTeamHref(row.teamHref ?? selectedHref);
+        const rowTeamName = teamNameByHref.get(rowTeamHref) ?? (rowTeamHref === selectedHref ? selectedTeamName : '');
         const parts = row.displayName.trim().split(/\s+/).filter(Boolean);
         const shortName =
           parts.length >= 2
@@ -932,8 +975,8 @@ function SoccerPageContent() {
           id: row.playerKey,
           name: row.displayName,
           shortName,
-          teamName,
-          teamHref: href || null,
+          teamName: rowTeamName,
+          teamHref: rowTeamHref || null,
           number: info?.number ?? null,
           imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
           role: info?.position ?? null,
@@ -947,7 +990,14 @@ function SoccerPageContent() {
         if (bc !== ac) return bc - ac;
         return a.name.localeCompare(b.name);
       });
-  }, [cachedSoccerPlayerRoster, selectedTeam?.href, selectedTeam?.name, lineupImageByNormalizedName, lineupPlayerInfoLookup]);
+  }, [
+    searchableCachedPlayers,
+    selectedTeam?.href,
+    selectedTeam?.name,
+    teamNameByHref,
+    lineupImageByNormalizedName,
+    lineupPlayerInfoLookup,
+  ]);
 
   const filteredSoccerPlayers = useMemo(() => {
     const q = foldSoccerPlayerSearchText(playerSearchQuery);
@@ -962,6 +1012,41 @@ function SoccerPageContent() {
       })
       .slice(0, 48);
   }, [playerSearchQuery, soccerPlayerUniverse]);
+
+  useEffect(() => {
+    if (propsMode !== 'player') return;
+    let cancelled = false;
+    setGlobalCachedPlayersLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch('/api/soccer/cached-players-index', { cache: 'no-store' });
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          players?: Array<{ playerKey?: string; displayName?: string; matchCount?: number; teamHref?: string }>;
+        } | null;
+        if (!res.ok || !data?.success || !Array.isArray(data.players)) {
+          if (!cancelled) setGlobalCachedPlayers([]);
+          return;
+        }
+        const list = data.players
+          .map((p) => ({
+            playerKey: String(p.playerKey || '').trim().toLowerCase(),
+            displayName: String(p.displayName || '').trim(),
+            matchCount: Number(p.matchCount) || 0,
+            teamHref: normalizeTeamHref(String(p.teamHref || '')),
+          }))
+          .filter((p) => p.playerKey && p.displayName && p.teamHref && p.matchCount > 0);
+        if (!cancelled) setGlobalCachedPlayers(list);
+      } catch {
+        if (!cancelled) setGlobalCachedPlayers([]);
+      } finally {
+        if (!cancelled) setGlobalCachedPlayersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [propsMode]);
 
   useEffect(() => {
     if (propsMode !== 'player') return;
@@ -997,6 +1082,7 @@ function SoccerPageContent() {
             playerKey: String(p.playerKey || '').trim().toLowerCase(),
             displayName: String(p.displayName || '').trim(),
             matchCount: Number(p.matchCount) || 0,
+            teamHref: href,
           }))
           .filter((p) => p.playerKey && p.displayName);
         if (!cancelled) setCachedSoccerPlayerRoster(list);
@@ -1112,6 +1198,10 @@ function SoccerPageContent() {
     [pathname, router, searchParams]
   );
 
+  const handlePlayerPropsChartSnapshot = useCallback((snapshot: SoccerPlayerPropsChartSnapshot) => {
+    setPlayerPropsChartSnapshot(snapshot);
+  }, []);
+
   const handleLineupPlayerClick = useCallback(
     ({ player, teamName }: { player: SoccerwayLineupPlayer; teamName: string }) => {
       const matchedTeam =
@@ -1130,7 +1220,7 @@ function SoccerPageContent() {
 
       const currentHref = normalizeTeamHref(selectedTeam?.href ?? '');
       if (currentHref === teamHrefNorm) {
-        const row = findCachedRosterRowForLineupPlayer(cachedSoccerPlayerRoster, player);
+        const row = findCachedRosterRowForLineupPlayer(playerRosterForLookup, player, teamHrefNorm);
         if (row) {
           setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, matchedTeam, lineupImageByNormalizedName, lineupPlayerInfoLookup));
           setPlayerSearchQuery(row.displayName);
@@ -1147,7 +1237,7 @@ function SoccerPageContent() {
       setSelectedSoccerPlayer(null);
       setPlayerSearchQuery(displayName || slug);
     },
-    [cachedSoccerPlayerRoster, lineupImageByNormalizedName, selectedTeam?.href, teamUniverse, updateTeamUrl]
+    [playerRosterForLookup, lineupImageByNormalizedName, lineupPlayerInfoLookup, selectedTeam?.href, teamUniverse, updateTeamUrl]
   );
 
   useEffect(() => {
@@ -1164,13 +1254,17 @@ function SoccerPageContent() {
     const href = normalizeTeamHref(selectedTeam?.href ?? '');
     if (href !== pending.teamHref || !selectedTeam) return;
 
-    if (cachedSoccerPlayerRoster.length === 0) {
-      if (!rosterPlayerStatsFetchSettledRef.current) return;
+    if (playerRosterForLookup.length === 0) {
+      if (globalCachedPlayersLoading || !rosterPlayerStatsFetchSettledRef.current) return;
       lineupPickPendingRef.current = null;
       return;
     }
 
-    const row = findCachedRosterRowFromLineupPick(cachedSoccerPlayerRoster, pending);
+    const row =
+      findCachedRosterRowFromLineupPick(
+        playerRosterForLookup.filter((r) => !r.teamHref || normalizeTeamHref(r.teamHref) === href),
+        pending
+      ) ?? findCachedRosterRowFromLineupPick(playerRosterForLookup, pending);
     if (row) {
       setSelectedSoccerPlayer(buildSoccerPlayerOptionFromRosterRow(row, selectedTeam, lineupImageByNormalizedName, lineupPlayerInfoLookup));
       setPlayerSearchQuery(row.displayName);
@@ -1179,7 +1273,14 @@ function SoccerPageContent() {
     }
 
     lineupPickPendingRef.current = null;
-  }, [cachedSoccerPlayerRoster, lineupImageByNormalizedName, lineupPlayerInfoLookup, propsMode, selectedTeam]);
+  }, [
+    globalCachedPlayersLoading,
+    lineupImageByNormalizedName,
+    lineupPlayerInfoLookup,
+    playerRosterForLookup,
+    propsMode,
+    selectedTeam,
+  ]);
 
   useEffect(() => {
     if (teamUniverse.length === 0) return;
@@ -1945,9 +2046,11 @@ function SoccerPageContent() {
                             >
                               {filteredSoccerPlayers.length === 0 ? (
                                 <div className={`px-3 py-3 text-sm ${emptyText}`}>
-                                  {soccerPlayerUniverse.length === 0
-                                    ? 'No squad list loaded yet — wait a moment, or refresh. Charts need batch-scraped games for stats.'
-                                    : 'No players match'}
+                                  {globalCachedPlayersLoading
+                                    ? 'Loading cached players…'
+                                    : soccerPlayerUniverse.length === 0
+                                      ? 'No cached players yet — run the player-stats batch, then search any player with stored games.'
+                                      : 'No players match'}
                                 </div>
                               ) : (
                                 <ul className="py-1">
@@ -2100,6 +2203,7 @@ function SoccerPageContent() {
                           nextOpponentName={displayOpponent}
                           isDark={Boolean(mounted && isDark)}
                           emptyTextClass={emptyText}
+                          onChartSnapshotChange={handlePlayerPropsChartSnapshot}
                         />
                       ) : !selectedTeam ? (
                         <div className={`flex h-full min-h-[200px] items-center justify-center px-4 text-center text-sm ${emptyText}`}>
@@ -2154,6 +2258,44 @@ function SoccerPageContent() {
                     </div>
                   </div>
                 </div>
+
+                {propsMode === 'player' && (
+                  <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
+                    <h3 className={`text-sm font-semibold mb-1 px-3 sm:px-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      Supporting stats
+                    </h3>
+                    <div className="min-h-[220px] px-0 sm:px-0">
+                      {!selectedSoccerPlayer && !chartBootstrapPlayer?.playerKey ? (
+                        <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
+                          Select a player to load supporting stats.
+                        </div>
+                      ) : playerPropsChartSnapshot?.loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="space-y-3 w-full max-w-md">
+                            <div className={`h-4 w-32 rounded animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'} mx-auto`} />
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                              <div className={`h-20 rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                            </div>
+                          </div>
+                        </div>
+                      ) : !playerPropsChartSnapshot?.matches.length ? (
+                        <div className={`min-h-[120px] flex items-center justify-center px-4 text-center text-sm ${emptyText}`}>
+                          No cached player stats yet. Run the batch scrape, then select the player again.
+                        </div>
+                      ) : (
+                        <SoccerPlayerSupportingStats
+                          matches={playerPropsChartSnapshot.matches}
+                          mainStatKey={playerPropsChartSnapshot.mainStatKey}
+                          timeframe={playerPropsChartSnapshot.timeframe}
+                          competitionFilter={playerPropsChartSnapshot.competitionFilter}
+                          nextOpponentName={displayOpponent}
+                          isDark={Boolean(mounted && isDark)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {propsMode === 'team' && (
                   <div className={`w-full min-w-0 flex flex-col rounded-lg ${AFL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
@@ -2227,13 +2369,6 @@ function SoccerPageContent() {
                 <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
                   <div className="min-h-[200px]" />
                 </div>
-
-                {/* 4.52 — mobile placeholder */}
-                {propsMode === 'player' && (
-                  <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} px-2 sm:px-2.5 py-2.5 sm:py-3`}>
-                    <div className="min-h-[160px]" />
-                  </div>
-                )}
 
                 {/* 4.6 Injuries — mobile */}
                 {propsMode === 'player' && (

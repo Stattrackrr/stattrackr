@@ -4,33 +4,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
-import { canonicalSoccerStatKey, readCanonicalSoccerStatValue } from '@/lib/soccerStatKeyAliases';
-
-type PlayerStatRow = {
-  player: string | null;
-  stats: Record<string, string | null>;
-};
-
-type PlayerMatchStats = {
-  matchId: string;
-  kickoffUnix: number | null;
-  opponent: string;
-  opponentLogoUrl?: string | null;
-  competitionName?: string | null;
-  competitionCountry?: string | null;
-  venue: 'HOME' | 'AWAY';
-  scoreline: string;
-  result: 'W' | 'D' | 'L';
-  categories: {
-    top?: PlayerStatRow;
-    shots?: PlayerStatRow;
-    attack?: PlayerStatRow;
-    passes?: PlayerStatRow;
-    defense?: PlayerStatRow;
-    goalkeeping?: PlayerStatRow;
-    general?: PlayerStatRow;
-  };
-};
+import { canonicalSoccerStatKey, readPlayerMatchStatNumber } from '@/lib/soccerStatKeyAliases';
+import type { PlayerMatchStats } from '@/lib/soccerPlayerStatsScrape';
+import type {
+  SoccerPlayerChartTimeframe,
+  SoccerPlayerPropsChartSnapshot,
+} from '@/app/soccer/components/soccerPlayerPropsTypes';
+import { buildOutfieldMainChartTiles } from '@/app/soccer/components/soccerPlayerStatCatalog';
 
 type PlayerPropsResponse = {
   success?: boolean;
@@ -48,6 +28,7 @@ type SoccerPlayerPropsTestCardProps = {
   nextOpponentName?: string | null;
   isDark: boolean;
   emptyTextClass: string;
+  onChartSnapshotChange?: (snapshot: SoccerPlayerPropsChartSnapshot) => void;
 };
 
 type PlayerStatCategory = keyof PlayerMatchStats['categories'];
@@ -58,60 +39,16 @@ type StatTile = {
   key: string;
 };
 
-const PREFERRED_STAT_TILES: StatTile[] = [
-  { id: 'top:total_shots', label: 'Total Shots', category: 'top', key: 'total_shots' },
-  { id: 'top:expected_goals_xg', label: 'xG', category: 'top', key: 'expected_goals_xg' },
-  { id: 'top:touches', label: 'Touches', category: 'top', key: 'touches' },
-  { id: 'top:accurate_passes', label: 'Passes', category: 'top', key: 'accurate_passes' },
-];
-
-const STAT_CATEGORY_ORDER: PlayerStatCategory[] = ['top', 'shots', 'attack', 'passes', 'defense', 'goalkeeping', 'general'];
-
-function countNumericStatInCategory(
-  matches: PlayerMatchStats[],
-  category: PlayerStatCategory,
-  statKey: string
-): number {
-  let n = 0;
-  for (const match of matches) {
-    const raw = readCanonicalSoccerStatValue(match.categories[category]?.stats, statKey);
-    if (parseLeadingNumber(raw) != null) n += 1;
-  }
-  return n;
-}
-
-/** Best category tab to read this canonical stat from (most populated across the squad scrape). */
-function bestCategoryForCanonicalStat(matches: PlayerMatchStats[], canonicalKey: string): PlayerStatCategory {
-  let best: PlayerStatCategory = 'top';
-  let bestScore = -1;
-  for (const category of STAT_CATEGORY_ORDER) {
-    const score = countNumericStatInCategory(matches, category, canonicalKey);
-    if (score > bestScore) {
-      bestScore = score;
-      best = category;
-    }
-  }
-  return best;
-}
-
-function preferredStatTileIndex(tile: StatTile): number {
-  return PREFERRED_STAT_TILES.findIndex(
-    (p) => p.category === tile.category && canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(tile.key)
-  );
-}
-
-function pickBetterStatTileOnTie(a: StatTile, b: StatTile): StatTile {
-  const ia = preferredStatTileIndex(a);
-  const ib = preferredStatTileIndex(b);
-  if (ia !== -1 && ib !== -1) return ia <= ib ? a : b;
-  if (ia !== -1) return a;
-  if (ib !== -1) return b;
-  return a.id.localeCompare(b.id) <= 0 ? a : b;
-}
+const DEFAULT_MAIN_STAT_TILE: StatTile = {
+  id: 'general:goals',
+  label: 'Goals',
+  category: 'general',
+  key: 'goals',
+};
 
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last20', 'last50', 'h2h', 'thisSeason', 'lastSeason', 'all'] as const;
 
-type ChartTimeframe = (typeof TIMEFRAME_OPTIONS)[number];
+type ChartTimeframe = SoccerPlayerChartTimeframe;
 
 function parseLeadingNumber(value: string | null | undefined): number | null {
   const match = String(value || '').match(/-?\d+(?:\.\d+)?/);
@@ -187,14 +124,6 @@ function opponentNamesMatch(a: string | null | undefined, b: string | null | und
   const right = normalizeOpponentName(b);
   if (!left || !right) return false;
   return left === right || left.includes(right) || right.includes(left);
-}
-
-function labelFromStatKey(key: string): string {
-  return key
-    .split('_')
-    .filter(Boolean)
-    .map((word) => (word.length <= 3 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
-    .join(' ');
 }
 
 function buildPositiveAxis(values: number[], lineValue: number): { domain: [number, number]; ticks: number[] } {
@@ -466,11 +395,12 @@ export function SoccerPlayerPropsTestCard({
   nextOpponentName = null,
   isDark,
   emptyTextClass,
+  onChartSnapshotChange,
 }: SoccerPlayerPropsTestCardProps) {
   const [matches, setMatches] = useState<PlayerMatchStats[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStat, setSelectedStat] = useState('top:total_shots');
+  const [selectedStat, setSelectedStat] = useState(DEFAULT_MAIN_STAT_TILE.id);
   const [selectedTimeframe, setSelectedTimeframe] = useState<ChartTimeframe>('last10');
   const [selectedCompetition, setSelectedCompetition] = useState('all');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
@@ -560,76 +490,7 @@ export function SoccerPlayerPropsTestCard({
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
 
-  const availableStatTiles = useMemo(() => {
-    const canonicalKey = (tile: StatTile) => canonicalSoccerStatKey(tile.key);
-
-    const candidates: StatTile[] = [];
-
-    for (const preferred of PREFERRED_STAT_TILES) {
-      const hasNumericValue = matches.some(
-        (match) =>
-          parseLeadingNumber(readCanonicalSoccerStatValue(match.categories[preferred.category]?.stats, preferred.key)) != null
-      );
-      if (hasNumericValue) candidates.push(preferred);
-    }
-
-    for (const match of matches) {
-      for (const [category, row] of Object.entries(match.categories) as Array<[PlayerStatCategory, PlayerStatRow | undefined]>) {
-        if (!row?.stats) continue;
-        for (const [key, rawValue] of Object.entries(row.stats)) {
-          if (parseLeadingNumber(rawValue) == null) continue;
-          const canon = canonicalSoccerStatKey(key);
-          candidates.push({
-            id: `${category}:${canon}`,
-            label: labelFromStatKey(canon),
-            category,
-            key: canon,
-          });
-        }
-      }
-    }
-
-    const byCanon = new Map<string, StatTile[]>();
-    for (const tile of candidates) {
-      const k = canonicalKey(tile);
-      if (!byCanon.has(k)) byCanon.set(k, []);
-      byCanon.get(k)!.push(tile);
-    }
-
-    const winners: StatTile[] = [];
-    for (const [canon, group] of byCanon) {
-      let best = group[0];
-      let bestScore = countNumericStatInCategory(matches, best.category, canon);
-      for (const t of group.slice(1)) {
-        const score = countNumericStatInCategory(matches, t.category, canon);
-        if (score > bestScore) {
-          best = t;
-          bestScore = score;
-        } else if (score === bestScore) {
-          best = pickBetterStatTileOnTie(t, best);
-        }
-      }
-      const category = bestCategoryForCanonicalStat(matches, canon);
-      const pref = PREFERRED_STAT_TILES.find((p) => canonicalSoccerStatKey(p.key) === canon);
-      winners.push({
-        id: `${category}:${canon}`,
-        category,
-        key: canon,
-        label: pref?.label ?? labelFromStatKey(canon),
-      });
-    }
-
-    winners.sort((a, b) => {
-      const ia = PREFERRED_STAT_TILES.findIndex((p) => canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(a.key));
-      const ib = PREFERRED_STAT_TILES.findIndex((p) => canonicalSoccerStatKey(p.key) === canonicalSoccerStatKey(b.key));
-      if (ia !== -1 && ib !== -1) return ia - ib;
-      if (ia !== -1) return -1;
-      if (ib !== -1) return 1;
-      return a.label.localeCompare(b.label);
-    });
-
-    return winners;
-  }, [matches]);
+  const availableStatTiles = useMemo(() => buildOutfieldMainChartTiles(matches), [matches]);
 
   useEffect(() => {
     if (!availableStatTiles.length) return;
@@ -638,7 +499,18 @@ export function SoccerPlayerPropsTestCard({
     }
   }, [availableStatTiles, selectedStat]);
 
-  const selectedStatMeta = availableStatTiles.find((tile) => tile.id === selectedStat) ?? availableStatTiles[0] ?? PREFERRED_STAT_TILES[0];
+  const selectedStatMeta =
+    availableStatTiles.find((tile) => tile.id === selectedStat) ?? availableStatTiles[0] ?? DEFAULT_MAIN_STAT_TILE;
+
+  useEffect(() => {
+    onChartSnapshotChange?.({
+      matches,
+      mainStatKey: canonicalSoccerStatKey(selectedStatMeta.key),
+      timeframe: selectedTimeframe,
+      competitionFilter: selectedCompetition,
+      loading,
+    });
+  }, [loading, matches, onChartSnapshotChange, selectedCompetition, selectedStatMeta.key, selectedTimeframe]);
 
   useEffect(() => {
     setManualLineValue(null);
@@ -708,8 +580,7 @@ export function SoccerPlayerPropsTestCard({
 
   const chartData = useMemo(() => {
     return chartMatches.map((match) => {
-      const raw = readCanonicalSoccerStatValue(match.categories[selectedStatMeta.category]?.stats, selectedStatMeta.key);
-      const value = parseLeadingNumber(raw);
+      const value = readPlayerMatchStatNumber(match.categories, selectedStatMeta.key);
       return {
         key: match.matchId,
         xKey: match.matchId,
@@ -763,7 +634,7 @@ export function SoccerPlayerPropsTestCard({
   if (!hrefTrimmed) {
     return (
       <div className={`flex h-full min-h-[220px] items-center justify-center px-4 text-center text-sm ${emptyTextClass}`}>
-        Select a team to load player props (search uses the squad list; charts use cached games when available).
+        Search for a player above — pick someone with cached games to load their chart.
       </div>
     );
   }

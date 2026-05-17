@@ -551,6 +551,81 @@ export async function getSoccerPlayerStatsCache<TMatch = unknown>(
   );
 }
 
+function buildSoccerPlayerStatsCacheAttempts(
+  limit: number,
+  categories: string[]
+): Array<{ limit: number; categories: string[] }> {
+  const attempts: Array<{ limit: number; categories: string[] }> = [];
+  const seen = new Set<string>();
+  const add = (l: number, c: string[]) => {
+    const normalized = c.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+    const cats = normalized.length ? normalized : ['all'];
+    const sig = `${l}:${cats.join(',')}`;
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    attempts.push({ limit: l, categories: cats });
+  };
+  add(limit, categories);
+  add(100, categories);
+  add(limit, ['all']);
+  add(100, ['all']);
+  add(30, ['all']);
+  add(100, ['top']);
+  add(5, ['top']);
+  return attempts;
+}
+
+function averagePlayerStatCategoryTabs(matches: unknown[]): number {
+  if (!matches.length) return 0;
+  let sum = 0;
+  for (const match of matches) {
+    const cats = (match as { categories?: Record<string, unknown> })?.categories;
+    sum += cats && typeof cats === 'object' ? Object.keys(cats).length : 0;
+  }
+  return sum / matches.length;
+}
+
+function wantsRichPlayerStatCategories(categories: string[]): boolean {
+  const normalized = categories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
+  if (!normalized.length || normalized.includes('all')) return true;
+  return normalized.length > 1;
+}
+
+function scorePlayerStatsCacheHit(matches: unknown[], categories: string[]): number {
+  const count = matches.length;
+  if (!wantsRichPlayerStatCategories(categories)) return count;
+  // When the UI asks for full Soccerway depth, prefer multi-tab payloads over a larger top-only row.
+  return averagePlayerStatCategoryTabs(matches) * 1_000_000 + count;
+}
+
+/** Reads player stats, trying common limit/category cache keys (charts request l30:all; batch may store l100:top). */
+export async function getSoccerPlayerStatsCacheWithFallback<TMatch = unknown>(
+  teamHref: string,
+  playerKey: string,
+  limit: number,
+  categories: string[] = [],
+  options: GetCacheOptions = {}
+): Promise<SoccerPlayerStatsCachePayload<TMatch> | null> {
+  let best: SoccerPlayerStatsCachePayload<TMatch> | null = null;
+  let bestScore = -1;
+  for (const attempt of buildSoccerPlayerStatsCacheAttempts(limit, categories)) {
+    const hit = await getSoccerPlayerStatsCache<TMatch>(
+      teamHref,
+      playerKey,
+      attempt.limit,
+      attempt.categories,
+      options
+    );
+    if (!hit || !Array.isArray(hit.matches) || hit.matches.length === 0) continue;
+    const score = scorePlayerStatsCacheHit(hit.matches, categories);
+    if (!best || score > bestScore) {
+      best = hit;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 export async function setSoccerPlayerStatsCache<TMatch = unknown>(
   teamHref: string,
   playerKey: string,
@@ -571,6 +646,76 @@ export async function setSoccerPlayerStatsCache<TMatch = unknown>(
     { teamHref: normalized, fetchedAt: payload.generatedAt },
     quiet
   );
+}
+
+export type SoccerCachedPlayerIndexRow = {
+  playerKey: string;
+  displayName: string;
+  teamHref: string;
+  matchCount: number;
+};
+
+/** All players with at least one cached match row (deduped per team + playerKey). */
+export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } = {}): Promise<SoccerCachedPlayerIndexRow[]> {
+  if (!supabaseAdmin) return [];
+
+  const quiet = options.quiet ?? false;
+  const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
+  const pageSize = 1000;
+  const byPlayer = new Map<string, SoccerCachedPlayerIndexRow>();
+
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabaseAdmin
+        .from(TABLE_NAME)
+        .select('team_href, data, cache_key')
+        .eq('cache_type', 'player_stats')
+        .like('cache_key', `${cacheKeyPrefix}%`)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        if (!quiet) warnSoccerCache('Failed to list cached player-stats index', error);
+        break;
+      }
+
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const record = row as { team_href?: string | null; data?: unknown; cache_key?: string };
+        const payload = record.data as Partial<SoccerPlayerStatsCachePayload> | null;
+        const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        if (matches.length === 0) continue;
+
+        const playerKey = String(payload?.playerKey || '').trim().toLowerCase();
+        const displayName = String(payload?.playerName || '').trim();
+        const teamHref = normalizeSoccerTeamHref(String(payload?.teamHref || record.team_href || ''));
+        if (!playerKey || !displayName || !teamHref) continue;
+
+        const dedupeKey = `${teamHref}|${playerKey}`;
+        const matchCount = matches.length;
+        const cacheKey = String(record.cache_key || '');
+        const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
+        const existing = byPlayer.get(dedupeKey);
+        if (
+          !existing ||
+          matchCount > existing.matchCount ||
+          (matchCount === existing.matchCount && prefersAllCategories)
+        ) {
+          byPlayer.set(dedupeKey, { playerKey, displayName, teamHref, matchCount });
+        }
+      }
+
+      if (rows.length < pageSize) break;
+    }
+  } catch (error) {
+    if (!quiet) warnSoccerCache('Unexpected failure listing cached player-stats index', error);
+  }
+
+  return [...byPlayer.values()].sort((a, b) => {
+    if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+    return a.displayName.localeCompare(b.displayName);
+  });
 }
 
 export async function cleanupExpiredSoccerCache(): Promise<number> {

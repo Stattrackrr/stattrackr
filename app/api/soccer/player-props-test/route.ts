@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { normalizeSoccerTeamHref, getSoccerPlayerStatsCache, setSoccerPlayerStatsCache, type SoccerPlayerStatsCachePayload } from '@/lib/soccerCache';
+import {
+  normalizeSoccerTeamHref,
+  getSoccerPlayerStatsCacheWithFallback,
+  setSoccerPlayerStatsCache,
+  type SoccerPlayerStatsCachePayload,
+} from '@/lib/soccerCache';
 import {
   buildPlayerAliasesFromDisplayName,
   buildPlayerStatsForAliases,
@@ -84,7 +89,7 @@ export async function GET(request: NextRequest) {
   try {
     if (cacheOnly) {
       // Large `player_stats` rows (many matches × categories) can exceed short timeouts; roster-report uses 1200ms.
-      const cached = await getSoccerPlayerStatsCache<PlayerMatchStats>(
+      const cached = await getSoccerPlayerStatsCacheWithFallback<PlayerMatchStats>(
         teamHref,
         playerKey,
         limit,

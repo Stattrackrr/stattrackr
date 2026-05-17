@@ -570,6 +570,9 @@ export default function NBALandingPage() {
   const [navigatingToPlayer, setNavigatingToPlayer] = useState(false);
   const navigatingRef = useRef(false);
   const [isMobile, setIsMobile] = useState(false);
+  const PROPS_DESKTOP_SKELETON_ROW_HEIGHT_PX = 58;
+  const PROPS_DESKTOP_SKELETON_TOP_OFFSET_PX = 300;
+  const [desktopSkeletonRowCount, setDesktopSkeletonRowCount] = useState(12);
   // Load filter selections from localStorage on mount
   const loadFiltersFromStorage = () => {
     if (typeof window === 'undefined') {
@@ -1122,8 +1125,15 @@ export default function NBALandingPage() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
+    const updateDesktopSkeletonRows = () => {
+      const available = Math.max(window.innerHeight - PROPS_DESKTOP_SKELETON_TOP_OFFSET_PX, 420);
+      const rows = Math.ceil(available / PROPS_DESKTOP_SKELETON_ROW_HEIGHT_PX);
+      setDesktopSkeletonRowCount(Math.min(Math.max(rows, 10), 32));
+    };
     checkMobile();
+    updateDesktopSkeletonRows();
     window.addEventListener('resize', checkMobile);
+    window.addEventListener('resize', updateDesktopSkeletonRows);
     
     // Load odds format from localStorage
     const savedFormat = localStorage.getItem('oddsFormat');
@@ -1196,7 +1206,10 @@ export default function NBALandingPage() {
       }
     }
     
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('resize', updateDesktopSkeletonRows);
+    };
   }, []);
 
   // Run before paint: restore from sessionStorage so first paint shows cache (no loading flash)
@@ -4602,6 +4615,32 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       : combinedTotalPages;
   const activeCurrentPage = propsSport === 'nba' ? currentPageSafe : currentPage;
 
+  const isPropsLoadingSkeleton = useMemo(() => {
+    if (activeFilteredCount !== 0) return false;
+    if (
+      (propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) ||
+      (propsSport === 'nba' && !showNoPropsMessage) ||
+      (propsSport === 'combined' &&
+        (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))
+    ) {
+      return true;
+    }
+    if (propsSport === 'afl' && aflPropsFetchCompleteRef.current) return false;
+    if (propsSport === 'combined') return false;
+    if (propsSport === 'nba' && showNoPropsMessage) return false;
+    return true;
+  }, [
+    activeFilteredCount,
+    propsSport,
+    aflPropsLoading,
+    showNoPropsMessage,
+    combinedPropsLoading,
+    propsLoading,
+    aflProps.length,
+    playerProps.length,
+    filteredCombinedProps.length,
+  ]);
+
   /** Club-site portraits for AFL props; bump version to invalidate client after resolver changes. */
   const [aflPortraitExtras, setAflPortraitExtras] = useState<Record<string, string>>({});
   const aflPortraitFetchedRef = useRef<Set<string>>(new Set());
@@ -5860,7 +5899,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             </div>
 
             {/* Player Props Section */}
-            <div className={`h-[calc(100%-160px)] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}>
+            <div
+              className={`${
+                isPropsLoadingSkeleton
+                  ? 'min-h-[calc(100dvh-17rem)] lg:min-h-[calc(100dvh-15rem)]'
+                  : 'h-[calc(100%-160px)]'
+              } ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
+              style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}
+            >
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
                 mounted && isDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
               } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
@@ -5885,7 +5931,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
-                      <div className="hidden 2xl:block overflow-x-auto">
+                      <div className="hidden 2xl:block overflow-x-auto min-h-[calc(100dvh-17rem)]">
                         <table className="w-full">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
@@ -5906,7 +5952,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </tr>
                           </thead>
                           <tbody>
-                            {[...Array(10)].map((_, idx) => (
+                            {[...Array(desktopSkeletonRowCount)].map((_, idx) => (
                               <tr key={idx} className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-3">
@@ -6031,7 +6077,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     ) : (
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
-                      <div className="hidden 2xl:block overflow-x-auto">
+                      <div className="hidden 2xl:block overflow-x-auto min-h-[calc(100dvh-17rem)]">
                         <table className="w-full">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
@@ -6052,7 +6098,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </tr>
                           </thead>
                           <tbody>
-                            {[...Array(10)].map((_, idx) => (
+                            {[...Array(desktopSkeletonRowCount)].map((_, idx) => (
                               <tr key={idx} className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-3">
