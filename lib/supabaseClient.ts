@@ -543,6 +543,48 @@ export interface Database {
           status?: 'pending' | 'settled' | null
         }
       }
+      official_picks_bets: {
+        Row: {
+          id: string
+          date: string
+          sport: string
+          market: string | null
+          selection: string
+          stake_units: number
+          odds: number
+          result: 'win' | 'loss' | 'void' | 'pending'
+          bookmaker: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          sport?: string
+          market?: string | null
+          selection: string
+          stake_units?: number
+          odds: number
+          result?: 'win' | 'loss' | 'void' | 'pending'
+          bookmaker?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          sport?: string
+          market?: string | null
+          selection?: string
+          stake_units?: number
+          odds?: number
+          result?: 'win' | 'loss' | 'void' | 'pending'
+          bookmaker?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tracked_props: {
         Row: {
           id: string
