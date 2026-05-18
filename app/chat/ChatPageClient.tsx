@@ -19,7 +19,9 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
+import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
+import { useTheme } from '@/contexts/ThemeContext';
+import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
 const CHAT_ADMIN_EMAIL = 'admin@stattrackr.co';
@@ -258,8 +260,10 @@ function markChatRoomAsRead(userId: string, roomId: string, timestamp = new Date
 
 export default function ChatPageClient() {
   const router = useRouter();
+  const { isDark } = useTheme();
 
   const [viewer, setViewer] = useState<ViewerState>(DEFAULT_VIEWER);
+  const [showPicksRecordModal, setShowPicksRecordModal] = useState(false);
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>('american');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -1192,30 +1196,6 @@ export default function ChatPageClient() {
           }
         }
 
-        .chat-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(168, 85, 247, 0.65) transparent;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .chat-scrollbar::-webkit-scrollbar {
-          width: 10px;
-        }
-
-        .chat-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .chat-scrollbar::-webkit-scrollbar-thumb {
-          border-radius: 9999px;
-          border: 2px solid transparent;
-          background-clip: padding-box;
-          background-color: rgba(148, 163, 184, 0.38);
-        }
-
-        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(168, 85, 247, 0.68);
-        }
       `}</style>
 
       <DashboardLeftSidebarWrapper
@@ -1332,17 +1312,29 @@ export default function ChatPageClient() {
                               : 'Discuss bets, share slips, talk through plays, and hang out with the community.'}
                           </p>
                         </div>
-                        {pinnedMessages.length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={scrollToPinnedMessages}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-purple-400/50 bg-purple-500/15 px-2.5 py-1 text-[11px] font-semibold text-purple-200 transition-colors hover:bg-purple-500/25 sm:hidden"
-                            aria-label={`View ${pinnedMessages.length} pinned chat ${pinnedMessages.length === 1 ? 'message' : 'messages'}`}
-                          >
-                            <Pin className="h-3 w-3" />
-                            {pinnedMessages.length}+ pinned
-                          </button>
-                        ) : null}
+                        <div className="flex shrink-0 items-center gap-2">
+                          {isPicksRoom ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowPicksRecordModal(true)}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/25 dark:text-emerald-200"
+                            >
+                              <BarChart3 className="h-3.5 w-3.5" />
+                              View record
+                            </button>
+                          ) : null}
+                          {pinnedMessages.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={scrollToPinnedMessages}
+                              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-purple-400/50 bg-purple-500/15 px-2.5 py-1 text-[11px] font-semibold text-purple-700 transition-colors hover:bg-purple-500/25 dark:text-purple-200 sm:hidden"
+                              aria-label={`View ${pinnedMessages.length} pinned chat ${pinnedMessages.length === 1 ? 'message' : 'messages'}`}
+                            >
+                              <Pin className="h-3 w-3" />
+                              {pinnedMessages.length}+ pinned
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                       </div>
                       {rooms.length > 1 ? (
@@ -1902,6 +1894,12 @@ export default function ChatPageClient() {
           </div>
         </div>
       </main>
+      <OfficialPicksRecordModal
+        isOpen={showPicksRecordModal}
+        onClose={() => setShowPicksRecordModal(false)}
+        isAdmin={viewer.isAdmin}
+        isDark={isDark}
+      />
     </div>
   );
 }
