@@ -1,223 +1,105 @@
 (function () {
-  const BOOK_LABELS = {
-    sportsbet: 'Sportsbet',
-    tab: 'TAB',
-    neds: 'Neds',
-    ladbrokes: 'Ladbrokes',
-    bet365_au: 'bet365 AU',
-    unknown: 'Unknown',
-  };
-
-  const STORAGE_KEY = 'stattrackr:last-import-signature';
+  const SYNC_KEY = '__STATTRACKR_JOURNAL_SYNC__';
+  const SYNC = globalThis[SYNC_KEY];
   const ROOT_ID = 'stattrackr-import-root';
+  const STORAGE_KEY = 'stattrackr:last-import-signature';
 
-  function getBookKey() {
-    const host = window.location.hostname.toLowerCase();
-    if (host.includes('sportsbet')) return 'sportsbet';
-    if (host.includes('tab')) return 'tab';
-    if (host.includes('neds')) return 'neds';
-    if (host.includes('ladbrokes')) return 'ladbrokes';
-    if (host.includes('bet365')) return 'bet365_au';
-    return 'unknown';
+  if (!SYNC) {
+    console.warn('[StatTrackr] Parser bundle failed to load.');
+    return;
   }
 
-  function normalizeText(value) {
-    return (value || '').replace(/\s+/g, ' ').trim();
+  let observerStopped = false;
+
+  function isExtensionAlive() {
+    try {
+      return Boolean(chrome.runtime?.id);
+    } catch {
+      return false;
+    }
   }
 
-  function getVisibleText() {
-    return normalizeText(document.body ? document.body.innerText : '');
-  }
-
-  function getLines() {
-    return (document.body ? document.body.innerText : '')
-      .split('\n')
-      .map((line) => normalizeText(line))
-      .filter((line) => line.length >= 3 && line.length <= 180);
+  function formatExtensionError(error) {
+    const message = String(error?.message || error || 'Extension error');
+    if (/extension context invalidated/i.test(message)) {
+      return 'Extension was reloaded. Refresh this Sportsbet page (F5), then try again.';
+    }
+    return message;
   }
 
   function readSettings() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get(
-        {
-          appOrigin: 'https://stattrackr.com',
+      if (!isExtensionAlive()) {
+        resolve({
+          appOrigin: 'https://stattrackr.co',
           autoAdd: false,
           autoCapture: false,
-        },
-        resolve
-      );
+        });
+        return;
+      }
+
+      try {
+        chrome.storage.sync.get(
+          {
+            appOrigin: 'https://stattrackr.co',
+            autoAdd: false,
+            autoCapture: false,
+          },
+          (settings) => {
+            if (chrome.runtime.lastError) {
+              resolve({
+                appOrigin: 'https://stattrackr.co',
+                autoAdd: false,
+                autoCapture: false,
+              });
+              return;
+            }
+            resolve(settings);
+          }
+        );
+      } catch {
+        resolve({
+          appOrigin: 'https://stattrackr.co',
+          autoAdd: false,
+          autoCapture: false,
+        });
+      }
     });
   }
 
-  function parseAmount(raw) {
-    if (!raw) return null;
-    const cleaned = String(raw).replace(/[^0-9.,-]/g, '').replace(/,/g, '');
-    const value = Number(cleaned);
-    return Number.isFinite(value) ? value : null;
-  }
-
-  function extractByPatterns(text, patterns) {
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        return normalizeText(match[1]);
+  function isSportsbetHistoryPage() {
+    try {
+      if (!SYNC?.getBookKey || !SYNC?.normalizeText) return false;
+      const book = SYNC.getBookKey();
+      if (book !== 'sportsbet') return false;
+      const path = window.location.pathname.toLowerCase();
+      const href = window.location.href.toLowerCase();
+      if (/(bet|history|my-?bets?|statement|account)/i.test(`${path} ${href}`)) {
+        return true;
       }
+      const sample = SYNC.normalizeText(document.body?.innerText || '').slice(0, 6000);
+      return /\bmy bets\b/i.test(sample);
+    } catch {
+      return false;
     }
-    return null;
   }
 
-  function extractStake(text) {
-    const raw = extractByPatterns(text, [
-      /(?:stake|outlay|wager|bet amount)\s*[:\-]?\s*(\$?\s*[\d.,]+)/i,
-      /(\$[\d.,]+)\s*(?:stake|outlay|wager)/i,
-    ]);
-    return parseAmount(raw);
-  }
-
-  function extractOdds(text) {
-    const raw = extractByPatterns(text, [
-      /(?:decimal odds|odds|price)\s*[:@\-]?\s*([\d.]+)/i,
-      /@\s*([\d.]+)/i,
-    ]);
-    const value = parseAmount(raw);
-    return value && value > 1 ? value : null;
-  }
-
-  function extractTicketId(text) {
-    return extractByPatterns(text, [
-      /(?:receipt|bet id|ticket|transaction|reference)(?:\s*(?:number|no|id))?\s*[:#-]?\s*([a-z0-9-]{5,})/i,
-    ]);
-  }
-
-  function extractPlacedDate(text) {
-    const direct = extractByPatterns(text, [
-      /(\d{4}-\d{2}-\d{2})/,
-      /(\d{1,2}\/\d{1,2}\/\d{2,4})/,
-      /(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/,
-    ]);
-    if (!direct) {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    const parsed = new Date(direct);
-    if (Number.isNaN(parsed.getTime())) {
-      return new Date().toISOString().slice(0, 10);
-    }
-    return parsed.toISOString().slice(0, 10);
-  }
-
-  function detectSport(text) {
-    const upper = text.toUpperCase();
-    if (upper.includes('AFL') || upper.includes('DISPOSALS') || upper.includes('BEHINDS')) return 'AFL';
-    if (upper.includes('NBA') || upper.includes('REBOUNDS') || upper.includes('ASSISTS')) return 'NBA';
-    if (upper.includes('NRL')) return 'NRL';
-    if (upper.includes('NFL')) return 'NFL';
-    if (upper.includes('MLB')) return 'MLB';
-    if (upper.includes('NHL')) return 'NHL';
-    return 'OTHER';
-  }
-
-  function isIgnoredLine(line) {
-    return /^(stake|outlay|wager|odds|price|bet id|receipt|ticket|transaction|reference|cash out|collect|return|bonus|promotions?|same game multi available|available on|my bets|bet history)$/i.test(
-      line
+  function isValidImportPayload(payload) {
+    return Boolean(
+      payload &&
+        payload.bet &&
+        payload.bet.selection &&
+        payload.bet.stake != null &&
+        payload.bet.odds != null
     );
   }
 
-  function chooseSelection(lines) {
-    const preferred = lines.find((line) => /.+\s+(over|under)\s+\d+(\.\d+)?\s+.+/i.test(line));
-    if (preferred) return preferred;
-
-    const secondary = lines.find(
-      (line) =>
-        !isIgnoredLine(line) &&
-        /(to win|moneyline|head to head|spread|total|line|goals|disposals|points|rebounds|assists|marks|tackles)/i.test(line)
-    );
-    if (secondary) return secondary;
-
-    return lines.find((line) => !isIgnoredLine(line)) || null;
-  }
-
-  function extractPlayerProp(selection) {
-    const match = selection.match(/^(.+?)\s+(over|under)\s+([\d.]+)\s+(.+)$/i);
-    if (!match) return null;
-    return {
-      player_name: normalizeText(match[1]),
-      over_under: match[2].toLowerCase(),
-      line: Number(match[3]),
-      stat_type: normalizeText(match[4]).toLowerCase(),
-    };
-  }
-
-  function buildMarket(selection) {
-    const prop = extractPlayerProp(selection);
-    if (prop) return prop.stat_type;
-    if (/same game/i.test(selection)) return 'same game multi';
-    if (/moneyline|head to head|to win/i.test(selection)) return 'moneyline';
-    if (/spread|line/i.test(selection)) return 'spread';
-    if (/total/i.test(selection)) return 'total';
-    return 'sportsbook import';
-  }
-
-  function looksLikeConfirmation(text) {
-    return /(bet placed|receipt|successfully placed|my bet|bet confirmation|pending result|cash out available|ticket)/i.test(
-      text
-    );
-  }
-
-  function buildPayload() {
-    const book = getBookKey();
-    const bookLabel = BOOK_LABELS[book] || BOOK_LABELS.unknown;
-    const text = getVisibleText();
-    const lines = getLines();
-
-    if (!text || lines.length === 0) {
-      throw new Error('No readable bet content found on this page yet.');
-    }
-
-    const selection = chooseSelection(lines);
-    const stake = extractStake(text);
-    const odds = extractOdds(text);
-
-    if (!selection) {
-      throw new Error('Could not identify a selection on this page.');
-    }
-    if (!stake) {
-      throw new Error('Could not identify a stake on this page.');
-    }
-    if (!odds) {
-      throw new Error('Could not identify decimal odds on this page.');
-    }
-
-    const playerProp = extractPlayerProp(selection);
-    const sport = detectSport(text);
-
-    return {
-      source: 'extension',
-      source_book: book,
-      source_external_id: extractTicketId(text),
-      source_page_url: window.location.href,
-      parse_notes: `${bookLabel} desktop parser`,
-      raw_payload: {
-        title: document.title,
-        text_excerpt: text.slice(0, 2500),
-      },
-      bet: {
-        date: extractPlacedDate(text),
-        sport,
-        market: buildMarket(selection),
-        selection,
-        stake,
-        currency: 'AUD',
-        odds,
-        bookmaker: bookLabel,
-        result: 'pending',
-        status: 'pending',
-        ...(playerProp || {}),
-      },
-    };
+  function filterValidPayloads(payloads) {
+    return payloads.filter(isValidImportPayload);
   }
 
   function getSignature(payload) {
+    if (!isValidImportPayload(payload)) return '';
     return [
       payload.source_book,
       payload.source_external_id || '',
@@ -228,6 +110,13 @@
     ].join('|');
   }
 
+  function getBatchSignature(payloads) {
+    return filterValidPayloads(payloads)
+      .map((payload) => getSignature(payload))
+      .filter(Boolean)
+      .join('||');
+  }
+
   function setStatus(root, message, tone) {
     const status = root.querySelector('[data-stattrackr-status]');
     if (!status) return;
@@ -236,48 +125,205 @@
       tone === 'error' ? '#fecaca' : tone === 'success' ? '#bbf7d0' : '#e9d5ff';
   }
 
-  async function sendCurrentPage(root) {
-    try {
-      setStatus(root, 'Parsing page...', 'info');
-      const payload = buildPayload();
-      const signature = getSignature(payload);
-
-      chrome.runtime.sendMessage(
-        {
-          type: 'OPEN_STATTRACKR_IMPORT',
-          payload,
-        },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            setStatus(root, chrome.runtime.lastError.message, 'error');
-            return;
-          }
-          if (!response || !response.ok) {
-            setStatus(root, response?.error || 'Could not open StatTrackr import page.', 'error');
-            return;
-          }
-
-          window.sessionStorage.setItem(STORAGE_KEY, signature);
-          setStatus(root, 'Opened StatTrackr import page.', 'success');
-        }
+  function openImport(message, root, successMessage) {
+    if (!isExtensionAlive()) {
+      setStatus(
+        root,
+        'Extension was reloaded. Refresh this Sportsbet page (F5), then try again.',
+        'error'
       );
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          setStatus(root, formatExtensionError(chrome.runtime.lastError), 'error');
+          return;
+        }
+        if (!response || !response.ok) {
+          setStatus(root, response?.error || 'Could not open StatTrackr import page.', 'error');
+          return;
+        }
+        setStatus(root, successMessage, 'success');
+      });
+    } catch (error) {
+      setStatus(root, formatExtensionError(error), 'error');
+    }
+  }
+
+  function parsePayloads(options) {
+    const payloads = SYNC.buildImportPayloads(options);
+    return filterValidPayloads(SYNC.dedupePayloads(payloads));
+  }
+
+  async function sendSingleBet(root) {
+    try {
+      setStatus(root, 'Parsing bet...', 'info');
+      const payloads = parsePayloads({ parseAll: false });
+      const payload = payloads[0];
+      if (!payload) {
+        throw new Error('Could not identify a bet on this page.');
+      }
+
+      openImport(
+        { type: 'OPEN_STATTRACKR_IMPORT', payload },
+        root,
+        'Opened StatTrackr import page.'
+      );
+      window.sessionStorage.setItem(STORAGE_KEY, getSignature(payload));
     } catch (error) {
       setStatus(root, error && error.message ? error.message : 'Failed to parse bet.', 'error');
     }
   }
 
+  function findScrollableContainers(scope) {
+    const root = scope || document.querySelector('main') || document.body;
+    const matches = [];
+
+    root.querySelectorAll('div, section, ul').forEach((element) => {
+      if (!(element instanceof HTMLElement)) return;
+      if (element.scrollHeight <= element.clientHeight + 80) return;
+      const style = window.getComputedStyle(element);
+      if (!/(auto|scroll)/i.test(style.overflowY)) return;
+      matches.push(element);
+    });
+
+    return matches.sort((a, b) => b.scrollHeight - a.scrollHeight).slice(0, 4);
+  }
+
+  function countVisibleBetNodes() {
+    return document.querySelectorAll('[data-automation-id*="bet"], [data-automation-id*="Bet"]').length;
+  }
+
+  async function collectResultedPayloadsWhileScrolling() {
+    const scrollTargets = findScrollableContainers();
+    const targets = scrollTargets.length > 0 ? scrollTargets : [null];
+    const collected = [];
+    const parseVisible = () => {
+      try {
+        const batch = parsePayloads({
+          parseAll: true,
+          requireResulted: true,
+          minConfidence: 'low',
+        });
+        if (Array.isArray(batch) && batch.length > 0) {
+          collected.push(...batch);
+        }
+      } catch {
+        // Keep scrolling even if one pass finds nothing.
+      }
+    };
+
+    parseVisible();
+
+    for (const target of targets) {
+      if (target) target.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+
+    let stagnantPasses = 0;
+    let lastBetNodes = countVisibleBetNodes();
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < 35000 && stagnantPasses < 8) {
+      for (const target of targets) {
+        if (target) {
+          target.scrollTop = target.scrollHeight;
+        }
+      }
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+
+      parseVisible();
+
+      const betNodes = countVisibleBetNodes();
+      if (betNodes <= lastBetNodes) {
+        stagnantPasses += 1;
+      } else {
+        stagnantPasses = 0;
+        lastBetNodes = betNodes;
+      }
+    }
+
+    for (const target of targets) {
+      if (target) target.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+
+    return SYNC.dedupePayloads(collected);
+  }
+
+  async function sendAllResultedBets(root) {
+    try {
+      setStatus(root, 'Loading resulted bets (scrolling)...', 'info');
+      setStatus(root, 'Scanning resulted bets...', 'info');
+      let payloads = [];
+      try {
+        payloads = await collectResultedPayloadsWhileScrolling();
+      } catch (parseError) {
+        throw new Error(
+          parseError?.message ||
+            'Failed to parse resulted bets. Reload the extension (v0.2.2) and try again.'
+        );
+      }
+
+      if (payloads.length === 0) {
+        throw new Error(
+          'No resulted bets found. Open My Bets, select the Resulted tab, then try again.'
+        );
+      }
+
+      openImport(
+        {
+          type: 'OPEN_STATTRACKR_IMPORT',
+          imports: payloads,
+          import_batch_id: crypto.randomUUID(),
+        },
+        root,
+        `Sending ${payloads.length} bet${payloads.length === 1 ? '' : 's'} to StatTrackr...`
+      );
+      const signature = getBatchSignature(payloads);
+      if (signature) {
+        window.sessionStorage.setItem(STORAGE_KEY, signature);
+      }
+    } catch (error) {
+      let hint = '';
+      try {
+        const scope = document.querySelector('main') || document.body;
+        const betNodes = document.querySelectorAll(
+          '[data-automation-id*="bet"], [data-automation-id*="Bet"]'
+        ).length;
+        hint = ` (${betNodes} bet nodes visible — scroll Resulted to load more, reload extension v0.3.6, then retry)`;
+      } catch {
+        // ignore
+      }
+      setStatus(
+        root,
+        (error && error.message ? error.message : 'Failed to parse resulted bets.') + hint,
+        'error'
+      );
+    }
+  }
+
   async function maybeAutoCapture(root) {
     const settings = await readSettings();
-    if (!settings.autoCapture) return;
-
-    const text = getVisibleText();
-    if (!looksLikeConfirmation(text)) return;
+    if (!settings.autoCapture || isSportsbetHistoryPage()) return;
 
     try {
-      const payload = buildPayload();
+      const payloads = parsePayloads({ autoCapture: true, parseAll: false });
+      const payload = payloads[0];
+      if (!payload) return;
       const signature = getSignature(payload);
       if (window.sessionStorage.getItem(STORAGE_KEY) === signature) return;
-      sendCurrentPage(root);
+
+      openImport(
+        { type: 'OPEN_STATTRACKR_IMPORT', payload },
+        root,
+        'Auto-captured bet and opened StatTrackr.'
+      );
+      window.sessionStorage.setItem(STORAGE_KEY, signature);
     } catch {
       // Ignore parse failures during passive auto-detection.
     }
@@ -285,6 +331,22 @@
 
   function injectUi() {
     if (document.getElementById(ROOT_ID) || !document.body) return;
+
+    if (!isExtensionAlive()) {
+      const stale = document.getElementById(ROOT_ID);
+      if (stale) {
+        setStatus(
+          stale,
+          'Extension was reloaded. Refresh this Sportsbet page (F5), then import again.',
+          'error'
+        );
+      }
+      return;
+    }
+
+    const bookKey = SYNC.getBookKey();
+    const bookLabel = SYNC.getBookLabel(bookKey);
+    const historyPage = isSportsbetHistoryPage();
 
     const root = document.createElement('div');
     root.id = ROOT_ID;
@@ -300,7 +362,7 @@
     card.style.border = '1px solid rgba(168,85,247,0.4)';
     card.style.borderRadius = '14px';
     card.style.padding = '12px';
-    card.style.width = '280px';
+    card.style.width = historyPage ? '300px' : '280px';
     card.style.boxShadow = '0 12px 30px rgba(15,23,42,0.45)';
 
     const title = document.createElement('div');
@@ -309,35 +371,64 @@
     title.style.fontSize = '14px';
 
     const sub = document.createElement('div');
-    sub.textContent = `${BOOK_LABELS[getBookKey()]} parser`;
+    sub.textContent = historyPage
+      ? `${bookLabel} · Resulted import`
+      : `${bookLabel} parser`;
     sub.style.fontSize = '12px';
     sub.style.color = '#d8b4fe';
     sub.style.marginTop = '4px';
 
-    const button = document.createElement('button');
-    button.textContent = 'Send bet to StatTrackr';
-    button.style.marginTop = '10px';
-    button.style.width = '100%';
-    button.style.border = '0';
-    button.style.borderRadius = '10px';
-    button.style.padding = '10px 12px';
-    button.style.background = '#9333ea';
-    button.style.color = '#fff';
-    button.style.fontWeight = '700';
-    button.style.cursor = 'pointer';
-    button.addEventListener('click', () => sendCurrentPage(root));
+    const primaryButton = document.createElement('button');
+    primaryButton.textContent = historyPage
+      ? 'Import all resulted bets'
+      : 'Send bet to StatTrackr';
+    primaryButton.style.marginTop = '10px';
+    primaryButton.style.width = '100%';
+    primaryButton.style.border = '0';
+    primaryButton.style.borderRadius = '10px';
+    primaryButton.style.padding = '10px 12px';
+    primaryButton.style.background = '#9333ea';
+    primaryButton.style.color = '#fff';
+    primaryButton.style.fontWeight = '700';
+    primaryButton.style.cursor = 'pointer';
+    primaryButton.addEventListener('click', () => {
+      if (historyPage) {
+        sendAllResultedBets(root);
+      } else {
+        sendSingleBet(root);
+      }
+    });
+
+    card.appendChild(title);
+    card.appendChild(sub);
+    card.appendChild(primaryButton);
+
+    if (historyPage) {
+      const secondaryButton = document.createElement('button');
+      secondaryButton.textContent = 'Import visible bet only';
+      secondaryButton.style.marginTop = '8px';
+      secondaryButton.style.width = '100%';
+      secondaryButton.style.border = '1px solid rgba(168,85,247,0.35)';
+      secondaryButton.style.borderRadius = '10px';
+      secondaryButton.style.padding = '9px 12px';
+      secondaryButton.style.background = 'transparent';
+      secondaryButton.style.color = '#e9d5ff';
+      secondaryButton.style.fontWeight = '600';
+      secondaryButton.style.cursor = 'pointer';
+      secondaryButton.addEventListener('click', () => sendSingleBet(root));
+      card.appendChild(secondaryButton);
+    }
 
     const status = document.createElement('div');
     status.setAttribute('data-stattrackr-status', 'true');
-    status.textContent = 'Ready. Use on bet confirmation or receipt pages.';
+    status.textContent = historyPage
+      ? 'Open the Resulted tab, scroll to load bets, then import all.'
+      : 'Ready. Use on bet confirmation or receipt pages.';
     status.style.marginTop = '8px';
     status.style.fontSize = '12px';
     status.style.lineHeight = '1.4';
     status.style.color = '#e9d5ff';
 
-    card.appendChild(title);
-    card.appendChild(sub);
-    card.appendChild(button);
     card.appendChild(status);
     root.appendChild(card);
     document.body.appendChild(root);
@@ -346,7 +437,25 @@
   }
 
   let injectTimer = null;
+  let observer = null;
+
   const scheduleInject = () => {
+    if (!isExtensionAlive()) {
+      if (!observerStopped) {
+        observerStopped = true;
+        observer?.disconnect();
+      }
+      const root = document.getElementById(ROOT_ID);
+      if (root) {
+        setStatus(
+          root,
+          'Extension was reloaded. Refresh this Sportsbet page (F5), then import again.',
+          'error'
+        );
+      }
+      return;
+    }
+
     if (injectTimer) {
       window.clearTimeout(injectTimer);
     }
@@ -360,7 +469,7 @@
   };
 
   injectUi();
-  const observer = new MutationObserver(scheduleInject);
+  observer = new MutationObserver(scheduleInject);
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,

@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { normalizeSportsbookImportPayload, type NormalizedImportRecord } from '@/lib/journalImport';
+import {
+  isJunkImportSelection,
+  normalizeImportBatchId,
+  normalizeSportsbookImportPayload,
+  type NormalizedImportRecord,
+} from '@/lib/journalImport';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getJournalRouteUser } from '@/lib/server/journalRouteAuth';
 import { promoteImportedBetRows } from '@/lib/server/journalImportPromotion';
@@ -16,7 +21,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const status = url.searchParams.get('status');
-    const limit = Math.min(Number(url.searchParams.get('limit') || '25'), 100);
+    const limit = Math.min(Number(url.searchParams.get('limit') || '25'), 200);
 
     let query = supabaseAdmin
       .from('imported_bets')
@@ -67,10 +72,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing import payload' }, { status: 400 });
     }
 
-    const sharedBatchId =
-      typeof body?.import_batch_id === 'string' && body.import_batch_id.trim()
-        ? body.import_batch_id.trim()
-        : crypto.randomUUID();
+    const sharedBatchId = normalizeImportBatchId(body?.import_batch_id);
     const autoAddAll = body?.auto_add === true;
 
     const normalizedInputs: NormalizedImportRecord[] = inputs.map((value: unknown) => {
@@ -84,7 +86,32 @@ export async function POST(req: Request) {
       };
     });
 
-    const dedupeKeys = normalizedInputs.map((item) => item.dedupeKey);
+    const junkSkipped = normalizedInputs.filter((item) =>
+      isJunkImportSelection(item.normalizedBet.selection)
+    ).length;
+    const importableInputs = normalizedInputs.filter(
+      (item) => !isJunkImportSelection(item.normalizedBet.selection)
+    );
+
+    if (importableInputs.length === 0) {
+      return NextResponse.json({
+        success: true,
+        import_batch_id: sharedBatchId,
+        inserted_count: 0,
+        duplicate_count: 0,
+        junk_skipped_count: junkSkipped,
+        promoted_count: 0,
+        failed: [],
+        inserted_ids: [],
+        duplicate_rows: [],
+        message:
+          junkSkipped > 0
+            ? 'No real bets found in this capture (footer/help text was filtered out).'
+            : 'No bets to import.',
+      });
+    }
+
+    const dedupeKeys = importableInputs.map((item) => item.dedupeKey);
     const { data: existingImports, error: existingError } = await supabaseAdmin
       .from('imported_bets')
       .select('id, dedupe_key, review_status')
@@ -99,7 +126,7 @@ export async function POST(req: Request) {
       (existingImports ?? []).map((row) => [row.dedupe_key as string, row])
     );
 
-    const rowsToInsert = normalizedInputs
+    const rowsToInsert = importableInputs
       .filter((item) => !existingByKey.has(item.dedupeKey))
       .map((item) => ({
         user_id: user.id,
@@ -130,7 +157,7 @@ export async function POST(req: Request) {
       insertedRows = inserted ?? [];
     }
 
-    const duplicateRows = normalizedInputs
+    const duplicateRows = importableInputs
       .filter((item) => existingByKey.has(item.dedupeKey))
       .map((item) => {
         const existing = existingByKey.get(item.dedupeKey)!;
@@ -143,7 +170,7 @@ export async function POST(req: Request) {
 
     const autoApproveIds = insertedRows
       .filter((row) =>
-        normalizedInputs.some((item) => item.dedupeKey === row.dedupe_key && item.autoAdd)
+        importableInputs.some((item) => item.dedupeKey === row.dedupe_key && item.autoAdd)
       )
       .map((row) => row.id);
 
@@ -157,6 +184,7 @@ export async function POST(req: Request) {
       import_batch_id: sharedBatchId,
       inserted_count: insertedRows.length,
       duplicate_count: duplicateRows.length + promotionResult.duplicates.length,
+      junk_skipped_count: junkSkipped,
       promoted_count: promotionResult.promoted.length,
       failed: promotionResult.failed,
       inserted_ids: insertedRows.map((row) => row.id),

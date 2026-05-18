@@ -4,9 +4,10 @@ Chrome MV3 extension for capturing sportsbook bets and handing them off to the S
 
 ## Current scope
 - Desktop Chrome only
-- Sportsbet and TAB tuned first
-- Extra parser coverage included for Neds, Ladbrokes, and bet365 AU
-- Singles first, with review/approval in the StatTrackr journal
+- Sportsbet **Resulted** bet history bulk import (all sports on the page)
+- Single-bet capture on confirmation / receipt pages
+- Extra parser coverage scaffolded for TAB, Neds, Ladbrokes, and bet365 AU
+- Review/approval in the StatTrackr journal (keep auto-add off until you trust capture)
 
 ## Load locally
 1. Open `chrome://extensions`
@@ -16,14 +17,14 @@ Chrome MV3 extension for capturing sportsbook bets and handing them off to the S
 
 ## Configure
 1. Open the extension popup
-2. Set the StatTrackr origin, usually `https://stattrackr.com`
+2. Set the StatTrackr origin, usually `https://stattrackr.co`
 3. Leave `Auto-add after capture` off if you want everything to land in the journal review queue first
 4. Turn on `Auto-capture on bet confirmation pages` only after you trust the sportsbook parser you are using
 
 ## Flow
 1. Stay logged into StatTrackr in the same Chrome profile
-2. Open a supported sportsbook receipt / confirmation / my-bet page
-3. Use `Send bet to StatTrackr` or let auto-capture fire
+2. On Sportsbet, open **My Bets → Resulted** and scroll to load your history
+3. Click **Import all resulted bets** (or use single-bet capture on a receipt page)
 4. The extension opens `StatTrackr -> /journal/import`
 5. StatTrackr stages the bet in `imported_bets` and either:
    - promotes it straight into `bets` when auto-add is enabled

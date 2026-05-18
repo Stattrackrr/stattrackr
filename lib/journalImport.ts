@@ -9,6 +9,40 @@ export const IMPORT_REVIEW_STATUSES = new Set([
   'failed',
 ]);
 
+const JUNK_IMPORT_SELECTION_PATTERNS = [
+  /for free and confidential support/i,
+  /gamblinghelponline\.org\.au/i,
+  /1800\s*858\s*858/i,
+  /responsible gambling/i,
+  /deposit limit/i,
+  /account overview/i,
+  /quick links/i,
+  /^same game multi$/i,
+  /^parlay:\s*same game multi$/i,
+  /^parlay$/i,
+  /^multi$/i,
+];
+
+export function isJunkImportSelection(selection: unknown): boolean {
+  const text = asOptionalTrimmedString(selection);
+  if (!text) return true;
+  if (text.length < 6) return true;
+  if (text.length > 280) return true;
+  if (/^parlay:\s*.+\s+\+\s+.+\s+\+\s+.+/i.test(text)) return true;
+  return JUNK_IMPORT_SELECTION_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+const IMPORT_BATCH_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function normalizeImportBatchId(value: unknown): string {
+  const text = asOptionalTrimmedString(value);
+  if (text && IMPORT_BATCH_UUID_PATTERN.test(text)) {
+    return text.toLowerCase();
+  }
+  return crypto.randomUUID();
+}
+
 export type ImportReviewStatus =
   | 'pending_review'
   | 'approved'
@@ -384,6 +418,22 @@ export function buildImportDedupeKey(record: {
   }
 
   const bet = record.normalizedBet;
+  const team = (bet.team ?? '').trim().toLowerCase();
+  const opponent = (bet.opponent ?? '').trim().toLowerCase();
+  const fixture =
+    team && opponent ? [team, opponent].sort().join('|') : '';
+
+  if (record.sourceBook === 'sportsbet' && !explicitId && fixture) {
+    const pick = team || bet.selection.trim().toLowerCase().slice(0, 80);
+    return [
+      record.sourceBook,
+      pick,
+      fixture,
+      String(bet.stake),
+      String(bet.odds),
+    ].join('|');
+  }
+
   const parts = [
     record.sourceBook,
     bet.date,

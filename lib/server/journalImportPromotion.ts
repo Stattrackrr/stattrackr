@@ -114,3 +114,83 @@ export async function promoteImportedBetRows(userId: string, importedBetIds: str
 
   return { promoted, duplicates, failed };
 }
+
+export async function undoPromotedImportedBets(userId: string, importedBetIds: string[]) {
+  if (importedBetIds.length === 0) {
+    return { undone: [] as string[], failed: [] as Array<{ id: string; error: string }> };
+  }
+
+  const { data: importedRows, error: importedError } = await supabaseAdmin
+    .from('imported_bets')
+    .select('id, review_status, promoted_bet_id')
+    .eq('user_id', userId)
+    .in('id', importedBetIds);
+
+  if (importedError) {
+    throw new Error(importedError.message);
+  }
+
+  const undone: string[] = [];
+  const failed: Array<{ id: string; error: string }> = [];
+
+  for (const row of importedRows ?? []) {
+    const promotedBetId = row.promoted_bet_id as string | null;
+    const reviewStatus = row.review_status as string;
+
+    if (!promotedBetId) {
+      if (reviewStatus === 'pending_review' || reviewStatus === 'failed') {
+        await supabaseAdmin
+          .from('imported_bets')
+          .update({
+            review_status: 'rejected',
+            reviewed_at: new Date().toISOString(),
+            error_message: null,
+          })
+          .eq('id', row.id)
+          .eq('user_id', userId);
+        undone.push(row.id);
+      } else {
+        failed.push({ id: row.id, error: 'Import was not promoted to the journal' });
+      }
+      continue;
+    }
+
+    if (reviewStatus !== 'approved' && reviewStatus !== 'duplicate') {
+      failed.push({ id: row.id, error: `Cannot undo import with status ${reviewStatus}` });
+      continue;
+    }
+
+    try {
+      const { error: deleteError } = await supabaseAdmin
+        .from('bets')
+        .delete()
+        .eq('id', promotedBetId)
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        throw new Error(deleteError.message);
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('imported_bets')
+        .update({
+          review_status: 'rejected',
+          promoted_bet_id: null,
+          reviewed_at: new Date().toISOString(),
+          error_message: null,
+        })
+        .eq('id', row.id)
+        .eq('user_id', userId);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      undone.push(row.id);
+    } catch (error: any) {
+      failed.push({ id: row.id, error: error?.message || 'Failed to undo imported bet' });
+    }
+  }
+
+  return { undone, failed };
+}

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getJournalRouteUser } from '@/lib/server/journalRouteAuth';
-import { promoteImportedBetRows } from '@/lib/server/journalImportPromotion';
+import {
+  promoteImportedBetRows,
+  undoPromotedImportedBets,
+} from '@/lib/server/journalImportPromotion';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,6 +53,11 @@ export async function POST(req: Request) {
       }
 
       return NextResponse.json({ success: true, rejected: ids });
+    }
+
+    if (action === 'undo') {
+      const result = await undoPromotedImportedBets(user.id, ids);
+      return NextResponse.json({ success: true, ...result });
     }
 
     return NextResponse.json({ error: 'Unsupported review action' }, { status: 400 });

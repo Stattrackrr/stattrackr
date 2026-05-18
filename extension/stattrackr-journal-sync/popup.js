@@ -1,5 +1,5 @@
 const DEFAULTS = {
-  appOrigin: 'https://stattrackr.com',
+  appOrigin: 'https://stattrackr.co',
   autoAdd: false,
   autoCapture: false,
 };
