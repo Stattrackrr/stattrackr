@@ -150,7 +150,7 @@ function normalizeForRankMatch(value: string): string {
 
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v6';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
-const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v2';
+const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v3';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -2503,7 +2503,7 @@ export default function AFLPage() {
     // Team mode must always chart the team's full game log, not the currently selected player's
     // personal log. Using player logs here makes the team chart look like the club has only
     // played as many games as that player has appeared in.
-    return teamModeSelectedTeamLogs.map((g, idx) => {
+    return dedupeAflGames(teamModeSelectedTeamLogs as Record<string, unknown>[]).map((g, idx) => {
       const result = String(g.result ?? '').trim();
       const scores = parseAflScoresFromResult(result);
       const parsedGoals = parseAflGoalsFromResult(result);

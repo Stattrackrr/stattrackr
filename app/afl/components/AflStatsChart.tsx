@@ -7,6 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
+import { dedupeAflGames } from '@/lib/aflGameDedupe';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 type AflAdvancedFilterKey =
@@ -671,6 +672,15 @@ export function AflStatsChart({
     return null;
   }, []);
 
+  const dedupedGameLogs = useMemo(
+    () => dedupeAflGames(gameLogs as Record<string, unknown>[]) as typeof gameLogs,
+    [gameLogs]
+  );
+  const dedupedAllGameLogs = useMemo(
+    () => dedupeAflGames(allGameLogs as Record<string, unknown>[]) as typeof allGameLogs,
+    [allGameLogs]
+  );
+
   useEffect(() => {
     if (!teammateFilterName?.trim()) {
       setTeammateGameKeys(new Set());
@@ -755,8 +765,8 @@ export function AflStatsChart({
     );
 
   const logsForStatOptions = useMemo(
-    () => (gameLogs.length > 0 ? gameLogs : allGameLogs),
-    [gameLogs, allGameLogs]
+    () => (dedupedGameLogs.length > 0 ? dedupedGameLogs : dedupedAllGameLogs),
+    [dedupedGameLogs, dedupedAllGameLogs]
   );
 
   const availableStats = useMemo(() => {
@@ -875,11 +885,11 @@ export function AflStatsChart({
   }, [gameLogs, availableStats, preferredDefaultStat, selectedStat, onSelectedStatChange]);
 
   const filteredGameLogs = useMemo(() => {
-    if (!teammateFilterName?.trim()) return gameLogs;
+    if (!teammateFilterName?.trim()) return dedupedGameLogs;
     if (teammateGameKeys.size === 0) {
-      return withWithoutMode === 'with' ? [] : gameLogs;
+      return withWithoutMode === 'with' ? [] : dedupedGameLogs;
     }
-    return gameLogs.filter((g) => {
+    return dedupedGameLogs.filter((g) => {
       const round = String(g.round ?? '').trim();
       const gameSeason = resolveGameSeason(g);
       const key = round && gameSeason != null ? `${gameSeason}:${round}` : '';
@@ -887,7 +897,7 @@ export function AflStatsChart({
       if (withWithoutMode === 'with') return playedWithTeammate;
       return !playedWithTeammate;
     });
-  }, [gameLogs, teammateFilterName, teammateGameKeys, withWithoutMode, resolveGameSeason]);
+  }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, withWithoutMode, resolveGameSeason]);
 
   const venueOptions = useMemo(() => [...AFL_ALL_VENUES], []);
   const venueCounts = useMemo(() => {
@@ -1714,7 +1724,7 @@ export function AflStatsChart({
           <div className="h-full w-full flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
           </div>
-        ) : gameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
+        ) : dedupedGameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
           <div className="h-full w-full flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
           </div>
