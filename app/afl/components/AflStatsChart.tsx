@@ -943,7 +943,7 @@ export function AflStatsChart({
   }, [uiResetToken]);
 
   const splitFilteredGameLogs = useMemo(() => {
-    return filteredGameLogs.filter((g) => {
+    const filtered = filteredGameLogs.filter((g) => {
       if (splitResultFilter !== 'all') {
         const outcome = getGameOutcome(g.result);
         if (outcome !== splitResultFilter) return false;
@@ -954,6 +954,7 @@ export function AflStatsChart({
       }
       return true;
     });
+    return dedupeAflGames(filtered as Record<string, unknown>[]) as typeof filteredGameLogs;
   }, [filteredGameLogs, splitResultFilter, splitVenueFilter]);
 
   const effectiveSeason = useCallback((g: Record<string, unknown>) => {

@@ -150,7 +150,7 @@ function normalizeForRankMatch(value: string): string {
 
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v6';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
-const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v3';
+const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v4';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
 
 const CHART_STAT_TO_DVP_METRIC: Record<string, string> = {
@@ -2503,7 +2503,7 @@ export default function AFLPage() {
     // Team mode must always chart the team's full game log, not the currently selected player's
     // personal log. Using player logs here makes the team chart look like the club has only
     // played as many games as that player has appeared in.
-    return dedupeAflGames(teamModeSelectedTeamLogs as Record<string, unknown>[]).map((g, idx) => {
+    const mapped = dedupeAflGames(teamModeSelectedTeamLogs as Record<string, unknown>[]).map((g, idx) => {
       const result = String(g.result ?? '').trim();
       const scores = parseAflScoresFromResult(result);
       const parsedGoals = parseAflGoalsFromResult(result);
@@ -2520,12 +2520,19 @@ export default function AFLPage() {
         : result.toLowerCase().startsWith('l')
           ? 0
           : null;
+      const dateRaw = String(g.date ?? g.game_date ?? '').trim();
+      const seasonFromGame = typeof g.season === 'number' && Number.isFinite(g.season) ? g.season : null;
+      const seasonFromDate = dateRaw.match(/\b(20\d{2})\b/)?.[1];
+      const season =
+        seasonFromGame ??
+        (seasonFromDate ? parseInt(seasonFromDate, 10) : null);
 
       const row: Record<string, unknown> = {
         round: g.round ?? '',
         opponent: g.opponent ?? '',
         result: g.result ?? '',
-        date: g.date ?? g.game_date ?? '',
+        date: dateRaw,
+        ...(season != null ? { season } : {}),
         ...(venue ? { venue } : {}),
         game_number: typeof g.game_number === 'number' ? g.game_number : idx + 1,
         moneyline,
@@ -2564,6 +2571,7 @@ export default function AFLPage() {
 
       return row;
     });
+    return dedupeAflGames(mapped);
   }, [
     aflPropsMode,
     teamModeSelectedTeamLogs,

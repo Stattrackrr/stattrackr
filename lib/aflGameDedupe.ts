@@ -1,9 +1,42 @@
+import { opponentToOfficialTeamName } from '@/lib/aflTeamMapping';
+
+/** Canonical round label for dedupe keys (R14, SF, PF, etc.). */
+export function normalizeAflRoundForDedupe(round: unknown): string {
+  const text = String(round ?? '').trim().toUpperCase();
+  if (!text) return '';
+  const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
+  if (match) return `R${parseInt(match[1], 10)}`;
+  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 'GF';
+  if (/\b(PF|PRELIM)\b/.test(text)) return 'PF';
+  if (/\b(SF|SEMI)\b/.test(text)) return 'SF';
+  if (/\b(QF|QUAL)\b/.test(text)) return 'QF';
+  if (/\b(EF|ELIM)\b/.test(text)) return 'EF';
+  return text;
+}
+
+function normalizeOpponentForDedupe(opponent: unknown): string {
+  const raw = String(opponent ?? '').trim();
+  if (!raw) return '';
+  const official = opponentToOfficialTeamName(raw);
+  return (official ?? raw).toLowerCase();
+}
+
+function inferSeasonForDedupe(game: Record<string, unknown>): string {
+  const season = Number(game.season);
+  if (Number.isFinite(season)) return String(season);
+  const date = String(game.date ?? game.game_date ?? '').trim();
+  const y4 = date.match(/\b(20\d{2})\b/);
+  if (y4?.[1]) return y4[1];
+  const y2 = date.match(/\b(\d{2})\b$/);
+  if (y2?.[1]) return String(2000 + parseInt(y2[1], 10));
+  return '';
+}
+
 /** Stable identity for matching venue enrichment across base vs quarter-enriched rows. */
 export function buildAflGameIdentityKey(game: Record<string, unknown>): string {
-  const season = Number(game.season);
-  const seasonPart = Number.isFinite(season) ? String(season) : '';
-  const round = String(game.round ?? '').trim().toUpperCase();
-  const opponent = String(game.opponent ?? '').trim().toLowerCase();
+  const seasonPart = inferSeasonForDedupe(game);
+  const round = normalizeAflRoundForDedupe(game.round);
+  const opponent = normalizeOpponentForDedupe(game.opponent);
   const result = String(game.result ?? '').trim().toLowerCase();
   const date = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
   return [seasonPart, round, opponent, date, result].join('|');
@@ -12,10 +45,10 @@ export function buildAflGameIdentityKey(game: Record<string, unknown>): string {
 /** Primary dedupe / venue lookup key: season + round + opponent (date can differ by a day across player logs). */
 export function buildAflGameDedupeKey(game: Record<string, unknown>): string {
   const datePart = String(game.date ?? game.game_date ?? '').trim().slice(0, 10);
-  const opponentPart = String(game.opponent ?? '').trim().toLowerCase();
-  const roundPart = String(game.round ?? '').trim().toUpperCase();
+  const opponentPart = normalizeOpponentForDedupe(game.opponent);
+  const roundPart = normalizeAflRoundForDedupe(game.round);
   const gameNumberPart = String(game.game_number ?? '').trim();
-  const seasonPart = String(game.season ?? '').trim();
+  const seasonPart = inferSeasonForDedupe(game);
   const roundOpponentKey = roundPart && opponentPart ? [seasonPart, roundPart, opponentPart].join('|') : '';
   const dateKey = datePart ? [seasonPart, datePart, opponentPart].join('|') : '';
   const identityKey = buildAflGameIdentityKey(game);
