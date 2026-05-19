@@ -154,7 +154,46 @@ function getCardSubtitle(item: ImportedBetRow, bet: ImportedBetRow['normalized_b
   return label;
 }
 
-function getCardTitle(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet']) {
+function getFixtureDisplay(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet']): string {
+  const raw = item.raw_payload;
+
+  if (raw?.fixture && isValidFixtureDisplay(String(raw.fixture))) {
+    return sanitizeFixtureDisplay(String(raw.fixture));
+  }
+
+  if (bet.team && bet.opponent) {
+    return `${bet.team} v ${bet.opponent}`;
+  }
+
+  const titleCandidates = [
+    raw?.display_title ? String(raw.display_title) : null,
+    bet.selection.split('—')[0]?.trim() || null,
+    bet.selection,
+  ].filter((value): value is string => Boolean(value));
+
+  for (const candidate of titleCandidates) {
+    const fixtureFromTitle = candidate.match(/([A-Za-z][^—]*?\s+(?:v|vs)\s+[A-Za-z][^—]*)/i);
+    if (fixtureFromTitle?.[1] && isValidFixtureDisplay(fixtureFromTitle[1])) {
+      return sanitizeFixtureDisplay(fixtureFromTitle[1]);
+    }
+  }
+
+  const fixtureFromSelection = bet.selection.match(
+    /([A-Za-z][A-Za-z0-9 .'-]{2,}\s+(?:v|vs)\s+[A-Za-z][A-Za-z0-9 .'-]{2,})/i
+  );
+  if (fixtureFromSelection?.[1] && isValidFixtureDisplay(fixtureFromSelection[1])) {
+    return sanitizeFixtureDisplay(fixtureFromSelection[1]);
+  }
+
+  const fallbackTitle = titleCandidates[0] ?? bet.selection;
+  if (raw?.multi_label && !isValidFixtureDisplay(fallbackTitle)) {
+    return fallbackTitle;
+  }
+
+  return fallbackTitle;
+}
+
+function getCardTitle(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet']): string {
   const raw = item.raw_payload;
   if (raw?.display_title) return String(raw.display_title);
 
@@ -175,37 +214,6 @@ function getCardTitle(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet'
   }
 
   return bet.selection;
-}
-
-function getFixtureDisplay(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet']) {
-  const raw = item.raw_payload;
-  const title = getCardTitle(item, bet);
-
-  if (raw?.fixture && isValidFixtureDisplay(String(raw.fixture))) {
-    return sanitizeFixtureDisplay(String(raw.fixture));
-  }
-
-  if (bet.team && bet.opponent) {
-    return `${bet.team} v ${bet.opponent}`;
-  }
-
-  const fixtureFromTitle = title.match(/([A-Za-z][^—]*?\s+(?:v|vs)\s+[A-Za-z][^—]*)/i);
-  if (fixtureFromTitle?.[1] && isValidFixtureDisplay(fixtureFromTitle[1])) {
-    return sanitizeFixtureDisplay(fixtureFromTitle[1]);
-  }
-
-  const fixtureFromSelection = bet.selection.match(
-    /([A-Za-z][A-Za-z0-9 .'-]{2,}\s+(?:v|vs)\s+[A-Za-z][A-Za-z0-9 .'-]{2,})/i
-  );
-  if (fixtureFromSelection?.[1] && isValidFixtureDisplay(fixtureFromSelection[1])) {
-    return sanitizeFixtureDisplay(fixtureFromSelection[1]);
-  }
-
-  if (raw?.multi_label && !isValidFixtureDisplay(title)) {
-    return title;
-  }
-
-  return title;
 }
 
 function getBetDetailLine(item: ImportedBetRow, bet: ImportedBetRow['normalized_bet'], title: string) {
