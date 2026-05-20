@@ -263,7 +263,7 @@ function buildBatchUrl(teamHref) {
   return `${baseUrl}/api/soccer/player-stats-batch?${params.toString()}`;
 }
 
-function requestJson(url, timeoutMs) {
+function requestJson(url, timeoutMs, redirectsRemaining = 5) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const client = parsed.protocol === 'https:' ? https : http;
@@ -275,6 +275,15 @@ function requestJson(url, timeoutMs) {
         timeout: timeoutMs,
       },
       (res) => {
+        const status = res.statusCode || 0;
+        const location = res.headers.location;
+        if (status >= 300 && status < 400 && location && redirectsRemaining > 0) {
+          res.resume();
+          const redirectedUrl = new URL(location, parsed).toString();
+          requestJson(redirectedUrl, timeoutMs, redirectsRemaining - 1).then(resolve, reject);
+          return;
+        }
+
         const chunks = [];
         res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
         res.on('end', () => {
@@ -286,8 +295,8 @@ function requestJson(url, timeoutMs) {
             payload = null;
           }
           resolve({
-            ok: res.statusCode >= 200 && res.statusCode < 300,
-            status: res.statusCode || 0,
+            ok: status >= 200 && status < 300,
+            status,
             payload,
           });
         });
