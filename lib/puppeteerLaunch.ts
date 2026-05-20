@@ -1,6 +1,19 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Browser } from 'puppeteer-core';
 
 const SERVERLESS_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
+
+function resolveChromiumBinDir(): string | undefined {
+  const candidates = [
+    join(process.cwd(), 'node_modules', '@sparticuz', 'chromium', 'bin'),
+    '/var/task/node_modules/@sparticuz/chromium/bin',
+  ];
+  for (const dir of candidates) {
+    if (existsSync(join(dir, 'chromium.br'))) return dir;
+  }
+  return undefined;
+}
 
 /** True when Puppeteer must use @sparticuz/chromium (Vercel/AWS), not bundled Chrome. */
 export function isServerlessPuppeteerRuntime(): boolean {
@@ -21,7 +34,14 @@ async function getServerlessChromiumExecutablePath(): Promise<string> {
     serverlessExecutablePathPromise = (async () => {
       const chromium = (await import('@sparticuz/chromium')).default;
       chromium.setGraphicsMode = false;
-      return chromium.executablePath();
+      const binDir = resolveChromiumBinDir();
+      if (!binDir) {
+        throw new Error(
+          '@sparticuz/chromium bin/*.br missing in deployment (expected node_modules/@sparticuz/chromium/bin). ' +
+            'Check next.config outputFileTracingIncludes for this API route.'
+        );
+      }
+      return chromium.executablePath(binDir);
     })();
   }
   return serverlessExecutablePathPromise;

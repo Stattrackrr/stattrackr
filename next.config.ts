@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
+const chromiumBinTrace = ['./node_modules/@sparticuz/chromium/bin/**/*'] as const;
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  // Vercel file tracing omits @sparticuz/chromium/bin/*.br unless explicitly included
+  outputFileTracingIncludes: {
+    '/api/soccer/player-stats-batch': [...chromiumBinTrace],
+    '/api/soccer/player-props-test': [...chromiumBinTrace],
+  },
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
     return [{ source: "/favicon.ico", destination: "/images/stattrackr-icon.png" }];
