@@ -3,8 +3,25 @@ import { getSoccerTeamResultsCache, normalizeSoccerTeamHref } from '@/lib/soccer
 import { getPermanentSoccerTeamResults } from '@/lib/soccerPermanentStore';
 import { fetchLiveSoccerwayTeamResultsMatches } from '@/lib/soccerwayLiveTeamResultsFetch';
 import { fetchSoccerwayPlayerStatsHtml, pickLargestTableFromHtml } from '@/lib/soccerwayPlayerStatsHtmlFetch';
+import {
+  applyPositionsToPlayerMatches,
+  extractSoccerwayRoleFromText,
+  stripSoccerwayRoleFromPlayerCell,
+} from '@/lib/soccerPlayerPosition';
+import {
+  filterMatchesToSeasonYear,
+  getCurrentSoccerSeasonYear,
+  getSoccerSeasonYearFromKickoffUnix,
+} from '@/lib/soccerOpponentBreakdown';
 import { canonicalSoccerStatKey, readCanonicalSoccerStatValue } from '@/lib/soccerStatKeyAliases';
 import type { SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
+
+export { getCurrentSoccerSeasonYear, getSoccerSeasonYearFromKickoffUnix, parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
+
+/** Load enough recent games before season filter so we can still fill `limit` for the current season. */
+const SEASON_SCRAPE_PREFETCH_MATCHES = 120;
+
+export { applyPositionsToPlayerMatches, derivePrimaryPositionFromMatches, enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
 
 export const PLAYER_STAT_CATEGORIES = ['top', 'shots', 'attack', 'passes', 'defense', 'goalkeeping', 'general'] as const;
 export type PlayerStatCategory = (typeof PLAYER_STAT_CATEGORIES)[number];
@@ -15,6 +32,8 @@ const PLAYER_STAT_CATEGORY_SET = new Set<string>(PLAYER_STAT_CATEGORIES);
 export const SOCCERWAY_ORIGIN = 'https://www.soccerway.com';
 export const DEFAULT_MATCH_LIMIT = 100;
 export const MAX_MATCH_LIMIT = 100;
+/** No cap after season filter — include every match in the current season. */
+export const FULL_SEASON_PLAYER_MATCH_LIMIT = 0;
 /** Higher is faster when the fetch path works; cap avoids hammering Soccerway. */
 export const DEFAULT_SCRAPE_MATCH_CONCURRENCY = 10;
 
@@ -22,6 +41,10 @@ export type PlayerStatRow = {
   player: string | null;
   rawCells: string[];
   stats: Record<string, string | null>;
+  /** Short code: GK, CB, CDM, CAM, CM, FB, WB, W, ST, etc. */
+  position?: string | null;
+  /** Soccerway phrase, e.g. "centre back". */
+  positionRaw?: string | null;
 };
 
 export type PlayerMatchStats = {
@@ -36,6 +59,9 @@ export type PlayerMatchStats = {
   scoreline: string;
   result: 'W' | 'D' | 'L';
   categories: Partial<Record<PlayerStatCategory, PlayerStatRow>>;
+  /** Mode across categories for this match. */
+  position?: string | null;
+  positionRaw?: string | null;
 };
 
 export function normalizeText(value: string | null | undefined): string {
@@ -133,10 +159,15 @@ function playerStatRowFromParsedTable(
     stats[normalizeHeader(header, `col_${index}`)] = matchedRow[index] ?? null;
   });
 
+  const playerCell = matchedRow[0] || null;
+  const role = extractSoccerwayRoleFromText(playerCell);
+
   return {
-    player: matchedRow[0] || null,
+    player: playerCell ? stripSoccerwayRoleFromPlayerCell(playerCell) : null,
     rawCells: matchedRow,
     stats,
+    position: role?.code ?? null,
+    positionRaw: role?.raw ?? null,
   };
 }
 
@@ -226,14 +257,72 @@ function addMatchMetadata(row: PlayerMatchStats, match: SoccerwayRecentMatch, si
 
 const LIVE_TEAM_RESULTS_FEED_PAGES = 8;
 
+export function filterPlayerMatchStatsToSeasonYear(
+  matches: PlayerMatchStats[],
+  seasonYear: number
+): PlayerMatchStats[] {
+  if (!Number.isFinite(seasonYear) || seasonYear <= 0) return [];
+  return matches.filter((match) => getSoccerSeasonYearFromKickoffUnix(match.kickoffUnix) === seasonYear);
+}
+
+function resolveSeasonYearForScrape(seasonYear: number | null | undefined): number | null {
+  if (seasonYear === null) return null;
+  if (typeof seasonYear === 'number' && Number.isFinite(seasonYear) && seasonYear > 0) return Math.floor(seasonYear);
+  return getCurrentSoccerSeasonYear();
+}
+
+export function parsePlayerStatsMatchLimit(
+  raw: string | null | undefined,
+  options: { seasonYear?: number | null } = {}
+): number {
+  const value = String(raw ?? '').trim().toLowerCase();
+  const seasonScoped = options.seasonYear !== null && options.seasonYear !== undefined;
+  if (!value || value === 'all' || value === '0' || value === 'season' || value === 'full') {
+    return seasonScoped ? FULL_SEASON_PLAYER_MATCH_LIMIT : DEFAULT_MATCH_LIMIT;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return seasonScoped ? FULL_SEASON_PLAYER_MATCH_LIMIT : DEFAULT_MATCH_LIMIT;
+  }
+  return Math.min(MAX_MATCH_LIMIT, parsed);
+}
+
+export function applySeasonAndLimitToRecentMatches(
+  matches: SoccerwayRecentMatch[],
+  limit: number,
+  seasonYear: number | null | undefined
+): SoccerwayRecentMatch[] {
+  const effectiveSeason = resolveSeasonYearForScrape(seasonYear);
+  const sorted = [...matches]
+    .filter((match) => normalizeSummaryPath(match.summaryPath))
+    .sort((a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER));
+  const seasonScoped =
+    effectiveSeason != null ? filterMatchesToSeasonYear(sorted, effectiveSeason) : sorted;
+  if (limit <= 0) {
+    if (effectiveSeason != null) return seasonScoped;
+    return seasonScoped.slice(0, DEFAULT_MATCH_LIMIT);
+  }
+  return seasonScoped.slice(0, limit);
+}
+
 export async function loadRecentMatchesForScrape(
   teamHref: string,
   limit: number,
-  opts?: { mergeLiveSoccerway?: boolean }
+  opts?: { mergeLiveSoccerway?: boolean; seasonYear?: number | null }
 ): Promise<SoccerwayRecentMatch[]> {
+  const effectiveSeason = resolveSeasonYearForScrape(opts?.seasonYear);
+  const prefetchLimit =
+    limit <= 0 && effectiveSeason != null
+      ? SEASON_SCRAPE_PREFETCH_MATCHES
+      : effectiveSeason != null
+        ? Math.max(limit, SEASON_SCRAPE_PREFETCH_MATCHES)
+        : limit <= 0
+          ? DEFAULT_MATCH_LIMIT
+          : limit;
+
   const cached = await getSoccerTeamResultsCache(teamHref, { quiet: true, restTimeoutMs: 700, jsTimeoutMs: 700 });
   const cachedMatches = cached?.matches ?? [];
-  const permanent = await getPermanentSoccerTeamResults(teamHref, { limitMatches: limit });
+  const permanent = await getPermanentSoccerTeamResults(teamHref, { limitMatches: prefetchLimit });
   const byKey = new Map<string, SoccerwayRecentMatch>();
   const liveKeys = new Set<string>();
 
@@ -266,10 +355,7 @@ export async function loadRecentMatchesForScrape(
     }
   }
 
-  const sorted = Array.from(byKey.values())
-    .filter((match) => normalizeSummaryPath(match.summaryPath))
-    .sort((a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER));
-  return sorted.slice(0, limit);
+  return applySeasonAndLimitToRecentMatches(Array.from(byKey.values()), limit, opts?.seasonYear);
 }
 
 async function createPlayerStatsPage(browser: Browser): Promise<Page> {
@@ -413,6 +499,12 @@ export type BuildPlayerStatsOptions = {
    * JS-rendered (our fetch returns the page shell with no parseable table).
    */
   puppeteerOnly?: boolean;
+  /** Season start year (2025 = 2025/26). Omit for current season; pass `null` for no season filter. */
+  seasonYear?: number | null;
+  /** Seed per-player buckets before scraping (incremental refresh). */
+  existingByPlayer?: Map<string, PlayerMatchStats[]>;
+  /** Only scrape these matches; defaults to full season match list when omitted. */
+  scrapeMatches?: SoccerwayRecentMatch[];
 };
 
 /** Promise pool that runs at most `limit` async tasks in flight at once. */
@@ -448,9 +540,13 @@ export async function buildPlayerStatsForAliases(
     1,
     Math.min(16, options?.matchConcurrency ?? DEFAULT_SCRAPE_MATCH_CONCURRENCY)
   );
-  const matches =
+  const seasonYear = options?.seasonYear !== undefined ? options.seasonYear : getCurrentSoccerSeasonYear();
+  const matches = applySeasonAndLimitToRecentMatches(
     options?.prefetchedMatches ??
-    (await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true }));
+      (await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true, seasonYear })),
+    limit,
+    seasonYear
+  );
   if (!matches.length) return [];
 
   const browserHolder: { current: Browser | null } = { current: null };
@@ -529,7 +625,9 @@ export async function buildPlayerStatsForAliases(
       const rows = await Promise.all(batch.map((match) => scrapeMatch(match)));
       output.push(...rows.filter((row): row is PlayerMatchStats => row != null));
     }
-    return output.sort((a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER));
+    return applyPositionsToPlayerMatches(
+      output.sort((a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER))
+    );
   } finally {
     if (browserHolder.current) await browserHolder.current.close().catch(() => undefined);
   }
@@ -574,10 +672,24 @@ export async function buildSquadPlayerStats(
     1,
     Math.min(60, options?.fetchConcurrency ?? matchConcurrency * Math.max(1, playerStatCategories.length))
   );
-  const matches =
+  const seasonYear = options?.seasonYear !== undefined ? options.seasonYear : getCurrentSoccerSeasonYear();
+  const seasonMatches = applySeasonAndLimitToRecentMatches(
     options?.prefetchedMatches ??
-    (await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true }));
-  if (!matches.length) return players.map((p) => ({ playerKey: p.playerKey, displayName: p.displayName, matches: [] }));
+      (await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true, seasonYear })),
+    limit,
+    seasonYear
+  );
+  const matches =
+    options?.scrapeMatches != null
+      ? options.scrapeMatches
+      : seasonMatches;
+  if (!seasonMatches.length) {
+    return players.map((p) => ({
+      playerKey: p.playerKey,
+      displayName: p.displayName,
+      matches: applyPositionsToPlayerMatches(options?.existingByPlayer?.get(p.playerKey) ?? []),
+    }));
+  }
 
   const puppeteerOnly = options?.puppeteerOnly === true || process.env.SOCCER_PLAYER_STATS_PUPPETEER_ONLY === '1';
   const fallbackEnv = process.env.SOCCER_PLAYER_STATS_PUPPETEER_FALLBACK === '1';
@@ -595,7 +707,14 @@ export async function buildSquadPlayerStats(
 
   // playerKey -> matchId -> PlayerMatchStats
   const perPlayer = new Map<string, Map<string, PlayerMatchStats>>();
-  for (const p of players) perPlayer.set(p.playerKey, new Map());
+  for (const p of players) {
+    const bucket = new Map<string, PlayerMatchStats>();
+    for (const row of options?.existingByPlayer?.get(p.playerKey) ?? []) {
+      const key = String(row.matchId || '').trim();
+      if (key) bucket.set(key, row);
+    }
+    perPlayer.set(p.playerKey, bucket);
+  }
 
   const distributeTable = (
     match: SoccerwayRecentMatch,
@@ -707,8 +826,8 @@ export async function buildSquadPlayerStats(
       ? `fetch=skipped(puppeteerOnly)`
       : `fetch=${ms(tFetch - t0)} (ok=${fetchOk} empty=${fetchEmpty} err=${fetchErr})`;
     console.log(
-      `[soccerPlayerStatsScrape] squad scrape: matches=${matches.length} cats=${playerStatCategories.length} ` +
-        `players=${players.length} ${fetchPart} ` +
+      `[soccerPlayerStatsScrape] squad scrape: fetchMatches=${matches.length} seasonMatches=${seasonMatches.length} ` +
+        `cats=${playerStatCategories.length} players=${players.length} ${fetchPart} ` +
         (fallbackEnabled
           ? `fallback=${ms(tDone - tFetch)} (ok=${fallbackOk} empty=${fallbackEmpty} err=${fallbackErr})`
           : `fallback=disabled missingTabs=${fetchEmpty + fetchErr}`)
@@ -716,8 +835,10 @@ export async function buildSquadPlayerStats(
 
     return players.map((p) => {
       const bucket = perPlayer.get(p.playerKey)!;
-      const sorted = Array.from(bucket.values()).sort(
-        (a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER)
+      const sorted = applyPositionsToPlayerMatches(
+        Array.from(bucket.values()).sort(
+          (a, b) => (b.kickoffUnix ?? Number.MIN_SAFE_INTEGER) - (a.kickoffUnix ?? Number.MIN_SAFE_INTEGER)
+        )
       );
       return { playerKey: p.playerKey, displayName: p.displayName, matches: sorted };
     });

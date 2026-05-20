@@ -438,7 +438,7 @@ export function SoccerPlayerPropsTestCard({
     let cancelled = false;
     const controller = new AbortController();
     // Request all 7 Soccerway tabs; UI filters which keys it surfaces dynamically.
-    const params = new URLSearchParams({ href, cacheOnly: '1', limit: '30', categories: 'all' });
+    const params = new URLSearchParams({ href, cacheOnly: '1', limit: '0', categories: 'all', season: 'current' });
     params.set('playerKey', pk);
     const dn = String(displayName || '').trim();
     if (dn) params.set('player', dn);

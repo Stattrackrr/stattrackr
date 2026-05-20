@@ -5,15 +5,22 @@ import {
   setSoccerPlayerStatsCache,
   type SoccerPlayerStatsCachePayload,
 } from '@/lib/soccerCache';
+import { enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
+import { parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
 import {
+  findMissingSeasonMatches,
+  mergePlayerMatchStats,
+} from '@/lib/soccerPlayerStatsIncremental';
+import {
+  applySeasonAndLimitToRecentMatches,
   buildPlayerAliasesFromDisplayName,
   buildPlayerStatsForAliases,
   enrichPlayerMatchesFromTeamCache,
+  loadRecentMatchesForScrape,
+  parsePlayerStatsMatchLimit,
   parseRequestedPlayerStatCategories,
   type PlayerMatchStats,
   PLAYER_STAT_CATEGORIES,
-  DEFAULT_MATCH_LIMIT,
-  MAX_MATCH_LIMIT,
 } from '@/lib/soccerPlayerStatsScrape';
 
 export const runtime = 'nodejs';
@@ -55,13 +62,14 @@ export async function GET(request: NextRequest) {
   const explicitKey = request.nextUrl.searchParams.get('playerKey')?.trim().toLowerCase() || '';
   const rawPlayer = request.nextUrl.searchParams.get('player')?.trim() || '';
   const requestedPlayer = rawPlayer || DEFAULT_PLAYER;
-  const rawLimit = request.nextUrl.searchParams.get('limit')?.trim().toLowerCase() ?? '';
-  const limit =
-    !rawLimit || rawLimit === 'all' || rawLimit === '0'
-      ? DEFAULT_MATCH_LIMIT
-      : Math.max(1, Math.min(MAX_MATCH_LIMIT, Number.parseInt(rawLimit, 10) || DEFAULT_MATCH_LIMIT));
+  const seasonYear = parseSoccerSeasonYearParam(request.nextUrl.searchParams.get('season'));
+  const limit = parsePlayerStatsMatchLimit(request.nextUrl.searchParams.get('limit'), { seasonYear });
   const playerStatCategories = parseRequestedPlayerStatCategories(request.nextUrl.searchParams.get('categories'));
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
+  const forceFull = request.nextUrl.searchParams.get('full') === '1';
+  const incrementalRefresh =
+    request.nextUrl.searchParams.get('incremental') !== '0' &&
+    request.nextUrl.searchParams.get('incremental') !== 'false';
   const cacheOnly = request.nextUrl.searchParams.get('cacheOnly') === '1' || !forceRefresh;
 
   if (!TEAM_HREF_RE.test(teamHref)) {
@@ -95,6 +103,7 @@ export async function GET(request: NextRequest) {
         limit,
         playerStatCategories,
         {
+          seasonYear,
           quiet: true,
           restTimeoutMs: 8000,
           jsTimeoutMs: 8000,
@@ -110,6 +119,7 @@ export async function GET(request: NextRequest) {
           categories: cached.categories?.length ? cached.categories : playerStatCategories,
           availableCategories: PLAYER_STAT_CATEGORIES,
           matches: cachedMatches,
+          seasonYear: cached.seasonYear ?? seasonYear,
           summary: {
             matchCount: cachedMatches.length,
           },
@@ -140,9 +150,63 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const matches = await buildPlayerStatsForAliases(teamHref, limit, playerStatCategories, scrapeAliases);
+    const seasonMatches = applySeasonAndLimitToRecentMatches(
+      await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true, seasonYear }),
+      limit,
+      seasonYear
+    );
+
+    let matches: PlayerMatchStats[] = [];
+    let updateMode: 'full' | 'incremental' | 'cache-only' = 'full';
+    let scrapedNewMatches = seasonMatches.length;
+
+    if (incrementalRefresh && !forceFull) {
+      const cached = await getSoccerPlayerStatsCacheWithFallback<PlayerMatchStats>(
+        teamHref,
+        playerKey,
+        limit,
+        playerStatCategories,
+        { seasonYear, quiet: true, restTimeoutMs: 8000, jsTimeoutMs: 8000 }
+      );
+      const existing = Array.isArray(cached?.matches)
+        ? await enrichPlayerMatchesFromTeamCache(teamHref, cached!.matches)
+        : [];
+      const missing = findMissingSeasonMatches(seasonMatches, existing);
+
+      if (cached && missing.length > 0) {
+        const scraped = await buildPlayerStatsForAliases(
+          teamHref,
+          limit,
+          playerStatCategories,
+          scrapeAliases,
+          { seasonYear, prefetchedMatches: missing }
+        );
+        matches = await enrichPlayerMatchesFromTeamCache(teamHref, mergePlayerMatchStats(existing, scraped));
+        updateMode = 'incremental';
+        scrapedNewMatches = missing.length;
+      } else if (cached && existing.length > 0) {
+        matches = existing;
+        updateMode = 'incremental';
+        scrapedNewMatches = 0;
+      } else {
+        matches = await buildPlayerStatsForAliases(teamHref, limit, playerStatCategories, scrapeAliases, {
+          seasonYear,
+          prefetchedMatches: seasonMatches,
+        });
+        matches = await enrichPlayerMatchesFromTeamCache(teamHref, matches);
+        updateMode = 'full';
+      }
+    } else {
+      matches = await buildPlayerStatsForAliases(teamHref, limit, playerStatCategories, scrapeAliases, {
+        seasonYear,
+        prefetchedMatches: seasonMatches,
+      });
+      matches = await enrichPlayerMatchesFromTeamCache(teamHref, matches);
+      updateMode = 'full';
+    }
+
     const generatedAt = new Date().toISOString();
-    const cachePayload: SoccerPlayerStatsCachePayload<PlayerMatchStats> = {
+    const cachePayload = enrichPlayerStatsWithPositions({
       teamHref,
       playerName: displayNameForCache,
       playerKey,
@@ -151,7 +215,8 @@ export async function GET(request: NextRequest) {
       matches,
       source: 'soccerway',
       generatedAt,
-    };
+      seasonYear,
+    }) satisfies SoccerPlayerStatsCachePayload<PlayerMatchStats>;
     let cacheWriteOk = false;
     if (matches.length > 0) {
       cacheWriteOk = await setSoccerPlayerStatsCache(
@@ -172,13 +237,18 @@ export async function GET(request: NextRequest) {
       categories: playerStatCategories,
       availableCategories: PLAYER_STAT_CATEGORIES,
       matches,
+      seasonYear,
+      updateMode,
+      scrapedNewMatches,
       summary: {
         matchCount: matches.length,
+        seasonMatchCount: seasonMatches.length,
       },
       cache: {
         source: 'live',
         generatedAt,
         forcedRefresh: forceRefresh,
+        incrementalRefresh: incrementalRefresh && !forceFull,
         writeOk: cacheWriteOk,
       },
     });

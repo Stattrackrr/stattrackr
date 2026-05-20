@@ -72,6 +72,9 @@
     },
     "app/api/cron/warm-soccer-cache/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/soccer/player-stats-batch/route.ts": {
+      "maxDuration": 800
     }
   },
   "rewrites": [

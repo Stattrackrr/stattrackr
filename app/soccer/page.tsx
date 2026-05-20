@@ -98,7 +98,13 @@ type SoccerPlayerOption = {
   cachedMatchCount?: number;
 };
 
-type CachedSoccerRosterRow = { playerKey: string; displayName: string; matchCount: number; teamHref?: string };
+type CachedSoccerRosterRow = {
+  playerKey: string;
+  displayName: string;
+  matchCount: number;
+  teamHref?: string;
+  position?: string | null;
+};
 
 function extractSoccerwayPlayerSlugFromParticipantUrl(url: string | null | undefined): string | null {
   const m = String(url || '').trim().match(/\/player\/([^/]+)\//i);
@@ -219,7 +225,7 @@ function buildSoccerPlayerOptionFromRosterRow(
     teamHref: href || null,
     number: info?.number ?? null,
     imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-    role: info?.position ?? null,
+    role: row.position ?? info?.position ?? null,
     status: row.matchCount > 0 ? ('cached' as const) : ('test' as const),
     cachedMatchCount: row.matchCount > 0 ? row.matchCount : undefined,
   };
@@ -979,7 +985,7 @@ function SoccerPageContent() {
           teamHref: rowTeamHref || null,
           number: info?.number ?? null,
           imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-          role: info?.position ?? null,
+          role: row.position ?? info?.position ?? null,
           status: matchCount > 0 ? ('cached' as const) : ('test' as const),
           cachedMatchCount: matchCount > 0 ? matchCount : undefined,
         };
@@ -1022,7 +1028,13 @@ function SoccerPageContent() {
         const res = await fetch('/api/soccer/cached-players-index', { cache: 'no-store' });
         const data = (await res.json().catch(() => null)) as {
           success?: boolean;
-          players?: Array<{ playerKey?: string; displayName?: string; matchCount?: number; teamHref?: string }>;
+          players?: Array<{
+            playerKey?: string;
+            displayName?: string;
+            matchCount?: number;
+            teamHref?: string;
+            position?: string | null;
+          }>;
         } | null;
         if (!res.ok || !data?.success || !Array.isArray(data.players)) {
           if (!cancelled) setGlobalCachedPlayers([]);
@@ -1034,6 +1046,7 @@ function SoccerPageContent() {
             displayName: String(p.displayName || '').trim(),
             matchCount: Number(p.matchCount) || 0,
             teamHref: normalizeTeamHref(String(p.teamHref || '')),
+            position: String(p.position || '').trim() || null,
           }))
           .filter((p) => p.playerKey && p.displayName && p.teamHref && p.matchCount > 0);
         if (!cancelled) setGlobalCachedPlayers(list);
@@ -1066,7 +1079,7 @@ function SoccerPageContent() {
     void (async () => {
       try {
         const res = await fetch(
-          `/api/soccer/player-stats-roster-report?href=${encodeURIComponent(href)}&limit=30&categories=all`,
+          `/api/soccer/player-stats-roster-report?href=${encodeURIComponent(href)}&limit=0&categories=all&season=current`,
           { cache: 'no-store' }
         );
         const data = (await res.json().catch(() => null)) as {

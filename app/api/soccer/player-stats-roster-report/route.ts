@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSoccerPlayerStatsCache, normalizeSoccerTeamHref } from '@/lib/soccerCache';
-import { parseRequestedPlayerStatCategories, type PlayerMatchStats } from '@/lib/soccerPlayerStatsScrape';
+import { parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
+import {
+  parsePlayerStatsMatchLimit,
+  parseRequestedPlayerStatCategories,
+  type PlayerMatchStats,
+} from '@/lib/soccerPlayerStatsScrape';
 import { fetchSoccerwaySquadPlayers } from '@/lib/soccerwaySquadHtml';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
-const DEFAULT_MATCH_LIMIT = 100;
-const MAX_MATCH_LIMIT = 100;
 const READ_CONCURRENCY = 10;
 
 type GameRow = {
@@ -60,11 +63,8 @@ async function mapInChunks<T, R>(items: T[], chunkSize: number, fn: (item: T) =>
 export async function GET(request: NextRequest) {
   const href = request.nextUrl.searchParams.get('href')?.trim() || '';
   const teamHref = normalizeSoccerTeamHref(href);
-  const rawLimit = request.nextUrl.searchParams.get('limit')?.trim().toLowerCase() ?? '';
-  const limit =
-    !rawLimit || rawLimit === 'all' || rawLimit === '0'
-      ? DEFAULT_MATCH_LIMIT
-      : Math.max(1, Math.min(MAX_MATCH_LIMIT, Number.parseInt(rawLimit, 10) || DEFAULT_MATCH_LIMIT));
+  const seasonYear = parseSoccerSeasonYearParam(request.nextUrl.searchParams.get('season'));
+  const limit = parsePlayerStatsMatchLimit(request.nextUrl.searchParams.get('limit'), { seasonYear });
   const categories = parseRequestedPlayerStatCategories(request.nextUrl.searchParams.get('categories'));
 
   if (!TEAM_HREF_RE.test(teamHref)) {

@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { normalizeSoccerTeamHref, setSoccerPlayerStatsCache } from '@/lib/soccerCache';
+import { enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
+import { parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
+import {
+  buildIncrementalSquadOptions,
+  planIncrementalSquadPlayerStats,
+} from '@/lib/soccerPlayerStatsIncremental';
 import {
   buildPlayerAliasesFromDisplayName,
   buildSquadPlayerStats,
-  loadRecentMatchesForScrape,
+  parsePlayerStatsMatchLimit,
   parseRequestedPlayerStatCategories,
-  DEFAULT_MATCH_LIMIT,
-  MAX_MATCH_LIMIT,
   PLAYER_STAT_CATEGORIES,
 } from '@/lib/soccerPlayerStatsScrape';
 import { fetchSoccerwaySquadPlayers, type SoccerwaySquadListPlayer } from '@/lib/soccerwaySquadHtml';
@@ -19,15 +23,15 @@ export const maxDuration = 800;
 
 const TEAM_HREF_RE = /^\/team\/[a-z0-9-]+\/[a-zA-Z0-9]+\/?$/;
 const PLAYER_STATS_CACHE_TTL_MINUTES = 24 * 60;
-const DEFAULT_PLAYER_CONCURRENCY = 3;
-const MAX_PLAYER_CONCURRENCY = 6;
+const MAX_PLAYER_CONCURRENCY = 8;
+const DEFAULT_PLAYER_CONCURRENCY = 6;
 /** First N in squad table order (see fetchSoccerwaySquadPlayers sort=document); cap 35 = senior/top slice only. */
-const DEFAULT_MAX_PLAYERS = 35;
 const MAX_MAX_PLAYERS = 35;
-const DEFAULT_MATCH_SCRAPE_CONCURRENCY = 12;
+const DEFAULT_MAX_PLAYERS = MAX_MAX_PLAYERS;
 const MAX_MATCH_SCRAPE_CONCURRENCY = 25;
-const DEFAULT_FETCH_CONCURRENCY = 30;
+const DEFAULT_MATCH_SCRAPE_CONCURRENCY = MAX_MATCH_SCRAPE_CONCURRENCY;
 const MAX_FETCH_CONCURRENCY = 60;
+const DEFAULT_FETCH_CONCURRENCY = MAX_FETCH_CONCURRENCY;
 
 function parsePositiveInt(value: string | null, fallback: number, max: number): number {
   const n = Number.parseInt(String(value || '').trim(), 10);
@@ -60,11 +64,10 @@ export async function GET(request: NextRequest) {
   const href = request.nextUrl.searchParams.get('href')?.trim() || '';
   const teamHref = normalizeSoccerTeamHref(href);
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === '1';
-  const rawLimit = request.nextUrl.searchParams.get('limit')?.trim().toLowerCase() ?? '';
-  const limit =
-    !rawLimit || rawLimit === 'all' || rawLimit === '0'
-      ? DEFAULT_MATCH_LIMIT
-      : Math.max(1, Math.min(MAX_MATCH_LIMIT, Number.parseInt(rawLimit, 10) || DEFAULT_MATCH_LIMIT));
+  const forceFull = parseQueryBool(request.nextUrl.searchParams.get('full'), false);
+  const incrementalRefresh = parseQueryBool(request.nextUrl.searchParams.get('incremental'), true);
+  const seasonYear = parseSoccerSeasonYearParam(request.nextUrl.searchParams.get('season'));
+  const limit = parsePlayerStatsMatchLimit(request.nextUrl.searchParams.get('limit'), { seasonYear });
   const categories = parseRequestedPlayerStatCategories(request.nextUrl.searchParams.get('categories'));
   const playerConcurrency = parsePositiveInt(
     request.nextUrl.searchParams.get('playerConcurrency'),
@@ -94,7 +97,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Batch scrape is explicit: add refresh=1 (long-running, many browser tabs).',
-        hint: 'Optional: keys=slug1,slug2 — default maxPlayers=35. Player-stats HTML is JS-rendered; batch defaults puppeteerOnly=1 (skip dead fetch). Try fetch first: puppeteerOnly=0&puppeteerFallback=1.',
+        hint: 'Optional: keys=slug1,slug2 — default maxPlayers=35, incremental=1 (only new season games). full=1 forces full re-scrape. Player-stats HTML is JS-rendered; batch defaults puppeteerOnly=1.',
       },
       { status: 400 }
     );
@@ -119,8 +122,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const prefetchedMatches = await loadRecentMatchesForScrape(teamHref, limit, { mergeLiveSoccerway: true });
-    if (!prefetchedMatches.length) {
+    const squadInputs = squad.map((p) => ({
+      playerKey: p.playerKey,
+      displayName: p.displayName,
+      aliases: buildPlayerAliasesFromDisplayName(p.displayName),
+    }));
+
+    const incrementalPlan = await planIncrementalSquadPlayerStats(
+      teamHref,
+      limit,
+      seasonYear,
+      categories,
+      squadInputs
+    );
+    const useIncremental = incrementalRefresh && !forceFull;
+    const seasonMatches = incrementalPlan.seasonMatches;
+    if (!seasonMatches.length) {
       return NextResponse.json(
         { success: false, error: 'No recent matches to scrape for this team.', players: [], startedAt },
         { status: 404 }
@@ -139,27 +156,42 @@ export async function GET(request: NextRequest) {
       hint?: string;
     }> = [];
 
-    const squadInputs = squad.map((p) => ({
-      playerKey: p.playerKey,
-      displayName: p.displayName,
-      aliases: buildPlayerAliasesFromDisplayName(p.displayName),
-    }));
-
     let scrapeError: string | null = null;
     let perPlayer: Awaited<ReturnType<typeof buildSquadPlayerStats>> = [];
+    const scrapeOpts = useIncremental
+      ? buildIncrementalSquadOptions(incrementalPlan, {
+          matchConcurrency,
+          fetchConcurrency,
+          disablePuppeteerFallback: !(puppeteerFallback || puppeteerOnly),
+          puppeteerOnly,
+          seasonYear,
+        })
+      : {
+          prefetchedMatches: seasonMatches,
+          scrapeMatches: seasonMatches,
+          matchConcurrency,
+          fetchConcurrency,
+          disablePuppeteerFallback: !(puppeteerFallback || puppeteerOnly),
+          puppeteerOnly,
+          seasonYear,
+        };
+
     try {
-      perPlayer = await buildSquadPlayerStats(teamHref, limit, categories, squadInputs, {
-        prefetchedMatches,
-        matchConcurrency,
-        fetchConcurrency,
-        disablePuppeteerFallback: !(puppeteerFallback || puppeteerOnly),
-        puppeteerOnly,
-      });
+      if (useIncremental && incrementalPlan.matchesToScrape.length === 0) {
+        perPlayer = squadInputs.map((p) => ({
+          playerKey: p.playerKey,
+          displayName: p.displayName,
+          matches: incrementalPlan.existingByPlayer.get(p.playerKey) ?? [],
+        }));
+      } else {
+        perPlayer = await buildSquadPlayerStats(teamHref, limit, categories, squadInputs, scrapeOpts);
+      }
     } catch (err) {
       scrapeError = err instanceof Error ? err.message : String(err);
     }
 
     const perPlayerByKey = new Map(perPlayer.map((r) => [r.playerKey, r] as const));
+    const planByKey = new Map(incrementalPlan.players.map((p) => [p.playerKey, p] as const));
 
     for (let offset = 0; offset < squadInputs.length; offset += playerConcurrency) {
       const chunk = squadInputs.slice(offset, offset + playerConcurrency);
@@ -176,7 +208,7 @@ export async function GET(request: NextRequest) {
           }
           const matches = perPlayerByKey.get(p.playerKey)?.matches ?? [];
           const generatedAt = new Date().toISOString();
-          const cachePayload = {
+          const cachePayload = enrichPlayerStatsWithPositions({
             teamHref,
             playerName: p.displayName,
             playerKey: p.playerKey,
@@ -185,7 +217,8 @@ export async function GET(request: NextRequest) {
             matches,
             source: 'soccerway' as const,
             generatedAt,
-          };
+            seasonYear,
+          });
           let writeOk = false;
           if (matches.length > 0) {
             try {
@@ -208,11 +241,14 @@ export async function GET(request: NextRequest) {
               };
             }
           }
+          const plan = planByKey.get(p.playerKey);
           return {
             playerKey: p.playerKey,
             displayName: p.displayName,
             matchCount: matches.length,
             writeOk,
+            updateMode: useIncremental ? (plan?.mode ?? 'incremental') : 'full',
+            scrapedNewMatches: useIncremental ? (plan?.matchesToScrape.length ?? 0) : matches.length,
             ...(matches.length === 0 ? { hint: ZERO_MATCH_HINT } : {}),
           };
         })
@@ -233,10 +269,15 @@ export async function GET(request: NextRequest) {
       startedAt,
       finishedAt,
       categories,
+      seasonYear,
       availableCategories: PLAYER_STAT_CATEGORIES,
       summary: {
         squadSize: squad.length,
-        prefetchedMatchCount: prefetchedMatches.length,
+        incrementalRefresh: useIncremental,
+        seasonMatchCount: seasonMatches.length,
+        matchesToScrapeCount: useIncremental ? incrementalPlan.matchesToScrape.length : seasonMatches.length,
+        playersIncremental: useIncremental ? incrementalPlan.playersIncremental : 0,
+        playersFull: useIncremental ? incrementalPlan.playersFull : squad.length,
         playerConcurrency,
         matchConcurrency,
         fetchConcurrency,

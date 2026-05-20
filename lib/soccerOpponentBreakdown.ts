@@ -241,12 +241,33 @@ export function filterToCompetition(
   return matches.filter((match) => tokensMatch(match.competitionName, filter.competitionName));
 }
 
+/** European season start year (Aug–Jun): e.g. May 2026 → 2025 for 2025/26. */
 export function getSoccerSeasonYearFromKickoffUnix(kickoffUnix: number | null | undefined): number {
   if (kickoffUnix == null || !Number.isFinite(kickoffUnix)) return 0;
   const kickoff = new Date(kickoffUnix * 1000);
   const month = kickoff.getUTCMonth();
   const year = kickoff.getUTCFullYear();
   return month >= 6 ? year : year - 1;
+}
+
+export function getCurrentSoccerSeasonYear(referenceDate: Date = new Date()): number {
+  const month = referenceDate.getUTCMonth();
+  const year = referenceDate.getUTCFullYear();
+  return month >= 6 ? year : year - 1;
+}
+
+/** `current` / empty → current season; `all` → no filter; otherwise a 4-digit season start year. */
+export function parseSoccerSeasonYearParam(value: string | null | undefined): number | null {
+  const raw = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (!raw || raw === 'current' || raw === 'this' || raw === 'thisseason') {
+    return getCurrentSoccerSeasonYear();
+  }
+  if (raw === 'all' || raw === 'any' || raw === 'none') return null;
+  const n = Number.parseInt(raw, 10);
+  if (Number.isFinite(n) && n >= 2000 && n <= 2100) return n;
+  return getCurrentSoccerSeasonYear();
 }
 
 export function filterMatchesToSeasonYear(

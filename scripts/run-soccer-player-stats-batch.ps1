@@ -4,7 +4,7 @@
 # Examples:
 #   .\scripts\run-soccer-player-stats-batch.ps1
 #   .\scripts\run-soccer-player-stats-batch.ps1 -BaseUrl "http://127.0.0.1:3000"
-#   Default batch: puppeteerOnly (API default) - skips useless HTTP fetch of JS shell; last 30 matches x top.
+#   Default batch: puppeteerOnly (API default) - full current season x all categories.
 #   Experiment with plain fetch first: .\scripts\run-soccer-player-stats-batch.ps1 -TryFetchFirst
 #   .\scripts\run-soccer-player-stats-batch.ps1 -Keys "bernardo-silva,rodri-hernandez" -PlayerConcurrency 2
 # One player only (simpler): .\scripts\run-soccer-player-stats-single.ps1 -PlayerKey "ake-nathan"
@@ -14,13 +14,12 @@
 param(
     [string]$BaseUrl = "http://localhost:3000",
     [string]$TeamHref = "/team/manchester-city/Wtn9Stg0",
-    [int]$PlayerConcurrency = 3,
-    [int]$MatchConcurrency = 12,
-    [int]$FetchConcurrency = 30,
+    [int]$PlayerConcurrency = 6,
+    [int]$MatchConcurrency = 25,
+    [int]$FetchConcurrency = 60,
     [int]$MaxPlayers = 35,
-    # Defaults match what the soccer dashboard reads from cache (last 30 matches, all 7 categories).
-    # Drop to -Categories top for a fast smoke test; raise -Limit 100 for a deeper historical pull.
-    [int]$Limit = 30,
+    # Defaults: full current season (limit=season), all 7 categories. Use -Limit 30 for a quick smoke test.
+    [string]$Limit = "season",
     [string]$Categories = "all",
     [string]$Keys = "",
     [switch]$TryFetchFirst,
@@ -40,7 +39,9 @@ $parts = @(
     "fetchConcurrency=$FetchConcurrency",
     "maxPlayers=$MaxPlayers",
     "limit=$Limit",
-    "categories=$([uri]::EscapeDataString($Categories))"
+    "categories=$([uri]::EscapeDataString($Categories))",
+    "season=current",
+    "incremental=1"
 )
 if ($TryFetchFirst) {
     $parts += "puppeteerOnly=0"

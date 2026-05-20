@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
+import { getCurrentSoccerSeasonYear } from '@/lib/soccerOpponentBreakdown';
+import {
+  filterPlayerMatchStatsToSeasonYear,
+  FULL_SEASON_PLAYER_MATCH_LIMIT,
+  type PlayerMatchStats,
+} from '@/lib/soccerPlayerStatsScrape';
 import type { SoccerwayLineupBundle, SoccerwayMatchStats, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE_NAME = 'soccer_api_cache';
 // Bump when persistent soccer cache payload/coverage rules change.
 const SOCCER_CACHE_SCHEMA = 'v3';
@@ -21,7 +26,12 @@ function warnSoccerCache(context: string, error: unknown): void {
   console.warn(`[Soccer Cache] ${context}:`, error);
 }
 
-if (supabaseUrl && supabaseServiceKey) {
+/** Lazy init so CLI scripts can load dotenv before the first cache read/write. */
+function ensureSupabaseAdmin(): ReturnType<typeof createClient> | null {
+  if (supabaseAdmin) return supabaseAdmin;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) return null;
   try {
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -31,7 +41,9 @@ if (supabaseUrl && supabaseServiceKey) {
     });
   } catch (error) {
     warnSoccerCache('Failed to initialize Supabase soccer cache client; using live fetch fallback', error);
+    return null;
   }
+  return supabaseAdmin;
 }
 
 const HOT_CACHE_TTL_MS = 30 * 1000;
@@ -134,6 +146,11 @@ export type SoccerPlayerStatsCachePayload<TMatch = unknown> = {
   matches: TMatch[];
   source: 'soccerway';
   generatedAt: string;
+  /** Mode of per-match positions (GK, CB, CDM, CAM, CM, FB, WB, W, ST, …). */
+  primaryPosition?: string | null;
+  primaryPositionRaw?: string | null;
+  /** European season start year for `matches` (e.g. 2025 = 2025/26). */
+  seasonYear?: number | null;
 };
 
 export interface SoccerCacheEntry<T = unknown> {
@@ -206,7 +223,7 @@ export function buildSoccerInjuriesCacheKey(teamHref: string): string {
 }
 
 export function buildSoccerPlayerStatsCacheKey(teamHref: string, playerKey: string, limit: number, categories: string[] = []): string {
-  const limitKey = limit > 0 ? `l${limit}` : 'all';
+  const limitKey = limit > 0 ? `l${limit}` : 'season';
   const categoryKey = categories.length ? categories.map((category) => String(category).trim().toLowerCase()).filter(Boolean).join('-') : 'all';
   return `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:${normalizeSoccerTeamHref(teamHref)}:${String(playerKey || '').trim().toLowerCase()}:${limitKey}:${categoryKey}`;
 }
@@ -231,7 +248,8 @@ function attachCacheMetadata<T>(value: T, row: Record<string, unknown>): T {
 }
 
 async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOptions = {}): Promise<T | null> {
-  if (!supabaseAdmin) return null;
+  const db = ensureSupabaseAdmin();
+  if (!db) return null;
 
   const quiet = options.quiet ?? false;
   const restTimeoutMs = Math.max(100, options.restTimeoutMs ?? 5000);
@@ -247,12 +265,14 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
 
   const readPromise = (async (): Promise<T | null> => {
     try {
+      const restUrlBase = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const restServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       const restPromise: Promise<T | null> =
-        !options.disableRest && supabaseUrl && supabaseServiceKey
+        !options.disableRest && restUrlBase && restServiceKey
           ? (async () => {
               try {
                 const restUrl =
-                  `${supabaseUrl}/rest/v1/${TABLE_NAME}` +
+                  `${restUrlBase}/rest/v1/${TABLE_NAME}` +
                   `?cache_key=eq.${encodeURIComponent(cacheKey)}` +
                   '&select=data,fetched_at,expires_at,updated_at,created_at&limit=1';
                 const controller = new AbortController();
@@ -261,8 +281,8 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
                 const response = await fetch(restUrl, {
                   method: 'GET',
                   headers: {
-                    apikey: supabaseServiceKey,
-                    Authorization: `Bearer ${supabaseServiceKey}`,
+                    apikey: restServiceKey,
+                    Authorization: `Bearer ${restServiceKey}`,
                     'Content-Type': 'application/json',
                     Prefer: 'return=representation',
                   },
@@ -293,7 +313,7 @@ async function getSoccerCache<T = unknown>(cacheKey: string, options: GetCacheOp
           setTimeout(() => resolve(null), jsTimeoutMs);
         });
 
-        const queryPromise = supabaseAdmin
+        const queryPromise = db
           .from(TABLE_NAME)
           .select('data, fetched_at, expires_at, updated_at, created_at')
           .eq('cache_key', cacheKey)
@@ -356,7 +376,8 @@ async function setSoccerCache(
   extras: { teamHref?: string | null; matchId?: string | null; fetchedAt?: string | null } = {},
   quiet = false
 ): Promise<boolean> {
-  if (!supabaseAdmin) return false;
+  const db = ensureSupabaseAdmin();
+  if (!db) return false;
 
   try {
     const hash = stableHash(data);
@@ -382,7 +403,7 @@ async function setSoccerCache(
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabaseAdmin
+    const { error } = await db
       .from(TABLE_NAME)
       .upsert(cacheEntry as any, { onConflict: 'cache_key' });
 
@@ -566,8 +587,10 @@ function buildSoccerPlayerStatsCacheAttempts(
     attempts.push({ limit: l, categories: cats });
   };
   add(limit, categories);
+  add(FULL_SEASON_PLAYER_MATCH_LIMIT, categories);
   add(100, categories);
   add(limit, ['all']);
+  add(FULL_SEASON_PLAYER_MATCH_LIMIT, ['all']);
   add(100, ['all']);
   add(30, ['all']);
   add(100, ['top']);
@@ -599,13 +622,31 @@ function scorePlayerStatsCacheHit(matches: unknown[], categories: string[]): num
 }
 
 /** Reads player stats, trying common limit/category cache keys (charts request l30:all; batch may store l100:top). */
+function trimPlayerStatsPayloadToSeason<TMatch>(
+  payload: SoccerPlayerStatsCachePayload<TMatch>,
+  limit: number,
+  seasonYear: number | null
+): SoccerPlayerStatsCachePayload<TMatch> | null {
+  if (!Array.isArray(payload.matches) || payload.matches.length === 0) return null;
+  if (seasonYear == null) return payload;
+  const filtered = filterPlayerMatchStatsToSeasonYear(payload.matches as PlayerMatchStats[], seasonYear);
+  if (!filtered.length) return null;
+  const sorted = [...filtered].sort((a, b) => (b.kickoffUnix ?? 0) - (a.kickoffUnix ?? 0));
+  return {
+    ...payload,
+    seasonYear,
+    matches: (limit > 0 ? sorted.slice(0, limit) : sorted) as TMatch[],
+  };
+}
+
 export async function getSoccerPlayerStatsCacheWithFallback<TMatch = unknown>(
   teamHref: string,
   playerKey: string,
   limit: number,
   categories: string[] = [],
-  options: GetCacheOptions = {}
+  options: GetCacheOptions & { seasonYear?: number | null } = {}
 ): Promise<SoccerPlayerStatsCachePayload<TMatch> | null> {
+  const seasonYear = options.seasonYear !== undefined ? options.seasonYear : getCurrentSoccerSeasonYear();
   let best: SoccerPlayerStatsCachePayload<TMatch> | null = null;
   let bestScore = -1;
   for (const attempt of buildSoccerPlayerStatsCacheAttempts(limit, categories)) {
@@ -617,9 +658,11 @@ export async function getSoccerPlayerStatsCacheWithFallback<TMatch = unknown>(
       options
     );
     if (!hit || !Array.isArray(hit.matches) || hit.matches.length === 0) continue;
-    const score = scorePlayerStatsCacheHit(hit.matches, categories);
+    const trimmed = trimPlayerStatsPayloadToSeason(hit, limit, seasonYear);
+    if (!trimmed || !Array.isArray(trimmed.matches) || trimmed.matches.length === 0) continue;
+    const score = scorePlayerStatsCacheHit(trimmed.matches, categories);
     if (!best || score > bestScore) {
-      best = hit;
+      best = trimmed;
       bestScore = score;
     }
   }
@@ -653,11 +696,13 @@ export type SoccerCachedPlayerIndexRow = {
   displayName: string;
   teamHref: string;
   matchCount: number;
+  position: string | null;
 };
 
 /** All players with at least one cached match row (deduped per team + playerKey). */
 export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } = {}): Promise<SoccerCachedPlayerIndexRow[]> {
-  if (!supabaseAdmin) return [];
+  const db = ensureSupabaseAdmin();
+  if (!db) return [];
 
   const quiet = options.quiet ?? false;
   const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
@@ -666,7 +711,7 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
 
   try {
     for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await db
         .from(TABLE_NAME)
         .select('team_href, data, cache_key')
         .eq('cache_type', 'player_stats')
@@ -694,15 +739,19 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
 
         const dedupeKey = `${teamHref}|${playerKey}`;
         const matchCount = matches.length;
+        const position = String(payload?.primaryPosition || '').trim() || null;
         const cacheKey = String(record.cache_key || '');
+        const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
         const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
         const existing = byPlayer.get(dedupeKey);
         if (
           !existing ||
           matchCount > existing.matchCount ||
-          (matchCount === existing.matchCount && prefersAllCategories)
+          (matchCount === existing.matchCount && (prefersFullSeason || prefersAllCategories))
         ) {
-          byPlayer.set(dedupeKey, { playerKey, displayName, teamHref, matchCount });
+          byPlayer.set(dedupeKey, { playerKey, displayName, teamHref, matchCount, position });
+        } else if (existing && !existing.position && position) {
+          byPlayer.set(dedupeKey, { ...existing, position });
         }
       }
 
@@ -718,10 +767,159 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
   });
 }
 
-export async function cleanupExpiredSoccerCache(): Promise<number> {
-  if (!supabaseAdmin) return 0;
+export type BackfillSoccerPlayerPositionsResult = {
+  scanned: number;
+  updated: number;
+  withPosition: number;
+  skipped: number;
+  errors: number;
+};
+
+/**
+ * Reads every cached player_stats row, extracts Soccerway roles from match rows, and writes back.
+ */
+export async function backfillSoccerPlayerPositionsInCache(options: {
+  quiet?: boolean;
+  dryRun?: boolean;
+  limit?: number;
+} = {}): Promise<BackfillSoccerPlayerPositionsResult> {
+  const quiet = options.quiet ?? false;
+  const dryRun = options.dryRun ?? false;
+  const maxRows = options.limit && options.limit > 0 ? options.limit : Number.POSITIVE_INFINITY;
+
+  const result: BackfillSoccerPlayerPositionsResult = {
+    scanned: 0,
+    updated: 0,
+    withPosition: 0,
+    skipped: 0,
+    errors: 0,
+  };
+
+  const db = ensureSupabaseAdmin();
+  if (!db) {
+    if (!quiet) {
+      console.warn(
+        '[Soccer Cache] backfillSoccerPlayerPositionsInCache: Supabase not configured (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)'
+      );
+    }
+    return result;
+  }
+
+  const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
+  const pageSize = 200;
+
   try {
-    const { data, error } = await supabaseAdmin.rpc('cleanup_expired_soccer_cache');
+    for (let offset = 0; result.scanned < maxRows; offset += pageSize) {
+      const { data, error } = await db
+        .from(TABLE_NAME)
+        .select('cache_key, data, fetched_at, expires_at, team_href')
+        .eq('cache_type', 'player_stats')
+        .like('cache_key', `${cacheKeyPrefix}%`)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        if (!quiet) warnSoccerCache('Backfill player positions: list failed', error);
+        break;
+      }
+
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        if (result.scanned >= maxRows) break;
+        result.scanned += 1;
+
+        const record = row as {
+          cache_key?: string;
+          data?: Partial<SoccerPlayerStatsCachePayload<PlayerMatchStats>>;
+          fetched_at?: string;
+          expires_at?: string;
+          team_href?: string | null;
+        };
+        const cacheKey = String(record.cache_key || '').trim();
+        const payload = record.data;
+        const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        if (!cacheKey || matches.length === 0) {
+          result.skipped += 1;
+          continue;
+        }
+
+        const enriched = enrichPlayerStatsWithPositions({
+          teamHref: String(payload?.teamHref || record.team_href || ''),
+          playerName: String(payload?.playerName || ''),
+          playerKey: String(payload?.playerKey || ''),
+          limit: Number(payload?.limit) || matches.length,
+          categories: Array.isArray(payload?.categories) ? payload.categories : [],
+          matches,
+          source: 'soccerway',
+          generatedAt: String(payload?.generatedAt || record.fetched_at || new Date().toISOString()),
+          primaryPosition: payload?.primaryPosition ?? null,
+          primaryPositionRaw: payload?.primaryPositionRaw ?? null,
+        });
+
+        if (!enriched.primaryPosition) {
+          result.skipped += 1;
+          continue;
+        }
+
+        result.withPosition += 1;
+
+        const prevHash = stableHash(payload);
+        const nextHash = stableHash(enriched);
+        if (prevHash === nextHash) {
+          result.skipped += 1;
+          continue;
+        }
+
+        if (dryRun) {
+          result.updated += 1;
+          continue;
+        }
+
+        try {
+          const { error: writeError } = await db
+            .from(TABLE_NAME)
+            .upsert(
+              {
+                cache_key: cacheKey,
+                cache_type: 'player_stats',
+                team_href: normalizeSoccerTeamHref(String(enriched.teamHref || record.team_href || '')) || null,
+                match_id: null,
+                data: enriched,
+                fetched_at: record.fetched_at ?? enriched.generatedAt,
+                expires_at: record.expires_at ?? SOCCER_CACHE_FOREVER_EXPIRES_AT,
+                updated_at: new Date().toISOString(),
+              } as any,
+              { onConflict: 'cache_key' }
+            );
+
+          if (writeError) {
+            result.errors += 1;
+            if (!quiet) warnSoccerCache(`Backfill write failed for ${cacheKey}`, writeError);
+          } else {
+            result.updated += 1;
+            hotCache.delete(cacheKey);
+          }
+        } catch (writeErr) {
+          result.errors += 1;
+          if (!quiet) warnSoccerCache(`Backfill write failed for ${cacheKey}`, writeErr);
+        }
+      }
+
+      if (rows.length < pageSize) break;
+    }
+  } catch (error) {
+    if (!quiet) warnSoccerCache('Backfill player positions: unexpected failure', error);
+  }
+
+  return result;
+}
+
+export async function cleanupExpiredSoccerCache(): Promise<number> {
+  const db = ensureSupabaseAdmin();
+  if (!db) return 0;
+  try {
+    const { data, error } = await db.rpc('cleanup_expired_soccer_cache');
     if (error) return 0;
     return data || 0;
   } catch {
