@@ -42,9 +42,12 @@ async function launchServerlessBrowser(): Promise<Browser> {
     const puppeteerCore = await import('puppeteer-core');
     const executablePath = await getServerlessChromiumExecutablePath();
     return puppeteerCore.default.launch({
-      args: [...chromium.args, ...SERVERLESS_ARGS],
+      args: puppeteerCore.default.defaultArgs({
+        args: [...chromium.args, ...SERVERLESS_ARGS],
+        headless: 'shell',
+      }),
       executablePath,
-      headless: true,
+      headless: 'shell',
     });
   });
 }
