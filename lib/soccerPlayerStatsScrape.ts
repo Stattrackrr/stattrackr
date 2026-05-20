@@ -1,4 +1,5 @@
-import puppeteer, { type Browser, type Page } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer-core';
+import { launchHeadlessBrowser } from '@/lib/puppeteerLaunch';
 import { getSoccerTeamResultsCache, normalizeSoccerTeamHref } from '@/lib/soccerCache';
 import { getPermanentSoccerTeamResults } from '@/lib/soccerPermanentStore';
 import { fetchLiveSoccerwayTeamResultsMatches } from '@/lib/soccerwayLiveTeamResultsFetch';
@@ -554,10 +555,7 @@ export async function buildPlayerStatsForAliases(
 
   const ensureBrowser = async (): Promise<Browser> => {
     if (!browserHolder.current) {
-      browserHolder.current = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      browserHolder.current = await launchHeadlessBrowser();
     }
     return browserHolder.current;
   };
@@ -697,10 +695,7 @@ export async function buildSquadPlayerStats(
   const browserHolder: { current: Browser | null } = { current: null };
   const ensureBrowser = async (): Promise<Browser> => {
     if (!browserHolder.current) {
-      browserHolder.current = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      browserHolder.current = await launchHeadlessBrowser();
     }
     return browserHolder.current;
   };

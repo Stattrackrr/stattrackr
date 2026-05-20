@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
     return [{ source: "/favicon.ico", destination: "/images/stattrackr-icon.png" }];
