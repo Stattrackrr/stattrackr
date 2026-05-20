@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const { execSync } = require('node:child_process');
+const { existsSync, readdirSync, readFileSync } = require('node:fs');
+const { join } = require('node:path');
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -18,40 +19,35 @@ function reply(payload) {
   process.stdout.write(`${JSON.stringify(payload)}\n`);
 }
 
-function run(command) {
-  return execSync(command, {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
-}
-
 function getCurrentBranch() {
   try {
-    return run('git branch --show-current');
+    const head = readFileSync(join(process.cwd(), '.git', 'HEAD'), 'utf8').trim();
+    const prefix = 'ref: refs/heads/';
+    return head.startsWith(prefix) ? head.slice(prefix.length) : '';
   } catch {
     return '';
   }
 }
 
 function getDirtyGeneratedFiles() {
-  try {
-    const status = run('git status --short');
-    return status
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .filter((line) =>
-        line.includes('.next/') ||
-        line.includes('__pycache__/') ||
-        line.includes('data/afl-model/local/') ||
-        line.includes('latest-disposals-projections-localtest.json') ||
-        line.includes('data/afl-model/projections/disposals-projections-')
-      )
-      .slice(0, 8);
-  } catch {
-    return [];
+  const candidates = [
+    '.next',
+    join('data', 'afl-model', 'local'),
+    join('data', 'afl-model', 'latest-disposals-projections-localtest.json'),
+  ];
+  const found = candidates.filter((path) => existsSync(join(process.cwd(), path)));
+
+  const projectionsDir = join(process.cwd(), 'data', 'afl-model', 'projections');
+  if (existsSync(projectionsDir)) {
+    for (const entry of readdirSync(projectionsDir)) {
+      if (entry.startsWith('disposals-projections-')) {
+        found.push(join('data', 'afl-model', 'projections', entry));
+        break;
+      }
+    }
   }
+
+  return found.slice(0, 8);
 }
 
 function isMasterLike(branch) {

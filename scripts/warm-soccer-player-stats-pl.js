@@ -49,6 +49,7 @@ const maxPlayers = Math.max(1, Math.min(35, Number.parseInt(process.env.SOCCER_P
 const MAX_PLAYER_CONCURRENCY = 8;
 const DEFAULT_PLAYER_CONCURRENCY = 6;
 const MAX_MATCH_CONCURRENCY = 25;
+const DEFAULT_MATCH_CONCURRENCY = 1;
 const MAX_FETCH_CONCURRENCY = 60;
 const playerConcurrency = Math.max(
   1,
@@ -64,8 +65,8 @@ const matchConcurrency = Math.max(
   1,
   Math.min(
     MAX_MATCH_CONCURRENCY,
-    Number.parseInt(process.env.SOCCER_PL_STATS_MATCH_CONCURRENCY || String(MAX_MATCH_CONCURRENCY), 10) ||
-      MAX_MATCH_CONCURRENCY
+    Number.parseInt(process.env.SOCCER_PL_STATS_MATCH_CONCURRENCY || String(DEFAULT_MATCH_CONCURRENCY), 10) ||
+      DEFAULT_MATCH_CONCURRENCY
   )
 );
 const fetchConcurrency = Math.max(
@@ -330,6 +331,8 @@ async function main() {
   );
   console.log(`  maxPlayers/team:   ${maxPlayers}`);
   console.log(`  playerConcurrency: ${playerConcurrency}`);
+  console.log(`  matchConcurrency:  ${matchConcurrency}`);
+  console.log(`  fetchConcurrency:  ${fetchConcurrency}`);
   console.log(`  puppeteerOnly:     ${puppeteerOnly}`);
   console.log(`  dryRun:            ${dryRun}`);
   console.log('');

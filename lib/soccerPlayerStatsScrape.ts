@@ -694,6 +694,9 @@ export async function buildSquadPlayerStats(
   const fallbackEnabled = puppeteerOnly || fallbackEnv || options?.disablePuppeteerFallback === false;
   const browserHolder: { current: Browser | null } = { current: null };
   const ensureBrowser = async (): Promise<Browser> => {
+    if (browserHolder.current && !browserHolder.current.isConnected()) {
+      browserHolder.current = null;
+    }
     if (!browserHolder.current) {
       browserHolder.current = await launchHeadlessBrowser();
     }
@@ -790,9 +793,11 @@ export async function buildSquadPlayerStats(
       await runWithConcurrency(missingMatches, Math.max(1, Math.min(matchConcurrency, missingMatches.length)), async ([matchId, missingCats]) => {
         const match = matchById.get(matchId);
         if (!match) return;
-        const b = await ensureBrowser();
-        const page = await createPlayerStatsPage(b);
+        let page: Page | null = null;
+        let b: Browser | null = null;
         try {
+          b = await ensureBrowser();
+          page = await createPlayerStatsPage(b);
           for (const category of missingCats) {
             try {
               const table = await readPlayerCategoryTablePuppeteer(
@@ -809,8 +814,14 @@ export async function buildSquadPlayerStats(
               fallbackErr += 1;
             }
           }
+        } catch (error) {
+          fallbackErr += missingCats.length;
+          if (b && !b.isConnected()) {
+            browserHolder.current = null;
+          }
+          console.error('[soccerPlayerStatsScrape] Puppeteer page setup failed', error);
         } finally {
-          await page.close().catch(() => undefined);
+          await page?.close().catch(() => undefined);
         }
       });
     }

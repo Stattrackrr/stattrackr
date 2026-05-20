@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       team_concurrency:
-        description: 'Parallel teams (use 1 on Vercel if you see spawn ETXTBSY; 3 ok locally)'
+        description: 'Parallel teams (keep 1 for deployed/serverless Puppeteer)'
         required: false
         default: '1'
       teams:
@@ -66,10 +66,11 @@ jobs:
         env:
           SOCCER_PL_STATS_BASE_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          # Same defaults as scripts/warm-soccer-player-stats-pl.js (local npm run soccer:player-stats:pl)
+          # Keep browser work deliberately serial on the deployed app; high tab concurrency makes
+          # serverless Chromium crash with Target closed / Target.createTarget errors.
           SOCCER_PL_STATS_TEAM_CONCURRENCY: ${{ github.event.inputs.team_concurrency || '1' }}
-          SOCCER_PL_STATS_PLAYER_CONCURRENCY: '6'
-          SOCCER_PL_STATS_MATCH_CONCURRENCY: '25'
+          SOCCER_PL_STATS_PLAYER_CONCURRENCY: '1'
+          SOCCER_PL_STATS_MATCH_CONCURRENCY: '1'
           SOCCER_PL_STATS_FETCH_CONCURRENCY: '60'
           SOCCER_PL_STATS_MAX_PLAYERS: '35'
           SOCCER_PL_STATS_PUPPETEER_ONLY: '1'
