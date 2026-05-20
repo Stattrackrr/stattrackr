@@ -66,11 +66,10 @@ jobs:
         env:
           SOCCER_PL_STATS_BASE_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          # Keep browser work deliberately serial on the deployed app; high tab concurrency makes
-          # serverless Chromium crash with Target closed / Target.createTarget errors.
+          # Keep team concurrency serial, then tune the in-team browser pool carefully.
           SOCCER_PL_STATS_TEAM_CONCURRENCY: ${{ github.event.inputs.team_concurrency || '1' }}
-          SOCCER_PL_STATS_PLAYER_CONCURRENCY: '1'
-          SOCCER_PL_STATS_MATCH_CONCURRENCY: '1'
+          SOCCER_PL_STATS_PLAYER_CONCURRENCY: '4'
+          SOCCER_PL_STATS_MATCH_CONCURRENCY: '4'
           SOCCER_PL_STATS_FETCH_CONCURRENCY: '60'
           SOCCER_PL_STATS_MAX_PLAYERS: '35'
           SOCCER_PL_STATS_PUPPETEER_ONLY: '1'
