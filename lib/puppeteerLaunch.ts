@@ -12,24 +12,54 @@ export function isServerlessPuppeteerRuntime(): boolean {
   );
 }
 
+/** @sparticuz/chromium unpacks to a shared path — concurrent calls cause spawn ETXTBSY on Vercel. */
+let serverlessExecutablePathPromise: Promise<string> | null = null;
+let serverlessLaunchGate: Promise<void> = Promise.resolve();
+
+async function getServerlessChromiumExecutablePath(): Promise<string> {
+  if (!serverlessExecutablePathPromise) {
+    serverlessExecutablePathPromise = (async () => {
+      const chromium = (await import('@sparticuz/chromium')).default;
+      chromium.setGraphicsMode = false;
+      return chromium.executablePath();
+    })();
+  }
+  return serverlessExecutablePathPromise;
+}
+
+function withServerlessLaunchLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = serverlessLaunchGate.then(fn, fn);
+  serverlessLaunchGate = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
+async function launchServerlessBrowser(): Promise<Browser> {
+  return withServerlessLaunchLock(async () => {
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteerCore = await import('puppeteer-core');
+    const executablePath = await getServerlessChromiumExecutablePath();
+    return puppeteerCore.default.launch({
+      args: [...chromium.args, ...SERVERLESS_ARGS],
+      executablePath,
+      headless: true,
+    });
+  });
+}
+
 /**
  * Launch headless Chrome for Soccerway scrapes.
  * - Local: `puppeteer-core` + Chrome from the `puppeteer` package install
  * - Vercel serverless: `puppeteer-core` + `@sparticuz/chromium` binary
  */
 export async function launchHeadlessBrowser(): Promise<Browser> {
-  const puppeteerCore = await import('puppeteer-core');
-
   if (isServerlessPuppeteerRuntime()) {
-    const chromium = (await import('@sparticuz/chromium')).default;
-    chromium.setGraphicsMode = false;
-    return puppeteerCore.default.launch({
-      args: [...chromium.args, ...SERVERLESS_ARGS],
-      executablePath: await chromium.executablePath(),
-      headless: true,
-    });
+    return launchServerlessBrowser();
   }
 
+  const puppeteerCore = await import('puppeteer-core');
   const puppeteer = await import('puppeteer');
   return puppeteerCore.default.launch({
     executablePath: puppeteer.default.executablePath(),

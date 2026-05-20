@@ -195,10 +195,16 @@ function logTeamProgress(result, position, total) {
 
   if (cached === 0 && Array.isArray(result.players) && result.players.length > 0) {
     const sample = result.players.find((p) => p?.error || p?.hint) ?? result.players[0];
+    const errText = String(sample?.error || sample?.hint || '');
     if (sample?.error) {
-      console.log(`${prefix}   hint: ${String(sample.error).slice(0, 240)}`);
+      console.log(`${prefix}   hint: ${errText.slice(0, 240)}`);
     } else if (sample?.hint) {
-      console.log(`${prefix}   hint: ${String(sample.hint).slice(0, 240)}`);
+      console.log(`${prefix}   hint: ${errText.slice(0, 240)}`);
+    }
+    if (/ETXTBSY/i.test(errText)) {
+      console.log(
+        `${prefix}   tip: Vercel unpacked Chromium while another team batch was starting — re-run with SOCCER_PL_STATS_TEAM_CONCURRENCY=1 (or retry this workflow).`
+      );
     }
   }
 

@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       team_concurrency:
-        description: 'Parallel teams (default 3, same as local npm run soccer:player-stats:pl)'
+        description: 'Parallel teams (use 1 on Vercel if you see spawn ETXTBSY; 3 ok locally)'
         required: false
-        default: '3'
+        default: '1'
       teams:
         description: 'Optional comma filter (e.g. arsenal,liverpool)'
         required: false
@@ -67,7 +67,7 @@ jobs:
           SOCCER_PL_STATS_BASE_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           # Same defaults as scripts/warm-soccer-player-stats-pl.js (local npm run soccer:player-stats:pl)
-          SOCCER_PL_STATS_TEAM_CONCURRENCY: ${{ github.event.inputs.team_concurrency || '3' }}
+          SOCCER_PL_STATS_TEAM_CONCURRENCY: ${{ github.event.inputs.team_concurrency || '1' }}
           SOCCER_PL_STATS_PLAYER_CONCURRENCY: '6'
           SOCCER_PL_STATS_MATCH_CONCURRENCY: '25'
           SOCCER_PL_STATS_FETCH_CONCURRENCY: '60'
