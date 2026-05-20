@@ -1,6 +1,7 @@
 # Premier League deep player-stats warm (incremental, full current season).
 # Runs the same orchestrator as local: `npm run soccer:player-stats:pl`
-# Scraping happens on your deployed app (Puppeteer on Vercel), not on the runner.
+# Scraping runs against a local Next server on the GitHub runner. Vercel serverless
+# resets long Puppeteer requests before full-season team batches can finish.
 name: Soccer PL Player Stats Warm
 
 on:
@@ -48,24 +49,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check PROD_URL and CRON_SECRET
+      - name: Check cache secrets
         id: check
         run: |
-          if [ -z "${{ secrets.PROD_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
+          if [ -z "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
             echo "configured=false" >> $GITHUB_OUTPUT
-            echo "⚠️ PROD_URL or CRON_SECRET not set — add both in GitHub → Settings → Secrets → Actions"
-            echo "   PROD_URL must match your Vercel deployment (no trailing slash)"
-            echo "   CRON_SECRET must match Vercel env CRON_SECRET (batch API requires it in production)"
+            echo "⚠️ NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — add both in GitHub → Settings → Secrets → Actions"
+            echo "   The workflow runs the scraper on the GitHub runner and writes player_stats directly to Supabase."
           else
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Warm Premier League player stats
         if: steps.check.outputs.configured == 'true'
-        run: npm run soccer:player-stats:pl
+        shell: bash
+        run: |
+          npm run dev > next-dev.log 2>&1 &
+          NEXT_PID=$!
+
+          for i in {1..60}; do
+            if curl -fsS "http://127.0.0.1:3000" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+          if ! kill -0 "$NEXT_PID" 2>/dev/null; then
+            echo "Local Next server exited before warm started"
+            cat next-dev.log
+            exit 1
+          fi
+
+          status=0
+          npm run soccer:player-stats:pl || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "=== next-dev.log (tail) ==="
+            tail -n 240 next-dev.log || true
+          fi
+          kill "$NEXT_PID" 2>/dev/null || true
+          exit "$status"
         env:
-          SOCCER_PL_STATS_BASE_URL: ${{ secrets.PROD_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SOCCER_PL_STATS_BASE_URL: http://127.0.0.1:3000
           # Keep team concurrency serial, then tune the in-team browser pool carefully.
           SOCCER_PL_STATS_TEAM_CONCURRENCY: ${{ github.event.inputs.team_concurrency || '1' }}
           SOCCER_PL_STATS_PLAYER_CONCURRENCY: '4'
