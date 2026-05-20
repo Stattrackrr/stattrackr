@@ -18,6 +18,8 @@
 require('dotenv').config({ path: '.env.local' });
 
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const path = require('path');
 
 const TEAM_SAMPLE_PATH = path.join(process.cwd(), 'data', 'soccerway-teams-sample.json');
@@ -261,24 +263,53 @@ function buildBatchUrl(teamHref) {
   return `${baseUrl}/api/soccer/player-stats-batch?${params.toString()}`;
 }
 
+function requestJson(url, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const client = parsed.protocol === 'https:' ? https : http;
+    const req = client.request(
+      parsed,
+      {
+        method: 'GET',
+        headers,
+        timeout: timeoutMs,
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          let payload = null;
+          try {
+            payload = text ? JSON.parse(text) : null;
+          } catch {
+            payload = null;
+          }
+          resolve({
+            ok: res.statusCode >= 200 && res.statusCode < 300,
+            status: res.statusCode || 0,
+            payload,
+          });
+        });
+      }
+    );
+    req.on('timeout', () => req.destroy(new Error(`HTTP timeout after ${timeoutMs}ms`)));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 async function warmTeam(team) {
   const url = buildBatchUrl(team.href);
   if (dryRun) {
     return { team, ok: true, dryRun: true, url, summary: null };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), teamTimeoutMs);
   const started = Date.now();
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-    const payload = await response.json().catch(() => null);
+    const response = await requestJson(url, teamTimeoutMs);
+    const payload = response.payload;
     const elapsedMs = Date.now() - started;
 
     if (!response.ok || !payload?.success) {
@@ -308,8 +339,6 @@ async function warmTeam(team) {
       error: error instanceof Error ? error.message : String(error),
       summary: null,
     };
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
 

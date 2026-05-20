@@ -757,6 +757,7 @@ export async function buildSquadPlayerStats(
   let fetchErr = 0;
   const missingByMatch = new Map<string, PlayerStatCategory[]>();
   const matchById = new Map(matches.map((m) => [m.matchId, m] as const));
+  const verbose = process.env.SOCCER_PLAYER_STATS_VERBOSE === '1';
 
   const t0 = Date.now();
   try {
@@ -790,15 +791,23 @@ export async function buildSquadPlayerStats(
     let fallbackErr = 0;
 
     if (fallbackEnabled && missingMatches.length) {
+      if (verbose) {
+        console.log(
+          `[soccerPlayerStatsScrape] Puppeteer fallback starting: matches=${missingMatches.length} ` +
+            `matchConcurrency=${Math.max(1, Math.min(matchConcurrency, missingMatches.length))}`
+        );
+      }
       await runWithConcurrency(missingMatches, Math.max(1, Math.min(matchConcurrency, missingMatches.length)), async ([matchId, missingCats]) => {
         const match = matchById.get(matchId);
         if (!match) return;
         let page: Page | null = null;
         let b: Browser | null = null;
+        const matchStarted = Date.now();
         try {
           b = await ensureBrowser();
           page = await createPlayerStatsPage(b);
           for (const category of missingCats) {
+            const categoryStarted = Date.now();
             try {
               const table = await readPlayerCategoryTablePuppeteer(
                 page,
@@ -813,6 +822,14 @@ export async function buildSquadPlayerStats(
             } catch {
               fallbackErr += 1;
             }
+            if (verbose) {
+              console.log(
+                `[soccerPlayerStatsScrape] category ${matchId}/${category} finished in ${(
+                  (Date.now() - categoryStarted) /
+                  1000
+                ).toFixed(1)}s`
+              );
+            }
           }
         } catch (error) {
           fallbackErr += missingCats.length;
@@ -822,6 +839,13 @@ export async function buildSquadPlayerStats(
           console.error('[soccerPlayerStatsScrape] Puppeteer page setup failed', error);
         } finally {
           await page?.close().catch(() => undefined);
+          if (verbose) {
+            console.log(
+              `[soccerPlayerStatsScrape] match ${matchId} finished in ${((Date.now() - matchStarted) / 1000).toFixed(
+                1
+              )}s`
+            );
+          }
         }
       });
     }
