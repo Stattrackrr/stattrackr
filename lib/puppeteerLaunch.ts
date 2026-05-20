@@ -14,26 +14,25 @@ export function isServerlessPuppeteerRuntime(): boolean {
 
 /**
  * Launch headless Chrome for Soccerway scrapes.
- * - Local / GitHub Actions dev: full `puppeteer` with downloaded Chrome
+ * - Local: `puppeteer-core` + Chrome from the `puppeteer` package install
  * - Vercel serverless: `puppeteer-core` + `@sparticuz/chromium` binary
  */
 export async function launchHeadlessBrowser(): Promise<Browser> {
+  const puppeteerCore = await import('puppeteer-core');
+
   if (isServerlessPuppeteerRuntime()) {
     const chromium = (await import('@sparticuz/chromium')).default;
-    const puppeteerCore = await import('puppeteer-core');
-    if ('setGraphicsMode' in chromium && typeof chromium.setGraphicsMode === 'function') {
-      chromium.setGraphicsMode(false);
-    }
+    chromium.setGraphicsMode = false;
     return puppeteerCore.default.launch({
       args: [...chromium.args, ...SERVERLESS_ARGS],
-      defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: true,
     });
   }
 
   const puppeteer = await import('puppeteer');
-  return puppeteer.default.launch({
+  return puppeteerCore.default.launch({
+    executablePath: puppeteer.default.executablePath(),
     headless: true,
     args: SERVERLESS_ARGS,
   });
