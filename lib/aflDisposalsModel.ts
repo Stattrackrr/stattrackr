@@ -333,7 +333,30 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
   const current = getCachedProjectionData();
   const rows = Array.isArray(current.payload?.rows) ? current.payload!.rows! : [];
   const gameRows = rows.filter((row) => String(row.gameKey ?? '').trim() === gameKey);
-  const picks = selectTopRowsWithSideAnchors(gameRows, limit);
+  let picks = selectTopRowsWithSideAnchors(gameRows, limit);
+  if (picks.length === 0) {
+    const cap = Math.max(1, Math.min(10, limit));
+    const maxSame = TOP_PICKS_MAX_SAME_SIDE;
+    const seen = new Set<string>();
+    let overCt = 0;
+    let underCt = 0;
+    picks = [];
+    for (const row of rankedFallbackRows(gameRows)) {
+      if (picks.length >= cap) break;
+      const key = normalizeName(String(row.playerName ?? ''));
+      if (!key || seen.has(key)) continue;
+      const side: 'OVER' | 'UNDER' =
+        row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
+          ? row.recommendedSide
+          : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER');
+      if (side === 'OVER' && overCt >= maxSame) continue;
+      if (side === 'UNDER' && underCt >= maxSame) continue;
+      seen.add(key);
+      if (side === 'OVER') overCt += 1;
+      else underCt += 1;
+      picks.push({ ...row, recommendedSide: side });
+    }
+  }
   return picks.map((row, idx) => ({
     playerName: String(row.playerName ?? ''),
     bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
