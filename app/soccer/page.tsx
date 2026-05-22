@@ -2452,6 +2452,8 @@ function SoccerPageContent() {
                     opponentHref={nextOpponentHrefForPanel}
                     nextCompetitionName={nextFixture?.competitionName ?? null}
                     nextCompetitionCountry={nextFixture?.competitionCountry ?? null}
+                    statKey={mainChartStat}
+                    playerPosition={propsMode === 'player' ? selectedSoccerPlayer?.role ?? null : null}
                     emptyTextClass={emptyText}
                     showSkeleton={fixtureGatedPanelSkeleton}
                   />

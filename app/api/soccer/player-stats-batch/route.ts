@@ -126,6 +126,8 @@ export async function GET(request: NextRequest) {
       playerKey: p.playerKey,
       displayName: p.displayName,
       aliases: buildPlayerAliasesFromDisplayName(p.displayName),
+      position: p.position ?? null,
+      positionRaw: p.positionRaw ?? null,
     }));
 
     const incrementalPlan = await planIncrementalSquadPlayerStats(
@@ -217,6 +219,8 @@ export async function GET(request: NextRequest) {
             matches,
             source: 'soccerway' as const,
             generatedAt,
+            primaryPosition: p.position ?? null,
+            primaryPositionRaw: p.positionRaw ?? null,
             seasonYear,
           });
           let writeOk = false;

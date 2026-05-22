@@ -176,7 +176,7 @@ function cleanObjectForHash(value: unknown): unknown {
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(cleanObjectForHash);
   const clone: Record<string, unknown> = {};
-  for (const [key, inner] of Object.entries(value)) {
+  for (const [key, inner] of Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) {
     if (key === '__cache_metadata') continue;
     clone[key] = cleanObjectForHash(inner);
   }
@@ -699,6 +699,16 @@ export type SoccerCachedPlayerIndexRow = {
   position: string | null;
 };
 
+export type SoccerCachedPlayerStatsPayloadRow<TMatch = PlayerMatchStats> = {
+  cacheKey: string;
+  teamHref: string;
+  playerKey: string;
+  displayName: string;
+  matchCount: number;
+  position: string | null;
+  payload: SoccerPlayerStatsCachePayload<TMatch>;
+};
+
 /** All players with at least one cached match row (deduped per team + playerKey). */
 export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } = {}): Promise<SoccerCachedPlayerIndexRow[]> {
   const db = ensureSupabaseAdmin();
@@ -708,6 +718,63 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
   const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
   const pageSize = 1000;
   const byPlayer = new Map<string, SoccerCachedPlayerIndexRow>();
+
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await db
+        .from(TABLE_NAME)
+        .select(
+          'team_href, cache_key, player_key:data->>playerKey, player_name:data->>playerName, primary_position:data->>primaryPosition'
+        )
+        .eq('cache_type', 'player_stats')
+        .like('cache_key', `${cacheKeyPrefix}%`)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        if (!quiet) warnSoccerCache('Lightweight cached player-stats index failed; falling back to full payload scan', error);
+        byPlayer.clear();
+        break;
+      }
+
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const record = row as {
+          team_href?: string | null;
+          cache_key?: string;
+          player_key?: string | null;
+          player_name?: string | null;
+          primary_position?: string | null;
+        };
+        const playerKey = String(record.player_key || '').trim().toLowerCase();
+        const displayName = String(record.player_name || '').trim();
+        const teamHref = normalizeSoccerTeamHref(String(record.team_href || ''));
+        if (!playerKey || !displayName || !teamHref) continue;
+
+        const dedupeKey = `${teamHref}|${playerKey}`;
+        const position = String(record.primary_position || '').trim() || null;
+        const cacheKey = String(record.cache_key || '');
+        const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
+        const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
+        const existing = byPlayer.get(dedupeKey);
+        if (!existing || (prefersFullSeason || prefersAllCategories)) {
+          byPlayer.set(dedupeKey, { playerKey, displayName, teamHref, matchCount: 1, position });
+        } else if (existing && !existing.position && position) {
+          byPlayer.set(dedupeKey, { ...existing, position });
+        }
+      }
+
+      if (rows.length < pageSize) break;
+    }
+
+    if (byPlayer.size > 0) {
+      return [...byPlayer.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+    }
+  } catch (error) {
+    byPlayer.clear();
+    if (!quiet) warnSoccerCache('Unexpected lightweight cached player-stats index failure; falling back to full payload scan', error);
+  }
 
   try {
     for (let offset = 0; ; offset += pageSize) {
@@ -767,6 +834,85 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
   });
 }
 
+/** All cached player_stats payloads, deduped to the richest/fullest row for each team + player. */
+export async function listSoccerCachedPlayerStatsPayloads(
+  options: { quiet?: boolean; pageSize?: number } = {}
+): Promise<SoccerCachedPlayerStatsPayloadRow[]> {
+  const db = ensureSupabaseAdmin();
+  if (!db) return [];
+
+  const quiet = options.quiet ?? false;
+  const pageSize = Math.max(100, Math.min(2000, options.pageSize ?? 1000));
+  const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
+  const byPlayer = new Map<string, SoccerCachedPlayerStatsPayloadRow>();
+
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await db
+        .from(TABLE_NAME)
+        .select('team_href, data, cache_key')
+        .eq('cache_type', 'player_stats')
+        .like('cache_key', `${cacheKeyPrefix}%`)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        if (!quiet) warnSoccerCache('Failed to list cached player-stats payloads', error);
+        break;
+      }
+
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const record = row as { team_href?: string | null; data?: unknown; cache_key?: string };
+        const payload = record.data as Partial<SoccerPlayerStatsCachePayload<PlayerMatchStats>> | null;
+        const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+        if (matches.length === 0) continue;
+
+        const playerKey = String(payload?.playerKey || '').trim().toLowerCase();
+        const displayName = String(payload?.playerName || '').trim();
+        const teamHref = normalizeSoccerTeamHref(String(payload?.teamHref || record.team_href || ''));
+        if (!playerKey || !displayName || !teamHref) continue;
+
+        const cacheKey = String(record.cache_key || '');
+        const dedupeKey = `${teamHref}|${playerKey}`;
+        const position = String(payload?.primaryPosition || '').trim() || null;
+        const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
+        const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
+        const matchCount = matches.length;
+        const candidate: SoccerCachedPlayerStatsPayloadRow = {
+          cacheKey,
+          teamHref,
+          playerKey,
+          displayName,
+          matchCount,
+          position,
+          payload: payload as SoccerPlayerStatsCachePayload<PlayerMatchStats>,
+        };
+        const existing = byPlayer.get(dedupeKey);
+        if (
+          !existing ||
+          matchCount > existing.matchCount ||
+          (matchCount === existing.matchCount && (prefersFullSeason || prefersAllCategories))
+        ) {
+          byPlayer.set(dedupeKey, candidate);
+        } else if (existing && !existing.position && position) {
+          byPlayer.set(dedupeKey, { ...existing, position });
+        }
+      }
+
+      if (rows.length < pageSize) break;
+    }
+  } catch (error) {
+    if (!quiet) warnSoccerCache('Unexpected failure listing cached player-stats payloads', error);
+  }
+
+  return [...byPlayer.values()].sort((a, b) => {
+    if (a.teamHref !== b.teamHref) return a.teamHref.localeCompare(b.teamHref);
+    return a.displayName.localeCompare(b.displayName);
+  });
+}
+
 export type BackfillSoccerPlayerPositionsResult = {
   scanned: number;
   updated: number;
@@ -775,8 +921,24 @@ export type BackfillSoccerPlayerPositionsResult = {
   errors: number;
 };
 
+type SoccerPositionFallback = {
+  position: string | null;
+  positionRaw: string | null;
+};
+
+function normalizeSoccerPositionLookupName(value: string | null | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
- * Reads every cached player_stats row, extracts Soccerway roles from match rows, and writes back.
+ * Reads every cached player_stats row, extracts Soccerway roles from match rows or squad groups, and writes back.
  */
 export async function backfillSoccerPlayerPositionsInCache(options: {
   quiet?: boolean;
@@ -807,6 +969,38 @@ export async function backfillSoccerPlayerPositionsInCache(options: {
 
   const cacheKeyPrefix = `soccer:player-stats:${SOCCER_CACHE_SCHEMA}:`;
   const pageSize = 200;
+  const squadPositionFallbacksByTeam = new Map<string, Promise<Map<string, SoccerPositionFallback>>>();
+
+  const loadSquadPositionFallbacks = (teamHref: string): Promise<Map<string, SoccerPositionFallback>> => {
+    const normalizedTeamHref = normalizeSoccerTeamHref(teamHref);
+    if (!normalizedTeamHref) return Promise.resolve(new Map());
+    const existing = squadPositionFallbacksByTeam.get(normalizedTeamHref);
+    if (existing) return existing;
+    const promise = (async () => {
+      try {
+        const { fetchSoccerwaySquadPlayers } = await import('@/lib/soccerwaySquadHtml');
+        const squad = await fetchSoccerwaySquadPlayers(normalizedTeamHref, { sort: 'document' });
+        const map = new Map<string, SoccerPositionFallback>();
+        for (const player of squad) {
+          const fallback = {
+            position: player.position ?? null,
+            positionRaw: player.positionRaw ?? null,
+          };
+          if (!fallback.position) continue;
+          const playerKey = String(player.playerKey || '').trim().toLowerCase();
+          if (playerKey) map.set(`key:${playerKey}`, fallback);
+          const nameKey = normalizeSoccerPositionLookupName(player.displayName);
+          if (nameKey) map.set(`name:${nameKey}`, fallback);
+        }
+        return map;
+      } catch (error) {
+        if (!quiet) warnSoccerCache(`Backfill player positions: squad fallback failed for ${normalizedTeamHref}`, error);
+        return new Map<string, SoccerPositionFallback>();
+      }
+    })();
+    squadPositionFallbacksByTeam.set(normalizedTeamHref, promise);
+    return promise;
+  };
 
   try {
     for (let offset = 0; result.scanned < maxRows; offset += pageSize) {
@@ -844,17 +1038,27 @@ export async function backfillSoccerPlayerPositionsInCache(options: {
           continue;
         }
 
+        const teamHref = normalizeSoccerTeamHref(String(payload?.teamHref || record.team_href || ''));
+        const playerKey = String(payload?.playerKey || '').trim().toLowerCase();
+        const playerName = String(payload?.playerName || '');
+        const squadFallbacks = await loadSquadPositionFallbacks(teamHref);
+        const squadFallback =
+          (playerKey && squadFallbacks.get(`key:${playerKey}`)) ||
+          squadFallbacks.get(`name:${normalizeSoccerPositionLookupName(playerName)}`) ||
+          null;
+
         const enriched = enrichPlayerStatsWithPositions({
-          teamHref: String(payload?.teamHref || record.team_href || ''),
-          playerName: String(payload?.playerName || ''),
-          playerKey: String(payload?.playerKey || ''),
+          teamHref,
+          playerName,
+          playerKey,
           limit: Number(payload?.limit) || matches.length,
           categories: Array.isArray(payload?.categories) ? payload.categories : [],
           matches,
           source: 'soccerway',
           generatedAt: String(payload?.generatedAt || record.fetched_at || new Date().toISOString()),
-          primaryPosition: payload?.primaryPosition ?? null,
-          primaryPositionRaw: payload?.primaryPositionRaw ?? null,
+          primaryPosition: payload?.primaryPosition ?? squadFallback?.position ?? null,
+          primaryPositionRaw: payload?.primaryPositionRaw ?? squadFallback?.positionRaw ?? null,
+          seasonYear: payload?.seasonYear ?? null,
         });
 
         if (!enriched.primaryPosition) {

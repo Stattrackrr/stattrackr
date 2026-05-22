@@ -32,6 +32,28 @@ export const OUTFIELD_MAIN_CHART_KEYS = new Set(
   OUTFIELD_MAIN_CHART_STATS.map((stat) => canonicalSoccerStatKey(stat.key))
 );
 
+/** Goalkeeper — main chart pill order. */
+export const GOALKEEPER_MAIN_CHART_STATS: SoccerPlayerStatDef[] = [
+  { key: 'goalkeeper_saves', label: 'GK Saves' },
+  { key: 'goals_conceded', label: 'Goals Conceded' },
+  { key: 'goals_prevented', label: 'Goals Prevented' },
+  { key: 'xgot_faced', label: 'xGOT Faced' },
+  { key: 'punches', label: 'Punches' },
+  { key: 'throws', label: 'Throws' },
+  { key: 'act_as_sweeper', label: 'Act as Sweeper' },
+  { key: 'accurate_passes', label: 'Passes' },
+];
+
+export const GOALKEEPER_MAIN_CHART_KEYS = new Set(
+  GOALKEEPER_MAIN_CHART_STATS.map((stat) => canonicalSoccerStatKey(stat.key))
+);
+
+const GOALKEEPER_SIGNAL_STAT_KEYS = new Set(
+  ['goalkeeper_saves', 'goals_conceded', 'goals_prevented', 'xgot_faced', 'punches', 'throws', 'act_as_sweeper'].map((key) =>
+    canonicalSoccerStatKey(key)
+  )
+);
+
 /** Main-chart shot stats that share the same supporting panel as Goals. */
 const SHOT_MAIN_CHART_SUPPORTING_MAIN_KEYS = new Set(
   ['goals', 'total_shots', 'shots_on_target', 'shots_outside_the_box'].map((key) => canonicalSoccerStatKey(key))
@@ -174,6 +196,7 @@ export const SUPPORTING_STAT_ORDER: SoccerPlayerStatDef[] = [
 const LABEL_BY_KEY = new Map<string, string>(
   [
     ...OUTFIELD_MAIN_CHART_STATS,
+    ...GOALKEEPER_MAIN_CHART_STATS,
     ...SUPPORTING_STAT_ORDER,
     { key: 'shots_inside_the_box', label: 'Shots Inside the Box' },
     { key: 'shots_on_target_inside_the_box', label: 'SOT Inside the Box' },
@@ -230,6 +253,28 @@ export function collectAvailablePlayerStatKeys(matches: PlayerMatchStats[]): Set
   return keys;
 }
 
+function isGoalkeeperPosition(value: string | null | undefined): boolean {
+  const normalized = String(value || '').trim().toLowerCase();
+  return normalized === 'gk' || normalized.startsWith('goalkeeper') || normalized.startsWith('keeper');
+}
+
+export function isGoalkeeperPlayer(matches: PlayerMatchStats[]): boolean {
+  if (
+    matches.some(
+      (match) =>
+        isGoalkeeperPosition(match.position) ||
+        Object.values(match.categories).some(
+          (row) => isGoalkeeperPosition(row?.position) || isGoalkeeperPosition(row?.positionRaw)
+        )
+    )
+  ) {
+    return true;
+  }
+
+  const available = collectAvailablePlayerStatKeys(matches);
+  return [...GOALKEEPER_SIGNAL_STAT_KEYS].some((key) => available.has(key));
+}
+
 export type MainChartStatTile = {
   id: string;
   label: string;
@@ -248,6 +293,27 @@ export function buildOutfieldMainChartTiles(matches: PlayerMatchStats[]): MainCh
       key: canon,
     };
   });
+}
+
+export function buildGoalkeeperMainChartTiles(matches: PlayerMatchStats[]): MainChartStatTile[] {
+  return GOALKEEPER_MAIN_CHART_STATS.filter((stat) => playerHasStat(matches, stat.key)).map((stat) => {
+    const canon = canonicalSoccerStatKey(stat.key);
+    const category = bestCategoryForCanonicalStat(matches, canon);
+    return {
+      id: `${category}:${canon}`,
+      label: stat.label,
+      category,
+      key: canon,
+    };
+  });
+}
+
+export function buildPlayerMainChartTiles(matches: PlayerMatchStats[]): MainChartStatTile[] {
+  if (isGoalkeeperPlayer(matches)) {
+    const goalkeeperTiles = buildGoalkeeperMainChartTiles(matches);
+    if (goalkeeperTiles.length) return goalkeeperTiles;
+  }
+  return buildOutfieldMainChartTiles(matches);
 }
 
 export function buildSupportingStatKeys(

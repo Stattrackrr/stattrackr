@@ -4,38 +4,114 @@ import type { PlayerMatchStats, PlayerStatRow } from '@/lib/soccerPlayerStatsScr
 const SOCCERWAY_ROLE_PHRASES = [
   'attacking midfielder',
   'defensive midfielder',
+  'central midfielder',
+  'centre midfielder',
+  'center midfielder',
+  'central midfield',
+  'centre midfield',
+  'center midfield',
+  'centre forward',
+  'center forward',
+  'left winger',
+  'right winger',
+  'left wing',
+  'right wing',
+  'left back',
+  'right back',
+  'left-back',
+  'right-back',
+  'full-back',
   'centre back',
   'center back',
+  'centre-back',
+  'center-back',
   'goalkeeper',
   'wingback',
+  'wing-back',
   'fullback',
+  'defender',
   'midfielder',
   'forward',
   'striker',
   'winger',
+  'attack',
+  'attacker',
 ] as const;
 
 const SOCCERWAY_ROLE_TO_CODE: Record<(typeof SOCCERWAY_ROLE_PHRASES)[number], string> = {
   goalkeeper: 'GK',
   'centre back': 'CB',
   'center back': 'CB',
+  'centre-back': 'CB',
+  'center-back': 'CB',
   fullback: 'FB',
+  'full-back': 'FB',
+  'left back': 'LB',
+  'right back': 'RB',
+  'left-back': 'LB',
+  'right-back': 'RB',
   wingback: 'WB',
+  'wing-back': 'WB',
   'defensive midfielder': 'CDM',
+  'central midfielder': 'CM',
+  'centre midfielder': 'CM',
+  'center midfielder': 'CM',
+  'central midfield': 'CM',
+  'centre midfield': 'CM',
+  'center midfield': 'CM',
   midfielder: 'CM',
   'attacking midfielder': 'CAM',
+  'left winger': 'LW',
+  'right winger': 'RW',
+  'left wing': 'LW',
+  'right wing': 'RW',
   winger: 'W',
+  'centre forward': 'ST',
+  'center forward': 'ST',
   forward: 'ST',
   striker: 'ST',
+  attack: 'ST',
+  attacker: 'ST',
+  defender: 'DEF',
 };
 
-const ROLE_STRIP_RE =
-  /\b(goalkeeper|centre back|center back|fullback|wingback|midfielder|attacking midfielder|defensive midfielder|winger|forward|striker)\b/gi;
+const POSITION_CODE_SET = new Set([
+  'GK',
+  'CB',
+  'FB',
+  'LB',
+  'RB',
+  'WB',
+  'LWB',
+  'RWB',
+  'CDM',
+  'CM',
+  'CAM',
+  'W',
+  'LW',
+  'RW',
+  'ST',
+  'DEF',
+  'MID',
+  'FWD',
+]);
+const ROLE_STRIP_RE = new RegExp(
+  `\\b(${SOCCERWAY_ROLE_PHRASES.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+  'gi'
+);
 
 export type SoccerwayExtractedRole = {
   raw: string;
   code: string;
 };
+
+export function normalizeSoccerPositionCode(value: string | null | undefined): string | null {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  const code = text.toUpperCase().replace(/[^A-Z]/g, '');
+  if (POSITION_CODE_SET.has(code)) return code;
+  return extractSoccerwayRoleFromText(text)?.code ?? null;
+}
 
 export function extractSoccerwayRoleFromText(value: string | null | undefined): SoccerwayExtractedRole | null {
   const text = String(value || '').trim();
@@ -75,7 +151,8 @@ function modeString(values: string[]): string | null {
 
 function positionFromStatRow(row: PlayerStatRow | null | undefined): string | null {
   if (!row) return null;
-  if (row.position) return row.position;
+  const normalized = normalizeSoccerPositionCode(row.position);
+  if (normalized) return normalized;
   const extracted = extractSoccerwayRoleFromText(row.player);
   return extracted?.code ?? null;
 }

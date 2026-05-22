@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
       return {
         playerKey: p.playerKey,
         displayName: p.displayName,
+        position: cached?.primaryPosition ?? p.position ?? null,
         cached: matches.length > 0,
         generatedAt: cached?.generatedAt ?? null,
         matchCount: matches.length,

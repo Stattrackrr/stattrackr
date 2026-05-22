@@ -10,7 +10,7 @@ import type {
   SoccerPlayerChartTimeframe,
   SoccerPlayerPropsChartSnapshot,
 } from '@/app/soccer/components/soccerPlayerPropsTypes';
-import { buildOutfieldMainChartTiles } from '@/app/soccer/components/soccerPlayerStatCatalog';
+import { buildPlayerMainChartTiles } from '@/app/soccer/components/soccerPlayerStatCatalog';
 
 type PlayerPropsResponse = {
   success?: boolean;
@@ -408,6 +408,7 @@ export function SoccerPlayerPropsTestCard({
   const [manualLineValue, setManualLineValue] = useState<number | null>(null);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const competitionDropdownRef = useRef<HTMLDivElement>(null);
+  const previousPlayerIdentityRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     const href = String(teamHref || '').trim();
@@ -490,14 +491,24 @@ export function SoccerPlayerPropsTestCard({
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
 
-  const availableStatTiles = useMemo(() => buildOutfieldMainChartTiles(matches), [matches]);
+  const availableStatTiles = useMemo(() => buildPlayerMainChartTiles(matches), [matches]);
+  const selectedPlayerIdentity = `${String(teamHref || '').trim()}::${String(playerKey || '').trim().toLowerCase()}`;
 
   useEffect(() => {
     if (!availableStatTiles.length) return;
+    const playerChanged = previousPlayerIdentityRef.current !== selectedPlayerIdentity;
+    previousPlayerIdentityRef.current = selectedPlayerIdentity;
+    const goalkeeperSavesTile = availableStatTiles.find((tile) => canonicalSoccerStatKey(tile.key) === 'goalkeeper_saves');
+    if (goalkeeperSavesTile && playerChanged) {
+      if (selectedStat !== goalkeeperSavesTile.id) {
+        setSelectedStat(goalkeeperSavesTile.id);
+      }
+      return;
+    }
     if (!availableStatTiles.some((tile) => tile.id === selectedStat)) {
       setSelectedStat(availableStatTiles[0].id);
     }
-  }, [availableStatTiles, selectedStat]);
+  }, [availableStatTiles, selectedPlayerIdentity, selectedStat]);
 
   const selectedStatMeta =
     availableStatTiles.find((tile) => tile.id === selectedStat) ?? availableStatTiles[0] ?? DEFAULT_MAIN_STAT_TILE;

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   normalizeSoccerTeamHref,
+  getSoccerPlayerStatsCache,
   getSoccerPlayerStatsCacheWithFallback,
   setSoccerPlayerStatsCache,
   type SoccerPlayerStatsCachePayload,
 } from '@/lib/soccerCache';
 import { enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
-import { parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
+import { getSoccerSeasonYearFromKickoffUnix, parseSoccerSeasonYearParam } from '@/lib/soccerOpponentBreakdown';
 import {
   findMissingSeasonMatches,
   mergePlayerMatchStats,
@@ -22,6 +23,7 @@ import {
   type PlayerMatchStats,
   PLAYER_STAT_CATEGORIES,
 } from '@/lib/soccerPlayerStatsScrape';
+import { fetchSoccerwaySquadPlayers } from '@/lib/soccerwaySquadHtml';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,6 +56,35 @@ function slugToDisplayName(slug: string): string {
 
 function bernardoScrapeAliases(): string[] {
   return [...new Set([...buildPlayerAliasesFromDisplayName('Bernardo Silva'), ...BERNARDO_ALLOWED_REQUEST])];
+}
+
+function trimCachedPlayerPayloadToSeason(
+  cached: SoccerPlayerStatsCachePayload<PlayerMatchStats> | null,
+  limit: number,
+  seasonYear: number | null
+): SoccerPlayerStatsCachePayload<PlayerMatchStats> | null {
+  const matches = Array.isArray(cached?.matches)
+    ? cached!.matches.filter((match) => {
+        if (seasonYear == null) return true;
+        return getSoccerSeasonYearFromKickoffUnix(match.kickoffUnix) === seasonYear;
+      })
+    : [];
+  if (!cached || matches.length === 0) return null;
+  return { ...cached, matches: limit > 0 ? matches.slice(0, limit) : matches };
+}
+
+async function getSquadPositionFallback(teamHref: string, playerKey: string, displayName: string) {
+  try {
+    const squad = await fetchSoccerwaySquadPlayers(teamHref, { sort: 'document' });
+    const normalizedName = normalizeText(displayName);
+    return (
+      squad.find((p) => p.playerKey === playerKey) ??
+      squad.find((p) => normalizeText(p.displayName) === normalizedName) ??
+      null
+    );
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -96,8 +127,34 @@ export async function GET(request: NextRequest) {
 
   try {
     if (cacheOnly) {
-      // Large `player_stats` rows (many matches × categories) can exceed short timeouts; roster-report uses 1200ms.
-      const cached = await getSoccerPlayerStatsCacheWithFallback<PlayerMatchStats>(
+      // UI chart requests usually match the warmed season/all key exactly. Try that first so
+      // cache-only player lookup stays a single fast read instead of scanning fallback keys.
+      const quickAttempts: Array<{ limit: number; categories: string[] }> = [
+        { limit, categories: playerStatCategories },
+        { limit: 100, categories: ['all'] },
+        { limit: 100, categories: ['top'] },
+        { limit: 5, categories: ['top'] },
+      ];
+      let quickCached: SoccerPlayerStatsCachePayload<PlayerMatchStats> | null = null;
+      for (const attempt of quickAttempts) {
+        const hit = await getSoccerPlayerStatsCache<PlayerMatchStats>(
+          teamHref,
+          playerKey,
+          attempt.limit,
+          attempt.categories,
+          {
+            quiet: true,
+            restTimeoutMs: 1800,
+            jsTimeoutMs: 1800,
+          }
+        );
+        quickCached = trimCachedPlayerPayloadToSeason(hit, limit, seasonYear);
+        if (quickCached) break;
+      }
+      const cached =
+        quickCached
+          ? quickCached
+          : await getSoccerPlayerStatsCacheWithFallback<PlayerMatchStats>(
         teamHref,
         playerKey,
         limit,
@@ -105,8 +162,8 @@ export async function GET(request: NextRequest) {
         {
           seasonYear,
           quiet: true,
-          restTimeoutMs: 8000,
-          jsTimeoutMs: 8000,
+          restTimeoutMs: 2500,
+          jsTimeoutMs: 2500,
         }
       );
       if (cached && Array.isArray(cached.matches)) {
@@ -206,6 +263,7 @@ export async function GET(request: NextRequest) {
     }
 
     const generatedAt = new Date().toISOString();
+    const squadPositionFallback = await getSquadPositionFallback(teamHref, playerKey, displayNameForCache);
     const cachePayload = enrichPlayerStatsWithPositions({
       teamHref,
       playerName: displayNameForCache,
@@ -215,6 +273,8 @@ export async function GET(request: NextRequest) {
       matches,
       source: 'soccerway',
       generatedAt,
+      primaryPosition: squadPositionFallback?.position ?? null,
+      primaryPositionRaw: squadPositionFallback?.positionRaw ?? null,
       seasonYear,
     }) satisfies SoccerPlayerStatsCachePayload<PlayerMatchStats>;
     let cacheWriteOk = false;
