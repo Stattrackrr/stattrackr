@@ -1,39 +1,17 @@
 {
-  "generatedAt": "2026-05-21T18:17:19.713Z",
+  "generatedAt": "2026-05-22T13:29:42.198Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "d4a871aad3a9b3bee8a64fe6424ae759",
-      "homeTeam": "Richmond Tigers",
-      "awayTeam": "Essendon Bombers",
-      "commenceTime": "2026-05-22T09:45:07Z",
-      "weather": {
-        "temperatureC": 11.8,
-        "precipitationMm": 0,
-        "windKmh": 3.5
-      }
-    },
-    {
-      "gameId": "a6f63bf124d94449fc366e03cbffbbdd",
-      "homeTeam": "Fremantle Dockers",
-      "awayTeam": "St Kilda Saints",
-      "commenceTime": "2026-05-22T10:30:37Z",
-      "weather": {
-        "temperatureC": 15,
-        "precipitationMm": 0,
-        "windKmh": 12.8
-      }
-    },
     {
       "gameId": "7970bf337603479a51a42c1934c647c1",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-05-23T03:15:07Z",
       "weather": {
-        "temperatureC": 17,
+        "temperatureC": 16.2,
         "precipitationMm": 0,
-        "windKmh": 9.8
+        "windKmh": 6.8
       }
     },
     {
@@ -42,9 +20,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-05-23T06:15:55Z",
       "weather": {
-        "temperatureC": 17,
+        "temperatureC": 16,
         "precipitationMm": 0,
-        "windKmh": 9.5
+        "windKmh": 14.7
       }
     },
     {
@@ -53,9 +31,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-05-23T06:35:36Z",
       "weather": {
-        "temperatureC": 16.6,
+        "temperatureC": 16.5,
         "precipitationMm": 0,
-        "windKmh": 8.5
+        "windKmh": 5.7
       }
     },
     {
@@ -64,9 +42,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-05-23T09:35:18Z",
       "weather": {
-        "temperatureC": 14.9,
+        "temperatureC": 15.4,
         "precipitationMm": 0,
-        "windKmh": 7.5
+        "windKmh": 10
       }
     },
     {
@@ -75,9 +53,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-05-24T02:30:07Z",
       "weather": {
-        "temperatureC": 20.4,
-        "precipitationMm": 0,
-        "windKmh": 3.1
+        "temperatureC": 20.2,
+        "precipitationMm": 0.1,
+        "windKmh": 8.4
       }
     },
     {
@@ -86,11 +64,11 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-05-24T05:15:50Z",
       "weather": {
-        "temperatureC": 16.6,
+        "temperatureC": 16.3,
         "precipitationMm": 0,
-        "windKmh": 5.8
+        "windKmh": 10.2
       }
     }
   ],
-  "count": 8
+  "count": 6
 }
