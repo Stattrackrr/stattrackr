@@ -1442,26 +1442,56 @@ export async function GET(request: NextRequest) {
 
   // include_both=1: one request returns games + gamesWithQuarters (2 cache lookups in parallel). When cacheOnly we only serve from cache.
   if (includeBoth && (teamForFootyWire || teamsToTry.length > 0)) {
-    const cacheTeamSlug = teamForFootyWire ?? (teamsToTry[0] ? getFootyWireTeamNameForPlayerUrl(teamsToTry[0]) : null);
+    const cacheTeamSlugs = [
+      teamForFootyWire,
+      ...teamsToTry.map((team) => getFootyWireTeamNameForPlayerUrl(team)),
+    ].filter((team): team is string => Boolean(team));
+    const uniqueCacheTeamSlugs = [...new Set(cacheTeamSlugs)];
+    const cacheTeamSlug = uniqueCacheTeamSlugs[0] ?? null;
     const keyBase = buildAflPlayerLogsCacheKey({ season, playerName: effectivePlayerName, teamForRequest: cacheTeamSlug, includeQuarters: false });
     const keyQuarters = buildAflPlayerLogsCacheKey({ season, playerName: effectivePlayerName, teamForRequest: cacheTeamSlug, includeQuarters: true });
-    const [cachedBase, cachedQuarters] = cacheEnabled
-      ? await Promise.all([getAflPlayerLogsCache(keyBase), getAflPlayerLogsCache(keyQuarters)])
-      : [null, null];
+    const cachedEntries = cacheEnabled
+      ? await Promise.all(
+          uniqueCacheTeamSlugs.map(async (teamSlug) => {
+            const entryKeyBase = buildAflPlayerLogsCacheKey({ season, playerName: effectivePlayerName, teamForRequest: teamSlug, includeQuarters: false });
+            const entryKeyQuarters = buildAflPlayerLogsCacheKey({ season, playerName: effectivePlayerName, teamForRequest: teamSlug, includeQuarters: true });
+            const [entryBase, entryQuarters] = await Promise.all([
+              getAflPlayerLogsCache(entryKeyBase),
+              getAflPlayerLogsCache(entryKeyQuarters),
+            ]);
+            return { keyBase: entryKeyBase, keyQuarters: entryKeyQuarters, cachedBase: entryBase, cachedQuarters: entryQuarters };
+          })
+        )
+      : [];
+    const primaryCachedEntry = cachedEntries[0] ?? { keyBase, keyQuarters, cachedBase: null, cachedQuarters: null };
+    const { cachedBase, cachedQuarters } = primaryCachedEntry;
     const baseGames = cachedBase?.games as { disposals?: number }[] | undefined;
     const cachedCount = cachedBase?.game_count ?? (Array.isArray(baseGames) ? baseGames.length : 0);
     const hasBaseGames = Array.isArray(baseGames) && baseGames.length > 0 && cachedCount > 0;
     const slugOverridesForPlayer = getAflFootywireSlugOverridesForName(effectivePlayerName);
+    const cacheEntryHasUsableGames = (entry: typeof primaryCachedEntry): boolean => {
+      const entryGames = entry.cachedBase?.games as { disposals?: number; season?: number }[] | undefined;
+      const entryCount = entry.cachedBase?.game_count ?? (Array.isArray(entryGames) ? entryGames.length : 0);
+      if (!Array.isArray(entryGames) || entryGames.length === 0 || entryCount <= 0) return false;
+      if (
+        cachedDisposalsLookWrong(entryGames) &&
+        (nameHasSymbol(effectivePlayerName) || slugOverridesForPlayer.length > 0)
+      ) {
+        return false;
+      }
+      const entrySeason = entry.cachedBase?.season ?? entryGames[0]?.season;
+      if (season === 2026 && entrySeason === 2025) return false;
+      return true;
+    };
+    const usableCachedEntry = cachedEntries.find(cacheEntryHasUsableGames);
     const skipCacheWrongData =
       hasBaseGames &&
       cachedDisposalsLookWrong(baseGames as { disposals?: number }[]) &&
       (nameHasSymbol(effectivePlayerName) || slugOverridesForPlayer.length > 0);
-    const cachedSeason = cachedBase?.season ?? (baseGames?.[0] as { season?: number } | undefined)?.season;
-    const skipCacheStale2025 = season === 2026 && cachedSeason === 2025;
     // 2025: prefer cache, but allow live fetch on cache miss so moved-team players are not empty.
     if (season === 2025 && !forceFetch) {
-      if (cachedBase && hasBaseGames && !skipCacheWrongData) {
-        const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
+      if (usableCachedEntry?.cachedBase) {
+        const payload = { ...usableCachedEntry.cachedBase, gamesWithQuarters: usableCachedEntry.cachedQuarters?.games ?? usableCachedEntry.cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
         return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
       }
     }
@@ -1481,8 +1511,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
     // Warm request: skip Redis so we always fetch live 2026 from FootyWire
-    if (cachedBase && hasBaseGames && !skipCacheWrongData && !skipCacheStale2025 && !isWarmRequest && !forceFetch) {
-      const payload = { ...cachedBase, gamesWithQuarters: cachedQuarters?.games ?? cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
+    if (usableCachedEntry?.cachedBase && !isWarmRequest && !forceFetch) {
+      const payload = { ...usableCachedEntry.cachedBase, gamesWithQuarters: usableCachedEntry.cachedQuarters?.games ?? usableCachedEntry.cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
     // Cache-only: prod only reads cache; warm job is allowed to fetch. For current/prev season (e.g. 2025+2026), allow fetch on miss so dashboard and props get both years.

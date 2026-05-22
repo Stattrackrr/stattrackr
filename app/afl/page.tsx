@@ -165,7 +165,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v6';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v7';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v4';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -2086,7 +2086,10 @@ export default function AFLPage() {
       ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || footywireNicknameToOfficial(String(selectedPlayer.team)) || String(selectedPlayer.team))
       : '';
     const logsCacheKey = getAflPlayerLogsCacheKey(season, String(playerName), teamForApi);
-    const shouldBypassClientLogsCache = season === new Date().getFullYear();
+    // Current-season cache is safe to reuse because cacheOkFor2026 below rejects
+    // stale payloads that do not contain both 2026 and 2025 rows. Bypassing it
+    // caused transient FootyWire/API misses to wipe known-good current-season logs.
+    const shouldBypassClientLogsCache = false;
     const has2026InGames = (g: { season?: unknown }[]) =>
       Array.isArray(g) && g.some((x) => (x?.season as number) === 2026);
     const has2025InGames = (g: { season?: unknown; date?: string; game_date?: string }[]) =>
@@ -2189,6 +2192,15 @@ export default function AFLPage() {
           const d = (await res.json()) as Record<string, unknown>;
           return { ok: res.ok, data: d } as SeasonFetchResult;
         });
+      const resultHasSeason = (result: SeasonFetchResult, targetSeason: number) => {
+        const games = result.ok && Array.isArray(result.data?.games)
+          ? (result.data.games as Record<string, unknown>[])
+          : [];
+        if (games.some((g) => (g?.season as number) === targetSeason || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === String(targetSeason)))) {
+          return true;
+        }
+        return result.data?.season === targetSeason && games.length > 0;
+      };
 
       const applyMergedSeasonResults = (
         resultCurrent: SeasonFetchResult,
@@ -2312,8 +2324,15 @@ export default function AFLPage() {
         const p1 = fetchSeason(currentYear, '');
         const p2 = fetchSeason(prevYear);
         const p3 = fetchSeason(olderYear);
-        const [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
+        let [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
         if (cancelled) return;
+        if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
+          const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
+          if (cancelled) return;
+          if (resultHasSeason(strictCurrent, 2026)) {
+            resultCurrent = strictCurrent;
+          }
+        }
 
         const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
         if (mergedCountWithoutOldest === 0) {
