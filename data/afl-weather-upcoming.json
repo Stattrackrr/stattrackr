@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-23T11:58:26.998Z",
+  "generatedAt": "2026-05-23T17:32:33.313Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-05-24T02:30:07Z",
       "weather": {
-        "temperatureC": 20,
+        "temperatureC": 19.9,
         "precipitationMm": 0,
-        "windKmh": 7
+        "windKmh": 3.1
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-05-24T05:15:50Z",
       "weather": {
-        "temperatureC": 15.2,
-        "precipitationMm": 0.2,
-        "windKmh": 11.9
+        "temperatureC": 16.4,
+        "precipitationMm": 0,
+        "windKmh": 11
       }
     }
   ],
