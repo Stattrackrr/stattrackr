@@ -1,61 +1,17 @@
 {
-  "generatedAt": "2026-05-22T18:12:53.197Z",
+  "generatedAt": "2026-05-23T11:58:26.998Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "7970bf337603479a51a42c1934c647c1",
-      "homeTeam": "North Melbourne Kangaroos",
-      "awayTeam": "Gold Coast Suns",
-      "commenceTime": "2026-05-23T03:15:07Z",
-      "weather": {
-        "temperatureC": 16.2,
-        "precipitationMm": 0,
-        "windKmh": 6.8
-      }
-    },
-    {
-      "gameId": "e0689137e3004036458916f5e8bcb3d2",
-      "homeTeam": "Geelong Cats",
-      "awayTeam": "Sydney Swans",
-      "commenceTime": "2026-05-23T06:15:55Z",
-      "weather": {
-        "temperatureC": 16,
-        "precipitationMm": 0,
-        "windKmh": 14.7
-      }
-    },
-    {
-      "gameId": "957c2a33381ae2468703a1829560f27d",
-      "homeTeam": "Collingwood Magpies",
-      "awayTeam": "West Coast Eagles",
-      "commenceTime": "2026-05-23T06:35:36Z",
-      "weather": {
-        "temperatureC": 16.5,
-        "precipitationMm": 0,
-        "windKmh": 5.7
-      }
-    },
-    {
-      "gameId": "7c3676e04a0aa7163d052027da76e7b7",
-      "homeTeam": "Port Adelaide Power",
-      "awayTeam": "Carlton Blues",
-      "commenceTime": "2026-05-23T09:35:18Z",
-      "weather": {
-        "temperatureC": 15.4,
-        "precipitationMm": 0,
-        "windKmh": 10
-      }
-    },
     {
       "gameId": "c2359222d8b43b27ad6d7cbc6f780932",
       "homeTeam": "GWS Giants",
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-05-24T02:30:07Z",
       "weather": {
-        "temperatureC": 20.2,
-        "precipitationMm": 0.1,
-        "windKmh": 8.4
+        "temperatureC": 20,
+        "precipitationMm": 0,
+        "windKmh": 7
       }
     },
     {
@@ -64,11 +20,11 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-05-24T05:15:50Z",
       "weather": {
-        "temperatureC": 16.3,
-        "precipitationMm": 0,
-        "windKmh": 10.2
+        "temperatureC": 15.2,
+        "precipitationMm": 0.2,
+        "windKmh": 11.9
       }
     }
   ],
-  "count": 6
+  "count": 2
 }
