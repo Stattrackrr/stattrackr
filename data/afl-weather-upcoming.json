@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T12:00:00.062Z",
+  "generatedAt": "2026-05-24T17:30:46.823Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-05-28T09:30:00Z",
       "weather": {
-        "temperatureC": 14.1,
+        "temperatureC": 14.3,
         "precipitationMm": 0,
-        "windKmh": 11.2
+        "windKmh": 10.1
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-05-29T09:40:00Z",
       "weather": {
-        "temperatureC": 11.9,
-        "precipitationMm": 0,
-        "windKmh": 6.7
+        "temperatureC": 13.6,
+        "precipitationMm": 0.1,
+        "windKmh": 11.4
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-30T03:15:44Z",
       "weather": {
-        "temperatureC": 15.2,
-        "precipitationMm": 0.2,
-        "windKmh": 18.9
+        "temperatureC": 13.6,
+        "precipitationMm": 1.9,
+        "windKmh": 22.8
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-30T06:15:19Z",
       "weather": {
-        "temperatureC": 18.6,
+        "temperatureC": 17.5,
         "precipitationMm": 0,
-        "windKmh": 23.4
+        "windKmh": 23.6
       }
     },
     {
