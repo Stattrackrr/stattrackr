@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T17:30:46.823Z",
+  "generatedAt": "2026-05-25T13:58:48.478Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-05-28T09:30:00Z",
       "weather": {
-        "temperatureC": 14.3,
+        "temperatureC": 12.8,
         "precipitationMm": 0,
-        "windKmh": 10.1
+        "windKmh": 5.7
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-05-29T09:40:00Z",
       "weather": {
-        "temperatureC": 13.6,
-        "precipitationMm": 0.1,
-        "windKmh": 11.4
+        "temperatureC": 11.6,
+        "precipitationMm": 0,
+        "windKmh": 0.9
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-30T03:15:44Z",
       "weather": {
-        "temperatureC": 13.6,
-        "precipitationMm": 1.9,
-        "windKmh": 22.8
+        "temperatureC": 16.5,
+        "precipitationMm": 0,
+        "windKmh": 21.6
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-30T06:15:19Z",
       "weather": {
-        "temperatureC": 17.5,
+        "temperatureC": 17.6,
         "precipitationMm": 0,
-        "windKmh": 23.6
+        "windKmh": 18.4
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-05-30T09:35:58Z",
       "weather": {
-        "temperatureC": 13.3,
+        "temperatureC": 12.5,
         "precipitationMm": 0,
-        "windKmh": 9.9
+        "windKmh": 12.8
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-31T05:15:16Z",
       "weather": {
-        "temperatureC": 14.4,
+        "temperatureC": 14.8,
         "precipitationMm": 0,
-        "windKmh": 14.6
+        "windKmh": 13.9
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-05-31T09:20:54Z",
       "weather": {
-        "temperatureC": 15.4,
-        "precipitationMm": 1,
-        "windKmh": 22.6
+        "temperatureC": 18,
+        "precipitationMm": 0.3,
+        "windKmh": 31.1
       }
     }
   ],
