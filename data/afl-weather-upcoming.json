@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-25T13:58:48.478Z",
+  "generatedAt": "2026-05-25T18:04:57.232Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -11,7 +11,7 @@
       "weather": {
         "temperatureC": 12.8,
         "precipitationMm": 0,
-        "windKmh": 5.7
+        "windKmh": 7.1
       }
     },
     {
@@ -22,7 +22,7 @@
       "weather": {
         "temperatureC": 11.6,
         "precipitationMm": 0,
-        "windKmh": 0.9
+        "windKmh": 1
       }
     },
     {
@@ -55,7 +55,7 @@
       "weather": {
         "temperatureC": 12.5,
         "precipitationMm": 0,
-        "windKmh": 12.8
+        "windKmh": 12.6
       }
     },
     {
@@ -66,7 +66,7 @@
       "weather": {
         "temperatureC": 14.8,
         "precipitationMm": 0,
-        "windKmh": 13.9
+        "windKmh": 14.1
       }
     },
     {
