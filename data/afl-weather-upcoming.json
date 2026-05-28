@@ -1,28 +1,17 @@
 {
-  "generatedAt": "2026-05-27T14:25:38.149Z",
+  "generatedAt": "2026-05-28T14:35:36.275Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
     {
-      "gameId": "7b91ed053d103df934a17a408c2cf101",
-      "homeTeam": "St Kilda Saints",
-      "awayTeam": "Hawthorn Hawks",
-      "commenceTime": "2026-05-28T09:30:00Z",
-      "weather": {
-        "temperatureC": 13.2,
-        "precipitationMm": 0,
-        "windKmh": 1
-      }
-    },
-    {
       "gameId": "3133eac54c5be98ae65c98de9916392a",
       "homeTeam": "Carlton Blues",
       "awayTeam": "Geelong Cats",
-      "commenceTime": "2026-05-29T09:40:00Z",
+      "commenceTime": "2026-05-29T09:40:08Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 11.8,
         "precipitationMm": 0,
-        "windKmh": 5
+        "windKmh": 4.3
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-30T03:15:44Z",
       "weather": {
-        "temperatureC": 17,
+        "temperatureC": 17.1,
         "precipitationMm": 0,
-        "windKmh": 14.1
+        "windKmh": 14.8
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-30T06:15:19Z",
       "weather": {
-        "temperatureC": 18.8,
+        "temperatureC": 19.1,
         "precipitationMm": 0,
-        "windKmh": 16.2
+        "windKmh": 15.6
       }
     },
     {
@@ -53,9 +42,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-05-30T09:35:58Z",
       "weather": {
-        "temperatureC": 11.4,
-        "precipitationMm": 3.5,
-        "windKmh": 6.5
+        "temperatureC": 11.6,
+        "precipitationMm": 0,
+        "windKmh": 5.7
       }
     },
     {
@@ -64,9 +53,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-31T05:15:16Z",
       "weather": {
-        "temperatureC": 13,
-        "precipitationMm": 0.2,
-        "windKmh": 16
+        "temperatureC": 13.4,
+        "precipitationMm": 0,
+        "windKmh": 16.4
       }
     },
     {
@@ -75,11 +64,11 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-05-31T09:20:54Z",
       "weather": {
-        "temperatureC": 15.4,
-        "precipitationMm": 1,
-        "windKmh": 35.3
+        "temperatureC": 16.1,
+        "precipitationMm": 0.2,
+        "windKmh": 38.5
       }
     }
   ],
-  "count": 7
+  "count": 6
 }
