@@ -1,28 +1,17 @@
 {
-  "generatedAt": "2026-05-28T18:47:44.424Z",
+  "generatedAt": "2026-05-29T13:57:50.081Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "3133eac54c5be98ae65c98de9916392a",
-      "homeTeam": "Carlton Blues",
-      "awayTeam": "Geelong Cats",
-      "commenceTime": "2026-05-29T09:40:08Z",
-      "weather": {
-        "temperatureC": 11.8,
-        "precipitationMm": 0,
-        "windKmh": 4.3
-      }
-    },
     {
       "gameId": "70e3a2b6940a31616dc31a8a697e96c1",
       "homeTeam": "Sydney Swans",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-05-30T03:15:44Z",
       "weather": {
-        "temperatureC": 17.1,
+        "temperatureC": 17.7,
         "precipitationMm": 0,
-        "windKmh": 14.8
+        "windKmh": 16.2
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-05-30T06:15:19Z",
       "weather": {
-        "temperatureC": 19.1,
+        "temperatureC": 19,
         "precipitationMm": 0,
-        "windKmh": 15.6
+        "windKmh": 16.9
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-05-30T09:35:58Z",
       "weather": {
-        "temperatureC": 11.6,
-        "precipitationMm": 0,
-        "windKmh": 5.7
+        "temperatureC": 11.8,
+        "precipitationMm": 0.2,
+        "windKmh": 3.9
       }
     },
     {
@@ -53,9 +42,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-31T05:15:16Z",
       "weather": {
-        "temperatureC": 13.4,
+        "temperatureC": 14.1,
         "precipitationMm": 0,
-        "windKmh": 16.4
+        "windKmh": 15.2
       }
     },
     {
@@ -65,10 +54,10 @@
       "commenceTime": "2026-05-31T09:20:54Z",
       "weather": {
         "temperatureC": 16.1,
-        "precipitationMm": 0.2,
-        "windKmh": 38.5
+        "precipitationMm": 1.1,
+        "windKmh": 43
       }
     }
   ],
-  "count": 6
+  "count": 5
 }
