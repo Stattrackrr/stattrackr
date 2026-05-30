@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-30T12:03:30.624Z",
+  "generatedAt": "2026-05-30T17:34:42.806Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-31T05:15:16Z",
       "weather": {
-        "temperatureC": 14,
+        "temperatureC": 14.2,
         "precipitationMm": 0,
-        "windKmh": 14.8
+        "windKmh": 13.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-05-31T09:20:54Z",
       "weather": {
-        "temperatureC": 15.2,
-        "precipitationMm": 1.2,
-        "windKmh": 46.4
+        "temperatureC": 16.4,
+        "precipitationMm": 0.3,
+        "windKmh": 43.7
       }
     }
   ],
