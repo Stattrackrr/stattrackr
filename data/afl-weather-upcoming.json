@@ -1,50 +1,17 @@
 {
-  "generatedAt": "2026-05-29T18:46:38.722Z",
+  "generatedAt": "2026-05-30T12:03:30.624Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "70e3a2b6940a31616dc31a8a697e96c1",
-      "homeTeam": "Sydney Swans",
-      "awayTeam": "Richmond Tigers",
-      "commenceTime": "2026-05-30T03:15:44Z",
-      "weather": {
-        "temperatureC": 17.7,
-        "precipitationMm": 0,
-        "windKmh": 16.2
-      }
-    },
-    {
-      "gameId": "f0768bdd7b9fed921b5d8aede1d6bec5",
-      "homeTeam": "Brisbane Lions",
-      "awayTeam": "Fremantle Dockers",
-      "commenceTime": "2026-05-30T06:15:19Z",
-      "weather": {
-        "temperatureC": 19,
-        "precipitationMm": 0,
-        "windKmh": 16.9
-      }
-    },
-    {
-      "gameId": "5e06aeff84a466044adc1db2aae029cb",
-      "homeTeam": "Western Bulldogs",
-      "awayTeam": "Collingwood Magpies",
-      "commenceTime": "2026-05-30T09:35:58Z",
-      "weather": {
-        "temperatureC": 11.8,
-        "precipitationMm": 0.2,
-        "windKmh": 3.9
-      }
-    },
     {
       "gameId": "8c2145e03ce0cdd3befd7b7f6d07f353",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-05-31T05:15:16Z",
       "weather": {
-        "temperatureC": 14.1,
+        "temperatureC": 14,
         "precipitationMm": 0,
-        "windKmh": 15.2
+        "windKmh": 14.8
       }
     },
     {
@@ -53,11 +20,11 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-05-31T09:20:54Z",
       "weather": {
-        "temperatureC": 16.1,
-        "precipitationMm": 1.1,
-        "windKmh": 43
+        "temperatureC": 15.2,
+        "precipitationMm": 1.2,
+        "windKmh": 46.4
       }
     }
   ],
-  "count": 5
+  "count": 2
 }
