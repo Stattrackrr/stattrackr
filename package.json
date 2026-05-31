@@ -52,6 +52,7 @@
     "fetch:afl:dfs-role-map": "node scripts/fetch-afl-dfs-role-map.js",
     "fetch:afl:weather-context": "node scripts/fetch-afl-weather-context.js",
     "test:afl:symbols": "node scripts/test-afl-symbol-players.js",
+    "test:world-cup-api": "node scripts/test-world-cup-api.js",
     "test:afl:headshots": "npx tsx scripts/test-afl-club-headshots.ts",
     "test:afl:team-selections": "node scripts/test-footywire-team-selections.js",
     "clear:player-props": "node scripts/clear-player-props-cache.js",
