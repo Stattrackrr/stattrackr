@@ -437,7 +437,6 @@ function getWorldCupStatLabelByKey(key: string): string {
     clearances: 'Clearances',
     passes_final_third: 'Final Third Passes',
     crosses_total: 'Crosses',
-    crosses_accurate: 'Accurate Crosses',
     dribbles_attempted: 'Dribbles Attempted',
     dribbles_completed: 'Dribbles Completed',
     dribbles_total: 'Dribbles',
