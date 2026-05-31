@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-05-31T12:16:15Z",
-  "modelVersion": "afl-disp-20260531-121044",
-  "modelType": "hgb",
+  "generatedAt": "2026-05-31T17:55:07Z",
+  "modelVersion": "afl-disp-20260531-175409",
+  "modelType": "rf",
   "sideBalance": {
     "mode": "adaptive",
     "applied": false,
