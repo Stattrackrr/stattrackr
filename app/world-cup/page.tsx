@@ -1232,7 +1232,7 @@ function WorldCupGameByGameChart({
         const teamId = String(row.team_id ?? selectedTeamId ?? '');
         const homeId = String(match?.homeTeam?.id ?? match?.raw?.home_team?.id ?? '');
         const awayId = String(match?.awayTeam?.id ?? match?.raw?.away_team?.id ?? '');
-        const isHome = row.is_home === true || (homeId && teamId && homeId === teamId);
+        const isHome = row.is_home === true || Boolean(homeId && teamId && homeId === teamId);
         const opponentLabel = isHome
           ? String(match?.awayLabel || match?.awayTeam?.name || 'Opponent')
           : String(match?.homeLabel || match?.homeTeam?.name || 'Opponent');
