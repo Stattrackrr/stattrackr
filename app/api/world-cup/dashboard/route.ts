@@ -141,6 +141,28 @@ function getTeamLabel(match: BdlMatch, side: 'home' | 'away'): string {
   return team?.name || source?.description || source?.placeholder || 'TBD';
 }
 
+function resolveTeamFromPlayerMatchStats(
+  stats: Array<Record<string, unknown>>,
+  teams: BdlTeam[]
+): BdlTeam | null {
+  const counts = new Map<number, number>();
+  for (const row of stats) {
+    const teamId = Number(row.team_id);
+    if (!Number.isFinite(teamId)) continue;
+    counts.set(teamId, (counts.get(teamId) ?? 0) + 1);
+  }
+  let bestTeamId: number | null = null;
+  let bestCount = 0;
+  for (const [teamId, count] of counts) {
+    if (count > bestCount) {
+      bestCount = count;
+      bestTeamId = teamId;
+    }
+  }
+  if (bestTeamId == null) return null;
+  return teams.find((team) => team.id === bestTeamId) ?? null;
+}
+
 function findFeatureMatch(matches: BdlMatch[], selectedTeam: BdlTeam | null): BdlMatch | null {
   if (!matches.length) return null;
   const teamMatches = selectedTeam
@@ -180,10 +202,361 @@ function summarizeMatches(matches: BdlMatch[]) {
   }));
 }
 
+const DVP_SEASONS = new Set([2018, 2022, 2026]);
+const DVP_POSITIONS = new Set(['DEF', 'MID', 'ATT']);
+const DVP_STAT_KEYS = new Set([
+  'goals',
+  'assists',
+  'shots_total',
+  'shots_on_target',
+  'passes_accurate',
+  'yellow_cards',
+  'red_cards',
+]);
+
+type DvpPosition = 'DEF' | 'MID' | 'ATT';
+
+type BdlPlayerMatchStat = Record<string, unknown> & {
+  match_id?: number;
+  player_id?: number;
+  team_id?: number;
+  position?: string | null;
+  is_home?: boolean;
+};
+
+type BdlLineupRow = Record<string, unknown> & {
+  match_id?: number;
+  player_id?: number;
+  position?: string | null;
+};
+
+type BdlRosterRow = Record<string, unknown> & {
+  player_id?: number;
+  position?: string | null;
+};
+
+type BdlPlayerProfile = {
+  id: number;
+  position?: string | null;
+};
+
+function dvpToNumber(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseDvpPosition(value: unknown): DvpPosition | null {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  if (['g', 'gk', 'goalkeeper', 'goalie', 'portero'].includes(lower) || lower.includes('keeper')) return 'DEF';
+  if (
+    [
+      'd', 'def', 'defender', 'cb', 'centre back', 'center back', 'centerback', 'centreback',
+      'lb', 'left back', 'leftback', 'rb', 'right back', 'rightback',
+      'wb', 'lwb', 'rwb', 'wing back', 'left wing back', 'right wing back',
+    ].includes(lower)
+  ) return 'DEF';
+  if (
+    [
+      'm', 'mf', 'mid', 'midfielder', 'cm', 'mc', 'centre midfielder', 'center midfielder',
+      'cdm', 'dm', 'defensive midfielder', 'defensive mid',
+      'cam', 'am', 'attacking midfielder', 'attacking mid',
+      'lm', 'left midfielder', 'rm', 'right midfielder',
+    ].includes(lower)
+  ) return 'MID';
+  if (
+    [
+      'f', 'fw', 'forward', 'st', 'striker', 'cf', 'centre forward', 'center forward',
+      'ss', 'second striker', 'lw', 'left wing', 'leftwing', 'left winger',
+      'rw', 'right wing', 'rightwing', 'right winger', 'w', 'winger',
+    ].includes(lower)
+  ) return 'ATT';
+  return null;
+}
+
+function heuristicDvpPosition(row: BdlPlayerMatchStat): DvpPosition {
+  if (dvpToNumber(row.saves) > 0) return 'DEF';
+  const shots = dvpToNumber(row.shots_total) + dvpToNumber(row.derived_shots_total);
+  const attacking = shots + dvpToNumber(row.shots_on_target) + dvpToNumber(row.goals) * 2 + dvpToNumber(row.expected_goals);
+  const defending =
+    dvpToNumber(row.tackles) + dvpToNumber(row.tackles_won) + dvpToNumber(row.clearances) + dvpToNumber(row.interceptions);
+  if (attacking >= 1.5 && attacking > defending) return 'ATT';
+  if (defending > attacking && defending >= 2) return 'DEF';
+  return 'MID';
+}
+
+async function handleWorldCupDvpBatch(request: NextRequest, apiKey: string): Promise<NextResponse> {
+  const seasonRaw = Number.parseInt(String(request.nextUrl.searchParams.get('season') || ''), 10);
+  if (!DVP_SEASONS.has(seasonRaw)) {
+    return NextResponse.json({ error: 'season must be 2018, 2022, or 2026' }, { status: 400 });
+  }
+  const positionRaw = String(request.nextUrl.searchParams.get('position') || '').toUpperCase();
+  if (!DVP_POSITIONS.has(positionRaw)) {
+    return NextResponse.json({ error: 'position must be DEF, MID, or ATT' }, { status: 400 });
+  }
+  const position = positionRaw as DvpPosition;
+  const requestedStatsCsv = String(request.nextUrl.searchParams.get('stats') || '').trim();
+  const requestedStats = requestedStatsCsv
+    ? requestedStatsCsv
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => DVP_STAT_KEYS.has(s))
+    : Array.from(DVP_STAT_KEYS);
+  if (requestedStats.length === 0) {
+    return NextResponse.json({ error: 'No supported stat keys requested' }, { status: 400 });
+  }
+
+  const seasonsParam = new URLSearchParams();
+  seasonsParam.append('seasons[]', String(seasonRaw));
+
+  const matches = await bdlFetchAll<BdlMatch>('/matches', new URLSearchParams(seasonsParam), apiKey, {
+    cursor: true,
+    maxPages: 4,
+  });
+  const completedMatches = matches.filter((match) => match.status === 'completed');
+  if (completedMatches.length === 0) {
+    return NextResponse.json(
+      {
+        success: true,
+        season: seasonRaw,
+        position,
+        opponents: [] as string[],
+        metrics: {} as Record<string, unknown>,
+        samples: {} as Record<string, number>,
+        teamGames: {} as Record<string, number>,
+        message: 'No completed matches for this season',
+      },
+      { headers: { 'Cache-Control': 'public, s-maxage=300' } }
+    );
+  }
+
+  const completedMatchIds = Array.from(new Set(completedMatches.map((m) => m.id)));
+  const matchById = new Map<number, BdlMatch>();
+  completedMatches.forEach((match) => matchById.set(match.id, match));
+
+  const matchIdChunks: number[][] = [];
+  for (let i = 0; i < completedMatchIds.length; i += 50) {
+    matchIdChunks.push(completedMatchIds.slice(i, i + 50));
+  }
+
+  const fetchByMatchIds = async <T>(path: string): Promise<T[]> => {
+    const collected: T[] = [];
+    for (const chunk of matchIdChunks) {
+      const params = new URLSearchParams();
+      chunk.forEach((id) => params.append('match_ids[]', String(id)));
+      const rows = await bdlFetchAll<T>(path, params, apiKey, { cursor: true, maxPages: 6 });
+      collected.push(...rows);
+    }
+    return collected;
+  };
+
+  const wantsShots = requestedStats.includes('shots_total');
+  const [playerMatchStats, lineups, rosters, players, matchShots] = await Promise.all([
+    fetchByMatchIds<BdlPlayerMatchStat>('/player_match_stats'),
+    fetchByMatchIds<BdlLineupRow>('/match_lineups'),
+    bdlFetchAll<BdlRosterRow>('/rosters', new URLSearchParams(seasonsParam), apiKey, { cursor: true, maxPages: 12 }),
+    bdlFetchAll<BdlPlayerProfile>('/players', new URLSearchParams(seasonsParam), apiKey, { cursor: true, maxPages: 12 }),
+    wantsShots
+      ? fetchByMatchIds<Record<string, unknown>>('/match_shots')
+      : Promise.resolve([] as Record<string, unknown>[]),
+  ]);
+
+  // BDL's player_match_stats.shots_total is unreliable; rebuild it from /match_shots
+  // by counting shots per (match_id, player_id).
+  const shotsByPair = new Map<string, number>();
+  for (const shot of matchShots) {
+    const matchId = Number((shot as { match_id?: unknown }).match_id);
+    const playerId = Number((shot as { player_id?: unknown }).player_id);
+    if (!Number.isFinite(matchId) || !Number.isFinite(playerId)) continue;
+    const key = `${matchId}:${playerId}`;
+    shotsByPair.set(key, (shotsByPair.get(key) ?? 0) + 1);
+  }
+
+  const lineupPositionByPair = new Map<string, string>();
+  for (const row of lineups) {
+    const matchId = Number(row.match_id);
+    const playerId = Number(row.player_id);
+    if (!Number.isFinite(matchId) || !Number.isFinite(playerId)) continue;
+    const pos = String(row.position ?? '').trim();
+    if (!pos) continue;
+    lineupPositionByPair.set(`${matchId}:${playerId}`, pos);
+  }
+
+  const rosterPositionByPlayer = new Map<number, string>();
+  for (const row of rosters) {
+    const playerId = Number(row.player_id);
+    if (!Number.isFinite(playerId)) continue;
+    const pos = String(row.position ?? '').trim();
+    if (!pos) continue;
+    if (!rosterPositionByPlayer.has(playerId)) rosterPositionByPlayer.set(playerId, pos);
+  }
+
+  const profilePositionByPlayer = new Map<number, string>();
+  for (const player of players) {
+    const playerId = Number(player.id);
+    if (!Number.isFinite(playerId)) continue;
+    const pos = String(player.position ?? '').trim();
+    if (!pos) continue;
+    profilePositionByPlayer.set(playerId, pos);
+  }
+
+  const positionForRow = (row: BdlPlayerMatchStat): DvpPosition => {
+    const matchId = Number(row.match_id);
+    const playerId = Number(row.player_id);
+    const candidates = [
+      lineupPositionByPair.get(`${matchId}:${playerId}`),
+      row.position,
+      rosterPositionByPlayer.get(playerId),
+      profilePositionByPlayer.get(playerId),
+    ];
+    for (const candidate of candidates) {
+      const bucket = parseDvpPosition(candidate);
+      if (bucket) return bucket;
+    }
+    return heuristicDvpPosition(row);
+  };
+
+  type AccumulatorRow = {
+    teamName: string;
+    teamId: number;
+    sums: Map<string, number>;
+    sampleCount: number;
+  };
+
+  const teamNameById = new Map<number, string>();
+  completedMatches.forEach((match) => {
+    if (match.home_team?.id != null) teamNameById.set(match.home_team.id, match.home_team.name);
+    if (match.away_team?.id != null) teamNameById.set(match.away_team.id, match.away_team.name);
+  });
+
+  const accumulator = new Map<number, AccumulatorRow>();
+  for (const teamId of teamNameById.keys()) {
+    accumulator.set(teamId, {
+      teamId,
+      teamName: teamNameById.get(teamId) ?? String(teamId),
+      sums: new Map(requestedStats.map((key) => [key, 0])),
+      sampleCount: 0,
+    });
+  }
+
+  for (const row of playerMatchStats) {
+    const matchId = Number(row.match_id);
+    const match = matchById.get(matchId);
+    if (!match) continue;
+    const homeId = match.home_team?.id ?? null;
+    const awayId = match.away_team?.id ?? null;
+    if (homeId == null || awayId == null) continue;
+
+    const teamId = Number(row.team_id);
+    const isHome = row.is_home === true || teamId === homeId;
+    const opponentId = isHome ? awayId : homeId;
+    if (positionForRow(row) !== position) continue;
+
+    const acc = accumulator.get(opponentId);
+    if (!acc) continue;
+
+    const rowShotsTotal = wantsShots
+      ? Math.max(
+          dvpToNumber(row.shots_total),
+          shotsByPair.get(`${matchId}:${Number(row.player_id)}`) ?? 0
+        )
+      : 0;
+    for (const stat of requestedStats) {
+      const value = stat === 'shots_total' ? rowShotsTotal : dvpToNumber(row[stat]);
+      acc.sums.set(stat, (acc.sums.get(stat) ?? 0) + value);
+    }
+    acc.sampleCount += 1;
+  }
+
+  const teamGamesPlayed = new Map<number, number>();
+  for (const match of completedMatches) {
+    const homeId = match.home_team?.id;
+    const awayId = match.away_team?.id;
+    if (homeId != null) teamGamesPlayed.set(homeId, (teamGamesPlayed.get(homeId) ?? 0) + 1);
+    if (awayId != null) teamGamesPlayed.set(awayId, (teamGamesPlayed.get(awayId) ?? 0) + 1);
+  }
+
+  const opponentNames: string[] = [];
+  const teamGames: Record<string, number> = {};
+  const samples: Record<string, number> = {};
+  const metricValuesByStat: Record<string, Record<string, number>> = {};
+  const metricRanksByStat: Record<string, Record<string, number>> = {};
+  for (const stat of requestedStats) {
+    metricValuesByStat[stat] = {};
+    metricRanksByStat[stat] = {};
+  }
+
+  const orderedTeamIds = Array.from(accumulator.keys()).sort((a, b) => {
+    const nameA = teamNameById.get(a) ?? String(a);
+    const nameB = teamNameById.get(b) ?? String(b);
+    return nameA.localeCompare(nameB);
+  });
+
+  for (const teamId of orderedTeamIds) {
+    const row = accumulator.get(teamId)!;
+    opponentNames.push(row.teamName);
+    teamGames[row.teamName] = teamGamesPlayed.get(teamId) ?? 0;
+    samples[row.teamName] = row.sampleCount;
+    const games = teamGamesPlayed.get(teamId) ?? 0;
+    for (const stat of requestedStats) {
+      const sum = row.sums.get(stat) ?? 0;
+      metricValuesByStat[stat][row.teamName] = Number((games > 0 ? sum / games : 0).toFixed(3));
+    }
+  }
+
+  for (const stat of requestedStats) {
+    const sorted = Object.entries(metricValuesByStat[stat]).sort((a, b) => a[1] - b[1]);
+    let lastValue: number | null = null;
+    let lastRank = 0;
+    sorted.forEach(([teamName, value], index) => {
+      const rank = lastValue !== null && value === lastValue ? lastRank : index + 1;
+      metricRanksByStat[stat][teamName] = rank;
+      lastValue = value;
+      lastRank = rank;
+    });
+  }
+
+  return NextResponse.json(
+    {
+      success: true,
+      season: seasonRaw,
+      position,
+      opponents: opponentNames,
+      metrics: requestedStats.reduce<Record<string, { values: Record<string, number>; ranks: Record<string, number> }>>(
+        (acc, stat) => {
+          acc[stat] = { values: metricValuesByStat[stat], ranks: metricRanksByStat[stat] };
+          return acc;
+        },
+        {}
+      ),
+      samples,
+      teamGames,
+    },
+    {
+      headers: {
+        'Cache-Control': seasonRaw === 2026 ? 'public, s-maxage=120' : 'public, s-maxage=21600',
+      },
+    }
+  );
+}
+
 export async function GET(request: NextRequest) {
   const apiKey = getBdlApiKey();
   if (!apiKey) {
     return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
+  }
+
+  if (request.nextUrl.searchParams.get('dvpBatch') === '1') {
+    try {
+      return await handleWorldCupDvpBatch(request, apiKey);
+    } catch (error) {
+      const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to compute World Cup DVP' },
+        { status }
+      );
+    }
   }
 
   const season = parseSeason(request.nextUrl.searchParams.get('season'));
@@ -303,6 +676,20 @@ export async function GET(request: NextRequest) {
       ...(derivedShotsByMatch.get(Number(row.match_id)) ?? {}),
     }));
 
+    let resolvedSelectedTeam = selectedTeam;
+    if (requestedPlayerId && /^\d+$/.test(requestedPlayerId) && enrichedPlayerMatchStats.length) {
+      const playerTeam = resolveTeamFromPlayerMatchStats(enrichedPlayerMatchStats, teams);
+      if (playerTeam) resolvedSelectedTeam = playerTeam;
+    }
+
+    const resolvedSelectedTeamId = resolvedSelectedTeam?.id ?? null;
+    const resolvedFeatureMatch = findFeatureMatch(matches, resolvedSelectedTeam);
+    const resolvedSelectedTeamMatches = resolvedSelectedTeamId
+      ? matches.filter(
+          (match) => match.home_team?.id === resolvedSelectedTeamId || match.away_team?.id === resolvedSelectedTeamId
+        )
+      : matches;
+
     return NextResponse.json(
       {
         season,
@@ -311,14 +698,14 @@ export async function GET(request: NextRequest) {
         standings,
         matches: summarizeMatches(matches),
         playerMatches: summarizeMatches(playerMatches),
-        selectedTeam,
-        featureMatch: featureMatch
+        selectedTeam: resolvedSelectedTeam,
+        featureMatch: resolvedFeatureMatch
           ? {
-              ...summarizeMatches([featureMatch])[0],
-              raw: featureMatch,
+              ...summarizeMatches([resolvedFeatureMatch])[0],
+              raw: resolvedFeatureMatch,
             }
           : null,
-        selectedTeamMatches: summarizeMatches(selectedTeamMatches),
+        selectedTeamMatches: summarizeMatches(resolvedSelectedTeamMatches),
         rosters,
         teamMatchStats,
         playerMatchStats: enrichedPlayerMatchStats,

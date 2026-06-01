@@ -68,7 +68,7 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'a.espncdn.com',
-        pathname: '/i/teamlogos/**',
+        pathname: '/**',
       },
     ],
     // Enable WebP format (automatic with Next.js Image)

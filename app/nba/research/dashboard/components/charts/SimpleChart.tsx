@@ -50,6 +50,8 @@ interface SimpleChartProps {
   averageOverlayLower?: boolean;
   /** Extra lowering for layouts with reduced controls height (e.g. advanced open with no selected filter). */
   averageOverlayLowerExtra?: boolean;
+  /** When true, lift the Avg + Hit overlay further above the chart (used by World Cup dashboard). */
+  averageOverlayHigher?: boolean;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
   /** Optional desktop left inset for plotted area + overlays. */
@@ -109,6 +111,7 @@ const SimpleChart = memo(function SimpleChart({
   averageOverlayLowerOnMobile = false,
   averageOverlayLower = false,
   averageOverlayLowerExtra = false,
+  averageOverlayHigher = false,
   secondaryRankAxisMax,
   desktopChartLeftInset = 32,
   desktopChartRightInset = 14,
@@ -871,7 +874,9 @@ const SimpleChart = memo(function SimpleChart({
       {averageDisplay && !hideAverageOverlay && (
         <div
           className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${
-            averageOverlayLowerOnMobile
+            averageOverlayHigher
+              ? '-top-9 sm:-top-10'
+              : averageOverlayLowerOnMobile
               ? (
                 hasSecondAxis || averageOverlayLower
                   ? (averageOverlayLowerExtra ? 'top-0 sm:top-0' : 'top-0 sm:top-0')
@@ -993,7 +998,7 @@ const SimpleChart = memo(function SimpleChart({
             left: isMobile ? '0px' : `${desktopChartLeftInset}px`,
             right: isMobile ? '0px' : `${desktopChartRightInset}px`,
             top: '22px',
-            bottom: '57px',
+            bottom: `${chartBottomMargin + xAxisHeight}px`,
             zIndex: 5,
           }}
           aria-hidden
@@ -1019,7 +1024,7 @@ const SimpleChart = memo(function SimpleChart({
             left: isMobile ? '0px' : `${desktopChartLeftInset}px`, // Full width on mobile, yAxis width on desktop
             right: isMobile ? '0px' : `${desktopChartRightInset}px`, // Full width on mobile, updated via DOM when second axis changes on desktop
             top: isMobile ? '44px' : '22px',   // Match chart margin.top (mobile 44, desktop 22)
-            bottom: isMobile ? '59px' : '57px', // Match chart margin.bottom (19) + XAxis height (40) so overlay = bar area only
+            bottom: `${chartBottomMargin + xAxisHeight}px`, // Match chart margin.bottom + XAxis height so overlay's bottom edge sits on the bar baseline
             zIndex: 25 // above bars (chart is z-20), purple line is also in chart so it will be above betting line
           }}
         >
