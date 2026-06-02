@@ -1,7 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  InternationalCompetition,
+  loadInternationalDashboardData,
+  loadInternationalDvp,
+  loadInternationalStatsByPlayerName,
+  loadInternationalTeamForm,
+} from '@/lib/internationalDashboard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
+
+function parseCompetition(value: string | null): CompetitionParam {
+  const v = (value || '').toLowerCase();
+  if (v === 'euros' || v === 'nations-league' || v === 'all') return v;
+  return 'world-cup';
+}
+
+/**
+ * Resolve a player name → all their BDL World Cup match stats + matches
+ * across the three WC seasons. Returns BDL-shaped rows so they can be merged
+ * directly into the dashboard response.
+ */
+async function fetchBdlStatsForPlayerName(
+  name: string,
+  apiKey: string
+): Promise<{ playerMatchStats: any[]; matches: any[] }> {
+  if (!name || !apiKey) return { playerMatchStats: [], matches: [] };
+  try {
+    const searchParams = new URLSearchParams();
+    searchParams.set('search', name);
+    searchParams.set('per_page', '25');
+    const response = await bdlFetch<{ id: number; name?: string }>('/players', searchParams, apiKey);
+    const candidates = Array.isArray(response.data) ? response.data : [];
+    if (!candidates.length) return { playerMatchStats: [], matches: [] };
+    const target = name.trim().toLowerCase();
+    const exact = candidates.find((p) => String(p.name || '').trim().toLowerCase() === target);
+    const picked = exact || candidates[0];
+    if (!picked) return { playerMatchStats: [], matches: [] };
+
+    const playerStatsParams = new URLSearchParams();
+    playerStatsParams.append('player_ids[]', String(picked.id));
+    const statsRows = await bdlFetchAll<Record<string, any>>(
+      '/player_match_stats',
+      playerStatsParams,
+      apiKey,
+      { cursor: true, maxPages: 6 }
+    );
+
+    const matchIds = Array.from(
+      new Set(
+        statsRows
+          .map((row) => Number(row?.match_id))
+          .filter((id) => Number.isFinite(id))
+      )
+    );
+    let matchRows: BdlMatch[] = [];
+    if (matchIds.length) {
+      const matchParams = new URLSearchParams();
+      appendArrayParam(matchParams, 'seasons[]', [2018, 2022, 2026]);
+      appendArrayParam(matchParams, 'match_ids[]', matchIds);
+      matchRows = await bdlFetchAll<BdlMatch>('/matches', matchParams, apiKey, {
+        cursor: true,
+        maxPages: 2,
+      });
+    }
+    return {
+      playerMatchStats: statsRows.map((row) => ({ ...row, source: 'bdl', tournament_slug: 'worldcup' })),
+      matches: summarizeMatches(matchRows),
+    };
+  } catch (err) {
+    console.warn('[world-cup/dashboard] BDL-by-name fetch failed:', err);
+    return { playerMatchStats: [], matches: [] };
+  }
+}
 
 const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
 const DEFAULT_SEASON = 2026;
@@ -65,34 +138,66 @@ function appendArrayParam(params: URLSearchParams, key: string, values: Array<st
   });
 }
 
+// Tiny in-memory cache + in-flight dedupe to soften BDL rate limits when the
+// page fires multiple parallel/sequential requests for the same URL.
+const BDL_CACHE_TTL_MS = 60_000;
+const bdlCache = new Map<string, { ts: number; payload: unknown }>();
+const bdlInflight = new Map<string, Promise<unknown>>();
+
 async function bdlFetch<T>(path: string, params: URLSearchParams, apiKey: string): Promise<BdlEnvelope<T>> {
-  const authCandidates = getAuthCandidates(apiKey);
-  let lastStatus = 0;
-  let lastText = '';
+  const url = new URL(`${BDL_FIFA_BASE}${path}`);
+  params.forEach((value, key) => url.searchParams.append(key, value));
+  const cacheKey = url.toString();
 
-  for (const auth of authCandidates.length ? authCandidates : ['']) {
-    const url = new URL(`${BDL_FIFA_BASE}${path}`);
-    params.forEach((value, key) => url.searchParams.append(key, value));
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'StatTrackr/1.0',
-        ...(auth ? { Authorization: auth } : {}),
-      },
-      cache: 'no-store',
-    });
-
-    if (response.ok) {
-      return (await response.json()) as BdlEnvelope<T>;
-    }
-
-    lastStatus = response.status;
-    lastText = await response.text().catch(() => response.statusText);
-    if (response.status !== 401) break;
+  const cached = bdlCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < BDL_CACHE_TTL_MS) {
+    return cached.payload as BdlEnvelope<T>;
+  }
+  const inflight = bdlInflight.get(cacheKey);
+  if (inflight) {
+    return inflight as Promise<BdlEnvelope<T>>;
   }
 
-  throw Object.assign(new Error(lastText || `BDL request failed with ${lastStatus}`), { status: lastStatus });
+  const exec = async (): Promise<BdlEnvelope<T>> => {
+    const authCandidates = getAuthCandidates(apiKey);
+    let lastStatus = 0;
+    let lastText = '';
+
+    for (const auth of authCandidates.length ? authCandidates : ['']) {
+      // 429 backoff: try up to 2 retries with short waits.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const response = await fetch(cacheKey, {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': 'StatTrackr/1.0',
+            ...(auth ? { Authorization: auth } : {}),
+          },
+          cache: 'no-store',
+        });
+
+        if (response.ok) {
+          const payload = (await response.json()) as BdlEnvelope<T>;
+          bdlCache.set(cacheKey, { ts: Date.now(), payload });
+          return payload;
+        }
+
+        lastStatus = response.status;
+        lastText = await response.text().catch(() => response.statusText);
+        if (response.status === 429 && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 350 + attempt * 500));
+          continue;
+        }
+        if (response.status !== 401) break;
+        break;
+      }
+    }
+
+    throw Object.assign(new Error(lastText || `BDL request failed with ${lastStatus}`), { status: lastStatus });
+  };
+
+  const promise = exec().finally(() => bdlInflight.delete(cacheKey));
+  bdlInflight.set(cacheKey, promise);
+  return promise;
 }
 
 async function bdlFetchAll<T>(
@@ -541,22 +646,275 @@ async function handleWorldCupDvpBatch(request: NextRequest, apiKey: string): Pro
   );
 }
 
-export async function GET(request: NextRequest) {
-  const apiKey = getBdlApiKey();
-  if (!apiKey) {
-    return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
+async function handleInternationalDvp(
+  request: NextRequest,
+  competition: InternationalCompetition
+): Promise<NextResponse> {
+  const seasonRaw = Number.parseInt(String(request.nextUrl.searchParams.get('season') || ''), 10);
+  if (!Number.isFinite(seasonRaw)) {
+    return NextResponse.json({ error: 'season is required' }, { status: 400 });
   }
+  const positionRaw = String(request.nextUrl.searchParams.get('position') || '').toUpperCase();
+  if (positionRaw !== 'DEF' && positionRaw !== 'MID' && positionRaw !== 'ATT') {
+    return NextResponse.json({ error: 'position must be DEF, MID, or ATT' }, { status: 400 });
+  }
+  const requestedStatsCsv = String(request.nextUrl.searchParams.get('stats') || '').trim();
+  const requestedStats = requestedStatsCsv
+    ? requestedStatsCsv.split(',').map((s) => s.trim()).filter(Boolean)
+    : ['goals', 'assists', 'shots_total', 'shots_on_target', 'passes_accurate', 'yellow_cards', 'red_cards'];
+
+  const result = await loadInternationalDvp({
+    competition,
+    seasonYear: seasonRaw,
+    position: positionRaw as 'DEF' | 'MID' | 'ATT',
+    requestedStats,
+  });
+
+  return NextResponse.json(
+    {
+      success: true,
+      season: seasonRaw,
+      position: positionRaw,
+      opponents: result.opponents,
+      metrics: requestedStats.reduce<
+        Record<string, { values: Record<string, number>; ranks: Record<string, number> }>
+      >((acc, stat) => {
+        const values = result.metrics[stat] ?? {};
+        // Rank: opponent with lowest avg -> rank 1 (best matchup vs that position).
+        const sortedTeams = [...result.opponents].sort(
+          (a, b) => (values[a] ?? 0) - (values[b] ?? 0)
+        );
+        const ranks: Record<string, number> = {};
+        sortedTeams.forEach((team, idx) => {
+          ranks[team] = idx + 1;
+        });
+        acc[stat] = { values, ranks };
+        return acc;
+      }, {}),
+      samples: result.samples,
+      teamGames: result.teamGames,
+    },
+    { headers: { 'Cache-Control': 'public, s-maxage=3600' } }
+  );
+}
+
+async function handleInternationalTeamForm(
+  request: NextRequest,
+  competition: InternationalCompetition
+): Promise<NextResponse> {
+  const teamId = String(request.nextUrl.searchParams.get('teamId') || '');
+  const opponentId = request.nextUrl.searchParams.get('opponentId');
+  if (!teamId) {
+    return NextResponse.json({ error: 'teamId is required' }, { status: 400 });
+  }
+  const result = await loadInternationalTeamForm({ competition, teamId, opponentId });
+  return NextResponse.json(
+    {
+      success: true,
+      teamId,
+      opponentId: opponentId || null,
+      teamMatches: result.teamMatches,
+      opponentMatches: result.opponentMatches,
+      teamMatchStats: result.teamMatchStats,
+    },
+    { headers: { 'Cache-Control': 'public, s-maxage=600' } }
+  );
+}
+
+async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Promise<NextResponse> {
+  const teamIdRaw = request.nextUrl.searchParams.get('teamId') || '';
+  const opponentIdRaw = request.nextUrl.searchParams.get('opponentId') || '';
+  const teamId = /^\d+$/.test(teamIdRaw) ? Number(teamIdRaw) : null;
+  const opponentId = /^\d+$/.test(opponentIdRaw) ? Number(opponentIdRaw) : null;
+  if (!teamId) {
+    return NextResponse.json({ error: 'teamId is required' }, { status: 400 });
+  }
+
+  // Pull every match across all 3 World Cup seasons (small dataset).
+  const seasonsParam = new URLSearchParams();
+  appendArrayParam(seasonsParam, 'seasons[]', [2018, 2022, 2026]);
+  const allMatches = await bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, {
+    cursor: true,
+    maxPages: 6,
+  });
+
+  const isCompletedMatch = (match: BdlMatch) => match.status === 'completed';
+  const teamMatchesAll = allMatches.filter(
+    (match) => match.home_team?.id === teamId || match.away_team?.id === teamId
+  );
+  const opponentMatchesAll = opponentId
+    ? allMatches.filter((match) => match.home_team?.id === opponentId || match.away_team?.id === opponentId)
+    : [];
+
+  const teamMatches = teamMatchesAll.filter(isCompletedMatch);
+  const opponentMatches = opponentMatchesAll.filter(isCompletedMatch);
+
+  const matchIds = Array.from(
+    new Set(
+      [...teamMatches, ...opponentMatches]
+        .map((match) => match.id)
+        .filter((id): id is number => Number.isFinite(id))
+    )
+  );
+
+  const matchIdChunks: number[][] = [];
+  for (let i = 0; i < matchIds.length; i += 50) {
+    matchIdChunks.push(matchIds.slice(i, i + 50));
+  }
+
+  const teamMatchStats: Array<Record<string, unknown>> = [];
+  for (const chunk of matchIdChunks) {
+    const params = new URLSearchParams();
+    chunk.forEach((id) => params.append('match_ids[]', String(id)));
+    const rows = await bdlFetchAll<Record<string, unknown>>('/team_match_stats', params, apiKey, {
+      cursor: true,
+      maxPages: 4,
+    });
+    teamMatchStats.push(...rows);
+  }
+
+  return NextResponse.json(
+    {
+      success: true,
+      teamId,
+      opponentId,
+      teamMatches: summarizeMatches(teamMatches),
+      opponentMatches: summarizeMatches(opponentMatches),
+      teamMatchStats,
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600',
+      },
+    }
+  );
+}
+
+export async function GET(request: NextRequest) {
+  const competition = parseCompetition(request.nextUrl.searchParams.get('competition'));
+  const apiKey = getBdlApiKey();
 
   if (request.nextUrl.searchParams.get('dvpBatch') === '1') {
     try {
+      if (competition === 'euros' || competition === 'nations-league') {
+        return await handleInternationalDvp(request, competition);
+      }
+      if (!apiKey) {
+        return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
+      }
       return await handleWorldCupDvpBatch(request, apiKey);
     } catch (error) {
       const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Failed to compute World Cup DVP' },
+        { error: error instanceof Error ? error.message : 'Failed to compute DVP' },
         { status }
       );
     }
+  }
+
+  if (request.nextUrl.searchParams.get('teamForm') === '1') {
+    try {
+      if (competition === 'euros' || competition === 'nations-league') {
+        return await handleInternationalTeamForm(request, competition);
+      }
+      if (!apiKey) {
+        return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
+      }
+      return await handleWorldCupTeamForm(request, apiKey);
+    } catch (error) {
+      const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to load team form' },
+        { status }
+      );
+    }
+  }
+
+  if (competition === 'euros' || competition === 'nations-league') {
+    try {
+      const data = await loadInternationalDashboardData({
+        competition,
+        teamId: request.nextUrl.searchParams.get('teamId'),
+        playerId: request.nextUrl.searchParams.get('playerId'),
+      });
+
+      // Merge in ALL other sources for the selected player so the chart shows
+      // every game (BDL World Cup + the other international source).
+      const playerName = request.nextUrl.searchParams.get('playerName') || '';
+      const requestedPlayerId = request.nextUrl.searchParams.get('playerId') || '';
+      if (playerName) {
+        const [intl, bdl] = await Promise.all([
+          loadInternationalStatsByPlayerName(playerName),
+          apiKey ? fetchBdlStatsForPlayerName(playerName, apiKey) : Promise.resolve({ playerMatchStats: [], matches: [] }),
+        ]);
+
+        const existingKeys = new Set(
+          (data.playerMatchStats as Array<Record<string, unknown>>).map(
+            (r) => `${(r as { player_id?: unknown }).player_id ?? ''}|${(r as { match_id?: unknown }).match_id ?? ''}`
+          )
+        );
+        const extraIntl = intl.playerMatchStats.filter(
+          (r) =>
+            !existingKeys.has(
+              `${(r as { player_id?: unknown }).player_id ?? ''}|${(r as { match_id?: unknown }).match_id ?? ''}`
+            )
+        );
+        let mergedStats: Array<Record<string, unknown>> = [
+          ...(data.playerMatchStats as Array<Record<string, unknown>>),
+          ...extraIntl,
+          ...bdl.playerMatchStats,
+        ];
+
+        // Unify player_id so the frontend filter keeps cross-source rows.
+        if (requestedPlayerId) {
+          mergedStats = mergedStats.map((row) => ({
+            ...row,
+            player_id: requestedPlayerId,
+            player:
+              (row as { player?: Record<string, unknown> }).player != null
+                ? { ...(row as { player: Record<string, unknown> }).player, id: requestedPlayerId }
+                : { id: requestedPlayerId },
+          }));
+        }
+
+        const matchIds = new Set(
+          [
+            ...(data.matches as Array<Record<string, unknown>>),
+            ...(data.playerMatches as Array<Record<string, unknown>>),
+          ].map((m) => String((m as { id?: unknown }).id ?? ''))
+        );
+        const extraMatches: Array<Record<string, unknown>> = [];
+        for (const m of [...intl.matches, ...bdl.matches]) {
+          const id = String((m as { id?: unknown }).id ?? '');
+          if (id && !matchIds.has(id)) {
+            extraMatches.push(m);
+            matchIds.add(id);
+          }
+        }
+
+        return NextResponse.json(
+          {
+            ...data,
+            playerMatchStats: mergedStats,
+            playerMatches: [...(data.playerMatches as Array<unknown>), ...extraMatches],
+          },
+          { headers: { 'Cache-Control': 'public, s-maxage=300' } }
+        );
+      }
+
+      return NextResponse.json(data, {
+        headers: { 'Cache-Control': 'public, s-maxage=300' },
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to load international data' },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
   }
 
   const season = parseSeason(request.nextUrl.searchParams.get('season'));
@@ -676,6 +1034,61 @@ export async function GET(request: NextRequest) {
       ...(derivedShotsByMatch.get(Number(row.match_id)) ?? {}),
     }));
 
+    // Always merge stats from every source we have for the currently selected
+    // player so the main chart shows every game across BDL + Euros + Nations
+    // League. This runs whenever a `playerName` is provided.
+    let mergedPlayerMatchStats: Array<Record<string, any>> = enrichedPlayerMatchStats.map((row) => ({
+      ...row,
+      source: 'bdl',
+      tournament_slug: 'worldcup',
+    }));
+    let mergedPlayerMatches: Array<Record<string, any>> = summarizeMatches(playerMatches);
+    const requestedPlayerName = request.nextUrl.searchParams.get('playerName') || '';
+    if (requestedPlayerName) {
+      try {
+        const [intl, bdlByName] = await Promise.all([
+          loadInternationalStatsByPlayerName(requestedPlayerName),
+          // If the requested player wasn't already a BDL ID (e.g. user came
+          // here from intl search in `all` mode), additionally look up BDL by
+          // name to surface their World Cup games too.
+          enrichedPlayerMatchStats.length
+            ? Promise.resolve({ playerMatchStats: [] as any[], matches: [] as any[] })
+            : fetchBdlStatsForPlayerName(requestedPlayerName, apiKey),
+        ]);
+
+        if (intl.playerMatchStats.length || bdlByName.playerMatchStats.length) {
+          mergedPlayerMatchStats = [
+            ...mergedPlayerMatchStats,
+            ...bdlByName.playerMatchStats.map((row) => ({ ...row, source: 'bdl', tournament_slug: 'worldcup' })),
+            ...intl.playerMatchStats,
+          ];
+          const knownIds = new Set([
+            ...mergedPlayerMatches.map((m) => String(m.id)),
+            ...summarizeMatches(matches).map((m) => String(m.id)),
+          ]);
+          for (const m of [...bdlByName.matches, ...intl.matches]) {
+            if (!knownIds.has(String(m.id))) {
+              mergedPlayerMatches.push(m);
+              knownIds.add(String(m.id));
+            }
+          }
+        }
+      } catch (mergeError) {
+        console.warn('[world-cup/dashboard] cross-source merge failed:', mergeError);
+      }
+    }
+
+    // Rewrite player_id on every merged row to the requested playerId so the
+    // frontend's `String(row.player_id) === selectedPlayerId` filter keeps
+    // all cross-source rows for the same player.
+    if (requestedPlayerId) {
+      mergedPlayerMatchStats = mergedPlayerMatchStats.map((row) => ({
+        ...row,
+        player_id: requestedPlayerId,
+        player: row.player ? { ...row.player, id: requestedPlayerId } : { id: requestedPlayerId },
+      }));
+    }
+
     let resolvedSelectedTeam = selectedTeam;
     if (requestedPlayerId && /^\d+$/.test(requestedPlayerId) && enrichedPlayerMatchStats.length) {
       const playerTeam = resolveTeamFromPlayerMatchStats(enrichedPlayerMatchStats, teams);
@@ -697,7 +1110,7 @@ export async function GET(request: NextRequest) {
         stadiums,
         standings,
         matches: summarizeMatches(matches),
-        playerMatches: summarizeMatches(playerMatches),
+        playerMatches: mergedPlayerMatches,
         selectedTeam: resolvedSelectedTeam,
         featureMatch: resolvedFeatureMatch
           ? {
@@ -708,7 +1121,7 @@ export async function GET(request: NextRequest) {
         selectedTeamMatches: summarizeMatches(resolvedSelectedTeamMatches),
         rosters,
         teamMatchStats,
-        playerMatchStats: enrichedPlayerMatchStats,
+        playerMatchStats: mergedPlayerMatchStats,
         lineups,
         events,
         shots,

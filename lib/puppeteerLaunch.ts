@@ -2,6 +2,19 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Browser } from 'puppeteer-core';
 
+function resolveSystemChromeExecutable(): string | undefined {
+  const candidates = [
+    process.env.CHROME_PATH,
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+  ].filter(Boolean) as string[];
+  return candidates.find((p) => existsSync(p));
+}
+
 const SERVERLESS_ARGS = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
 
 function resolveChromiumBinDir(): string | undefined {
@@ -84,8 +97,18 @@ export async function launchHeadlessBrowser(): Promise<Browser> {
 
   const puppeteerCore = await import('puppeteer-core');
   const puppeteer = await import('puppeteer');
+  let executablePath = puppeteer.default.executablePath();
+  if (!existsSync(executablePath)) {
+    const systemChrome = resolveSystemChromeExecutable();
+    if (!systemChrome) {
+      throw new Error(
+        'Chrome not found. Run: npx puppeteer browsers install chrome — or install Google Chrome.'
+      );
+    }
+    executablePath = systemChrome;
+  }
   return puppeteerCore.default.launch({
-    executablePath: puppeteer.default.executablePath(),
+    executablePath,
     headless: true,
     args: SERVERLESS_ARGS,
   });
