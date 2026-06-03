@@ -427,6 +427,35 @@ function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl'; i
 const SEARCH_DEBOUNCE_MS = 300;
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SESSION_STORAGE_MAX_SIZE = 4 * 1024 * 1024; // 4MB (conservative limit, most browsers allow 5-10MB)
+
+function getDashboardGamesDateRange(): { start: string; end: string } {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+  return { start, end };
+}
+
+function getDashboardGamesCacheKey(): string {
+  const { start, end } = getDashboardGamesDateRange();
+  return `dashboard-games-${start}-${end}`;
+}
+
+function readDashboardGamesFromSessionCache(): Game[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cacheKey = getDashboardGamesCacheKey();
+    const cachedData = sessionStorage.getItem(cacheKey);
+    const cachedTimestamp = sessionStorage.getItem(`${cacheKey}-timestamp`);
+    if (!cachedData || !cachedTimestamp) return null;
+    const age = Date.now() - parseInt(cachedTimestamp, 10);
+    if (age >= CACHE_TTL_MS) return null;
+    const parsed = JSON.parse(cachedData);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed as Game[];
+  } catch {
+    // ignore parse/storage errors
+  }
+  return null;
+}
 const BATCH_DELAY_MS = 500;
 const ODDS_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const INITIAL_ODDS_CHECK_DELAY_MS = 30 * 1000; // 30 seconds
@@ -1259,8 +1288,8 @@ export default function NBALandingPage() {
       }
     }
 
-    // 2) NBA player props cache
-    if (!restoredCombinedSnapshot || sportParam === 'nba') {
+    // 2) NBA player props cache (always restore so sport toggles NBA↔AFL stay instant)
+    if (!restoredCombinedSnapshot) {
       const CACHE_KEY = 'nba-player-props-cache';
       const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
       const cachedData = sessionStorage.getItem(CACHE_KEY);
@@ -1320,25 +1349,10 @@ export default function NBALandingPage() {
     }
 
     // 3) Games cache (same key as fetchTodaysGames)
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
-    const gamesCacheKey = `dashboard-games-${start}-${end}`;
-    const gamesCached = sessionStorage.getItem(gamesCacheKey);
-    const gamesTs = sessionStorage.getItem(`${gamesCacheKey}-timestamp`);
-    if (gamesCached && gamesTs) {
-      const age = Date.now() - parseInt(gamesTs, 10);
-      if (age < CACHE_TTL_MS) {
-        try {
-          const parsed = JSON.parse(gamesCached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setTodaysGames(parsed);
-            setGamesLoading(false);
-          }
-        } catch {
-          // ignore
-        }
-      }
+    const cachedGames = readDashboardGamesFromSessionCache();
+    if (cachedGames) {
+      setTodaysGames(cachedGames);
+      setGamesLoading(false);
     }
 
     // 4) AFL: paint from fresh session cache immediately for instant back-nav experience.
@@ -1709,54 +1723,35 @@ export default function NBALandingPage() {
   // OPTIMIZATION: Pre-fetch games immediately and cache them for dashboard
   useEffect(() => {
     const fetchTodaysGames = async () => {
-      try {
-        setGamesLoading(true);
-        
-        const today = new Date();
-        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
-        // Include a wider window (next 7 days) to match dashboard cache key format
-        const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+      const { start, end } = getDashboardGamesDateRange();
+      const cacheKey = getDashboardGamesCacheKey();
 
-        // Check sessionStorage first (same cache key format as dashboard for instant load)
-        if (typeof window !== 'undefined') {
-          try {
-            const cacheKey = `dashboard-games-${start}-${end}`;
-            const cachedData = sessionStorage.getItem(cacheKey);
-            const cachedTimestamp = sessionStorage.getItem(`${cacheKey}-timestamp`);
-            const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-            
-            if (cachedData && cachedTimestamp) {
-              const age = Date.now() - parseInt(cachedTimestamp, 10);
-              if (age < CACHE_TTL_MS) {
-                try {
-                  const parsed = JSON.parse(cachedData);
-                  if (Array.isArray(parsed) && parsed.length > 0) {
-                    // Debug logging removed(`✅ Using cached games from sessionStorage (${parsed.length} games, ${Math.round(age / 1000)}s old)`);
-                    setTodaysGames(parsed);
-                    setGamesLoading(false);
-                    // Still fetch in background to update if needed (non-blocking)
-                    fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' }).then(async (response) => {
-                      if (response.ok) {
-                        const data = await response.json();
-                        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-                          setTodaysGames(data.data);
-                          const dataString = JSON.stringify(data.data);
-                          safeSetSessionStorage(cacheKey, dataString);
-                          safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
-                        }
-                      }
-                    }).catch(() => {});
-                    return;
-                  }
-                } catch (e) {
-                  console.warn('Failed to parse cached games data, fetching fresh');
-                }
+      const refreshGamesInBackground = () => {
+        fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`, { cache: 'default' })
+          .then(async (response) => {
+            if (response.ok) {
+              const data = await response.json();
+              if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+                setTodaysGames(data.data);
+                const dataString = JSON.stringify(data.data);
+                safeSetSessionStorage(cacheKey, dataString);
+                safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
               }
             }
-          } catch (e) {
-            // Ignore sessionStorage errors, continue to fetch
-          }
+          })
+          .catch(() => {});
+      };
+
+      try {
+        const cachedGames = readDashboardGamesFromSessionCache();
+        if (cachedGames) {
+          setTodaysGames(cachedGames);
+          setGamesLoading(false);
+          refreshGamesInBackground();
+          return;
         }
+
+        setGamesLoading(true);
 
         const response = await fetch(`/api/bdl/games?start_date=${start}&end_date=${end}&per_page=100`);
         const data = await response.json();
@@ -1766,7 +1761,6 @@ export default function NBALandingPage() {
         
         // Cache games for dashboard (same format as dashboard uses)
         if (typeof window !== 'undefined' && games.length > 0) {
-          const cacheKey = `dashboard-games-${start}-${end}`;
           const gamesString = JSON.stringify(games);
           safeSetSessionStorage(cacheKey, gamesString);
           safeSetSessionStorage(`${cacheKey}-timestamp`, Date.now().toString());
@@ -2341,15 +2335,56 @@ export default function NBALandingPage() {
     };
   }, [aggregateAflListPayload, applyCombinedSnapshot, propsSport]);
 
+  // Restore games from sessionStorage when switching sport or returning from a dashboard
+  useEffect(() => {
+    const cachedGames = readDashboardGamesFromSessionCache();
+    if (cachedGames) {
+      setTodaysGames((prev) => (prev.length > 0 ? prev : cachedGames));
+      setGamesLoading(false);
+    }
+
+    if (propsSport !== 'afl' && propsSport !== 'combined') return;
+    if (aflGames.length > 0) return;
+    try {
+      const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { games?: AflGameForProps[]; timestamp?: number };
+      const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+      const cachedAflGames = Array.isArray(parsed?.games) ? parsed.games : [];
+      if (age < AFL_PROPS_CACHE_TTL_MS && cachedAflGames.length > 0) {
+        setAflGames(cachedAflGames);
+      }
+    } catch {
+      // ignore cache parse errors
+    }
+  }, [propsSport, aflGames.length]);
+
+  // Rehydrate games from sessionStorage when returning from a dashboard without remounting
+  useEffect(() => {
+    const restoreGamesIfNeeded = () => {
+      const cachedGames = readDashboardGamesFromSessionCache();
+      if (!cachedGames) return;
+      setTodaysGames((prev) => (prev.length > 0 ? prev : cachedGames));
+      setGamesLoading(false);
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        restoreGamesIfNeeded();
+      }
+    };
+
+    window.addEventListener('pageshow', restoreGamesIfNeeded);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('pageshow', restoreGamesIfNeeded);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
   // Fetch player props with good win chances from BDL
   useEffect(() => {
-    // When page is opened directly in AFL mode, never run NBA props/polling side effects.
-    const initialSportFromUrl =
-      typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sport') : null;
-    if (propsSport !== 'nba' || initialSportFromUrl === 'afl') {
-      if (propsSport === 'afl' || initialSportFromUrl === 'afl') {
-        setPropsLoading(false);
-      }
+    if (propsSport !== 'nba') {
       if (propsSport === 'combined') {
         return;
       }
@@ -4908,6 +4943,38 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   }, [activePaginatedProps, propsSport, aflLogoByTeam, aflPortraitExtras]);
 
   const applySportMode = useCallback((nextMode: 'nba' | 'afl' | 'combined') => {
+    if (nextMode === 'nba' && !propsLoadedRef.current) {
+      try {
+        const CACHE_KEY = 'nba-player-props-cache';
+        const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
+        const cachedData = sessionStorage.getItem(CACHE_KEY);
+        const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+        if (cachedData && cachedTimestamp) {
+          const age = Date.now() - parseInt(cachedTimestamp, 10);
+          if (age < CACHE_TTL_MS) {
+            const parsed = JSON.parse(cachedData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const mergedNba = mergeNbaPropsWithStoredCalculatedStats(parsed);
+              setPlayerProps(mergedNba.props);
+              propsLoadedRef.current = true;
+              initialFetchCompletedRef.current = true;
+              setPropsWithCalculatedStats(mergedNba.calculatedMap);
+              mergedNba.calculatedKeys.forEach((key) => calculatedKeysRef.current.add(key));
+              setPropsLoading(false);
+            }
+          }
+        }
+      } catch {
+        // ignore cache parse errors; fetch effect will load fresh data
+      }
+    }
+
+    const cachedGames = readDashboardGamesFromSessionCache();
+    if (cachedGames) {
+      setTodaysGames((prev) => (prev.length > 0 ? prev : cachedGames));
+      setGamesLoading(false);
+    }
+
     setPropsSport(nextMode);
     if (nextMode !== 'nba') {
       setAflPropsLoading(true);
@@ -4922,7 +4989,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           : '/props?sport=nba';
     const path = basePath + (testCode ? `${basePath.includes('?') ? '&' : '?'}test_event_code=${encodeURIComponent(testCode)}` : '');
     router.replace(path, { scroll: false });
-  }, [router]);
+  }, [router, mergeNbaPropsWithStoredCalculatedStats]);
 
   const toggleSportSelection = useCallback((sport: 'nba' | 'afl') => {
     // Combined means "no explicit single-sport filter selected".
