@@ -210,6 +210,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    if (cacheOnly) {
+      return NextResponse.json({
+        fixturesUrl,
+        fixture: null,
+        count: 0,
+        cache: {
+          source: 'cache-miss',
+          forcedRefresh: false,
+          cacheOnly: true,
+        },
+      });
+    }
+
     const response = await fetch(fixturesUrl, {
       headers: SOCCERWAY_HTML_HEADERS,
       cache: 'no-store',
