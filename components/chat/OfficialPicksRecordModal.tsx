@@ -14,10 +14,11 @@ import {
   computePickRecordStats,
   computePickXAxisConfig,
   formatUnits,
+  type PickChartPoint,
   type PickRecordStats,
 } from '@/lib/officialPicksRecordStats';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bar,
@@ -38,6 +39,14 @@ type OfficialPicksRecordModalProps = {
 };
 
 const RESULT_OPTIONS: OfficialPickResult[] = ['pending', 'win', 'loss', 'void'];
+
+const DOLLARS_PER_UNIT = 50;
+
+function formatUnitDollars(units: number, dollarsPerUnit = DOLLARS_PER_UNIT): string {
+  const amount = units * dollarsPerUnit;
+  const sign = amount > 0 ? '+' : amount < 0 ? '-' : '';
+  return `${sign}$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 type NewBetForm = {
   date: string;
@@ -214,17 +223,9 @@ export function OfficialPicksRecordModal({ isOpen, onClose, isAdmin, isDark }: O
     return null;
   }
 
-  const axisColor = isDark ? '#e2e8f0' : '#0f172a';
-  const tooltipStyle = {
-    backgroundColor: isDark ? '#334155' : '#e2e8f0',
-    border: `1px solid ${isDark ? '#64748b' : '#94a3b8'}`,
-    borderRadius: '8px',
-    color: isDark ? '#fff' : '#0f172a',
-  };
-
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[180] bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 z-[180] bg-black/70" onClick={onClose} aria-hidden />
       <div className="fixed inset-0 z-[190] flex items-center justify-center p-1.5 sm:p-6" onClick={onClose}>
         <div
           className="flex max-h-[min(92dvh,900px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#0f1a2b]"
@@ -270,8 +271,6 @@ export function OfficialPicksRecordModal({ isOpen, onClose, isAdmin, isDark }: O
                 stats={stats}
                 chartData={chartData}
                 xAxisConfig={xAxisConfig}
-                axisColor={axisColor}
-                tooltipStyle={tooltipStyle}
                 isDark={isDark}
                 calendarView={calendarView}
                 setCalendarView={setCalendarView}
@@ -304,8 +303,6 @@ type RecordModalBodyProps = {
   stats: PickRecordStats;
   chartData: ReturnType<typeof computePickChartData>;
   xAxisConfig: ReturnType<typeof computePickXAxisConfig>;
-  axisColor: string;
-  tooltipStyle: React.CSSProperties;
   isDark: boolean;
   calendarView: 'day' | 'week' | 'month' | 'year';
   setCalendarView: (view: 'day' | 'week' | 'month' | 'year') => void;
@@ -326,13 +323,92 @@ type RecordModalBodyProps = {
   onAddBet: (event: FormEvent) => void;
 };
 
+const UnitsPnlChart = memo(function UnitsPnlChart({
+  chartData,
+  ticks,
+  isDark,
+  compactChart,
+}: {
+  chartData: PickChartPoint[];
+  ticks: number[];
+  isDark: boolean;
+  compactChart: boolean;
+}) {
+  const axisColor = isDark ? '#e2e8f0' : '#0f172a';
+  const tooltipStyle: React.CSSProperties = {
+    backgroundColor: isDark ? '#334155' : '#e2e8f0',
+    border: `1px solid ${isDark ? '#64748b' : '#94a3b8'}`,
+    borderRadius: '8px',
+    color: isDark ? '#fff' : '#0f172a',
+  };
+  const chartMargin = compactChart
+    ? { top: 8, right: 4, left: -4, bottom: 0 }
+    : { top: 8, right: 4, left: 4, bottom: 4 };
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData} margin={chartMargin} barCategoryGap={compactChart ? '8%' : '12%'}>
+        <XAxis
+          dataKey="bet"
+          type="category"
+          scale="band"
+          stroke={axisColor}
+          tick={{ fill: axisColor, fontSize: compactChart ? 9 : 11 }}
+          ticks={ticks}
+          tickFormatter={(value) => String(value)}
+          height={compactChart ? 24 : 30}
+          tickMargin={compactChart ? 4 : 8}
+          axisLine={{ stroke: axisColor }}
+          tickLine={false}
+        />
+        <YAxis
+          width={compactChart ? 26 : 36}
+          stroke={axisColor}
+          tick={{ fill: axisColor, fontSize: compactChart ? 9 : 11 }}
+          tickCount={6}
+          axisLine={false}
+          tickLine={false}
+          tickMargin={compactChart ? 4 : 2}
+        />
+        <Tooltip
+          isAnimationActive={false}
+          cursor={{ fill: isDark ? 'rgba(148,163,184,0.15)' : 'rgba(15,23,42,0.06)' }}
+          content={({ active, payload, label }) => {
+            if (!active || !payload || payload.length === 0) {
+              return null;
+            }
+            const value = Number(payload[0]?.value ?? 0);
+            return (
+              <div style={tooltipStyle} className="px-3 py-2 text-xs">
+                <p className="font-semibold">{`Bet #${label}`}</p>
+                <p className="mt-1">{`Units P&L : ${formatUnits(value)}`}</p>
+                <p className={`mt-0.5 font-semibold ${value > 0 ? 'text-green-500' : value < 0 ? 'text-red-500' : ''}`}>
+                  {`${formatUnitDollars(value)} @ $${DOLLARS_PER_UNIT}/u`}
+                </p>
+              </div>
+            );
+          }}
+        />
+        <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="3 3" />
+        <Bar dataKey="profit" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+          {chartData.map((entry, index) => (
+            <Cell
+              key={`bar-${index}`}
+              fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'}
+              fillOpacity={index === 0 ? 0 : 1}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+});
+
 function RecordModalBody(props: RecordModalBodyProps) {
   const {
     stats,
     chartData,
     xAxisConfig,
-    axisColor,
-    tooltipStyle,
     isDark,
     calendarView,
     setCalendarView,
@@ -363,10 +439,6 @@ function RecordModalBody(props: RecordModalBodyProps) {
     return () => media.removeEventListener('change', sync);
   }, []);
 
-  const chartMargin = compactChart
-    ? { top: 8, right: 4, left: -4, bottom: 0 }
-    : { top: 8, right: 4, left: 4, bottom: 4 };
-
   return (
     <>
       <div className="mb-3 grid grid-cols-2 gap-1.5 sm:mb-4 sm:grid-cols-4 sm:gap-2">
@@ -393,49 +465,7 @@ function RecordModalBody(props: RecordModalBodyProps) {
           {chartData.length <= 1 ? (
             <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">No settled picks yet.</p>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={chartMargin} barCategoryGap={compactChart ? '8%' : '12%'}>
-                <XAxis
-                  dataKey="bet"
-                  type="category"
-                  scale="band"
-                  stroke={axisColor}
-                  tick={{ fill: axisColor, fontSize: compactChart ? 9 : 11 }}
-                  ticks={xAxisConfig.ticks}
-                  tickFormatter={(value) => String(value)}
-                  height={compactChart ? 24 : 30}
-                  tickMargin={compactChart ? 4 : 8}
-                  axisLine={{ stroke: axisColor }}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={compactChart ? 26 : 36}
-                  stroke={axisColor}
-                  tick={{ fill: axisColor, fontSize: compactChart ? 9 : 11 }}
-                  tickCount={6}
-                  axisLine={false}
-                  tickLine={false}
-                  tickMargin={compactChart ? 4 : 2}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  labelStyle={{ color: tooltipStyle.color }}
-                  itemStyle={{ color: tooltipStyle.color }}
-                  labelFormatter={(value: number) => `Bet #${value}`}
-                  formatter={(value: number) => [formatUnits(value), 'Units P&L']}
-                />
-                <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="3 3" />
-                <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`bar-${index}`}
-                      fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'}
-                      fillOpacity={index === 0 ? 0 : 1}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <UnitsPnlChart chartData={chartData} ticks={xAxisConfig.ticks} isDark={isDark} compactChart={compactChart} />
           )}
         </div>
       </div>
