@@ -1,28 +1,17 @@
 {
-  "generatedAt": "2026-06-03T15:26:55.851Z",
+  "generatedAt": "2026-06-04T18:34:03.464Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "1879f9a9ee1925232095f8ed1b3d00e6",
-      "homeTeam": "Adelaide Crows",
-      "awayTeam": "Geelong Cats",
-      "commenceTime": "2026-06-04T09:30:00Z",
-      "weather": {
-        "temperatureC": 12.4,
-        "precipitationMm": 0.1,
-        "windKmh": 21.6
-      }
-    },
     {
       "gameId": "4e6b1b07e9dd09b9b708067f4fe08ebc",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-06-05T09:40:00Z",
       "weather": {
-        "temperatureC": 11.9,
+        "temperatureC": 11.7,
         "precipitationMm": 0,
-        "windKmh": 6.2
+        "windKmh": 6.5
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-06-06T04:15:00Z",
       "weather": {
-        "temperatureC": 16,
-        "precipitationMm": 0,
-        "windKmh": 7.5
+        "temperatureC": 16.1,
+        "precipitationMm": 0.1,
+        "windKmh": 7.4
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-06-06T07:15:00Z",
       "weather": {
-        "temperatureC": 16.6,
+        "temperatureC": 16.8,
         "precipitationMm": 0,
-        "windKmh": 9.4
+        "windKmh": 9.2
       }
     },
     {
@@ -53,9 +42,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-06-06T10:15:57Z",
       "weather": {
-        "temperatureC": 16.5,
+        "temperatureC": 17.2,
         "precipitationMm": 0,
-        "windKmh": 2.7
+        "windKmh": 0.6
       }
     },
     {
@@ -66,7 +55,7 @@
       "weather": {
         "temperatureC": 17.2,
         "precipitationMm": 0,
-        "windKmh": 11.5
+        "windKmh": 6.8
       }
     },
     {
@@ -75,9 +64,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-06-07T09:20:02Z",
       "weather": {
-        "temperatureC": 13.6,
+        "temperatureC": 12.6,
         "precipitationMm": 0,
-        "windKmh": 10.3
+        "windKmh": 11.5
       }
     },
     {
@@ -86,11 +75,11 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-06-08T05:15:33Z",
       "weather": {
-        "temperatureC": 14.9,
+        "temperatureC": 14.4,
         "precipitationMm": 0,
-        "windKmh": 11.7
+        "windKmh": 11.6
       }
     }
   ],
-  "count": 8
+  "count": 7
 }
