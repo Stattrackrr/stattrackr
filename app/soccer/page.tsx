@@ -1130,6 +1130,7 @@ function SoccerPageContent() {
     const cachedVisibleMatches = takeRecentSoccerMatches(cached.recentMatches);
     const sessionPlayer = cached.playerProps;
 
+    setPropsMode('team');
     setSelectedTeam((prev) => {
       if (normalizeTeamHref(prev?.href) === cached.team.href) return prev;
       return {

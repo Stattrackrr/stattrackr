@@ -8,7 +8,7 @@
   "competitionLabel": "England · Premier League",
   "seasonYear": 2025,
   "teamsInLeague": 20,
-  "teamsSampled": 20,
+  "teamsSampled": 14,
   "stats": [
     {
       "id": "goals",
@@ -1095,8 +1095,8 @@
       }
     },
     {
-      "name": "Burnley",
-      "href": "/team/burnley/z3dmTMMO",
+      "name": "West Ham",
+      "href": "/team/west-ham/Cxq57r8g",
       "leagueGames": 5,
       "attack": {
         "goals": {
@@ -1110,9 +1110,9 @@
           "rankedSize": 20
         },
         "total_shots": {
-          "perGame": 9.4,
-          "rank": 20,
-          "rankedSize": 20
+          "perGame": 13.6,
+          "rank": 4,
+          "rankedSize": 14
         },
         "shots_on_target": {
           "perGame": 3.6,
