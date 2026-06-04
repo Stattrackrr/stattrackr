@@ -11,15 +11,21 @@
  * Usage:
  *   node scripts/extract-soccerway-match.js
  *   node scripts/extract-soccerway-match.js --url=https://www.soccerway.com/match/.../summary/
+ *   node scripts/extract-soccerway-match.js --fixtures=https://www.soccerway.com/england/premier-league/fixtures/
  *   node scripts/extract-soccerway-match.js --out=data/my-soccerway-match.json
+ *
+ * With no --url=, the script loads the fixtures page, walks match links in order, and picks the
+ * first summary whose og:title does not look like a final score (finished matches usually include
+ * a trailing "0:2" style score in that tag).
  */
 
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
-const DEFAULT_URL = 'https://www.soccerway.com/match/dortmund-nP1i5US1/vfb-stuttgart-nJQmYp1B/summary/';
+const DEFAULT_FIXTURES_PAGE_URL = 'https://www.soccerway.com/england/premier-league/fixtures/';
 const DEFAULT_OUTPUT = path.join(process.cwd(), 'data', 'soccerway-match-sample.json');
+const DISCOVERY_CANDIDATE_CAP = 25;
 const PLAYER_STAT_CATEGORIES = ['top', 'shots', 'attack', 'passes', 'defense', 'goalkeeping', 'general'];
 const ODDS_GEO = {
   countryCode: 'AU',
@@ -89,6 +95,52 @@ async function fetchHtml(url) {
   }
 
   return response.text();
+}
+
+function extractOrderedMatchSummaryUrlsFromFixturesHtml(html) {
+  const re = /href="(\/match\/[^"]+)"/g;
+  const ordered = [];
+  const seen = new Set();
+  let match;
+  while ((match = re.exec(html))) {
+    const href = match[1];
+    const absolute = href.startsWith('http') ? href : `https://www.soccerway.com${href}`;
+    const base = absolute.match(/^(https?:\/\/www\.soccerway\.com\/match\/[^/]+\/[^/]+\/?)/i);
+    if (!base) continue;
+    const normalizedBase = base[1].endsWith('/') ? base[1] : `${base[1]}/`;
+    if (seen.has(normalizedBase)) continue;
+    seen.add(normalizedBase);
+    ordered.push(`${normalizedBase}summary/`);
+  }
+  return ordered;
+}
+
+async function discoverUpcomingSummaryUrl(fixturesPageUrl) {
+  const fixturesHtml = await fetchHtml(fixturesPageUrl);
+  const candidates = extractOrderedMatchSummaryUrlsFromFixturesHtml(fixturesHtml);
+  if (!candidates.length) {
+    throw new Error(`No /match/ links found on fixtures page: ${fixturesPageUrl}`);
+  }
+
+  const limit = Math.min(candidates.length, DISCOVERY_CANDIDATE_CAP);
+  for (let index = 0; index < limit; index += 1) {
+    const summaryUrl = candidates[index];
+    const summaryHtml = await fetchHtml(summaryUrl);
+    const ogTitle = extractMetaProperty(summaryHtml, 'og:title');
+    if (parseScoreFromOgTitle(ogTitle)) {
+      continue;
+    }
+    if (!extractEventId(summaryHtml)) {
+      continue;
+    }
+    console.log(`Discovered upcoming-style match (${index + 1} of ${limit} candidates):`);
+    console.log(`  ${summaryUrl}`);
+    return summaryUrl;
+  }
+
+  throw new Error(
+    `No upcoming-looking match found on ${fixturesPageUrl} (first ${limit} links all had final scores in og:title or no event id). Pass --url= explicitly.`
+  );
 }
 
 async function fetchTeamStats(eventId) {
@@ -392,8 +444,22 @@ function mapPlayerRows(headers, rows) {
 }
 
 async function main() {
-  const inputUrl = getArg('url', DEFAULT_URL);
+  const hasUrlArg = process.argv.some((arg) => arg.startsWith('--url='));
+  const fixturesPageUrl = getArg('fixtures', DEFAULT_FIXTURES_PAGE_URL);
   const outPath = getArg('out', DEFAULT_OUTPUT);
+
+  let inputUrl;
+  if (hasUrlArg) {
+    inputUrl = getArg('url', '');
+    if (!inputUrl) {
+      throw new Error('Empty --url= value');
+    }
+  } else {
+    console.log('No --url= provided; discovering a non-finished match from:');
+    console.log(`  ${fixturesPageUrl}`);
+    inputUrl = await discoverUpcomingSummaryUrl(fixturesPageUrl);
+  }
+
   const baseUrl = normalizeMatchBaseUrl(inputUrl);
   const summaryUrl = `${baseUrl}summary/`;
 
@@ -535,9 +601,9 @@ async function main() {
   console.log(`Odds markets: ${report.odds?.summary?.marketCount || 0}`);
   console.log(`Parsed events: ${report.summary.parsedEvents.length}`);
   console.log(`Player stat categories: ${Object.keys(playerStats).join(', ')}`);
- }
+}
 
- main().catch((error) => {
+main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
