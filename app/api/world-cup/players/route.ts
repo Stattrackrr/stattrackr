@@ -3,11 +3,32 @@ import {
   InternationalCompetition,
   searchInternationalPlayers,
 } from '@/lib/internationalDashboard';
+import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
+import {
+  getWorldCupPlayerIndex,
+  searchWorldCupPlayerIndex,
+} from '@/lib/worldCupPlayerIndex';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
+
+// Persist BDL World Cup player searches in Supabase so the same query never
+// re-hits the API. Stored permanently (no expiry).
+const WC_PLAYER_SEARCH_CACHE_PREFIX = 'wc:player-search:v1';
+
+function buildPlayerSearchCacheKey(opts: {
+  competition: CompetitionParam;
+  search: string;
+  teamId: string;
+  season: string;
+}): string {
+  const normalizedSearch = opts.search.toLowerCase().replace(/\s+/g, ' ').trim();
+  const teamPart = /^\d+$/.test(opts.teamId) ? opts.teamId : 'any';
+  const seasonPart = ['2018', '2022', '2026'].includes(opts.season) ? opts.season : 'any';
+  return `${WC_PLAYER_SEARCH_CACHE_PREFIX}:${opts.competition}:${seasonPart}:${teamPart}:${normalizedSearch}`;
+}
 
 type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 
@@ -114,28 +135,61 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: [] }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
+  const cacheKey = buildPlayerSearchCacheKey({ competition, search, teamId, season });
+
   try {
-    if (competition === 'world-cup') {
-      const data = dedupePlayers(await fetchBdlPlayers({ search, teamId, season }));
-      return NextResponse.json({ data }, { headers: { 'Cache-Control': 'no-store' } });
+    // Preferred path: serve entirely from the pre-built master player index in
+    // Supabase (no BDL API). Built by `npm run build:world-cup:player-index`.
+    //
+    // Only players active in the current World Cup are searchable — regardless
+    // of the selected competition tab — so we always query the index as
+    // 'world-cup'. The attached Euros/Nations-League sources are used purely so
+    // the dashboard can merge those stats by player name.
+    const index = await getWorldCupPlayerIndex();
+    if (index && index.length) {
+      const data = searchWorldCupPlayerIndex(index, {
+        query: search,
+        competition: 'world-cup',
+        limit: 25,
+      });
+      return NextResponse.json(
+        { data, source: 'index' },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
-    if (competition === 'euros' || competition === 'nations-league') {
-      const data = dedupePlayers(
+    // Fallback (index not built yet): per-query cache + live lookups.
+    const cached = await getWorldCupCache<Array<Record<string, unknown>>>(cacheKey);
+    if (cached) {
+      return NextResponse.json(
+        { data: cached, cached: true },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    let data: Array<Record<string, unknown>>;
+    if (competition === 'world-cup') {
+      data = dedupePlayers(await fetchBdlPlayers({ search, teamId, season }));
+    } else if (competition === 'euros' || competition === 'nations-league') {
+      data = dedupePlayers(
         await searchInternationalPlayers({ competition, query: search, limit: 25 })
       );
-      return NextResponse.json({ data }, { headers: { 'Cache-Control': 'no-store' } });
+    } else {
+      // competition === 'all'
+      const [bdl, intl] = await Promise.all([
+        fetchBdlPlayers({ search, teamId, season }),
+        searchInternationalPlayers({ competition: 'all', query: search, limit: 25 }),
+      ]);
+      data = dedupePlayers([...bdl, ...intl]);
     }
 
-    // competition === 'all'
-    const [bdl, intl] = await Promise.all([
-      fetchBdlPlayers({ search, teamId, season }),
-      searchInternationalPlayers({ competition: 'all', query: search, limit: 25 }),
-    ]);
-    return NextResponse.json(
-      { data: dedupePlayers([...bdl, ...intl]) },
-      { headers: { 'Cache-Control': 'no-store' } }
-    );
+    // Only cache non-empty results so a transient API hiccup (empty array)
+    // doesn't get pinned permanently.
+    if (data.length) {
+      await setWorldCupCache(cacheKey, data);
+    }
+
+    return NextResponse.json({ data }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to search players' },

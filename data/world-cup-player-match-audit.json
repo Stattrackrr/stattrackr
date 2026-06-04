@@ -1,0 +1,2253 @@
+{
+  "generatedAt": "2026-06-04T18:21:34.183Z",
+  "seasons": [
+    "2026"
+  ],
+  "totals": {
+    "worldCupPlayers": 1251,
+    "internationalRows": 5521,
+    "matchedWorldCupPlayers": 675,
+    "confident": 673,
+    "countryMismatch": 2,
+    "ambiguous": 0,
+    "unmatched": 576,
+    "worldCupNameCollisions": 1,
+    "internationalWithBdlId": 0,
+    "nearMissSameNation": 5,
+    "nearMissDiffNation": 15
+  },
+  "ambiguous": [],
+  "countryMismatch": [
+    {
+      "normalizedName": "alban lafont",
+      "worldCup": [
+        {
+          "name": "Alban Lafont",
+          "id": "29731",
+          "countryCode": "CIV"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "30393",
+          "name": "Alban Lafont",
+          "nation": "France",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "countryMismatch",
+      "reasons": [
+        "nation differs (WC: CIV vs intl: fra)"
+      ]
+    },
+    {
+      "normalizedName": "hannes delcroix",
+      "worldCup": [
+        {
+          "name": "Hannes Delcroix",
+          "id": "30009",
+          "countryCode": "HTI"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "1411",
+          "name": "Hannes Delcroix",
+          "nation": "Belgium",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "countryMismatch",
+      "reasons": [
+        "nation differs (WC: HTI vs intl: bel)"
+      ]
+    }
+  ],
+  "worldCupNameCollisions": [
+    {
+      "normalizedName": "emiliano martinez",
+      "worldCup": [
+        {
+          "name": "Emiliano Martínez",
+          "id": "8891",
+          "countryCode": "ARG"
+        },
+        {
+          "name": "Emiliano Martínez",
+          "id": "30633",
+          "countryCode": "URY"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "153083",
+          "name": "Emiliano Martínez",
+          "nation": "Uruguay",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "19599",
+          "name": "Emiliano Martínez",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": [
+        "2 World Cup players share this name",
+        "resolved via curated per-player override"
+      ]
+    }
+  ],
+  "nearMissSameNation": [
+    {
+      "worldCupName": "Danilo Oliveira",
+      "worldCupId": "29617",
+      "worldCupNation": "BRA",
+      "candidateName": "Danilo",
+      "candidateNormalized": "danilo",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Brazil",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": true
+    },
+    {
+      "worldCupName": "Amar Memić",
+      "worldCupId": "29588",
+      "worldCupNation": "BIH",
+      "candidateName": "Amar Dedić",
+      "candidateNormalized": "amar dedic",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Bosnia & Herzegovina",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": true
+    },
+    {
+      "worldCupName": "Joan García",
+      "worldCupId": "30515",
+      "worldCupNation": "ESP",
+      "candidateName": "Fran García",
+      "candidateNormalized": "fran garcia",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Spain",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": true
+    },
+    {
+      "worldCupName": "Mohamed Alaa",
+      "worldCupId": "29888",
+      "worldCupNation": "EGY",
+      "candidateName": "Mohamed Salah",
+      "candidateNormalized": "mohamed salah",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Egypt",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": true
+    },
+    {
+      "worldCupName": "Tim Weah",
+      "worldCupId": "8824",
+      "worldCupNation": "USA",
+      "candidateName": "Tim Ream",
+      "candidateNormalized": "tim ream",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "USA",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": true
+    }
+  ],
+  "nearMissDiffNation": [
+    {
+      "worldCupName": "Luis Javier Suárez",
+      "worldCupId": "29681",
+      "worldCupNation": "COL",
+      "candidateName": "Luis Suárez",
+      "candidateNormalized": "luis suarez",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Uruguay",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Mauricio",
+      "worldCupId": "30292",
+      "worldCupNation": "PRY",
+      "candidateName": "Mauricio Isla",
+      "candidateNormalized": "mauricio isla",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Chile",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Nicolas Pépé",
+      "worldCupId": "29708",
+      "worldCupNation": "CIV",
+      "candidateName": "Pepê",
+      "candidateNormalized": "pepe",
+      "competitions": [
+        "nations-league",
+        "euros"
+      ],
+      "candidateNation": "Portugal",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Rayan",
+      "worldCupId": "29613",
+      "worldCupNation": "BRA",
+      "candidateName": "Rayan Cherki",
+      "candidateNormalized": "rayan cherki",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "France",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Rayan",
+      "worldCupId": "29613",
+      "worldCupNation": "BRA",
+      "candidateName": "Rayan Aït-Nouri",
+      "candidateNormalized": "rayan ait nouri",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Algeria",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Rayan",
+      "worldCupId": "29613",
+      "worldCupNation": "BRA",
+      "candidateName": "Rayan Lutin",
+      "candidateNormalized": "rayan lutin",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Comoros",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Rodrigo Aguirre",
+      "worldCupId": "30626",
+      "worldCupNation": "URY",
+      "candidateName": "Rodrigo",
+      "candidateNormalized": "rodrigo",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Spain",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Rodrigo Zalazar",
+      "worldCupId": "30624",
+      "worldCupNation": "URY",
+      "candidateName": "Rodrigo",
+      "candidateNormalized": "rodrigo",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Spain",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Taha Abdi Ali",
+      "worldCupId": "30528",
+      "worldCupNation": "SWE",
+      "candidateName": "Ali Abdi",
+      "candidateNormalized": "ali abdi",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Tunisia",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Wesley",
+      "worldCupId": "29615",
+      "worldCupNation": "BRA",
+      "candidateName": "Wesley Fofana",
+      "candidateNormalized": "wesley fofana",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "France",
+      "relation": "subset",
+      "distance": 0,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Andrés Gómez",
+      "worldCupId": "29691",
+      "worldCupNation": "COL",
+      "candidateName": "André Gomes",
+      "candidateNormalized": "andre gomes",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Portugal",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Ben Waine",
+      "worldCupId": "30208",
+      "worldCupNation": "NZL",
+      "candidateName": "Ben White",
+      "candidateNormalized": "ben white",
+      "competitions": [
+        "euros"
+      ],
+      "candidateNation": "England",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Erik Lira",
+      "worldCupId": "30144",
+      "worldCupNation": "MEX",
+      "candidateName": "Erik Jirka",
+      "candidateNormalized": "erik jirka",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Slovakia",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Ibrahim Sadeh",
+      "worldCupId": "30110",
+      "worldCupNation": "JOR",
+      "candidateName": "Ibrahim Adel",
+      "candidateNormalized": "ibrahim adel",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Egypt",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": false
+    },
+    {
+      "worldCupName": "Orlando Gill",
+      "worldCupId": "30308",
+      "worldCupNation": "PRY",
+      "candidateName": "Orlando Galo",
+      "candidateNormalized": "orlando galo",
+      "competitions": [
+        "nations-league"
+      ],
+      "candidateNation": "Costa Rica",
+      "relation": "fuzzy",
+      "distance": 2,
+      "sameNation": false
+    }
+  ],
+  "confidentSample": [
+    {
+      "normalizedName": "aaron hickey",
+      "worldCup": [
+        {
+          "name": "Aaron Hickey",
+          "id": "30404",
+          "countryCode": "SCO"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "44871",
+          "name": "Aaron Hickey",
+          "nation": "Scotland",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "aaron wan bissaka",
+      "worldCup": [
+        {
+          "name": "Aaron Wan-Bissaka",
+          "id": "29827",
+          "countryCode": "COD"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "18846",
+          "name": "Aaron Wan-Bissaka",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdessamad ezzalzouli",
+      "worldCup": [
+        {
+          "name": "Abdessamad Ezzalzouli",
+          "id": "9152",
+          "countryCode": "MAR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "181421",
+          "name": "Abdessamad Ezzalzouli",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdoulaye seck",
+      "worldCup": [
+        {
+          "name": "Abdoulaye Seck",
+          "id": "30436",
+          "countryCode": "SEN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "8450",
+          "name": "Abdoulaye Seck",
+          "nation": "Senegal",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdulkerim bardakci",
+      "worldCup": [
+        {
+          "name": "Abdülkerim Bardakcı",
+          "id": "30611",
+          "countryCode": "TUR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "48383",
+          "name": "Abdülkerim Bardakcı",
+          "nation": "Turkey",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "61837",
+          "name": "Abdülkerim Bardakcı",
+          "nation": "Türkiye",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "achraf hakimi",
+      "worldCup": [
+        {
+          "name": "Achraf Hakimi",
+          "id": "139",
+          "countryCode": "MAR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "9",
+          "name": "Achraf Hakimi",
+          "nation": "Morocco",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "adalberto carrasquilla",
+      "worldCup": [
+        {
+          "name": "Adalberto Carrasquilla",
+          "id": "30261",
+          "countryCode": "PAN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "57807",
+          "name": "Adalberto Carrasquilla",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "adam hlozek",
+      "worldCup": [
+        {
+          "name": "Adam Hložek",
+          "id": "29787",
+          "countryCode": "CZE"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "28239",
+          "name": "Adam Hložek",
+          "nation": "Czech Republic",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "66019",
+          "name": "Adam Hložek",
+          "nation": "Czech Republic",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "adem arous",
+      "worldCup": [
+        {
+          "name": "Adem Arous",
+          "id": "30592",
+          "countryCode": "TUN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "393977",
+          "name": "Adem Arous",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "adil boulbina",
+      "worldCup": [
+        {
+          "name": "Adil Boulbina",
+          "id": "29459",
+          "countryCode": "DZA"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "329163",
+          "name": "Adil Boulbina",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "adrien rabiot",
+      "worldCup": [
+        {
+          "name": "Adrien Rabiot",
+          "id": "8972",
+          "countryCode": "FRA"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "272",
+          "name": "Adrien Rabiot",
+          "nation": null,
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "3026",
+          "name": "Adrien Rabiot",
+          "nation": "France",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "agustin canobbio",
+      "worldCup": [
+        {
+          "name": "Agustín Canobbio",
+          "id": "9371",
+          "countryCode": "URY"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "51603",
+          "name": "Agustín Canobbio",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed fatouh",
+      "worldCup": [
+        {
+          "name": "Ahmed Fatouh",
+          "id": "29882",
+          "countryCode": "EGY"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "2649",
+          "name": "Ahmed Fatouh",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "aissa mandi",
+      "worldCup": [
+        {
+          "name": "Aïssa Mandi",
+          "id": "29466",
+          "countryCode": "DZA"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "1567",
+          "name": "Aïssa Mandi",
+          "nation": "Algeria",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alan franco",
+      "worldCup": [
+        {
+          "name": "Alan Franco",
+          "id": "8772",
+          "countryCode": "ECU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "16360",
+          "name": "Alan Franco",
+          "nation": "Ecuador",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alan minda",
+      "worldCup": [
+        {
+          "name": "Alan Minda",
+          "id": "29840",
+          "countryCode": "ECU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "280695",
+          "name": "Alan Minda",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alejandro grimaldo",
+      "worldCup": [
+        {
+          "name": "Alejandro Grimaldo",
+          "id": "30506",
+          "countryCode": "ESP"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "563",
+          "name": "Alejandro Grimaldo",
+          "nation": "Spain",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "aleksandar pavlovic",
+      "worldCup": [
+        {
+          "name": "Aleksandar Pavlović",
+          "id": "29950",
+          "countryCode": "DEU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "328033",
+          "name": "Aleksandar Pavlović",
+          "nation": "Germany",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alessandro schopf",
+      "worldCup": [
+        {
+          "name": "Alessandro Schöpf",
+          "id": "29540",
+          "countryCode": "AUT"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "11281",
+          "name": "Alessandro Schöpf",
+          "nation": "Austria",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "417",
+          "name": "Alessandro Schöpf",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander isak",
+      "worldCup": [
+        {
+          "name": "Alexander Isak",
+          "id": "30519",
+          "countryCode": "SWE"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "2864",
+          "name": "Alexander Isak",
+          "nation": "Sweden",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "8819",
+          "name": "Alexander Isak",
+          "nation": "Sweden",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander nubel",
+      "worldCup": [
+        {
+          "name": "Alexander Nübel",
+          "id": "29966",
+          "countryCode": "DEU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "399",
+          "name": "Alexander Nübel",
+          "nation": "Germany",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander prass",
+      "worldCup": [
+        {
+          "name": "Alexander Prass",
+          "id": "29538",
+          "countryCode": "AUT"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "39545",
+          "name": "Alexander Prass",
+          "nation": "Austria",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "7327",
+          "name": "Alexander Prass",
+          "nation": "Austria",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander schlager",
+      "worldCup": [
+        {
+          "name": "Alexander Schlager",
+          "id": "29550",
+          "countryCode": "AUT"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "7525",
+          "name": "Alexander Schlager",
+          "nation": "Austria",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "8768",
+          "name": "Alexander Schlager",
+          "nation": "Austria",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander sorloth",
+      "worldCup": [
+        {
+          "name": "Alexander Sørloth",
+          "id": "30233",
+          "countryCode": "NOR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "8492",
+          "name": "Alexander Sørloth",
+          "nation": "Norway",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex arce",
+      "worldCup": [
+        {
+          "name": "Alex Arce",
+          "id": "30286",
+          "countryCode": "PRY"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "95460",
+          "name": "Alex Arce",
+          "nation": "Paraguay",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex baena",
+      "worldCup": [
+        {
+          "name": "Alex Baena",
+          "id": "30507",
+          "countryCode": "ESP"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "41115",
+          "name": "Álex Baena",
+          "nation": "Spain",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexis mac allister",
+      "worldCup": [
+        {
+          "name": "Alexis Mac Allister",
+          "id": "8880",
+          "countryCode": "ARG"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "6716",
+          "name": "Alexis Mac Allister",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexis saelemaekers",
+      "worldCup": [
+        {
+          "name": "Alexis Saelemaekers",
+          "id": "29561",
+          "countryCode": "BEL"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "1417",
+          "name": "Alexis Saelemaekers",
+          "nation": "Belgium",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexis vega",
+      "worldCup": [
+        {
+          "name": "Alexis Vega",
+          "id": "8933",
+          "countryCode": "MEX"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "2889",
+          "name": "Alexis Vega",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ali abdi",
+      "worldCup": [
+        {
+          "name": "Ali Abdi",
+          "id": "9024",
+          "countryCode": "TUN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "49583",
+          "name": "Ali Abdi",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ali ahmed",
+      "worldCup": [
+        {
+          "name": "Ali Ahmed",
+          "id": "29663",
+          "countryCode": "CAN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "362145",
+          "name": "Ali Ahmed",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alisson",
+      "worldCup": [
+        {
+          "name": "Alisson",
+          "id": "308",
+          "countryCode": "BRA"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "280",
+          "name": "Alisson",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alistair johnston",
+      "worldCup": [
+        {
+          "name": "Alistair Johnston",
+          "id": "9217",
+          "countryCode": "CAN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "78547",
+          "name": "Alistair Johnston",
+          "nation": "Canada",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alphonso davies",
+      "worldCup": [
+        {
+          "name": "Alphonso Davies",
+          "id": "9207",
+          "countryCode": "CAN"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "509",
+          "name": "Alphonso Davies",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "altay bayindir",
+      "worldCup": [
+        {
+          "name": "Altay Bayındır",
+          "id": "30620",
+          "countryCode": "TUR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "30442",
+          "name": "Altay Bayındır",
+          "nation": "Turkey",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "50132",
+          "name": "Altay Bayındır",
+          "nation": "Türkiye",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alvaro montero",
+      "worldCup": [
+        {
+          "name": "Álvaro Montero",
+          "id": "29706",
+          "countryCode": "COL"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "2481",
+          "name": "Álvaro Montero",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "amad diallo",
+      "worldCup": [
+        {
+          "name": "Amad Diallo",
+          "id": "29713",
+          "countryCode": "CIV"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "157997",
+          "name": "Amad Diallo",
+          "nation": "Ivory Coast",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "amadou onana",
+      "worldCup": [
+        {
+          "name": "Amadou Onana",
+          "id": "9195",
+          "countryCode": "BEL"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "162714",
+          "name": "Amadou Onana",
+          "nation": "Belgium",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "48347",
+          "name": "Amadou Onana",
+          "nation": "Belgium",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "amar dedic",
+      "worldCup": [
+        {
+          "name": "Amar Dedić",
+          "id": "29593",
+          "countryCode": "BIH"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "7318",
+          "name": "Amar Dedić",
+          "nation": "Bosnia & Herzegovina",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "amir hadziahmetovic",
+      "worldCup": [
+        {
+          "name": "Amir Hadžiahmetović",
+          "id": "29587",
+          "countryCode": "BIH"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "50006",
+          "name": "Amir Hadžiahmetović",
+          "nation": "Bosnia & Herzegovina",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "anass salah eddine",
+      "worldCup": [
+        {
+          "name": "Anass Salah-Eddine",
+          "id": "30169",
+          "countryCode": "MAR"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "162451",
+          "name": "Anass Salah-Eddine",
+          "nation": "Morocco",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "andrej kramaric",
+      "worldCup": [
+        {
+          "name": "Andrej Kramarić",
+          "id": "232",
+          "countryCode": "HRV"
+        }
+      ],
+      "international": [
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "5460",
+          "name": "Andrej Kramarić",
+          "nation": "Croatia",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "726",
+          "name": "Andrej Kramarić",
+          "nation": "Croatia",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "andres cubas",
+      "worldCup": [
+        {
+          "name": "Andrés Cubas",
+          "id": "30296",
+          "countryCode": "PRY"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "6236",
+          "name": "Andrés Cubas",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "angelo preciado",
+      "worldCup": [
+        {
+          "name": "Ángelo Preciado",
+          "id": "8763",
+          "countryCode": "ECU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "2583",
+          "name": "Ángelo Preciado",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "angelo stiller",
+      "worldCup": [
+        {
+          "name": "Angelo Stiller",
+          "id": "29952",
+          "countryCode": "DEU"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "137210",
+          "name": "Angelo Stiller",
+          "nation": "Germany",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "angus gunn",
+      "worldCup": [
+        {
+          "name": "Angus Gunn",
+          "id": "30411",
+          "countryCode": "SCO"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "18933",
+          "name": "Angus Gunn",
+          "nation": null,
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "22379",
+          "name": "Angus Gunn",
+          "nation": "Scotland",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "anis hadj moussa",
+      "worldCup": [
+        {
+          "name": "Anis Hadj Moussa",
+          "id": "29455",
+          "countryCode": "DZA"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "326067",
+          "name": "Anis Hadj Moussa",
+          "nation": null,
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ante budimir",
+      "worldCup": [
+        {
+          "name": "Ante Budimir",
+          "id": "9180",
+          "countryCode": "HRV"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "46746",
+          "name": "Ante Budimir",
+          "nation": "Croatia",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "8654",
+          "name": "Ante Budimir",
+          "nation": "Croatia",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "anthony elanga",
+      "worldCup": [
+        {
+          "name": "Anthony Elanga",
+          "id": "30520",
+          "countryCode": "SWE"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "153430",
+          "name": "Anthony Elanga",
+          "nation": "Sweden",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    },
+    {
+      "normalizedName": "anthony gordon",
+      "worldCup": [
+        {
+          "name": "Anthony Gordon",
+          "id": "29892",
+          "countryCode": "ENG"
+        }
+      ],
+      "international": [
+        {
+          "competition": "nations-league",
+          "source": "api-football",
+          "id": "138787",
+          "name": "Anthony Gordon",
+          "nation": "England",
+          "bdlPlayerId": null
+        },
+        {
+          "competition": "euros",
+          "source": "statsbomb",
+          "id": "28104",
+          "name": "Anthony Gordon",
+          "nation": "England",
+          "bdlPlayerId": null
+        }
+      ],
+      "status": "confident",
+      "reasons": []
+    }
+  ],
+  "unmatchedSample": [
+    {
+      "normalizedName": "aaron tshibola",
+      "worldCup": [
+        {
+          "name": "Aaron Tshibola",
+          "id": "29825",
+          "countryCode": "COD"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abbosbek fayzullaev",
+      "worldCup": [
+        {
+          "name": "Abbosbek Fayzullaev",
+          "id": "30677",
+          "countryCode": "UZB"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdallah al fakhouri",
+      "worldCup": [
+        {
+          "name": "Abdallah Al-Fakhouri",
+          "id": "30122",
+          "countryCode": "JOR"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdallah nasib",
+      "worldCup": [
+        {
+          "name": "Abdallah Nasib",
+          "id": "30114",
+          "countryCode": "JOR"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdelaziz hatem",
+      "worldCup": [
+        {
+          "name": "Abdelaziz Hatem",
+          "id": "8790",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdelmouhib chamakh",
+      "worldCup": [
+        {
+          "name": "Abdelmouhib Chamakh",
+          "id": "30595",
+          "countryCode": "TUN"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdukodir khusanov",
+      "worldCup": [
+        {
+          "name": "Abdukodir Khusanov",
+          "id": "30689",
+          "countryCode": "UZB"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdulelah al amri",
+      "worldCup": [
+        {
+          "name": "Abdulelah Al-Amri",
+          "id": "8953",
+          "countryCode": "SAU"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdul fatawu issahaku",
+      "worldCup": [
+        {
+          "name": "Abdul Fatawu Issahaku",
+          "id": "9397",
+          "countryCode": "GHA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdulla abdullaev",
+      "worldCup": [
+        {
+          "name": "Abdulla Abdullaev",
+          "id": "30685",
+          "countryCode": "UZB"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdullah al hamdan",
+      "worldCup": [
+        {
+          "name": "Abdullah Al-Hamdan",
+          "id": "30362",
+          "countryCode": "SAU"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdullah al khaibari",
+      "worldCup": [
+        {
+          "name": "Abdullah Al-Khaibari",
+          "id": "6267",
+          "countryCode": "SAU"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abdul mumin",
+      "worldCup": [
+        {
+          "name": "Abdul Mumin",
+          "id": "29988",
+          "countryCode": "GHA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "abduvokhid nematov",
+      "worldCup": [
+        {
+          "name": "Abduvokhid Nematov",
+          "id": "30698",
+          "countryCode": "UZB"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "achref abada",
+      "worldCup": [
+        {
+          "name": "Achref Abada",
+          "id": "29471",
+          "countryCode": "DZA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmadou bamba dieng",
+      "worldCup": [
+        {
+          "name": "Ahmadou Bamba Dieng",
+          "id": "8747",
+          "countryCode": "SEN"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed alaaeldin",
+      "worldCup": [
+        {
+          "name": "Ahmed Alaaeldin",
+          "id": "8789",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed al ganehi",
+      "worldCup": [
+        {
+          "name": "Ahmed Al-Ganehi",
+          "id": "30347",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed al kassar",
+      "worldCup": [
+        {
+          "name": "Ahmed Al-Kassar",
+          "id": "30387",
+          "countryCode": "SAU"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed basil",
+      "worldCup": [
+        {
+          "name": "Ahmed Basil",
+          "id": "30070",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed fathi",
+      "worldCup": [
+        {
+          "name": "Ahmed Fathi",
+          "id": "30349",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed nadhir benbouali",
+      "worldCup": [
+        {
+          "name": "Ahmed Nadhir Benbouali",
+          "id": "29453",
+          "countryCode": "DZA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed qasem",
+      "worldCup": [
+        {
+          "name": "Ahmed Qasem",
+          "id": "30058",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed reda tagnaouti",
+      "worldCup": [
+        {
+          "name": "Ahmed Reda Tagnaouti",
+          "id": "6142",
+          "countryCode": "MAR"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ahmed yahya",
+      "worldCup": [
+        {
+          "name": "Ahmed Yahya",
+          "id": "30066",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "aiden oneill",
+      "worldCup": [
+        {
+          "name": "Aiden O'Neill",
+          "id": "29513",
+          "countryCode": "AUS"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "aimar sher",
+      "worldCup": [
+        {
+          "name": "Aimar Sher",
+          "id": "30056",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ajdin hrustic",
+      "worldCup": [
+        {
+          "name": "Ajdin Hrustić",
+          "id": "9002",
+          "countryCode": "AUS"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "akam hashem",
+      "worldCup": [
+        {
+          "name": "Akam Hashem",
+          "id": "30063",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "akmal mozgovoy",
+      "worldCup": [
+        {
+          "name": "Akmal Mozgovoy",
+          "id": "30682",
+          "countryCode": "UZB"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "akram afif",
+      "worldCup": [
+        {
+          "name": "Akram Afif",
+          "id": "8778",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alaa al hejji",
+      "worldCup": [
+        {
+          "name": "Ala'a Al-Hejji",
+          "id": "30376",
+          "countryCode": "SAU"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alberto quintero",
+      "worldCup": [
+        {
+          "name": "Alberto Quintero",
+          "id": "30270",
+          "countryCode": "PAN"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alejandro romero",
+      "worldCup": [
+        {
+          "name": "Alejandro Romero",
+          "id": "30297",
+          "countryCode": "PRY"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alessandro circati",
+      "worldCup": [
+        {
+          "name": "Alessandro Circati",
+          "id": "29516",
+          "countryCode": "AUS"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander bernhardsson",
+      "worldCup": [
+        {
+          "name": "Alexander Bernhardsson",
+          "id": "30523",
+          "countryCode": "SWE"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexander freeman",
+      "worldCup": [
+        {
+          "name": "Alexander Freeman",
+          "id": "30668",
+          "countryCode": "USA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexandre pierre",
+      "worldCup": [
+        {
+          "name": "Alexandre Pierre",
+          "id": "30018",
+          "countryCode": "HTI"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexandro maidana",
+      "worldCup": [
+        {
+          "name": "Alexandro Maidana",
+          "id": "30305",
+          "countryCode": "PRY"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alexandr sojka",
+      "worldCup": [
+        {
+          "name": "Alexandr Sojka",
+          "id": "29799",
+          "countryCode": "CZE"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex paulsen",
+      "worldCup": [
+        {
+          "name": "Alex Paulsen",
+          "id": "30229",
+          "countryCode": "NZL"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex rufer",
+      "worldCup": [
+        {
+          "name": "Alex Rufer",
+          "id": "30219",
+          "countryCode": "NZL"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex sandro",
+      "worldCup": [
+        {
+          "name": "Alex Sandro",
+          "id": "9223",
+          "countryCode": "BRA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alex zendejas",
+      "worldCup": [
+        {
+          "name": "Alex Zendejas",
+          "id": "30659",
+          "countryCode": "USA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alfie jones",
+      "worldCup": [
+        {
+          "name": "Alfie Jones",
+          "id": "29677",
+          "countryCode": "CAN"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alhashmi mohialdin",
+      "worldCup": [
+        {
+          "name": "Alhashmi Mohialdin",
+          "id": "30358",
+          "countryCode": "QAT"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ali al azaizah",
+      "worldCup": [
+        {
+          "name": "Ali Al Azaizah",
+          "id": "30103",
+          "countryCode": "JOR"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ali al hamadi",
+      "worldCup": [
+        {
+          "name": "Ali Al-Hamadi",
+          "id": "30046",
+          "countryCode": "IRQ"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "ali alipour",
+      "worldCup": [
+        {
+          "name": "Ali Alipour",
+          "id": "30022",
+          "countryCode": "IRN"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    },
+    {
+      "normalizedName": "alidu seidu",
+      "worldCup": [
+        {
+          "name": "Alidu Seidu",
+          "id": "9385",
+          "countryCode": "GHA"
+        }
+      ],
+      "international": [],
+      "status": "unmatched",
+      "reasons": []
+    }
+  ]
+}

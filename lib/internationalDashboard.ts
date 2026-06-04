@@ -8,6 +8,8 @@
  */
 
 import { supabaseAdmin } from './supabaseAdmin';
+import { normalizeWorldCupPlayerName } from './worldCupPlayerIndex';
+import { getWorldCupNameAliases, getWorldCupPlayerOverride } from './worldCupPlayerAliases';
 
 export type InternationalCompetition = 'euros' | 'nations-league';
 
@@ -403,11 +405,7 @@ export async function searchInternationalPlayers(opts: {
   }>
 > {
   const sb = supabaseAdmin;
-  const norm = opts.query
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+  const norm = normalizeWorldCupPlayerName(opts.query);
   if (!norm) return [];
 
   const sources =
@@ -458,31 +456,51 @@ function shortNameFromFull(full: string): string {
  * dashboard so the main chart shows every game we have for that player.
  */
 export async function loadInternationalStatsByPlayerName(
-  playerName: string
+  playerName: string,
+  opts: { bdlPlayerId?: string | null } = {}
 ): Promise<{
   playerMatchStats: Array<Record<string, unknown>>;
   matches: Array<Record<string, unknown>>;
 }> {
   const sb = supabaseAdmin;
-  const norm = playerName
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  const norm = normalizeWorldCupPlayerName(playerName);
   if (!norm) return { playerMatchStats: [], matches: [] };
+
+  // Match the exact normalized name plus any curated same-person aliases
+  // (e.g. "erling haaland" also pulls "erling braut haaland").
+  const matchNames = [norm, ...getWorldCupNameAliases(norm)];
 
   const { data: matchedPlayers } = await sb
     .from('international_players')
     .select('source, source_player_id, full_name')
-    .eq('normalized_name', norm)
+    .in('normalized_name', matchNames)
     .in('source', ['statsbomb', 'api-football']);
 
-  const players = (matchedPlayers ?? []) as Array<{
+  let players = (matchedPlayers ?? []) as Array<{
     source: string;
     source_player_id: string;
     full_name: string;
   }>;
+
+  // Collision overrides: when this name maps to multiple different people,
+  // drop the international identities that belong to someone else and pull in
+  // any explicitly pinned ones for the selected World Cup player.
+  const override = getWorldCupPlayerOverride(opts.bdlPlayerId);
+  if (override?.excludeIntlIds?.length) {
+    const excluded = new Set(override.excludeIntlIds.map((r) => `${r.source}:${r.id}`));
+    players = players.filter((p) => !excluded.has(`${p.source}:${p.source_player_id}`));
+  }
+  if (override?.includeIntlIds?.length) {
+    const present = new Set(players.map((p) => `${p.source}:${p.source_player_id}`));
+    for (const ref of override.includeIntlIds) {
+      const key = `${ref.source}:${ref.id}`;
+      if (!present.has(key)) {
+        players.push({ source: ref.source, source_player_id: ref.id, full_name: playerName });
+        present.add(key);
+      }
+    }
+  }
+
   if (!players.length) return { playerMatchStats: [], matches: [] };
 
   // Group by source for batched queries.

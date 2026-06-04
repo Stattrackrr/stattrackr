@@ -6,11 +6,31 @@ import {
   loadInternationalStatsByPlayerName,
   loadInternationalTeamForm,
 } from '@/lib/internationalDashboard';
+import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
+
+// Persist the assembled World Cup dashboard payload in Supabase so a player's
+// stats are only fetched from BDL once and then served from cache on
+// subsequent loads (links every searched name to its resolved stats).
+// Stored permanently (no expiry).
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v1';
+
+function buildDashboardCacheKey(opts: {
+  competition: CompetitionParam;
+  season: number;
+  teamId: string | null;
+  playerId: string | null;
+  playerName: string | null;
+}): string {
+  const teamPart = opts.teamId && /^\d+$/.test(opts.teamId) ? opts.teamId : 'none';
+  const playerPart = opts.playerId && /^\d+$/.test(opts.playerId) ? opts.playerId : 'none';
+  const namePart = (opts.playerName || '').toLowerCase().replace(/\s+/g, ' ').trim() || 'none';
+  return `${WC_DASHBOARD_CACHE_PREFIX}:${opts.competition}:${opts.season}:${teamPart}:${playerPart}:${namePart}`;
+}
 
 function parseCompetition(value: string | null): CompetitionParam {
   const v = (value || '').toLowerCase();
@@ -844,7 +864,7 @@ export async function GET(request: NextRequest) {
       const requestedPlayerId = request.nextUrl.searchParams.get('playerId') || '';
       if (playerName) {
         const [intl, bdl] = await Promise.all([
-          loadInternationalStatsByPlayerName(playerName),
+          loadInternationalStatsByPlayerName(playerName, { bdlPlayerId: requestedPlayerId }),
           apiKey ? fetchBdlStatsForPlayerName(playerName, apiKey) : Promise.resolve({ playerMatchStats: [], matches: [] }),
         ]);
 
@@ -920,10 +940,24 @@ export async function GET(request: NextRequest) {
   const season = parseSeason(request.nextUrl.searchParams.get('season'));
   const requestedTeamId = request.nextUrl.searchParams.get('teamId');
   const requestedPlayerId = request.nextUrl.searchParams.get('playerId');
+  const requestedPlayerNameForKey = request.nextUrl.searchParams.get('playerName');
   const seasonsParam = new URLSearchParams();
   appendArrayParam(seasonsParam, 'seasons[]', [season]);
 
+  const dashboardCacheKey = buildDashboardCacheKey({
+    competition,
+    season,
+    teamId: requestedTeamId,
+    playerId: requestedPlayerId,
+    playerName: requestedPlayerNameForKey,
+  });
+
   try {
+    const cachedDashboard = await getWorldCupCache<Record<string, unknown>>(dashboardCacheKey);
+    if (cachedDashboard) {
+      return NextResponse.json(cachedDashboard, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
     const [teams, stadiums, standings, matches, futures] = await Promise.all([
       bdlFetchAll<BdlTeam>('/teams', seasonsParam, apiKey),
       bdlFetchAll('/stadiums', seasonsParam, apiKey),
@@ -1047,7 +1081,7 @@ export async function GET(request: NextRequest) {
     if (requestedPlayerName) {
       try {
         const [intl, bdlByName] = await Promise.all([
-          loadInternationalStatsByPlayerName(requestedPlayerName),
+          loadInternationalStatsByPlayerName(requestedPlayerName, { bdlPlayerId: requestedPlayerId }),
           // If the requested player wasn't already a BDL ID (e.g. user came
           // here from intl search in `all` mode), additionally look up BDL by
           // name to surface their World Cup games too.
@@ -1103,42 +1137,45 @@ export async function GET(request: NextRequest) {
         )
       : matches;
 
-    return NextResponse.json(
-      {
-        season,
-        teams,
-        stadiums,
-        standings,
-        matches: summarizeMatches(matches),
-        playerMatches: mergedPlayerMatches,
-        selectedTeam: resolvedSelectedTeam,
-        featureMatch: resolvedFeatureMatch
-          ? {
-              ...summarizeMatches([resolvedFeatureMatch])[0],
-              raw: resolvedFeatureMatch,
-            }
-          : null,
-        selectedTeamMatches: summarizeMatches(resolvedSelectedTeamMatches),
-        rosters,
-        teamMatchStats,
-        playerMatchStats: mergedPlayerMatchStats,
-        lineups,
-        events,
-        shots,
-        playerShots,
-        momentum,
-        bestPlayers,
-        avgPositions,
-        teamForm,
-        odds,
-        futures,
+    const responsePayload = {
+      season,
+      teams,
+      stadiums,
+      standings,
+      matches: summarizeMatches(matches),
+      playerMatches: mergedPlayerMatches,
+      selectedTeam: resolvedSelectedTeam,
+      featureMatch: resolvedFeatureMatch
+        ? {
+            ...summarizeMatches([resolvedFeatureMatch])[0],
+            raw: resolvedFeatureMatch,
+          }
+        : null,
+      selectedTeamMatches: summarizeMatches(resolvedSelectedTeamMatches),
+      rosters,
+      teamMatchStats,
+      playerMatchStats: mergedPlayerMatchStats,
+      lineups,
+      events,
+      shots,
+      playerShots,
+      momentum,
+      bestPlayers,
+      avgPositions,
+      teamForm,
+      odds,
+      futures,
+    };
+
+    // Cache the assembled payload permanently so this player's stats are reused
+    // next time without re-querying BDL.
+    await setWorldCupCache(dashboardCacheKey, responsePayload);
+
+    return NextResponse.json(responsePayload, {
+      headers: {
+        'Cache-Control': 'no-store',
       },
-      {
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      }
-    );
+    });
   } catch (error) {
     const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
     return NextResponse.json(
