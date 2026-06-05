@@ -5,6 +5,7 @@ import {
   loadInternationalDvp,
   loadInternationalStatsByPlayerName,
   loadInternationalTeamForm,
+  loadInternationalTeamStatsByCountry,
 } from '@/lib/internationalDashboard';
 import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
 
@@ -17,7 +18,7 @@ type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 // stats are only fetched from BDL once and then served from cache on
 // subsequent loads (links every searched name to its resolved stats).
 // Stored permanently (no expiry).
-const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v1';
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v4';
 
 function buildDashboardCacheKey(opts: {
   competition: CompetitionParam;
@@ -93,6 +94,73 @@ async function fetchBdlStatsForPlayerName(
   } catch (err) {
     console.warn('[world-cup/dashboard] BDL-by-name fetch failed:', err);
     return { playerMatchStats: [], matches: [] };
+  }
+}
+
+/**
+ * Team-mode (Game Props): fetch a team's completed World Cup matches across all
+ * three editions (2018 / 2022 / 2026) and their per-match team stats. The main
+ * dashboard path only loads season 2026 (no completed games yet), so previous
+ * World Cup bars never appear without this. Returns BDL-shaped rows tagged as
+ * World Cup so the chart's competition tag resolves to "WC".
+ */
+async function fetchBdlTeamWorldCupHistory(
+  teamId: number,
+  apiKey: string
+): Promise<{ teamMatchStats: any[]; matches: any[] }> {
+  if (!Number.isFinite(teamId) || !apiKey) return { teamMatchStats: [], matches: [] };
+  try {
+    const seasonsParam = new URLSearchParams();
+    appendArrayParam(seasonsParam, 'seasons[]', [2018, 2022, 2026]);
+    const allMatches = await bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, {
+      cursor: true,
+      maxPages: 6,
+    });
+    const teamMatches = allMatches.filter(
+      (match) =>
+        (match.home_team?.id === teamId || match.away_team?.id === teamId) &&
+        match.status === 'completed'
+    );
+    if (!teamMatches.length) return { teamMatchStats: [], matches: [] };
+
+    const matchIds = Array.from(
+      new Set(teamMatches.map((match) => match.id).filter((id): id is number => Number.isFinite(id)))
+    );
+
+    // Map each match to the selected team's goals (from the scoreline) so the
+    // "goals" team stat is always populated for World Cup bars.
+    const goalsByMatch = new Map<number, number | null>();
+    for (const match of teamMatches) {
+      const isHome = match.home_team?.id === teamId;
+      const score = isHome ? match.home_score : match.away_score;
+      goalsByMatch.set(match.id, score ?? null);
+    }
+
+    const teamMatchStats: Array<Record<string, any>> = [];
+    for (let i = 0; i < matchIds.length; i += 50) {
+      const chunk = matchIds.slice(i, i + 50);
+      const params = new URLSearchParams();
+      chunk.forEach((id) => params.append('match_ids[]', String(id)));
+      const rows = await bdlFetchAll<Record<string, any>>('/team_match_stats', params, apiKey, {
+        cursor: true,
+        maxPages: 4,
+      });
+      for (const row of rows) {
+        if (Number(row?.team_id) !== teamId) continue;
+        const scoreGoals = goalsByMatch.get(Number(row?.match_id));
+        teamMatchStats.push({
+          ...row,
+          goals: row?.goals ?? (scoreGoals != null ? scoreGoals : undefined),
+          source: 'bdl',
+          tournament_slug: 'worldcup',
+        });
+      }
+    }
+
+    return { teamMatchStats, matches: summarizeMatches(teamMatches) };
+  } catch (err) {
+    console.warn('[world-cup/dashboard] BDL team history fetch failed:', err);
+    return { teamMatchStats: [], matches: [] };
   }
 }
 
@@ -944,6 +1012,23 @@ export async function GET(request: NextRequest) {
   const seasonsParam = new URLSearchParams();
   appendArrayParam(seasonsParam, 'seasons[]', [season]);
 
+  // Lightweight teams-only fetch so the Game Props team search can list real
+  // BDL national teams (with numeric ids) before any selection is made.
+  if (request.nextUrl.searchParams.get('teamsOnly') === '1') {
+    const teamsCacheKey = `${WC_DASHBOARD_CACHE_PREFIX}:teams:${season}`;
+    const cachedTeams = await getWorldCupCache<Record<string, unknown>>(teamsCacheKey);
+    if (cachedTeams) {
+      return NextResponse.json(cachedTeams, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    const [teamsOnly, standingsOnly] = await Promise.all([
+      bdlFetchAll<BdlTeam>('/teams', seasonsParam, apiKey),
+      bdlFetchAll('/group_standings', seasonsParam, apiKey),
+    ]);
+    const teamsPayload = { season, teams: teamsOnly, standings: standingsOnly };
+    await setWorldCupCache(teamsCacheKey, teamsPayload);
+    return NextResponse.json(teamsPayload, { headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const dashboardCacheKey = buildDashboardCacheKey({
     competition,
     season,
@@ -1137,6 +1222,54 @@ export async function GET(request: NextRequest) {
         )
       : matches;
 
+    // Team-mode (Game Props): BDL only has World Cup matches, and the 2026
+    // edition has no completed games yet — so `teamMatchStats` is empty and the
+    // chart renders nothing. Merge the selected national team's per-match team
+    // stats from every international competition we ingest (Euros / Nations
+    // League / Copa América / AFCON) so the chart, supporting stats and team
+    // form panels populate, exactly like the Soccer dashboard's recent matches.
+    let mergedTeamMatchStats: Array<Record<string, any>> = teamMatchStats as Array<Record<string, any>>;
+    if (!requestedPlayerId && resolvedSelectedTeam?.id != null) {
+      try {
+        const [intlTeam, bdlHistory] = await Promise.all([
+          loadInternationalTeamStatsByCountry({
+            countryCode: resolvedSelectedTeam.country_code ?? null,
+            teamName: resolvedSelectedTeam.name ?? null,
+            bdlTeamId: String(resolvedSelectedTeam.id),
+          }),
+          // Past World Cup editions (2018/2022) for the "WC" bars.
+          fetchBdlTeamWorldCupHistory(resolvedSelectedTeam.id, apiKey),
+        ]);
+
+        const knownMatchIds = new Set(mergedPlayerMatches.map((m) => String(m.id)));
+        const knownStatKeys = new Set(
+          mergedTeamMatchStats.map((r) => `${r.match_id ?? ''}|${r.team_id ?? ''}`)
+        );
+        const addStats = (rows: Array<Record<string, any>>) => {
+          for (const row of rows) {
+            const key = `${row.match_id ?? ''}|${row.team_id ?? ''}`;
+            if (knownStatKeys.has(key)) continue;
+            mergedTeamMatchStats.push(row);
+            knownStatKeys.add(key);
+          }
+        };
+        const addMatches = (rows: Array<Record<string, any>>) => {
+          for (const m of rows) {
+            if (knownMatchIds.has(String(m.id))) continue;
+            mergedPlayerMatches.push(m);
+            knownMatchIds.add(String(m.id));
+          }
+        };
+
+        addStats(bdlHistory.teamMatchStats);
+        addMatches(bdlHistory.matches);
+        addStats(intlTeam.teamMatchStats);
+        addMatches(intlTeam.matches);
+      } catch (teamMergeError) {
+        console.warn('[world-cup/dashboard] team cross-source merge failed:', teamMergeError);
+      }
+    }
+
     const responsePayload = {
       season,
       teams,
@@ -1153,7 +1286,7 @@ export async function GET(request: NextRequest) {
         : null,
       selectedTeamMatches: summarizeMatches(resolvedSelectedTeamMatches),
       rosters,
-      teamMatchStats,
+      teamMatchStats: mergedTeamMatchStats,
       playerMatchStats: mergedPlayerMatchStats,
       lineups,
       events,

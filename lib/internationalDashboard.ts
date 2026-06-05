@@ -10,6 +10,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { normalizeWorldCupPlayerName } from './worldCupPlayerIndex';
 import { getWorldCupNameAliases, getWorldCupPlayerOverride } from './worldCupPlayerAliases';
+import { resolveWorldCupFlagCode } from './worldCupFlags';
 
 export type InternationalCompetition = 'euros' | 'nations-league';
 
@@ -867,4 +868,199 @@ export async function loadInternationalTeamForm(opts: {
   }
 
   return { teamMatches, opponentMatches, teamMatchStats };
+}
+
+const INTERNATIONAL_TEAM_SOURCES = ['statsbomb', 'api-football'];
+
+/**
+ * Aggregate a national team's per-match team stats across EVERY international
+ * competition we ingest (Euros via StatsBomb + Nations League / Copa América /
+ * AFCON via API-Football). The result is shaped to drop straight into the World
+ * Cup dashboard's team-mode chart: each stat row's `team_id` is rewritten to the
+ * BDL team id (so the chart's `team_id === selectedTeamId` filter keeps it) and
+ * every match is returned in the same summarized shape the chart's lookup uses.
+ *
+ * Cross-source team identity is resolved through `resolveWorldCupFlagCode`, which
+ * canonicalizes either a country code or a country name to one FIFA slug, so we
+ * don't depend on the (inconsistent) `country_code` column being populated.
+ */
+export async function loadInternationalTeamStatsByCountry(opts: {
+  countryCode?: string | null;
+  teamName?: string | null;
+  bdlTeamId?: string | null;
+}): Promise<{
+  teamMatchStats: Array<Record<string, unknown>>;
+  matches: Array<Record<string, unknown>>;
+}> {
+  const sb = supabaseAdmin;
+  const targetSlug =
+    resolveWorldCupFlagCode(opts.countryCode) || resolveWorldCupFlagCode(opts.teamName);
+  if (!targetSlug) return { teamMatchStats: [], matches: [] };
+
+  const teamIdOut =
+    opts.bdlTeamId && /^\d+$/.test(String(opts.bdlTeamId)) ? String(opts.bdlTeamId) : null;
+  if (!teamIdOut) return { teamMatchStats: [], matches: [] };
+
+  // 1. Resolve this country's source_team_id in each international source, and
+  //    keep team metadata for every team so we can label opponents.
+  const { data: teamRows } = await sb
+    .from('international_teams')
+    .select('source, source_team_id, team_name, country_code')
+    .in('source', INTERNATIONAL_TEAM_SOURCES);
+
+  const teamMetaById = new Map<string, { country_code: string | null; name: string }>();
+  const ourTeamIdsBySource = new Map<string, Set<string>>();
+  for (const t of (teamRows ?? []) as IntlTeamRow[]) {
+    teamMetaById.set(`${t.source}:${t.source_team_id}`, {
+      country_code: t.country_code,
+      name: t.team_name,
+    });
+    const slug = resolveWorldCupFlagCode(t.country_code) || resolveWorldCupFlagCode(t.team_name);
+    if (slug && slug === targetSlug) {
+      const set = ourTeamIdsBySource.get(t.source) ?? new Set<string>();
+      set.add(String(t.source_team_id));
+      ourTeamIdsBySource.set(t.source, set);
+    }
+  }
+  if (!ourTeamIdsBySource.size) return { teamMatchStats: [], matches: [] };
+
+  const teamMatchStats: Array<Record<string, unknown>> = [];
+  const matches: Array<Record<string, unknown>> = [];
+
+  for (const [source, ids] of ourTeamIdsBySource) {
+    const idList = Array.from(ids);
+    if (!idList.length) continue;
+
+    const { data: matchRows } = await sb
+      .from('international_matches')
+      .select(
+        'source_match_id, match_date, kickoff_unix, stage, season_year, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status, tournament_slug'
+      )
+      .eq('source', source)
+      .or(
+        `home_team_source_id.in.(${idList.join(',')}),away_team_source_id.in.(${idList.join(',')})`
+      );
+
+    const mRows = (matchRows ?? []) as IntlMatchRow[];
+    if (!mRows.length) continue;
+
+    const matchIds = mRows.map((m) => m.source_match_id);
+
+    // Per-match aggregate of OUR team's player stats. We track which stats had
+    // at least one non-null contribution so absent metrics can be emitted as
+    // `null` (vs a misleading 0) — the dashboard uses that to only show stats
+    // that every competition actually provides.
+    type TeamStatAgg = { sums: Record<string, number>; present: Set<string>; is_home: boolean };
+    const AGG_KEYS = [
+      'goals',
+      'assists',
+      'shots_total',
+      'shots_on_target',
+      'passes_total',
+      'passes_accurate',
+      'expected_goals',
+      'yellow_cards',
+      'red_cards',
+      'fouls',
+      'was_fouled',
+      'tackles',
+      'interceptions',
+    ] as const;
+    const agg = new Map<string, TeamStatAgg>();
+    // Supabase caps rows; chunk match-id lookups to stay safe.
+    const chunkSize = 200;
+    for (let i = 0; i < matchIds.length; i += chunkSize) {
+      const chunk = matchIds.slice(i, i + chunkSize);
+      const { data: statRows } = await sb
+        .from('international_player_match_stats')
+        .select(
+          'source_match_id, source_team_id, is_home, goals, assists, shots_total, shots_on_target, passes_total, passes_accurate, expected_goals, yellow_cards, red_cards, fouls, was_fouled, tackles, interceptions'
+        )
+        .eq('source', source)
+        .in('source_match_id', chunk);
+      for (const r of (statRows ?? []) as Array<Record<string, unknown>>) {
+        if (!ids.has(String(r.source_team_id))) continue;
+        let a = agg.get(String(r.source_match_id));
+        if (!a) {
+          a = { sums: {}, present: new Set<string>(), is_home: r.is_home === true };
+          agg.set(String(r.source_match_id), a);
+        }
+        for (const key of AGG_KEYS) {
+          const value = r[key];
+          if (value == null) continue;
+          const num = typeof value === 'number' ? value : Number.parseFloat(String(value));
+          if (!Number.isFinite(num)) continue;
+          a.sums[key] = (a.sums[key] ?? 0) + num;
+          a.present.add(key);
+        }
+        if (r.is_home === true) a.is_home = true;
+      }
+    }
+
+    for (const m of mRows) {
+      const prefixedId = `intl-${source}-${m.source_match_id}`;
+      const homeMeta = teamMetaById.get(`${source}:${m.home_team_source_id}`);
+      const awayMeta = teamMetaById.get(`${source}:${m.away_team_source_id}`);
+      const home = {
+        id: m.home_team_source_id,
+        name: m.home_team_name,
+        country_code: homeMeta?.country_code ?? null,
+      };
+      const away = {
+        id: m.away_team_source_id,
+        name: m.away_team_name,
+        country_code: awayMeta?.country_code ?? null,
+      };
+      matches.push({
+        id: prefixedId,
+        datetime: m.match_date
+          ? new Date(`${m.match_date}T${secondsToTimeOfDay(m.kickoff_unix)}`).toISOString()
+          : null,
+        status: m.status || 'completed',
+        season: { year: m.season_year },
+        stage: { name: m.stage ?? null },
+        home_team: home,
+        away_team: away,
+        homeTeam: home,
+        awayTeam: away,
+        homeLabel: home.name,
+        awayLabel: away.name,
+        homeScore: m.home_score,
+        awayScore: m.away_score,
+        home_score: m.home_score,
+        away_score: m.away_score,
+        tournament_slug: m.tournament_slug,
+        source,
+      });
+
+      const a = agg.get(String(m.source_match_id));
+      if (!a) continue;
+      const ourIsHome = ids.has(String(m.home_team_source_id));
+      // Goals are most reliable straight from the scoreline.
+      const goalsFromScore = ourIsHome ? m.home_score : m.away_score;
+      const stat = (key: string): number | null => (a.present.has(key) ? a.sums[key] ?? 0 : null);
+      teamMatchStats.push({
+        match_id: prefixedId,
+        team_id: teamIdOut,
+        is_home: ourIsHome,
+        source,
+        tournament_slug: m.tournament_slug,
+        goals: goalsFromScore != null ? goalsFromScore : stat('goals'),
+        assists: stat('assists'),
+        shots_total: stat('shots_total'),
+        shots_on_target: stat('shots_on_target'),
+        passes_total: stat('passes_total'),
+        passes_accurate: stat('passes_accurate'),
+        expected_goals: stat('expected_goals'),
+        yellow_cards: stat('yellow_cards'),
+        red_cards: stat('red_cards'),
+        fouls: stat('fouls'),
+        was_fouled: stat('was_fouled'),
+        tackles: stat('tackles'),
+        interceptions: stat('interceptions'),
+      });
+    }
+  }
+
+  return { teamMatchStats, matches };
 }

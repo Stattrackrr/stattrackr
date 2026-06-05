@@ -14,6 +14,7 @@ import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdo
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabaseClient';
+import { getWorldCupFlagUrl, resolveWorldCupFlagCode, FIFA_NAME_TO_CODE } from '@/lib/worldCupFlags';
 
 const DASH_CARD_GLOW =
   'border border-gray-200 dark:border-[#463e6b] bg-white dark:bg-[#0a1929] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_0_20px_rgba(124,58,237,0.1)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.22),0_0_36px_rgba(124,58,237,0.22)]';
@@ -40,6 +41,25 @@ const COMMON_INTERNATIONAL_UNSUPPORTED = new Set<string>([
   'free_kicks',
   'ball_possession',
   'corner_kicks',
+]);
+// Team-mode (Game Props) candidate stats. These are aggregated from per-player
+// match rows across BDL + the international sources. This is only the candidate
+// pool — the chart further trims it at runtime to the stats that EVERY shown
+// competition actually provides (see getSymmetricTeamStatIds), so e.g. xG (only
+// StatsBomb has it) drops out automatically when API-Football comps are present.
+const WORLD_CUP_TEAM_SUPPORTED_STAT_IDS = new Set<string>([
+  'goals',
+  'assists',
+  'total_shots',
+  'shots_on_target',
+  'accurate_passes',
+  'passes',
+  'fouls_committed',
+  'fouls_suffered',
+  'yellow_cards',
+  'red_cards',
+  'tackles',
+  'expected_goals_xg',
 ]);
 const UNSUPPORTED_STATS_BY_COMPETITION: Record<Competition, Set<string>> = {
   all: new Set<string>(),
@@ -189,17 +209,17 @@ const WORLD_CUP_DVP_METRICS = [
 ] as const;
 const WORLD_CUP_STAT_OPTIONS = [
   // Player main chart order mirrors app/soccer/components/soccerPlayerStatCatalog.ts
-  { id: 'goals', label: 'Goals', playerKey: 'goals', teamKey: null },
-  { id: 'assists', label: 'Assists', playerKey: 'assists', teamKey: null },
+  { id: 'goals', label: 'Goals', playerKey: 'goals', teamKey: 'goals' },
+  { id: 'assists', label: 'Assists', playerKey: 'assists', teamKey: 'assists' },
   { id: 'total_shots', label: 'Total Shots', playerKey: 'derived_shots_total', teamKey: 'shots_total' },
   { id: 'shots_on_target', label: 'Shots on Target', playerKey: 'shots_on_target', teamKey: 'shots_on_target' },
   { id: 'accurate_passes', label: 'Passes', playerKey: 'passes_accurate', teamKey: 'passes_accurate' },
   { id: 'big_chances_created', label: 'Big Chances Created', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'fouls_committed', label: 'Fouls Committed', playerKey: 'fouls_committed', teamKey: 'fouls' },
-  { id: 'fouls_suffered', label: 'Fouls Suffered', playerKey: 'was_fouled', teamKey: null },
+  { id: 'fouls_suffered', label: 'Fouls Suffered', playerKey: 'was_fouled', teamKey: 'was_fouled' },
   { id: 'duels_won', label: 'Duels Won', playerKey: 'duels_won', teamKey: null },
   { id: 'yellow_cards', label: 'Yellow Cards', playerKey: 'yellow_cards', teamKey: 'yellow_cards' },
-  { id: 'red_cards', label: 'Red Cards', playerKey: 'red_cards', teamKey: null },
+  { id: 'red_cards', label: 'Red Cards', playerKey: 'red_cards', teamKey: 'red_cards' },
 
   // Goalkeeper main chart order mirrors app/soccer/components/soccerPlayerStatCatalog.ts
   { id: 'goalkeeper_saves', label: 'GK Saves', playerKey: 'saves', teamKey: 'saves' },
@@ -573,189 +593,30 @@ function WorldCupCardSkeleton({
   );
 }
 
-/** ISO-2 / common codes → ESPN FIFA 3-letter slug used by their flag CDN. */
-const WORLD_CUP_ISO2_TO_FIFA: Record<string, string> = {
-  ar: 'arg',
-  au: 'aus',
-  at: 'aut',
-  be: 'bel',
-  br: 'bra',
-  ca: 'can',
-  ch: 'sui',
-  ci: 'civ',
-  cl: 'chi',
-  cm: 'cmr',
-  cn: 'chn',
-  co: 'col',
-  cr: 'crc',
-  cw: 'cuw',
-  cz: 'cze',
-  de: 'ger',
-  dk: 'den',
-  ec: 'ecu',
-  eg: 'egy',
-  es: 'esp',
-  fi: 'fin',
-  fr: 'fra',
-  gh: 'gha',
-  gr: 'gre',
-  hn: 'hon',
-  hr: 'cro',
-  hu: 'hun',
-  ie: 'irl',
-  ir: 'irn',
-  is: 'isl',
-  it: 'ita',
-  jo: 'jor',
-  jp: 'jpn',
-  kr: 'kor',
-  ma: 'mar',
-  mx: 'mex',
-  ng: 'nga',
-  nl: 'ned',
-  no: 'nor',
-  nz: 'nzl',
-  pe: 'per',
-  pl: 'pol',
-  pt: 'por',
-  py: 'par',
-  qa: 'qat',
-  ro: 'rou',
-  rs: 'srb',
-  ru: 'rus',
-  sa: 'ksa',
-  se: 'swe',
-  si: 'svn',
-  sk: 'svk',
-  sn: 'sen',
-  tn: 'tun',
-  tr: 'tur',
-  ua: 'ukr',
-  us: 'usa',
-  uy: 'uru',
-  ve: 'ven',
-  bg: 'bul',
-  am: 'arm',
-  by: 'blr',
-  ge: 'geo',
-  kz: 'kaz',
-  uz: 'uzb',
-};
-
-const WORLD_CUP_COUNTRY_NAME_TO_FIFA: Record<string, string> = {
-  'costa rica': 'crc',
-  'south korea': 'kor',
-  'korea republic': 'kor',
-  'republic of korea': 'kor',
-  'united states': 'usa',
-  'saudi arabia': 'ksa',
-  'czech republic': 'cze',
-  czechia: 'cze',
-  england: 'eng',
-  netherlands: 'ned',
-  germany: 'ger',
-  spain: 'esp',
-  japan: 'jpn',
-  mexico: 'mex',
-  sweden: 'swe',
-  france: 'fra',
-  brazil: 'bra',
-  argentina: 'arg',
-  australia: 'aus',
-  croatia: 'cro',
-  poland: 'pol',
-  portugal: 'por',
-  belgium: 'bel',
-  switzerland: 'sui',
-  uruguay: 'uru',
-  colombia: 'col',
-  ecuador: 'ecu',
-  peru: 'per',
-  chile: 'chi',
-  iran: 'irn',
-  morocco: 'mar',
-  senegal: 'sen',
-  tunisia: 'tun',
-  cameroon: 'cmr',
-  ghana: 'gha',
-  qatar: 'qat',
-  canada: 'can',
-  curacao: 'cuw',
-  curaçao: 'cuw',
-  wales: 'wal',
-  scotland: 'sco',
-  'northern ireland': 'nir',
-};
-
-/** Cases where ISO 3166-1 alpha-3 differs from FIFA's 3-letter code. */
-const WORLD_CUP_ISO3_TO_FIFA: Record<string, string> = {
-  cri: 'crc',
-  deu: 'ger',
-  nld: 'ned',
-  che: 'sui',
-  hrv: 'cro',
-  prt: 'por',
-  dnk: 'den',
-  isl: 'isl',
-  irl: 'irl',
-  pol: 'pol',
-  bgr: 'bul',
-  ron: 'rou',
-  bih: 'bih',
-  mkd: 'mkd',
-  lva: 'lat',
-  ltu: 'ltu',
-  est: 'est',
-  blr: 'blr',
-  alb: 'alb',
-  mlt: 'mlt',
-  cyp: 'cyp',
-  lux: 'lux',
-  tur: 'tur',
-  bel: 'bel',
-  esp: 'esp',
-  ita: 'ita',
-  fra: 'fra',
-  gbr: 'eng',
-  zaf: 'rsa',
-  hkg: 'hkg',
-  twn: 'tpe',
-  prk: 'prk',
-  kor: 'kor',
-  irn: 'irn',
-  mex: 'mex',
-  arg: 'arg',
-  bra: 'bra',
-  usa: 'usa',
-  can: 'can',
-  jpn: 'jpn',
-  ksa: 'ksa',
-  qat: 'qat',
-  uae: 'uae',
-  egy: 'egy',
-  mar: 'mar',
-  tun: 'tun',
-  cmr: 'cmr',
-  sen: 'sen',
-  gha: 'gha',
-  nga: 'nga',
-  civ: 'civ',
-};
-
-function normalizeWorldCupFifaCode(countryCode?: string | null): string | null {
-  const raw = String(countryCode || '').trim();
-  if (!raw) return null;
-  const lower = raw.toLowerCase();
-  if (lower.length === 2) return WORLD_CUP_ISO2_TO_FIFA[lower] ?? null;
-  if (lower.length === 3) return WORLD_CUP_ISO3_TO_FIFA[lower] ?? lower;
-  return WORLD_CUP_COUNTRY_NAME_TO_FIFA[lower] ?? null;
+/** Bar-chart-shaped skeleton shown in the game-by-game chart while a player's
+ * stats are loading (e.g. right after switching players). */
+function WorldCupChartSkeleton({ isDark, className = '' }: { isDark: boolean; className?: string }) {
+  const bar = isDark ? 'bg-gray-800' : 'bg-gray-200';
+  const heights = [55, 80, 45, 70, 60, 90, 50, 75, 65, 40];
+  return (
+    <div className={`flex h-full w-full flex-col ${className}`}>
+      <div className="flex min-h-0 flex-1 items-end justify-between gap-1.5 sm:gap-2">
+        {heights.map((h, idx) => (
+          <div key={idx} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+            <div className={`w-full rounded-t-md animate-pulse ${bar}`} style={{ height: `${h}%` }} />
+            <div className={`h-3 w-3 rounded-full animate-pulse ${bar}`} />
+            <div className={`h-1.5 w-2/3 rounded animate-pulse ${bar}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-function getWorldCupFlagUrl(countryCode?: string | null): string | null {
-  const fifa = normalizeWorldCupFifaCode(countryCode);
-  if (!fifa) return null;
-  return `https://a.espncdn.com/combiner/i?img=/i/teamlogos/countries/500/${fifa}.png&h=80&w=80`;
-}
+// Flag resolution (ISO2/ISO3/name → ESPN FIFA slug) lives in lib/worldCupFlags.ts,
+// backed by a verified, generated override map. `WORLD_CUP_COUNTRY_NAME_TO_FIFA`
+// is kept as an alias so existing name-based team resolution keeps working.
+const WORLD_CUP_COUNTRY_NAME_TO_FIFA = FIFA_NAME_TO_CODE;
 
 function buildWorldCupTeamCountryLookup(teams: Array<{ id?: number | string; name?: string; abbreviation?: string | null; country_code?: string | null }>) {
   const byName = new Map<string, string>();
@@ -822,6 +683,42 @@ function deriveWorldCupCompetitionTag(
   if (sources.some((s) => s === 'statsbomb')) return 'Euros';
   if (sources.some((s) => s === 'api-football')) return 'NL';
   return 'WC';
+}
+
+/**
+ * Team mode: return the set of stat option ids whose `teamKey` has real data in
+ * EVERY competition present among the given team rows. Keeps the chart's stat
+ * pills "symmetrical" — a stat only shows if all of WC / Euros / NL / Copa /
+ * AFCON (whichever the team actually played) provide it, so no competition ever
+ * renders a misleading empty bar.
+ */
+function getSymmetricTeamStatIds(
+  candidateOptions: Array<{ id: string; teamKey: string | null }>,
+  teamRows: Array<Record<string, any>>
+): Set<string> {
+  const result = new Set<string>();
+  if (!teamRows.length) return result;
+
+  // Group rows by competition tag.
+  const rowsByComp = new Map<string, Array<Record<string, any>>>();
+  for (const row of teamRows) {
+    const tag = deriveWorldCupCompetitionTag(row, undefined);
+    const list = rowsByComp.get(tag) ?? [];
+    list.push(row);
+    rowsByComp.set(tag, list);
+  }
+  const comps = Array.from(rowsByComp.keys());
+
+  for (const option of candidateOptions) {
+    const key = option.teamKey;
+    if (!key) continue;
+    const coveredEverywhere = comps.every((comp) => {
+      const rows = rowsByComp.get(comp) ?? [];
+      return rows.some((row) => toNumber(row[key]) != null);
+    });
+    if (coveredEverywhere) result.add(option.id);
+  }
+  return result;
 }
 
 function WorldCupXAxisTick({ x, y, payload, data, isDark, hideTickDetails }: any) {
@@ -1321,6 +1218,13 @@ function getAvailableWorldCupStats(
       if (WORLD_CUP_GOALKEEPER_ONLY_PLAYER_KEYS.has(key) && !isGoalkeeper) return false;
       if (isGoalkeeper && WORLD_CUP_OUTFIELD_ONLY_PLAYER_KEYS.has(key)) return false;
     }
+    // Team mode (Game Props) stats come from aggregating per-player match rows
+    // across BDL + the international sources, which only expose a subset of
+    // team metrics. Restrict the pills to the ones we can actually populate so
+    // the chart never renders an empty stat.
+    if (mode === 'team' && !WORLD_CUP_TEAM_SUPPORTED_STAT_IDS.has(option.id)) {
+      return false;
+    }
     // Hide stats that are not provided by the international sources.
     if (UNSUPPORTED_STATS_BY_COMPETITION[competition].has(option.id)) {
       return false;
@@ -1403,10 +1307,23 @@ function WorldCupGameByGameChart({
   const [manualLineValue, setManualLineValue] = useState<number | null>(null);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
-  const availableStats = useMemo(
+  const baseAvailableStats = useMemo(
     () => getAvailableWorldCupStats(mode, selectedPlayer, competition),
     [mode, selectedPlayer, competition]
   );
+  const teamStatRows = useMemo(() => {
+    if (mode !== 'team' || !data) return [] as Array<Record<string, any>>;
+    const teamId = selectedTeam?.id ?? null;
+    return data.teamMatchStats.filter((row) => !teamId || String(row.team_id ?? '') === teamId);
+  }, [mode, data, selectedTeam?.id]);
+  const availableStats = useMemo(() => {
+    if (mode !== 'team') return baseAvailableStats;
+    // Until rows load, keep the full candidate pool so pills don't flicker.
+    if (!teamStatRows.length) return baseAvailableStats;
+    const symmetric = getSymmetricTeamStatIds(baseAvailableStats, teamStatRows);
+    const filtered = baseAvailableStats.filter((option) => symmetric.has(option.id));
+    return filtered.length ? filtered : baseAvailableStats;
+  }, [mode, baseAvailableStats, teamStatRows]);
   const statConfig = useMemo(
     () => availableStats.find((option) => option.id === selectedStat) ?? availableStats[0] ?? getChartStatConfig(mode, selectedStat),
     [availableStats, mode, selectedStat]
@@ -1632,7 +1549,9 @@ function WorldCupGameByGameChart({
       </div>
 
       <div className="min-h-0 flex-1">
-        {chartRows.length ? (
+        {loading ? (
+          <WorldCupChartSkeleton isDark={isDark} />
+        ) : chartRows.length ? (
           <SimpleChart
             chartData={chartRows}
             yAxisConfig={yAxisConfig}
@@ -2084,7 +2003,7 @@ function WorldCupDvpCard({
   }, [playerPosition]);
 
   useEffect(() => {
-    if (opponentTeam?.id) setOppSel(opponentTeam.id);
+    setOppSel(opponentTeam?.id ?? '');
   }, [opponentTeam?.id]);
 
   useEffect(() => {
@@ -3095,6 +3014,7 @@ function WorldCupPageContent() {
   const [worldCupData, setWorldCupData] = useState<WorldCupDashboardData | null>(null);
   const [worldCupLoading, setWorldCupLoading] = useState(false);
   const [worldCupError, setWorldCupError] = useState<string | null>(null);
+  const [apiTeams, setApiTeams] = useState<WorldCupDashboardData['teams'] | null>(null);
   const [chartContext, setChartContext] = useState<WorldCupChartContext>({
     statId: 'goals',
     statKey: 'goals',
@@ -3116,24 +3036,34 @@ function WorldCupPageContent() {
   });
 
   const teamOptions = useMemo<WorldCupTeamOption[]>(() => {
-    if (!worldCupData?.teams?.length) return WORLD_CUP_TEAMS;
-    return worldCupData.teams.map((team) => ({
+    const sourceTeams = worldCupData?.teams?.length ? worldCupData.teams : apiTeams;
+    if (!sourceTeams?.length) return WORLD_CUP_TEAMS;
+    const standings = worldCupData?.standings ?? [];
+    return sourceTeams.map((team) => ({
       id: String(team.id),
       name: team.name,
       abbreviation: team.abbreviation || team.country_code || team.name.slice(0, 3).toUpperCase(),
       countryCode: team.country_code || team.abbreviation || null,
       group:
         String(
-          worldCupData.standings.find((row) => Number(row?.team?.id) === team.id)?.group?.name ??
-            worldCupData.featureMatch?.group ??
+          standings.find((row) => Number(row?.team?.id) === team.id)?.group?.name ??
+            worldCupData?.featureMatch?.group ??
             'World Cup'
         ) || 'World Cup',
       confederation: team.confederation || 'FIFA',
     }));
-  }, [worldCupData]);
+  }, [worldCupData, apiTeams]);
 
   const hasSelection = propsMode === 'player' ? Boolean(selectedPlayer) : Boolean(selectedTeam);
   const showSkeleton = !hasSelection;
+  const hasApiTeams = Boolean(worldCupData?.teams?.length || apiTeams?.length);
+  const selectedTeamId = selectedTeam?.id ?? null;
+  const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
+  const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
+  // Keep insight panels (DVP, opponent breakdown, team form) on skeleton until the
+  // dashboard API has hydrated the real BDL team — avoids flashing placeholder teams
+  // (e.g. Argentina from WORLD_CUP_TEAMS) while a player search is loading.
+  const showInsightsSkeleton = !hasSelection || worldCupLoading || selectedTeamNeedsHydration;
 
   const playerOptions = useMemo<WorldCupPlayerOption[]>(() => {
     const rosterPlayers = !worldCupData?.rosters?.length ? [] : worldCupData.rosters.slice(0, 80).map((row) => {
@@ -3161,18 +3091,21 @@ function WorldCupPageContent() {
   }, [searchedPlayers, selectedTeam?.name, showSkeleton, teamOptions, worldCupData]);
 
   const opponentTeam = useMemo(() => {
-    if (!hasSelection) return null;
+    if (!hasSelection || selectedTeamNeedsHydration) return null;
     const featureMatch = worldCupData?.featureMatch;
-    const homeId = featureMatch?.homeTeam?.id != null ? String(featureMatch.homeTeam.id) : null;
-    const awayId = featureMatch?.awayTeam?.id != null ? String(featureMatch.awayTeam.id) : null;
-    if (selectedTeam?.id && homeId === selectedTeam.id && awayId) {
+    if (!featureMatch || !selectedTeam?.id) return null;
+    const homeId = featureMatch.homeTeam?.id != null ? String(featureMatch.homeTeam.id) : null;
+    const awayId = featureMatch.awayTeam?.id != null ? String(featureMatch.awayTeam.id) : null;
+    if (homeId === selectedTeam.id && awayId) {
       return teamOptions.find((team) => team.id === awayId) ?? null;
     }
-    if (selectedTeam?.id && awayId === selectedTeam.id && homeId) {
+    if (awayId === selectedTeam.id && homeId) {
       return teamOptions.find((team) => team.id === homeId) ?? null;
     }
-    return teamOptions.find((team) => team.id !== selectedTeam?.id) ?? null;
-  }, [hasSelection, selectedTeam?.id, teamOptions, worldCupData?.featureMatch]);
+    // No feature match yet — leave null so DVP stays unset until the API resolves
+    // the fixture (never default to the first placeholder team e.g. Argentina).
+    return null;
+  }, [hasSelection, selectedTeam?.id, selectedTeamNeedsHydration, teamOptions, worldCupData?.featureMatch]);
   const emptyText = isDark ? 'text-gray-400' : 'text-gray-500';
   const featureMatchMeta = worldCupData?.featureMatch
     ? [
@@ -3185,10 +3118,6 @@ function WorldCupPageContent() {
         .filter(Boolean)
         .join(' - ')
     : 'FIFA World Cup 2026 - BDL GOAT data pending';
-  const selectedTeamId = selectedTeam?.id ?? null;
-  const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
-  const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
-
   // Next match countdown / live status (mirrors AFL header)
   const nextGameTipoff = useMemo(() => {
     const dt = worldCupData?.featureMatch?.datetime ? new Date(String(worldCupData.featureMatch.datetime)) : null;
@@ -3204,7 +3133,7 @@ function WorldCupPageContent() {
   const opponentTeamLogo = getWorldCupFlagUrl(opponentTeam?.countryCode || opponentTeam?.abbreviation);
   const selectedTeamAbbr = selectedTeam?.abbreviation || selectedTeam?.name?.slice(0, 3).toUpperCase() || 'TBD';
   const opponentTeamAbbr = opponentTeam?.abbreviation || opponentTeam?.name?.slice(0, 3).toUpperCase() || 'TBD';
-  const hasMatchup = hasSelection && Boolean(opponentTeam && selectedTeam);
+  const hasMatchup = hasSelection && !showInsightsSkeleton && Boolean(opponentTeam && selectedTeam);
   const skeletonBar = isDark ? 'bg-gray-800' : 'bg-gray-200';
 
   useEffect(() => {
@@ -3309,14 +3238,16 @@ function WorldCupPageContent() {
     }
   }, [hydratedFromStorage, selectedPlayer]);
 
-  // Keep selected team in sync with the active player (header matchup + DVP opponent).
+  // Keep selected team in sync with the active player once API teams are loaded.
+  // Skip while teamOptions are still placeholders — resolving against WORLD_CUP_TEAMS
+  // can pick the wrong nation and flash incorrect DVP/matchup data.
   useEffect(() => {
-    if (propsMode !== 'player' || !selectedPlayer || !teamOptions.length) return;
+    if (propsMode !== 'player' || !selectedPlayer || !hasApiTeams) return;
     const team = resolveWorldCupTeamForPlayer(selectedPlayer, teamOptions);
     if (!team || team.id === selectedTeam?.id) return;
     setSelectedTeam(team);
     setTeamSearchQuery(team.name);
-  }, [propsMode, selectedPlayer, teamOptions, selectedTeam?.id]);
+  }, [propsMode, selectedPlayer, hasApiTeams, teamOptions, selectedTeam?.id]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -3406,6 +3337,26 @@ function WorldCupPageContent() {
       cancelled = true;
     };
   }, [hasSelection, hydratedFromStorage, selectedPlayerId, selectedTeamId, selectedTeamNeedsHydration, competition, selectedPlayer?.name]);
+
+  // Load the real BDL national-team list up front so Game Props team search can
+  // resolve to numeric team ids (and the correct team) before any selection.
+  useEffect(() => {
+    if (!hydratedFromStorage || apiTeams?.length) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/world-cup/dashboard?season=2026&teamsOnly=1', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = (await response.json().catch(() => null)) as { teams?: WorldCupDashboardData['teams'] } | null;
+        if (!cancelled && payload?.teams?.length) setApiTeams(payload.teams);
+      } catch {
+        /* non-fatal: fall back to placeholder teams */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydratedFromStorage, apiTeams?.length]);
 
   useEffect(() => {
     const query = playerSearchQuery.trim();
@@ -3799,10 +3750,15 @@ function WorldCupPageContent() {
                                       setSelectedPlayer(player);
                                       setPlayerSearchQuery(player.name);
                                       setPlayerSearchOpen(false);
-                                      const team = resolveWorldCupTeamForPlayer(player, teamOptions);
-                                      if (team) {
-                                        setSelectedTeam(team);
-                                        setTeamSearchQuery(team.name);
+                                      if (hasApiTeams) {
+                                        const team = resolveWorldCupTeamForPlayer(player, teamOptions);
+                                        if (team) {
+                                          setSelectedTeam(team);
+                                          setTeamSearchQuery(team.name);
+                                        }
+                                      } else {
+                                        setSelectedTeam(null);
+                                        setTeamSearchQuery(player.teamName || '');
                                       }
                                     }}
                                     className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
@@ -3958,7 +3914,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`lg:hidden w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} />
                   ) : (
                   <WorldCupInsightsPanel
@@ -4010,7 +3966,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`hidden lg:block h-[420px] w-full min-w-0 shrink-0 rounded-lg xl:h-[460px] ${DASH_CARD_GLOW} overflow-hidden`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} fill className="p-3 sm:p-4" />
                   ) : (
                   <WorldCupInsightsPanel
@@ -4026,7 +3982,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} className="p-3 sm:p-4" />
                   ) : (
                   <WorldCupTeamFormHomeAwayPanel
