@@ -112,7 +112,7 @@ type AflTopGamePick = {
 };
 const MODEL_NEUTRAL_LINE_GAP = 0.5; // Neutral when model is within 0.5 disposals of line
 /** When true, the Player vs Team "Prediction Model" tab is disabled (under maintenance). */
-const AFL_PREDICTION_MODEL_UNDER_MAINTENANCE = true;
+const AFL_PREDICTION_MODEL_UNDER_MAINTENANCE = false;
 type AflTopPicksGameGroup = {
   gameKey: string;
   homeTeam: string;
