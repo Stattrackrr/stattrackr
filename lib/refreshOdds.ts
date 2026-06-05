@@ -959,7 +959,12 @@ export async function refreshOddsData(
     console.log(`📊 SUMMARY: Found ${allPlayerPropVendors.size} unique player prop vendors: ${Array.from(allPlayerPropVendors).sort().join(', ')}`);
 
     const now = new Date();
-    const ttlMinutes = 2 * 60; // cache for 2 hours
+    // Cache TTL is a safety net, not the refresh cadence. The refresh cron runs
+    // hourly, so a 2h TTL only tolerates a single missed/delayed run before the
+    // odds vanish. GitHub-scheduled crons are routinely delayed or dropped, so we
+    // give a wider 6h margin (tolerates several missed runs). `lastUpdated` still
+    // reflects the genuine fetch time, so UI freshness stays accurate.
+    const ttlMinutes = 6 * 60; // cache for 6 hours (safety margin over hourly refresh)
     const nextUpdate = new Date(now.getTime() + ttlMinutes * 60 * 1000);
 
     // Helper to get US Eastern Time date string (same as getGameDateFromOddsCache)
@@ -1039,32 +1044,58 @@ export async function refreshOddsData(
 
     // Get previous cache to compare (before we potentially overwrite it)
     const previous = (await getNBACache<OddsCache>(ODDS_CACHE_KEY)) || cache.get<OddsCache>(ODDS_CACHE_KEY);
-    
+
+    // When we intentionally keep the previous cache (refresh returned no/too few
+    // games), we MUST re-persist it with a fresh TTL. Otherwise the row keeps its
+    // original 2h expiry and silently expires while we're "preserving" it — which
+    // is exactly why NBA odds disappear randomly during sparse schedules (e.g. the
+    // Finals, where most hourly refreshes legitimately return 0 games).
+    const preservePreviousCache = (note: string) => {
+      // Strip runtime metadata before re-writing so we don't persist it.
+      const clean: OddsCache = {
+        games: previous!.games,
+        lastUpdated: previous!.lastUpdated,
+        nextUpdate: nextUpdate.toISOString(),
+      };
+      cache.set(ODDS_CACHE_KEY, clean, ttlMinutes);
+      void setNBACache(ODDS_CACHE_KEY, 'odds', clean, ttlMinutes).catch((err) => {
+        console.warn('[Odds Cache] ⚠️ Failed to re-persist preserved cache to Supabase:', err?.message);
+      });
+      console.warn(`[Odds Cache] ♻️ Re-persisted previous cache with fresh TTL (${note}).`);
+      return {
+        success: true,
+        gamesCount: clean.games.length,
+        lastUpdated: clean.lastUpdated,
+        nextUpdate: clean.nextUpdate,
+        note,
+      };
+    };
+
+    // Cap how long we keep preserving stale odds. Within this window we re-persist
+    // (so odds don't randomly disappear mid-season); beyond it we let the cache go
+    // empty so we don't serve ancient odds during the offseason.
+    const PRESERVE_MAX_AGE_MIN = 24 * 60; // 24 hours
+    const previousAgeMin = previous?.lastUpdated
+      ? (now.getTime() - new Date(previous.lastUpdated).getTime()) / 60000
+      : Infinity;
+    const previousWorthPreserving = !!previous && previous.games.length > 0 && previousAgeMin < PRESERVE_MAX_AGE_MIN;
+
     // If the new payload is empty, keep the previous cache (avoid zeroing)
     if (games.length === 0) {
       console.warn('[Odds Cache] ⚠️ Refresh returned 0 games. Keeping previous cache.');
-      if (previous) {
-        return {
-          success: true,
-          gamesCount: previous.games.length,
-          lastUpdated: previous.lastUpdated,
-          nextUpdate: previous.nextUpdate,
-          note: 'served previous cache because refresh returned 0 games'
-        };
+      if (previousWorthPreserving) {
+        return preservePreviousCache('served previous cache because refresh returned 0 games');
       }
-      // If no previous cache, fall through and set empty (rare)
+      if (previous) {
+        console.warn(`[Odds Cache] Previous cache is ${Math.round(previousAgeMin)}min old (> ${PRESERVE_MAX_AGE_MIN}min); letting it go empty.`);
+      }
+      // If no previous cache (or too stale), fall through and set empty (rare)
     }
     
     // If pruning removed all games, preserve previous cache to avoid blanking the UI
-    if (prunedGames.length === 0 && previous && previous.games.length > 0) {
+    if (prunedGames.length === 0 && previousWorthPreserving) {
       console.warn('[Odds Cache] ⚠️ Pruning removed all games but previous cache has data. Preserving previous cache.');
-      return {
-        success: true,
-        gamesCount: previous.games.length,
-        lastUpdated: previous.lastUpdated,
-        nextUpdate: previous.nextUpdate,
-        note: 'preserved previous cache because pruning removed all games'
-      };
+      return preservePreviousCache('preserved previous cache because pruning removed all games');
     }
     
     // If new cache has significantly fewer games than previous, preserve previous (avoid clearing during refresh)
@@ -1078,13 +1109,7 @@ export async function refreshOddsData(
       // This prevents the "flash and disappear" issue where background refresh clears cache during page load
       if (isPreviousRecent && prunedGames.length < (previous.games.length * 0.5)) {
         console.warn(`[Odds Cache] ⚠️ New cache has ${prunedGames.length} games vs previous ${previous.games.length}. Preserving previous cache to avoid clearing during refresh.`);
-        return {
-          success: true,
-          gamesCount: previous.games.length,
-          lastUpdated: previous.lastUpdated,
-          nextUpdate: previous.nextUpdate,
-          note: 'preserved previous cache because new cache has significantly fewer games'
-        };
+        return preservePreviousCache('preserved previous cache because new cache has significantly fewer games');
       }
     }
 

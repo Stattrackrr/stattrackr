@@ -275,8 +275,11 @@ export async function buildCombinedPropsSnapshot(
 
   const aflAggregated = aggregateAflProps(aflPayload);
   const now = Date.now();
+  // Degrade gracefully: the combined slate is usable as long as at least one
+  // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
+  // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok && aflResponse.ok,
+    success: nbaResponse.ok || aflResponse.ok,
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),

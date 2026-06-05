@@ -397,15 +397,35 @@ export async function GET(request: NextRequest) {
         if (removedCount > 0) {
           console.log(`[Player Props API] 🗑️ Removed ${removedCount} props from games no longer in odds cache (games started)`);
         }
-        
-        console.log(`[Player Props API] ✅ Cache HIT for game date: ${gameDate}, props count: ${filteredProps.length} (filtered from ${beforeFilter})`);
+
+        // Hide props for games already underway beyond a short grace window, so a
+        // user who saw/bet a line at tipoff doesn't keep seeing locked/stale lines
+        // for an in-progress or finished game hours later. Date-only commence times
+        // have no tipoff clock, so they're kept (the day-level slate switch handles
+        // those); games with a real tip time are dropped PROP_HIDE_AFTER_TIPOFF_MS
+        // after they start.
+        const PROP_HIDE_AFTER_TIPOFF_MS = 30 * 60 * 1000; // 30-minute grace after tipoff
+        const nowMsForTipoff = Date.now();
+        const liveProps = filteredProps.filter((prop: any) => {
+          const commence = prop?.gameDate ? String(prop.gameDate) : '';
+          if (!commence || /^\d{4}-\d{2}-\d{2}$/.test(commence)) return true;
+          const startMs = new Date(commence).getTime();
+          if (!Number.isFinite(startMs)) return true;
+          return nowMsForTipoff < startMs + PROP_HIDE_AFTER_TIPOFF_MS;
+        });
+        const startedRemoved = filteredProps.length - liveProps.length;
+        if (startedRemoved > 0) {
+          console.log(`[Player Props API] 🚫 Hid ${startedRemoved} props for games >30min past tipoff`);
+        }
+
+        console.log(`[Player Props API] ✅ Cache HIT for game date: ${gameDate}, props count: ${liveProps.length} (filtered from ${beforeFilter})`);
         return NextResponse.json({
           success: true,
-          data: filteredProps,
+          data: liveProps,
           lastUpdated: oddsCache.lastUpdated,
           gameDate,
           cached: true,
-          filtered: removedCount > 0 ? removedCount : undefined
+          filtered: (removedCount + startedRemoved) > 0 ? (removedCount + startedRemoved) : undefined
         }, {
           headers: {
             'Cache-Control': PROPS_LIST_CACHE_CONTROL,

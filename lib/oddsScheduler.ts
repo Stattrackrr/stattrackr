@@ -23,7 +23,8 @@ async function refreshOdds() {
     const result = await refreshOddsData({ source: 'scheduler' });
     
     if (process.env.VERCEL_ENV === 'production') {
-      console.log(`✅ Scheduled odds refresh complete: ${result.gamesCount} games, ${result.apiCalls} API calls`);
+      const apiCalls = 'apiCalls' in result ? result.apiCalls : 0;
+      console.log(`✅ Scheduled odds refresh complete: ${result.gamesCount} games, ${apiCalls} API calls`);
     }
   } catch (error) {
     // Always log errors

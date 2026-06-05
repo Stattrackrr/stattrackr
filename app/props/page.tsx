@@ -2276,7 +2276,10 @@ export default function NBALandingPage() {
       try {
         const response = await fetch(combinedUrl, { cache: forceRefresh || debugStats ? 'no-store' : 'default' });
         const payload = await response.json().catch(() => null) as CombinedPropsSnapshotResponse | null;
-        if (!response.ok || !payload?.success || !payload?.nba?.ok || !payload?.afl?.ok) {
+        // Degrade gracefully: render as long as at least one sport is available.
+        // A sport that's out of season (e.g. NBA with no odds) returns ok=false
+        // with empty props and should not blank out the whole combined page.
+        if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok)) {
           throw new Error(payload?.error || 'Failed to load combined props');
         }
         if (cancelled) return;
@@ -2293,7 +2296,9 @@ export default function NBALandingPage() {
             nbaResponse.json().catch(() => null),
             aflResponse.json().catch(() => null),
           ]);
-          if (!nbaResponse.ok || !aflResponse.ok) {
+          // Only fail if BOTH sports are unavailable. A single sport being out
+          // of season (e.g. NBA 503 with no odds) still lets us render the other.
+          if (!nbaResponse.ok && !aflResponse.ok) {
             throw new Error('Fallback combined props requests failed');
           }
           const aflResult = aggregateAflListPayload(aflPayload);
@@ -2303,15 +2308,15 @@ export default function NBALandingPage() {
             generatedAt: new Date().toISOString(),
             staleAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
             nba: {
-              ok: true,
+              ok: nbaResponse.ok,
               status: nbaResponse.status,
               cached: nbaPayload?.cached === true,
               lastUpdated: typeof nbaPayload?.lastUpdated === 'string' ? nbaPayload.lastUpdated : null,
               gameDate: typeof nbaPayload?.gameDate === 'string' ? nbaPayload.gameDate : null,
-              props: Array.isArray(nbaPayload?.data) ? nbaPayload.data as PlayerProp[] : [],
+              props: nbaResponse.ok && Array.isArray(nbaPayload?.data) ? nbaPayload.data as PlayerProp[] : [],
             },
             afl: {
-              ok: true,
+              ok: aflResponse.ok,
               status: aflResponse.status,
               lastUpdated: aflResult.lastUpdated ?? null,
               nextUpdate: aflResult.nextUpdate ?? null,
