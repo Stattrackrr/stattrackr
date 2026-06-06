@@ -119,6 +119,11 @@ type ApiFixturePlayers = {
   }>;
 };
 
+type ApiFixtureStatistics = {
+  team: { id: number; name: string; logo: string };
+  statistics: Array<{ type: string; value: number | string | null }>;
+};
+
 type IngestStats = { matches: number; players: number; statRows: number };
 
 function n(value: number | null | undefined): number {
@@ -258,6 +263,48 @@ async function loadFixturesForSeason(cfg: CompetitionConfig, seasonYear: number)
 async function loadFixturePlayers(fixtureId: number): Promise<ApiFixturePlayers[]> {
   const data = await apiFootballFetch<ApiFixturePlayers[]>('/fixtures/players', { fixture: fixtureId });
   return Array.isArray(data) ? data : [];
+}
+
+async function loadFixtureStatistics(fixtureId: number): Promise<ApiFixtureStatistics[]> {
+  const data = await apiFootballFetch<ApiFixtureStatistics[]>('/fixtures/statistics', { fixture: fixtureId });
+  return Array.isArray(data) ? data : [];
+}
+
+/** Parse an API-Football stat value: numbers, "55%", "12", or null. */
+function parseStatValue(value: number | string | null): number | null {
+  if (value == null) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const cleaned = value.replace('%', '').trim();
+  if (!cleaned) return null;
+  const num = Number.parseFloat(cleaned);
+  return Number.isFinite(num) ? num : null;
+}
+
+/** Map API-Football's statistics `type` labels to our team-stat columns. */
+function mapApiFootballTeamStats(
+  stats: Array<{ type: string; value: number | string | null }>
+): Record<string, number | null> {
+  const byType = new Map<string, number | null>();
+  for (const s of stats) byType.set(s.type.trim().toLowerCase(), parseStatValue(s.value));
+  const get = (label: string) => byType.get(label.toLowerCase()) ?? null;
+  return {
+    shots_total: get('Total Shots'),
+    shots_on_target: get('Shots on Goal'),
+    shots_off_target: get('Shots off Goal'),
+    shots_blocked: get('Blocked Shots'),
+    shots_inside_box: get('Shots insidebox'),
+    shots_outside_box: get('Shots outsidebox'),
+    corners: get('Corner Kicks'),
+    offsides: get('Offsides'),
+    fouls: get('Fouls'),
+    yellow_cards: get('Yellow Cards'),
+    red_cards: get('Red Cards'),
+    saves: get('Goalkeeper Saves'),
+    possession_pct: get('Ball Possession'),
+    passes_total: get('Total passes'),
+    passes_accurate: get('Passes accurate'),
+    expected_goals: get('expected_goals'),
+  };
 }
 
 async function probeSeasonPlayerCoverage(cfg: CompetitionConfig, seasonYear: number): Promise<number> {
@@ -482,6 +529,60 @@ async function ingestFixtureStats(
   return { playerRows: statRows.length, uniquePlayers: playerProfiles.size, noPlayerData: statRows.length === 0 };
 }
 
+async function ingestFixtureTeamStats(
+  supabase: ReturnType<typeof getSupabase>,
+  cfg: CompetitionConfig,
+  fixture: ApiFixture,
+  seasonYear: number
+): Promise<number> {
+  const fixtureId = fixture.fixture.id;
+  const homeId = fixture.teams.home.id;
+  const teams = await loadFixtureStatistics(fixtureId);
+  if (!teams.length) return 0;
+
+  const rows = teams.map((teamBlock) => {
+    const teamId = teamBlock.team.id;
+    const isHome = teamId === homeId;
+    const mapped = mapApiFootballTeamStats(teamBlock.statistics ?? []);
+    const scoreGoals = isHome
+      ? fixture.goals.home ?? fixture.score.fulltime.home
+      : fixture.goals.away ?? fixture.score.fulltime.away;
+    return {
+      source: SOURCE,
+      source_match_id: String(fixtureId),
+      source_team_id: String(teamId),
+      tournament_slug: cfg.slug,
+      season_year: seasonYear,
+      is_home: isHome,
+      goals: scoreGoals ?? null,
+      expected_goals: mapped.expected_goals,
+      shots_total: mapped.shots_total,
+      shots_on_target: mapped.shots_on_target,
+      shots_off_target: mapped.shots_off_target,
+      shots_blocked: mapped.shots_blocked,
+      shots_inside_box: mapped.shots_inside_box,
+      shots_outside_box: mapped.shots_outside_box,
+      corners: mapped.corners,
+      offsides: mapped.offsides,
+      fouls: mapped.fouls,
+      yellow_cards: mapped.yellow_cards,
+      red_cards: mapped.red_cards,
+      possession_pct: mapped.possession_pct,
+      passes_total: mapped.passes_total,
+      passes_accurate: mapped.passes_accurate,
+      saves: mapped.saves,
+      raw_aggregates: null,
+      fetched_at: new Date().toISOString(),
+    };
+  });
+
+  const { error } = await supabase
+    .from('international_team_match_stats')
+    .upsert(rows, { onConflict: 'source,source_match_id,source_team_id' });
+  if (error) throw new Error(`Failed to upsert team_match_stats for fixture ${fixtureId}: ${error.message}`);
+  return rows.length;
+}
+
 async function ingestSeason(
   supabase: ReturnType<typeof getSupabase>,
   cfg: CompetitionConfig,
@@ -504,6 +605,7 @@ async function ingestSeason(
 
   let processed = 0;
   let totalStatRows = 0;
+  let totalTeamRows = 0;
   let fixturesWithStats = 0;
   let fixturesWithoutStats = 0;
   let skippedResume = 0;
@@ -511,6 +613,15 @@ async function ingestSeason(
   for (const fixture of fixtures) {
     processed += 1;
     const idStr = String(fixture.fixture.id);
+
+    // Team-level stats (corners, possession, offsides, shot splits) always run,
+    // even for fixtures whose player stats were already ingested in resume mode.
+    try {
+      totalTeamRows += await ingestFixtureTeamStats(supabase, cfg, fixture, seasonYear);
+    } catch (err) {
+      console.warn(`[api-football] fixture ${fixture.fixture.id} team-stats failed: ${(err as Error).message} - continuing`);
+    }
+
     if (alreadyIngested.has(idStr)) {
       skippedResume += 1;
       continue;
@@ -529,6 +640,7 @@ async function ingestSeason(
       console.warn(`[api-football] fixture ${fixture.fixture.id} failed: ${(err as Error).message} - continuing`);
     }
   }
+  console.log(`[api-football] season ${seasonYear}: ${totalTeamRows} team-stat rows`);
 
   if (fixturesWithoutStats > 0) {
     console.warn(`[api-football] season ${seasonYear}: ${fixturesWithoutStats} fixtures had no player stats`);

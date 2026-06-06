@@ -966,7 +966,11 @@ export async function loadInternationalTeamStatsByCountry(opts: {
       'tackles',
       'interceptions',
     ] as const;
+    // `agg` holds OUR team's per-match aggregate; `aggOpp` holds the single
+    // opponent's, so the dashboard can offer team / opponent / home / away
+    // perspective toggles for every stat.
     const agg = new Map<string, TeamStatAgg>();
+    const aggOpp = new Map<string, TeamStatAgg>();
     // Supabase caps rows; chunk match-id lookups to stay safe.
     const chunkSize = 200;
     for (let i = 0; i < matchIds.length; i += chunkSize) {
@@ -979,11 +983,12 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         .eq('source', source)
         .in('source_match_id', chunk);
       for (const r of (statRows ?? []) as Array<Record<string, unknown>>) {
-        if (!ids.has(String(r.source_team_id))) continue;
-        let a = agg.get(String(r.source_match_id));
+        const isOurs = ids.has(String(r.source_team_id));
+        const target = isOurs ? agg : aggOpp;
+        let a = target.get(String(r.source_match_id));
         if (!a) {
           a = { sums: {}, present: new Set<string>(), is_home: r.is_home === true };
-          agg.set(String(r.source_match_id), a);
+          target.set(String(r.source_match_id), a);
         }
         for (const key of AGG_KEYS) {
           const value = r[key];
@@ -994,6 +999,48 @@ export async function loadInternationalTeamStatsByCountry(opts: {
           a.present.add(key);
         }
         if (r.is_home === true) a.is_home = true;
+      }
+    }
+
+    // Team-only stats (corners, possession, offsides, shot splits, throw-ins,
+    // crosses) that cannot be summed from player rows. Stored per (match, team)
+    // in international_team_match_stats. Keyed here by source_match_id.
+    const teamOnly = new Map<string, Record<string, number | null>>();
+    const teamOnlyOpp = new Map<string, Record<string, number | null>>();
+    const TEAM_ONLY_KEYS = [
+      'corners',
+      'offsides',
+      'possession_pct',
+      'shots_off_target',
+      'shots_blocked',
+      'shots_inside_box',
+      'shots_outside_box',
+      'throw_ins',
+      'goal_kicks',
+      'free_kicks',
+      'crosses_total',
+      'crosses_accurate',
+      'big_chances',
+      'big_chances_missed',
+      'hit_woodwork',
+    ];
+    for (let i = 0; i < matchIds.length; i += chunkSize) {
+      const chunk = matchIds.slice(i, i + chunkSize);
+      const { data: teamRows } = await sb
+        .from('international_team_match_stats')
+        .select('*')
+        .eq('source', source)
+        .in('source_match_id', chunk);
+      for (const r of (teamRows ?? []) as Array<Record<string, unknown>>) {
+        const extras: Record<string, number | null> = {};
+        for (const key of TEAM_ONLY_KEYS) {
+          const value = r[key];
+          if (value == null) continue;
+          const num = typeof value === 'number' ? value : Number.parseFloat(String(value));
+          extras[key] = Number.isFinite(num) ? num : null;
+        }
+        const target = ids.has(String(r.source_team_id)) ? teamOnly : teamOnlyOpp;
+        target.set(String(r.source_match_id), extras);
       }
     }
 
@@ -1034,11 +1081,23 @@ export async function loadInternationalTeamStatsByCountry(opts: {
       });
 
       const a = agg.get(String(m.source_match_id));
-      if (!a) continue;
+      const extras = teamOnly.get(String(m.source_match_id));
+      const aOpp = aggOpp.get(String(m.source_match_id));
+      const extrasOpp = teamOnlyOpp.get(String(m.source_match_id));
+      // Skip only when we have neither player-aggregated nor team-level stats.
+      if (!a && !extras) continue;
       const ourIsHome = ids.has(String(m.home_team_source_id));
       // Goals are most reliable straight from the scoreline.
       const goalsFromScore = ourIsHome ? m.home_score : m.away_score;
-      const stat = (key: string): number | null => (a.present.has(key) ? a.sums[key] ?? 0 : null);
+      const oppGoalsFromScore = ourIsHome ? m.away_score : m.home_score;
+      const stat = (key: string): number | null =>
+        a && a.present.has(key) ? a.sums[key] ?? 0 : null;
+      const extra = (key: string): number | null =>
+        extras && extras[key] != null ? extras[key] : null;
+      const statOpp = (key: string): number | null =>
+        aOpp && aOpp.present.has(key) ? aOpp.sums[key] ?? 0 : null;
+      const extraOpp = (key: string): number | null =>
+        extrasOpp && extrasOpp[key] != null ? extrasOpp[key] : null;
       teamMatchStats.push({
         match_id: prefixedId,
         team_id: teamIdOut,
@@ -1058,6 +1117,43 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         was_fouled: stat('was_fouled'),
         tackles: stat('tackles'),
         interceptions: stat('interceptions'),
+        // Team-only markets (corners, possession, offsides, shot splits, ...).
+        corners: extra('corners'),
+        offsides: extra('offsides'),
+        possession_pct: extra('possession_pct'),
+        shots_off_target: extra('shots_off_target'),
+        shots_blocked: extra('shots_blocked'),
+        shots_inside_box: extra('shots_inside_box'),
+        shots_outside_box: extra('shots_outside_box'),
+        throw_ins: extra('throw_ins'),
+        goal_kicks: extra('goal_kicks'),
+        free_kicks: extra('free_kicks'),
+        crosses_total: extra('crosses_total'),
+        // Opponent values for the same match (team/opponent/home/away toggle).
+        opp_goals: oppGoalsFromScore != null ? oppGoalsFromScore : statOpp('goals'),
+        opp_assists: statOpp('assists'),
+        opp_shots_total: statOpp('shots_total'),
+        opp_shots_on_target: statOpp('shots_on_target'),
+        opp_passes_total: statOpp('passes_total'),
+        opp_passes_accurate: statOpp('passes_accurate'),
+        opp_expected_goals: statOpp('expected_goals'),
+        opp_yellow_cards: statOpp('yellow_cards'),
+        opp_red_cards: statOpp('red_cards'),
+        opp_fouls: statOpp('fouls'),
+        opp_was_fouled: statOpp('was_fouled'),
+        opp_tackles: statOpp('tackles'),
+        opp_interceptions: statOpp('interceptions'),
+        opp_corners: extraOpp('corners'),
+        opp_offsides: extraOpp('offsides'),
+        opp_possession_pct: extraOpp('possession_pct'),
+        opp_shots_off_target: extraOpp('shots_off_target'),
+        opp_shots_blocked: extraOpp('shots_blocked'),
+        opp_shots_inside_box: extraOpp('shots_inside_box'),
+        opp_shots_outside_box: extraOpp('shots_outside_box'),
+        opp_throw_ins: extraOpp('throw_ins'),
+        opp_goal_kicks: extraOpp('goal_kicks'),
+        opp_free_kicks: extraOpp('free_kicks'),
+        opp_crosses_total: extraOpp('crosses_total'),
       });
     }
   }

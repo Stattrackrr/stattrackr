@@ -52,6 +52,10 @@ const WORLD_CUP_TEAM_SUPPORTED_STAT_IDS = new Set<string>([
   'assists',
   'total_shots',
   'shots_on_target',
+  'shots_off_target',
+  'shots_blocked',
+  'shots_inside_box',
+  'shots_outside_box',
   'accurate_passes',
   'passes',
   'fouls_committed',
@@ -59,7 +63,17 @@ const WORLD_CUP_TEAM_SUPPORTED_STAT_IDS = new Set<string>([
   'yellow_cards',
   'red_cards',
   'tackles',
+  'interceptions',
   'expected_goals_xg',
+  // Team-only betting markets now ingested for every competition
+  // (BDL + StatsBomb + API-Football team statistics).
+  'corner_kicks',
+  'offsides',
+  'ball_possession',
+  'crosses',
+  'throw_ins',
+  'free_kicks',
+  'goal_kicks',
 ]);
 const UNSUPPORTED_STATS_BY_COMPETITION: Record<Competition, Set<string>> = {
   all: new Set<string>(),
@@ -213,6 +227,10 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'assists', label: 'Assists', playerKey: 'assists', teamKey: 'assists' },
   { id: 'total_shots', label: 'Total Shots', playerKey: 'derived_shots_total', teamKey: 'shots_total' },
   { id: 'shots_on_target', label: 'Shots on Target', playerKey: 'shots_on_target', teamKey: 'shots_on_target' },
+  { id: 'shots_off_target', label: 'Shots off Target', playerKey: null, teamKey: 'shots_off_target' },
+  { id: 'shots_blocked', label: 'Shots Blocked', playerKey: 'derived_shots_blocked', teamKey: 'shots_blocked' },
+  { id: 'shots_inside_box', label: 'Shots Inside Box', playerKey: null, teamKey: 'shots_inside_box' },
+  { id: 'shots_outside_box', label: 'Shots Outside Box', playerKey: null, teamKey: 'shots_outside_box' },
   { id: 'accurate_passes', label: 'Passes', playerKey: 'passes_accurate', teamKey: 'passes_accurate' },
   { id: 'big_chances_created', label: 'Big Chances Created', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'fouls_committed', label: 'Fouls Committed', playerKey: 'fouls_committed', teamKey: 'fouls' },
@@ -241,6 +259,7 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'successful_dribbles', label: 'Successful Dribbles', playerKey: 'dribbles_completed', teamKey: 'dribbles_completed' },
   { id: 'dribbles_attempted', label: 'Dribbles Attempted', playerKey: 'dribbles_attempted', teamKey: 'dribbles_total' },
   { id: 'tackles', label: 'Tackles', playerKey: 'tackles', teamKey: 'tackles' },
+  { id: 'interceptions', label: 'Interceptions', playerKey: 'interceptions', teamKey: 'interceptions' },
   { id: 'tackles_won', label: 'Tackles Won', playerKey: 'tackles_won', teamKey: null },
   { id: 'clearances', label: 'Clearances', playerKey: 'clearances', teamKey: 'clearances' },
   { id: 'duels_lost', label: 'Duels Lost', playerKey: 'duels_lost', teamKey: null },
@@ -322,6 +341,15 @@ const WORLD_CUP_OUTFIELD_ONLY_PLAYER_KEYS = new Set([
 
 type WorldCupChartStatId = (typeof WORLD_CUP_STAT_OPTIONS)[number]['id'];
 type WorldCupChartTimeframe = (typeof WORLD_CUP_TIMEFRAMES)[number]['id'];
+// Game Props: whose value to chart for the selected stat. `team` = selected
+// national team, `opponent` = their match-mate, `all` = both teams combined
+// (match total).
+type WorldCupStatPerspective = 'team' | 'opponent' | 'all';
+const WORLD_CUP_STAT_PERSPECTIVES: Array<{ id: WorldCupStatPerspective; label: string }> = [
+  { id: 'team', label: 'Team' },
+  { id: 'opponent', label: 'Opponent' },
+  { id: 'all', label: 'All' },
+];
 type WorldCupChartContext = {
   statId: WorldCupChartStatId;
   statKey: string | null;
@@ -1305,6 +1333,7 @@ function WorldCupGameByGameChart({
   );
   const [timeframe, setTimeframe] = useState<WorldCupChartTimeframe>('last10');
   const [manualLineValue, setManualLineValue] = useState<number | null>(null);
+  const [perspective, setPerspective] = useState<WorldCupStatPerspective>('team');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
   const baseAvailableStats = useMemo(
@@ -1348,11 +1377,29 @@ function WorldCupGameByGameChart({
       .map((row) => {
         const matchId = String(row.match_id ?? '');
         const match = matchLookup.get(matchId);
-        const value = getWorldCupStatNumber(row, statKey);
         const teamId = String(row.team_id ?? selectedTeamId ?? '');
         const homeId = String(match?.homeTeam?.id ?? match?.raw?.home_team?.id ?? '');
         const awayId = String(match?.awayTeam?.id ?? match?.raw?.away_team?.id ?? '');
         const isHome = row.is_home === true || Boolean(homeId && teamId && homeId === teamId);
+        // Resolve the value for the active perspective. `team` reads the base
+        // key; `opponent` reads the match-mate's `opp_<key>`; `all` sums both
+        // (match total). Missing values fall back to the base key's zero-default.
+        const value = (() => {
+          if (!statKey) return null;
+          const readKey = (key: string): number | null => {
+            const parsed = toNumber(row[key]);
+            if (parsed != null) return parsed;
+            return ZERO_DEFAULT_STAT_KEYS.has(statKey) ? 0 : null;
+          };
+          if (mode === 'team' && perspective === 'opponent') return readKey(`opp_${statKey}`);
+          if (mode === 'team' && perspective === 'all') {
+            const own = readKey(statKey);
+            const opp = readKey(`opp_${statKey}`);
+            if (own == null && opp == null) return null;
+            return (own ?? 0) + (opp ?? 0);
+          }
+          return readKey(statKey);
+        })();
         const opponentLabel = isHome
           ? String(match?.awayLabel || match?.awayTeam?.name || 'Opponent')
           : String(match?.homeLabel || match?.homeTeam?.name || 'Opponent');
@@ -1400,7 +1447,7 @@ function WorldCupGameByGameChart({
 
     const frame = WORLD_CUP_TIMEFRAMES.find((option) => option.id === timeframe) ?? WORLD_CUP_TIMEFRAMES[1];
     return rows.slice(-frame.count);
-  }, [data, mode, selectedPlayerId, selectedTeamId, statKey, timeframe, opponentTeam]);
+  }, [data, mode, selectedPlayerId, selectedTeamId, statKey, timeframe, opponentTeam, perspective]);
 
   const values = useMemo(
     () => chartRows.map((row) => row.value).filter((value): value is number => value != null),
@@ -1545,6 +1592,26 @@ function WorldCupGameByGameChart({
               </div>
             ) : null}
           </div>
+          {mode === 'team' ? (
+            <div className="inline-flex items-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5 h-[32px]">
+              {WORLD_CUP_STAT_PERSPECTIVES.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setPerspective(option.id)}
+                  className={`px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                    perspective === option.id
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                  aria-pressed={perspective === option.id}
+                  aria-label={`Show ${option.label.toLowerCase()} ${statConfig.label.toLowerCase()}`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
 

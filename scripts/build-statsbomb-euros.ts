@@ -81,14 +81,18 @@ type SbEvent = {
   team?: { id: number; name: string };
   player?: { id: number; name: string };
   position?: { id: number; name: string };
+  location?: number[];
   shot?: {
     statsbomb_xg?: number;
     outcome?: { id: number; name: string };
+    type?: { id: number; name: string };
   };
   pass?: {
     outcome?: { id: number; name: string } | null;
     goal_assist?: boolean;
     shot_assist?: boolean;
+    type?: { id: number; name: string } | null;
+    cross?: boolean;
   };
   bad_behaviour?: {
     card?: { id: number; name: string };
@@ -354,6 +358,163 @@ function aggregateMatch(
   return Array.from(aggByPlayer.values());
 }
 
+type TeamStatRow = {
+  source_team_id: string;
+  is_home: boolean;
+  goals: number;
+  expected_goals: number;
+  shots_total: number;
+  shots_on_target: number;
+  shots_off_target: number;
+  shots_blocked: number;
+  shots_inside_box: number;
+  shots_outside_box: number;
+  corners: number;
+  offsides: number;
+  fouls: number;
+  yellow_cards: number;
+  red_cards: number;
+  throw_ins: number;
+  goal_kicks: number;
+  free_kicks: number;
+  passes_total: number;
+  passes_accurate: number;
+  crosses_total: number;
+  crosses_accurate: number;
+  tackles: number;
+  interceptions: number;
+  saves: number;
+  possession_pct: number;
+};
+
+// StatsBomb shot outcome ids.
+const SHOT_BLOCKED_ID = 96;
+const SHOT_OFF_TARGET_IDS = new Set<number>([98, 99, 101, 115]); // Off T, Post, Wayward, Saved Off T
+
+function makeEmptyTeamStat(teamId: number, isHome: boolean): TeamStatRow {
+  return {
+    source_team_id: String(teamId),
+    is_home: isHome,
+    goals: 0,
+    expected_goals: 0,
+    shots_total: 0,
+    shots_on_target: 0,
+    shots_off_target: 0,
+    shots_blocked: 0,
+    shots_inside_box: 0,
+    shots_outside_box: 0,
+    corners: 0,
+    offsides: 0,
+    fouls: 0,
+    yellow_cards: 0,
+    red_cards: 0,
+    throw_ins: 0,
+    goal_kicks: 0,
+    free_kicks: 0,
+    passes_total: 0,
+    passes_accurate: 0,
+    crosses_total: 0,
+    crosses_accurate: 0,
+    tackles: 0,
+    interceptions: 0,
+    saves: 0,
+    possession_pct: 0,
+  };
+}
+
+/**
+ * Derive team-level match stats from StatsBomb events. Possession is
+ * approximated from each team's share of total passes (StatsBomb open data has
+ * no possession-time field); everything else is an exact event count.
+ */
+function aggregateTeamStats(
+  events: SbEvent[],
+  homeTeamId: number,
+  awayTeamId: number,
+  homeScore: number | null,
+  awayScore: number | null
+): TeamStatRow[] {
+  const home = makeEmptyTeamStat(homeTeamId, true);
+  const away = makeEmptyTeamStat(awayTeamId, false);
+  const pick = (teamId: number | undefined): TeamStatRow | null =>
+    teamId === homeTeamId ? home : teamId === awayTeamId ? away : null;
+
+  for (const event of events) {
+    const agg = pick(event.team?.id);
+    if (!agg) continue;
+    const typeName = event.type?.name;
+
+    if (typeName === 'Shot' && event.shot) {
+      agg.shots_total += 1;
+      const xg = Number(event.shot.statsbomb_xg ?? 0);
+      if (Number.isFinite(xg)) agg.expected_goals += xg;
+      const outcomeId = event.shot.outcome?.id;
+      if (outcomeId != null && SHOT_ON_TARGET_OUTCOME_IDS.has(outcomeId)) agg.shots_on_target += 1;
+      else if (outcomeId === SHOT_BLOCKED_ID) agg.shots_blocked += 1;
+      else if (outcomeId != null && SHOT_OFF_TARGET_IDS.has(outcomeId)) agg.shots_off_target += 1;
+      // Pitch is 120 long; penalty box starts at x=102.
+      const x = Array.isArray(event.location) ? event.location[0] : null;
+      if (x != null) {
+        if (x >= 102) agg.shots_inside_box += 1;
+        else agg.shots_outside_box += 1;
+      }
+      if (event.shot.type?.name === 'Free Kick') agg.free_kicks += 1;
+    }
+
+    if (typeName === 'Pass' && event.pass) {
+      agg.passes_total += 1;
+      if (!event.pass.outcome) agg.passes_accurate += 1;
+      const passType = event.pass.type?.name;
+      if (passType === 'Corner') agg.corners += 1;
+      if (passType === 'Throw-in') agg.throw_ins += 1;
+      if (passType === 'Goal Kick') agg.goal_kicks += 1;
+      if (passType === 'Free Kick') agg.free_kicks += 1;
+      if (event.pass.cross) {
+        agg.crosses_total += 1;
+        if (!event.pass.outcome) agg.crosses_accurate += 1;
+      }
+    }
+
+    if (typeName === 'Offside') agg.offsides += 1;
+
+    if (typeName === 'Foul Committed') {
+      agg.fouls += 1;
+      const cardId = event.foul_committed?.card?.id;
+      if (cardId != null) {
+        if (YELLOW_CARD_IDS.has(cardId)) agg.yellow_cards += 1;
+        if (RED_CARD_IDS.has(cardId)) agg.red_cards += 1;
+      }
+    }
+    if (typeName === 'Bad Behaviour') {
+      const cardId = event.bad_behaviour?.card?.id;
+      if (cardId != null) {
+        if (YELLOW_CARD_IDS.has(cardId)) agg.yellow_cards += 1;
+        if (RED_CARD_IDS.has(cardId)) agg.red_cards += 1;
+      }
+    }
+
+    if (typeName === 'Duel' && event.duel?.type?.name === 'Tackle') agg.tackles += 1;
+    if (typeName === 'Interception') agg.interceptions += 1;
+    if (typeName === 'Goal Keeper') {
+      const gkType = event.goalkeeper?.type?.name?.toLowerCase() ?? '';
+      if (gkType.includes('save') || gkType.includes('shot saved')) agg.saves += 1;
+    }
+  }
+
+  // Goals from the final score (own goals, etc. are already reflected there).
+  home.goals = homeScore ?? 0;
+  away.goals = awayScore ?? 0;
+
+  // Possession proxy from pass share.
+  const totalPasses = home.passes_total + away.passes_total;
+  if (totalPasses > 0) {
+    home.possession_pct = Math.round((home.passes_total / totalPasses) * 1000) / 10;
+    away.possession_pct = Math.round((away.passes_total / totalPasses) * 1000) / 10;
+  }
+
+  return [home, away];
+}
+
 async function ensureCompetitionRegistered(
   supabase: ReturnType<typeof getSupabase>,
   season: EuroSeason
@@ -465,6 +626,54 @@ async function ingestSeason(
       match.home_team.home_team_id,
       match.away_team.away_team_id
     );
+
+    const teamAggregated = aggregateTeamStats(
+      events,
+      match.home_team.home_team_id,
+      match.away_team.away_team_id,
+      match.home_score,
+      match.away_score
+    );
+    const teamStatRows = teamAggregated.map((row) => ({
+      source: 'statsbomb',
+      source_match_id: String(match.match_id),
+      source_team_id: row.source_team_id,
+      tournament_slug: 'euros',
+      season_year: season.seasonYear,
+      is_home: row.is_home,
+      goals: row.goals,
+      expected_goals: Number(row.expected_goals.toFixed(3)),
+      shots_total: row.shots_total,
+      shots_on_target: row.shots_on_target,
+      shots_off_target: row.shots_off_target,
+      shots_blocked: row.shots_blocked,
+      shots_inside_box: row.shots_inside_box,
+      shots_outside_box: row.shots_outside_box,
+      corners: row.corners,
+      offsides: row.offsides,
+      fouls: row.fouls,
+      yellow_cards: row.yellow_cards,
+      red_cards: row.red_cards,
+      throw_ins: row.throw_ins,
+      goal_kicks: row.goal_kicks,
+      free_kicks: row.free_kicks,
+      possession_pct: row.possession_pct,
+      passes_total: row.passes_total,
+      passes_accurate: row.passes_accurate,
+      crosses_total: row.crosses_total,
+      crosses_accurate: row.crosses_accurate,
+      tackles: row.tackles,
+      interceptions: row.interceptions,
+      saves: row.saves,
+      raw_aggregates: null,
+      fetched_at: new Date().toISOString(),
+    }));
+    {
+      const { error } = await supabase
+        .from('international_team_match_stats')
+        .upsert(teamStatRows, { onConflict: 'source,source_match_id,source_team_id' });
+      if (error) throw new Error(`Failed to upsert team_match_stats: ${error.message}`);
+    }
 
     for (const row of aggregated) {
       const existing = playerRowMap.get(row.source_player_id);

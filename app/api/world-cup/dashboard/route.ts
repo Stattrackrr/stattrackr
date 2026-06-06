@@ -18,7 +18,7 @@ type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 // stats are only fetched from BDL once and then served from cache on
 // subsequent loads (links every searched name to its resolved stats).
 // Stored permanently (no expiry).
-const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v4';
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v6';
 
 function buildDashboardCacheKey(opts: {
   competition: CompetitionParam;
@@ -127,16 +127,21 @@ async function fetchBdlTeamWorldCupHistory(
       new Set(teamMatches.map((match) => match.id).filter((id): id is number => Number.isFinite(id)))
     );
 
-    // Map each match to the selected team's goals (from the scoreline) so the
-    // "goals" team stat is always populated for World Cup bars.
+    // Map each match to the selected team's and opponent's goals (from the
+    // scoreline) so the "goals" team stat is always populated for World Cup bars.
     const goalsByMatch = new Map<number, number | null>();
+    const oppGoalsByMatch = new Map<number, number | null>();
     for (const match of teamMatches) {
       const isHome = match.home_team?.id === teamId;
-      const score = isHome ? match.home_score : match.away_score;
-      goalsByMatch.set(match.id, score ?? null);
+      goalsByMatch.set(match.id, (isHome ? match.home_score : match.away_score) ?? null);
+      oppGoalsByMatch.set(match.id, (isHome ? match.away_score : match.home_score) ?? null);
     }
 
-    const teamMatchStats: Array<Record<string, any>> = [];
+    // BDL's /team_match_stats returns both teams' rows for each match. Collect
+    // our rows and the opponent rows separately so opponent / home / away
+    // perspectives can be derived per match.
+    const ourRows: Array<Record<string, any>> = [];
+    const oppRowByMatch = new Map<number, Record<string, any>>();
     for (let i = 0; i < matchIds.length; i += 50) {
       const chunk = matchIds.slice(i, i + 50);
       const params = new URLSearchParams();
@@ -146,15 +151,37 @@ async function fetchBdlTeamWorldCupHistory(
         maxPages: 4,
       });
       for (const row of rows) {
-        if (Number(row?.team_id) !== teamId) continue;
-        const scoreGoals = goalsByMatch.get(Number(row?.match_id));
-        teamMatchStats.push({
-          ...row,
-          goals: row?.goals ?? (scoreGoals != null ? scoreGoals : undefined),
-          source: 'bdl',
-          tournament_slug: 'worldcup',
-        });
+        if (Number(row?.team_id) === teamId) ourRows.push(row);
+        else oppRowByMatch.set(Number(row?.match_id), row);
       }
+    }
+
+    // Prefix an opponent row's numeric stat fields with `opp_` so they can sit
+    // alongside our team's fields on the same emitted row.
+    const prefixOpp = (row: Record<string, any> | undefined): Record<string, any> => {
+      const out: Record<string, any> = {};
+      if (!row) return out;
+      for (const [key, value] of Object.entries(row)) {
+        if (key === 'match_id' || key === 'team_id' || key === 'is_home') continue;
+        out[`opp_${key}`] = value;
+      }
+      return out;
+    };
+
+    const teamMatchStats: Array<Record<string, any>> = [];
+    for (const row of ourRows) {
+      const matchId = Number(row?.match_id);
+      const scoreGoals = goalsByMatch.get(matchId);
+      const oppRow = oppRowByMatch.get(matchId);
+      const oppScoreGoals = oppGoalsByMatch.get(matchId);
+      teamMatchStats.push({
+        ...row,
+        goals: row?.goals ?? (scoreGoals != null ? scoreGoals : undefined),
+        ...prefixOpp(oppRow),
+        opp_goals: oppRow?.goals ?? (oppScoreGoals != null ? oppScoreGoals : undefined),
+        source: 'bdl',
+        tournament_slug: 'worldcup',
+      });
     }
 
     return { teamMatchStats, matches: summarizeMatches(teamMatches) };
@@ -1228,7 +1255,33 @@ export async function GET(request: NextRequest) {
     // stats from every international competition we ingest (Euros / Nations
     // League / Copa América / AFCON) so the chart, supporting stats and team
     // form panels populate, exactly like the Soccer dashboard's recent matches.
-    let mergedTeamMatchStats: Array<Record<string, any>> = teamMatchStats as Array<Record<string, any>>;
+    // BDL returns both teams' rows per match. Attach each row's match-mate as
+    // `opp_<field>` so the chart's team/opponent/home/away perspective toggle
+    // works for live (2026) World Cup games once they complete.
+    const attachOpponentFields = (rows: Array<Record<string, any>>): Array<Record<string, any>> => {
+      const byMatch = new Map<string, Array<Record<string, any>>>();
+      for (const row of rows) {
+        const mid = String(row?.match_id ?? '');
+        const list = byMatch.get(mid) ?? [];
+        list.push(row);
+        byMatch.set(mid, list);
+      }
+      return rows.map((row) => {
+        const mid = String(row?.match_id ?? '');
+        const mate = (byMatch.get(mid) ?? []).find((r) => r !== row && String(r?.team_id) !== String(row?.team_id));
+        if (!mate) return row;
+        const out: Record<string, any> = { ...row };
+        for (const [key, value] of Object.entries(mate)) {
+          if (key === 'match_id' || key === 'team_id' || key === 'is_home') continue;
+          if (out[`opp_${key}`] === undefined) out[`opp_${key}`] = value;
+        }
+        return out;
+      });
+    };
+
+    let mergedTeamMatchStats: Array<Record<string, any>> = attachOpponentFields(
+      teamMatchStats as Array<Record<string, any>>
+    );
     if (!requestedPlayerId && resolvedSelectedTeam?.id != null) {
       try {
         const [intlTeam, bdlHistory] = await Promise.all([
