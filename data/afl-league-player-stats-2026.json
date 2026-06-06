@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-06-06T13:21:12.156Z",
+  "generatedAt": "2026-06-06T15:10:19.441Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 608,
@@ -110,14 +110,14 @@
       "handballs": 14.17,
       "marks": 3.25,
       "goals": 0.25,
-      "tackles": 4.17,
+      "tackles": 4.08,
       "clearances": 5.92,
       "inside_50s": 5.5,
       "rebound_50s": 1,
-      "contested_possessions": 12.25,
+      "contested_possessions": 12.33,
       "uncontested_possessions": 17.75,
-      "meters_gained": 530.25,
-      "free_kicks_for": 2
+      "meters_gained": 530.42,
+      "free_kicks_for": 2.17
     },
     {
       "name": "Harry Sheezel",
@@ -1004,12 +1004,12 @@
       "marks": 2.15,
       "goals": 0.77,
       "tackles": 3.15,
-      "clearances": 5.38,
+      "clearances": 5.46,
       "inside_50s": 4.46,
       "rebound_50s": 0.85,
       "contested_possessions": 11.85,
       "uncontested_possessions": 12.15,
-      "meters_gained": 398.15,
+      "meters_gained": 399.31,
       "free_kicks_for": 2
     },
     {
@@ -1085,7 +1085,7 @@
       "rebound_50s": 1.42,
       "contested_possessions": 9.58,
       "uncontested_possessions": 14.25,
-      "meters_gained": 405.25,
+      "meters_gained": 405.5,
       "free_kicks_for": 1
     },
     {
@@ -2567,7 +2567,7 @@
       "rebound_50s": 0.78,
       "contested_possessions": 8,
       "uncontested_possessions": 11.44,
-      "meters_gained": 195.67,
+      "meters_gained": 197.44,
       "free_kicks_for": 0.78
     },
     {
@@ -2651,16 +2651,16 @@
       "team": "West Coast",
       "games": 13,
       "number": 77,
-      "disposals": 19,
+      "disposals": 19.08,
       "kicks": 11.15,
-      "handballs": 7.85,
+      "handballs": 7.92,
       "marks": 4.85,
       "goals": 0.69,
-      "tackles": 3.31,
+      "tackles": 3.38,
       "clearances": 2.54,
       "inside_50s": 3.62,
       "rebound_50s": 1.54,
-      "contested_possessions": 6.92,
+      "contested_possessions": 7,
       "uncontested_possessions": 12.62,
       "meters_gained": 357.23,
       "free_kicks_for": 0.69
@@ -2795,7 +2795,7 @@
       "rebound_50s": 1,
       "contested_possessions": 9.92,
       "uncontested_possessions": 8.92,
-      "meters_gained": 249.92,
+      "meters_gained": 250.08,
       "free_kicks_for": 1.58
     },
     {
@@ -2831,9 +2831,9 @@
       "clearances": 1.6,
       "inside_50s": 2.9,
       "rebound_50s": 0.9,
-      "contested_possessions": 7.6,
-      "uncontested_possessions": 10.4,
-      "meters_gained": 199.8,
+      "contested_possessions": 7.5,
+      "uncontested_possessions": 10.5,
+      "meters_gained": 198.6,
       "free_kicks_for": 1.6
     },
     {
@@ -2890,7 +2890,7 @@
       "rebound_50s": 1.12,
       "contested_possessions": 4.38,
       "uncontested_possessions": 13.38,
-      "meters_gained": 283,
+      "meters_gained": 284.12,
       "free_kicks_for": 0.75
     },
     {
@@ -3572,9 +3572,9 @@
       "clearances": 1.08,
       "inside_50s": 2.58,
       "rebound_50s": 1.83,
-      "contested_possessions": 6.5,
+      "contested_possessions": 6.58,
       "uncontested_possessions": 11,
-      "meters_gained": 249.5,
+      "meters_gained": 250.42,
       "free_kicks_for": 1.33
     },
     {
@@ -3910,13 +3910,13 @@
       "handballs": 6.27,
       "marks": 3,
       "goals": 1.09,
-      "tackles": 5.82,
+      "tackles": 5.73,
       "clearances": 3.36,
       "inside_50s": 3.91,
       "rebound_50s": 0.73,
       "contested_possessions": 7.36,
       "uncontested_possessions": 9.45,
-      "meters_gained": 350.73,
+      "meters_gained": 349.91,
       "free_kicks_for": 1.18
     },
     {
@@ -4125,7 +4125,7 @@
       "rebound_50s": 0.75,
       "contested_possessions": 4.75,
       "uncontested_possessions": 11.75,
-      "meters_gained": 265.5,
+      "meters_gained": 266,
       "free_kicks_for": 0.42
     },
     {
@@ -4645,7 +4645,7 @@
       "name": "Timothy English",
       "team": "Western Bulldogs",
       "games": 8,
-      "number": 13,
+      "number": 14,
       "disposals": 15.62,
       "kicks": 8.75,
       "handballs": 6.88,
@@ -5525,7 +5525,7 @@
       "handballs": 4.67,
       "marks": 4,
       "goals": 0,
-      "tackles": 2.33,
+      "tackles": 2.67,
       "clearances": 1.67,
       "inside_50s": 2,
       "rebound_50s": 3.67,
@@ -5873,7 +5873,7 @@
       "rebound_50s": 1.1,
       "contested_possessions": 4.8,
       "uncontested_possessions": 9,
-      "meters_gained": 294.2,
+      "meters_gained": 293.7,
       "free_kicks_for": 0.3
     },
     {
@@ -6172,7 +6172,7 @@
       "marks": 3.82,
       "goals": 0.09,
       "tackles": 2.55,
-      "clearances": 0.82,
+      "clearances": 0.73,
       "inside_50s": 2.55,
       "rebound_50s": 1.64,
       "contested_possessions": 2.82,
@@ -6916,9 +6916,9 @@
       "clearances": 0.17,
       "inside_50s": 0.83,
       "rebound_50s": 0.08,
-      "contested_possessions": 4.17,
-      "uncontested_possessions": 8.17,
-      "meters_gained": 207.58,
+      "contested_possessions": 4.08,
+      "uncontested_possessions": 8.25,
+      "meters_gained": 207.08,
       "free_kicks_for": 0.5
     },
     {
@@ -7583,7 +7583,7 @@
       "rebound_50s": 3.43,
       "contested_possessions": 2.86,
       "uncontested_possessions": 6.86,
-      "meters_gained": 274.43,
+      "meters_gained": 273.43,
       "free_kicks_for": 0.14
     },
     {
@@ -7704,7 +7704,7 @@
       "name": "Harrison Oliver",
       "team": "GWS",
       "games": 2,
-      "number": 13,
+      "number": 14,
       "disposals": 11.5,
       "kicks": 7.5,
       "handballs": 4,
@@ -7944,7 +7944,7 @@
       "rebound_50s": 0.57,
       "contested_possessions": 3.29,
       "uncontested_possessions": 8.14,
-      "meters_gained": 190.29,
+      "meters_gained": 189.71,
       "free_kicks_for": 0.71
     },
     {
@@ -8369,7 +8369,7 @@
       "name": "Mitchell Knevitt",
       "team": "Geelong",
       "games": 1,
-      "number": 13,
+      "number": 14,
       "disposals": 11,
       "kicks": 6,
       "handballs": 5,
@@ -9725,12 +9725,12 @@
       "marks": 1.7,
       "goals": 0.3,
       "tackles": 3,
-      "clearances": 1.7,
+      "clearances": 1.6,
       "inside_50s": 1.4,
       "rebound_50s": 0.2,
-      "contested_possessions": 5.4,
-      "uncontested_possessions": 3.8,
-      "meters_gained": 118.2,
+      "contested_possessions": 5.3,
+      "uncontested_possessions": 3.9,
+      "meters_gained": 121.6,
       "free_kicks_for": 1.1
     },
     {
@@ -9920,7 +9920,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5,
       "uncontested_possessions": 5,
-      "meters_gained": 242,
+      "meters_gained": 255,
       "free_kicks_for": 0
     },
     {
@@ -10109,7 +10109,7 @@
       "inside_50s": 1.75,
       "rebound_50s": 0.08,
       "contested_possessions": 2.83,
-      "uncontested_possessions": 6.17,
+      "uncontested_possessions": 6.08,
       "meters_gained": 164.25,
       "free_kicks_for": 0.58
     },
@@ -10307,7 +10307,7 @@
       "name": "Samson Ryan",
       "team": "Richmond",
       "games": 3,
-      "number": 13,
+      "number": 14,
       "disposals": 8.33,
       "kicks": 4,
       "handballs": 4.33,
@@ -10713,7 +10713,7 @@
       "marks": 1.88,
       "goals": 0.5,
       "tackles": 2,
-      "clearances": 0.5,
+      "clearances": 0.62,
       "inside_50s": 1.5,
       "rebound_50s": 0.12,
       "contested_possessions": 3.5,
