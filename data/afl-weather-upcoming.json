@@ -1,41 +1,63 @@
 {
-  "generatedAt": "2026-06-06T17:39:13.313Z",
+  "generatedAt": "2026-06-07T12:19:02.683Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "d35e2da67794aaadd64b607c11fc9387",
-      "homeTeam": "Sydney Swans",
-      "awayTeam": "St Kilda Saints",
-      "commenceTime": "2026-06-07T05:15:32Z",
-      "weather": {
-        "temperatureC": 17.3,
-        "precipitationMm": 0,
-        "windKmh": 2.7
-      }
-    },
-    {
-      "gameId": "87916d1c0805a3f57417d6e474ebd18d",
-      "homeTeam": "Essendon Bombers",
-      "awayTeam": "Carlton Blues",
-      "commenceTime": "2026-06-07T09:20:02Z",
-      "weather": {
-        "temperatureC": 13.2,
-        "precipitationMm": 0,
-        "windKmh": 7.4
-      }
-    },
     {
       "gameId": "71e562fa330b4eacc2f60368fc9fb4e0",
       "homeTeam": "Collingwood Magpies",
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-06-08T05:15:33Z",
       "weather": {
+        "temperatureC": 14.8,
+        "precipitationMm": 0,
+        "windKmh": 12.8
+      }
+    },
+    {
+      "gameId": "409bf5546dbf9b7f90839358e8e8f890",
+      "homeTeam": "Western Bulldogs",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-06-11T09:30:00Z",
+      "weather": {
+        "temperatureC": 11.8,
+        "precipitationMm": 0,
+        "windKmh": 3.3
+      }
+    },
+    {
+      "gameId": "66ace0866c415dd789835ee4f48fe906",
+      "homeTeam": "Geelong Cats",
+      "awayTeam": "Gold Coast Suns",
+      "commenceTime": "2026-06-12T09:40:00Z",
+      "weather": {
         "temperatureC": 14.2,
         "precipitationMm": 0,
-        "windKmh": 14.4
+        "windKmh": 14.6
+      }
+    },
+    {
+      "gameId": "9ec6a36d9762cab36419da63d8d27407",
+      "homeTeam": "North Melbourne Kangaroos",
+      "awayTeam": "West Coast Eagles",
+      "commenceTime": "2026-06-13T06:15:00Z",
+      "weather": {
+        "temperatureC": 14.4,
+        "precipitationMm": 0,
+        "windKmh": 11.3
+      }
+    },
+    {
+      "gameId": "e08e87d805fdb3667e4e41aa9c45aae8",
+      "homeTeam": "Richmond Tigers",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-06-14T03:10:00Z",
+      "weather": {
+        "temperatureC": 16.8,
+        "precipitationMm": 0,
+        "windKmh": 11
       }
     }
   ],
-  "count": 3
+  "count": 5
 }
