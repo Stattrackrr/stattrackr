@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-07T12:19:02.683Z",
+  "generatedAt": "2026-06-07T17:45:32.820Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-06-08T05:15:33Z",
       "weather": {
-        "temperatureC": 14.8,
+        "temperatureC": 15.2,
         "precipitationMm": 0,
-        "windKmh": 12.8
+        "windKmh": 13
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-06-11T09:30:00Z",
       "weather": {
-        "temperatureC": 11.8,
+        "temperatureC": 11.1,
         "precipitationMm": 0,
-        "windKmh": 3.3
+        "windKmh": 2.1
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-06-12T09:40:00Z",
       "weather": {
-        "temperatureC": 14.2,
+        "temperatureC": 13.3,
         "precipitationMm": 0,
-        "windKmh": 14.6
+        "windKmh": 13.8
       }
     },
     {
@@ -42,9 +42,20 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-06-13T06:15:00Z",
       "weather": {
-        "temperatureC": 14.4,
+        "temperatureC": 14.5,
         "precipitationMm": 0,
-        "windKmh": 11.3
+        "windKmh": 16.6
+      }
+    },
+    {
+      "gameId": "e3309264abbd7dff8434b86b1cffc603",
+      "homeTeam": "Port Adelaide Power",
+      "awayTeam": "Sydney Swans",
+      "commenceTime": "2026-06-13T09:35:00Z",
+      "weather": {
+        "temperatureC": 15.6,
+        "precipitationMm": 0,
+        "windKmh": 9.8
       }
     },
     {
@@ -57,7 +68,18 @@
         "precipitationMm": 0,
         "windKmh": 11
       }
+    },
+    {
+      "gameId": "eb9313d969a21be0fee7af72db7dd7cc",
+      "homeTeam": "St Kilda Saints",
+      "awayTeam": "GWS Giants",
+      "commenceTime": "2026-06-14T05:15:00Z",
+      "weather": {
+        "temperatureC": 17.6,
+        "precipitationMm": 0,
+        "windKmh": 13.5
+      }
     }
   ],
-  "count": 5
+  "count": 7
 }

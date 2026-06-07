@@ -1,71 +1,59 @@
 {
-  "generatedAt": "2026-06-07T12:25:57Z",
-  "modelVersion": "afl-disp-20260607-121936",
+  "generatedAt": "2026-06-07T18:07:03Z",
+  "modelVersion": "afl-disp-20260607-180253",
   "sampleCount": 1552,
-  "guardrailsPass": false,
-  "promoted": false,
+  "guardrailsPass": true,
+  "promoted": true,
   "candidateMetrics": {
     "name": "candidate",
     "sampleCount": 1552,
-    "hitRate": 0.552191,
-    "brierScore": 0.246142,
-    "logLoss": 0.6859,
-    "mae": 4.465499,
-    "avgClvLite": -0.00168,
-    "positiveClvRate": 0.240979,
+    "hitRate": 0.548969,
+    "brierScore": 0.246448,
+    "logLoss": 0.685841,
+    "mae": 4.436911,
+    "avgClvLite": -0.001959,
+    "positiveClvRate": 0.239046,
     "clvSampleCount": 1552,
     "calibrationBins": [
       {
         "bin": 1,
         "count": 4,
-        "avgPred": 0.1667,
+        "avgPred": 0.172,
         "avgActual": 0.25
       },
       {
         "bin": 2,
-        "count": 34,
-        "avgPred": 0.2973,
-        "avgActual": 0.3235
+        "count": 14,
+        "avgPred": 0.2275,
+        "avgActual": 0.2143
       },
       {
         "bin": 3,
-        "count": 12,
-        "avgPred": 0.3761,
-        "avgActual": 0.25
+        "count": 208,
+        "avgPred": 0.3906,
+        "avgActual": 0.4038
       },
       {
         "bin": 4,
-        "count": 1309,
-        "avgPred": 0.4474,
-        "avgActual": 0.4507
+        "count": 1084,
+        "avgPred": 0.4561,
+        "avgActual": 0.4566
       },
       {
         "bin": 5,
-        "count": 187,
-        "avgPred": 0.5311,
-        "avgActual": 0.5294
-      },
-      {
-        "bin": 6,
-        "count": 1,
-        "avgPred": 0.6001,
-        "avgActual": 0.0
-      },
-      {
-        "bin": 7,
-        "count": 1,
-        "avgPred": 0.7571,
-        "avgActual": 1.0
+        "count": 241,
+        "avgPred": 0.5253,
+        "avgActual": 0.5145
       },
       {
         "bin": 9,
-        "count": 4,
-        "avgPred": 0.9924,
-        "avgActual": 0.75
+        "count": 1,
+        "avgPred": 1.0,
+        "avgActual": 1.0
       }
     ],
     "calibrationMethod": "isotonic",
-    "modelVersion": "afl-disp-20260607-121936"
+    "modelVersion": "afl-disp-20260607-180253"
   },
   "currentMetrics": {
     "name": "current",
@@ -74,7 +62,7 @@
     "brierScore": 0.245884,
     "logLoss": 0.684758,
     "mae": 4.419118,
-    "avgClvLite": -0.001722,
+    "avgClvLite": -0.001768,
     "positiveClvRate": 0.24549,
     "clvSampleCount": 1552,
     "calibrationBins": [
@@ -125,58 +113,58 @@
     "modelVersion": "afl-disp-20260606-175710"
   },
   "deltas": {
-    "brierImprovement": -0.001049,
-    "logLossChange": 0.001668,
-    "hitRateDelta": 0.003222
+    "brierImprovement": -0.002294,
+    "logLossChange": 0.001582,
+    "hitRateDelta": 0.0
   },
   "confidenceBuckets": [
     {
       "bucketType": "confidence",
       "bucket": "high_0.65_plus",
-      "count": 45,
-      "hitRate": 0.711111
+      "count": 19,
+      "hitRate": 0.789474
     },
     {
       "bucketType": "confidence",
       "bucket": "low",
-      "count": 1413,
-      "hitRate": 0.543524
+      "count": 1313,
+      "hitRate": 0.538462
     },
     {
       "bucketType": "confidence",
       "bucket": "mid_0.57_0.65",
-      "count": 94,
-      "hitRate": 0.606383
+      "count": 220,
+      "hitRate": 0.590909
     }
   ],
   "edgeBuckets": [
     {
       "bucketType": "edge",
       "bucket": "edge_5_8",
-      "count": 774,
-      "hitRate": 0.543928
+      "count": 263,
+      "hitRate": 0.498099
     },
     {
       "bucketType": "edge",
       "bucket": "edge_8_plus",
-      "count": 137,
-      "hitRate": 0.649635
+      "count": 229,
+      "hitRate": 0.611354
     },
     {
       "bucketType": "edge",
       "bucket": "edge_under_5",
-      "count": 641,
-      "hitRate": 0.541342
+      "count": 1060,
+      "hitRate": 0.548113
     }
   ],
   "topLossTypes": [
     {
       "type": "Under->Over",
-      "count": 605
+      "count": 583
     },
     {
       "type": "Over->Under",
-      "count": 90
+      "count": 117
     }
   ]
 }
