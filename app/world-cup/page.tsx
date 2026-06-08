@@ -48,6 +48,7 @@ const COMMON_INTERNATIONAL_UNSUPPORTED = new Set<string>([
 // competition actually provides (see getSymmetricTeamStatIds), so e.g. xG (only
 // StatsBomb has it) drops out automatically when API-Football comps are present.
 const WORLD_CUP_TEAM_SUPPORTED_STAT_IDS = new Set<string>([
+  'moneyline',
   'goals',
   'assists',
   'total_shots',
@@ -56,7 +57,6 @@ const WORLD_CUP_TEAM_SUPPORTED_STAT_IDS = new Set<string>([
   'shots_blocked',
   'shots_inside_box',
   'shots_outside_box',
-  'accurate_passes',
   'passes',
   'fouls_committed',
   'fouls_suffered',
@@ -221,7 +221,29 @@ const WORLD_CUP_DVP_METRICS = [
   { key: 'yellow_cards', label: 'Yellow Cards vs ' },
   { key: 'red_cards', label: 'Red Cards vs ' },
 ] as const;
+// Stats shown in the Opponent Breakdown (team-level "allowed" averages). These
+// reuse the DVP batch endpoint's stat keys; values are summed across DEF/MID/ATT
+// to give a whole-team allowed-per-game figure (mirrors the AFL Opponent
+// Breakdown card's allowed-averages layout).
+const WORLD_CUP_OPP_BREAKDOWN_METRICS = [
+  { key: 'goals', label: 'Goals' },
+  { key: 'assists', label: 'Assists' },
+  { key: 'shots_total', label: 'Shots' },
+  { key: 'shots_on_target', label: 'Shots on Target' },
+  { key: 'passes_accurate', label: 'Passes' },
+  { key: 'yellow_cards', label: 'Yellow Cards' },
+  { key: 'red_cards', label: 'Red Cards' },
+] as const;
+// Opponent Breakdown is computed over each team's last N completed games (any
+// season/competition), not per-season — these are the toggle options.
+const WORLD_CUP_OPP_BREAKDOWN_WINDOWS = [
+  { id: 3, label: 'L3' },
+  { id: 10, label: 'L10' },
+  { id: 20, label: 'L20' },
+] as const;
 const WORLD_CUP_STAT_OPTIONS = [
+  // Game Props only: win/draw/loss result view (value derived from scoreline).
+  { id: 'moneyline', label: 'Money Line', playerKey: null, teamKey: 'moneyline' },
   // Player main chart order mirrors app/soccer/components/soccerPlayerStatCatalog.ts
   { id: 'goals', label: 'Goals', playerKey: 'goals', teamKey: 'goals' },
   { id: 'assists', label: 'Assists', playerKey: 'assists', teamKey: 'assists' },
@@ -231,7 +253,6 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'shots_blocked', label: 'Shots Blocked', playerKey: 'derived_shots_blocked', teamKey: 'shots_blocked' },
   { id: 'shots_inside_box', label: 'Shots Inside Box', playerKey: null, teamKey: 'shots_inside_box' },
   { id: 'shots_outside_box', label: 'Shots Outside Box', playerKey: null, teamKey: 'shots_outside_box' },
-  { id: 'accurate_passes', label: 'Passes', playerKey: 'passes_accurate', teamKey: 'passes_accurate' },
   { id: 'big_chances_created', label: 'Big Chances Created', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'fouls_committed', label: 'Fouls Committed', playerKey: 'fouls_committed', teamKey: 'fouls' },
   { id: 'fouls_suffered', label: 'Fouls Suffered', playerKey: 'was_fouled', teamKey: 'was_fouled' },
@@ -252,7 +273,7 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'big_chances', label: 'Big Chances', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'big_chances_missed', label: 'Big Chances Missed', playerKey: 'big_chances_missed', teamKey: 'big_chances_missed' },
   { id: 'corner_kicks', label: 'Corner Kicks', playerKey: null, teamKey: 'corners' },
-  { id: 'passes', label: 'Total Passes', playerKey: 'passes_total', teamKey: 'passes_total' },
+  { id: 'passes', label: 'Passes', playerKey: 'passes_total', teamKey: 'passes_total' },
   { id: 'passes_in_final_third', label: 'Passes in Final Third', playerKey: null, teamKey: 'passes_final_third' },
   { id: 'crosses', label: 'Crosses', playerKey: 'crosses_total', teamKey: 'crosses_total' },
   { id: 'possession_lost', label: 'Possession Lost', playerKey: 'possession_lost', teamKey: null },
@@ -270,6 +291,37 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'goal_kicks', label: 'Goal Kicks', playerKey: null, teamKey: 'goal_kicks' },
   { id: 'free_kicks', label: 'Free Kicks', playerKey: null, teamKey: 'free_kicks' },
 ] as const;
+// Player Props (player mode): stat options to hide from both the main stat
+// pills and the supporting-stats row. These were removed per product decision.
+const WORLD_CUP_PLAYER_HIDDEN_STAT_IDS = new Set<string>([
+  'expected_goals_xg',
+  'expected_assists_xa',
+  'big_chances',
+  'big_chances_created',
+  'big_chances_missed',
+  'shots_blocked',
+  'crosses',
+  'possession_lost',
+  'tackles_won',
+  'interceptions',
+  'clearances',
+  'duels_lost',
+]);
+// The corresponding playerKey strings, used to drop the same stats from the
+// supporting-stats row (which is keyed by playerKey, not option id).
+const WORLD_CUP_PLAYER_HIDDEN_SUPPORTING_KEYS = new Set<string>([
+  'expected_goals',
+  'expected_assists',
+  'big_chances_created',
+  'big_chances_missed',
+  'derived_shots_blocked',
+  'crosses_total',
+  'possession_lost',
+  'tackles_won',
+  'interceptions',
+  'clearances',
+  'duels_lost',
+]);
 const WORLD_CUP_TIMEFRAMES = [
   { id: 'last5', label: 'L5', count: 5 },
   { id: 'last10', label: 'L10', count: 10 },
@@ -487,6 +539,34 @@ function worldCupTeamOptionFromBdl(team: {
   };
 }
 
+/** Map a persisted team (possibly a placeholder slug id) onto the live BDL list. */
+function resolveStoredWorldCupTeam(
+  stored: WorldCupTeamOption,
+  teamOptions: WorldCupTeamOption[]
+): WorldCupTeamOption | null {
+  if (!stored || !teamOptions.length) return stored;
+  if (/^\d+$/.test(stored.id)) {
+    return teamOptions.find((team) => team.id === stored.id) ?? stored;
+  }
+  const nameKey = stored.name.trim().toLowerCase();
+  const codeKey = (stored.countryCode || stored.abbreviation || stored.id).trim().toLowerCase();
+  return (
+    teamOptions.find((team) => team.name.trim().toLowerCase() === nameKey) ||
+    teamOptions.find((team) => (team.countryCode || '').trim().toLowerCase() === codeKey) ||
+    teamOptions.find((team) => team.abbreviation.trim().toLowerCase() === codeKey) ||
+    teamOptions.find((team) => team.id.trim().toLowerCase() === codeKey) ||
+    null
+  );
+}
+
+const WORLD_CUP_STORAGE_KEYS = {
+  propsMode: 'world-cup:propsMode',
+  competition: 'world-cup:competition',
+  selectedTeam: 'world-cup:selectedTeam',
+  selectedPlayer: 'world-cup:selectedPlayer',
+  chartContext: 'world-cup:chartContext',
+} as const;
+
 function toNumber(value: unknown): number | null {
   const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) ? parsed : null;
@@ -688,7 +768,87 @@ function resolveWorldCupOpponentCountryCode(
   return null;
 }
 
-type WorldCupCompetitionTag = 'WC' | 'Euros' | 'NL' | 'Copa' | 'AFCON';
+type WorldCupCompetitionTag = 'WC' | 'WCQ' | 'Euros' | 'NL' | 'Copa' | 'AFCON' | 'AC' | 'Club';
+
+const WORLD_CUP_COMPETITION_TAG_ORDER: WorldCupCompetitionTag[] = ['WC', 'WCQ', 'Euros', 'NL', 'Copa', 'AFCON', 'AC', 'Club'];
+
+// Tournament stage buckets, ordered by "pressure" (group -> final).
+type WorldCupStageBucket = 'group' | 'r16' | 'qf' | 'sf' | 'third' | 'final';
+const WORLD_CUP_STAGE_ORDER: { id: WorldCupStageBucket; label: string }[] = [
+  { id: 'group', label: 'Group Stage' },
+  { id: 'r16', label: 'Round of 16' },
+  { id: 'qf', label: 'Quarter-final' },
+  { id: 'sf', label: 'Semi-final' },
+  { id: 'third', label: '3rd Place' },
+  { id: 'final', label: 'Final' },
+];
+
+// The `stage` field arrives as a string (BDL) or { name } (international sources).
+function readWorldCupMatchStage(match: any): string | null {
+  const raw = match?.stage;
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && typeof raw.name === 'string') return raw.name;
+  return null;
+}
+
+// Normalize the heterogeneous stage strings from each source into one bucket.
+function deriveWorldCupStageBucket(stageRaw: string | null): WorldCupStageBucket | null {
+  if (!stageRaw) return null;
+  const s = stageRaw.toLowerCase();
+  if (s.includes('semi')) return 'sf';
+  if (s.includes('quarter') || /\bqf\b/.test(s)) return 'qf';
+  if (s.includes('round of 16') || s.includes('last 16') || s.includes('1/8') || s.includes('eighth')) return 'r16';
+  if ((s.includes('third') || s.includes('3rd')) && s.includes('place')) return 'third';
+  if (s.includes('final')) return 'final';
+  if (s.includes('group') || s.includes('league')) return 'group';
+  return null;
+}
+
+function readWorldCupMatchPenaltyScores(match: Record<string, any> | null | undefined): {
+  home: number | null;
+  away: number | null;
+} {
+  if (!match) return { home: null, away: null };
+  const home =
+    toNumber(match.homeScorePenalties) ??
+    toNumber(match.home_score_penalties) ??
+    toNumber(match.home_score_penalty) ??
+    null;
+  const away =
+    toNumber(match.awayScorePenalties) ??
+    toNumber(match.away_score_penalties) ??
+    toNumber(match.away_score_penalty) ??
+    null;
+  return { home, away };
+}
+
+/** Knockout level after ET; chart still grades as a draw, tooltip shows pens winner. */
+function resolveWorldCupPenaltyShootout(
+  match: Record<string, any> | null | undefined,
+  isHome: boolean,
+  teamLabel: string,
+  opponentLabel: string
+): {
+  winnerName: string;
+  teamWonPenalties: boolean;
+  penScorelineTeamFirst: string;
+} | null {
+  const { home, away } = readWorldCupMatchPenaltyScores(match);
+  if (home == null || away == null || home === away) return null;
+  const homeWon = home > away;
+  const teamWonPenalties = isHome ? homeWon : !homeWon;
+  const winnerName = homeWon
+    ? isHome
+      ? teamLabel
+      : opponentLabel
+    : isHome
+      ? opponentLabel
+      : teamLabel;
+  const teamPens = isHome ? home : away;
+  const oppPens = isHome ? away : home;
+  return { winnerName, teamWonPenalties, penScorelineTeamFirst: `${teamPens}-${oppPens}` };
+}
 
 // Map a stat row / its match to a short competition tag shown under the date.
 // Intl matches carry `source`/`tournament_slug`; BDL World Cup rows do not, so
@@ -704,8 +864,14 @@ function deriveWorldCupCompetitionTag(
   );
   const sources = [match?.source, row?.source].map((v) => String(v ?? '').toLowerCase());
 
+  // Club leagues are ingested via API-Football with `club-` prefixed slugs
+  // (epl, la-liga, …). Tag them all as a single "Club" competition so they sit
+  // alongside the national-team tags in the chart's competition filter.
+  if (slugs.some((s) => s.startsWith('club'))) return 'Club';
+  if (slugs.some((s) => s.startsWith('wcq') || s === 'wc-qualifiers' || s === 'world-cup-qualification')) return 'WCQ';
   if (slugs.some((s) => s === 'copa-america' || s === 'copa_america' || s === 'copaamerica')) return 'Copa';
   if (slugs.some((s) => s === 'afcon' || s === 'africa-cup-of-nations')) return 'AFCON';
+  if (slugs.some((s) => s === 'asian-cup' || s === 'afc-asian-cup')) return 'AC';
   if (slugs.some((s) => s === 'euros' || s === 'euro')) return 'Euros';
   if (slugs.some((s) => s === 'nations-league' || s === 'nationsleague')) return 'NL';
   if (sources.some((s) => s === 'statsbomb')) return 'Euros';
@@ -713,21 +879,12 @@ function deriveWorldCupCompetitionTag(
   return 'WC';
 }
 
-/**
- * Team mode: return the set of stat option ids whose `teamKey` has real data in
- * EVERY competition present among the given team rows. Keeps the chart's stat
- * pills "symmetrical" — a stat only shows if all of WC / Euros / NL / Copa /
- * AFCON (whichever the team actually played) provide it, so no competition ever
- * renders a misleading empty bar.
- */
-function getSymmetricTeamStatIds(
-  candidateOptions: Array<{ id: string; teamKey: string | null }>,
-  teamRows: Array<Record<string, any>>
-): Set<string> {
-  const result = new Set<string>();
-  if (!teamRows.length) return result;
+/** Indicator stats used to decide whether a competition has full team-level data. */
+const RICH_TEAM_STAT_KEYS = ['shots_total', 'corners', 'possession_pct', 'passes_total'] as const;
 
-  // Group rows by competition tag.
+function groupTeamRowsByCompetition(
+  teamRows: Array<Record<string, any>>
+): Map<string, Array<Record<string, any>>> {
   const rowsByComp = new Map<string, Array<Record<string, any>>>();
   for (const row of teamRows) {
     const tag = deriveWorldCupCompetitionTag(row, undefined);
@@ -735,15 +892,74 @@ function getSymmetricTeamStatIds(
     list.push(row);
     rowsByComp.set(tag, list);
   }
+  return rowsByComp;
+}
+
+/**
+ * Competitions that participate in the symmetric-coverage gate. A competition is
+ * "sparse" when its rows only carry scoreline-level fields (goals, cards) — e.g.
+ * a couple of past World Cup games from BDL without full team_match_stats. Those
+ * sparse buckets are excluded so they do not hide shots / possession / corners
+ * that WCQ (SofaScore) and other rich sources provide.
+ */
+function getSymmetricCoverageCompetitions(
+  rowsByComp: Map<string, Array<Record<string, any>>>
+): string[] {
   const comps = Array.from(rowsByComp.keys());
+  const rich = comps.filter((comp) => {
+    const rows = rowsByComp.get(comp) ?? [];
+    if (!rows.length) return false;
+    const present = RICH_TEAM_STAT_KEYS.filter((key) =>
+      rows.some((row) => toNumber(row[key]) != null)
+    );
+    return present.length >= 2;
+  });
+  return rich.length ? rich : comps;
+}
+
+function teamStatPresentInComp(
+  rowsByComp: Map<string, Array<Record<string, any>>>,
+  comp: string,
+  key: string
+): boolean {
+  return (rowsByComp.get(comp) ?? []).some((row) => toNumber(row[key]) != null);
+}
+
+/**
+ * Team mode: return stat keys present in every *rich* competition among the team
+ * rows (see getSymmetricCoverageCompetitions). Keeps pills aligned across WC /
+ * Euros / NL / Copa / AFCON when those sources all provide full team stats, but
+ * does not let a sparse WC slice hide stats from WCQ.
+ */
+function getSymmetricTeamStatKeys(
+  keys: string[],
+  teamRows: Array<Record<string, any>>
+): Set<string> {
+  const result = new Set<string>();
+  if (!teamRows.length) return result;
+  const rowsByComp = groupTeamRowsByCompetition(teamRows);
+  const comps = getSymmetricCoverageCompetitions(rowsByComp);
+  for (const key of keys) {
+    if (!key) continue;
+    const coveredEverywhere = comps.every((comp) => teamStatPresentInComp(rowsByComp, comp, key));
+    if (coveredEverywhere) result.add(key);
+  }
+  return result;
+}
+
+function getSymmetricTeamStatIds(
+  candidateOptions: Array<{ id: string; teamKey: string | null }>,
+  teamRows: Array<Record<string, any>>
+): Set<string> {
+  const result = new Set<string>();
+  if (!teamRows.length) return result;
+  const rowsByComp = groupTeamRowsByCompetition(teamRows);
+  const comps = getSymmetricCoverageCompetitions(rowsByComp);
 
   for (const option of candidateOptions) {
     const key = option.teamKey;
     if (!key) continue;
-    const coveredEverywhere = comps.every((comp) => {
-      const rows = rowsByComp.get(comp) ?? [];
-      return rows.some((row) => toNumber(row[key]) != null);
-    });
+    const coveredEverywhere = comps.every((comp) => teamStatPresentInComp(rowsByComp, comp, key));
     if (coveredEverywhere) result.add(option.id);
   }
   return result;
@@ -811,9 +1027,10 @@ interface WorldCupChartTooltipProps {
   coordinate?: { x: number; y: number };
   isDark: boolean;
   statLabel: string;
+  isMoneyline?: boolean;
 }
 
-function WorldCupChartTooltip({ active, payload, coordinate, isDark, statLabel }: WorldCupChartTooltipProps) {
+function WorldCupChartTooltip({ active, payload, coordinate, isDark, statLabel, isMoneyline }: WorldCupChartTooltipProps) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -865,16 +1082,23 @@ function WorldCupChartTooltip({ active, payload, coordinate, isDark, statLabel }
         matchLabel?: string;
         minutes?: number | null;
         competitionTag?: WorldCupCompetitionTag;
+        penaltyShootout?: {
+          winnerName: string;
+          teamWonPenalties: boolean;
+          penScorelineTeamFirst: string;
+        } | null;
       }
     | undefined;
   if (!point) return null;
 
   const competitionFullName: Record<string, string> = {
     WC: 'World Cup',
+    WCQ: 'World Cup Qualifier',
     Euros: 'Euros',
     NL: 'Nations League',
     Copa: 'Copa América',
     AFCON: 'Africa Cup of Nations',
+    AC: 'Asian Cup',
   };
   const competitionLabel = point.competitionTag ? competitionFullName[point.competitionTag] : null;
 
@@ -1000,11 +1224,29 @@ function WorldCupChartTooltip({ active, payload, coordinate, isDark, statLabel }
           borderRadius: '6px',
           fontSize: '14px',
           fontWeight: 600,
-          color: tooltipText,
+          color: isMoneyline ? resultColor : tooltipText,
         }}
       >
-        {statLabel}: {formattedValue}
+        {isMoneyline
+          ? `${gameResultLabel ?? 'Result'}${point.scoreline ? ` (${point.scoreline})` : ''}`
+          : `${statLabel}: ${formattedValue}`}
       </div>
+
+      {point.penaltyShootout ? (
+        <div
+          style={{
+            marginBottom: '8px',
+            padding: '8px',
+            backgroundColor: isDark ? '#374151' : '#f3f4f6',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: point.penaltyShootout.teamWonPenalties ? winColor : lossColor,
+          }}
+        >
+          {point.penaltyShootout.winnerName} won {point.penaltyShootout.penScorelineTeamFirst} on pens
+        </div>
+      ) : null}
 
       {competitionLabel ? (
         <div
@@ -1148,8 +1390,8 @@ function getWorldCupStatLabelByKey(key: string): string {
     derived_shots_total: 'Shots',
     big_chances: 'Big Chances',
     big_chances_created: 'Big Chances Created',
-    passes_total: 'Total Passes',
-    passes_accurate: 'Passes',
+    passes_total: 'Passes',
+    passes_accurate: 'Completed Passes',
     key_passes: 'Key Passes',
     crosses_accurate: 'Accurate Crosses',
     fouls_committed: 'Fouls Committed',
@@ -1178,7 +1420,6 @@ function getWorldCupStatLabelByKey(key: string): string {
     free_kicks: 'Free Kicks',
     ball_possession: 'Ball Possession',
     corner_kicks: 'Corner Kicks',
-    accurate_passes: 'Passes',
     passes_in_final_third: 'Passes in Final Third',
     successful_dribbles: 'Successful Dribbles',
   };
@@ -1189,19 +1430,35 @@ function buildWorldCupSupportingKeys(mainKey: string | null, mode: PropsMode): s
   const unique = (preferred: string[]) => preferred.filter((key, index, arr) => Boolean(key) && arr.indexOf(key) === index);
   const main = mainKey || '';
   if (mode === 'team') {
-    if (['expected_goals', 'shots_total', 'shots_on_target', 'big_chances'].includes(main)) {
-      return unique(['expected_goals', 'shots_total', 'shots_on_target', 'big_chances', 'corners']);
+    // Category groups so the supporting row reflects the main chart (e.g. pick
+    // Goals/Total Shots → the shooting family appears). The symmetric-coverage
+    // filter in WorldCupSupportingStats then trims anything a competition lacks,
+    // so xG falls back to total shots / SOT automatically when unavailable.
+    const shooting = [
+      'goals',
+      'shots_total',
+      'shots_on_target',
+      'shots_off_target',
+      'shots_blocked',
+      'shots_inside_box',
+      'shots_outside_box',
+      'expected_goals',
+      'big_chances',
+    ];
+    const passing = ['passes_total', 'possession_pct', 'passes_final_third', 'crosses_total'];
+    const discipline = ['fouls', 'yellow_cards', 'red_cards', 'offsides'];
+    const setPieces = ['corners', 'offsides', 'throw_ins', 'free_kicks', 'goal_kicks'];
+    const defending = ['tackles', 'interceptions', 'clearances', 'fouls'];
+
+    if (shooting.includes(main)) return unique([main, ...shooting]);
+    if (passing.includes(main)) return unique([main, ...passing]);
+    if (['corners', 'throw_ins', 'free_kicks', 'goal_kicks'].includes(main)) {
+      return unique([main, ...setPieces, 'shots_total', 'shots_on_target']);
     }
-    if (['yellow_cards', 'fouls'].includes(main)) {
-      return unique(['fouls', 'yellow_cards', 'tackles', 'clearances']);
-    }
-    if (['passes_total', 'passes_accurate', 'passes_final_third'].includes(main)) {
-      return unique(['passes_total', 'passes_accurate', 'passes_final_third', 'expected_goals', 'shots_total']);
-    }
-    if (['corners', 'offsides', 'throw_ins', 'goal_kicks', 'free_kicks'].includes(main)) {
-      return unique([main, 'expected_goals', 'shots_total', 'shots_on_target']);
-    }
-    return unique([main, 'expected_goals', 'shots_total', 'shots_on_target', 'possession_pct', 'corners'].filter(Boolean));
+    if (['yellow_cards', 'red_cards'].includes(main)) return unique([main, ...discipline, ...defending]);
+    if (main === 'fouls') return unique([main, ...discipline, 'tackles', 'interceptions']);
+    if (['tackles', 'interceptions', 'clearances'].includes(main)) return unique([main, ...defending]);
+    return unique([main, 'shots_total', 'shots_on_target', 'possession_pct', 'corners', 'passes_total'].filter(Boolean));
   }
 
   if (['goals', 'derived_shots_total', 'shots_on_target', 'expected_goals'].includes(main)) {
@@ -1216,10 +1473,10 @@ function buildWorldCupSupportingKeys(mainKey: string | null, mode: PropsMode): s
     ]);
   }
   if (['assists', 'expected_assists', 'key_passes'].includes(main)) {
-    return unique(['minutes_played', 'assists', 'expected_assists', 'key_passes', 'passes_total', 'passes_accurate']);
+    return unique(['minutes_played', 'assists', 'expected_assists', 'key_passes', 'passes_total']);
   }
   if (['passes_accurate', 'passes_total'].includes(main)) {
-    return unique(['minutes_played', 'passes_total', 'passes_accurate', 'expected_assists', 'key_passes']);
+    return unique(['minutes_played', 'passes_total', 'expected_assists', 'key_passes']);
   }
   if (['dribbles_completed', 'dribbles_attempted'].includes(main)) {
     return unique(['minutes_played', 'dribbles_attempted', 'dribbles_completed', 'duels_won', 'was_fouled']);
@@ -1243,6 +1500,7 @@ function getAvailableWorldCupStats(
     const key = mode === 'player' ? option.playerKey : option.teamKey;
     if (!key) return false;
     if (mode === 'player') {
+      if (WORLD_CUP_PLAYER_HIDDEN_STAT_IDS.has(option.id)) return false;
       if (WORLD_CUP_GOALKEEPER_ONLY_PLAYER_KEYS.has(key) && !isGoalkeeper) return false;
       if (isGoalkeeper && WORLD_CUP_OUTFIELD_ONLY_PLAYER_KEYS.has(key)) return false;
     }
@@ -1259,6 +1517,20 @@ function getAvailableWorldCupStats(
     }
     return true;
   });
+  if (mode === 'player') {
+    // Player Props ordering: passes immediately after shots on target, and
+    // tackles immediately after passes.
+    const moveAfter = (id: string, afterId: string) => {
+      const idx = filtered.findIndex((o) => o.id === id);
+      if (idx === -1) return;
+      const [item] = filtered.splice(idx, 1);
+      const afterIdx = filtered.findIndex((o) => o.id === afterId);
+      if (afterIdx === -1) filtered.push(item);
+      else filtered.splice(afterIdx + 1, 0, item);
+    };
+    moveAfter('passes', 'shots_on_target');
+    moveAfter('tackles', 'passes');
+  }
   if (mode !== 'player' || !isGoalkeeper) return filtered;
   const goalkeeperStats = filtered.filter((option) =>
     option.playerKey ? WORLD_CUP_GOALKEEPER_ONLY_PLAYER_KEYS.has(option.playerKey) : false
@@ -1329,13 +1601,19 @@ function WorldCupGameByGameChart({
   onChartContextChange?: (context: WorldCupChartContext) => void;
 }) {
   const [selectedStat, setSelectedStat] = useState<WorldCupChartStatId>(
-    mode === 'player' ? 'accurate_passes' : 'goals'
+    mode === 'player' ? 'passes' : 'goals'
   );
   const [timeframe, setTimeframe] = useState<WorldCupChartTimeframe>('last10');
   const [manualLineValue, setManualLineValue] = useState<number | null>(null);
-  const [perspective, setPerspective] = useState<WorldCupStatPerspective>('team');
+  const [perspective, setPerspective] = useState<WorldCupStatPerspective>('all');
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
+  const [competitionFilter, setCompetitionFilter] = useState<WorldCupCompetitionTag | 'all'>('all');
+  const [isCompetitionDropdownOpen, setIsCompetitionDropdownOpen] = useState(false);
+  const competitionDropdownRef = useRef<HTMLDivElement>(null);
+  const [stageFilter, setStageFilter] = useState<WorldCupStageBucket | 'all'>('all');
+  const [isStageDropdownOpen, setIsStageDropdownOpen] = useState(false);
+  const stageDropdownRef = useRef<HTMLDivElement>(null);
   const baseAvailableStats = useMemo(
     () => getAvailableWorldCupStats(mode, selectedPlayer, competition),
     [mode, selectedPlayer, competition]
@@ -1350,7 +1628,11 @@ function WorldCupGameByGameChart({
     // Until rows load, keep the full candidate pool so pills don't flicker.
     if (!teamStatRows.length) return baseAvailableStats;
     const symmetric = getSymmetricTeamStatIds(baseAvailableStats, teamStatRows);
-    const filtered = baseAvailableStats.filter((option) => symmetric.has(option.id));
+    // Money Line is derived from the scoreline (not a team-stat field), so it is
+    // always available regardless of cross-competition stat coverage.
+    const filtered = baseAvailableStats.filter(
+      (option) => option.id === 'moneyline' || symmetric.has(option.id)
+    );
     return filtered.length ? filtered : baseAvailableStats;
   }, [mode, baseAvailableStats, teamStatRows]);
   const statConfig = useMemo(
@@ -1358,10 +1640,11 @@ function WorldCupGameByGameChart({
     [availableStats, mode, selectedStat]
   );
   const statKey = mode === 'player' ? statConfig.playerKey : statConfig.teamKey;
+  const isMoneyline = mode === 'team' && statConfig.id === 'moneyline';
   const selectedTeamId = selectedTeam?.id ?? null;
   const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
 
-  const chartRows = useMemo(() => {
+  const baseChartRows = useMemo(() => {
     if (!data || !statKey) return [];
     const allMatches = [...(data.matches ?? []), ...(data.playerMatches ?? [])];
     const matchLookup = new Map(allMatches.map((match) => [String(match.id), match]));
@@ -1381,10 +1664,35 @@ function WorldCupGameByGameChart({
         const homeId = String(match?.homeTeam?.id ?? match?.raw?.home_team?.id ?? '');
         const awayId = String(match?.awayTeam?.id ?? match?.raw?.away_team?.id ?? '');
         const isHome = row.is_home === true || Boolean(homeId && teamId && homeId === teamId);
+        const opponentLabel = isHome
+          ? String(match?.awayLabel || match?.awayTeam?.name || 'Opponent')
+          : String(match?.homeLabel || match?.homeTeam?.name || 'Opponent');
+        const teamLabel = isHome
+          ? String(match?.homeLabel || match?.homeTeam?.name || selectedTeam?.name || 'Team')
+          : String(match?.awayLabel || match?.awayTeam?.name || selectedTeam?.name || 'Team');
+        const opponentCountryCode = resolveWorldCupOpponentCountryCode(match, isHome, opponentLabel, countryLookup);
+        const teamScore = isHome ? match?.homeScore : match?.awayScore;
+        const opponentScore = isHome ? match?.awayScore : match?.homeScore;
+        const scoreline = teamScore != null && opponentScore != null ? `${teamScore}-${opponentScore}` : '';
+        const penaltyShootout =
+          teamScore != null && opponentScore != null && teamScore === opponentScore
+            ? resolveWorldCupPenaltyShootout(match, isHome, teamLabel, opponentLabel)
+            : null;
+        // Win/Draw/Loss outcome from the selected team's perspective.
+        const outcome: 'W' | 'D' | 'L' | null =
+          teamScore == null || opponentScore == null
+            ? null
+            : teamScore > opponentScore
+              ? 'W'
+              : teamScore < opponentScore
+                ? 'L'
+                : 'D';
         // Resolve the value for the active perspective. `team` reads the base
         // key; `opponent` reads the match-mate's `opp_<key>`; `all` sums both
         // (match total). Missing values fall back to the base key's zero-default.
+        // Money Line is special: value is the W/D/L outcome (+1/0/-1).
         const value = (() => {
+          if (isMoneyline) return outcome == null ? null : outcome === 'W' ? 1 : outcome === 'L' ? -1 : 0;
           if (!statKey) return null;
           const readKey = (key: string): number | null => {
             const parsed = toNumber(row[key]);
@@ -1400,13 +1708,6 @@ function WorldCupGameByGameChart({
           }
           return readKey(statKey);
         })();
-        const opponentLabel = isHome
-          ? String(match?.awayLabel || match?.awayTeam?.name || 'Opponent')
-          : String(match?.homeLabel || match?.homeTeam?.name || 'Opponent');
-        const opponentCountryCode = resolveWorldCupOpponentCountryCode(match, isHome, opponentLabel, countryLookup);
-        const teamScore = isHome ? match?.homeScore : match?.awayScore;
-        const opponentScore = isHome ? match?.awayScore : match?.homeScore;
-        const scoreline = teamScore != null && opponentScore != null ? `${teamScore}-${opponentScore}` : '';
         return {
           key: matchId || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
           xKey: matchId || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
@@ -1417,6 +1718,9 @@ function WorldCupGameByGameChart({
           opponentLogoUrl: getWorldCupFlagUrl(opponentCountryCode),
           opponent: opponentLabel,
           value,
+          outcome,
+          penaltyShootout,
+          stageBucket: deriveWorldCupStageBucket(readWorldCupMatchStage(match)),
           gameDate: typeof match?.datetime === 'string' ? match.datetime : '',
           gameTimestamp: Date.parse(String(match?.datetime || '')) || 0,
           matchLabel: match ? `${match.homeLabel || 'TBD'} vs ${match.awayLabel || 'TBD'}` : `Match ${matchId}`,
@@ -1429,11 +1733,59 @@ function WorldCupGameByGameChart({
       .filter((row) => row.value != null)
       .sort((a, b) => a.gameTimestamp - b.gameTimestamp);
 
+    return rows;
+  }, [data, mode, selectedPlayerId, selectedTeamId, selectedTeam?.name, statKey, perspective, isMoneyline]);
+
+  // Competitions present in the current selection, with game counts, for the
+  // competition filter dropdown (e.g. "WC 8", "Euros 5", plus "All").
+  const chartCompetitions = useMemo(() => {
+    const counts = new Map<WorldCupCompetitionTag, number>();
+    for (const row of baseChartRows) {
+      const tag = row.competitionTag as WorldCupCompetitionTag | undefined;
+      if (!tag) continue;
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+    return WORLD_CUP_COMPETITION_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
+      tag,
+      count: counts.get(tag) ?? 0,
+    }));
+  }, [baseChartRows]);
+
+  // Rows after the competition filter (drives the stage filter's options/counts
+  // so stages reflect the chosen competition).
+  const competitionFilteredRows = useMemo(
+    () =>
+      competitionFilter === 'all'
+        ? baseChartRows
+        : baseChartRows.filter((row) => row.competitionTag === competitionFilter),
+    [baseChartRows, competitionFilter]
+  );
+
+  // Tournament stages present in the current selection, with game counts.
+  const chartStages = useMemo(() => {
+    const counts = new Map<WorldCupStageBucket, number>();
+    for (const row of competitionFilteredRows) {
+      const bucket = row.stageBucket as WorldCupStageBucket | null;
+      if (!bucket) continue;
+      counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
+    }
+    return WORLD_CUP_STAGE_ORDER.filter((entry) => counts.has(entry.id)).map((entry) => ({
+      ...entry,
+      count: counts.get(entry.id) ?? 0,
+    }));
+  }, [competitionFilteredRows]);
+
+  const chartRows = useMemo(() => {
+    let rows = competitionFilteredRows;
+    if (stageFilter !== 'all') {
+      rows = rows.filter((row) => row.stageBucket === stageFilter);
+    }
+
     if (timeframe === 'h2h') {
       const opponentName = opponentTeam?.name?.trim().toLowerCase();
       const opponentAbbr = opponentTeam?.abbreviation?.trim().toUpperCase();
       const opponentCode = opponentTeam?.countryCode?.trim().toLowerCase();
-      const filtered = rows.filter((row) => {
+      return rows.filter((row) => {
         const rowOpponentName = row.opponent?.trim().toLowerCase();
         const rowAbbr = row.tickLabel?.trim().toUpperCase();
         const rowCode = row.opponentCountryCode?.trim().toLowerCase();
@@ -1442,27 +1794,43 @@ function WorldCupGameByGameChart({
         if (opponentCode && rowCode === opponentCode) return true;
         return false;
       });
-      return filtered;
     }
 
     const frame = WORLD_CUP_TIMEFRAMES.find((option) => option.id === timeframe) ?? WORLD_CUP_TIMEFRAMES[1];
     return rows.slice(-frame.count);
-  }, [data, mode, selectedPlayerId, selectedTeamId, statKey, timeframe, opponentTeam, perspective]);
+  }, [competitionFilteredRows, stageFilter, timeframe, opponentTeam]);
 
   const values = useMemo(
     () => chartRows.map((row) => row.value).filter((value): value is number => value != null),
     [chartRows]
   );
-  const averageValue = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
-  const lineValue = manualLineValue ?? Math.round(averageValue * 2) / 2;
+  // Reference line defaults to 0.5 for every stat until the user moves it
+  // (there are no bookie odds for these historical international matches). For
+  // Money Line, +0.5 grades wins; 0 draws; -0.5 losses.
+  const lineValue = manualLineValue ?? 0.5;
+  const moneylineTarget = lineValue >= 0.5 ? 'Win' : lineValue <= -0.5 ? 'Loss' : 'Draw';
+  // Hit rate for the selected outcome over the games currently shown (reflects
+  // the active timeframe, since chartRows is already sliced to it).
+  const moneylineSummary = useMemo(() => {
+    if (!isMoneyline) return null;
+    const totalGames = chartRows.length;
+    if (!totalGames) return null;
+    const targetOutcome = moneylineTarget === 'Win' ? 'W' : moneylineTarget === 'Loss' ? 'L' : 'D';
+    const count = chartRows.reduce((sum, row) => sum + (row.outcome === targetOutcome ? 1 : 0), 0);
+    const hitRate = Math.round((count / totalGames) * 100);
+    return { count, totalGames, hitRate };
+  }, [isMoneyline, chartRows, moneylineTarget]);
   const tightYAxis =
     statConfig.id === 'goals' ||
     statConfig.id === 'assists' ||
     statConfig.id === 'total_shots' ||
     statConfig.id === 'shots_on_target';
   const yAxisConfig = useMemo(
-    () => buildWorldCupMainYAxis(values, { tight: tightYAxis }),
-    [values, tightYAxis]
+    () =>
+      isMoneyline
+        ? { domain: [-1, 1] as [number, number], ticks: [-1, 0, 1] }
+        : buildWorldCupMainYAxis(values, { tight: tightYAxis }),
+    [isMoneyline, values, tightYAxis]
   );
   useEffect(() => {
     if (!availableStats.length) return;
@@ -1474,7 +1842,7 @@ function WorldCupGameByGameChart({
     if (mode !== 'player') return;
     if (!availableStats.length) return;
     const isGoalkeeper = isWorldCupGoalkeeperRole(selectedPlayer?.role);
-    const preferredId: WorldCupChartStatId = isGoalkeeper ? 'goalkeeper_saves' : 'accurate_passes';
+    const preferredId: WorldCupChartStatId = isGoalkeeper ? 'goalkeeper_saves' : 'passes';
     const preferredAvailable = availableStats.some((option) => option.id === preferredId);
     setSelectedStat(preferredAvailable ? preferredId : availableStats[0].id);
   }, [mode, selectedPlayer?.id, selectedPlayer?.role, availableStats]);
@@ -1494,18 +1862,39 @@ function WorldCupGameByGameChart({
 
   useEffect(() => {
     const onDocMouseDown = (event: MouseEvent) => {
-      const el = timeframeDropdownRef.current;
-      if (el && event.target instanceof Node && !el.contains(event.target)) {
-        setIsTimeframeDropdownOpen(false);
-      }
+      if (!(event.target instanceof Node)) return;
+      const tf = timeframeDropdownRef.current;
+      if (tf && !tf.contains(event.target)) setIsTimeframeDropdownOpen(false);
+      const comp = competitionDropdownRef.current;
+      if (comp && !comp.contains(event.target)) setIsCompetitionDropdownOpen(false);
+      const stage = stageDropdownRef.current;
+      if (stage && !stage.contains(event.target)) setIsStageDropdownOpen(false);
     };
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
 
+  // Reset the competition filter when the chosen competition is no longer in
+  // the current selection (e.g. after switching team/player).
+  useEffect(() => {
+    if (competitionFilter === 'all') return;
+    if (!chartCompetitions.some((entry) => entry.tag === competitionFilter)) {
+      setCompetitionFilter('all');
+    }
+  }, [chartCompetitions, competitionFilter]);
+
+  // Reset the stage filter when the chosen stage is no longer available (e.g.
+  // after changing team/player or competition).
+  useEffect(() => {
+    if (stageFilter === 'all') return;
+    if (!chartStages.some((entry) => entry.id === stageFilter)) {
+      setStageFilter('all');
+    }
+  }, [chartStages, stageFilter]);
+
   const customTooltip = useCallback(
-    (props: any) => <WorldCupChartTooltip {...props} isDark={isDark} statLabel={statConfig.label} />,
-    [isDark, statConfig.label]
+    (props: any) => <WorldCupChartTooltip {...props} isDark={isDark} statLabel={statConfig.label} isMoneyline={isMoneyline} />,
+    [isDark, statConfig.label, isMoneyline]
   );
 
   const customXAxisTick = useMemo(
@@ -1514,7 +1903,7 @@ function WorldCupGameByGameChart({
   );
 
   if (loading && !data) {
-    return <StatsBars isDark={isDark} metrics={mode === 'player' ? PLAYER_METRICS : TEAM_METRICS} mode={mode} data={null} />;
+    return <WorldCupChartSkeleton isDark={isDark} />;
   }
 
   if (error) {
@@ -1546,19 +1935,52 @@ function WorldCupGameByGameChart({
 
       <div className="space-y-2 sm:space-y-3 md:space-y-4 mb-2 sm:mb-3 md:mb-4 lg:mb-6">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
-          <input
-            id="world-cup-betting-line-input"
-            type="number"
-            step={0.5}
-            value={lineValue}
-            min={0}
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              if (Number.isFinite(next)) setManualLineValue(next);
-            }}
-            className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            aria-label={`Set line value for ${statConfig.label}`}
-          />
+          {isMoneyline ? (
+            <>
+              <input
+                id="world-cup-betting-line-input"
+                type="number"
+                step={0.5}
+                min={-0.5}
+                max={0.5}
+                value={lineValue}
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  if (!Number.isFinite(raw)) return;
+                  // Snap to the three valid reference lines: loss / draw / win.
+                  const snapped = raw <= -0.25 ? -0.5 : raw >= 0.25 ? 0.5 : 0;
+                  setManualLineValue(snapped);
+                }}
+                className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                aria-label="Set Money Line reference (-0.5 loss, 0 draw, 0.5 win)"
+              />
+              <span
+                className={`text-xs font-semibold ${
+                  moneylineTarget === 'Win'
+                    ? 'text-green-600 dark:text-green-400'
+                    : moneylineTarget === 'Loss'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-gray-500 dark:text-gray-300'
+                }`}
+              >
+                {moneylineTarget}
+              </span>
+            </>
+          ) : (
+            <input
+              id="world-cup-betting-line-input"
+              type="number"
+              step={0.5}
+              value={lineValue}
+              min={0}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                if (Number.isFinite(next)) setManualLineValue(next);
+              }}
+              className="w-20 sm:w-20 md:w-22 px-2.5 py-1.5 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 dark:text-white text-center focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              aria-label={`Set line value for ${statConfig.label}`}
+            />
+          )}
           <div className="relative" ref={timeframeDropdownRef}>
             <button
               type="button"
@@ -1592,30 +2014,166 @@ function WorldCupGameByGameChart({
               </div>
             ) : null}
           </div>
-          {mode === 'team' ? (
+          {mode === 'team' && !isMoneyline ? (
             <div className="inline-flex items-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5 h-[32px]">
-              {WORLD_CUP_STAT_PERSPECTIVES.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setPerspective(option.id)}
-                  className={`px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                    perspective === option.id
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                  aria-pressed={perspective === option.id}
-                  aria-label={`Show ${option.label.toLowerCase()} ${statConfig.label.toLowerCase()}`}
-                >
-                  {option.label}
-                </button>
-              ))}
+              {WORLD_CUP_STAT_PERSPECTIVES.map((option) => {
+                // The selected team is fixed (e.g. "Portugal"); the opponent
+                // changes each match, so it always reads "Opponent".
+                const buttonLabel =
+                  option.id === 'team' ? selectedTeam?.name ?? option.label : option.label;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setPerspective(option.id)}
+                    className={`px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                      perspective === option.id
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    aria-pressed={perspective === option.id}
+                    aria-label={`Show ${buttonLabel.toLowerCase()} ${statConfig.label.toLowerCase()}`}
+                  >
+                    {buttonLabel}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {chartCompetitions.length > 1 ? (
+            <div className="relative ml-auto" ref={competitionDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsCompetitionDropdownOpen((prev) => !prev)}
+                className="min-w-[108px] px-2.5 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-600"
+                aria-label="Filter games by competition"
+              >
+                <span className="truncate">
+                  {competitionFilter === 'all'
+                    ? 'Competition'
+                    : `${competitionFilter} ${chartCompetitions.find((entry) => entry.tag === competitionFilter)?.count ?? ''}`}
+                </span>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isCompetitionDropdownOpen ? (
+                <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {chartCompetitions.map((entry) => (
+                    <button
+                      key={entry.tag}
+                      type="button"
+                      onClick={() => {
+                        setCompetitionFilter(entry.tag);
+                        setIsCompetitionDropdownOpen(false);
+                      }}
+                      className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                        competitionFilter === entry.tag
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      <span>{entry.tag}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{entry.count}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompetitionFilter('all');
+                      setIsCompetitionDropdownOpen(false);
+                    }}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
+                      competitionFilter === 'all'
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {chartStages.length > 1 ? (
+            <div className={`relative ${chartCompetitions.length > 1 ? '' : 'ml-auto'}`} ref={stageDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsStageDropdownOpen((prev) => !prev)}
+                className="min-w-[120px] px-2.5 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-600"
+                aria-label="Filter games by tournament stage"
+              >
+                <span className="truncate">
+                  {stageFilter === 'all'
+                    ? 'Stage'
+                    : `${WORLD_CUP_STAGE_ORDER.find((entry) => entry.id === stageFilter)?.label ?? 'Stage'} ${
+                        chartStages.find((entry) => entry.id === stageFilter)?.count ?? ''
+                      }`}
+                </span>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isStageDropdownOpen ? (
+                <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {chartStages.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => {
+                        setStageFilter(entry.id);
+                        setIsStageDropdownOpen(false);
+                      }}
+                      className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                        stageFilter === entry.id
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      <span>{entry.label}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{entry.count}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStageFilter('all');
+                      setIsStageDropdownOpen(false);
+                    }}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
+                      stageFilter === 'all'
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 relative">
+        {isMoneyline && !loading && moneylineSummary ? (
+          <div
+            className="absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] top-0 left-1/2 -translate-x-1/2"
+            style={{
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)',
+              border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)'}`,
+            }}
+            aria-hidden
+          >
+            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+              Hit: <span className="font-semibold">{moneylineSummary.hitRate}%</span>
+            </span>
+            <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+              <span className="font-semibold">{moneylineSummary.count}/{moneylineSummary.totalGames}</span>
+            </span>
+          </div>
+        ) : null}
         {loading ? (
           <WorldCupChartSkeleton isDark={isDark} />
         ) : chartRows.length ? (
@@ -1631,7 +2189,7 @@ function WorldCupGameByGameChart({
             disableBarAnimation
             centerAverageOverlay
             averageOverlayLowerOnMobile
-            averageOverlayHigher
+            averageOverlayLower
             desktopChartLeftInset={40}
             desktopChartRightInset={8}
             desktopChartRightMargin={8}
@@ -1664,32 +2222,6 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h3>
         {subtitle ? <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p> : null}
       </div>
-    </div>
-  );
-}
-
-function MetricGrid({
-  metrics,
-  mode,
-  data,
-  selectedPlayerId,
-}: {
-  metrics: string[];
-  mode?: PropsMode;
-  data?: WorldCupDashboardData | null;
-  selectedPlayerId?: string | null;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2 px-3 sm:grid-cols-4 sm:px-4">
-      {metrics.map((metric) => (
-        <div key={metric} className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-[#07131f]">
-          <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{metric}</div>
-          <div className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
-            {mode ? metricValue(metric, mode, data ?? null, selectedPlayerId) : '-'}
-          </div>
-          <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">{data ? 'BDL World Cup' : 'Waiting for World Cup API'}</div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -1782,20 +2314,61 @@ function WorldCupSupportingStats({
       ),
     [chartContext.timeframe, data, mode, selectedPlayerId, selectedTeamId, opponentTeam]
   );
+  // Full team rows (not timeframe-limited) used to detect which supporting
+  // stats are symmetric across every competition the team played.
+  const teamSymmetryRows = useMemo(() => {
+    if (mode !== 'team' || !data) return [] as Array<Record<string, any>>;
+    return data.teamMatchStats.filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId);
+  }, [mode, data, selectedTeamId]);
+
   const supportingOptions = useMemo(() => {
-    const candidates = buildWorldCupSupportingKeys(chartContext.statKey, mode);
+    const baseCandidates = buildWorldCupSupportingKeys(chartContext.statKey, mode);
+    // Game Props: always offer Ball Possession in the supporting row so it can
+    // lead it, regardless of the selected main stat's category.
+    const candidates =
+      mode === 'team' && !baseCandidates.includes('possession_pct')
+        ? [...baseCandidates, 'possession_pct']
+        : baseCandidates;
     const isGoalkeeper = isWorldCupGoalkeeperRole(selectedPlayer?.role);
     const unsupportedKeys = UNSUPPORTED_SUPPORTING_KEYS_BY_COMPETITION[competition];
-    return candidates.filter((key, index, arr) => {
+    // In team mode, only keep supporting stats present in EVERY competition the
+    // team played (mirrors the main chart's symmetric pills).
+    const symmetricKeys =
+      mode === 'team' && teamSymmetryRows.length
+        ? getSymmetricTeamStatKeys(candidates, teamSymmetryRows)
+        : null;
+    // Game Props: stats that are near-duplicates of each other. Selecting one in
+    // the main chart hides its siblings from the supporting row so we never show
+    // e.g. "Passes" (accurate) next to "Total Passes" with a different number.
+    const TEAM_STAT_SIBLINGS: Record<string, string[]> = {
+      passes_accurate: ['passes_total'],
+      passes_total: ['passes_accurate'],
+    };
+    const mainSiblings =
+      mode === 'team' && chartContext.statKey ? TEAM_STAT_SIBLINGS[chartContext.statKey] ?? [] : [];
+
+    const filtered = candidates.filter((key, index, arr) => {
       if (arr.indexOf(key) !== index) return false;
+      // Game Props: never echo the stat already shown in the main chart, nor a
+      // near-duplicate sibling of it.
+      if (mode === 'team' && key === chartContext.statKey) return false;
+      if (mode === 'team' && mainSiblings.includes(key)) return false;
       if (mode === 'player') {
+        if (WORLD_CUP_PLAYER_HIDDEN_SUPPORTING_KEYS.has(key)) return false;
         if (WORLD_CUP_GOALKEEPER_ONLY_PLAYER_KEYS.has(key) && !isGoalkeeper) return false;
         if (isGoalkeeper && WORLD_CUP_OUTFIELD_ONLY_PLAYER_KEYS.has(key)) return false;
       }
       if (unsupportedKeys.has(key)) return false;
+      if (symmetricKeys && !symmetricKeys.has(key)) return false;
       return true;
     });
-  }, [chartContext.statKey, mode, selectedPlayer?.role, competition]);
+    // Game Props: surface Ball Possession first in the supporting row (unless it
+    // is the stat already selected in the main chart).
+    if (mode === 'team' && chartContext.statKey !== 'possession_pct' && filtered.includes('possession_pct')) {
+      return ['possession_pct', ...filtered.filter((key) => key !== 'possession_pct')];
+    }
+    return filtered;
+  }, [chartContext.statKey, mode, selectedPlayer?.role, competition, teamSymmetryRows]);
 
   useEffect(() => {
     if (!supportingOptions.length) {
@@ -1984,6 +2557,15 @@ type WorldCupDvpResponse = {
   samples: Record<string, number>;
   teamGames: Record<string, number>;
   message?: string;
+};
+
+type WorldCupOppBreakdownResponse = {
+  window: number;
+  generatedAt?: string;
+  // Keyed by FIFA country slug so a nation's games from every source/competition
+  // collapse into one ranking. names maps slug -> display name.
+  names: Record<string, string>;
+  metrics: Record<string, WorldCupDvpMetricEntry>;
 };
 
 function getWorldCupDvpRankStyles(rank: number | null, totalRanks: number, isDark: boolean) {
@@ -2327,6 +2909,237 @@ function WorldCupDvpCard({
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================
+// Opponent Breakdown — mirrors the AFL dashboard's AflOpponentBreakdownCard:
+// the opponent's "allowed averages" per stat, each with a defensive rank badge
+// (red = hardest / allows least, green = easiest / allows most) and a legend.
+// Powered by the DVP batch endpoint, summed across DEF/MID/ATT so the figures
+// are whole-team allowed-per-game rather than per-position.
+// =====================
+function WorldCupOpponentBreakdownCard({
+  isDark,
+  opponentTeam,
+  teamOptions,
+}: {
+  isDark: boolean;
+  opponentTeam: WorldCupTeamOption | null;
+  teamOptions: WorldCupTeamOption[];
+}) {
+  const [windowN, setWindowN] = useState<number>(10);
+
+  const [oppSel, setOppSel] = useState<string>(opponentTeam?.id ?? '');
+  const [oppOpen, setOppOpen] = useState(false);
+  useEffect(() => {
+    setOppSel(opponentTeam?.id ?? '');
+  }, [opponentTeam?.id]);
+
+  const [breakdown, setBreakdown] = useState<WorldCupOppBreakdownResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    // Competition-agnostic: rankings are precomputed across each nation's last N
+    // games from every competition, so we only vary the window.
+    const url = `/api/world-cup/dashboard?oppBreakdown=1&window=${windowN}`;
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error((body as { error?: string }).error || `Request failed (${res.status})`);
+        }
+        return res.json() as Promise<WorldCupOppBreakdownResponse>;
+      })
+      .then((payload) => {
+        if (!cancelled) setBreakdown(payload);
+      })
+      .catch((err: Error) => {
+        if (cancelled) return;
+        setBreakdown(null);
+        setError(err.message || 'Failed to load opponent breakdown');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [windowN]);
+
+  const opponentForLabel = useMemo(
+    () => teamOptions.find((team) => team.id === oppSel) || opponentTeam,
+    [oppSel, teamOptions, opponentTeam]
+  );
+  const opponentName = opponentForLabel?.name ?? '';
+  const opponentLogoUrl = getWorldCupFlagUrl(opponentForLabel?.countryCode || opponentForLabel?.abbreviation);
+  const opponentSlug =
+    resolveWorldCupFlagCode(opponentForLabel?.countryCode) ||
+    resolveWorldCupFlagCode(opponentForLabel?.abbreviation) ||
+    resolveWorldCupFlagCode(opponentForLabel?.name) ||
+    '';
+
+  const totalOpponents = breakdown ? Object.keys(breakdown.names).length : 0;
+
+  const formatValue = (value: number | undefined, statKey: string) => {
+    if (value == null || !Number.isFinite(value)) return '—';
+    if (statKey === 'yellow_cards' || statKey === 'red_cards') return value.toFixed(2);
+    return value.toFixed(1);
+  };
+
+  const noData = Boolean(breakdown) && totalOpponents === 0;
+
+  return (
+    <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
+      <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
+        <div className={`flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+          {WORLD_CUP_OPP_BREAKDOWN_WINDOWS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setWindowN(option.id)}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                windowN === option.id
+                  ? 'bg-purple-600 text-white'
+                  : isDark
+                    ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative mb-2 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setOppOpen((open) => !open)}
+          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-sm ${
+            isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+          }`}
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            {opponentLogoUrl ? (
+              <img src={opponentLogoUrl} alt={opponentForLabel?.name || 'Opponent'} className="w-6 h-6 object-contain" />
+            ) : null}
+            <span className="font-semibold truncate">{opponentForLabel?.name || 'Select opponent'}</span>
+          </span>
+          <svg className="w-4 h-4 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {oppOpen ? (
+          <>
+            <div
+              className={`absolute z-20 mt-1 left-0 right-0 rounded-md border shadow-lg overflow-hidden ${
+                isDark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'
+              }`}
+            >
+              <div
+                className="max-h-56 overflow-y-auto custom-scrollbar overscroll-contain"
+                onWheel={(event) => event.stopPropagation()}
+              >
+                {teamOptions.map((team) => {
+                  const teamLogoUrl = getWorldCupFlagUrl(team.countryCode || team.abbreviation);
+                  return (
+                    <button
+                      key={team.id}
+                      type="button"
+                      onClick={() => {
+                        setOppSel(team.id);
+                        setOppOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-2 py-2 text-sm text-left ${
+                        isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900'
+                      }`}
+                    >
+                      {teamLogoUrl ? (
+                        <img src={teamLogoUrl} alt={team.name} className="w-5 h-5 object-contain" />
+                      ) : null}
+                      <span className="font-medium truncate">{team.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="fixed inset-0 z-10" onClick={() => setOppOpen(false)} />
+          </>
+        ) : null}
+      </div>
+
+      <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
+        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+          <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
+          <h4 className={`text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            {opponentName || 'TBD'} allowed averages
+          </h4>
+        </div>
+
+        {loading && !breakdown ? (
+          <div className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading…</div>
+        ) : error ? (
+          <div className="text-sm text-amber-600 dark:text-amber-400 py-4">{error}</div>
+        ) : !opponentName ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            Pick an opponent team to view their allowed averages.
+          </div>
+        ) : noData ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            No completed matches yet — opponent averages will populate once games are played.
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-2 custom-scrollbar">
+              {WORLD_CUP_OPP_BREAKDOWN_METRICS.map((metric) => {
+                const entry = breakdown?.metrics[metric.key];
+                const value = opponentSlug ? entry?.values[opponentSlug] : undefined;
+                const rank = (opponentSlug ? entry?.ranks[opponentSlug] : null) ?? null;
+                const styles = getWorldCupDvpRankStyles(rank, totalOpponents, isDark);
+                return (
+                  <div
+                    key={metric.key}
+                    className={`flex items-center justify-between rounded border px-3 py-2 ${
+                      isDark ? 'border-gray-600/60' : 'border-gray-200/80'
+                    }`}
+                  >
+                    <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      {metric.label} Allowed
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-base font-bold font-mono ${isDark ? 'text-white' : 'text-black'}`}>
+                        {loading ? '…' : formatValue(value, metric.key)}
+                      </span>
+                      <span
+                        className={`inline-flex items-center justify-center px-2.5 py-1 rounded text-xs font-bold ${styles.badgeColor}`}
+                      >
+                        {rank && totalOpponents > 0 ? `#${rank}` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`flex items-center justify-center gap-4 mt-2 pt-2 flex-shrink-0 text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded bg-red-600 dark:bg-red-500" aria-hidden />
+                Hardest
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded bg-green-600 dark:bg-green-500" aria-hidden />
+                Easiest
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -2975,27 +3788,32 @@ function WorldCupTeamFormHomeAwayPanel({
 
 function WorldCupInsightsPanel({
   isDark,
+  mode,
   selectedPlayer,
   selectedTeam,
   opponentTeam,
   teamOptions,
-  data,
   competition,
 }: {
   isDark: boolean;
+  mode: PropsMode;
   selectedPlayer: WorldCupPlayerOption | null;
   selectedTeam: WorldCupTeamOption | null;
   opponentTeam: WorldCupTeamOption | null;
   teamOptions: WorldCupTeamOption[];
-  data: WorldCupDashboardData | null;
   competition: Competition;
 }) {
   const [tab, setTab] = useState<InsightTab>('dvp');
+  // DVP (Defense vs Position) is a player-props-only insight, so hide it on the
+  // Game Props (team) side.
   const tabs: Array<{ id: InsightTab; label: string }> = [
-    { id: 'dvp', label: 'DVP' },
+    ...(mode === 'player' ? [{ id: 'dvp' as InsightTab, label: 'DVP' }] : []),
     { id: 'opponent', label: 'Opponent Breakdown' },
     { id: 'matchup', label: 'Team Matchup' },
   ];
+  // If the active tab isn't available in the current mode (e.g. DVP while in
+  // team mode), fall back to the first available tab.
+  const activeTabId = tabs.some((item) => item.id === tab) ? tab : tabs[0].id;
   const activeTab = 'bg-purple-600 text-white border-purple-600';
   const inactiveTab =
     'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700';
@@ -3009,7 +3827,7 @@ function WorldCupInsightsPanel({
             type="button"
             onClick={() => setTab(item.id)}
             className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors xl:px-2.5 xl:text-sm ${
-              tab === item.id ? activeTab : inactiveTab
+              activeTabId === item.id ? activeTab : inactiveTab
             }`}
           >
             {item.label}
@@ -3017,26 +3835,26 @@ function WorldCupInsightsPanel({
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-lg px-2 py-3 custom-scrollbar">
-        {tab === 'dvp' ? (
-          <WorldCupDvpCard
-            key={`${selectedPlayer?.id ?? 'none'}-${opponentTeam?.id ?? 'none'}-${competition}`}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {activeTabId === 'dvp' ? (
+          <div className="h-full overflow-y-auto rounded-lg px-2 py-3 custom-scrollbar">
+            <WorldCupDvpCard
+              key={`${selectedPlayer?.id ?? 'none'}-${opponentTeam?.id ?? 'none'}-${competition}`}
+              isDark={isDark}
+              selectedPlayer={selectedPlayer}
+              opponentTeam={opponentTeam}
+              teamOptions={teamOptions}
+              competition={competition}
+            />
+          </div>
+        ) : activeTabId === 'opponent' ? (
+          <WorldCupOpponentBreakdownCard
             isDark={isDark}
-            selectedPlayer={selectedPlayer}
             opponentTeam={opponentTeam}
             teamOptions={teamOptions}
-            competition={competition}
           />
-        ) : tab === 'opponent' ? (
-          <div>
-            <SectionHeader
-              title="Opponent Breakdown"
-              subtitle={`${opponentTeam?.name || 'Opponent'} defensive profile, form, cards, chances, and pressure stats.`}
-            />
-            <MetricGrid metrics={['xG', 'Shots', 'SOT', 'Big chances', 'Corners', 'Cards', 'Clearances', 'Saves']} mode="team" data={data} />
-          </div>
         ) : (
-          <div>
+          <div className="h-full overflow-y-auto rounded-lg px-2 py-3 custom-scrollbar">
             <SectionHeader
               title="Team Matchup"
               subtitle={`${selectedTeam?.name || 'Selected team'} attack vs ${opponentTeam?.name || 'opponent'} defense, and reverse.`}
@@ -3098,6 +3916,8 @@ function WorldCupPageContent() {
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
+  const previousCompetition = useRef<Competition | null>(null);
+  const hadStoredTeamOnHydration = useRef(false);
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({
     sidebarOpen,
   });
@@ -3131,6 +3951,10 @@ function WorldCupPageContent() {
   // dashboard API has hydrated the real BDL team — avoids flashing placeholder teams
   // (e.g. Argentina from WORLD_CUP_TEAMS) while a player search is loading.
   const showInsightsSkeleton = !hasSelection || worldCupLoading || selectedTeamNeedsHydration;
+  // Content containers (supporting stats) skeleton on the same timing as the
+  // main chart: no selection OR the dashboard fetch for this selection is still
+  // in flight. Mirrors the AFL dashboard's loading skeletons.
+  const showContentSkeleton = !hasSelection || worldCupLoading;
 
   const playerOptions = useMemo<WorldCupPlayerOption[]>(() => {
     const rosterPlayers = !worldCupData?.rosters?.length ? [] : worldCupData.rosters.slice(0, 80).map((row) => {
@@ -3203,39 +4027,62 @@ function WorldCupPageContent() {
   const hasMatchup = hasSelection && !showInsightsSkeleton && Boolean(opponentTeam && selectedTeam);
   const skeletonBar = isDark ? 'bg-gray-800' : 'bg-gray-200';
 
+  // Rehydrate page context on refresh (mode, competition, team/player, chart stat).
   useEffect(() => {
     if (typeof window === 'undefined') {
       setHydratedFromStorage(true);
       return;
     }
     try {
-      const storedMode = window.localStorage.getItem('world-cup:propsMode');
+      const storedMode = window.localStorage.getItem(WORLD_CUP_STORAGE_KEYS.propsMode);
       if (storedMode === 'player' || storedMode === 'team') {
         setPropsMode(storedMode);
       }
-      const storedCompetition = window.localStorage.getItem('world-cup:competition');
+
+      let restoredCompetition: Competition = 'world-cup';
+      const storedCompetition = window.localStorage.getItem(WORLD_CUP_STORAGE_KEYS.competition);
       if (
         storedCompetition === 'all' ||
         storedCompetition === 'world-cup' ||
         storedCompetition === 'euros' ||
         storedCompetition === 'nations-league'
       ) {
+        restoredCompetition = storedCompetition;
         setCompetition(storedCompetition);
       }
-      const storedTeamRaw = window.localStorage.getItem('world-cup:selectedTeam');
+      // Seed before hydratedFromStorage flips so the competition-change handler
+      // does not treat a restored value as a user switch and wipe the team.
+      previousCompetition.current = restoredCompetition;
+
+      const storedTeamRaw = window.localStorage.getItem(WORLD_CUP_STORAGE_KEYS.selectedTeam);
       if (storedTeamRaw) {
         const parsed = JSON.parse(storedTeamRaw) as WorldCupTeamOption | null;
         if (parsed && parsed.id) {
+          hadStoredTeamOnHydration.current = true;
           setSelectedTeam(parsed);
-          setTeamSearchQuery(parsed.name ?? '');
+          setTeamSearchQuery('');
         }
       }
-      const storedPlayerRaw = window.localStorage.getItem('world-cup:selectedPlayer');
+
+      const storedPlayerRaw = window.localStorage.getItem(WORLD_CUP_STORAGE_KEYS.selectedPlayer);
       if (storedPlayerRaw) {
         const parsed = JSON.parse(storedPlayerRaw) as WorldCupPlayerOption | null;
         if (parsed && parsed.id) {
           setSelectedPlayer(parsed);
           setPlayerSearchQuery(parsed.name ?? '');
+        }
+      }
+
+      const storedChartRaw = window.localStorage.getItem(WORLD_CUP_STORAGE_KEYS.chartContext);
+      if (storedChartRaw) {
+        const parsed = JSON.parse(storedChartRaw) as Partial<WorldCupChartContext> | null;
+        if (parsed?.statId && parsed?.timeframe) {
+          setChartContext({
+            statId: parsed.statId,
+            statKey: parsed.statKey ?? parsed.statId,
+            statLabel: parsed.statLabel ?? String(parsed.statId),
+            timeframe: parsed.timeframe,
+          });
         }
       }
     } catch (err) {
@@ -3247,7 +4094,7 @@ function WorldCupPageContent() {
   useEffect(() => {
     if (!hydratedFromStorage || typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem('world-cup:propsMode', propsMode);
+      window.localStorage.setItem(WORLD_CUP_STORAGE_KEYS.propsMode, propsMode);
     } catch {
       /* localStorage unavailable */
     }
@@ -3256,19 +4103,20 @@ function WorldCupPageContent() {
   useEffect(() => {
     if (!hydratedFromStorage || typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem('world-cup:competition', competition);
+      window.localStorage.setItem(WORLD_CUP_STORAGE_KEYS.competition, competition);
     } catch {
       /* localStorage unavailable */
     }
   }, [hydratedFromStorage, competition]);
 
-  // When switching competition, drop any selected player whose ID is not
-  // numeric in the new context (international IDs are numeric source IDs,
-  // BDL IDs are also numeric; collisions are unlikely but we reset to be safe
-  // so the user picks a player in the new dataset).
-  const previousCompetition = useRef<Competition>(competition);
+  // When the user switches competition, drop selections — but not on the initial
+  // restore from localStorage (previousCompetition is seeded during hydration).
   useEffect(() => {
     if (!hydratedFromStorage) return;
+    if (previousCompetition.current === null) {
+      previousCompetition.current = competition;
+      return;
+    }
     if (previousCompetition.current !== competition) {
       previousCompetition.current = competition;
       setSelectedPlayer(null);
@@ -3276,34 +4124,68 @@ function WorldCupPageContent() {
       setSelectedTeam(null);
       setTeamSearchQuery('');
       setSearchedPlayers([]);
+      try {
+        window.localStorage.removeItem(WORLD_CUP_STORAGE_KEYS.selectedTeam);
+        window.localStorage.removeItem(WORLD_CUP_STORAGE_KEYS.selectedPlayer);
+      } catch {
+        /* localStorage unavailable */
+      }
     }
   }, [competition, hydratedFromStorage]);
 
   useEffect(() => {
-    if (!hydratedFromStorage || typeof window === 'undefined') return;
+    if (!hydratedFromStorage || !selectedTeam || typeof window === 'undefined') return;
     try {
-      if (selectedTeam) {
-        window.localStorage.setItem('world-cup:selectedTeam', JSON.stringify(selectedTeam));
-      } else {
-        window.localStorage.removeItem('world-cup:selectedTeam');
-      }
+      window.localStorage.setItem(WORLD_CUP_STORAGE_KEYS.selectedTeam, JSON.stringify(selectedTeam));
     } catch {
       /* localStorage unavailable */
     }
   }, [hydratedFromStorage, selectedTeam]);
 
   useEffect(() => {
-    if (!hydratedFromStorage || typeof window === 'undefined') return;
+    if (!hydratedFromStorage || !selectedPlayer || typeof window === 'undefined') return;
     try {
-      if (selectedPlayer) {
-        window.localStorage.setItem('world-cup:selectedPlayer', JSON.stringify(selectedPlayer));
-      } else {
-        window.localStorage.removeItem('world-cup:selectedPlayer');
-      }
+      window.localStorage.setItem(WORLD_CUP_STORAGE_KEYS.selectedPlayer, JSON.stringify(selectedPlayer));
     } catch {
       /* localStorage unavailable */
     }
   }, [hydratedFromStorage, selectedPlayer]);
+
+  useEffect(() => {
+    if (!hydratedFromStorage || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(WORLD_CUP_STORAGE_KEYS.chartContext, JSON.stringify(chartContext));
+    } catch {
+      /* localStorage unavailable */
+    }
+  }, [hydratedFromStorage, chartContext]);
+
+  // Upgrade a persisted placeholder team (slug id) to the real BDL team once the
+  // API team list is available — keeps Game Props working after refresh.
+  useEffect(() => {
+    if (!hydratedFromStorage || propsMode !== 'team' || !selectedTeam || !hasApiTeams) return;
+    if (!selectedTeamNeedsHydration) return;
+    const resolved = resolveStoredWorldCupTeam(selectedTeam, teamOptions);
+    if (resolved && resolved.id !== selectedTeam.id) {
+      setSelectedTeam(resolved);
+      setTeamSearchQuery('');
+    }
+  }, [
+    hydratedFromStorage,
+    propsMode,
+    selectedTeam,
+    selectedTeamNeedsHydration,
+    hasApiTeams,
+    teamOptions,
+  ]);
+
+  // First visit to Game Props with no prior team — default to the first real team.
+  useEffect(() => {
+    if (!hydratedFromStorage || propsMode !== 'team' || selectedTeam || !hasApiTeams) return;
+    if (hadStoredTeamOnHydration.current) return;
+    const firstReal = teamOptions.find((team) => /^\d+$/.test(team.id));
+    if (firstReal) setSelectedTeam(firstReal);
+  }, [hydratedFromStorage, propsMode, selectedTeam, hasApiTeams, teamOptions]);
 
   // Keep selected team in sync with the active player once API teams are loaded.
   // Skip while teamOptions are still placeholders — resolving against WORLD_CUP_TEAMS
@@ -3313,7 +4195,7 @@ function WorldCupPageContent() {
     const team = resolveWorldCupTeamForPlayer(selectedPlayer, teamOptions);
     if (!team || team.id === selectedTeam?.id) return;
     setSelectedTeam(team);
-    setTeamSearchQuery(team.name);
+    setTeamSearchQuery('');
   }, [propsMode, selectedPlayer, hasApiTeams, teamOptions, selectedTeam?.id]);
 
   useEffect(() => {
@@ -3388,7 +4270,7 @@ function WorldCupPageContent() {
           if (selectedPlayerId || selectedTeamNeedsHydration) {
             if (team.id !== selectedTeam?.id) {
               setSelectedTeam(team);
-              setTeamSearchQuery(team.name);
+              setTeamSearchQuery('');
             }
           }
         }
@@ -3867,7 +4749,9 @@ function WorldCupPageContent() {
                                   onMouseDown={(event) => event.preventDefault()}
                                   onClick={() => {
                                     setSelectedTeam(team);
-                                    setTeamSearchQuery(team.name);
+                                    // Clear the input — the team lives in the
+                                    // dashboard, not the search bar.
+                                    setTeamSearchQuery('');
                                     setTeamSearchOpen(false);
                                   }}
                                   className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-[#1e293b] ${
@@ -3912,7 +4796,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
-                  {showSkeleton ? (
+                  {showContentSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} className="px-3 sm:px-4 py-1" />
                   ) : (
                     <>
@@ -3939,14 +4823,14 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="px-3 sm:px-4 py-1" />
                   ) : (
                     <>
                   <SectionHeader title="Predicted lineups" subtitle="BDL match lineups, formations, average positions, and starters will populate here." />
                   <div className="grid grid-cols-1 gap-3 px-3 sm:px-4 xl:grid-cols-2">
                     {[selectedTeam, opponentTeam].map((team, idx) => (
-                      <div key={team?.id || idx} className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-white/10 dark:bg-[#07131f]">
+                      <div key={`lineup-${idx}-${team?.id ?? 'tbd'}`} className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-white/10 dark:bg-[#07131f]">
                         <div className="mb-3 flex items-center gap-2">
                           <TeamBadge team={team} isDark={isDark} />
                           <div>
@@ -3986,18 +4870,18 @@ function WorldCupPageContent() {
                   ) : (
                   <WorldCupInsightsPanel
                     isDark={isDark}
+                    mode={propsMode}
                     selectedPlayer={selectedPlayer}
                     selectedTeam={selectedTeam}
                     opponentTeam={opponentTeam}
                     teamOptions={teamOptions}
-                    data={worldCupData}
                     competition={competition}
                   />
                   )}
                 </div>
 
                 <div className={`lg:hidden w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} />
                   ) : (
                     <>
@@ -4009,8 +4893,8 @@ function WorldCupPageContent() {
 
                 {propsMode === 'player' ? (
                   <div className="w-full min-w-0 pb-6 lg:pb-0">
-                    <div className={`min-h-[120px] rounded-lg ${showSkeleton ? '' : `border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-200'}`}`}>
-                      {showSkeleton ? (
+                    <div className={`min-h-[120px] rounded-lg ${showInsightsSkeleton ? '' : `border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-200'}`}`}>
+                      {showInsightsSkeleton ? (
                         <WorldCupCardSkeleton isDark={isDark} rows={3} className="p-3" />
                       ) : (
                         <EmptyState text="Player game log and box score rows will appear here." />
@@ -4038,11 +4922,11 @@ function WorldCupPageContent() {
                   ) : (
                   <WorldCupInsightsPanel
                     isDark={isDark}
+                    mode={propsMode}
                     selectedPlayer={selectedPlayer}
                     selectedTeam={selectedTeam}
                     opponentTeam={opponentTeam}
                     teamOptions={teamOptions}
-                    data={worldCupData}
                     competition={competition}
                   />
                   )}
@@ -4062,7 +4946,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
                     <>
@@ -4073,7 +4957,7 @@ function WorldCupPageContent() {
                 </div>
 
                 <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
-                  {showSkeleton ? (
+                  {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
                     <>

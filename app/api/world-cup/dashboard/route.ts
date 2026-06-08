@@ -7,6 +7,7 @@ import {
   loadInternationalTeamForm,
   loadInternationalTeamStatsByCountry,
 } from '@/lib/internationalDashboard';
+import { getOpponentBreakdown } from '@/lib/worldCupOpponentBreakdown';
 import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
 
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 // stats are only fetched from BDL once and then served from cache on
 // subsequent loads (links every searched name to its resolved stats).
 // Stored permanently (no expiry).
-const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v6';
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v13';
 
 function buildDashboardCacheKey(opts: {
   competition: CompetitionParam;
@@ -229,6 +230,9 @@ type BdlMatch = {
   away_team_source?: { description?: string | null; placeholder?: string | null } | null;
   home_score?: number | null;
   away_score?: number | null;
+  home_score_penalties?: number | null;
+  away_score_penalties?: number | null;
+  has_penalty_shootout?: boolean | null;
   home_formation?: string | null;
   away_formation?: string | null;
 };
@@ -402,6 +406,30 @@ function findFeatureMatch(matches: BdlMatch[], selectedTeam: BdlTeam | null): Bd
   );
 }
 
+// Team-stat fields that mirror the BDL stat set (xG excluded). A game is only
+// "chartable" in Game Props when its row carries the majority of these — this
+// is what separates a fully-tracked match from a goals-and-cards-only one.
+const RICH_TEAM_STAT_KEYS = [
+  'shots_total',
+  'shots_on_target',
+  'corners',
+  'possession_pct',
+  'passes_total',
+] as const;
+
+function isRichTeamStatRow(row: Record<string, unknown>): boolean {
+  let present = 0;
+  for (const key of RICH_TEAM_STAT_KEYS) {
+    const value = row[key];
+    if (value == null) continue;
+    const num = typeof value === 'number' ? value : Number.parseFloat(String(value));
+    if (Number.isFinite(num)) present += 1;
+  }
+  // Require a clear majority (4 of 5) so one missing field doesn't drop an
+  // otherwise fully-tracked game, while cards-only rows (0 present) are removed.
+  return present >= 4;
+}
+
 function summarizeMatches(matches: BdlMatch[]) {
   return matches.map((match) => ({
     id: match.id,
@@ -417,6 +445,9 @@ function summarizeMatches(matches: BdlMatch[]) {
     awayLabel: getTeamLabel(match, 'away'),
     homeScore: match.home_score ?? null,
     awayScore: match.away_score ?? null,
+    homeScorePenalties: match.home_score_penalties ?? null,
+    awayScorePenalties: match.away_score_penalties ?? null,
+    hasPenaltyShootout: match.has_penalty_shootout === true,
     homeFormation: match.home_formation ?? null,
     awayFormation: match.away_formation ?? null,
   }));
@@ -927,6 +958,25 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (request.nextUrl.searchParams.get('oppBreakdown') === '1') {
+    try {
+      // Competition-agnostic: rankings span every nation's last N games across
+      // all ingested competitions. Served from the precomputed cache (see
+      // scripts/build-world-cup-opponent-breakdown.ts) for an instant response.
+      const windowN = Number.parseInt(request.nextUrl.searchParams.get('window') || '10', 10);
+      const payload = await getOpponentBreakdown(windowN, apiKey);
+      return NextResponse.json(payload, {
+        headers: { 'Cache-Control': 'public, s-maxage=600' },
+      });
+    } catch (error) {
+      const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Failed to compute opponent breakdown' },
+        { status }
+      );
+    }
+  }
+
   if (request.nextUrl.searchParams.get('teamForm') === '1') {
     try {
       if (competition === 'euros' || competition === 'nations-league') {
@@ -1322,6 +1372,14 @@ export async function GET(request: NextRequest) {
         console.warn('[world-cup/dashboard] team cross-source merge failed:', teamMergeError);
       }
     }
+
+    // Game Props (team mode): only chart games whose team stats match the full
+    // BDL stat set — shots, shots on target, corners, possession, passes. Drop
+    // goals-and-cards-only games (CAF / lower-tier AFC / OFC World Cup
+    // qualifiers, which no provider tracks in depth) so a stat is never shown
+    // with a half-empty set of bars. xG is intentionally excluded from the
+    // requirement since not every rich source provides it.
+    mergedTeamMatchStats = mergedTeamMatchStats.filter(isRichTeamStatRow);
 
     const responsePayload = {
       season,

@@ -33,8 +33,26 @@ type IntlMatchRow = {
   away_team_name: string;
   home_score: number | null;
   away_score: number | null;
+  home_score_penalty: number | null;
+  away_score_penalty: number | null;
+  has_penalty_shootout: boolean | null;
   status: string | null;
 };
+
+const INTL_MATCH_SELECT =
+  'source, source_match_id, tournament_slug, season_year, match_date, kickoff_unix, stage, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, home_score_penalty, away_score_penalty, has_penalty_shootout, status';
+
+function mapIntlMatchPenaltyFields(m: {
+  home_score_penalty?: number | null;
+  away_score_penalty?: number | null;
+  has_penalty_shootout?: boolean | null;
+}) {
+  return {
+    homeScorePenalties: m.home_score_penalty ?? null,
+    awayScorePenalties: m.away_score_penalty ?? null,
+    hasPenaltyShootout: m.has_penalty_shootout === true,
+  };
+}
 
 type IntlTeamRow = {
   source: string;
@@ -106,7 +124,7 @@ export async function loadInternationalDashboardData(opts: {
   const { data: matchRows = [] } = await sb
     .from('international_matches')
     .select(
-      'source, source_match_id, tournament_slug, season_year, match_date, kickoff_unix, stage, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status'
+      INTL_MATCH_SELECT
     )
     .eq('source', source)
     .eq('tournament_slug', tournamentSlug)
@@ -137,6 +155,7 @@ export async function loadInternationalDashboardData(opts: {
       awayScore: m.away_score,
       home_score: m.home_score,
       away_score: m.away_score,
+      ...mapIntlMatchPenaltyFields(m),
       source: m.source,
     };
   });
@@ -195,7 +214,7 @@ export async function loadInternationalDashboardData(opts: {
       const { data: extra } = await sb
         .from('international_matches')
         .select(
-          'source, source_match_id, tournament_slug, season_year, match_date, kickoff_unix, stage, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status'
+          INTL_MATCH_SELECT
         )
         .eq('source', source)
         .in('source_match_id', missing);
@@ -218,6 +237,7 @@ export async function loadInternationalDashboardData(opts: {
           awayScore: m.away_score,
           home_score: m.home_score,
           away_score: m.away_score,
+          ...mapIntlMatchPenaltyFields(m),
           source: m.source,
         };
       });
@@ -411,7 +431,7 @@ export async function searchInternationalPlayers(opts: {
 
   const sources =
     opts.competition === 'all'
-      ? ['statsbomb', 'api-football']
+      ? ['statsbomb', 'api-football', 'sofascore']
       : [COMPETITION_TO_SOURCE[opts.competition]];
 
   const limit = Math.min(opts.limit ?? 25, 50);
@@ -475,7 +495,7 @@ export async function loadInternationalStatsByPlayerName(
     .from('international_players')
     .select('source, source_player_id, full_name')
     .in('normalized_name', matchNames)
-    .in('source', ['statsbomb', 'api-football']);
+    .in('source', ['statsbomb', 'api-football', 'sofascore']);
 
   let players = (matchedPlayers ?? []) as Array<{
     source: string;
@@ -537,7 +557,7 @@ export async function loadInternationalStatsByPlayerName(
     const { data } = await sb
       .from('international_matches')
       .select(
-        'source_match_id, match_date, kickoff_unix, stage, season_year, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status, tournament_slug'
+        `${INTL_MATCH_SELECT}, tournament_slug`
       )
       .eq('source', source)
       .in('source_match_id', Array.from(ids));
@@ -616,6 +636,7 @@ export async function loadInternationalStatsByPlayerName(
         awayScore: row.away_score,
         home_score: row.home_score,
         away_score: row.away_score,
+        ...mapIntlMatchPenaltyFields(row),
         tournament_slug: row.tournament_slug,
         source,
       });
@@ -776,7 +797,7 @@ export async function loadInternationalTeamForm(opts: {
   const { data: matchRows } = await sb
     .from('international_matches')
     .select(
-      'source_match_id, match_date, kickoff_unix, stage, season_year, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status'
+      INTL_MATCH_SELECT
     )
     .eq('source', source)
     .eq('tournament_slug', opts.competition)
@@ -870,7 +891,7 @@ export async function loadInternationalTeamForm(opts: {
   return { teamMatches, opponentMatches, teamMatchStats };
 }
 
-const INTERNATIONAL_TEAM_SOURCES = ['statsbomb', 'api-football'];
+const INTERNATIONAL_TEAM_SOURCES = ['statsbomb', 'api-football', 'sofascore'];
 
 /**
  * Aggregate a national team's per-match team stats across EVERY international
@@ -934,7 +955,7 @@ export async function loadInternationalTeamStatsByCountry(opts: {
     const { data: matchRows } = await sb
       .from('international_matches')
       .select(
-        'source_match_id, match_date, kickoff_unix, stage, season_year, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, status, tournament_slug'
+        `${INTL_MATCH_SELECT}, tournament_slug`
       )
       .eq('source', source)
       .or(
@@ -1007,6 +1028,7 @@ export async function loadInternationalTeamStatsByCountry(opts: {
     // in international_team_match_stats. Keyed here by source_match_id.
     const teamOnly = new Map<string, Record<string, number | null>>();
     const teamOnlyOpp = new Map<string, Record<string, number | null>>();
+    // Pure team-only markets (not derivable from player rows).
     const TEAM_ONLY_KEYS = [
       'corners',
       'offsides',
@@ -1024,6 +1046,25 @@ export async function loadInternationalTeamStatsByCountry(opts: {
       'big_chances_missed',
       'hit_woodwork',
     ];
+    // Core stats that are normally summed from player rows, but which sources
+    // ingested team-stats-only (e.g. SofaScore WCQ Asia/Africa) provide directly
+    // on international_team_match_stats. Loaded here so the dashboard can fall
+    // back to them when no per-player rows exist for the match.
+    const TEAM_FALLBACK_KEYS = [
+      'goals',
+      'expected_goals',
+      'shots_total',
+      'shots_on_target',
+      'passes_total',
+      'passes_accurate',
+      'yellow_cards',
+      'red_cards',
+      'fouls',
+      'tackles',
+      'interceptions',
+      'saves',
+    ];
+    const TEAM_STAT_KEYS = [...TEAM_ONLY_KEYS, ...TEAM_FALLBACK_KEYS];
     for (let i = 0; i < matchIds.length; i += chunkSize) {
       const chunk = matchIds.slice(i, i + chunkSize);
       const { data: teamRows } = await sb
@@ -1033,7 +1074,7 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         .in('source_match_id', chunk);
       for (const r of (teamRows ?? []) as Array<Record<string, unknown>>) {
         const extras: Record<string, number | null> = {};
-        for (const key of TEAM_ONLY_KEYS) {
+        for (const key of TEAM_STAT_KEYS) {
           const value = r[key];
           if (value == null) continue;
           const num = typeof value === 'number' ? value : Number.parseFloat(String(value));
@@ -1076,6 +1117,7 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         awayScore: m.away_score,
         home_score: m.home_score,
         away_score: m.away_score,
+        ...mapIntlMatchPenaltyFields(m),
         tournament_slug: m.tournament_slug,
         source,
       });
@@ -1098,25 +1140,29 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         aOpp && aOpp.present.has(key) ? aOpp.sums[key] ?? 0 : null;
       const extraOpp = (key: string): number | null =>
         extrasOpp && extrasOpp[key] != null ? extrasOpp[key] : null;
+      // Prefer the player-summed value, but fall back to the team-level stat for
+      // team-stats-only sources (SofaScore WCQ) that have no per-player rows.
+      const val = (key: string): number | null => stat(key) ?? extra(key);
+      const valOpp = (key: string): number | null => statOpp(key) ?? extraOpp(key);
       teamMatchStats.push({
         match_id: prefixedId,
         team_id: teamIdOut,
         is_home: ourIsHome,
         source,
         tournament_slug: m.tournament_slug,
-        goals: goalsFromScore != null ? goalsFromScore : stat('goals'),
+        goals: goalsFromScore != null ? goalsFromScore : val('goals'),
         assists: stat('assists'),
-        shots_total: stat('shots_total'),
-        shots_on_target: stat('shots_on_target'),
-        passes_total: stat('passes_total'),
-        passes_accurate: stat('passes_accurate'),
-        expected_goals: stat('expected_goals'),
-        yellow_cards: stat('yellow_cards'),
-        red_cards: stat('red_cards'),
-        fouls: stat('fouls'),
+        shots_total: val('shots_total'),
+        shots_on_target: val('shots_on_target'),
+        passes_total: val('passes_total'),
+        passes_accurate: val('passes_accurate'),
+        expected_goals: val('expected_goals'),
+        yellow_cards: val('yellow_cards'),
+        red_cards: val('red_cards'),
+        fouls: val('fouls'),
         was_fouled: stat('was_fouled'),
-        tackles: stat('tackles'),
-        interceptions: stat('interceptions'),
+        tackles: val('tackles'),
+        interceptions: val('interceptions'),
         // Team-only markets (corners, possession, offsides, shot splits, ...).
         corners: extra('corners'),
         offsides: extra('offsides'),
@@ -1130,19 +1176,19 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         free_kicks: extra('free_kicks'),
         crosses_total: extra('crosses_total'),
         // Opponent values for the same match (team/opponent/home/away toggle).
-        opp_goals: oppGoalsFromScore != null ? oppGoalsFromScore : statOpp('goals'),
+        opp_goals: oppGoalsFromScore != null ? oppGoalsFromScore : valOpp('goals'),
         opp_assists: statOpp('assists'),
-        opp_shots_total: statOpp('shots_total'),
-        opp_shots_on_target: statOpp('shots_on_target'),
-        opp_passes_total: statOpp('passes_total'),
-        opp_passes_accurate: statOpp('passes_accurate'),
-        opp_expected_goals: statOpp('expected_goals'),
-        opp_yellow_cards: statOpp('yellow_cards'),
-        opp_red_cards: statOpp('red_cards'),
-        opp_fouls: statOpp('fouls'),
+        opp_shots_total: valOpp('shots_total'),
+        opp_shots_on_target: valOpp('shots_on_target'),
+        opp_passes_total: valOpp('passes_total'),
+        opp_passes_accurate: valOpp('passes_accurate'),
+        opp_expected_goals: valOpp('expected_goals'),
+        opp_yellow_cards: valOpp('yellow_cards'),
+        opp_red_cards: valOpp('red_cards'),
+        opp_fouls: valOpp('fouls'),
         opp_was_fouled: statOpp('was_fouled'),
-        opp_tackles: statOpp('tackles'),
-        opp_interceptions: statOpp('interceptions'),
+        opp_tackles: valOpp('tackles'),
+        opp_interceptions: valOpp('interceptions'),
         opp_corners: extraOpp('corners'),
         opp_offsides: extraOpp('offsides'),
         opp_possession_pct: extraOpp('possession_pct'),

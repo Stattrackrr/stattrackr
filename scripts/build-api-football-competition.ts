@@ -48,13 +48,83 @@ const COMPETITIONS: Record<string, CompetitionConfig> = {
     name: 'Africa Cup of Nations',
     defaultSeasons: [2025],
   },
+  'asian-cup': {
+    slug: 'asian-cup',
+    leagueId: 7,
+    name: 'AFC Asian Cup',
+    // API season year is the tournament edition (2023 played Jan 2024).
+    defaultSeasons: [2023],
+  },
   'nations-league': {
     slug: 'nations-league',
     leagueId: 5,
     name: 'UEFA Nations League',
     defaultSeasons: [2020, 2022, 2024],
   },
+  // World Cup qualifiers (api-sports league ids: 29=CAF, 30=AFC, 31=CONCACAF,
+  // 32=UEFA, 33=OFC, 34=CONMEBOL). Only CONMEBOL / UEFA / CONCACAF expose
+  // per-player and team match stats; CAF / AFC / OFC qualifiers have fixtures
+  // only. Season numbers below are the 2026-cycle editions (verified via API).
+  'wcq-conmebol': {
+    slug: 'wcq-conmebol',
+    leagueId: 34,
+    name: 'World Cup Qualification (CONMEBOL)',
+    defaultSeasons: [2026],
+  },
+  'wcq-uefa': {
+    slug: 'wcq-uefa',
+    leagueId: 32,
+    name: 'World Cup Qualification (UEFA)',
+    defaultSeasons: [2024],
+  },
+  'wcq-concacaf': {
+    slug: 'wcq-concacaf',
+    leagueId: 31,
+    name: 'World Cup Qualification (CONCACAF)',
+    defaultSeasons: [2026],
+  },
+
+  // ---- Club leagues (player + team club form) ----
+  // Slugs are prefixed `club-` so the World Cup dashboard tags every one of
+  // them as a single "Club" competition (vs the national-team tags). Default to
+  // the most recent completed season only (2025 = the 2025/26 European season
+  // that just finished, and the 2025 calendar-year season elsewhere). Coverage
+  // for all 15 verified via scripts/probe-club-league-coverage.ts.
+  epl: { slug: 'club-epl', leagueId: 39, name: 'Premier League', defaultSeasons: [2025] },
+  'la-liga': { slug: 'club-la-liga', leagueId: 140, name: 'La Liga', defaultSeasons: [2025] },
+  'serie-a': { slug: 'club-serie-a', leagueId: 135, name: 'Serie A', defaultSeasons: [2025] },
+  bundesliga: { slug: 'club-bundesliga', leagueId: 78, name: 'Bundesliga', defaultSeasons: [2025] },
+  brasileirao: { slug: 'club-brasileirao', leagueId: 71, name: 'Brasileirão', defaultSeasons: [2025] },
+  'ligue-1': { slug: 'club-ligue-1', leagueId: 61, name: 'Ligue 1', defaultSeasons: [2025] },
+  'liga-portugal': { slug: 'club-liga-portugal', leagueId: 94, name: 'Liga Portugal', defaultSeasons: [2025] },
+  eredivisie: { slug: 'club-eredivisie', leagueId: 88, name: 'Eredivisie', defaultSeasons: [2025] },
+  mls: { slug: 'club-mls', leagueId: 253, name: 'Major League Soccer', defaultSeasons: [2025] },
+  'belgian-pro-league': { slug: 'club-belgian-pro-league', leagueId: 144, name: 'Belgian Pro League', defaultSeasons: [2025] },
+  'saudi-pro-league': { slug: 'club-saudi-pro-league', leagueId: 307, name: 'Saudi Pro League', defaultSeasons: [2025] },
+  'argentine-primera': { slug: 'club-argentine-primera', leagueId: 128, name: 'Argentine Primera División', defaultSeasons: [2025] },
+  'liga-mx': { slug: 'club-liga-mx', leagueId: 262, name: 'Liga MX', defaultSeasons: [2025] },
+  'super-lig': { slug: 'club-super-lig', leagueId: 203, name: 'Süper Lig', defaultSeasons: [2025] },
+  'j1-league': { slug: 'club-j1-league', leagueId: 98, name: 'J1 League', defaultSeasons: [2025] },
 };
+
+/** Club-league preset keys, for the convenience all-clubs runner / docs. */
+const CLUB_COMPETITION_KEYS = [
+  'epl',
+  'la-liga',
+  'serie-a',
+  'bundesliga',
+  'brasileirao',
+  'ligue-1',
+  'liga-portugal',
+  'eredivisie',
+  'mls',
+  'belgian-pro-league',
+  'saudi-pro-league',
+  'argentine-primera',
+  'liga-mx',
+  'super-lig',
+  'j1-league',
+] as const;
 
 type ApiResponse<T> = {
   get: string;
@@ -77,11 +147,15 @@ type ApiFixture = {
   };
   league: { id: number; season: number; round: string; name: string };
   teams: {
-    home: { id: number; name: string; logo: string };
-    away: { id: number; name: string; logo: string };
+    home: { id: number; name: string; logo: string; winner?: boolean | null };
+    away: { id: number; name: string; logo: string; winner?: boolean | null };
   };
   goals: { home: number | null; away: number | null };
-  score: { fulltime: { home: number | null; away: number | null } };
+  score: {
+    fulltime: { home: number | null; away: number | null };
+    extratime?: { home: number | null; away: number | null };
+    penalty?: { home: number | null; away: number | null };
+  };
 };
 
 type ApiPlayerStatBlock = {
@@ -150,19 +224,29 @@ function parseYearArg(): number[] | null {
   return years.length ? years : null;
 }
 
-function parseCompetitionArg(): CompetitionConfig {
+/**
+ * Resolve which competition(s) to ingest. Supports a single `--competition=epl`
+ * or the meta value `--competition=all-clubs` to run every club league in one
+ * pass (sequentially, so API-Football rate limits are respected).
+ */
+function parseCompetitionArgs(): CompetitionConfig[] {
   const arg = process.argv.find((a) => a.startsWith('--competition='));
   const key = (arg?.split('=')[1] ?? '').trim().toLowerCase();
   if (!key) {
     throw new Error(
-      `--competition is required. Available: ${Object.keys(COMPETITIONS).join(', ')}`
+      `--competition is required. Available: ${Object.keys(COMPETITIONS).join(', ')} (or all-clubs)`
     );
+  }
+  if (key === 'all-clubs') {
+    return CLUB_COMPETITION_KEYS.map((k) => COMPETITIONS[k]);
   }
   const cfg = COMPETITIONS[key];
   if (!cfg) {
-    throw new Error(`Unknown competition "${key}". Available: ${Object.keys(COMPETITIONS).join(', ')}`);
+    throw new Error(
+      `Unknown competition "${key}". Available: ${Object.keys(COMPETITIONS).join(', ')} (or all-clubs)`
+    );
   }
-  return cfg;
+  return [cfg];
 }
 
 let _requestCount = 0;
@@ -360,6 +444,12 @@ async function upsertMatches(
       away_team_name: f.teams.away.name,
       home_score: f.goals.home ?? f.score.fulltime.home ?? null,
       away_score: f.goals.away ?? f.score.fulltime.away ?? null,
+      home_score_penalty: f.score.penalty?.home ?? null,
+      away_score_penalty: f.score.penalty?.away ?? null,
+      has_penalty_shootout:
+        f.score.penalty?.home != null &&
+        f.score.penalty?.away != null &&
+        f.score.penalty.home !== f.score.penalty.away,
       status: 'completed',
       fetched_at: new Date().toISOString(),
     };
@@ -587,7 +677,8 @@ async function ingestSeason(
   supabase: ReturnType<typeof getSupabase>,
   cfg: CompetitionConfig,
   seasonYear: number,
-  resume: boolean
+  resume: boolean,
+  skipTeamStats: boolean
 ): Promise<IngestStats> {
   console.log(`\n[api-football] === ${cfg.name} ${seasonYear} season ===`);
   await ensureCompetitionRegistered(supabase, cfg, seasonYear);
@@ -614,12 +705,16 @@ async function ingestSeason(
     processed += 1;
     const idStr = String(fixture.fixture.id);
 
-    // Team-level stats (corners, possession, offsides, shot splits) always run,
-    // even for fixtures whose player stats were already ingested in resume mode.
-    try {
-      totalTeamRows += await ingestFixtureTeamStats(supabase, cfg, fixture, seasonYear);
-    } catch (err) {
-      console.warn(`[api-football] fixture ${fixture.fixture.id} team-stats failed: ${(err as Error).message} - continuing`);
+    // Team-level stats (corners, possession, offsides, shot splits) normally run
+    // for every fixture, even ones whose player stats already exist in resume
+    // mode. Skipped entirely with --player-stats-only (one fewer API call per
+    // fixture — roughly halves request usage).
+    if (!skipTeamStats) {
+      try {
+        totalTeamRows += await ingestFixtureTeamStats(supabase, cfg, fixture, seasonYear);
+      } catch (err) {
+        console.warn(`[api-football] fixture ${fixture.fixture.id} team-stats failed: ${(err as Error).message} - continuing`);
+      }
     }
 
     if (alreadyIngested.has(idStr)) {
@@ -712,33 +807,43 @@ function resolveSeasons(cfg: CompetitionConfig): number[] {
 }
 
 async function main() {
-  const cfg = parseCompetitionArg();
+  const configs = parseCompetitionArgs();
   const resume = process.argv.includes('--resume');
-  const seasons = resolveSeasons(cfg);
-  if (!seasons.length) throw new Error(`No seasons resolved for ${cfg.slug}`);
+  const skipTeamStats =
+    process.argv.includes('--player-stats-only') || process.argv.includes('--skip-team-stats');
+  if (skipTeamStats) console.log('[api-football] PLAYER-STATS-ONLY — skipping team fixture statistics');
+  const supabase = getSupabase();
 
-  console.log(`[api-football] competition=${cfg.slug} (league ${cfg.leagueId}) seasons: ${seasons.join(', ')}`);
-  for (const year of seasons) {
-    const players = await probeSeasonPlayerCoverage(cfg, year);
-    if (players === 0) {
-      console.warn(`[api-football] WARNING: season ${year} probe returned 0 players — API may lack stats for this edition`);
-    } else {
-      console.log(`[api-football] season ${year} probe OK (${players} players in sample fixture)`);
+  let grandMatches = 0;
+  let grandStatRows = 0;
+
+  for (const cfg of configs) {
+    const seasons = resolveSeasons(cfg);
+    if (!seasons.length) throw new Error(`No seasons resolved for ${cfg.slug}`);
+
+    console.log(
+      `\n[api-football] ######## competition=${cfg.slug} (league ${cfg.leagueId}) seasons: ${seasons.join(', ')} ########`
+    );
+    for (const year of seasons) {
+      const players = await probeSeasonPlayerCoverage(cfg, year);
+      if (players === 0) {
+        console.warn(`[api-football] WARNING: season ${year} probe returned 0 players — API may lack stats for this edition`);
+      } else {
+        console.log(`[api-football] season ${year} probe OK (${players} players in sample fixture)`);
+      }
+    }
+
+    for (const year of seasons) {
+      const r = await ingestSeason(supabase, cfg, year, resume, skipTeamStats);
+      grandMatches += r.matches;
+      grandStatRows += r.statRows;
     }
   }
 
-  const supabase = getSupabase();
-  let totalMatches = 0;
-  let totalStatRows = 0;
-  for (const year of seasons) {
-    const r = await ingestSeason(supabase, cfg, year, resume);
-    totalMatches += r.matches;
-    totalStatRows += r.statRows;
-  }
   await flagAmbiguousPlayers(supabase);
 
   console.log(
-    `\n[api-football] ALL DONE. competition=${cfg.slug} seasons=${seasons.join(',')} matches=${totalMatches} stat_rows=${totalStatRows}`
+    `\n[api-football] ALL DONE. competitions=${configs.map((c) => c.slug).join(',')} matches=${grandMatches} stat_rows=${grandStatRows}`
   );
   console.log(`[api-football] total requests: ${_requestCount}`);
 }
