@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-06-08T08:49:30.488Z",
+  "generatedAt": "2026-06-08T14:02:52.036Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 613,
@@ -21,7 +21,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 10.08,
       "uncontested_possessions": 22.33,
-      "meters_gained": 609.58,
+      "meters_gained": 609.25,
       "free_kicks_for": 1.25
     },
     {
@@ -814,12 +814,12 @@
       "marks": 3.31,
       "goals": 0.23,
       "tackles": 6.31,
-      "clearances": 5.62,
+      "clearances": 5.54,
       "inside_50s": 4.54,
       "rebound_50s": 1.15,
       "contested_possessions": 11.54,
       "uncontested_possessions": 12.38,
-      "meters_gained": 344.23,
+      "meters_gained": 344.62,
       "free_kicks_for": 1.23
     },
     {
@@ -876,7 +876,7 @@
       "rebound_50s": 1.3,
       "contested_possessions": 7.9,
       "uncontested_possessions": 15.6,
-      "meters_gained": 218.5,
+      "meters_gained": 218.2,
       "free_kicks_for": 0.7
     },
     {
@@ -990,7 +990,7 @@
       "rebound_50s": 5.6,
       "contested_possessions": 5.4,
       "uncontested_possessions": 13,
-      "meters_gained": 476.8,
+      "meters_gained": 476.6,
       "free_kicks_for": 0.4
     },
     {
@@ -1446,7 +1446,7 @@
       "rebound_50s": 1.69,
       "contested_possessions": 8.69,
       "uncontested_possessions": 12.54,
-      "meters_gained": 495.31,
+      "meters_gained": 495.23,
       "free_kicks_for": 1.46
     },
     {
@@ -1821,7 +1821,7 @@
       "marks": 4.38,
       "goals": 0.62,
       "tackles": 1.85,
-      "clearances": 6,
+      "clearances": 5.92,
       "inside_50s": 3.85,
       "rebound_50s": 1.69,
       "contested_possessions": 13.62,
@@ -1906,6 +1906,25 @@
       "free_kicks_for": 0.85
     },
     {
+      "name": "Tom Sparrow",
+      "team": "Melbourne",
+      "games": 13,
+      "number": 9,
+      "disposals": 20.69,
+      "kicks": 11.46,
+      "handballs": 9.23,
+      "marks": 2.69,
+      "goals": 0.46,
+      "tackles": 6.15,
+      "clearances": 4.85,
+      "inside_50s": 4.15,
+      "rebound_50s": 1.38,
+      "contested_possessions": 7.92,
+      "uncontested_possessions": 11.62,
+      "meters_gained": 365.77,
+      "free_kicks_for": 1.08
+    },
+    {
       "name": "Zac Bailey",
       "team": "Brisbane",
       "games": 12,
@@ -1961,25 +1980,6 @@
       "uncontested_possessions": 12.5,
       "meters_gained": 326.58,
       "free_kicks_for": 0.83
-    },
-    {
-      "name": "Tom Sparrow",
-      "team": "Melbourne",
-      "games": 13,
-      "number": 9,
-      "disposals": 20.62,
-      "kicks": 11.38,
-      "handballs": 9.23,
-      "marks": 2.69,
-      "goals": 0.46,
-      "tackles": 6.15,
-      "clearances": 4.69,
-      "inside_50s": 4.15,
-      "rebound_50s": 1.38,
-      "contested_possessions": 7.92,
-      "uncontested_possessions": 11.62,
-      "meters_gained": 365.38,
-      "free_kicks_for": 1.08
     },
     {
       "name": "Christian Salem",
@@ -2168,7 +2168,7 @@
       "rebound_50s": 2.08,
       "contested_possessions": 4.67,
       "uncontested_possessions": 15.5,
-      "meters_gained": 284.92,
+      "meters_gained": 284.75,
       "free_kicks_for": 0.67
     },
     {
@@ -2282,7 +2282,7 @@
       "rebound_50s": 2.62,
       "contested_possessions": 5.31,
       "uncontested_possessions": 13.62,
-      "meters_gained": 301.38,
+      "meters_gained": 301.46,
       "free_kicks_for": 0.38
     },
     {
@@ -2362,6 +2362,25 @@
       "free_kicks_for": 0.69
     },
     {
+      "name": "Jordan De Goey",
+      "team": "Collingwood",
+      "games": 12,
+      "number": 49,
+      "disposals": 19.92,
+      "kicks": 11.5,
+      "handballs": 8.42,
+      "marks": 4.67,
+      "goals": 1,
+      "tackles": 2.5,
+      "clearances": 2.17,
+      "inside_50s": 4.08,
+      "rebound_50s": 1.08,
+      "contested_possessions": 5.75,
+      "uncontested_possessions": 13.92,
+      "meters_gained": 322.92,
+      "free_kicks_for": 0.83
+    },
+    {
       "name": "Izak Rankine",
       "team": "Adelaide",
       "games": 10,
@@ -2398,25 +2417,6 @@
       "uncontested_possessions": 15.4,
       "meters_gained": 363.9,
       "free_kicks_for": 1
-    },
-    {
-      "name": "Jordan De Goey",
-      "team": "Collingwood",
-      "games": 12,
-      "number": 49,
-      "disposals": 19.83,
-      "kicks": 11.5,
-      "handballs": 8.33,
-      "marks": 4.67,
-      "goals": 1,
-      "tackles": 2.5,
-      "clearances": 2.17,
-      "inside_50s": 4.08,
-      "rebound_50s": 1.08,
-      "contested_possessions": 5.75,
-      "uncontested_possessions": 13.92,
-      "meters_gained": 322.92,
-      "free_kicks_for": 0.83
     },
     {
       "name": "Jai Serong",
@@ -3308,7 +3308,7 @@
       "rebound_50s": 4,
       "contested_possessions": 4.23,
       "uncontested_possessions": 13.08,
-      "meters_gained": 336.46,
+      "meters_gained": 337.69,
       "free_kicks_for": 0.77
     },
     {
@@ -3327,7 +3327,7 @@
       "rebound_50s": 3.11,
       "contested_possessions": 4.33,
       "uncontested_possessions": 12.56,
-      "meters_gained": 305.44,
+      "meters_gained": 303.78,
       "free_kicks_for": 0.56
     },
     {
@@ -3365,7 +3365,7 @@
       "rebound_50s": 4.5,
       "contested_possessions": 3.8,
       "uncontested_possessions": 9.9,
-      "meters_gained": 354.2,
+      "meters_gained": 354.5,
       "free_kicks_for": 0.8
     },
     {
@@ -3992,7 +3992,7 @@
       "rebound_50s": 0.75,
       "contested_possessions": 6.17,
       "uncontested_possessions": 10.92,
-      "meters_gained": 324,
+      "meters_gained": 323.17,
       "free_kicks_for": 0.5
     },
     {
@@ -4258,7 +4258,7 @@
       "rebound_50s": 0.69,
       "contested_possessions": 5.92,
       "uncontested_possessions": 10.23,
-      "meters_gained": 313.92,
+      "meters_gained": 313.15,
       "free_kicks_for": 0.69
     },
     {
@@ -5056,7 +5056,7 @@
       "rebound_50s": 2.31,
       "contested_possessions": 4.23,
       "uncontested_possessions": 10.69,
-      "meters_gained": 214.85,
+      "meters_gained": 216.38,
       "free_kicks_for": 0.15
     },
     {
@@ -5949,7 +5949,7 @@
       "rebound_50s": 3.45,
       "contested_possessions": 5.09,
       "uncontested_possessions": 8.27,
-      "meters_gained": 269.64,
+      "meters_gained": 269.36,
       "free_kicks_for": 0.27
     },
     {
@@ -6025,7 +6025,7 @@
       "rebound_50s": 4,
       "contested_possessions": 3,
       "uncontested_possessions": 10,
-      "meters_gained": 268,
+      "meters_gained": 267,
       "free_kicks_for": 0.25
     },
     {
@@ -6077,12 +6077,12 @@
       "marks": 2.69,
       "goals": 1.23,
       "tackles": 2.62,
-      "clearances": 1.38,
+      "clearances": 1.31,
       "inside_50s": 3.92,
       "rebound_50s": 0.54,
-      "contested_possessions": 4.77,
-      "uncontested_possessions": 8.92,
-      "meters_gained": 294,
+      "contested_possessions": 4.69,
+      "uncontested_possessions": 9,
+      "meters_gained": 294.15,
       "free_kicks_for": 1
     },
     {
@@ -6595,7 +6595,7 @@
       "rebound_50s": 0,
       "contested_possessions": 5,
       "uncontested_possessions": 7,
-      "meters_gained": 136,
+      "meters_gained": 139,
       "free_kicks_for": 1
     },
     {
@@ -6880,7 +6880,7 @@
       "rebound_50s": 3,
       "contested_possessions": 4,
       "uncontested_possessions": 8.62,
-      "meters_gained": 171,
+      "meters_gained": 171.08,
       "free_kicks_for": 0.92
     },
     {
@@ -6944,7 +6944,7 @@
       "name": "Jordon Sweet",
       "team": "Port Adelaide",
       "games": 11,
-      "number": 35,
+      "number": 36,
       "disposals": 12.36,
       "kicks": 6,
       "handballs": 6.36,
