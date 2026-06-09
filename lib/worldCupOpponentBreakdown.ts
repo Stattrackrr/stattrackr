@@ -57,7 +57,7 @@ export function deriveShotsTotal(
 ): number | null {
   const parts = [onTarget, offTarget, blocked].map(toFiniteOrNull);
   if (parts.every((p) => p == null)) return null;
-  return parts.reduce((sum, p) => sum + (p ?? 0), 0);
+  return parts.reduce<number>((sum, p) => sum + (p ?? 0), 0);
 }
 
 export function normalizeDerivedTeamStats(row: Record<string, any>): Record<string, any> {
