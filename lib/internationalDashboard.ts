@@ -603,6 +603,9 @@ export async function loadInternationalStatsByPlayerName(
       away_team_name: string;
       home_score: number | null;
       away_score: number | null;
+      home_score_penalty?: number | null;
+      away_score_penalty?: number | null;
+      has_penalty_shootout?: boolean | null;
       status: string | null;
       tournament_slug: string;
     }>) {

@@ -242,7 +242,7 @@ async function selectAllBySource(table: string, columns: string, source: string)
       .eq('source', source)
       .range(from, from + pageSize - 1);
     if (error) throw error;
-    const rows = (data ?? []) as Array<Record<string, unknown>>;
+    const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
     out.push(...rows);
     if (rows.length < pageSize) break;
     from += pageSize;

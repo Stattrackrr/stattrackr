@@ -94,6 +94,7 @@ async function probeKnownTournament(entry: { id: number; label: string; ingestSl
   if (entry.ingestSlug) console.log(`  ingest via: --competition=${entry.ingestSlug}`);
   type TournamentMeta = {
     name?: string;
+    league?: { name?: string };
     category?: { name?: string; sport?: { name?: string } };
   };
   let meta: TournamentMeta | undefined;
