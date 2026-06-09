@@ -1143,10 +1143,19 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         aOpp && aOpp.present.has(key) ? aOpp.sums[key] ?? 0 : null;
       const extraOpp = (key: string): number | null =>
         extrasOpp && extrasOpp[key] != null ? extrasOpp[key] : null;
-      // Prefer the player-summed value, but fall back to the team-level stat for
-      // team-stats-only sources (SofaScore WCQ) that have no per-player rows.
-      const val = (key: string): number | null => stat(key) ?? extra(key);
-      const valOpp = (key: string): number | null => statOpp(key) ?? extraOpp(key);
+      // Prefer team-level stats (international_team_match_stats) for core team
+      // metrics so the Game Props chart matches Opponent Breakdown and the BDL
+      // website. Player sums undercount shots/passes when not every player is
+      // tracked. Player rows remain the source for assists and other player-only
+      // fields; team-stats-only sources still work via the extra() fallback.
+      const val = (key: string): number | null =>
+        (TEAM_FALLBACK_KEYS as readonly string[]).includes(key)
+          ? (extra(key) ?? stat(key))
+          : (stat(key) ?? extra(key));
+      const valOpp = (key: string): number | null =>
+        (TEAM_FALLBACK_KEYS as readonly string[]).includes(key)
+          ? (extraOpp(key) ?? statOpp(key))
+          : (statOpp(key) ?? extraOpp(key));
       teamMatchStats.push({
         match_id: prefixedId,
         team_id: teamIdOut,
@@ -1163,7 +1172,10 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         yellow_cards: val('yellow_cards'),
         red_cards: val('red_cards'),
         fouls: val('fouls'),
-        was_fouled: stat('was_fouled'),
+        // Fouls suffered == opponent's fouls committed. Prefer the opponent's
+        // team-level fouls (reliable) over the player sum, which often marks
+        // was_fouled "present" as 0 when only a subset of players are tracked.
+        was_fouled: valOpp('fouls') ?? stat('was_fouled'),
         tackles: val('tackles'),
         interceptions: val('interceptions'),
         // Team-only markets (corners, possession, offsides, shot splits, ...).
@@ -1189,7 +1201,8 @@ export async function loadInternationalTeamStatsByCountry(opts: {
         opp_yellow_cards: valOpp('yellow_cards'),
         opp_red_cards: valOpp('red_cards'),
         opp_fouls: valOpp('fouls'),
-        opp_was_fouled: statOpp('was_fouled'),
+        // Opponent's fouls suffered == our committed fouls (same symmetry).
+        opp_was_fouled: val('fouls') ?? statOpp('was_fouled'),
         opp_tackles: valOpp('tackles'),
         opp_interceptions: valOpp('interceptions'),
         opp_corners: extraOpp('corners'),

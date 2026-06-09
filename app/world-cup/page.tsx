@@ -227,19 +227,62 @@ const WORLD_CUP_DVP_METRICS = [
 // Breakdown card's allowed-averages layout).
 const WORLD_CUP_OPP_BREAKDOWN_METRICS = [
   { key: 'goals', label: 'Goals' },
-  { key: 'assists', label: 'Assists' },
   { key: 'shots_total', label: 'Shots' },
   { key: 'shots_on_target', label: 'Shots on Target' },
+  { key: 'corners', label: 'Corners' },
   { key: 'passes_accurate', label: 'Passes' },
   { key: 'yellow_cards', label: 'Yellow Cards' },
   { key: 'red_cards', label: 'Red Cards' },
 ] as const;
+// Stats shown in the Team Matchup (attack vs defense). A subset of the breakdown
+// stats that read naturally as "going forward": cards are excluded since they
+// don't frame as attack/defense.
+const WORLD_CUP_MATCHUP_METRICS = [
+  { key: 'goals', label: 'Goals' },
+  { key: 'shots_total', label: 'Shots' },
+  { key: 'shots_on_target', label: 'SOT' },
+  { key: 'corners', label: 'Corners' },
+  { key: 'passes_accurate', label: 'Passes' },
+  { key: 'yellow_cards', label: 'Yellow Cards' },
+  { key: 'fouls', label: 'Fouls Committed' },
+  { key: 'was_fouled', label: 'Fouls Suffered' },
+] as const;
+
+/** Plain-language labels for each bar in the Team Matchup card. */
+function worldCupMatchupSideLabels(statKey: string): { team: string; opponent: string } {
+  switch (statKey) {
+    case 'goals':
+      return { team: 'Scores', opponent: 'Concedes' };
+    case 'shots_total':
+      return { team: 'Takes', opponent: 'Allows' };
+    case 'shots_on_target':
+      return { team: 'On target', opponent: 'Allows SOT' };
+    case 'corners':
+      return { team: 'Wins', opponent: 'Concedes' };
+    case 'passes_accurate':
+      return { team: 'Completes', opponent: 'Allows' };
+    case 'yellow_cards':
+      return { team: 'Booked', opponent: 'Books opp.' };
+    case 'fouls':
+      // Team = fouls they commit. Opponent "allowed" = fouls committed against them (= they draw).
+      return { team: 'Commits', opponent: 'Draws' };
+    case 'was_fouled':
+      // Team = fouls they draw. Opponent "allowed" = fouls suffered by their opponents (= they commit).
+      return { team: 'Draws', opponent: 'Commits' };
+    default:
+      return { team: 'For', opponent: 'Faces' };
+  }
+}
 // Opponent Breakdown is computed over each team's last N completed games (any
-// season/competition), not per-season — these are the toggle options.
+// season/competition), not per-season — these are the toggle options. id 0 is
+// the "All games" view (default), which averages over every game we have for a
+// nation. Windows a team can't fill (e.g. L10 when they've only played 3) are
+// disabled in the UI.
+const WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW = 0;
 const WORLD_CUP_OPP_BREAKDOWN_WINDOWS = [
-  { id: 3, label: 'L3' },
+  { id: 5, label: 'L5' },
   { id: 10, label: 'L10' },
-  { id: 20, label: 'L20' },
+  { id: WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW, label: 'All' },
 ] as const;
 const WORLD_CUP_STAT_OPTIONS = [
   // Game Props only: win/draw/loss result view (value derived from scoreline).
@@ -253,6 +296,7 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'shots_blocked', label: 'Shots Blocked', playerKey: 'derived_shots_blocked', teamKey: 'shots_blocked' },
   { id: 'shots_inside_box', label: 'Shots Inside Box', playerKey: null, teamKey: 'shots_inside_box' },
   { id: 'shots_outside_box', label: 'Shots Outside Box', playerKey: null, teamKey: 'shots_outside_box' },
+  { id: 'corner_kicks', label: 'Corners', playerKey: null, teamKey: 'corners' },
   { id: 'big_chances_created', label: 'Big Chances Created', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'fouls_committed', label: 'Fouls Committed', playerKey: 'fouls_committed', teamKey: 'fouls' },
   { id: 'fouls_suffered', label: 'Fouls Suffered', playerKey: 'was_fouled', teamKey: 'was_fouled' },
@@ -272,7 +316,6 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'ball_possession', label: 'Ball Possession', playerKey: null, teamKey: 'possession_pct' },
   { id: 'big_chances', label: 'Big Chances', playerKey: 'big_chances_created', teamKey: 'big_chances' },
   { id: 'big_chances_missed', label: 'Big Chances Missed', playerKey: 'big_chances_missed', teamKey: 'big_chances_missed' },
-  { id: 'corner_kicks', label: 'Corner Kicks', playerKey: null, teamKey: 'corners' },
   { id: 'passes', label: 'Passes', playerKey: 'passes_total', teamKey: 'passes_total' },
   { id: 'passes_in_final_third', label: 'Passes in Final Third', playerKey: null, teamKey: 'passes_final_third' },
   { id: 'crosses', label: 'Crosses', playerKey: 'crosses_total', teamKey: 'crosses_total' },
@@ -291,6 +334,22 @@ const WORLD_CUP_STAT_OPTIONS = [
   { id: 'goal_kicks', label: 'Goal Kicks', playerKey: null, teamKey: 'goal_kicks' },
   { id: 'free_kicks', label: 'Free Kicks', playerKey: null, teamKey: 'free_kicks' },
 ] as const;
+// Stat options hidden from the chart in BOTH modes (player + team), per product
+// decision. Removed from the main stat pills entirely.
+const WORLD_CUP_HIDDEN_STAT_IDS = new Set<string>([
+  'assists',
+  'ball_possession',
+  'throw_ins',
+  'goal_kicks',
+]);
+// Same stats by their stat-key, to drop them from the supporting-stats row too
+// (that row is keyed by playerKey/teamKey, not option id).
+const WORLD_CUP_HIDDEN_SUPPORTING_KEYS = new Set<string>([
+  'assists',
+  'possession_pct',
+  'throw_ins',
+  'goal_kicks',
+]);
 // Player Props (player mode): stat options to hide from both the main stat
 // pills and the supporting-stats row. These were removed per product decision.
 const WORLD_CUP_PLAYER_HIDDEN_STAT_IDS = new Set<string>([
@@ -402,6 +461,11 @@ const WORLD_CUP_STAT_PERSPECTIVES: Array<{ id: WorldCupStatPerspective; label: s
   { id: 'opponent', label: 'Opponent' },
   { id: 'all', label: 'All' },
 ];
+// Stats where the "All" (team + opponent) perspective is meaningless because the
+// two sides are mirror values. Fouls suffered == the opponent's fouls committed,
+// so "Fouls Committed (All)" and "Fouls Suffered (All)" both equal total match
+// fouls — identical. For these we disable "All" and pin to the selected team.
+const WORLD_CUP_NO_ALL_PERSPECTIVE_STAT_KEYS = new Set<string>(['fouls', 'was_fouled']);
 type WorldCupChartContext = {
   statId: WorldCupChartStatId;
   statKey: string | null;
@@ -922,7 +986,18 @@ function teamStatPresentInComp(
   comp: string,
   key: string
 ): boolean {
-  return (rowsByComp.get(comp) ?? []).some((row) => toNumber(row[key]) != null);
+  const rows = rowsByComp.get(comp) ?? [];
+  if (!rows.length) return false;
+  // Zero-default stats (yellow/red cards, fouls, …) chart as 0 when the field is
+  // missing. Requiring a non-null value here wrongly drops red cards: most games
+  // have no red, so every row can be null even though the stat is available.
+  if (ZERO_DEFAULT_STAT_KEYS.has(key)) {
+    return rows.some((row) =>
+      toNumber(row[key]) != null ||
+      RICH_TEAM_STAT_KEYS.some((richKey) => toNumber(row[richKey]) != null)
+    );
+  }
+  return rows.some((row) => toNumber(row[key]) != null);
 }
 
 /**
@@ -1499,6 +1574,8 @@ function getAvailableWorldCupStats(
   const filtered = WORLD_CUP_STAT_OPTIONS.filter((option) => {
     const key = mode === 'player' ? option.playerKey : option.teamKey;
     if (!key) return false;
+    // Globally hidden stats (both modes).
+    if (WORLD_CUP_HIDDEN_STAT_IDS.has(option.id)) return false;
     if (mode === 'player') {
       if (WORLD_CUP_PLAYER_HIDDEN_STAT_IDS.has(option.id)) return false;
       if (WORLD_CUP_GOALKEEPER_ONLY_PLAYER_KEYS.has(key) && !isGoalkeeper) return false;
@@ -1700,7 +1777,11 @@ function WorldCupGameByGameChart({
             return ZERO_DEFAULT_STAT_KEYS.has(statKey) ? 0 : null;
           };
           if (mode === 'team' && perspective === 'opponent') return readKey(`opp_${statKey}`);
-          if (mode === 'team' && perspective === 'all') {
+          if (
+            mode === 'team' &&
+            perspective === 'all' &&
+            !WORLD_CUP_NO_ALL_PERSPECTIVE_STAT_KEYS.has(statKey)
+          ) {
             const own = readKey(statKey);
             const opp = readKey(`opp_${statKey}`);
             if (own == null && opp == null) return null;
@@ -1892,6 +1973,15 @@ function WorldCupGameByGameChart({
     }
   }, [chartStages, stageFilter]);
 
+  // Fouls committed/suffered have no meaningful "All" view (the two sides are
+  // mirror values, so the total is identical). Pin to the selected team instead.
+  const noAllPerspective = Boolean(statKey && WORLD_CUP_NO_ALL_PERSPECTIVE_STAT_KEYS.has(statKey));
+  useEffect(() => {
+    if (noAllPerspective && perspective === 'all') {
+      setPerspective('team');
+    }
+  }, [noAllPerspective, perspective]);
+
   const customTooltip = useCallback(
     (props: any) => <WorldCupChartTooltip {...props} isDark={isDark} statLabel={statConfig.label} isMoneyline={isMoneyline} />,
     [isDark, statConfig.label, isMoneyline]
@@ -2016,7 +2106,9 @@ function WorldCupGameByGameChart({
           </div>
           {mode === 'team' && !isMoneyline ? (
             <div className="inline-flex items-center rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0a1929] p-0.5 h-[32px]">
-              {WORLD_CUP_STAT_PERSPECTIVES.map((option) => {
+              {WORLD_CUP_STAT_PERSPECTIVES.filter(
+                (option) => !(option.id === 'all' && noAllPerspective)
+              ).map((option) => {
                 // The selected team is fixed (e.g. "Portugal"); the opponent
                 // changes each match, so it always reads "Opponent".
                 const buttonLabel =
@@ -2188,8 +2280,7 @@ function WorldCupGameByGameChart({
             customXAxisTick={customXAxisTick}
             disableBarAnimation
             centerAverageOverlay
-            averageOverlayLowerOnMobile
-            averageOverlayLower
+            averageOverlayHigher
             desktopChartLeftInset={40}
             desktopChartRightInset={8}
             desktopChartRightMargin={8}
@@ -2322,13 +2413,7 @@ function WorldCupSupportingStats({
   }, [mode, data, selectedTeamId]);
 
   const supportingOptions = useMemo(() => {
-    const baseCandidates = buildWorldCupSupportingKeys(chartContext.statKey, mode);
-    // Game Props: always offer Ball Possession in the supporting row so it can
-    // lead it, regardless of the selected main stat's category.
-    const candidates =
-      mode === 'team' && !baseCandidates.includes('possession_pct')
-        ? [...baseCandidates, 'possession_pct']
-        : baseCandidates;
+    const candidates = buildWorldCupSupportingKeys(chartContext.statKey, mode);
     const isGoalkeeper = isWorldCupGoalkeeperRole(selectedPlayer?.role);
     const unsupportedKeys = UNSUPPORTED_SUPPORTING_KEYS_BY_COMPETITION[competition];
     // In team mode, only keep supporting stats present in EVERY competition the
@@ -2349,6 +2434,8 @@ function WorldCupSupportingStats({
 
     const filtered = candidates.filter((key, index, arr) => {
       if (arr.indexOf(key) !== index) return false;
+      // Globally hidden supporting stats (both modes).
+      if (WORLD_CUP_HIDDEN_SUPPORTING_KEYS.has(key)) return false;
       // Game Props: never echo the stat already shown in the main chart, nor a
       // near-duplicate sibling of it.
       if (mode === 'team' && key === chartContext.statKey) return false;
@@ -2362,11 +2449,6 @@ function WorldCupSupportingStats({
       if (symmetricKeys && !symmetricKeys.has(key)) return false;
       return true;
     });
-    // Game Props: surface Ball Possession first in the supporting row (unless it
-    // is the stat already selected in the main chart).
-    if (mode === 'team' && chartContext.statKey !== 'possession_pct' && filtered.includes('possession_pct')) {
-      return ['possession_pct', ...filtered.filter((key) => key !== 'possession_pct')];
-    }
     return filtered;
   }, [chartContext.statKey, mode, selectedPlayer?.role, competition, teamSymmetryRows]);
 
@@ -2565,7 +2647,13 @@ type WorldCupOppBreakdownResponse = {
   // Keyed by FIFA country slug so a nation's games from every source/competition
   // collapse into one ranking. names maps slug -> display name.
   names: Record<string, string>;
+  // slug -> games used for this window / total games available for the nation.
+  games?: Record<string, number>;
+  totalGames?: Record<string, number>;
+  // Defense: opponent allowed averages + ranks (lowest allowed = rank 1).
   metrics: Record<string, WorldCupDvpMetricEntry>;
+  // Attack: the nation's own per-game averages + ranks (most = rank 1).
+  forMetrics?: Record<string, WorldCupDvpMetricEntry>;
 };
 
 function getWorldCupDvpRankStyles(rank: number | null, totalRanks: number, isDark: boolean) {
@@ -2924,23 +3012,23 @@ function WorldCupDvpCard({
 function WorldCupOpponentBreakdownCard({
   isDark,
   opponentTeam,
-  teamOptions,
 }: {
   isDark: boolean;
   opponentTeam: WorldCupTeamOption | null;
-  teamOptions: WorldCupTeamOption[];
 }) {
-  const [windowN, setWindowN] = useState<number>(10);
-
-  const [oppSel, setOppSel] = useState<string>(opponentTeam?.id ?? '');
-  const [oppOpen, setOppOpen] = useState(false);
-  useEffect(() => {
-    setOppSel(opponentTeam?.id ?? '');
-  }, [opponentTeam?.id]);
+  const [windowN, setWindowN] = useState<number>(WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW);
 
   const [breakdown, setBreakdown] = useState<WorldCupOppBreakdownResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Full 1–48 league-table view: toggled by a button; ranks every nation for a
+  // single chosen stat instead of showing every stat for one opponent.
+  const [showAllRankings, setShowAllRankings] = useState(false);
+  const [rankingStat, setRankingStat] = useState<string>(WORLD_CUP_OPP_BREAKDOWN_METRICS[0].key);
+  // Portal target: the modal must mount on document.body so a transformed/clipped
+  // ancestor (the narrow sidebar card) doesn't trap the fixed overlay.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2973,12 +3061,8 @@ function WorldCupOpponentBreakdownCard({
     };
   }, [windowN]);
 
-  const opponentForLabel = useMemo(
-    () => teamOptions.find((team) => team.id === oppSel) || opponentTeam,
-    [oppSel, teamOptions, opponentTeam]
-  );
+  const opponentForLabel = opponentTeam;
   const opponentName = opponentForLabel?.name ?? '';
-  const opponentLogoUrl = getWorldCupFlagUrl(opponentForLabel?.countryCode || opponentForLabel?.abbreviation);
   const opponentSlug =
     resolveWorldCupFlagCode(opponentForLabel?.countryCode) ||
     resolveWorldCupFlagCode(opponentForLabel?.abbreviation) ||
@@ -2987,101 +3071,135 @@ function WorldCupOpponentBreakdownCard({
 
   const totalOpponents = breakdown ? Object.keys(breakdown.names).length : 0;
 
-  const formatValue = (value: number | undefined, statKey: string) => {
+  // Per-team sample size. totalGames is the same across windows (full count),
+  // games is how many were used for the active window.
+  const opponentTotalGames = opponentSlug ? breakdown?.totalGames?.[opponentSlug] ?? 0 : 0;
+  const opponentGamesUsed = opponentSlug ? breakdown?.games?.[opponentSlug] ?? 0 : 0;
+  const isAllWindow = windowN === WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW;
+  // Flag thin samples so the user knows a "0.0 allowed" is over very few games.
+  const SMALL_SAMPLE = 5;
+  const lowSample = opponentGamesUsed > 0 && opponentGamesUsed < SMALL_SAMPLE;
+
+  // If the active fixed window is larger than the opponent's available games,
+  // snap to "All" (those buttons are also disabled below).
+  useEffect(() => {
+    if (!isAllWindow && opponentTotalGames > 0 && opponentTotalGames < windowN) {
+      setWindowN(WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW);
+    }
+  }, [isAllWindow, opponentTotalGames, windowN]);
+
+  const formatValue = (value: number | undefined, _statKey: string) => {
     if (value == null || !Number.isFinite(value)) return '—';
-    if (statKey === 'yellow_cards' || statKey === 'red_cards') return value.toFixed(2);
-    return value.toFixed(1);
+    return value.toFixed(2);
   };
 
   const noData = Boolean(breakdown) && totalOpponents === 0;
+
+  // Full league-table list for the selected ranking stat: every ranked nation,
+  // ordered #1 (hardest / allows least) → #N (easiest / allows most).
+  const rankingList = useMemo(() => {
+    const entry = breakdown?.metrics[rankingStat];
+    if (!entry || !breakdown) return [] as Array<{
+      slug: string;
+      name: string;
+      value: number;
+      rank: number | null;
+      games: number;
+    }>;
+    return Object.entries(entry.values)
+      .map(([slug, value]) => ({
+        slug,
+        name: breakdown.names[slug] ?? slug,
+        value,
+        rank: entry.ranks[slug] ?? null,
+        games: breakdown.games?.[slug] ?? 0,
+      }))
+      .sort((a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER));
+  }, [breakdown, rankingStat]);
+
+  const rankingStatLabel =
+    WORLD_CUP_OPP_BREAKDOWN_METRICS.find((m) => m.key === rankingStat)?.label ?? rankingStat;
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
       <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Opponent Breakdown</h3>
         <div className={`flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-          {WORLD_CUP_OPP_BREAKDOWN_WINDOWS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setWindowN(option.id)}
-              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                windowN === option.id
-                  ? 'bg-purple-600 text-white'
-                  : isDark
-                    ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
-                    : 'bg-gray-100 text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+          {WORLD_CUP_OPP_BREAKDOWN_WINDOWS.map((option) => {
+            const isAllOption = option.id === WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW;
+            // Disable a fixed window when the selected opponent hasn't played
+            // enough games to fill it (e.g. L10 for a 3-game nation).
+            const disabled =
+              !isAllOption && opponentTotalGames > 0 && opponentTotalGames < option.id;
+            const active = windowN === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={disabled}
+                title={disabled ? `Only ${opponentTotalGames} games available` : undefined}
+                onClick={() => setWindowN(option.id)}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'bg-purple-600 text-white'
+                    : disabled
+                      ? isDark
+                        ? 'bg-[#0a1929] text-gray-700 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      : isDark
+                        ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                        : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="relative mb-2 flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => setOppOpen((open) => !open)}
-          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border text-sm ${
-            isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-          }`}
-        >
-          <span className="flex items-center gap-2 min-w-0">
-            {opponentLogoUrl ? (
-              <img src={opponentLogoUrl} alt={opponentForLabel?.name || 'Opponent'} className="w-6 h-6 object-contain" />
-            ) : null}
-            <span className="font-semibold truncate">{opponentForLabel?.name || 'Select opponent'}</span>
-          </span>
-          <svg className="w-4 h-4 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {oppOpen ? (
-          <>
-            <div
-              className={`absolute z-20 mt-1 left-0 right-0 rounded-md border shadow-lg overflow-hidden ${
-                isDark ? 'bg-slate-800 border-gray-600' : 'bg-white border-gray-300'
-              }`}
-            >
-              <div
-                className="max-h-56 overflow-y-auto custom-scrollbar overscroll-contain"
-                onWheel={(event) => event.stopPropagation()}
-              >
-                {teamOptions.map((team) => {
-                  const teamLogoUrl = getWorldCupFlagUrl(team.countryCode || team.abbreviation);
-                  return (
-                    <button
-                      key={team.id}
-                      type="button"
-                      onClick={() => {
-                        setOppSel(team.id);
-                        setOppOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2 py-2 text-sm text-left ${
-                        isDark ? 'hover:bg-gray-600 text-white' : 'hover:bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      {teamLogoUrl ? (
-                        <img src={teamLogoUrl} alt={team.name} className="w-5 h-5 object-contain" />
-                      ) : null}
-                      <span className="font-medium truncate">{team.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="fixed inset-0 z-10" onClick={() => setOppOpen(false)} />
-          </>
-        ) : null}
-      </div>
+      <button
+        type="button"
+        onClick={() => setShowAllRankings(true)}
+        className={`w-full mb-2 flex-shrink-0 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-semibold transition-colors ${
+          isDark
+            ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600'
+            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+        }`}
+      >
+        View full 1–48 rankings
+      </button>
 
       <div className={`rounded-lg border p-3 flex-1 min-h-0 flex flex-col ${isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-gray-50'}`}>
-        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-          <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
-          <h4 className={`text-sm font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {opponentName || 'TBD'} allowed averages
-          </h4>
+        <div className="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse flex-shrink-0`} />
+            <h4 className={`text-sm font-mono font-bold uppercase tracking-wider truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {opponentName || 'TBD'} allowed averages
+            </h4>
+          </div>
+          {opponentName && opponentGamesUsed > 0 ? (
+            <span
+              title={
+                isAllWindow
+                  ? `Averaged over all ${opponentGamesUsed} games`
+                  : `Averaged over ${opponentGamesUsed} of last ${windowN} games`
+              }
+              className={`flex-shrink-0 inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold ${
+                lowSample
+                  ? isDark
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-amber-100 text-amber-700'
+                  : isDark
+                    ? 'bg-gray-700 text-gray-300'
+                    : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {isAllWindow
+                ? `${opponentGamesUsed} game${opponentGamesUsed === 1 ? '' : 's'}`
+                : `Last ${opponentGamesUsed} game${opponentGamesUsed === 1 ? '' : 's'}`}
+            </span>
+          ) : null}
         </div>
 
         {loading && !breakdown ? (
@@ -3141,6 +3259,125 @@ function WorldCupOpponentBreakdownCard({
           </>
         )}
       </div>
+
+      {showAllRankings && mounted
+        ? createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setShowAllRankings(false)}
+          />
+          <div
+            className={`relative z-10 w-full max-w-md max-h-[85vh] flex flex-col rounded-xl border shadow-2xl ${
+              isDark ? 'border-gray-700 bg-[#0a1929]' : 'border-gray-200 bg-white'
+            }`}
+          >
+            <div className={`flex items-center justify-between gap-2 px-4 py-3 border-b flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {rankingStatLabel} Allowed — Full Rankings
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAllRankings(false)}
+                className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                  isDark ? 'text-gray-400 hover:bg-gray-700 hover:text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className={`flex flex-wrap gap-1 px-4 py-2 border-b flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              {WORLD_CUP_OPP_BREAKDOWN_METRICS.map((metric) => {
+                const active = metric.key === rankingStat;
+                return (
+                  <button
+                    key={metric.key}
+                    type="button"
+                    onClick={() => setRankingStat(metric.key)}
+                    className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors ${
+                      active
+                        ? 'bg-purple-600 text-white'
+                        : isDark
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {metric.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-1 custom-scrollbar"
+              onWheel={(event) => event.stopPropagation()}
+            >
+              {rankingList.length === 0 ? (
+                <div className={`text-sm py-4 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No ranking data available yet.
+                </div>
+              ) : (
+                rankingList.map((row) => {
+                  const styles = getWorldCupDvpRankStyles(row.rank, totalOpponents, isDark);
+                  const isSelected = Boolean(opponentSlug) && row.slug === opponentSlug;
+                  const flagUrl = getWorldCupFlagUrl(row.slug);
+                  return (
+                    <div
+                      key={row.slug}
+                      className={`flex items-center gap-2 rounded border px-2 py-1.5 ${
+                        isSelected
+                          ? 'border-purple-500 bg-purple-500/10'
+                          : isDark
+                            ? 'border-gray-600/60'
+                            : 'border-gray-200/80'
+                      }`}
+                    >
+                      <span
+                        className={`inline-flex w-9 flex-shrink-0 items-center justify-center px-1.5 py-1 rounded text-xs font-bold ${styles.badgeColor}`}
+                      >
+                        {row.rank && totalOpponents > 0 ? `#${row.rank}` : '—'}
+                      </span>
+                      {flagUrl ? (
+                        <img src={flagUrl} alt={row.name} className="w-5 h-5 flex-shrink-0 object-contain" />
+                      ) : null}
+                      <span className={`flex-1 min-w-0 truncate text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        {row.name}
+                      </span>
+                      <span className={`flex-shrink-0 text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {row.games} {row.games === 1 ? 'gm' : 'gms'}
+                      </span>
+                      <span className={`flex-shrink-0 w-12 text-right text-base font-bold font-mono ${isDark ? 'text-white' : 'text-black'}`}>
+                        {formatValue(row.value, rankingStat)}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className={`flex items-center justify-center gap-4 px-4 py-2 border-t flex-shrink-0 text-xs font-medium ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded bg-red-600 dark:bg-red-500" aria-hidden />
+                #1 Hardest
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded bg-green-600 dark:bg-green-500" aria-hidden />
+                {totalOpponents > 0 ? `#${totalOpponents} Easiest` : 'Easiest'}
+              </span>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+        : null}
     </div>
   );
 }
@@ -3786,6 +4023,295 @@ function WorldCupTeamFormHomeAwayPanel({
   );
 }
 
+function resolveWorldCupTeamSlug(team: WorldCupTeamOption | null): string {
+  if (!team) return '';
+  return (
+    resolveWorldCupFlagCode(team.countryCode) ||
+    resolveWorldCupFlagCode(team.abbreviation) ||
+    resolveWorldCupFlagCode(team.name) ||
+    ''
+  );
+}
+
+/**
+ * Team Matchup: the selected team's attacking averages (going forward) versus
+ * how the opponent defends (their allowed averages = the Opponent Breakdown),
+ * and the reverse via the toggle. Both sides read the SAME precomputed payload
+ * the Opponent Breakdown uses, so the numbers match the chart everywhere:
+ *   - attack  = forMetrics[stat].values[slug]  (ranked: most = #1)
+ *   - allowed = metrics[stat].values[slug]      (ranked: least allowed = #1)
+ */
+function WorldCupTeamMatchupCard({
+  isDark,
+  selectedTeam,
+  opponentTeam,
+}: {
+  isDark: boolean;
+  selectedTeam: WorldCupTeamOption | null;
+  opponentTeam: WorldCupTeamOption | null;
+}) {
+  const [windowN, setWindowN] = useState<number>(WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW);
+
+  const [breakdown, setBreakdown] = useState<WorldCupOppBreakdownResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/world-cup/dashboard?oppBreakdown=1&window=${windowN}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error((body as { error?: string }).error || `Request failed (${res.status})`);
+        }
+        return res.json() as Promise<WorldCupOppBreakdownResponse>;
+      })
+      .then((payload) => {
+        if (!cancelled) setBreakdown(payload);
+      })
+      .catch((err: Error) => {
+        if (cancelled) return;
+        setBreakdown(null);
+        setError(err.message || 'Failed to load team matchup');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [windowN]);
+
+  const opponentForLabel = opponentTeam;
+
+  const teamSlug = resolveWorldCupTeamSlug(selectedTeam);
+  const oppSlug = resolveWorldCupTeamSlug(opponentForLabel);
+
+  const teamFlagUrl = getWorldCupFlagUrl(selectedTeam?.countryCode || selectedTeam?.abbreviation);
+  const oppFlagUrl = getWorldCupFlagUrl(opponentForLabel?.countryCode || opponentForLabel?.abbreviation);
+
+  const teamLabel = selectedTeam?.name || 'Selected team';
+  const opponentLabel = opponentForLabel?.name || 'Opponent';
+  const teamAbbr = (selectedTeam?.abbreviation || selectedTeam?.name || '').slice(0, 3).toUpperCase();
+  const oppAbbr = (opponentForLabel?.abbreviation || opponentForLabel?.name || '').slice(0, 3).toUpperCase();
+  const isOpponentPrimary = false;
+
+  // Ranking universe size (ranked nations), used to convert ranks -> bar share.
+  const rankedSize = breakdown ? Math.max(Object.keys(breakdown.names).length, 20) : 20;
+
+  const rows = useMemo(() => {
+    if (!breakdown || !breakdown.forMetrics) return [];
+    return WORLD_CUP_MATCHUP_METRICS.map((metric) => {
+      const forEntry = breakdown.forMetrics?.[metric.key];
+      const allowedEntry = breakdown.metrics[metric.key];
+      // Attack slug = whoever is "for" in this view; defense slug = the other.
+      const attackSlug = isOpponentPrimary ? oppSlug : teamSlug;
+      const defenseSlug = isOpponentPrimary ? teamSlug : oppSlug;
+      const attackValue = attackSlug ? forEntry?.values[attackSlug] ?? null : null;
+      const attackRank = attackSlug ? forEntry?.ranks[attackSlug] ?? null : null;
+      const defenseValue = defenseSlug ? allowedEntry?.values[defenseSlug] ?? null : null;
+      const defenseRank = defenseSlug ? allowedEntry?.ranks[defenseSlug] ?? null : null;
+      const sideLabels = worldCupMatchupSideLabels(metric.key);
+      return {
+        key: metric.key,
+        label: metric.label,
+        teamSideLabel: sideLabels.team,
+        opponentSideLabel: sideLabels.opponent,
+        attackValue,
+        attackRank,
+        defenseValue,
+        defenseRank,
+      };
+    });
+  }, [breakdown, isOpponentPrimary, oppSlug, teamSlug]);
+
+  const teamGames = teamSlug ? breakdown?.games?.[teamSlug] ?? 0 : 0;
+  const oppGames = oppSlug ? breakdown?.games?.[oppSlug] ?? 0 : 0;
+  const teamTotal = teamSlug ? breakdown?.totalGames?.[teamSlug] ?? 0 : 0;
+  const oppTotal = oppSlug ? breakdown?.totalGames?.[oppSlug] ?? 0 : 0;
+
+  const formatValue = (value: number | null) => {
+    if (value == null || !Number.isFinite(value)) return '—';
+    return value.toFixed(2);
+  };
+
+  // Tiered rank pill: top third green, middle amber, bottom third red.
+  const rankPillClass = (rank: number | null) => {
+    if (!rank || !Number.isFinite(rank)) {
+      return isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-200 text-gray-500';
+    }
+    const third = rankedSize / 3;
+    if (rank <= third) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+    if (rank <= third * 2) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+    return 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+  };
+
+  // Bar segment fill colored by the same rank tier (green/amber/red).
+  const rankBarColor = (rank: number | null) => {
+    if (!rank || !Number.isFinite(rank)) return isDark ? '#4b5563' : '#9ca3af';
+    const third = rankedSize / 3;
+    if (rank <= third) return '#16a34a';
+    if (rank <= third * 2) return '#f59e0b';
+    return '#e11d48';
+  };
+
+  const hasTeams = Boolean(teamSlug && oppSlug);
+  const noData = Boolean(breakdown) && hasTeams && rows.every((r) => r.attackValue == null && r.defenseValue == null);
+
+  return (
+    <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
+      <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Team Matchup</h3>
+        <div className={`flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+          {WORLD_CUP_OPP_BREAKDOWN_WINDOWS.map((option) => {
+            const isAllOption = option.id === WORLD_CUP_OPP_BREAKDOWN_ALL_WINDOW;
+            const minTotal = Math.min(teamTotal || 0, oppTotal || 0);
+            const disabled = !isAllOption && minTotal > 0 && minTotal < option.id;
+            const active = windowN === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => setWindowN(option.id)}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'bg-purple-600 text-white'
+                    : disabled
+                      ? isDark
+                        ? 'bg-[#0a1929] text-gray-700 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      : isDark
+                        ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
+                        : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Matchup header — selected team (attacking) vs opponent (defending). */}
+      <div className="mb-2 flex flex-shrink-0 items-center gap-2">
+        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${isDark ? 'bg-cyan-400' : 'bg-cyan-500'} animate-pulse`} />
+        <h4 className={`truncate text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          {teamLabel} <span className={isDark ? 'text-gray-500' : 'text-gray-400'}>vs</span> {opponentLabel}
+        </h4>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 custom-scrollbar">
+        {!selectedTeam ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Select a team to see the matchup.</div>
+        ) : loading && !breakdown ? (
+          <div className="space-y-2">
+            {[0, 1, 2, 3, 4].map((idx) => (
+              <div key={idx} className={`h-12 w-full rounded-lg animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-sm text-red-600 dark:text-red-400 py-4">{error}</div>
+        ) : !hasTeams ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Pick an opponent to compare.</div>
+        ) : noData ? (
+          <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No data available yet.</div>
+        ) : (
+          <div className="space-y-2">
+            <p className={`px-0.5 text-center text-[10px] leading-snug ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Top = {teamLabel} going forward · Bottom = what opponents do against {opponentLabel}
+            </p>
+
+            {rows.map((row) => {
+              const minPct = 6;
+              const teamPct = row.attackRank
+                ? Math.max(minPct, ((rankedSize + 1 - row.attackRank) / rankedSize) * 100)
+                : 0;
+              const oppPct = row.defenseRank
+                ? Math.max(minPct, ((rankedSize + 1 - row.defenseRank) / rankedSize) * 100)
+                : 0;
+              return (
+                <div
+                  key={row.key}
+                  className={`rounded-xl border px-2.5 py-2 transition-colors ${
+                    isDark
+                      ? 'border-gray-700/60 bg-white/[0.02] hover:border-gray-600'
+                      : 'border-gray-200 bg-gray-50/70 hover:border-gray-300'
+                  }`}
+                >
+                  <div className={`mb-1.5 text-center text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {row.label}
+                  </div>
+
+                  {/* Team (attack) bar */}
+                  <div className="mb-1 flex items-center gap-1.5">
+                    {teamFlagUrl ? (
+                      <img src={teamFlagUrl} alt={teamLabel} className="h-3.5 w-3.5 flex-shrink-0 rounded-full object-cover ring-1 ring-black/10" />
+                    ) : (
+                      <span className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-[6px] font-bold ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-300 text-gray-700'}`}>{teamAbbr.slice(0, 1)}</span>
+                    )}
+                    <div className="w-[52px] flex-shrink-0 leading-tight">
+                      <div className={`text-[10px] font-bold uppercase ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{teamAbbr}</div>
+                      <div className={`text-[10px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{row.teamSideLabel}</div>
+                    </div>
+                    <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-gray-200/70 dark:bg-gray-800">
+                      <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${teamPct}%`, backgroundColor: rankBarColor(row.attackRank) }} />
+                    </div>
+                    <span className="w-10 flex-shrink-0 text-right text-xs font-bold tabular-nums text-gray-900 dark:text-white">{formatValue(row.attackValue)}</span>
+                    {row.attackRank ? (
+                      <span className={`w-7 flex-shrink-0 rounded-md px-1 py-0.5 text-center text-[9px] font-bold tabular-nums ${rankPillClass(row.attackRank)}`}>#{row.attackRank}</span>
+                    ) : (
+                      <span className="w-7 flex-shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Opponent (allowed) bar */}
+                  <div className="flex items-center gap-1.5">
+                    {oppFlagUrl ? (
+                      <img src={oppFlagUrl} alt={opponentLabel} className="h-3.5 w-3.5 flex-shrink-0 rounded-full object-cover ring-1 ring-black/10" />
+                    ) : (
+                      <span className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-[6px] font-bold ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-300 text-gray-700'}`}>{oppAbbr.slice(0, 1)}</span>
+                    )}
+                    <div className="w-[52px] flex-shrink-0 leading-tight">
+                      <div className={`text-[10px] font-bold uppercase ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{oppAbbr}</div>
+                      <div className={`text-[10px] font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{row.opponentSideLabel}</div>
+                    </div>
+                    <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-gray-200/70 dark:bg-gray-800">
+                      <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${oppPct}%`, backgroundColor: rankBarColor(row.defenseRank) }} />
+                    </div>
+                    <span className="w-10 flex-shrink-0 text-right text-xs font-bold tabular-nums text-gray-900 dark:text-white">{formatValue(row.defenseValue)}</span>
+                    {row.defenseRank ? (
+                      <span className={`w-7 flex-shrink-0 rounded-md px-1 py-0.5 text-center text-[9px] font-bold tabular-nums ${rankPillClass(row.defenseRank)}`}>#{row.defenseRank}</span>
+                    ) : (
+                      <span className="w-7 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className={`mt-0.5 flex items-center justify-center gap-2 text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <span className="flex items-center gap-1">
+                <span className="font-bold uppercase">{teamAbbr}</span>
+                <span className="opacity-70">for ·</span>
+                <span className="tabular-nums">{teamGames || teamTotal}g</span>
+              </span>
+              <span className="opacity-40">|</span>
+              <span className="flex items-center gap-1">
+                <span className="font-bold uppercase">{oppAbbr}</span>
+                <span className="opacity-70">opponents face ·</span>
+                <span className="tabular-nums">{oppGames || oppTotal}g</span>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WorldCupInsightsPanel({
   isDark,
   mode,
@@ -3851,28 +4377,13 @@ function WorldCupInsightsPanel({
           <WorldCupOpponentBreakdownCard
             isDark={isDark}
             opponentTeam={opponentTeam}
-            teamOptions={teamOptions}
           />
         ) : (
-          <div className="h-full overflow-y-auto rounded-lg px-2 py-3 custom-scrollbar">
-            <SectionHeader
-              title="Team Matchup"
-              subtitle={`${selectedTeam?.name || 'Selected team'} attack vs ${opponentTeam?.name || 'opponent'} defense, and reverse.`}
-            />
-            <div className="space-y-3 px-3 sm:px-4">
-              {['Attack vs defense', 'Defense vs attack', 'Odds and implied probability', 'Recent form'].map((label) => (
-                <div key={label} className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">API pending</span>
-                  </div>
-                  <div className={`h-2 rounded-full ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                    <div className="h-2 w-1/2 rounded-full bg-purple-500/70" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <WorldCupTeamMatchupCard
+            isDark={isDark}
+            selectedTeam={selectedTeam}
+            opponentTeam={opponentTeam}
+          />
         )}
       </div>
     </div>
@@ -4916,7 +5427,7 @@ function WorldCupPageContent() {
                   {filterControls}
                 </div>
 
-                <div className={`hidden lg:block h-[420px] w-full min-w-0 shrink-0 rounded-lg xl:h-[460px] ${DASH_CARD_GLOW} overflow-hidden`}>
+                <div className={`hidden lg:block h-[480px] w-full min-w-0 shrink-0 rounded-lg xl:h-[520px] ${DASH_CARD_GLOW} overflow-hidden`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} fill className="p-3 sm:p-4" />
                   ) : (

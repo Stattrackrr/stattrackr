@@ -74,7 +74,7 @@
     "build:world-cup:player-index": "npx tsx scripts/build-world-cup-player-index.ts",
     "build:world-cup:flag-map": "npx tsx scripts/build-world-cup-flag-map.ts",
     "audit:world-cup:player-matches": "npx tsx scripts/audit-world-cup-player-matches.ts",
-    "build:world-cup:opponent-breakdown": "npx tsx scripts/build-world-cup-opponent-breakdown.ts",
+    "build:world-cup:opponent-breakdown": "npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts",
     "backfill:international:normalized-names": "npx tsx scripts/backfill-international-normalized-names.ts",
     "test:afl:headshots": "npx tsx scripts/test-afl-club-headshots.ts",
     "test:afl:team-selections": "node scripts/test-footywire-team-selections.js",

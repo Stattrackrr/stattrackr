@@ -7,7 +7,13 @@ import {
   loadInternationalTeamForm,
   loadInternationalTeamStatsByCountry,
 } from '@/lib/internationalDashboard';
-import { getOpponentBreakdown } from '@/lib/worldCupOpponentBreakdown';
+import {
+  getOpponentBreakdown,
+  isRichTeamStatRow,
+  normalizeDerivedTeamStats,
+  dedupeCrossSourceTeamStatRows,
+  buildBdlTeamHistoryRows,
+} from '@/lib/worldCupOpponentBreakdown';
 import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
 
 export const runtime = 'nodejs';
@@ -19,7 +25,7 @@ type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 // stats are only fetched from BDL once and then served from cache on
 // subsequent loads (links every searched name to its resolved stats).
 // Stored permanently (no expiry).
-const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v13';
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v21';
 
 function buildDashboardCacheKey(opts: {
   competition: CompetitionParam;
@@ -128,21 +134,11 @@ async function fetchBdlTeamWorldCupHistory(
       new Set(teamMatches.map((match) => match.id).filter((id): id is number => Number.isFinite(id)))
     );
 
-    // Map each match to the selected team's and opponent's goals (from the
-    // scoreline) so the "goals" team stat is always populated for World Cup bars.
-    const goalsByMatch = new Map<number, number | null>();
-    const oppGoalsByMatch = new Map<number, number | null>();
-    for (const match of teamMatches) {
-      const isHome = match.home_team?.id === teamId;
-      goalsByMatch.set(match.id, (isHome ? match.home_score : match.away_score) ?? null);
-      oppGoalsByMatch.set(match.id, (isHome ? match.away_score : match.home_score) ?? null);
-    }
-
-    // BDL's /team_match_stats returns both teams' rows for each match. Collect
-    // our rows and the opponent rows separately so opponent / home / away
-    // perspectives can be derived per match.
-    const ourRows: Array<Record<string, any>> = [];
-    const oppRowByMatch = new Map<number, Record<string, any>>();
+    // BDL's /team_match_stats returns both teams' rows for each match. Key every
+    // row by `${match_id}:${team_id}` so the shared builder can pair each team
+    // with its opponent. Row assembly lives in lib/worldCupOpponentBreakdown so the
+    // chart and Opponent Breakdown produce identical values.
+    const statsByMatchTeam = new Map<string, Record<string, any>>();
     for (let i = 0; i < matchIds.length; i += 50) {
       const chunk = matchIds.slice(i, i + 50);
       const params = new URLSearchParams();
@@ -152,39 +148,11 @@ async function fetchBdlTeamWorldCupHistory(
         maxPages: 4,
       });
       for (const row of rows) {
-        if (Number(row?.team_id) === teamId) ourRows.push(row);
-        else oppRowByMatch.set(Number(row?.match_id), row);
+        statsByMatchTeam.set(`${Number(row?.match_id)}:${Number(row?.team_id)}`, row);
       }
     }
 
-    // Prefix an opponent row's numeric stat fields with `opp_` so they can sit
-    // alongside our team's fields on the same emitted row.
-    const prefixOpp = (row: Record<string, any> | undefined): Record<string, any> => {
-      const out: Record<string, any> = {};
-      if (!row) return out;
-      for (const [key, value] of Object.entries(row)) {
-        if (key === 'match_id' || key === 'team_id' || key === 'is_home') continue;
-        out[`opp_${key}`] = value;
-      }
-      return out;
-    };
-
-    const teamMatchStats: Array<Record<string, any>> = [];
-    for (const row of ourRows) {
-      const matchId = Number(row?.match_id);
-      const scoreGoals = goalsByMatch.get(matchId);
-      const oppRow = oppRowByMatch.get(matchId);
-      const oppScoreGoals = oppGoalsByMatch.get(matchId);
-      teamMatchStats.push({
-        ...row,
-        goals: row?.goals ?? (scoreGoals != null ? scoreGoals : undefined),
-        ...prefixOpp(oppRow),
-        opp_goals: oppRow?.goals ?? (oppScoreGoals != null ? oppScoreGoals : undefined),
-        source: 'bdl',
-        tournament_slug: 'worldcup',
-      });
-    }
-
+    const teamMatchStats = buildBdlTeamHistoryRows(teamId, teamMatches, statsByMatchTeam);
     return { teamMatchStats, matches: summarizeMatches(teamMatches) };
   } catch (err) {
     console.warn('[world-cup/dashboard] BDL team history fetch failed:', err);
@@ -404,30 +372,6 @@ function findFeatureMatch(matches: BdlMatch[], selectedTeam: BdlTeam | null): Bd
     sorted[0] ??
     null
   );
-}
-
-// Team-stat fields that mirror the BDL stat set (xG excluded). A game is only
-// "chartable" in Game Props when its row carries the majority of these — this
-// is what separates a fully-tracked match from a goals-and-cards-only one.
-const RICH_TEAM_STAT_KEYS = [
-  'shots_total',
-  'shots_on_target',
-  'corners',
-  'possession_pct',
-  'passes_total',
-] as const;
-
-function isRichTeamStatRow(row: Record<string, unknown>): boolean {
-  let present = 0;
-  for (const key of RICH_TEAM_STAT_KEYS) {
-    const value = row[key];
-    if (value == null) continue;
-    const num = typeof value === 'number' ? value : Number.parseFloat(String(value));
-    if (Number.isFinite(num)) present += 1;
-  }
-  // Require a clear majority (4 of 5) so one missing field doesn't drop an
-  // otherwise fully-tracked game, while cards-only rows (0 present) are removed.
-  return present >= 4;
 }
 
 function summarizeMatches(matches: BdlMatch[]) {
@@ -963,7 +907,8 @@ export async function GET(request: NextRequest) {
       // Competition-agnostic: rankings span every nation's last N games across
       // all ingested competitions. Served from the precomputed cache (see
       // scripts/build-world-cup-opponent-breakdown.ts) for an instant response.
-      const windowN = Number.parseInt(request.nextUrl.searchParams.get('window') || '10', 10);
+      // Default window is 0 = "All games" (each nation averaged over every game).
+      const windowN = Number.parseInt(request.nextUrl.searchParams.get('window') || '0', 10);
       const payload = await getOpponentBreakdown(windowN, apiKey);
       return NextResponse.json(payload, {
         headers: { 'Cache-Control': 'public, s-maxage=600' },
@@ -1375,10 +1320,16 @@ export async function GET(request: NextRequest) {
 
     // Game Props (team mode): only chart games whose team stats match the full
     // BDL stat set — shots, shots on target, corners, possession, passes. Drop
-    // goals-and-cards-only games (CAF / lower-tier AFC / OFC World Cup
-    // qualifiers, which no provider tracks in depth) so a stat is never shown
-    // with a half-empty set of bars. xG is intentionally excluded from the
-    // requirement since not every rich source provides it.
+    // goals-and-cards-only / scoreline-only games (CAF / lower-tier AFC / OFC
+    // World Cup qualifiers, which no provider tracks in depth) entirely so a
+    // stat is never shown with a half-empty set of bars. These games are
+    // removed from the cached payload, not hidden at render. xG is intentionally
+    // excluded from the requirement since not every rich source provides it.
+    mergedTeamMatchStats = mergedTeamMatchStats.map(normalizeDerivedTeamStats);
+    mergedTeamMatchStats = dedupeCrossSourceTeamStatRows(
+      mergedTeamMatchStats,
+      mergedPlayerMatches
+    ) as Array<Record<string, any>>;
     mergedTeamMatchStats = mergedTeamMatchStats.filter(isRichTeamStatRow);
 
     const responsePayload = {
