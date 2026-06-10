@@ -13,8 +13,10 @@ import {
   normalizeDerivedTeamStats,
   dedupeCrossSourceTeamStatRows,
   buildBdlTeamHistoryRows,
+  toFiniteOrNull,
 } from '@/lib/worldCupOpponentBreakdown';
 import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
+import { resolveWorldCupFlagCode } from '@/lib/worldCupFlags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +27,7 @@ type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
 // stats are only fetched from BDL once and then served from cache on
 // subsequent loads (links every searched name to its resolved stats).
 // Stored permanently (no expiry).
-const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v21';
+const WC_DASHBOARD_CACHE_PREFIX = 'wc:dashboard:v22';
 
 function buildDashboardCacheKey(opts: {
   competition: CompetitionParam;
@@ -38,6 +40,35 @@ function buildDashboardCacheKey(opts: {
   const playerPart = opts.playerId && /^\d+$/.test(opts.playerId) ? opts.playerId : 'none';
   const namePart = (opts.playerName || '').toLowerCase().replace(/\s+/g, ' ').trim() || 'none';
   return `${WC_DASHBOARD_CACHE_PREFIX}:${opts.competition}:${opts.season}:${teamPart}:${playerPart}:${namePart}`;
+}
+
+function enrichWorldCupRosters(
+  rosters: Array<Record<string, any>>,
+  players: Array<Record<string, any>>
+): Array<Record<string, any>> {
+  const positionByPlayerId = new Map<number, string>();
+  for (const player of players) {
+    const id = Number(player?.id);
+    const pos = String(player?.position ?? '').trim();
+    if (Number.isFinite(id) && pos) positionByPlayerId.set(id, pos);
+  }
+  return rosters.map((row) => {
+    const nested = row.player && typeof row.player === 'object' ? (row.player as Record<string, any>) : {};
+    const playerId = Number(row.player_id ?? nested.id);
+    const resolvedPos =
+      String(row.position ?? '').trim() ||
+      String(nested.position ?? '').trim() ||
+      (Number.isFinite(playerId) ? positionByPlayerId.get(playerId) ?? '' : '');
+    return {
+      ...row,
+      position: resolvedPos || row.position || null,
+      player: {
+        ...nested,
+        id: nested.id ?? row.player_id ?? null,
+        position: resolvedPos || nested.position || null,
+      },
+    };
+  });
 }
 
 function parseCompetition(value: string | null): CompetitionParam {
@@ -811,6 +842,230 @@ async function handleInternationalTeamForm(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Recent form (cross-source) — a national team's genuine last N games across
+// EVERY competition we ingest (BDL World Cup finals + StatsBomb Euros +
+// API-Football Nations League / Copa / AFCON / Asian Cup + SofaScore qualifiers),
+// not just World Cup matches. Each game is self-describing (opponent, score,
+// result, competition tag, key stats) so the UI can render it directly.
+// ---------------------------------------------------------------------------
+
+type RecentFormGame = {
+  matchId: string;
+  datetime: string | null;
+  competitionTag: string;
+  isHome: boolean;
+  goalsFor: number | null;
+  goalsAgainst: number | null;
+  outcome: 'W' | 'D' | 'L' | null;
+  penaltyWin: boolean | null;
+  opponentName: string;
+  opponentCode: string | null;
+  stats: Record<string, number | null>;
+  statsAgainst: Record<string, number | null>;
+};
+
+const RECENT_FORM_STAT_KEYS = [
+  'goals',
+  'expected_goals',
+  'shots_total',
+  'shots_on_target',
+  'possession_pct',
+  'corners',
+  'passes_accurate',
+  'yellow_cards',
+  'red_cards',
+  'fouls',
+] as const;
+
+function recentFormCompetitionTag(tournamentSlug?: unknown, source?: unknown): string {
+  const slug = String(tournamentSlug ?? '').toLowerCase();
+  const src = String(source ?? '').toLowerCase();
+  if (slug === 'worldcup' || slug === 'world-cup') return 'WC';
+  if (slug.startsWith('club')) return 'Club';
+  if (slug.startsWith('wcq') || slug === 'wc-qualifiers' || slug === 'world-cup-qualification') return 'WCQ';
+  if (slug === 'copa-america' || slug === 'copa_america') return 'Copa';
+  if (slug === 'afcon' || slug === 'africa-cup-of-nations') return 'AFCON';
+  if (slug === 'asian-cup' || slug === 'afc-asian-cup') return 'AC';
+  if (slug === 'euros' || slug === 'euro') return 'Euros';
+  if (slug === 'nations-league' || slug === 'nationsleague') return 'NL';
+  if (src === 'statsbomb') return 'Euros';
+  if (src === 'api-football') return 'NL';
+  return 'WC';
+}
+
+function recentFormPickStats(row: Record<string, any> | null | undefined): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const key of RECENT_FORM_STAT_KEYS) out[key] = toFiniteOrNull(row?.[key]);
+  return out;
+}
+
+// Conceded ("against") values for the defensive perspective toggle: read the
+// match-mate's `opp_<key>` fields attached by the team-history builders.
+function recentFormPickStatsAgainst(row: Record<string, any> | null | undefined): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const key of RECENT_FORM_STAT_KEYS) out[key] = toFiniteOrNull(row?.[`opp_${key}`]);
+  return out;
+}
+
+function recentFormOutcome(goalsFor: number | null, goalsAgainst: number | null): 'W' | 'D' | 'L' | null {
+  if (goalsFor == null || goalsAgainst == null) return null;
+  return goalsFor > goalsAgainst ? 'W' : goalsFor < goalsAgainst ? 'L' : 'D';
+}
+
+function recentFormPenaltyWin(match: Record<string, any> | null | undefined, isHome: boolean): boolean | null {
+  const home =
+    toFiniteOrNull(match?.home_score_penalties) ??
+    toFiniteOrNull(match?.homeScorePenalties) ??
+    toFiniteOrNull(match?.home_score_penalty);
+  const away =
+    toFiniteOrNull(match?.away_score_penalties) ??
+    toFiniteOrNull(match?.awayScorePenalties) ??
+    toFiniteOrNull(match?.away_score_penalty);
+  if (home == null || away == null || home === away) return null;
+  const homeWon = home > away;
+  return isHome ? homeWon : !homeWon;
+}
+
+function recentFormStatCount(game: RecentFormGame): number {
+  return Object.values(game.stats).filter((v) => v != null).length;
+}
+
+function resolveBdlTeamFromMatches(matches: BdlMatch[], teamId: number): BdlTeam | null {
+  for (const match of matches) {
+    if (match.home_team?.id === teamId) return match.home_team;
+    if (match.away_team?.id === teamId) return match.away_team;
+  }
+  return null;
+}
+
+/**
+ * Assemble a single nation's genuine last `limit` games across all competitions.
+ * `statsByMatchTeam` holds BDL World Cup `/team_match_stats` rows keyed by
+ * `${matchId}:${teamId}` (both teams per match) so we can attach the opponent's
+ * values to each World Cup game; international games come fully assembled from
+ * `loadInternationalTeamStatsByCountry`.
+ */
+async function buildTeamRecentForm(
+  team: BdlTeam,
+  bdlAllMatches: BdlMatch[],
+  statsByMatchTeam: Map<string, Record<string, any>>,
+  limit: number | null = 5
+): Promise<RecentFormGame[]> {
+  const teamSlug =
+    resolveWorldCupFlagCode(team.country_code) || resolveWorldCupFlagCode(team.name) || null;
+
+  const games: RecentFormGame[] = [];
+
+  // 1. BDL World Cup finals games (completed).
+  const wcMatches = bdlAllMatches.filter(
+    (match) =>
+      (match.home_team?.id === team.id || match.away_team?.id === team.id) &&
+      match.status === 'completed'
+  );
+  const wcMatchById = new Map(wcMatches.map((match) => [match.id, match]));
+  const bdlRows = buildBdlTeamHistoryRows(team.id, wcMatches, statsByMatchTeam);
+  for (const row of bdlRows) {
+    const match = wcMatchById.get(Number(row.match_id));
+    if (!match) continue;
+    const isHome = row.is_home === true;
+    const goalsFor = toFiniteOrNull(row.goals);
+    const goalsAgainst = toFiniteOrNull(row.opp_goals);
+    const oppTeam = isHome ? match.away_team : match.home_team;
+    const oppName = oppTeam?.name || getTeamLabel(match, isHome ? 'away' : 'home');
+    const oppCode =
+      resolveWorldCupFlagCode(oppTeam?.country_code) || resolveWorldCupFlagCode(oppName) || null;
+    games.push({
+      matchId: String(row.match_id),
+      datetime: match.datetime ?? null,
+      competitionTag: 'WC',
+      isHome,
+      goalsFor,
+      goalsAgainst,
+      outcome: recentFormOutcome(goalsFor, goalsAgainst),
+      penaltyWin: recentFormPenaltyWin(match, isHome),
+      opponentName: oppName,
+      opponentCode: oppCode,
+      stats: recentFormPickStats(row),
+      statsAgainst: recentFormPickStatsAgainst(row),
+    });
+  }
+
+  // 2. International games (all other competitions) unified by FIFA slug.
+  if (teamSlug) {
+    try {
+      const intl = await loadInternationalTeamStatsByCountry({
+        countryCode: team.country_code ?? null,
+        teamName: team.name ?? null,
+        bdlTeamId: String(team.id),
+      });
+      const statByMatchId = new Map<string, Record<string, any>>();
+      for (const r of intl.teamMatchStats as Array<Record<string, any>>) {
+        statByMatchId.set(String(r.match_id), r);
+      }
+      for (const m of intl.matches as Array<Record<string, any>>) {
+        const matchId = String(m.id);
+        const home = m.home_team ?? {};
+        const away = m.away_team ?? {};
+        const homeCode =
+          resolveWorldCupFlagCode(home.country_code) || resolveWorldCupFlagCode(home.name) || null;
+        const awayCode =
+          resolveWorldCupFlagCode(away.country_code) || resolveWorldCupFlagCode(away.name) || null;
+        const statRow = statByMatchId.get(matchId);
+        let isHome: boolean;
+        if (statRow && typeof statRow.is_home === 'boolean') isHome = statRow.is_home;
+        else if (homeCode && homeCode === teamSlug) isHome = true;
+        else if (awayCode && awayCode === teamSlug) isHome = false;
+        else continue;
+        const goalsFor = toFiniteOrNull(isHome ? m.home_score : m.away_score);
+        const goalsAgainst = toFiniteOrNull(isHome ? m.away_score : m.home_score);
+        const oppTeam = isHome ? away : home;
+        const oppName = String(oppTeam.name || 'Opponent');
+        const oppCode = isHome ? awayCode : homeCode;
+        games.push({
+          matchId,
+          datetime: (m.datetime as string | null) ?? null,
+          competitionTag: recentFormCompetitionTag(m.tournament_slug, m.source),
+          isHome,
+          goalsFor,
+          goalsAgainst,
+          outcome: recentFormOutcome(goalsFor, goalsAgainst),
+          penaltyWin: recentFormPenaltyWin(m, isHome),
+          opponentName: oppName,
+          opponentCode: oppCode,
+          stats: statRow ? recentFormPickStats(statRow) : recentFormPickStats({ goals: goalsFor }),
+          statsAgainst: statRow
+            ? recentFormPickStatsAgainst(statRow)
+            : recentFormPickStats({ goals: goalsAgainst }),
+        });
+      }
+    } catch (err) {
+      console.warn('[world-cup/recent-form] intl load failed:', err);
+    }
+  }
+
+  // Dedupe games that appear in more than one source (same day + opponent),
+  // keeping the richest copy, then take the genuine most-recent `limit`.
+  const byKey = new Map<string, RecentFormGame>();
+  for (const game of games) {
+    const day = game.datetime
+      ? new Date(Date.parse(game.datetime)).toISOString().slice(0, 10)
+      : game.matchId;
+    const oppKey = (game.opponentCode || game.opponentName).toLowerCase();
+    const key = `${day}:${oppKey}`;
+    const existing = byKey.get(key);
+    if (!existing || recentFormStatCount(game) > recentFormStatCount(existing)) {
+      byKey.set(key, game);
+    }
+  }
+
+  const sorted = [...byKey.values()]
+    .filter((game) => game.goalsFor != null || recentFormStatCount(game) > 0)
+    .sort((a, b) => (Date.parse(b.datetime || '') || 0) - (Date.parse(a.datetime || '') || 0));
+
+  return limit == null ? sorted : sorted.slice(0, limit);
+}
+
 async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Promise<NextResponse> {
   const teamIdRaw = request.nextUrl.searchParams.get('teamId') || '';
   const opponentIdRaw = request.nextUrl.searchParams.get('opponentId') || '';
@@ -863,6 +1118,37 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
     teamMatchStats.push(...rows);
   }
 
+  // Cross-source recent form (genuine last 5 games across all competitions) for
+  // both the selected team and its opponent, shown side-by-side in the UI.
+  const statsByMatchTeam = new Map<string, Record<string, any>>();
+  for (const row of teamMatchStats as Array<Record<string, any>>) {
+    statsByMatchTeam.set(`${Number(row?.match_id)}:${Number(row?.team_id)}`, row);
+  }
+  // Resolve full team metadata (name + country_code) so the cross-source
+  // assembler can map each nation to its FIFA slug. Prefer the 2026 teams list
+  // (all qualified nations, even those without a completed finals game yet),
+  // falling back to whatever appears in the match feed.
+  const teamsList = await bdlFetchAll<BdlTeam>(
+    '/teams',
+    new URLSearchParams([['seasons[]', '2026']]),
+    apiKey
+  );
+  const teamById = new Map(teamsList.map((team) => [team.id, team]));
+  const resolveTeamObj = (id: number): BdlTeam | null =>
+    teamById.get(id) ?? resolveBdlTeamFromMatches(allMatches, id);
+  const teamObj = resolveTeamObj(teamId);
+  const opponentObj = opponentId ? resolveTeamObj(opponentId) : null;
+  const [teamAll, opponentAll] = await Promise.all([
+    teamObj
+      ? buildTeamRecentForm(teamObj, allMatches, statsByMatchTeam, null)
+      : Promise.resolve([] as RecentFormGame[]),
+    opponentObj
+      ? buildTeamRecentForm(opponentObj, allMatches, statsByMatchTeam, null)
+      : Promise.resolve([] as RecentFormGame[]),
+  ]);
+  const teamRecent = teamAll.slice(0, 5);
+  const opponentRecent = opponentAll.slice(0, 5);
+
   return NextResponse.json(
     {
       success: true,
@@ -871,6 +1157,10 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
       teamMatches: summarizeMatches(teamMatches),
       opponentMatches: summarizeMatches(opponentMatches),
       teamMatchStats,
+      teamRecent,
+      opponentRecent,
+      teamAll,
+      opponentAll,
     },
     {
       headers: {
@@ -1086,8 +1376,19 @@ export async function GET(request: NextRequest) {
       .slice(-12);
     const statMatchIds = completedMatchIds.length ? completedMatchIds : featureMatchId ? [featureMatchId] : [];
 
+    // Opponent in the upcoming/feature fixture — used so rosters cover BOTH
+    // sides of the matchup (the Availability panel lists both squads).
+    const opponentTeamId = featureMatch
+      ? featureMatch.home_team?.id === selectedTeamId
+        ? featureMatch.away_team?.id ?? null
+        : featureMatch.home_team?.id ?? null
+      : null;
+
     const teamScopedParams = new URLSearchParams(seasonsParam);
     if (selectedTeamId) teamScopedParams.append('team_ids[]', String(selectedTeamId));
+    if (opponentTeamId && opponentTeamId !== selectedTeamId) {
+      teamScopedParams.append('team_ids[]', String(opponentTeamId));
+    }
 
     const matchScopedParams = new URLSearchParams();
     appendArrayParam(matchScopedParams, 'match_ids[]', statMatchIds);
@@ -1101,9 +1402,10 @@ export async function GET(request: NextRequest) {
     const featureMatchParams = new URLSearchParams();
     if (featureMatchId) featureMatchParams.append('match_ids[]', String(featureMatchId));
 
-    const [rosters, teamMatchStats, playerMatchStats, lineups, events, shots, momentum, bestPlayers, avgPositions, teamForm, odds] =
+    const [rostersRaw, squadPlayers, teamMatchStats, playerMatchStats, lineups, events, shots, momentum, bestPlayers, avgPositions, teamForm, odds] =
       await Promise.all([
         selectedTeamId ? bdlFetchAll('/rosters', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
+        selectedTeamId ? bdlFetchAll('/players', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
         statMatchIds.length ? bdlFetchAll('/team_match_stats', matchScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
         requestedPlayerId || statMatchIds.length ? bdlFetchAll('/player_match_stats', playerStatsParams, apiKey, { cursor: true, maxPages: 6 }) : Promise.resolve([]),
         featureMatchId ? bdlFetchAll('/match_lineups', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
@@ -1115,6 +1417,10 @@ export async function GET(request: NextRequest) {
         featureMatchId ? bdlFetchAll('/match_team_form', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
         featureMatchId ? bdlFetchAll('/odds', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
       ]);
+    const rosters = enrichWorldCupRosters(
+      rostersRaw as Array<Record<string, any>>,
+      squadPlayers as Array<Record<string, any>>
+    );
 
     let playerMatches: BdlMatch[] = [];
     let playerShots: any[] = [];
