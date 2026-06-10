@@ -11,6 +11,7 @@ import { supabaseAdmin } from './supabaseAdmin';
 import { normalizeWorldCupPlayerName } from './worldCupPlayerIndex';
 import { getWorldCupNameAliases, getWorldCupPlayerOverride } from './worldCupPlayerAliases';
 import { resolveWorldCupFlagCode } from './worldCupFlags';
+import { setWorldCupCache } from './worldCupCache';
 
 export type InternationalCompetition = 'euros' | 'nations-league';
 
@@ -94,6 +95,185 @@ type IntlStatRow = {
   big_chances_created: number | null;
   raw_aggregates: Record<string, unknown> | null;
 };
+
+// ---------------------------------------------------------------------------
+// Player position labeling
+//
+// Foundation for "Defense vs Position": every international player must resolve
+// to exactly one of GK / DEF / MID / FWD. Sources disagree on format — API
+// Football uses single letters (G/D/M/F), StatsBomb uses long descriptors, and
+// some feeds use abbreviations — so we normalize all of them, then pick one
+// canonical bucket per player by majority vote across their matches (with a
+// stat-based fallback so even players with no usable position string are
+// labeled).
+// ---------------------------------------------------------------------------
+
+export type IntlPositionBucket = 'GK' | 'DEF' | 'MID' | 'FWD';
+
+const INTL_POSITION_ORDER: readonly IntlPositionBucket[] = ['GK', 'DEF', 'MID', 'FWD'];
+
+function intlNum(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+/** Stable lookup key for a player across the international tables. */
+export function intlPlayerKey(source: string | null | undefined, sourcePlayerId: string | number): string {
+  return `${source ?? ''}:${sourcePlayerId}`;
+}
+
+/**
+ * Classify a single raw position string into GK/DEF/MID/FWD, or null when the
+ * string is empty/unrecognized (callers fall back to heuristics).
+ *
+ * Order matters: GK first, then DEF (so "wing back"/"wb" lands in DEF rather
+ * than FWD via "wing"), then MID (so "attacking"/"defensive midfielder" stay
+ * MID), then FWD.
+ */
+export function classifyIntlPositionString(
+  value: string | null | undefined
+): IntlPositionBucket | null {
+  const raw = String(value ?? '').trim().toLowerCase();
+  if (!raw) return null;
+  // API-Football single-letter codes.
+  if (raw === 'g') return 'GK';
+  if (raw === 'd') return 'DEF';
+  if (raw === 'm') return 'MID';
+  if (raw === 'f' || raw === 'w') return 'FWD';
+  if (/goalkeep|goalie|keeper|portero/.test(raw) || raw === 'gk') return 'GK';
+  if (
+    /back|defender|defence|defense|sweeper|fullback|full-back|\bcb\b|\blb\b|\brb\b|\bwb\b|\blwb\b|\brwb\b|\brcb\b|\blcb\b/.test(
+      raw
+    )
+  )
+    return 'DEF';
+  if (
+    /midfield|\bmid\b|\bcm\b|\bdm\b|\bam\b|\bcdm\b|\bcam\b|\bdmf\b|\bamf\b|\blm\b|\brm\b|\bmc\b|\brcm\b|\blcm\b|\bmf\b/.test(
+      raw
+    )
+  )
+    return 'MID';
+  if (
+    /forward|striker|wing|attacker|attack|\bcf\b|\bst\b|\bss\b|\blw\b|\brw\b|\bfw\b|centre forward|center forward/.test(
+      raw
+    )
+  )
+    return 'FWD';
+  return null;
+}
+
+type IntlPositionHeuristicStats = {
+  saves?: number | null;
+  goals?: number | null;
+  shots_total?: number | null;
+  shots_on_target?: number | null;
+  tackles?: number | null;
+  interceptions?: number | null;
+};
+
+/**
+ * Resolve ONE canonical position for a player from every position string seen
+ * across their matches (majority vote), falling back to stat-based heuristics
+ * when no string is recognized. Always returns a bucket so every player is
+ * labeled.
+ */
+export function resolvePlayerPositionBucket(
+  positionStrings: Array<string | null | undefined>,
+  stats: IntlPositionHeuristicStats = {}
+): IntlPositionBucket {
+  const counts: Record<IntlPositionBucket, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+  let recognized = false;
+  for (const s of positionStrings) {
+    const bucket = classifyIntlPositionString(s);
+    if (bucket) {
+      counts[bucket] += 1;
+      recognized = true;
+    }
+  }
+  if (recognized) {
+    return INTL_POSITION_ORDER.reduce(
+      (best, key) => (counts[key] > counts[best] ? key : best),
+      INTL_POSITION_ORDER[0]
+    );
+  }
+  // No usable position string anywhere — infer from accumulated production.
+  if (intlNum(stats.saves) > 0) return 'GK';
+  const attack = intlNum(stats.goals) * 2 + intlNum(stats.shots_total) + intlNum(stats.shots_on_target);
+  const defend = intlNum(stats.tackles) + intlNum(stats.interceptions);
+  if (attack > defend && attack > 0) return 'FWD';
+  if (defend > attack && defend > 0) return 'DEF';
+  return 'MID';
+}
+
+type IntlPositionInputRow = {
+  source?: string | null;
+  source_player_id: string | number;
+  position?: string | null;
+  saves?: number | null;
+  goals?: number | null;
+  shots_total?: number | null;
+  shots_on_target?: number | null;
+  tackles?: number | null;
+  interceptions?: number | null;
+};
+
+/**
+ * Build a canonical position map keyed by `intlPlayerKey`, aggregating every
+ * one of a player's match rows so the label reflects their whole sample, not a
+ * single noisy game. Guarantees a bucket for every player present in `rows`.
+ */
+export function buildIntlPlayerPositionMap(
+  rows: Array<IntlPositionInputRow>
+): Map<string, IntlPositionBucket> {
+  const positionsByPlayer = new Map<string, Array<string | null | undefined>>();
+  const statsByPlayer = new Map<string, Required<IntlPositionHeuristicStats>>();
+  for (const row of rows) {
+    const key = intlPlayerKey(row.source, row.source_player_id);
+    const list = positionsByPlayer.get(key) ?? [];
+    list.push(row.position ?? null);
+    positionsByPlayer.set(key, list);
+    const agg =
+      statsByPlayer.get(key) ??
+      { saves: 0, goals: 0, shots_total: 0, shots_on_target: 0, tackles: 0, interceptions: 0 };
+    agg.saves += intlNum(row.saves);
+    agg.goals += intlNum(row.goals);
+    agg.shots_total += intlNum(row.shots_total);
+    agg.shots_on_target += intlNum(row.shots_on_target);
+    agg.tackles += intlNum(row.tackles);
+    agg.interceptions += intlNum(row.interceptions);
+    statsByPlayer.set(key, agg);
+  }
+  const out = new Map<string, IntlPositionBucket>();
+  for (const [key, list] of positionsByPlayer) {
+    out.set(key, resolvePlayerPositionBucket(list, statsByPlayer.get(key)));
+  }
+  return out;
+}
+
+/**
+ * Load a canonical position for EVERY international player across ALL sources
+ * and competitions, reading the full `international_player_match_stats` table in
+ * pages (Supabase caps each select at 1000 rows). Returns a map keyed by
+ * `intlPlayerKey`.
+ */
+export async function loadInternationalPlayerPositions(): Promise<Map<string, IntlPositionBucket>> {
+  const sb = supabaseAdmin;
+  const PAGE = 1000;
+  const rows: IntlPositionInputRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from('international_player_match_stats')
+      .select(
+        'source, source_player_id, position, saves, goals, shots_total, shots_on_target, tackles, interceptions'
+      )
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Failed to load player positions: ${error.message}`);
+    const page = (data ?? []) as IntlPositionInputRow[];
+    rows.push(...page);
+    if (page.length < PAGE) break;
+  }
+  return buildIntlPlayerPositionMap(rows);
+}
 
 /** Build the normalized BDL-shaped data for an international competition. */
 export async function loadInternationalDashboardData(opts: {
@@ -753,6 +933,433 @@ export async function loadInternationalDvp(opts: {
   }
 
   return { opponents, samples, teamGames, metrics };
+}
+
+export type WorldCupDvpAggregateResult = {
+  opponents: string[];
+  samples: Record<string, number>;
+  teamGames: Record<string, number>;
+  totalGames: Record<string, number>;
+  names: Record<string, string>;
+  metrics: Record<string, Record<string, number>>;
+};
+
+// Canonical stat sets + windows for the aggregate DVP. These MUST match the keys
+// the World Cup dashboard requests (see WORLD_CUP_DVP_METRICS / _GK_METRICS in
+// app/world-cup/page.tsx) so the precompute script warms the exact cache entries
+// the UI reads.
+export const WC_DVP_WINDOWS = [5, 10, 0] as const;
+export const WC_DVP_OUTFIELD_STATS = [
+  'goals',
+  'assists',
+  'shots_total',
+  'shots_on_target',
+  'passes_accurate',
+  'yellow_cards',
+  'red_cards',
+] as const;
+export const WC_DVP_GK_STATS = ['saves', 'goals_conceded', 'passes_accurate', 'yellow_cards'] as const;
+export const WC_DVP_POSITIONS: IntlPositionBucket[] = ['GK', 'DEF', 'MID', 'FWD'];
+const WC_DVP_CACHE_PREFIX = 'wc:dvp-aggregate:v2';
+
+/** Canonical stat keys the UI requests for a given position bucket. */
+export function getWorldCupDvpStats(position: IntlPositionBucket): string[] {
+  return position === 'GK' ? [...WC_DVP_GK_STATS] : [...WC_DVP_OUTFIELD_STATS];
+}
+
+/** Stable Supabase cache key for one position+window+stats combination. */
+export function buildWorldCupDvpCacheKey(
+  position: string,
+  window: number,
+  stats: string[]
+): string {
+  return `${WC_DVP_CACHE_PREFIX}:${position}:w${window}:${stats.join(',')}`;
+}
+
+type DvpMatchRow = {
+  source: string;
+  source_match_id: string;
+  home_team_source_id: string;
+  away_team_source_id: string;
+  home_team_name: string;
+  away_team_name: string;
+  home_score: number | null;
+  away_score: number | null;
+  match_date: string | null;
+  kickoff_unix: number | null;
+};
+type DvpStatRow = IntlStatRow & { id?: number };
+
+/**
+ * The shared, window/position-independent inputs for the aggregate DVP: every
+ * national-team match, every player-match stat row, and the canonical position
+ * label for each player. Loaded ONCE (heavy DB scan) and reused to aggregate any
+ * number of position/window combinations in memory.
+ */
+export type WorldCupDvpSource = {
+  matchInfo: Map<string, DvpMatchRow>;
+  /** slug -> that nation's matches, sorted newest-first (for windowing). */
+  teamMatchesBySlug: Map<string, Array<{ key: string; ts: number }>>;
+  slugNames: Map<string, string>;
+  statRows: DvpStatRow[];
+  positionMap: Map<string, IntlPositionBucket>;
+};
+
+const dvpMatchKey = (source: string, id: string) => `${source}:${id}`;
+// Unify a nation across sources by FIFA slug (same join the Opponent Breakdown
+// uses), falling back to the normalized name when no slug resolves.
+const dvpTeamSlug = (name: string): string =>
+  resolveWorldCupFlagCode(name) || name.trim().toLowerCase();
+
+/**
+ * Load every national-team match + player-match stat row (club games excluded)
+ * and build the canonical position map. Call once, then pass to
+ * `aggregateInternationalDvp` for each position/window.
+ */
+export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
+  const sb = supabaseAdmin;
+  const PAGE = 1000;
+
+  // 1. Every national-team match across all sources (club games excluded).
+  const matches: DvpMatchRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from('international_matches')
+      .select(
+        'source, source_match_id, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, match_date, kickoff_unix'
+      )
+      .not('tournament_slug', 'like', 'club%')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`DVP matches load failed: ${error.message}`);
+    const page = (data ?? []) as DvpMatchRow[];
+    matches.push(...page);
+    if (page.length < PAGE) break;
+  }
+
+  const matchInfo = new Map<string, DvpMatchRow>();
+  const matchIdsBySource = new Map<string, string[]>();
+  const slugNames = new Map<string, string>();
+  const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
+
+  if (!matches.length) {
+    return { matchInfo, teamMatchesBySlug, slugNames, statRows: [], positionMap: new Map() };
+  }
+
+  const matchSortTs = (m: DvpMatchRow): number =>
+    (typeof m.kickoff_unix === 'number' ? m.kickoff_unix * 1000 : 0) ||
+    (m.match_date ? Date.parse(m.match_date) : 0) ||
+    0;
+  for (const m of matches) {
+    const key = dvpMatchKey(m.source, m.source_match_id);
+    matchInfo.set(key, m);
+    const ids = matchIdsBySource.get(m.source) ?? [];
+    ids.push(m.source_match_id);
+    matchIdsBySource.set(m.source, ids);
+  }
+
+  // 2. All player-match stat rows for those matches (queried by national match
+  //    ids per source so club player-games are never pulled). Each chunk is
+  //    paginated with .range() because Supabase caps a query at 1000 rows by
+  //    default — without paging, a chunk with >1000 player-games silently drops
+  //    the overflow (which previously made whole nations disappear from the DVP).
+  const statRows: DvpStatRow[] = [];
+  const STAT_CHUNK = 100;
+  const STAT_PAGE = 1000;
+  for (const [source, ids] of matchIdsBySource) {
+    for (let i = 0; i < ids.length; i += STAT_CHUNK) {
+      const chunk = ids.slice(i, i + STAT_CHUNK);
+      for (let from = 0; ; from += STAT_PAGE) {
+        const { data, error } = await sb
+          .from('international_player_match_stats')
+          .select('*')
+          .eq('source', source)
+          .in('source_match_id', chunk)
+          .order('source_match_id', { ascending: true })
+          .order('source_player_id', { ascending: true })
+          .range(from, from + STAT_PAGE - 1);
+        if (error) throw new Error(`DVP stats load failed: ${error.message}`);
+        const page = (data ?? []) as DvpStatRow[];
+        statRows.push(...page);
+        if (page.length < STAT_PAGE) break;
+      }
+    }
+  }
+
+  // 3. Build each nation's game list from ONLY the matches that actually have
+  //    player stats. Windowing/denominators must use games-with-data so "last 5"
+  //    means the last 5 games we can measure (and per-game averages aren't
+  //    diluted by recent games that have no player-level stats yet).
+  const matchesWithStats = new Set<string>();
+  for (const row of statRows) {
+    matchesWithStats.add(dvpMatchKey(row.source, row.source_match_id));
+  }
+  const addTeamMatch = (name: string, key: string, ts: number) => {
+    const slug = dvpTeamSlug(name);
+    if (!slug) return;
+    if (!slugNames.has(slug)) slugNames.set(slug, name);
+    const list = teamMatchesBySlug.get(slug) ?? [];
+    list.push({ key, ts });
+    teamMatchesBySlug.set(slug, list);
+  };
+  for (const m of matches) {
+    const key = dvpMatchKey(m.source, m.source_match_id);
+    if (!matchesWithStats.has(key)) continue;
+    const ts = matchSortTs(m);
+    addTeamMatch(m.home_team_name, key, ts);
+    addTeamMatch(m.away_team_name, key, ts);
+  }
+  for (const list of teamMatchesBySlug.values()) {
+    list.sort((a, b) => b.ts - a.ts);
+  }
+
+  // 4. Canonical position for every player from their whole sample.
+  const positionMap = buildIntlPlayerPositionMap(statRows);
+
+  return { matchInfo, teamMatchesBySlug, slugNames, statRows, positionMap };
+}
+
+/**
+ * Diagnostic: report DVP coverage for the qualified World Cup nations. Prints how
+ * many games-with-stats each qualified team has, which qualified teams have none,
+ * and which data nations did NOT match any qualified slug (these are alias/name
+ * gaps — teams that DO have data but whose names don't resolve to the same FIFA
+ * slug as the qualified list, so they're wrongly excluded).
+ */
+export async function diagnoseWorldCupDvpCoverage(
+  qualified: Map<string, string>,
+  log: (msg: string) => void = (m) => console.log(m)
+): Promise<void> {
+  const sb = supabaseAdmin;
+  const PAGE = 1000;
+  type MatchRow = { home_team_name: string; away_team_name: string; source: string; source_match_id: string };
+  const matches: MatchRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from('international_matches')
+      .select('source, source_match_id, home_team_name, away_team_name')
+      .not('tournament_slug', 'like', 'club%')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`match load failed: ${error.message}`);
+    const page = (data ?? []) as MatchRow[];
+    matches.push(...page);
+    if (page.length < PAGE) break;
+  }
+
+  const totalMatchesBySlug = new Map<string, number>();
+  const addMatch = (name: string) => {
+    const slug = dvpTeamSlug(name);
+    if (!slug) return;
+    totalMatchesBySlug.set(slug, (totalMatchesBySlug.get(slug) ?? 0) + 1);
+  };
+  for (const m of matches) {
+    addMatch(m.home_team_name);
+    addMatch(m.away_team_name);
+  }
+
+  const src = await loadWorldCupDvpSource();
+  const playerGames = (slug: string) => src.teamMatchesBySlug.get(slug)?.length ?? 0;
+
+  log(`=== Qualified WC teams: ${qualified.size} ===`);
+  log(`(DVP needs per-PLAYER stats — team-level match stats alone are not enough)`);
+  let withPlayerData = 0;
+  const missingPlayerStats: string[] = [];
+  const sorted = [...qualified.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  for (const [slug, name] of sorted) {
+    const total = totalMatchesBySlug.get(slug) ?? 0;
+    const withStats = playerGames(slug);
+    if (withStats > 0) withPlayerData += 1;
+    else missingPlayerStats.push(`${name} [${slug}]`);
+    const tag = withStats > 0 ? 'OK' : total > 0 ? '!!' : '--';
+    const detail =
+      total > 0 && withStats === 0
+        ? `${total} matches in DB, 0 with player stats`
+        : `${withStats} games-with-player-stats (${total} total matches)`;
+    log(`  ${tag} ${name} [${slug}]: ${detail}`);
+  }
+  log(`Qualified WITH player stats (DVP-ready): ${withPlayerData}/${qualified.size}`);
+  if (missingPlayerStats.length) {
+    log(`Qualified WITHOUT player stats: ${missingPlayerStats.join(', ')}`);
+    log('');
+    log('Teams marked !! have MATCHES but no per-player stat rows.');
+    log('DVP cannot compute until player stats are ingested for their competitions.');
+    log('Likely fix — re-run SofaScore/API-Football ingest WITHOUT --team-stats-only:');
+    log('  npm run build:sofascore:wcq-africa:players');
+    log('  npm run build:sofascore:wcq-oceania:players');
+    log('  npm run build:api-football:afcon');
+    log('  npm run build:api-football:wcq-concacaf');
+    log('Then rebuild: npm run build:world-cup:dvp');
+  }
+
+  const unmatched: Array<[string, string, number, number]> = [];
+  for (const [slug] of src.teamMatchesBySlug) {
+    if (!qualified.has(slug)) {
+      unmatched.push([
+        src.slugNames.get(slug) ?? slug,
+        slug,
+        playerGames(slug),
+        totalMatchesBySlug.get(slug) ?? 0,
+      ]);
+    }
+  }
+  unmatched.sort((a, b) => b[2] - a[2]);
+  log(`=== Non-qualified nations with player stats: ${unmatched.length} ===`);
+  for (const [name, slug, withStats, total] of unmatched.slice(0, 15)) {
+    log(`  ${name} [${slug}]: ${withStats} player-stat games (${total} total matches)`);
+  }
+  if (unmatched.length > 15) log(`  ... and ${unmatched.length - 15} more`);
+}
+
+/**
+ * Aggregate Defense vs Position across ALL international national-team
+ * competitions combined (Euros, Nations League, Copa, AFCON, Asian Cup, WC
+ * qualifiers — club games excluded), from preloaded source data. For the
+ * requested position bucket, sums the stats that opposing players in that bucket
+ * recorded AGAINST each team, then averages per team game. Every player with
+ * data is included — their canonical GK/DEF/MID/FWD label comes from
+ * `buildIntlPlayerPositionMap`, so even players who aren't searchable contribute.
+ *
+ * Keyed by FIFA country slug, so the same nation's games from every source/
+ * competition collapse into one ranking (matching the Opponent Breakdown join).
+ */
+export function aggregateInternationalDvp(
+  src: WorldCupDvpSource,
+  opts: {
+    position: IntlPositionBucket;
+    requestedStats: string[];
+    window?: number;
+    /**
+     * Restrict the ranking universe to these FIFA slugs (the 48 qualified World
+     * Cup nations). When empty/omitted, every nation with data is ranked.
+     */
+    restrictSlugs?: Set<string>;
+  }
+): WorldCupDvpAggregateResult {
+  const windowN = Number.isFinite(opts.window) && (opts.window ?? 0) > 0 ? Math.floor(opts.window!) : 0;
+  const restrict = opts.restrictSlugs && opts.restrictSlugs.size > 0 ? opts.restrictSlugs : null;
+
+  // Per-team window: the set of match keys counting toward each team (by slug),
+  // plus the games-played denominators.
+  const teamWindowKeys = new Map<string, Set<string>>();
+  const teamGamesBySlug = new Map<string, number>();
+  const teamTotalGamesBySlug = new Map<string, number>();
+  for (const [slug, list] of src.teamMatchesBySlug) {
+    const windowed = windowN > 0 ? list.slice(0, windowN) : list;
+    teamWindowKeys.set(slug, new Set(windowed.map((g) => g.key)));
+    teamGamesBySlug.set(slug, windowed.length);
+    teamTotalGamesBySlug.set(slug, list.length);
+  }
+
+  // Attribute each in-bucket player-game to the opponent (slug) they faced.
+  const byOpponent = new Map<string, { sums: Record<string, number>; count: number }>();
+  for (const row of src.statRows) {
+    const bucket = src.positionMap.get(intlPlayerKey(row.source, row.source_player_id));
+    if (bucket !== opts.position) continue;
+    const key = dvpMatchKey(row.source, row.source_match_id);
+    const m = src.matchInfo.get(key);
+    if (!m) continue;
+    const playerIsHome = String(row.source_team_id) === String(m.home_team_source_id);
+    const opponentName = playerIsHome ? m.away_team_name : m.home_team_name;
+    if (!opponentName) continue;
+    const opponentSlug = dvpTeamSlug(opponentName);
+    if (!opponentSlug) continue;
+    // Restrict the ranking universe to the qualified World Cup nations.
+    if (restrict && !restrict.has(opponentSlug)) continue;
+    // Only count games inside the opponent team's recency window.
+    if (windowN > 0 && !(teamWindowKeys.get(opponentSlug)?.has(key) ?? false)) continue;
+    // Goals the player's own team conceded that match = the opponent's score.
+    const goalsConceded = playerIsHome ? m.away_score : m.home_score;
+    let entry = byOpponent.get(opponentSlug);
+    if (!entry) {
+      entry = { sums: {}, count: 0 };
+      byOpponent.set(opponentSlug, entry);
+    }
+    entry.count += 1;
+    for (const stat of opts.requestedStats) {
+      const v =
+        stat === 'goals_conceded'
+          ? goalsConceded
+          : (row as unknown as Record<string, number | null>)[stat];
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        entry.sums[stat] = (entry.sums[stat] ?? 0) + v;
+      }
+    }
+  }
+
+  const opponents = Array.from(byOpponent.keys()).sort();
+  const samples: Record<string, number> = {};
+  const teamGames: Record<string, number> = {};
+  const totalGames: Record<string, number> = {};
+  const names: Record<string, string> = {};
+  const metrics: Record<string, Record<string, number>> = {};
+  for (const stat of opts.requestedStats) metrics[stat] = {};
+  for (const opp of opponents) {
+    const entry = byOpponent.get(opp)!;
+    samples[opp] = entry.count;
+    teamGames[opp] = teamGamesBySlug.get(opp) ?? 0;
+    totalGames[opp] = teamTotalGamesBySlug.get(opp) ?? 0;
+    names[opp] = src.slugNames.get(opp) ?? opp;
+    const games = teamGames[opp] || 1;
+    for (const stat of opts.requestedStats) {
+      metrics[stat]![opp] = Number(((entry.sums[stat] ?? 0) / games).toFixed(3));
+    }
+  }
+
+  return { opponents, samples, teamGames, totalGames, names, metrics };
+}
+
+/**
+ * Convenience wrapper: load the source data and aggregate a single
+ * position/window. Used by the live API route (falls back to this when the
+ * precomputed cache entry is missing).
+ */
+export async function loadInternationalDvpAggregate(opts: {
+  position: IntlPositionBucket;
+  requestedStats: string[];
+  /** Per-team recency window: only count each team's last N games. 0 = all. */
+  window?: number;
+  /** Restrict ranking to the 48 qualified World Cup nations (by FIFA slug). */
+  restrictSlugs?: Set<string>;
+}): Promise<WorldCupDvpAggregateResult> {
+  const src = await loadWorldCupDvpSource();
+  return aggregateInternationalDvp(src, opts);
+}
+
+/**
+ * Precompute and persist EVERY position×window aggregate DVP entry to the
+ * permanent Supabase cache, loading the heavy source data only once. After this
+ * runs, the World Cup dashboard's DVP card is instant for every team.
+ */
+export async function refreshWorldCupDvpCache(
+  onProgress?: (msg: string) => void,
+  restrictSlugs?: Set<string>
+): Promise<{ entries: number; teams: number }> {
+  const log = onProgress ?? ((msg: string) => console.log(`[dvp] ${msg}`));
+  log('loading source data (all international matches + player stats)…');
+  const src = await loadWorldCupDvpSource();
+  log(`loaded ${src.statRows.length} player-game rows across ${src.teamMatchesBySlug.size} nations`);
+  if (restrictSlugs && restrictSlugs.size > 0) {
+    log(`restricting ranking universe to ${restrictSlugs.size} qualified World Cup nations`);
+  } else {
+    log('WARNING: no World Cup team list available — ranking across all nations seen');
+  }
+
+  let entries = 0;
+  let maxTeams = 0;
+  for (const position of WC_DVP_POSITIONS) {
+    const stats = getWorldCupDvpStats(position);
+    for (const window of WC_DVP_WINDOWS) {
+      const result = aggregateInternationalDvp(src, { position, requestedStats: stats, window, restrictSlugs });
+      const key = buildWorldCupDvpCacheKey(position, window, stats);
+      const ok = await setWorldCupCache(key, result);
+      if (!ok) throw new Error(`Failed to write cache for ${position} w${window}`);
+      entries += 1;
+      maxTeams = Math.max(maxTeams, result.opponents.length);
+      log(`${position} w${window === 0 ? 'All' : window}: ${result.opponents.length} teams cached`);
+    }
+  }
+  return { entries, teams: maxTeams };
 }
 
 function bucketPosition(position: string | null, stats: IntlStatRow): 'DEF' | 'MID' | 'ATT' | null {

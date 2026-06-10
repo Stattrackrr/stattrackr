@@ -13,6 +13,43 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 async function main() {
+  if (process.argv.includes('--dvp-diagnose')) {
+    const apiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
+    const { diagnoseWorldCupDvpCoverage } = await import('../lib/internationalDashboard');
+    const { loadWorldCupQualifiedTeamMap } = await import('../lib/worldCupOpponentBreakdown');
+    const qualified = await loadWorldCupQualifiedTeamMap(apiKey);
+    await diagnoseWorldCupDvpCoverage(qualified, (m) => console.log(`[dvp-diag] ${m}`));
+    return;
+  }
+
+  if (process.argv.includes('--dvp-only')) {
+    const dvpApiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
+    const { refreshWorldCupDvpCache, WC_DVP_POSITIONS, WC_DVP_WINDOWS } = await import(
+      '../lib/internationalDashboard'
+    );
+    const { loadWorldCupQualifiedSlugs } = await import('../lib/worldCupOpponentBreakdown');
+    const label = (w: number) => (w === 0 ? 'All' : `L${w}`);
+    console.log(
+      `[dvp] computing ${WC_DVP_POSITIONS.length} positions x ${WC_DVP_WINDOWS.length} windows ` +
+        `(${WC_DVP_POSITIONS.join('/')} x ${WC_DVP_WINDOWS.map(label).join('/')})`
+    );
+    console.log('[dvp] prefer running with the dev server stopped to avoid DB contention.');
+    const qualifiedSlugs = await loadWorldCupQualifiedSlugs(dvpApiKey);
+    console.log(`[dvp] qualified World Cup nations: ${qualifiedSlugs.size}`);
+    const started = Date.now();
+    const { entries, teams } = await refreshWorldCupDvpCache(
+      (msg) => console.log(`[dvp] ${msg}`),
+      qualifiedSlugs
+    );
+    console.log(
+      `[dvp] done - ${entries} entries (up to ${teams} nations) in ${(
+        (Date.now() - started) /
+        1000
+      ).toFixed(1)}s`
+    );
+    return;
+  }
+
   const apiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
   if (!apiKey) {
     console.warn('[opp-breakdown] BALLDONTLIE_API_KEY missing — World Cup games AND the 48-team universe will be skipped. Rankings will fall back to every nation seen in the international sources. Set the key to rank the 48 qualified teams.');

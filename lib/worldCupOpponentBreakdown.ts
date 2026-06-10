@@ -434,6 +434,23 @@ function worldCupSlugMap(teams: BdlTeam[]): Map<string, string> {
   return out;
 }
 
+/**
+ * Set of FIFA slugs for the current World Cup's 48 qualified nations — the same
+ * universe the Opponent Breakdown ranks across. Used to restrict the DVP rankings
+ * so a team's rank is out of 48 (not every international nation we have data for).
+ * Falls back to the cached team list when BDL is unavailable; returns an empty
+ * set if neither is available (callers then rank across all nations seen).
+ */
+export async function loadWorldCupQualifiedSlugs(apiKey = ''): Promise<Set<string>> {
+  return new Set((await loadWorldCupQualifiedTeamMap(apiKey)).keys());
+}
+
+/** slug -> display name for the 48 qualified World Cup nations. */
+export async function loadWorldCupQualifiedTeamMap(apiKey = ''): Promise<Map<string, string>> {
+  const teams = await loadWorldCupTeamList(apiKey);
+  return worldCupSlugMap(teams);
+}
+
 // ---------------------------------------------------------------------------
 // BDL World Cup data (fetched once, shared across all nations)
 // ---------------------------------------------------------------------------

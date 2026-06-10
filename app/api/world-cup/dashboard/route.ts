@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   InternationalCompetition,
+  IntlPositionBucket,
+  buildWorldCupDvpCacheKey,
+  getWorldCupDvpStats,
   loadInternationalDashboardData,
   loadInternationalDvp,
+  loadInternationalDvpAggregate,
   loadInternationalStatsByPlayerName,
   loadInternationalTeamForm,
   loadInternationalTeamStatsByCountry,
@@ -14,6 +18,7 @@ import {
   dedupeCrossSourceTeamStatRows,
   buildBdlTeamHistoryRows,
   toFiniteOrNull,
+  loadWorldCupQualifiedSlugs,
 } from '@/lib/worldCupOpponentBreakdown';
 import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
 import { resolveWorldCupFlagCode } from '@/lib/worldCupFlags';
@@ -767,6 +772,72 @@ async function handleWorldCupDvpBatch(request: NextRequest, apiKey: string): Pro
   );
 }
 
+/**
+ * Defense vs Position aggregated across every international national-team
+ * competition (no season/competition scoping). Buckets are GK/DEF/MID/FWD.
+ * Served from the precomputed Supabase cache (see
+ * scripts/build-world-cup-dvp.ts); falls back to a live compute + cache write
+ * if the entry is missing. Stats are canonical per position so the cache key is
+ * stable and always matches what the precompute script warms.
+ */
+async function handleAggregateDvp(request: NextRequest): Promise<NextResponse> {
+  const positionRaw = String(request.nextUrl.searchParams.get('position') || '').toUpperCase();
+  if (positionRaw !== 'GK' && positionRaw !== 'DEF' && positionRaw !== 'MID' && positionRaw !== 'FWD') {
+    return NextResponse.json({ error: 'position must be GK, DEF, MID, or FWD' }, { status: 400 });
+  }
+  const position = positionRaw as IntlPositionBucket;
+  const requestedStats = getWorldCupDvpStats(position);
+  const windowRaw = Number.parseInt(String(request.nextUrl.searchParams.get('window') || '0'), 10);
+  const windowN = Number.isFinite(windowRaw) && windowRaw > 0 ? windowRaw : 0;
+
+  const cacheKey = buildWorldCupDvpCacheKey(position, windowN, requestedStats);
+  const cached = await getWorldCupCache<{
+    opponents: string[];
+    samples: Record<string, number>;
+    teamGames: Record<string, number>;
+    totalGames: Record<string, number>;
+    names: Record<string, string>;
+    metrics: Record<string, Record<string, number>>;
+  }>(cacheKey);
+
+  const result =
+    cached ??
+    (await loadInternationalDvpAggregate({
+      position,
+      requestedStats,
+      window: windowN,
+      restrictSlugs: await loadWorldCupQualifiedSlugs(getBdlApiKey()),
+    }));
+  if (!cached && result.opponents.length) {
+    await setWorldCupCache(cacheKey, result);
+  }
+
+  return NextResponse.json(
+    {
+      success: true,
+      position: positionRaw,
+      opponents: result.opponents,
+      metrics: requestedStats.reduce<
+        Record<string, { values: Record<string, number>; ranks: Record<string, number> }>
+      >((acc, stat) => {
+        const values = result.metrics[stat] ?? {};
+        const sortedTeams = [...result.opponents].sort((a, b) => (values[a] ?? 0) - (values[b] ?? 0));
+        const ranks: Record<string, number> = {};
+        sortedTeams.forEach((team, idx) => {
+          ranks[team] = idx + 1;
+        });
+        acc[stat] = { values, ranks };
+        return acc;
+      }, {}),
+      samples: result.samples,
+      teamGames: result.teamGames,
+      totalGames: result.totalGames,
+      names: result.names,
+    },
+    { headers: { 'Cache-Control': 'public, s-maxage=3600' } }
+  );
+}
+
 async function handleInternationalDvp(
   request: NextRequest,
   competition: InternationalCompetition
@@ -1176,13 +1247,10 @@ export async function GET(request: NextRequest) {
 
   if (request.nextUrl.searchParams.get('dvpBatch') === '1') {
     try {
-      if (competition === 'euros' || competition === 'nations-league') {
-        return await handleInternationalDvp(request, competition);
-      }
-      if (!apiKey) {
-        return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
-      }
-      return await handleWorldCupDvpBatch(request, apiKey);
+      // Defense vs Position is aggregated across every international competition
+      // (GK/DEF/MID/FWD), regardless of the selected competition tab. Reads only
+      // Supabase — no BDL key or season required.
+      return await handleAggregateDvp(request);
     } catch (error) {
       const status = typeof (error as { status?: unknown }).status === 'number' ? (error as { status: number }).status : 500;
       return NextResponse.json(
