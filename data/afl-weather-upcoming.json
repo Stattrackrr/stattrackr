@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T13:43:46.650Z",
+  "generatedAt": "2026-06-10T14:21:10.309Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-06-11T09:30:00Z",
       "weather": {
-        "temperatureC": 11.9,
+        "temperatureC": 12.1,
         "precipitationMm": 0,
-        "windKmh": 5.5
+        "windKmh": 5
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-06-12T09:40:00Z",
       "weather": {
-        "temperatureC": 16,
+        "temperatureC": 16.3,
         "precipitationMm": 0,
-        "windKmh": 13.2
+        "windKmh": 14.2
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-06-13T03:15:22Z",
       "weather": {
-        "temperatureC": 15.5,
-        "precipitationMm": 0.3,
-        "windKmh": 15.8
+        "temperatureC": 14.7,
+        "precipitationMm": 0,
+        "windKmh": 25.1
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-06-13T06:15:00Z",
       "weather": {
-        "temperatureC": 13.8,
-        "precipitationMm": 1.6,
-        "windKmh": 12.7
+        "temperatureC": 15,
+        "precipitationMm": 1.7,
+        "windKmh": 18.3
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-06-13T09:35:00Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 13.1,
         "precipitationMm": 0,
-        "windKmh": 3.3
+        "windKmh": 8.4
       }
     },
     {
@@ -64,7 +64,7 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-06-14T03:10:00Z",
       "weather": {
-        "temperatureC": 12.5,
+        "temperatureC": 12.9,
         "precipitationMm": 0,
         "windKmh": 1.1
       }
@@ -75,9 +75,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-06-14T05:15:00Z",
       "weather": {
-        "temperatureC": 13.3,
+        "temperatureC": 13.1,
         "precipitationMm": 0,
-        "windKmh": 3.4
+        "windKmh": 3.3
       }
     }
   ],
