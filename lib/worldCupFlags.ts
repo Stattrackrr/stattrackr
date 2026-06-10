@@ -163,11 +163,27 @@ function normalizeName(input: string): string {
 }
 
 /**
+ * `FIFA_NAME_TO_CODE` keyed by the normalized form of each name, so lookups for
+ * inputs containing punctuation/connectors (e.g. "Bosnia & Herzegovina",
+ * "Cote d'Ivoire") match keys stored with "and"/apostrophes.
+ */
+const NORMALIZED_NAME_TO_CODE: Record<string, string> = Object.entries(
+  FIFA_NAME_TO_CODE
+).reduce<Record<string, string>>((acc, [name, code]) => {
+  const key = normalizeName(name);
+  if (key && !acc[key]) acc[key] = code;
+  return acc;
+}, {});
+
+/**
  * Resolve any team identifier (FIFA code, ISO2, ISO3, or country name) to the
  * ESPN flag slug. Returns null when nothing matches so callers can fall back to
  * an abbreviation badge.
  */
-export function resolveWorldCupFlagCode(input?: string | null): string | null {
+export function resolveWorldCupFlagCode(
+  input?: string | null,
+  opts?: { allowIdentity?: boolean }
+): string | null {
   const raw = String(input || '').trim();
   if (!raw) return null;
   const lower = raw.toLowerCase();
@@ -183,15 +199,47 @@ export function resolveWorldCupFlagCode(input?: string | null): string | null {
     if (FIFA_ISO3_TO_CODE[lower]) return FIFA_ISO3_TO_CODE[lower];
   }
   if (FIFA_NAME_TO_CODE[nameKey]) return FIFA_NAME_TO_CODE[nameKey];
+  // Also match a normalized form of each name key so inputs like
+  // "Bosnia & Herzegovina" or "Cote d'Ivoire" resolve against keys that contain
+  // "and"/apostrophes/hyphens.
+  const fromNormalizedName = NORMALIZED_NAME_TO_CODE[nameKey];
+  if (fromNormalizedName) return fromNormalizedName;
 
-  // 3. ISO alpha-3 identity (many FIFA codes equal ISO-3 lowercased).
-  if (lower.length === 3 && /^[a-z]{3}$/.test(lower)) return lower;
+  // 3. ISO alpha-3 identity (many FIFA codes equal ISO-3 lowercased). This is a
+  // best-effort guess and can produce invalid CDN slugs for name-derived
+  // abbreviations (e.g. "SOU"), so callers can disable it via allowIdentity.
+  if ((opts?.allowIdentity ?? true) && lower.length === 3 && /^[a-z]{3}$/.test(lower)) {
+    return lower;
+  }
 
   return null;
 }
 
-export function getWorldCupFlagUrl(input?: string | null): string | null {
-  const code = resolveWorldCupFlagCode(input);
+export function getWorldCupFlagUrl(
+  input?: string | null,
+  opts?: { allowIdentity?: boolean }
+): string | null {
+  const code = resolveWorldCupFlagCode(input, opts);
   if (!code) return null;
   return `https://a.espncdn.com/combiner/i?img=/i/teamlogos/countries/500/${code}.png&h=80&w=80`;
+}
+
+/**
+ * Resolve the best ESPN flag slug for a team, preferring verified name/code
+ * mappings over the loose ISO-3 identity guess. Tries the country name and code
+ * through the strict maps first (so a name-derived abbreviation like "SOU" can't
+ * shadow the real "South Korea" → kor lookup), then allows the identity guess.
+ */
+export function resolveBestWorldCupFlagUrl(
+  ...candidates: Array<string | null | undefined>
+): string | null {
+  for (const candidate of candidates) {
+    const url = getWorldCupFlagUrl(candidate, { allowIdentity: false });
+    if (url) return url;
+  }
+  for (const candidate of candidates) {
+    const url = getWorldCupFlagUrl(candidate);
+    if (url) return url;
+  }
+  return null;
 }
