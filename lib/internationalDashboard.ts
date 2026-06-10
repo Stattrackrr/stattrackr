@@ -225,7 +225,15 @@ export function buildIntlPlayerPositionMap(
   rows: Array<IntlPositionInputRow>
 ): Map<string, IntlPositionBucket> {
   const positionsByPlayer = new Map<string, Array<string | null | undefined>>();
-  const statsByPlayer = new Map<string, Required<IntlPositionHeuristicStats>>();
+  type IntlPositionStatAccumulator = {
+    saves: number;
+    goals: number;
+    shots_total: number;
+    shots_on_target: number;
+    tackles: number;
+    interceptions: number;
+  };
+  const statsByPlayer = new Map<string, IntlPositionStatAccumulator>();
   for (const row of rows) {
     const key = intlPlayerKey(row.source, row.source_player_id);
     const list = positionsByPlayer.get(key) ?? [];
