@@ -1111,17 +1111,27 @@ async function main() {
     // international_matches that involve this nation (search by known team names for the slug)
     // Try both exact slug match via resolveWorldCupFlagCode logic and common team name patterns
     const namePattern = slug === 'rsa' ? 'south africa' : slug;
-    const { data: intlMatches } = await supabase
+    type IntlMatchRow = {
+      source: string;
+      source_match_id: string;
+      tournament_slug: string | null;
+      season_year: number | null;
+      home_team_name: string;
+      away_team_name: string;
+      match_date: string | null;
+    };
+    const { data: intlMatchesRaw } = await supabase
       .from('international_matches')
       .select('source, source_match_id, tournament_slug, season_year, home_team_name, away_team_name, match_date')
       .or(`home_team_name.ilike.%${namePattern}%,away_team_name.ilike.%${namePattern}%`)
       .not('tournament_slug', 'like', 'club%')
       .order('match_date', { ascending: false })
       .limit(50);
+    const intlMatches = (intlMatchesRaw ?? []) as IntlMatchRow[];
 
-    console.log(`\n[dvp-gap] international_matches (non-club): ${intlMatches?.length ?? 0} rows`);
+    console.log(`\n[dvp-gap] international_matches (non-club): ${intlMatches.length} rows`);
     const matchByTournament: Record<string, number> = {};
-    for (const r of intlMatches ?? []) {
+    for (const r of intlMatches) {
       const key = `${r.tournament_slug ?? 'unknown'} / ${r.season_year ?? '?'} (${r.source})`;
       matchByTournament[key] = (matchByTournament[key] ?? 0) + 1;
     }
@@ -1129,36 +1139,38 @@ async function main() {
       console.log(`  ${count}x  ${k}`);
     }
 
-    if ((intlMatches ?? []).length === 0) {
+    if (intlMatches.length === 0) {
       console.log('\n[dvp-gap] No international_matches found — the Opponent Breakdown 12 games must come from international_team_match_stats with a different key.');
     }
 
-    // Team stats: check how many of those match IDs have team stats rows
-    const matchIds = (intlMatches ?? []).map((m: { source_match_id: string }) => m.source_match_id);
+    const matchIds = intlMatches.map((m) => m.source_match_id);
     if (matchIds.length > 0) {
-      const { data: teamStatRows } = await supabase
+      type StatRow = { source: string; source_match_id: string; tournament_slug?: string | null; season_year?: number | null };
+      const { data: teamStatRowsRaw } = await supabase
         .from('international_team_match_stats')
         .select('source, source_match_id, tournament_slug, season_year')
         .in('source_match_id', matchIds.slice(0, 30))
         .limit(200);
-      const matchesWithTeamStats = new Set((teamStatRows ?? []).map((r) => r.source_match_id));
-      console.log(`\n[dvp-gap] international_team_match_stats for those matches: ${teamStatRows?.length ?? 0} rows (${matchesWithTeamStats.size} unique matches)`);
+      const teamStatRows = (teamStatRowsRaw ?? []) as StatRow[];
+      const matchesWithTeamStats = new Set(teamStatRows.map((r) => r.source_match_id));
+      console.log(`\n[dvp-gap] international_team_match_stats for those matches: ${teamStatRows.length} rows (${matchesWithTeamStats.size} unique matches)`);
     }
 
-    // Player stats: for each of those matches, check if player rows exist
     if (matchIds.length > 0) {
-      const { data: playerRows } = await supabase
+      type PlayerRow = { source: string; source_match_id: string };
+      const { data: playerRowsRaw } = await supabase
         .from('international_player_match_stats')
         .select('source, source_match_id')
         .in('source_match_id', matchIds.slice(0, 30))
         .limit(200);
-      const matchesWithPlayerStats = new Set((playerRows ?? []).map((r) => r.source_match_id));
+      const playerRows = (playerRowsRaw ?? []) as PlayerRow[];
+      const matchesWithPlayerStats = new Set(playerRows.map((r) => r.source_match_id));
       const matchesWithoutPlayerStats = matchIds.filter((id) => !matchesWithPlayerStats.has(id));
-      console.log(`\n[dvp-gap] international_player_match_stats rows for those matches: ${playerRows?.length ?? 0}`);
+      console.log(`\n[dvp-gap] international_player_match_stats rows for those matches: ${playerRows.length}`);
       console.log(`[dvp-gap] matches WITH player stats:    ${matchesWithPlayerStats.size}/${matchIds.length}`);
       console.log(`[dvp-gap] matches WITHOUT player stats: ${matchesWithoutPlayerStats.length}/${matchIds.length}`);
       for (const id of matchesWithoutPlayerStats.slice(0, 10)) {
-        const m = (intlMatches ?? []).find((x) => x.source_match_id === id);
+        const m = intlMatches.find((x) => x.source_match_id === id);
         if (m) console.log(`  match_id=${id}  ${m.home_team_name} vs ${m.away_team_name}  [${m.tournament_slug}/${m.season_year}]  (${m.source})`);
       }
     }
