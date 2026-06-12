@@ -1463,7 +1463,7 @@ function poolStatValue(row: DvpStatRow, stat: WorldCupPlayerPoolStatKey): number
       dvpStatNum((row as { derived_shots_total?: number | null }).derived_shots_total)
     );
   }
-  return dvpStatNum((row as Record<string, number | null | undefined>)[stat]);
+  return dvpStatNum((row as unknown as Record<string, number | null | undefined>)[stat]);
 }
 
 /**
