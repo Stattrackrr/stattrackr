@@ -242,6 +242,18 @@ function mapTeamStats(periods: SofaStatPeriod[]): { home: Record<string, number 
     tackles: pick(['Total tackles', 'Tackles'], side),
     interceptions: pick(['Interceptions'], side),
     crosses_total: pick(['Crosses', 'Total crosses'], side),
+    throw_ins: pick(['Throw-ins', 'Throw ins'], side),
+    goal_kicks: pick(['Goal kicks', 'Goal Kicks'], side),
+    free_kicks: pick(['Free kicks', 'Free Kicks'], side),
+    passes_final_third: pick(['Passes into final 1/3', 'Passes into final third', 'Passes final third', 'Passes in final third'], side),
+    long_balls_total: pick(['Long balls', 'Total long balls'], side),
+    long_balls_accurate: pick(['Long balls accurate', 'Accurate long balls'], side),
+    ground_duels_won: pick(['Ground duels won', 'Ground duels - won'], side),
+    ground_duels_total: pick(['Ground duels', 'Ground duels total'], side),
+    aerial_duels_won: pick(['Aerial duels won', 'Aerial duels - won'], side),
+    aerial_duels_total: pick(['Aerial duels', 'Aerial duels total'], side),
+    dribbles_completed: pick(['Dribbles successful', 'Successful dribbles', 'Dribbles - successful'], side),
+    dribbles_total: pick(['Dribbles attempted', 'Dribbles total', 'Total dribbles'], side),
   });
   return { home: build('home'), away: build('away') };
 }

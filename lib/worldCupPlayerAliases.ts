@@ -29,6 +29,41 @@ export const WORLD_CUP_NAME_ALIASES: Record<string, string[]> = {
   'meschak elia': ['meschack elia'],
   'yeremy pino': ['yeremi pino'],
   'samu costa': ['samuel costa'],
+
+  // Asian name-order aliases: BDL uses Family-Given ("Son Heung-min"), while
+  // API Football full-name enrichment produces Given-Family ("Heung-Min Son").
+  'son heung min': ['heung min son'],
+  'hwang hee chan': ['hee chan hwang'],
+  'kim min jae': ['min jae kim'],
+  'lee kang in': ['kang in lee'],
+  'hwang in beom': ['in beom hwang'],
+  'cho gue sung': ['gue sung cho'],
+  'oh hyeon gyu': ['hyeon gyu oh'],
+  'song bum keun': ['beom keun song'],
+
+  // Nickname → full name
+  'tim weah': ['timothy weah'],
+  'tino livramento': ['valentino livramento'],
+  'tony ralston': ['anthony ralston'],
+
+  // Middle name or prefix differences
+  'ar jany martha': ['arjany martha'],
+  'amine sbai': ['mohamed amine sbai'],
+  'dayne st clair': ['dayne tristan st clair'],
+  'derrick etienne': ['derrick etienne junior'],
+  'frans putros': ['frans dhia putros'],
+  'hossein hosseini': ['seyed hossein hosseini'],
+  'meshaal barsham': ['meshaal aissa barsham'],
+  'trevor iriving doornbusch': ['trevor doornbusch'],
+  'noor al deen al rawabdeh': ['noor al rawabdeh'],
+
+  // Transliteration variants (same name, different romanization)
+  'jovo lukic': ['jovan lukic'],
+  'mahdi torabi': ['mehdi torabi'],
+  'mohammad abu zrayq': ['mohammed abu zrayq'],
+  'odiljon khamrobekov': ['odildzhon khamrobekov'],
+  'umarbek eshmuradov': ['umar eshmuradov'],
+  'yazeed abu laila': ['yazeed abulaila'],
 };
 
 /** All international alias names a World Cup normalized name should also match. */

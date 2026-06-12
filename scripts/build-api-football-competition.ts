@@ -90,7 +90,9 @@ const COMPETITIONS: Record<string, CompetitionConfig> = {
   // the most recent completed season only (2025 = the 2025/26 European season
   // that just finished, and the 2025 calendar-year season elsewhere). Coverage
   // for all 15 verified via scripts/probe-club-league-coverage.ts.
+  // ── Domestic leagues ──────────────────────────────────────────────────────
   epl: { slug: 'club-epl', leagueId: 39, name: 'Premier League', defaultSeasons: [2025] },
+  championship: { slug: 'club-championship', leagueId: 40, name: 'Championship', defaultSeasons: [2025] },
   'la-liga': { slug: 'club-la-liga', leagueId: 140, name: 'La Liga', defaultSeasons: [2025] },
   'serie-a': { slug: 'club-serie-a', leagueId: 135, name: 'Serie A', defaultSeasons: [2025] },
   bundesliga: { slug: 'club-bundesliga', leagueId: 78, name: 'Bundesliga', defaultSeasons: [2025] },
@@ -105,10 +107,29 @@ const COMPETITIONS: Record<string, CompetitionConfig> = {
   'liga-mx': { slug: 'club-liga-mx', leagueId: 262, name: 'Liga MX', defaultSeasons: [2025] },
   'super-lig': { slug: 'club-super-lig', leagueId: 203, name: 'Süper Lig', defaultSeasons: [2025] },
   'j1-league': { slug: 'club-j1-league', leagueId: 98, name: 'J1 League', defaultSeasons: [2025] },
+  'k-league': { slug: 'club-k-league', leagueId: 292, name: 'K League 1', defaultSeasons: [2025] },
+  'a-league': { slug: 'club-a-league', leagueId: 188, name: 'A-League', defaultSeasons: [2025] },
+  'scottish-prem': { slug: 'club-scottish-prem', leagueId: 179, name: 'Scottish Premiership', defaultSeasons: [2025] },
+  'south-african-psl': { slug: 'club-south-african-psl', leagueId: 288, name: 'South African PSL', defaultSeasons: [2025] },
+
+  // ── UEFA club competitions ─────────────────────────────────────────────────
+  'champions-league': { slug: 'club-champions-league', leagueId: 2, name: 'UEFA Champions League', defaultSeasons: [2025] },
+  'europa-league': { slug: 'club-europa-league', leagueId: 3, name: 'UEFA Europa League', defaultSeasons: [2025] },
+  'conference-league': { slug: 'club-conference-league', leagueId: 848, name: 'UEFA Conference League', defaultSeasons: [2025] },
+
+  // ── Domestic cups ──────────────────────────────────────────────────────────
+  'fa-cup': { slug: 'club-fa-cup', leagueId: 45, name: 'FA Cup', defaultSeasons: [2025] },
+  'efl-cup': { slug: 'club-efl-cup', leagueId: 48, name: 'EFL Cup', defaultSeasons: [2025] },
+  'copa-del-rey': { slug: 'club-copa-del-rey', leagueId: 143, name: 'Copa del Rey', defaultSeasons: [2025] },
+  'dfb-pokal': { slug: 'club-dfb-pokal', leagueId: 81, name: 'DFB-Pokal', defaultSeasons: [2025] },
+  'coppa-italia': { slug: 'club-coppa-italia', leagueId: 137, name: 'Coppa Italia', defaultSeasons: [2025] },
+  'coupe-de-france': { slug: 'club-coupe-de-france', leagueId: 66, name: 'Coupe de France', defaultSeasons: [2025] },
+  'taca-de-portugal': { slug: 'club-taca-de-portugal', leagueId: 96, name: 'Taça de Portugal', defaultSeasons: [2025] },
 };
 
-/** Club-league preset keys, for the convenience all-clubs runner / docs. */
+/** Club-competition preset keys, for the convenience all-clubs runner / docs. */
 const CLUB_COMPETITION_KEYS = [
+  // Domestic leagues
   'epl',
   'la-liga',
   'serie-a',
@@ -124,6 +145,23 @@ const CLUB_COMPETITION_KEYS = [
   'liga-mx',
   'super-lig',
   'j1-league',
+  'championship',
+  'k-league',
+  'a-league',
+  'scottish-prem',
+  'south-african-psl',
+  // UEFA club competitions
+  'champions-league',
+  'europa-league',
+  'conference-league',
+  // Domestic cups
+  'fa-cup',
+  'efl-cup',
+  'copa-del-rey',
+  'dfb-pokal',
+  'coppa-italia',
+  'coupe-de-france',
+  'taca-de-portugal',
 ] as const;
 
 type ApiResponse<T> = {
@@ -199,6 +237,22 @@ type ApiFixtureStatistics = {
 };
 
 type IngestStats = { matches: number; players: number; statRows: number };
+
+type ApiSquadPlayer = {
+  id: number;
+  name: string;
+  firstname: string;
+  lastname: string;
+  age: number;
+  number: number | null;
+  position: string;
+  photo: string;
+};
+
+type ApiSquadResponse = {
+  team: { id: number; name: string; logo: string };
+  players: ApiSquadPlayer[];
+};
 
 function n(value: number | null | undefined): number {
   return Number.isFinite(value as number) ? (value as number) : 0;
@@ -349,6 +403,40 @@ async function loadFixturePlayers(fixtureId: number): Promise<ApiFixturePlayers[
   return Array.isArray(data) ? data : [];
 }
 
+/**
+ * Fetch full player names for every team in a season via /players/squads.
+ * Returns a Map<playerId, fullName> built from firstname + lastname so the
+ * ingestion can store proper names instead of abbreviated fixture names.
+ */
+async function buildPlayerNameCache(
+  leagueId: number,
+  seasonYear: number
+): Promise<Map<number, string>> {
+  const cache = new Map<number, string>();
+  try {
+    type ApiSquadsResponse = { team: { id: number }; players: ApiSquadPlayer[] }[];
+    const squads = await apiFootballFetch<ApiSquadsResponse>('/players/squads', {
+      league: leagueId,
+      season: seasonYear,
+    });
+    if (!Array.isArray(squads)) return cache;
+    for (const squadBlock of squads) {
+      for (const p of squadBlock.players ?? []) {
+        if (!p.id) continue;
+        const full =
+          p.firstname && p.lastname
+            ? `${p.firstname} ${p.lastname}`
+            : p.name || '';
+        if (full) cache.set(p.id, full);
+      }
+    }
+    console.log(`[api-football] name cache: ${cache.size} players for league=${leagueId} season=${seasonYear}`);
+  } catch (err) {
+    console.warn(`[api-football] name cache fetch failed (league=${leagueId} season=${seasonYear}):`, (err as Error).message);
+  }
+  return cache;
+}
+
 async function loadFixtureStatistics(fixtureId: number): Promise<ApiFixtureStatistics[]> {
   const data = await apiFootballFetch<ApiFixtureStatistics[]>('/fixtures/statistics', { fixture: fixtureId });
   return Array.isArray(data) ? data : [];
@@ -387,6 +475,14 @@ function mapApiFootballTeamStats(
     possession_pct: get('Ball Possession'),
     passes_total: get('Total passes'),
     passes_accurate: get('Passes accurate'),
+    passes_final_third: get('Passes final third') ?? get('Passes in final third') ?? get('Passes into final third'),
+    throw_ins: get('Throw Ins') ?? get('Throw-ins'),
+    goal_kicks: get('Goal Kicks') ?? get('Goal kicks'),
+    free_kicks: get('Free Kicks') ?? get('Free kicks'),
+    long_balls_total: get('Long Balls') ?? get('Total Long Balls'),
+    long_balls_accurate: get('Long Balls Accurate') ?? get('Accurate Long Balls'),
+    crosses_total: get('Total Crosses') ?? get('Crosses'),
+    crosses_accurate: get('Accurate Crosses'),
     expected_goals: get('expected_goals'),
   };
 }
@@ -499,7 +595,8 @@ async function loadAlreadyIngestedFixtureIds(
 
 async function ingestFixtureStats(
   supabase: ReturnType<typeof getSupabase>,
-  fixture: ApiFixture
+  fixture: ApiFixture,
+  playerNameCache: Map<number, string> = new Map()
 ): Promise<{ playerRows: number; uniquePlayers: number; noPlayerData: boolean }> {
   const homeId = fixture.teams.home.id;
   const fixtureId = fixture.fixture.id;
@@ -576,10 +673,15 @@ async function ingestFixtureStats(
 
       const pid = String(playerBlock.player.id);
       if (!playerProfiles.has(pid)) {
+        // Prefer the squad-cached full name (e.g. "Heung-Min Son") over the
+        // fixture abbreviated name (e.g. "H. Son") so cross-source name matching
+        // works in the dashboard.
+        const cachedName = playerNameCache.get(playerBlock.player.id);
+        const fullName = cachedName || playerBlock.player.name;
         playerProfiles.set(pid, {
           source_player_id: pid,
-          full_name: playerBlock.player.name,
-          normalized_name: normalizeName(playerBlock.player.name),
+          full_name: fullName,
+          normalized_name: normalizeName(fullName),
           position,
         });
       } else if (!playerProfiles.get(pid)!.position && position) {
@@ -660,6 +762,14 @@ async function ingestFixtureTeamStats(
       possession_pct: mapped.possession_pct,
       passes_total: mapped.passes_total,
       passes_accurate: mapped.passes_accurate,
+      passes_final_third: mapped.passes_final_third,
+      throw_ins: mapped.throw_ins,
+      goal_kicks: mapped.goal_kicks,
+      free_kicks: mapped.free_kicks,
+      long_balls_total: mapped.long_balls_total,
+      long_balls_accurate: mapped.long_balls_accurate,
+      crosses_total: mapped.crosses_total,
+      crosses_accurate: mapped.crosses_accurate,
       saves: mapped.saves,
       raw_aggregates: null,
       fetched_at: new Date().toISOString(),
@@ -688,6 +798,11 @@ async function ingestSeason(
 
   await upsertTeams(supabase, fixtures);
   await upsertMatches(supabase, cfg, fixtures, seasonYear);
+
+  // Build a full-name cache from /players/squads so fixture abbreviated names
+  // (e.g. "H. Son") are replaced with proper names (e.g. "Heung-Min Son")
+  // before they are stored in international_players.
+  const playerNameCache = await buildPlayerNameCache(cfg.leagueId, seasonYear);
 
   const alreadyIngested = resume ? await loadAlreadyIngestedFixtureIds(supabase, cfg, seasonYear) : new Set<string>();
   if (resume && alreadyIngested.size) {
@@ -722,7 +837,7 @@ async function ingestSeason(
       continue;
     }
     try {
-      const { playerRows, noPlayerData } = await ingestFixtureStats(supabase, fixture);
+      const { playerRows, noPlayerData } = await ingestFixtureStats(supabase, fixture, playerNameCache);
       totalStatRows += playerRows;
       if (noPlayerData) fixturesWithoutStats += 1;
       else fixturesWithStats += 1;
@@ -747,6 +862,62 @@ async function ingestSeason(
     `[api-football] ${cfg.name} ${seasonYear} DONE: ${fixtures.length} matches, ${fixturesWithStats} with stats, ${totalStatRows} stat rows`
   );
   return { matches: fixtures.length, players: fixturesWithStats, statRows: totalStatRows };
+}
+
+/**
+ * Finds all API Football player records whose stored name is abbreviated
+ * (e.g. "H. Son") and replaces them with the full name fetched from the
+ * /players endpoint. Run this after ingestion to fix name-matching failures
+ * in the dashboard's cross-source stat merge. Only updates rows that actually
+ * differ so re-runs are idempotent.
+ */
+async function enrichAbbreviatedPlayerNames(supabase: ReturnType<typeof getSupabase>): Promise<void> {
+  const { data: abbrevRows, error } = await supabase
+    .from('international_players')
+    .select('source_player_id, full_name')
+    .eq('source', SOURCE)
+    .like('full_name', '%. %'); // matches "H. Son", "J. Doe", etc.
+
+  if (error) {
+    console.warn('[api-football] enrich: could not load abbreviated players:', error.message);
+    return;
+  }
+  if (!abbrevRows?.length) {
+    console.log('[api-football] enrich: no abbreviated player names found');
+    return;
+  }
+  console.log(`[api-football] enrich: resolving ${abbrevRows.length} abbreviated names...`);
+
+  type ApiPlayerEntry = {
+    player: { id: number; name: string; firstname: string; lastname: string };
+    statistics: unknown[];
+  };
+
+  let enriched = 0;
+  for (const row of abbrevRows) {
+    try {
+      const data = await apiFootballFetch<ApiPlayerEntry[]>('/players', {
+        id: row.source_player_id,
+        season: 2024,
+      });
+      if (!Array.isArray(data) || !data[0]?.player) continue;
+      const { firstname, lastname, name: apiName } = data[0].player;
+      const fullName =
+        firstname && lastname ? `${firstname} ${lastname}` : apiName || '';
+      if (!fullName || fullName === row.full_name) continue;
+      const newNorm = normalizeName(fullName);
+      await supabase
+        .from('international_players')
+        .update({ full_name: fullName, normalized_name: newNorm })
+        .eq('source', SOURCE)
+        .eq('source_player_id', row.source_player_id);
+      console.log(`[api-football] enrich: "${row.full_name}" → "${fullName}"`);
+      enriched += 1;
+    } catch {
+      // Player may not have stats in 2024 season; skip silently
+    }
+  }
+  console.log(`[api-football] enrich: updated ${enriched}/${abbrevRows.length} names`);
 }
 
 async function flagAmbiguousPlayers(supabase: ReturnType<typeof getSupabase>): Promise<void> {
@@ -806,13 +977,220 @@ function resolveSeasons(cfg: CompetitionConfig): number[] {
   return [...seasons].sort((a, b) => b - a);
 }
 
+async function diagnoseMissingPlayers(supabase: ReturnType<typeof getSupabase>): Promise<void> {
+  const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
+  const bdlKey = process.env.BALLDONTLIE_API_KEY || process.env.BDL_API_KEY || process.env.NEXT_PUBLIC_BDL_API_KEY || '';
+  if (!bdlKey) {
+    console.error('[diagnose] BDL_API_KEY not set');
+    return;
+  }
+
+  console.log('[diagnose] fetching 2026 WC players from BDL...');
+
+  const allPlayers: Array<{ id: number; name: string; team?: { name?: string; country?: string } }> = [];
+  let cursor: string | null = null;
+  do {
+    const url = new URL(`${BDL_FIFA_BASE}/players`);
+    url.searchParams.set('seasons[]', '2026');
+    url.searchParams.set('per_page', '100');
+    if (cursor) url.searchParams.set('cursor', cursor);
+    const res = await fetch(url.toString(), { headers: { Authorization: bdlKey } });
+    if (!res.ok) throw new Error('BDL /players ' + res.status);
+    const body = (await res.json()) as {
+      data: Array<{ id: number; name: string; team?: { name?: string; country?: string } }>;
+      meta?: { next_cursor?: string };
+    };
+    allPlayers.push(...body.data);
+    cursor = body.meta?.next_cursor ?? null;
+  } while (cursor);
+
+  console.log('[diagnose] loaded ' + allPlayers.length + ' players\n');
+
+  const countryArg = process.argv.find((a) => a.startsWith('--country='));
+  const countryFilter = countryArg ? countryArg.split('=')[1]!.toLowerCase() : null;
+  const filtered = countryFilter
+    ? allPlayers.filter(
+        (p) =>
+          (p.team?.name ?? '').toLowerCase().includes(countryFilter) ||
+          (p.team?.country ?? '').toLowerCase().includes(countryFilter)
+      )
+    : allPlayers;
+
+  const noMatch: Array<{
+    name: string; id: number; team: string;
+    closeMatch: Array<{ source: string; full_name: string; normalized_name: string }>;
+  }> = [];
+  const matchCount: { n: number } = { n: 0 };
+
+  for (const player of filtered) {
+    const norm = normalizeName(player.name);
+    const parts = norm.split(' ');
+    const searched = [norm];
+    if (parts.length >= 2) {
+      const reversed = [...parts.slice(1), parts[0]!].join(' ');
+      if (reversed !== norm) searched.push(reversed);
+    }
+
+    const { data: exactData } = await supabase
+      .from('international_players')
+      .select('source, full_name')
+      .in('normalized_name', searched)
+      .in('source', ['api-football', 'sofascore']);
+
+    const found = (exactData ?? []) as Array<{ source: string; full_name: string }>;
+    if (found.length > 0) {
+      matchCount.n += 1;
+      continue;
+    }
+
+    // Try fuzzy: does DB have anyone whose normalized_name contains the last word?
+    const lastName = parts[parts.length - 1]!;
+    const { data: fuzzyData } = await supabase
+      .from('international_players')
+      .select('source, full_name, normalized_name')
+      .ilike('normalized_name', '%' + lastName + '%')
+      .in('source', ['api-football', 'sofascore'])
+      .limit(5);
+
+    noMatch.push({
+      name: player.name,
+      id: player.id,
+      team: player.team?.name ?? '?',
+      closeMatch: (fuzzyData ?? []) as Array<{ source: string; full_name: string; normalized_name: string }>,
+    });
+  }
+
+  const fixable = noMatch.filter((p) => p.closeMatch.length > 0);
+  const notInDb = noMatch.filter((p) => p.closeMatch.length === 0);
+
+  console.log('MATCHED:    ' + matchCount.n + '/' + filtered.length);
+  console.log('FIXABLE:    ' + fixable.length + ' (in DB under different name)');
+  console.log('NOT IN DB:  ' + notInDb.length + ' (club data not ingested)\n');
+
+  if (fixable.length > 0) {
+    console.log('=== FIXABLE — add aliases for these ===');
+    for (const p of fixable) {
+      console.log('  BDL "' + p.name + '" [' + p.id + ']');
+      for (const c of p.closeMatch) {
+        console.log('    DB ' + c.source + ': "' + c.full_name + '" (norm: ' + c.normalized_name + ')');
+        console.log("    -> add alias: '" + normalizeName(p.name) + "': ['" + c.normalized_name + "']");
+      }
+    }
+  }
+
+  if (notInDb.length > 0) {
+    console.log('\n=== NOT IN DB — need ingestion for their club league ===');
+    for (const p of notInDb) {
+      console.log('  "' + p.name + '" (' + p.team + ')');
+    }
+  }
+}
+
 async function main() {
+  const enrichNames = process.argv.includes('--enrich-names');
+  const diagnose = process.argv.includes('--diagnose');
+  const supabase = getSupabase();
+
+  // Standalone modes — no --competition needed, checked before parseCompetitionArgs().
+  if (enrichNames) {
+    await enrichAbbreviatedPlayerNames(supabase);
+    console.log(`[api-football] total requests: ${_requestCount}`);
+    return;
+  }
+  if (diagnose) {
+    await diagnoseMissingPlayers(supabase);
+    return;
+  }
+
+  // --dvp-gap=<slug>  Show team-stat vs player-stat coverage gap for a nation (e.g. --dvp-gap=rsa)
+  const dvpGapArg = process.argv.find((a) => a.startsWith('--dvp-gap='));
+  if (dvpGapArg) {
+    const slug = dvpGapArg.split('=').slice(1).join('=').toLowerCase().trim();
+    console.log(`\n[dvp-gap] Checking coverage gap for slug="${slug}"...\n`);
+
+    // international_matches that involve this nation (search by known team names for the slug)
+    // Try both exact slug match via resolveWorldCupFlagCode logic and common team name patterns
+    const namePattern = slug === 'rsa' ? 'south africa' : slug;
+    const { data: intlMatches } = await supabase
+      .from('international_matches')
+      .select('source, source_match_id, tournament_slug, season_year, home_team_name, away_team_name, match_date')
+      .or(`home_team_name.ilike.%${namePattern}%,away_team_name.ilike.%${namePattern}%`)
+      .not('tournament_slug', 'like', 'club%')
+      .order('match_date', { ascending: false })
+      .limit(50);
+
+    console.log(`\n[dvp-gap] international_matches (non-club): ${intlMatches?.length ?? 0} rows`);
+    const matchByTournament: Record<string, number> = {};
+    for (const r of intlMatches ?? []) {
+      const key = `${r.tournament_slug ?? 'unknown'} / ${r.season_year ?? '?'} (${r.source})`;
+      matchByTournament[key] = (matchByTournament[key] ?? 0) + 1;
+    }
+    for (const [k, count] of Object.entries(matchByTournament).sort()) {
+      console.log(`  ${count}x  ${k}`);
+    }
+
+    if ((intlMatches ?? []).length === 0) {
+      console.log('\n[dvp-gap] No international_matches found — the Opponent Breakdown 12 games must come from international_team_match_stats with a different key.');
+    }
+
+    // Team stats: check how many of those match IDs have team stats rows
+    const matchIds = (intlMatches ?? []).map((m) => m.source_match_id);
+    if (matchIds.length > 0) {
+      const { data: teamStatRows } = await supabase
+        .from('international_team_match_stats')
+        .select('source, source_match_id, tournament_slug, season_year')
+        .in('source_match_id', matchIds.slice(0, 30))
+        .limit(200);
+      const matchesWithTeamStats = new Set((teamStatRows ?? []).map((r) => r.source_match_id));
+      console.log(`\n[dvp-gap] international_team_match_stats for those matches: ${teamStatRows?.length ?? 0} rows (${matchesWithTeamStats.size} unique matches)`);
+    }
+
+    // Player stats: for each of those matches, check if player rows exist
+    if (matchIds.length > 0) {
+      const { data: playerRows } = await supabase
+        .from('international_player_match_stats')
+        .select('source, source_match_id')
+        .in('source_match_id', matchIds.slice(0, 30))
+        .limit(200);
+      const matchesWithPlayerStats = new Set((playerRows ?? []).map((r) => r.source_match_id));
+      const matchesWithoutPlayerStats = matchIds.filter((id) => !matchesWithPlayerStats.has(id));
+      console.log(`\n[dvp-gap] international_player_match_stats rows for those matches: ${playerRows?.length ?? 0}`);
+      console.log(`[dvp-gap] matches WITH player stats:    ${matchesWithPlayerStats.size}/${matchIds.length}`);
+      console.log(`[dvp-gap] matches WITHOUT player stats: ${matchesWithoutPlayerStats.length}/${matchIds.length}`);
+      for (const id of matchesWithoutPlayerStats.slice(0, 10)) {
+        const m = (intlMatches ?? []).find((x) => x.source_match_id === id);
+        if (m) console.log(`  match_id=${id}  ${m.home_team_name} vs ${m.away_team_name}  [${m.tournament_slug}/${m.season_year}]  (${m.source})`);
+      }
+    }
+    return;
+  }
+
+  // --lookup=<name>  Search international_players for any name containing a word
+  const lookupArg = process.argv.find((a) => a.startsWith('--lookup='));
+  if (lookupArg) {
+    const term = lookupArg.split('=').slice(1).join('=').toLowerCase().trim();
+    const { data } = await supabase
+      .from('international_players')
+      .select('source, source_player_id, full_name, normalized_name')
+      .ilike('normalized_name', '%' + term + '%')
+      .in('source', ['api-football', 'sofascore'])
+      .limit(20);
+    if (!data?.length) {
+      console.log('[lookup] No records found for "' + term + '"');
+    } else {
+      console.log('[lookup] Results for "' + term + '":');
+      for (const r of data as Array<{ source: string; source_player_id: string; full_name: string; normalized_name: string }>) {
+        console.log('  ' + r.source + ':' + r.source_player_id + '  "' + r.full_name + '"  (norm: ' + r.normalized_name + ')');
+      }
+    }
+    return;
+  }
+
   const configs = parseCompetitionArgs();
   const resume = process.argv.includes('--resume');
   const skipTeamStats =
     process.argv.includes('--player-stats-only') || process.argv.includes('--skip-team-stats');
   if (skipTeamStats) console.log('[api-football] PLAYER-STATS-ONLY — skipping team fixture statistics');
-  const supabase = getSupabase();
 
   let grandMatches = 0;
   let grandStatRows = 0;
@@ -840,6 +1218,8 @@ async function main() {
     }
   }
 
+  // After ingestion, expand abbreviated names so cross-source dashboard matching works
+  await enrichAbbreviatedPlayerNames(supabase);
   await flagAmbiguousPlayers(supabase);
 
   console.log(

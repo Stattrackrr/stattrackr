@@ -451,6 +451,17 @@ export async function loadWorldCupQualifiedTeamMap(apiKey = ''): Promise<Map<str
   return worldCupSlugMap(teams);
 }
 
+/** Qualified WC nations for ranking — BDL live list, then Supabase slug cache. */
+export async function ensureWorldCupQualifiedUniverse(apiKey = ''): Promise<Map<string, string>> {
+  const live = await loadWorldCupQualifiedTeamMap(apiKey);
+  if (live.size > 0) return live;
+  const cached = await getWorldCupCache<Record<string, string>>(WORLD_CUP_TEAMS_CACHE_KEY);
+  if (cached && typeof cached === 'object') {
+    return new Map(Object.entries(cached));
+  }
+  return live;
+}
+
 // ---------------------------------------------------------------------------
 // BDL World Cup data (fetched once, shared across all nations)
 // ---------------------------------------------------------------------------
@@ -758,4 +769,69 @@ export async function getOpponentBreakdown(window: number, _apiKey: string): Pro
   );
   if (legacy && legacy.games && Object.keys(legacy.games).length > 0) return legacy;
   return emptyPayload(safeWindow);
+}
+
+/**
+ * Compute an opponent breakdown using ONLY 2026 World Cup matches from BDL.
+ * Unlike the precomputed cache (which spans all competitions and editions), this
+ * runs live and only includes teams that have played ≥1 WC 2026 game.
+ * International Supabase data is intentionally excluded so the result is purely
+ * the current tournament.
+ */
+export async function computeWcOnlyOppBreakdown(apiKey: string): Promise<OppBreakdownPayload> {
+  if (!apiKey) return emptyPayload(OPP_BREAKDOWN_ALL_WINDOW);
+
+  // Fetch only 2026 WC matches.
+  const params = new URLSearchParams();
+  params.append('seasons[]', '2026');
+  const allMatches = await bdlFetchAll<BdlMatch>('/matches', params, apiKey, 6);
+  const matches = allMatches.filter((m) => m.status === 'completed');
+  if (!matches.length) return emptyPayload(OPP_BREAKDOWN_ALL_WINDOW);
+
+  // Fetch team stats for all 2026 completed matches.
+  const statsByMatchTeam = new Map<string, Record<string, any>>();
+  const ids = matches.map((m) => m.id);
+  for (let i = 0; i < ids.length; i += 50) {
+    const chunk = ids.slice(i, i + 50);
+    const chunkParams = new URLSearchParams();
+    chunk.forEach((id) => chunkParams.append('match_ids[]', String(id)));
+    const rows = await bdlFetchAll<Record<string, any>>('/team_match_stats', chunkParams, apiKey, 6);
+    for (const row of rows) {
+      statsByMatchTeam.set(`${Number(row?.match_id)}:${Number(row?.team_id)}`, row);
+    }
+  }
+  const bdl: BdlWorldCupData = { matches, statsByMatchTeam };
+
+  // Load the 48 qualified WC teams to build the slug map (ranking universe).
+  const teams = await loadWorldCupTeamList(apiKey);
+  const wcSlugMap = worldCupSlugMap(teams);
+
+  // Build appearances using only BDL 2026 rows (skip intl Supabase data).
+  const appearances: Appearance[] = [];
+  for (const team of teams) {
+    const slug = resolveWorldCupFlagCode(team.country_code) || resolveWorldCupFlagCode(team.name);
+    if (!slug) continue;
+    const teamMatches = matches.filter(
+      (m) => m.home_team?.id === team.id || m.away_team?.id === team.id
+    );
+    if (!teamMatches.length) continue; // has not played yet — exclude from rankings
+    const rows = buildBdlTeamHistoryRows(team.id, teamMatches, statsByMatchTeam)
+      .map(normalizeDerivedTeamStats)
+      .filter(isRichTeamStatRow);
+    const dateByMatch = new Map<string, number>();
+    for (const m of teamMatches) {
+      dateByMatch.set(String(m.id), m.datetime ? Date.parse(m.datetime) : 0);
+    }
+    for (const row of rows) {
+      appearances.push({
+        slug,
+        date: dateByMatch.get(String(row.match_id)) ?? 0,
+        name: team.name,
+        allowed: extractAllowedFromTeamRow(row),
+        forStats: extractForFromTeamRow(row),
+      });
+    }
+  }
+
+  return buildPayload(appearances, OPP_BREAKDOWN_ALL_WINDOW, wcSlugMap);
 }

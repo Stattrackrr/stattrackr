@@ -11,7 +11,23 @@ import { supabaseAdmin } from './supabaseAdmin';
 import { normalizeWorldCupPlayerName } from './worldCupPlayerIndex';
 import { getWorldCupNameAliases, getWorldCupPlayerOverride } from './worldCupPlayerAliases';
 import { resolveWorldCupFlagCode } from './worldCupFlags';
-import { setWorldCupCache } from './worldCupCache';
+import { getWorldCupCache, setWorldCupCache } from './worldCupCache';
+
+function rankOpponentAllowedValues(entries: { slug: string; value: number }[]): Record<string, number> {
+  if (!entries.length) return {};
+  const sorted = [...entries].sort((a, b) => a.value - b.value || a.slug.localeCompare(b.slug));
+  const ranks: Record<string, number> = {};
+  let i = 0;
+  while (i < sorted.length) {
+    let end = i;
+    while (end + 1 < sorted.length && sorted[end + 1]!.value === sorted[i]!.value) end++;
+    // Standard competition ranking: all tied entries share the best (lowest) rank in the group
+    const rank = i + 1;
+    for (let c = i; c <= end; c++) ranks[sorted[c]!.slug] = rank;
+    i = end + 1;
+  }
+  return ranks;
+}
 
 export type InternationalCompetition = 'euros' | 'nations-league';
 
@@ -685,6 +701,8 @@ export async function loadInternationalStatsByPlayerName(
     .in('normalized_name', matchNames)
     .in('source', ['statsbomb', 'api-football', 'sofascore']);
 
+  console.log('[loadIntlStatsByName] player:', playerName, '| searched:', matchNames, '| found:', (matchedPlayers ?? []).map(p => `${p.source}:${p.full_name}`));
+
   let players = (matchedPlayers ?? []) as Array<{
     source: string;
     source_player_id: string;
@@ -968,7 +986,7 @@ export const WC_DVP_OUTFIELD_STATS = [
 ] as const;
 export const WC_DVP_GK_STATS = ['saves', 'goals_conceded', 'passes_accurate', 'yellow_cards'] as const;
 export const WC_DVP_POSITIONS: IntlPositionBucket[] = ['GK', 'DEF', 'MID', 'FWD'];
-const WC_DVP_CACHE_PREFIX = 'wc:dvp-aggregate:v2';
+const WC_DVP_CACHE_PREFIX = 'wc:dvp-aggregate:v3';
 
 /** Canonical stat keys the UI requests for a given position bucket. */
 export function getWorldCupDvpStats(position: IntlPositionBucket): string[] {
@@ -995,7 +1013,23 @@ type DvpMatchRow = {
   away_score: number | null;
   match_date: string | null;
   kickoff_unix: number | null;
+  tournament_slug?: string | null;
+  status?: string | null;
+  season_year?: number | null;
 };
+
+const COMPLETED_MATCH_STATUSES = new Set(['completed', 'finished', 'ft']);
+
+/** True when the match is a completed FIFA World Cup finals game (not WCQ, Euros, etc.). */
+export function isCompletedWorldCupFinalsMatch(m: DvpMatchRow): boolean {
+  const slug = String(m.tournament_slug ?? '').toLowerCase();
+  const isWorldCup =
+    slug === 'worldcup' || slug === 'world-cup' || m.source === BDL_DVP_SOURCE;
+  if (!isWorldCup) return false;
+  if (m.source === BDL_DVP_SOURCE) return true;
+  const status = String(m.status ?? 'completed').toLowerCase();
+  return COMPLETED_MATCH_STATUSES.has(status);
+}
 type DvpStatRow = IntlStatRow & { id?: number };
 
 /**
@@ -1019,10 +1053,268 @@ const dvpMatchKey = (source: string, id: string) => `${source}:${id}`;
 const dvpTeamSlug = (name: string): string =>
   resolveWorldCupFlagCode(name) || name.trim().toLowerCase();
 
+const BDL_DVP_SOURCE = 'bdl';
+const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
+const BDL_DVP_SEASONS = [2018, 2022, 2026] as const;
+
+function dvpStatNum(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getBdlDvpApiKey(): string {
+  return (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
+}
+
+function bdlDvpAuthCandidates(apiKey: string): string[] {
+  if (!apiKey) return [];
+  if (apiKey.startsWith('Bearer ')) {
+    const plain = apiKey.replace(/^Bearer\s+/i, '').trim();
+    return [plain, apiKey].filter(Boolean);
+  }
+  return [apiKey, `Bearer ${apiKey}`];
+}
+
+const bdlDvpSleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function bdlDvpFetchAll<T>(
+  path: string,
+  baseParams: URLSearchParams,
+  apiKey: string,
+  maxPages = 8
+): Promise<T[]> {
+  const rows: T[] = [];
+  const auths = bdlDvpAuthCandidates(apiKey);
+  let cursor: string | number | null = null;
+
+  for (let page = 0; page < maxPages; page++) {
+    const params = new URLSearchParams(baseParams);
+    if (!params.has('per_page')) params.set('per_page', '100');
+    if (cursor != null) params.set('cursor', String(cursor));
+    const url = `${BDL_FIFA_BASE}${path}?${params.toString()}`;
+
+    let payload: { data?: T[]; meta?: { next_cursor?: number | string | null } } | null = null;
+    for (const auth of auths.length ? auths : ['']) {
+      let ok = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
+        try {
+          const res = await fetch(url, {
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'StatTrackr/1.0',
+              ...(auth ? { Authorization: auth } : {}),
+            },
+            cache: 'no-store',
+            signal: ctrl.signal,
+          });
+          if (res.ok) {
+            payload = await res.json();
+            ok = true;
+            break;
+          }
+          if ((res.status === 429 || res.status >= 500) && attempt < 2) {
+            await bdlDvpSleep(500 + attempt * 600);
+            continue;
+          }
+          break;
+        } catch {
+          if (attempt < 2) {
+            await bdlDvpSleep(400 + attempt * 600);
+            continue;
+          }
+          break;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      if (ok) break;
+    }
+
+    if (!payload) break;
+    rows.push(...(Array.isArray(payload.data) ? payload.data : []));
+    cursor = payload.meta?.next_cursor ?? null;
+    if (!cursor) break;
+  }
+
+  return rows;
+}
+
+type BdlDvpMatch = {
+  id: number;
+  datetime?: string | null;
+  status?: string | null;
+  home_team?: { id: number; name: string } | null;
+  away_team?: { id: number; name: string } | null;
+  home_score?: number | null;
+  away_score?: number | null;
+};
+
+function bdlMatchToDvpRow(match: BdlDvpMatch): DvpMatchRow | null {
+  const homeId = match.home_team?.id;
+  const awayId = match.away_team?.id;
+  const homeName = match.home_team?.name?.trim();
+  const awayName = match.away_team?.name?.trim();
+  if (!Number.isFinite(homeId) || !Number.isFinite(awayId) || !homeName || !awayName) return null;
+  const kickoffMs = match.datetime ? Date.parse(match.datetime) : NaN;
+  const seasonYear = Number.isFinite(kickoffMs) ? new Date(kickoffMs).getUTCFullYear() : null;
+  return {
+    source: BDL_DVP_SOURCE,
+    source_match_id: String(match.id),
+    home_team_source_id: String(homeId),
+    away_team_source_id: String(awayId),
+    home_team_name: homeName,
+    away_team_name: awayName,
+    home_score: match.home_score ?? null,
+    away_score: match.away_score ?? null,
+    match_date: match.datetime ?? null,
+    kickoff_unix: Number.isFinite(kickoffMs) ? Math.floor(kickoffMs / 1000) : null,
+    tournament_slug: 'worldcup',
+    status: 'completed',
+    season_year: seasonYear,
+  };
+}
+
+function bdlPlayerStatToDvpRow(row: Record<string, unknown>): DvpStatRow | null {
+  const matchId = row.match_id;
+  const playerId = row.player_id;
+  const teamId = row.team_id;
+  if (matchId == null || playerId == null || teamId == null) return null;
+
+  const minutes = dvpStatNum(row.minutes_played);
+  const hasAppearance =
+    (minutes != null && minutes > 0) ||
+    dvpStatNum(row.goals) != null ||
+    dvpStatNum(row.assists) != null ||
+    dvpStatNum(row.shots_total) != null ||
+    dvpStatNum(row.saves) != null;
+  if (!hasAppearance) return null;
+
+  return {
+    source: BDL_DVP_SOURCE,
+    source_match_id: String(matchId),
+    source_player_id: String(playerId),
+    source_team_id: String(teamId),
+    is_home: row.is_home === true,
+    position: typeof row.position === 'string' ? row.position : null,
+    minutes_played: minutes,
+    goals: dvpStatNum(row.goals),
+    assists: dvpStatNum(row.assists),
+    shots_total: dvpStatNum(row.shots_total) ?? dvpStatNum(row.derived_shots_total),
+    shots_on_target: dvpStatNum(row.shots_on_target),
+    passes_total: dvpStatNum(row.passes_total) ?? dvpStatNum(row.passes),
+    passes_accurate: dvpStatNum(row.passes_accurate),
+    expected_goals: dvpStatNum(row.expected_goals) ?? dvpStatNum(row.expected_goals_xg),
+    yellow_cards: dvpStatNum(row.yellow_cards),
+    red_cards: dvpStatNum(row.red_cards),
+    tackles: dvpStatNum(row.tackles),
+    interceptions: dvpStatNum(row.interceptions),
+    fouls: dvpStatNum(row.fouls) ?? dvpStatNum(row.fouls_committed),
+    was_fouled: dvpStatNum(row.was_fouled) ?? dvpStatNum(row.fouls_suffered),
+    saves: dvpStatNum(row.saves),
+    big_chances_created: dvpStatNum(row.big_chances_created),
+    raw_aggregates: null,
+  };
+}
+
+/**
+ * BDL FIFA World Cup finals (2018/2022/2026) player-match stats are not stored
+ * in `international_*` — they live only on the BDL API. Merge them here so DVP
+ * windowing includes the latest completed World Cup games (e.g. 2026 friendlies /
+ * group openers) exactly like Opponent Breakdown does for team stats.
+ */
+/**
+ * Fetch only 2026 World Cup matches + player stats from BDL — used by the
+ * WC-only DVP filter so we don't need the full loadWorldCupDvpSource() pipeline.
+ * Much faster since it skips Supabase and only fetches one season.
+ */
+export async function loadBdlWc2026DvpData(): Promise<{
+  matches: DvpMatchRow[];
+  statRows: DvpStatRow[];
+  /** Slugs of every team that has played ≥1 completed WC 2026 game. */
+  teamsWithGames: Set<string>;
+}> {
+  const apiKey = getBdlDvpApiKey();
+  if (!apiKey) return { matches: [], statRows: [], teamsWithGames: new Set() };
+
+  const seasonsParam = new URLSearchParams();
+  seasonsParam.append('seasons[]', '2026');
+  const rawMatches = await bdlDvpFetchAll<BdlDvpMatch>('/matches', seasonsParam, apiKey, 8);
+  const completed = rawMatches.filter((match) => match.status === 'completed');
+  const matches = completed.map(bdlMatchToDvpRow).filter((row): row is DvpMatchRow => row != null);
+  if (!matches.length) return { matches: [], statRows: [], teamsWithGames: new Set() };
+
+  // Build position-agnostic "teams that have played" set — both home and away
+  // for every completed match, so "has played" check is independent of position.
+  const teamsWithGames = new Set<string>();
+  for (const m of matches) {
+    const homeSlug = dvpTeamSlug(m.home_team_name);
+    const awaySlug = dvpTeamSlug(m.away_team_name);
+    if (homeSlug) teamsWithGames.add(homeSlug);
+    if (awaySlug) teamsWithGames.add(awaySlug);
+  }
+
+  const statRows: DvpStatRow[] = [];
+  const matchIds = completed.map((m) => m.id).filter((id) => Number.isFinite(id));
+  for (let i = 0; i < matchIds.length; i += 50) {
+    const chunk = matchIds.slice(i, i + 50);
+    const params = new URLSearchParams();
+    chunk.forEach((id) => params.append('match_ids[]', String(id)));
+    const rows = await bdlDvpFetchAll<Record<string, unknown>>('/player_match_stats', params, apiKey, 8);
+    for (const row of rows) {
+      const mapped = bdlPlayerStatToDvpRow(row);
+      if (mapped) statRows.push(mapped);
+    }
+  }
+
+  return { matches, statRows, teamsWithGames };
+}
+
+async function loadBdlWorldCupDvpSupplement(): Promise<{
+  matches: DvpMatchRow[];
+  statRows: DvpStatRow[];
+}> {
+  const apiKey = getBdlDvpApiKey();
+  if (!apiKey) return { matches: [], statRows: [] };
+
+  const seasonsParam = new URLSearchParams();
+  BDL_DVP_SEASONS.forEach((season) => seasonsParam.append('seasons[]', String(season)));
+  const rawMatches = await bdlDvpFetchAll<BdlDvpMatch>('/matches', seasonsParam, apiKey, 8);
+  const completed = rawMatches.filter((match) => match.status === 'completed');
+  const matches = completed
+    .map(bdlMatchToDvpRow)
+    .filter((row): row is DvpMatchRow => row != null);
+  if (!matches.length) return { matches: [], statRows: [] };
+
+  const statRows: DvpStatRow[] = [];
+  const matchIds = completed.map((match) => match.id).filter((id) => Number.isFinite(id));
+  for (let i = 0; i < matchIds.length; i += 50) {
+    const chunk = matchIds.slice(i, i + 50);
+    const params = new URLSearchParams();
+    chunk.forEach((id) => params.append('match_ids[]', String(id)));
+    const rows = await bdlDvpFetchAll<Record<string, unknown>>(
+      '/player_match_stats',
+      params,
+      apiKey,
+      8
+    );
+    for (const row of rows) {
+      const mapped = bdlPlayerStatToDvpRow(row);
+      if (mapped) statRows.push(mapped);
+    }
+  }
+
+  return { matches, statRows };
+}
+
 /**
  * Load every national-team match + player-match stat row (club games excluded)
  * and build the canonical position map. Call once, then pass to
  * `aggregateInternationalDvp` for each position/window.
+ *
+ * Sources: Supabase `international_*` tables PLUS live BDL World Cup finals
+ * player stats (so the most recent WC games count toward L5/L10 windows).
  */
 export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
   const sb = supabaseAdmin;
@@ -1034,7 +1326,7 @@ export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
     const { data, error } = await sb
       .from('international_matches')
       .select(
-        'source, source_match_id, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, match_date, kickoff_unix'
+        'source, source_match_id, home_team_source_id, away_team_source_id, home_team_name, away_team_name, home_score, away_score, match_date, kickoff_unix, tournament_slug, status, season_year'
       )
       .not('tournament_slug', 'like', 'club%')
       .order('id', { ascending: true })
@@ -1049,10 +1341,6 @@ export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
   const matchIdsBySource = new Map<string, string[]>();
   const slugNames = new Map<string, string>();
   const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
-
-  if (!matches.length) {
-    return { matchInfo, teamMatchesBySlug, slugNames, statRows: [], positionMap: new Map() };
-  }
 
   const matchSortTs = (m: DvpMatchRow): number =>
     (typeof m.kickoff_unix === 'number' ? m.kickoff_unix * 1000 : 0) ||
@@ -1094,6 +1382,14 @@ export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
     }
   }
 
+  // 2b. BDL World Cup finals — player stats for completed 2018/2022/2026 games.
+  const bdl = await loadBdlWorldCupDvpSupplement();
+  for (const m of bdl.matches) {
+    const key = dvpMatchKey(m.source, m.source_match_id);
+    matchInfo.set(key, m);
+  }
+  statRows.push(...bdl.statRows);
+
   // 3. Build each nation's game list from ONLY the matches that actually have
   //    player stats. Windowing/denominators must use games-with-data so "last 5"
   //    means the last 5 games we can measure (and per-game averages aren't
@@ -1107,10 +1403,11 @@ export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
     if (!slug) return;
     if (!slugNames.has(slug)) slugNames.set(slug, name);
     const list = teamMatchesBySlug.get(slug) ?? [];
+    if (list.some((entry) => entry.key === key)) return;
     list.push({ key, ts });
     teamMatchesBySlug.set(slug, list);
   };
-  for (const m of matches) {
+  for (const m of matchInfo.values()) {
     const key = dvpMatchKey(m.source, m.source_match_id);
     if (!matchesWithStats.has(key)) continue;
     const ts = matchSortTs(m);
@@ -1125,6 +1422,485 @@ export async function loadWorldCupDvpSource(): Promise<WorldCupDvpSource> {
   const positionMap = buildIntlPlayerPositionMap(statRows);
 
   return { matchInfo, teamMatchesBySlug, slugNames, statRows, positionMap };
+}
+
+export const WORLD_CUP_PLAYER_VS_POOL_STAT_KEYS = [
+  'goals',
+  'assists',
+  'shots_total',
+  'shots_on_target',
+  'fouls',
+  'was_fouled',
+  'passes_total',
+  'yellow_cards',
+  'red_cards',
+  'saves',
+  'goals_conceded',
+] as const;
+
+export type WorldCupPlayerPoolStatKey = (typeof WORLD_CUP_PLAYER_VS_POOL_STAT_KEYS)[number];
+
+export type WorldCupPlayerPoolEntry = {
+  playerKey: string;
+  source: string;
+  sourcePlayerId: string;
+  teamSlug: string;
+  position: IntlPositionBucket | null;
+  games: number;
+  averages: Partial<Record<WorldCupPlayerPoolStatKey, number>>;
+};
+
+function poolStatValue(row: DvpStatRow, stat: WorldCupPlayerPoolStatKey): number | null {
+  if (stat === 'fouls') {
+    return dvpStatNum(row.fouls) ?? dvpStatNum((row as { fouls_committed?: number | null }).fouls_committed);
+  }
+  if (stat === 'was_fouled') {
+    return dvpStatNum(row.was_fouled) ?? dvpStatNum((row as { fouls_suffered?: number | null }).fouls_suffered);
+  }
+  if (stat === 'shots_total') {
+    return (
+      dvpStatNum(row.shots_total) ??
+      dvpStatNum((row as { derived_shots_total?: number | null }).derived_shots_total)
+    );
+  }
+  return dvpStatNum((row as Record<string, number | null | undefined>)[stat]);
+}
+
+/**
+ * Per-player per-game averages across every international + BDL World Cup player
+ * appearance. Powers the Player vs Team rank badges (vs squad / vs tournament).
+ */
+export function aggregateWorldCupPlayerPool(src: WorldCupDvpSource): WorldCupPlayerPoolEntry[] {
+  type Acc = {
+    source: string;
+    sourcePlayerId: string;
+    teamSlug: string;
+    position: IntlPositionBucket;
+    games: number;
+    sums: Partial<Record<WorldCupPlayerPoolStatKey, number>>;
+  };
+  const buckets = new Map<string, Acc>();
+
+  for (const row of src.statRows) {
+    const minutes = row.minutes_played;
+    if (minutes != null && minutes < 1) continue;
+    const match = src.matchInfo.get(dvpMatchKey(row.source, row.source_match_id));
+    if (!match) continue;
+
+    const playerKey = intlPlayerKey(row.source, row.source_player_id);
+    const playerIsHome = String(row.source_team_id) === String(match.home_team_source_id);
+    const teamName = playerIsHome ? match.home_team_name : match.away_team_name;
+    const teamSlug = dvpTeamSlug(teamName);
+    if (!teamSlug) continue;
+
+    const position = src.positionMap.get(playerKey) ?? 'MID';
+    let acc =
+      buckets.get(playerKey) ??
+      ({
+        source: row.source,
+        sourcePlayerId: String(row.source_player_id),
+        teamSlug,
+        position,
+        games: 0,
+        sums: {},
+      } satisfies Acc);
+    acc.games += 1;
+
+    for (const stat of WORLD_CUP_PLAYER_VS_POOL_STAT_KEYS) {
+      const value = poolStatValue(row, stat);
+      if (value == null) continue;
+      acc.sums[stat] = (acc.sums[stat] ?? 0) + value;
+    }
+    buckets.set(playerKey, acc);
+  }
+
+  return [...buckets.values()].map((acc) => ({
+    playerKey: intlPlayerKey(acc.source, acc.sourcePlayerId),
+    source: acc.source,
+    sourcePlayerId: acc.sourcePlayerId,
+    teamSlug: acc.teamSlug,
+    position: acc.position,
+    games: acc.games,
+    averages: Object.fromEntries(
+      Object.entries(acc.sums).map(([key, total]) => [
+        key,
+        Number((total / acc.games).toFixed(3)),
+      ])
+    ) as Partial<Record<WorldCupPlayerPoolStatKey, number>>,
+  }));
+}
+
+const WC_PLAYER_VS_POOL_CACHE_KEY = 'wc:player-vs-pool:v1';
+const WC_PLAYER_VS_POOL_WC_FINALS_CACHE_KEY = 'wc:player-vs-pool:worldcup-finals:v1';
+
+const PLAYER_VS_OPPONENT_ALLOWED_STATS = [
+  'goals',
+  'shots_total',
+  'shots_on_target',
+  'fouls',
+  'was_fouled',
+  'passes_total',
+  'yellow_cards',
+  'red_cards',
+] as const satisfies readonly WorldCupPlayerPoolStatKey[];
+
+/** Rank every qualified nation: #1 = least allowed (toughest, red), #48 = most (easiest, green). Unplayed = 0 allowed. */
+export function rankPlayerVsOpponentAllowed(
+  values: Record<string, number>,
+  qualifiedUniverse: Map<string, string> | Set<string> | undefined,
+  games?: Record<string, number>
+): Record<string, number> {
+  const universe =
+    qualifiedUniverse instanceof Map
+      ? qualifiedUniverse
+      : qualifiedUniverse?.size
+        ? new Map([...qualifiedUniverse].map((slug) => [slug, slug]))
+        : new Map(Object.keys(values).map((slug) => [slug, slug]));
+
+  const slugs = [...universe.keys()];
+  if (!slugs.length) return {};
+
+  const rankEntries = slugs.map((slug) => {
+    const hasPlayed = (games?.[slug] ?? 0) >= 1 && Number.isFinite(values[slug]);
+    return {
+      slug,
+      value: hasPlayed ? values[slug]! : 0,
+    };
+  });
+
+  rankEntries.sort((a, b) => a.value - b.value || a.slug.localeCompare(b.slug));
+
+  return rankOpponentAllowedValues(rankEntries);
+}
+
+export function opponentAllowedRankingTotal(
+  qualifiedUniverse: Map<string, string> | Set<string> | undefined
+): number {
+  if (qualifiedUniverse instanceof Map) return qualifiedUniverse.size;
+  return qualifiedUniverse?.size ?? 0;
+}
+
+function dvpMatchEditionYear(match: DvpMatchRow): number | null {
+  if (typeof match.season_year === 'number' && Number.isFinite(match.season_year)) {
+    return match.season_year;
+  }
+  if (typeof match.kickoff_unix === 'number' && Number.isFinite(match.kickoff_unix)) {
+    return new Date(match.kickoff_unix * 1000).getUTCFullYear();
+  }
+  if (match.match_date) {
+    const parsed = Date.parse(match.match_date);
+    if (Number.isFinite(parsed)) return new Date(parsed).getUTCFullYear();
+  }
+  return null;
+}
+
+/** Keep only matches from one World Cup edition year (e.g. 2026). */
+export function filterWorldCupDvpSourceByEditionYear(
+  src: WorldCupDvpSource,
+  year: number
+): WorldCupDvpSource {
+  const matchInfo = new Map<string, DvpMatchRow>();
+  for (const [key, match] of src.matchInfo) {
+    if (dvpMatchEditionYear(match) === year) matchInfo.set(key, match);
+  }
+
+  const allowedKeys = new Set(matchInfo.keys());
+  const statRows = src.statRows.filter((row) =>
+    allowedKeys.has(dvpMatchKey(row.source, row.source_match_id))
+  );
+
+  const matchesWithStats = new Set<string>();
+  for (const row of statRows) {
+    matchesWithStats.add(dvpMatchKey(row.source, row.source_match_id));
+  }
+
+  const matchSortTs = (match: DvpMatchRow): number =>
+    (typeof match.kickoff_unix === 'number' ? match.kickoff_unix * 1000 : 0) ||
+    (match.match_date ? Date.parse(match.match_date) : 0) ||
+    0;
+
+  const slugNames = new Map<string, string>();
+  const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
+  const addTeamMatch = (name: string, key: string, ts: number) => {
+    const slug = dvpTeamSlug(name);
+    if (!slug) return;
+    if (!slugNames.has(slug)) slugNames.set(slug, name);
+    const list = teamMatchesBySlug.get(slug) ?? [];
+    if (list.some((entry) => entry.key === key)) return;
+    list.push({ key, ts });
+    teamMatchesBySlug.set(slug, list);
+  };
+
+  for (const match of matchInfo.values()) {
+    const key = dvpMatchKey(match.source, match.source_match_id);
+    if (!matchesWithStats.has(key)) continue;
+    const ts = matchSortTs(match);
+    addTeamMatch(match.home_team_name, key, ts);
+    addTeamMatch(match.away_team_name, key, ts);
+  }
+  for (const list of teamMatchesBySlug.values()) {
+    list.sort((a, b) => b.ts - a.ts);
+  }
+
+  return {
+    matchInfo,
+    teamMatchesBySlug,
+    slugNames,
+    statRows,
+    positionMap: buildIntlPlayerPositionMap(statRows),
+  };
+}
+
+/** Keep only completed FIFA World Cup finals matches and their player stats. */
+export function filterCompletedWorldCupDvpSource(src: WorldCupDvpSource): WorldCupDvpSource {
+  const matchInfo = new Map<string, DvpMatchRow>();
+  for (const [key, match] of src.matchInfo) {
+    if (isCompletedWorldCupFinalsMatch(match)) matchInfo.set(key, match);
+  }
+
+  const allowedKeys = new Set(matchInfo.keys());
+  const statRows = src.statRows.filter((row) =>
+    allowedKeys.has(dvpMatchKey(row.source, row.source_match_id))
+  );
+
+  const matchesWithStats = new Set<string>();
+  for (const row of statRows) {
+    matchesWithStats.add(dvpMatchKey(row.source, row.source_match_id));
+  }
+
+  const matchSortTs = (match: DvpMatchRow): number =>
+    (typeof match.kickoff_unix === 'number' ? match.kickoff_unix * 1000 : 0) ||
+    (match.match_date ? Date.parse(match.match_date) : 0) ||
+    0;
+
+  const slugNames = new Map<string, string>();
+  const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
+  const addTeamMatch = (name: string, key: string, ts: number) => {
+    const slug = dvpTeamSlug(name);
+    if (!slug) return;
+    if (!slugNames.has(slug)) slugNames.set(slug, name);
+    const list = teamMatchesBySlug.get(slug) ?? [];
+    if (list.some((entry) => entry.key === key)) return;
+    list.push({ key, ts });
+    teamMatchesBySlug.set(slug, list);
+  };
+
+  for (const match of matchInfo.values()) {
+    const key = dvpMatchKey(match.source, match.source_match_id);
+    if (!matchesWithStats.has(key)) continue;
+    const ts = matchSortTs(match);
+    addTeamMatch(match.home_team_name, key, ts);
+    addTeamMatch(match.away_team_name, key, ts);
+  }
+  for (const list of teamMatchesBySlug.values()) {
+    list.sort((a, b) => b.ts - a.ts);
+  }
+
+  return {
+    matchInfo,
+    teamMatchesBySlug,
+    slugNames,
+    statRows,
+    positionMap: buildIntlPlayerPositionMap(statRows),
+  };
+}
+
+export type WorldCupPlayerVsOpponentBreakdown = {
+  window: number;
+  names: Record<string, string>;
+  games: Record<string, number>;
+  totalGames: Record<string, number>;
+  /** Full qualified-nation count used as rank denominator (e.g. 48). */
+  rankingTotal: number;
+  metrics: Record<string, { values: Record<string, number>; ranks: Record<string, number> }>;
+};
+
+/** Opponent allowed averages from completed World Cup finals player stats only. */
+export function computeWorldCupPlayerVsOpponentBreakdown(
+  src: WorldCupDvpSource,
+  opts?: { qualifiedUniverse?: Map<string, string> }
+): WorldCupPlayerVsOpponentBreakdown {
+  const opponentMatchTotals = new Map<string, Map<string, Record<string, number>>>();
+  const slugNames = new Map<string, string>();
+
+  for (const row of src.statRows) {
+    const minutes = row.minutes_played;
+    if (minutes != null && minutes < 1) continue;
+    const key = dvpMatchKey(row.source, row.source_match_id);
+    const match = src.matchInfo.get(key);
+    if (!match) continue;
+
+    const playerIsHome = String(row.source_team_id) === String(match.home_team_source_id);
+    const opponentName = playerIsHome ? match.away_team_name : match.home_team_name;
+    const opponentSlug = dvpTeamSlug(opponentName);
+    if (!opponentSlug) continue;
+    if (!slugNames.has(opponentSlug)) slugNames.set(opponentSlug, opponentName);
+
+    const matchMap = opponentMatchTotals.get(opponentSlug) ?? new Map();
+    const matchSums =
+      matchMap.get(key) ??
+      Object.fromEntries(PLAYER_VS_OPPONENT_ALLOWED_STATS.map((stat) => [stat, 0]));
+    for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+      const value = poolStatValue(row, stat);
+      if (value != null) matchSums[stat] = (matchSums[stat] ?? 0) + value;
+    }
+    matchMap.set(key, matchSums);
+    opponentMatchTotals.set(opponentSlug, matchMap);
+  }
+
+  const names: Record<string, string> = {};
+  const games: Record<string, number> = {};
+  const totalGames: Record<string, number> = {};
+  const metrics: WorldCupPlayerVsOpponentBreakdown['metrics'] = {};
+  for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+    metrics[stat] = { values: {}, ranks: {} };
+  }
+
+  for (const [slug, matchMap] of opponentMatchTotals) {
+    const gameCount = matchMap.size;
+    if (!gameCount) continue;
+    names[slug] = slugNames.get(slug) ?? slug;
+    games[slug] = gameCount;
+    totalGames[slug] = gameCount;
+    for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+      let sum = 0;
+      for (const matchSums of matchMap.values()) {
+        sum += matchSums[stat] ?? 0;
+      }
+      metrics[stat].values[slug] = Number((sum / gameCount).toFixed(3));
+    }
+  }
+
+  if (opts?.qualifiedUniverse?.size) {
+    for (const [slug, displayName] of opts.qualifiedUniverse) {
+      if (!names[slug]) names[slug] = displayName;
+      if (games[slug] == null) games[slug] = 0;
+      if (totalGames[slug] == null) totalGames[slug] = 0;
+    }
+  }
+
+  for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+    metrics[stat].ranks = rankPlayerVsOpponentAllowed(
+      metrics[stat].values,
+      opts?.qualifiedUniverse,
+      games
+    );
+  }
+
+  const rankingTotal =
+    opponentAllowedRankingTotal(opts?.qualifiedUniverse) || Object.keys(names).length;
+  return { window: 0, names, games, totalGames, rankingTotal, metrics };
+}
+
+/** Seed every qualified nation into the breakdown and re-rank across the full universe. */
+export function expandWorldCupOpponentBreakdownUniverse(
+  breakdown: WorldCupPlayerVsOpponentBreakdown,
+  qualifiedUniverse: Map<string, string>
+): WorldCupPlayerVsOpponentBreakdown {
+  if (!qualifiedUniverse.size) return breakdown;
+
+  const names = { ...breakdown.names };
+  const games = { ...breakdown.games ?? {} };
+  const totalGames = { ...breakdown.totalGames ?? {} };
+  for (const [slug, displayName] of qualifiedUniverse) {
+    if (!names[slug]) names[slug] = displayName;
+    if (games[slug] == null) games[slug] = 0;
+    if (totalGames[slug] == null) totalGames[slug] = 0;
+  }
+
+  const metrics: WorldCupPlayerVsOpponentBreakdown['metrics'] = {};
+  for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+    const prior = breakdown.metrics[stat] ?? { values: {}, ranks: {} };
+    metrics[stat] = {
+      values: prior.values,
+      ranks: rankPlayerVsOpponentAllowed(prior.values, qualifiedUniverse, games),
+    };
+  }
+
+  return {
+    window: breakdown.window,
+    names,
+    games,
+    totalGames,
+    rankingTotal: opponentAllowedRankingTotal(qualifiedUniverse) || Object.keys(names).length,
+    metrics,
+  };
+}
+
+/** Patch / refresh one opponent's allowed averages and re-rank every stat. */
+export function mergeWorldCupOpponentAllowedSnapshot(
+  breakdown: WorldCupPlayerVsOpponentBreakdown,
+  slug: string,
+  name: string,
+  games: number,
+  allowed: Partial<Record<(typeof PLAYER_VS_OPPONENT_ALLOWED_STATS)[number], number>>,
+  opts?: { qualifiedUniverse?: Map<string, string> }
+): WorldCupPlayerVsOpponentBreakdown {
+  const next: WorldCupPlayerVsOpponentBreakdown = {
+    window: breakdown.window,
+    names: { ...breakdown.names, [slug]: name },
+    games: { ...breakdown.games, [slug]: games },
+    totalGames: { ...breakdown.totalGames, [slug]: games },
+    rankingTotal: breakdown.rankingTotal,
+    metrics: {},
+  };
+  for (const stat of PLAYER_VS_OPPONENT_ALLOWED_STATS) {
+    const prior = breakdown.metrics[stat] ?? { values: {}, ranks: {} };
+    const values = { ...prior.values };
+    if (typeof allowed[stat] === 'number' && Number.isFinite(allowed[stat])) {
+      values[slug] = allowed[stat]!;
+    }
+    next.metrics[stat] = {
+      values,
+      ranks: rankPlayerVsOpponentAllowed(values, opts?.qualifiedUniverse, next.games),
+    };
+  }
+  next.rankingTotal =
+    opponentAllowedRankingTotal(opts?.qualifiedUniverse) || breakdown.rankingTotal;
+  return next;
+}
+
+export type WorldCupPlayerVsPoolPayload = {
+  generatedAt: string;
+  scope: 'all' | 'worldcup';
+  players: WorldCupPlayerPoolEntry[];
+  opponentBreakdown?: WorldCupPlayerVsOpponentBreakdown;
+};
+
+export async function loadWorldCupPlayerPool(opts?: {
+  scope?: 'all' | 'worldcup';
+  seasonYear?: number;
+  qualifiedUniverse?: Map<string, string>;
+}): Promise<WorldCupPlayerVsPoolPayload> {
+  const worldCupOnly = opts?.scope === 'worldcup';
+  const cacheKey = worldCupOnly ? WC_PLAYER_VS_POOL_WC_FINALS_CACHE_KEY : WC_PLAYER_VS_POOL_CACHE_KEY;
+  // World Cup finals pool must stay live — BDL player stats update as games complete.
+  if (!worldCupOnly) {
+    const cached = await getWorldCupCache<WorldCupPlayerVsPoolPayload>(cacheKey);
+    if (cached?.players?.length) return cached;
+  }
+
+  const fullSrc = await loadWorldCupDvpSource();
+  let src = worldCupOnly ? filterCompletedWorldCupDvpSource(fullSrc) : fullSrc;
+  if (worldCupOnly && opts?.seasonYear != null) {
+    src = filterWorldCupDvpSourceByEditionYear(src, opts.seasonYear);
+  }
+  const payload: WorldCupPlayerVsPoolPayload = {
+    generatedAt: new Date().toISOString(),
+    scope: worldCupOnly ? 'worldcup' : 'all',
+    players: aggregateWorldCupPlayerPool(src),
+    ...(worldCupOnly
+      ? {
+          opponentBreakdown: computeWorldCupPlayerVsOpponentBreakdown(src, {
+            qualifiedUniverse: opts?.qualifiedUniverse,
+          }),
+        }
+      : {}),
+  };
+  if (!worldCupOnly) {
+    await setWorldCupCache(cacheKey, payload);
+  }
+  return payload;
 }
 
 /**
@@ -1260,7 +2036,9 @@ export function aggregateInternationalDvp(
   }
 
   // Attribute each in-bucket player-game to the opponent (slug) they faced.
-  const byOpponent = new Map<string, { sums: Record<string, number>; count: number }>();
+  // matchKeys tracks distinct match IDs per opponent so the per-game divisor is
+  // always exact — no slug-join required (avoids the teamMatchesBySlug mismatch bug).
+  const byOpponent = new Map<string, { sums: Record<string, number>; count: number; matchKeys: Set<string> }>();
   for (const row of src.statRows) {
     const bucket = src.positionMap.get(intlPlayerKey(row.source, row.source_player_id));
     if (bucket !== opts.position) continue;
@@ -1280,10 +2058,11 @@ export function aggregateInternationalDvp(
     const goalsConceded = playerIsHome ? m.away_score : m.home_score;
     let entry = byOpponent.get(opponentSlug);
     if (!entry) {
-      entry = { sums: {}, count: 0 };
+      entry = { sums: {}, count: 0, matchKeys: new Set() };
       byOpponent.set(opponentSlug, entry);
     }
     entry.count += 1;
+    entry.matchKeys.add(key);
     for (const stat of opts.requestedStats) {
       const v =
         stat === 'goals_conceded'
@@ -1305,10 +2084,12 @@ export function aggregateInternationalDvp(
   for (const opp of opponents) {
     const entry = byOpponent.get(opp)!;
     samples[opp] = entry.count;
-    teamGames[opp] = teamGamesBySlug.get(opp) ?? 0;
-    totalGames[opp] = teamTotalGamesBySlug.get(opp) ?? 0;
+    // Use the distinct match count from the aggregation loop — this is always
+    // correct and avoids slug-mismatch bugs with teamMatchesBySlug.
+    const games = entry.matchKeys.size || 1;
+    teamGames[opp] = games;
+    totalGames[opp] = teamTotalGamesBySlug.get(opp) ?? games;
     names[opp] = src.slugNames.get(opp) ?? opp;
-    const games = teamGames[opp] || 1;
     for (const stat of opts.requestedStats) {
       metrics[stat]![opp] = Number(((entry.sums[stat] ?? 0) / games).toFixed(3));
     }
@@ -1344,9 +2125,12 @@ export async function refreshWorldCupDvpCache(
   restrictSlugs?: Set<string>
 ): Promise<{ entries: number; teams: number }> {
   const log = onProgress ?? ((msg: string) => console.log(`[dvp] ${msg}`));
-  log('loading source data (all international matches + player stats)…');
+  log('loading source data (international tables + BDL World Cup player stats)…');
   const src = await loadWorldCupDvpSource();
-  log(`loaded ${src.statRows.length} player-game rows across ${src.teamMatchesBySlug.size} nations`);
+  const bdlRows = src.statRows.filter((row) => row.source === BDL_DVP_SOURCE).length;
+  log(
+    `loaded ${src.statRows.length} player-game rows (${bdlRows} from BDL World Cup) across ${src.teamMatchesBySlug.size} nations`
+  );
   if (restrictSlugs && restrictSlugs.size > 0) {
     log(`restricting ranking universe to ${restrictSlugs.size} qualified World Cup nations`);
   } else {
