@@ -1134,7 +1134,7 @@ async function main() {
     }
 
     // Team stats: check how many of those match IDs have team stats rows
-    const matchIds = (intlMatches ?? []).map((m) => m.source_match_id);
+    const matchIds = (intlMatches ?? []).map((m: { source_match_id: string }) => m.source_match_id);
     if (matchIds.length > 0) {
       const { data: teamStatRows } = await supabase
         .from('international_team_match_stats')
