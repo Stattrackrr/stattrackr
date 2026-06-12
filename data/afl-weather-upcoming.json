@@ -1,28 +1,17 @@
 {
-  "generatedAt": "2026-06-11T19:17:57.382Z",
+  "generatedAt": "2026-06-12T14:09:03.792Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "66ace0866c415dd789835ee4f48fe906",
-      "homeTeam": "Geelong Cats",
-      "awayTeam": "Gold Coast Suns",
-      "commenceTime": "2026-06-12T09:40:38Z",
-      "weather": {
-        "temperatureC": 16.3,
-        "precipitationMm": 0,
-        "windKmh": 14.2
-      }
-    },
     {
       "gameId": "58f6273d79650220d0c6efb7011eb9b2",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-06-13T03:15:22Z",
       "weather": {
-        "temperatureC": 15,
+        "temperatureC": 15.1,
         "precipitationMm": 0,
-        "windKmh": 25.1
+        "windKmh": 22.9
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-06-13T06:15:08Z",
       "weather": {
-        "temperatureC": 15,
-        "precipitationMm": 1.2,
-        "windKmh": 18.3
+        "temperatureC": 14.9,
+        "precipitationMm": 1.5,
+        "windKmh": 12
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-06-13T09:35:37Z",
       "weather": {
-        "temperatureC": 13.5,
+        "temperatureC": 13.8,
         "precipitationMm": 0,
-        "windKmh": 8.4
+        "windKmh": 11.3
       }
     },
     {
@@ -55,7 +44,7 @@
       "weather": {
         "temperatureC": 13.5,
         "precipitationMm": 0,
-        "windKmh": 1.1
+        "windKmh": 7.7
       }
     },
     {
@@ -64,11 +53,11 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-06-14T05:15:07Z",
       "weather": {
-        "temperatureC": 13.5,
+        "temperatureC": 13.3,
         "precipitationMm": 0,
-        "windKmh": 3.3
+        "windKmh": 8.3
       }
     }
   ],
-  "count": 6
+  "count": 5
 }

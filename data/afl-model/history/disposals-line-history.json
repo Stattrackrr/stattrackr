@@ -1,100 +1,100 @@
 {
-  "generatedAt": "2026-06-11T19:41:18Z",
+  "generatedAt": "2026-06-12T14:13:16Z",
   "count": 1810,
   "rows": [
     {
       "snapshotKey": "zac bailey|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Zac Bailey",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.11,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 20.94,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "tim taranto|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Tim Taranto",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.51,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 25.35,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "jayden short|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Jayden Short",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 23.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.46,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 22.89,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "lachie neale|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Lachie Neale",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 31.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 29.9,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 29.5,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "darcy wilmot|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Darcy Wilmot",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 24.6,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 24.22,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "max hall|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -108,25 +108,25 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 22.26,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "dion prestia|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Dion Prestia",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.93,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 21.84,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "jack ross|2026-W24",
@@ -148,75 +148,75 @@
     },
     {
       "snapshotKey": "will ashcroft|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Will Ashcroft",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 25.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 26.03,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 26.08,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "jacob hopper|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Jacob Hopper",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.27,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 24.92,
+      "modelEdge": 0.3036
     },
     {
       "snapshotKey": "jaspa fletcher|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Jaspa Fletcher",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.93,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 18.62,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "sam banks|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Sam Banks",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 20.58,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 19.6,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "hugo garcia|2026-W24",
@@ -238,7 +238,7 @@
     },
     {
       "snapshotKey": "darcy wilson|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -252,11 +252,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.88,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "bradley hill|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -270,11 +270,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 21.25,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "finn callaghan|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -288,11 +288,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 28.74,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "joseph fonti|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -306,11 +306,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.59,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "jack sinclair|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -321,14 +321,14 @@
       "opponentTeam": "GWS Giants",
       "bookmaker": "PointsBet (AU)",
       "line": 28.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 28.19,
-      "modelEdge": -0.0225
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 28.21,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "nasiah wanganeen milera|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -337,16 +337,16 @@
       "awayTeam": "GWS Giants",
       "playerTeam": "St Kilda Saints",
       "opponentTeam": "GWS Giants",
-      "bookmaker": "PointsBet (AU)",
-      "line": 27.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 28.58,
-      "modelEdge": 0.0462
+      "bookmaker": "SportsBet",
+      "line": 26.5,
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 28.39,
+      "modelEdge": 0.0369
     },
     {
       "snapshotKey": "lachlan ash|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -360,11 +360,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 29.12,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "lachie whitfield|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -378,47 +378,47 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 28.46,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "josh dunkley|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Josh Dunkley",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.6,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.35,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "jarrod berry|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Jarrod Berry",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.59,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.39,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "jackson macrae|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -431,12 +431,12 @@
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.44,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.41,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "callum wilkie|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -447,14 +447,14 @@
       "opponentTeam": "GWS Giants",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 21.44,
-      "modelEdge": -0.0151
+      "overOdds": "-115",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 21.46,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "clayton oliver|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -468,29 +468,29 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 27.81,
-      "modelEdge": -0.065
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "levi ashcroft|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Levi Ashcroft",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 19.17,
-      "modelEdge": -0.0225
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 18.55,
+      "modelEdge": -0.0143
     },
     {
       "snapshotKey": "connor idun|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -504,11 +504,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.5,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "harrison himmelberg|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -522,7 +522,7 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.52,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "harvey thomas|2026-W24",
@@ -544,7 +544,7 @@
     },
     {
       "snapshotKey": "jayden laverde|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -558,7 +558,7 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.21,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "marcus windhager|2026-W24",
@@ -580,7 +580,7 @@
     },
     {
       "snapshotKey": "brent daniels|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T05:15:07Z",
@@ -591,68 +591,68 @@
       "opponentTeam": "GWS Giants",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-119",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 18.67,
-      "modelEdge": -0.0282
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 18.66,
+      "modelEdge": -0.0251
     },
     {
       "snapshotKey": "bruce reville|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Bruce Reville",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "SportsBet",
       "line": 15.5,
       "overOdds": "-116",
       "underOdds": "-115",
-      "modelExpectedDisposals": 15.53,
-      "modelEdge": -0.0233
+      "modelExpectedDisposals": 15.06,
+      "modelEdge": -0.0226
     },
     {
       "snapshotKey": "nick vlastuin|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Nick Vlastuin",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 16.42,
-      "modelEdge": 0.0429
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 17.64,
+      "modelEdge": 0.0394
     },
     {
       "snapshotKey": "seth campbell|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-14",
       "commenceTime": "2026-06-14T03:10:11Z",
       "playerName": "Seth Campbell",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Brisbane Lions",
-      "playerTeam": "Brisbane Lions",
-      "opponentTeam": "Richmond Tigers",
+      "playerTeam": "Richmond Tigers",
+      "opponentTeam": "Brisbane Lions",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 14.99,
-      "modelEdge": -0.0151
+      "overOdds": "-112",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 14.81,
+      "modelEdge": -0.0159
     },
     {
       "snapshotKey": "jack steele|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -666,11 +666,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 22.5,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "jake bowey|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -684,7 +684,7 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 22.9,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "max gawn|2026-W24",
@@ -706,7 +706,7 @@
     },
     {
       "snapshotKey": "trent rivers|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -720,7 +720,7 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.81,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "george wardlaw|2026-W24",
@@ -742,7 +742,7 @@
     },
     {
       "snapshotKey": "luke parker|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -755,12 +755,12 @@
       "line": 24.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.49,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 23.76,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "elijah tsatas|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -774,11 +774,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 22.05,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "harry sheezel|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -791,48 +791,48 @@
       "line": 28.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 24.94,
-      "modelEdge": -0.065
+      "modelExpectedDisposals": 25.21,
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "zak butters|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Zak Butters",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 29.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 28.63,
-      "modelEdge": -0.0225
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 29.39,
+      "modelEdge": -0.0143
     },
     {
       "snapshotKey": "willem drew|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Willem Drew",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.21,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 18.61,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "archie roberts|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -843,14 +843,14 @@
       "opponentTeam": "Melbourne Demons",
       "bookmaker": "SportsBet",
       "line": 25.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 26.63,
-      "modelEdge": 0.0454
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 26.64,
+      "modelEdge": 0.0435
     },
     {
       "snapshotKey": "sam durham|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -861,32 +861,32 @@
       "opponentTeam": "Melbourne Demons",
       "bookmaker": "SportsBet",
       "line": 23.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 18.15,
-      "modelEdge": -0.134
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 18.16,
+      "modelEdge": -0.1349
     },
     {
       "snapshotKey": "jase burgoyne|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Jase Burgoyne",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 21.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.01,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.15,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "mason redman|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -900,11 +900,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 21.32,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "colby mckercher|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -917,12 +917,12 @@
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 20.54,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 20.81,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "luke davies uniacke|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -935,84 +935,84 @@
       "line": 23.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 24.03,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 24.31,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "brodie grundy|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Brodie Grundy",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.47,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 20.75,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "jai serong|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Jai Serong",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.69,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 19.88,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "nick blakey|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Nick Blakey",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
-      "line": 25.5,
+      "line": 24.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.3,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 26.38,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "riley bice|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Riley Bice",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 20.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 16.61,
-      "modelEdge": -0.065
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 22.02,
+      "modelEdge": 0.0394
     },
     {
       "snapshotKey": "archie perkins|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1023,10 +1023,10 @@
       "opponentTeam": "Melbourne Demons",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-123",
-      "underOdds": "-109",
-      "modelExpectedDisposals": 16.16,
-      "modelEdge": -0.0341
+      "overOdds": "-125",
+      "underOdds": "-106",
+      "modelExpectedDisposals": 16.18,
+      "modelEdge": -0.0376
     },
     {
       "snapshotKey": "jordan ridley|2026-W24",
@@ -1048,7 +1048,7 @@
     },
     {
       "snapshotKey": "kyle langford|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1062,11 +1062,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.53,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "sullivan robey|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1077,14 +1077,14 @@
       "opponentTeam": "Melbourne Demons",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 17.93,
-      "modelEdge": -0.0151
+      "overOdds": "-115",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 17.95,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "zachary merrett|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1098,11 +1098,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.54,
-      "modelEdge": -0.065
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "tristan xerri|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1112,15 +1112,15 @@
       "playerTeam": "West Coast Eagles",
       "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "PointsBet (AU)",
-      "line": 17.5,
+      "line": 16.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 16.04,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 16.09,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "liam baker|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1133,12 +1133,12 @@
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 15.21,
-      "modelEdge": -0.065
+      "modelExpectedDisposals": 15.48,
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "liam duggan|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1151,12 +1151,12 @@
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 16.73,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 17.0,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "elliot yeo|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1167,14 +1167,14 @@
       "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 14.38,
-      "modelEdge": -0.0225
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 14.68,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "caleb daniel|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1187,8 +1187,8 @@
       "line": 24.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 22.61,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 22.89,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "zac fisher|2026-W24",
@@ -1210,7 +1210,7 @@
     },
     {
       "snapshotKey": "jy simpkin|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1223,12 +1223,12 @@
       "line": 20.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.88,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.15,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "tom blamires|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1241,48 +1241,48 @@
       "line": 16.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 15.11,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 15.38,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "logan evans|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Logan Evans",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.88,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 15.31,
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "jason horne francis|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Jason Horne Francis",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 22.65,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 19.14,
+      "modelEdge": -0.0642
     },
     {
       "snapshotKey": "xavier duursma|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1296,29 +1296,29 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.39,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "isaac heeney|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Isaac Heeney",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 26.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.15,
-      "modelEdge": -0.065
+      "modelExpectedDisposals": 27.03,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "harley reid|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1331,26 +1331,26 @@
       "line": 23.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.71,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 21.99,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "chad warner|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Chad Warner",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 21.46,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 22.13,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "will setterfield|2026-W24",
@@ -1390,7 +1390,7 @@
     },
     {
       "snapshotKey": "ryan maric|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1401,14 +1401,14 @@
       "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 16.02,
-      "modelEdge": -0.0225
+      "overOdds": "-125",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 16.35,
+      "modelEdge": -0.0385
     },
     {
       "snapshotKey": "milan murdock|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1421,8 +1421,8 @@
       "line": 16.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 15.33,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 15.6,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "tom mccarthy|2026-W24",
@@ -1462,43 +1462,43 @@
     },
     {
       "snapshotKey": "angus sheldrick|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Angus Sheldrick",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.76,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 18.6,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "joe richards|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Joe Richards",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 17.17,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 17.4,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "tim kelly|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1509,28 +1509,28 @@
       "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 19.75,
-      "modelEdge": -0.065
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 20.05,
+      "modelEdge": -0.0291
     },
     {
       "snapshotKey": "callum mills|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Callum Mills",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 23.6,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 22.34,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "darcy parish|2026-W24",
@@ -1552,7 +1552,7 @@
     },
     {
       "snapshotKey": "jacob farrow|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T03:15:22Z",
@@ -1566,11 +1566,11 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.36,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "dylan stephens|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1583,120 +1583,120 @@
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 16.32,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 16.59,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "oliver wines|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Oliver Wines",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.61,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 18.32,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "darcy byrne jones|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Darcy Byrne Jones",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 20.12,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 20.09,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "sam wicks|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Sam Wicks",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.81,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 18.69,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "jake lloyd|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Jake Lloyd",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 17.29,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 18.47,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "matthew roberts|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Matthew Roberts",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 17.18,
-      "modelEdge": -0.0225
+      "modelExpectedDisposals": 17.95,
+      "modelEdge": -0.0218
     },
     {
       "snapshotKey": "kane farrell|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T09:35:37Z",
       "playerName": "Kane Farrell",
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Sydney Swans",
-      "playerTeam": "Sydney Swans",
-      "opponentTeam": "Port Adelaide Power",
+      "playerTeam": "Port Adelaide Power",
+      "opponentTeam": "Sydney Swans",
       "bookmaker": "PointsBet (AU)",
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.15,
-      "modelEdge": 0.0462
+      "modelExpectedDisposals": 19.64,
+      "modelEdge": 0.0469
     },
     {
       "snapshotKey": "cooper harvey|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1707,14 +1707,14 @@
       "opponentTeam": "North Melbourne Kangaroos",
       "bookmaker": "PointsBet (AU)",
       "line": 16.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 7.72,
-      "modelEdge": -0.2222
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 8.07,
+      "modelEdge": -0.2287
     },
     {
       "snapshotKey": "luke mcdonald|2026-W24",
-      "capturedAt": "2026-06-11T19:41:18Z",
+      "capturedAt": "2026-06-12T14:13:16Z",
       "weekKey": "2026-W24",
       "gameDate": "2026-06-13",
       "commenceTime": "2026-06-13T06:15:08Z",
@@ -1726,9 +1726,9 @@
       "bookmaker": "SportsBet",
       "line": 15.5,
       "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 13.32,
-      "modelEdge": -0.0299
+      "underOdds": "-112",
+      "modelExpectedDisposals": 13.59,
+      "modelEdge": -0.0283
     },
     {
       "snapshotKey": "bailey smith|2026-W24",
@@ -1746,7 +1746,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.46,
-      "modelEdge": -0.1428
+      "modelEdge": -0.1428,
+      "actualDisposals": 27.0,
+      "actualTog": 83.0,
+      "differenceLine": -6.5,
+      "differenceModel": 0.54,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:12Z"
     },
     {
       "snapshotKey": "max holmes|2026-W24",
@@ -1764,7 +1772,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 27.58,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 31.0,
+      "actualTog": 85.0,
+      "differenceLine": 2.5,
+      "differenceModel": 3.42,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:13Z"
     },
     {
       "snapshotKey": "thomas stewart|2026-W24",
@@ -1782,7 +1798,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.9,
-      "modelEdge": -0.0261
+      "modelEdge": -0.0261,
+      "actualDisposals": 20.5,
+      "actualTog": null,
+      "differenceLine": 0.0,
+      "differenceModel": -0.4,
+      "resultColor": "gray",
+      "isVoid": true,
+      "voidReason": "no_player_log_after_game_complete",
+      "settledAt": "2026-06-12T14:10:20Z"
     },
     {
       "snapshotKey": "matt rowell|2026-W24",
@@ -1800,7 +1824,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.67,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 26.0,
+      "actualTog": 82.0,
+      "differenceLine": 2.5,
+      "differenceModel": -0.67,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:20Z"
     },
     {
       "snapshotKey": "noah anderson|2026-W24",
@@ -1818,7 +1850,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 29.09,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 29.0,
+      "actualTog": 83.0,
+      "differenceLine": 2.5,
+      "differenceModel": -0.09,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:21Z"
     },
     {
       "snapshotKey": "john noble|2026-W24",
@@ -1836,7 +1876,15 @@
       "overOdds": "-120",
       "underOdds": "-111",
       "modelExpectedDisposals": 27.55,
-      "modelEdge": 0.0388
+      "modelEdge": 0.0388,
+      "actualDisposals": 30.0,
+      "actualTog": null,
+      "differenceLine": 4.5,
+      "differenceModel": 2.45,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:22Z"
     },
     {
       "snapshotKey": "zach guthrie|2026-W24",
@@ -1854,7 +1902,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.97,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 14.0,
+      "actualTog": 78.0,
+      "differenceLine": -2.5,
+      "differenceModel": -3.97,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:24Z"
     },
     {
       "snapshotKey": "ollie dempsey|2026-W24",
@@ -1872,7 +1928,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.25,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 20.0,
+      "actualTog": 93.0,
+      "differenceLine": 2.5,
+      "differenceModel": 2.75,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:25Z"
     },
     {
       "snapshotKey": "patrick dangerfield|2026-W24",
@@ -1890,7 +1954,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.95,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 22.0,
+      "actualTog": 67.0,
+      "differenceLine": 4.5,
+      "differenceModel": 5.05,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:26Z"
     },
     {
       "snapshotKey": "shaun mannagh|2026-W24",
@@ -1908,7 +1980,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.01,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 17.0,
+      "actualTog": 74.0,
+      "differenceLine": 0.5,
+      "differenceModel": 0.99,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:27Z"
     },
     {
       "snapshotKey": "jack bowes|2026-W24",
@@ -1926,7 +2006,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 17.83,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 18.5,
+      "actualTog": null,
+      "differenceLine": 0.0,
+      "differenceModel": 0.67,
+      "resultColor": "gray",
+      "isVoid": true,
+      "voidReason": "no_player_log_after_game_complete",
+      "settledAt": "2026-06-12T14:10:33Z"
     },
     {
       "snapshotKey": "gryan miers|2026-W24",
@@ -1944,7 +2032,15 @@
       "overOdds": "-114",
       "underOdds": "-118",
       "modelExpectedDisposals": 21.31,
-      "modelEdge": -0.02
+      "modelEdge": -0.02,
+      "actualDisposals": 21.5,
+      "actualTog": null,
+      "differenceLine": 0.0,
+      "differenceModel": 0.19,
+      "resultColor": "gray",
+      "isVoid": true,
+      "voidReason": "no_player_log_after_game_complete",
+      "settledAt": "2026-06-12T14:10:38Z"
     },
     {
       "snapshotKey": "lawson humphries|2026-W24",
@@ -1962,7 +2058,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 16.36,
-      "modelEdge": -0.0371
+      "modelEdge": -0.0371,
+      "actualDisposals": 18.0,
+      "actualTog": 75.0,
+      "differenceLine": -1.5,
+      "differenceModel": 1.64,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:39Z"
     },
     {
       "snapshotKey": "tom atkins|2026-W24",
@@ -1980,7 +2084,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 18.1,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 17.0,
+      "actualTog": 77.0,
+      "differenceLine": -0.5,
+      "differenceModel": -1.1,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:39Z"
     },
     {
       "snapshotKey": "bodhi uwland|2026-W24",
@@ -1998,7 +2110,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 23.6,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 20.0,
+      "actualTog": 82.0,
+      "differenceLine": -3.5,
+      "differenceModel": -3.6,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:40Z"
     },
     {
       "snapshotKey": "tanner bruhn|2026-W24",
@@ -2016,7 +2136,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 20.09,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 11.0,
+      "actualTog": 66.0,
+      "differenceLine": -9.5,
+      "differenceModel": -9.09,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:41Z"
     },
     {
       "snapshotKey": "daniel rioli|2026-W24",
@@ -2034,7 +2162,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 21.35,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 27.0,
+      "actualTog": 85.0,
+      "differenceLine": 6.5,
+      "differenceModel": 5.65,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:42Z"
     },
     {
       "snapshotKey": "touk miller|2026-W24",
@@ -2052,7 +2188,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 23.53,
-      "modelEdge": -0.0225
+      "modelEdge": -0.0225,
+      "actualDisposals": 25.0,
+      "actualTog": 79.0,
+      "differenceLine": 1.5,
+      "differenceModel": 1.47,
+      "resultColor": "green",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:42Z"
     },
     {
       "snapshotKey": "christian petracca|2026-W24",
@@ -2070,7 +2214,15 @@
       "overOdds": "-115",
       "underOdds": "-115",
       "modelExpectedDisposals": 26.14,
-      "modelEdge": 0.0462
+      "modelEdge": 0.0462,
+      "actualDisposals": 21.0,
+      "actualTog": 89.0,
+      "differenceLine": -3.5,
+      "differenceModel": -5.14,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:44Z"
     },
     {
       "snapshotKey": "mac andrew|2026-W24",
@@ -2088,7 +2240,15 @@
       "overOdds": "-112",
       "underOdds": "-119",
       "modelExpectedDisposals": 17.2,
-      "modelEdge": 0.052
+      "modelEdge": 0.052,
+      "actualDisposals": 11.0,
+      "actualTog": 89.0,
+      "differenceLine": -4.5,
+      "differenceModel": -6.2,
+      "resultColor": "red",
+      "isVoid": false,
+      "voidReason": null,
+      "settledAt": "2026-06-12T14:10:45Z"
     },
     {
       "snapshotKey": "matthew kennedy|2026-W24",
