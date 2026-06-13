@@ -175,7 +175,7 @@ async function fetchBdlStatsForPlayerName(
             const mid = Number(shot.match_id);
             if (Number.isFinite(mid)) shotsByMatch.set(mid, (shotsByMatch.get(mid) ?? 0) + 1);
           }
-          const stats = cachedStats.map((row) => ({
+          const stats: Array<Record<string, any>> = cachedStats.map((row) => ({
             ...row,
             source: 'bdl',
             tournament_slug: 'worldcup',
