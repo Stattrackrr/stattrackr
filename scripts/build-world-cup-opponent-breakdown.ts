@@ -6,13 +6,22 @@
  * Cup + StatsBomb / API-Football / SofaScore internationals). The "All" window
  * (id 0) averages over every game we have for a nation.
  *
- *   npx tsx scripts/build-world-cup-opponent-breakdown.ts
- *   npm run build:world-cup:opponent-breakdown
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --bdl-cache
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --bdl-cache --step=4
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --bdl-cache --force --step=4
+ *   npm run build:world-cup:bdl-cache -- --step=4 --force
  */
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 async function main() {
+  if (process.argv.includes('--bdl-cache')) {
+    const { runBuildWorldCup2026Cache } = await import('../lib/worldCupOpponentBreakdown');
+    const args = process.argv.slice(2).filter((a) => a !== '--bdl-cache');
+    await runBuildWorldCup2026Cache(args);
+    return;
+  }
+
   if (process.argv.includes('--dvp-diagnose')) {
     const apiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
     const { diagnoseWorldCupDvpCoverage } = await import('../lib/internationalDashboard');

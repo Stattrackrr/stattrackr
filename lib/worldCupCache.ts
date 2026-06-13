@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from 'async_hooks';
+import type { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
@@ -69,4 +71,100 @@ export async function setWorldCupCache(cacheKey: string, payload: unknown): Prom
     warnWorldCupCache(`Failed to write cache for ${cacheKey}`, error);
     return false;
   }
+}
+
+// ── Cache vs live BDL tracing (WC_CACHE_DEBUG=1 or dev mode) ─────────────────
+
+export type WcDataSource =
+  | 'supabase-cache'
+  | 'cache-miss'
+  | 'bdl-live'
+  | 'bdl-memory'
+  | 'supabase-intl'
+  | 'computed';
+
+export type WcCacheDebugSummary = {
+  bdlLiveCount: number;
+  bdlLiveCalls: string[];
+  sources: Record<string, { source: WcDataSource; detail?: string }>;
+  summary: string;
+};
+
+type WcCacheDebugContext = {
+  sources: Record<string, { source: WcDataSource; detail?: string }>;
+  bdlLiveCalls: string[];
+};
+
+const wcCacheDebugAls = new AsyncLocalStorage<WcCacheDebugContext>();
+
+/** True in dev, when ?debug=1, or when WC_CACHE_DEBUG=1 (set WC_CACHE_DEBUG=0 to silence). */
+export function isWcCacheDebug(request?: NextRequest | null): boolean {
+  if (process.env.WC_CACHE_DEBUG === '0') return false;
+  if (process.env.WC_CACHE_DEBUG === '1') return true;
+  if (request?.nextUrl.searchParams.get('debug') === '1') return true;
+  return process.env.NODE_ENV === 'development';
+}
+
+export async function runWithWcCacheDebug<T>(enabled: boolean, fn: () => Promise<T>): Promise<T> {
+  if (!enabled) return fn();
+  return wcCacheDebugAls.run({ sources: {}, bdlLiveCalls: [] }, fn);
+}
+
+export function recordWcSource(key: string, source: WcDataSource, detail?: string): void {
+  const ctx = wcCacheDebugAls.getStore();
+  if (!ctx) return;
+  ctx.sources[key] = { source, detail };
+  if (source === 'bdl-live') ctx.bdlLiveCalls.push(detail || key);
+}
+
+export function wcCacheLog(label: string, data?: Record<string, unknown>): void {
+  if (!wcCacheDebugAls.getStore() && process.env.WC_CACHE_DEBUG !== '1') return;
+  console.log(label, data ?? '');
+}
+
+export function getWcCacheDebugSummary(): WcCacheDebugSummary | null {
+  const ctx = wcCacheDebugAls.getStore();
+  if (!ctx) return null;
+  const bdlLiveCount = ctx.bdlLiveCalls.length;
+  const summary =
+    bdlLiveCount === 0
+      ? 'cache/supabase only - no live BDL'
+      : bdlLiveCount === 1 && ctx.sources.featureLineups?.source === 'bdl-live'
+        ? '1 intentional live BDL call (fixture lineups)'
+        : `${bdlLiveCount} live BDL call(s): ${ctx.bdlLiveCalls.slice(0, 8).join(' | ')}`;
+  return {
+    bdlLiveCount,
+    bdlLiveCalls: [...ctx.bdlLiveCalls],
+    sources: { ...ctx.sources },
+    summary,
+  };
+}
+
+export function attachWcDebug<T extends Record<string, unknown>>(
+  payload: T,
+  debug: boolean
+): T & { _wcDebug?: WcCacheDebugSummary } {
+  if (!debug) return payload;
+  const summary = getWcCacheDebugSummary();
+  if (!summary) return payload;
+  return { ...payload, _wcDebug: summary };
+}
+
+export function wcDebugResponseHeaders(debug: boolean): Record<string, string> {
+  if (!debug) return {};
+  const summary = getWcCacheDebugSummary();
+  if (!summary) return { 'X-WC-Cache-Debug': '1' };
+  return {
+    'X-WC-Cache-Debug': '1',
+    'X-WC-BDL-Live-Count': String(summary.bdlLiveCount),
+    'X-WC-Cache-Summary': summary.summary.slice(0, 240),
+  };
+}
+
+export function logWcCacheRequestComplete(endpoint: string, debug: boolean): WcCacheDebugSummary | null {
+  if (!debug) return null;
+  const summary = getWcCacheDebugSummary();
+  if (!summary) return null;
+  console.log(`[wc-cache] ${endpoint} | ${summary.summary}`);
+  return summary;
 }

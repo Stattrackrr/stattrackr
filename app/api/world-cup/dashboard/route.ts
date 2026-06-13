@@ -34,13 +34,53 @@ import {
   loadWorldCupQualifiedSlugs,
   loadWorldCupQualifiedTeamMap,
 } from '@/lib/worldCupOpponentBreakdown';
-import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
+import {
+  getWorldCupCache,
+  getWcCacheDebugSummary,
+  isWcCacheDebug,
+  logWcCacheRequestComplete,
+  recordWcSource,
+  runWithWcCacheDebug,
+  setWorldCupCache,
+  wcCacheLog,
+} from '@/lib/worldCupCache';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { resolveWorldCupFlagCode } from '@/lib/worldCupFlags';
+import { normalizeWorldCupPlayerName } from '@/lib/worldCupPlayerIndex';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type CompetitionParam = 'all' | 'world-cup' | InternationalCompetition;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pre-warmed cache key constants (must stay in sync with build-world-cup-2026-cache.ts)
+// ─────────────────────────────────────────────────────────────────────────────
+const WC2026 = {
+  teams: 'wc:raw:teams:2026:v1',
+  standings: 'wc:raw:standings:2026:v1',
+  stadiums: 'wc:raw:stadiums:2026:v1',
+  matches2026: 'wc:raw:matches:2026:v1',
+  matchesAllSeasons: 'wc:raw:matches:allseasons:v1',
+  teamStatsAllSeasons: 'wc:raw:team-stats-allseasons:v1',
+  rosterForTeam: (id: number | string) => `wc:raw:roster:${id}:v1`,
+  playersForTeam: (id: number | string) => `wc:raw:players:${id}:v1`,
+  matchDetail: (id: number | string) => `wc:match:${id}:v1`,
+  playerStats: (id: number | string) => `wc:player:stats:${id}:v1`,
+  playerShots: (id: number | string) => `wc:player:shots:${id}:v1`,
+  playerIdByName: 'wc:player-id-by-name:v1',
+  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v1:${pos}`,
+  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v1',
+  oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v1',
+  playerVsPoolWc: 'wc:player-vs-pool:worldcup:v2',
+} as const;
+
+/** Thin typed wrapper: returns null on miss, never throws. */
+async function readWcCache<T>(key: string): Promise<T | null> {
+  const value = await getWorldCupCache<T>(key);
+  recordWcSource(key, value != null ? 'supabase-cache' : 'cache-miss');
+  return value;
+}
 
 // Persist the assembled World Cup dashboard payload in Supabase so a player's
 // stats are only fetched from BDL once and then served from cache on
@@ -97,15 +137,68 @@ function parseCompetition(value: string | null): CompetitionParam {
 }
 
 /**
- * Resolve a player name → all their BDL World Cup match stats + matches
- * across the three WC seasons. Returns BDL-shaped rows so they can be merged
- * directly into the dashboard response.
+ * Resolve a player name → their BDL World Cup match stats + matches.
+ * Cache-first: reads from the pre-warmed Supabase keys written by
+ * `scripts/build-world-cup-2026-cache.ts`. Falls back to a live BDL search
+ * only when the cache is cold (first run before the script has executed).
  */
 async function fetchBdlStatsForPlayerName(
   name: string,
   apiKey: string
 ): Promise<{ playerMatchStats: any[]; matches: any[] }> {
-  if (!name || !apiKey) return { playerMatchStats: [], matches: [] };
+  if (!name) return { playerMatchStats: [], matches: [] };
+
+  // ── Cache-first path ──────────────────────────────────────────────────────
+  try {
+    const nameIndex = await readWcCache<Record<string, number>>(WC2026.playerIdByName);
+    if (nameIndex) {
+      const normalized = normalizeWorldCupPlayerName(name);
+      let playerId: number | undefined = nameIndex[normalized];
+      if (!playerId) {
+        // Try partial matches: last word of the normalized name (family name heuristic)
+        const parts = normalized.split(' ');
+        for (const part of parts.reverse()) {
+          if (part.length >= 3 && nameIndex[part]) { playerId = nameIndex[part]; break; }
+        }
+      }
+      if (playerId) {
+        const [cachedStats, cachedShots, cachedMatches2026] = await Promise.all([
+          readWcCache<Array<Record<string, any>>>(WC2026.playerStats(playerId)),
+          readWcCache<Array<Record<string, any>>>(WC2026.playerShots(playerId)),
+          readWcCache<BdlMatch[]>(WC2026.matches2026),
+        ]);
+        if (cachedStats) {
+          recordWcSource('playerStatsByName', 'supabase-cache', String(playerId));
+          // Attach shot-derived fields from the shot cache
+          const shotsByMatch = new Map<number, number>();
+          for (const shot of cachedShots ?? []) {
+            const mid = Number(shot.match_id);
+            if (Number.isFinite(mid)) shotsByMatch.set(mid, (shotsByMatch.get(mid) ?? 0) + 1);
+          }
+          const stats = cachedStats.map((row) => ({
+            ...row,
+            source: 'bdl',
+            tournament_slug: 'worldcup',
+            derived_shots_total: shotsByMatch.get(Number(row.match_id)) ?? row.derived_shots_total ?? null,
+          }));
+          const wc2026 = (cachedMatches2026 ?? []).filter((m) => m.status === 'completed');
+          return {
+            playerMatchStats: stats,
+            matches: summarizeMatches(wc2026.filter((m) =>
+              stats.some((s) => Number(s.match_id) === m.id)
+            )),
+          };
+        }
+      }
+    }
+  } catch (cacheErr) {
+    console.warn('[world-cup/dashboard] player cache lookup failed:', cacheErr);
+  }
+
+  // ── BDL live fallback (cache cold / player not indexed) ───────────────────
+  recordWcSource('playerStatsByName', 'bdl-live', name);
+  wcCacheLog('[wc-cache] playerStatsByName → BDL LIVE', { name });
+  if (!apiKey) return { playerMatchStats: [], matches: [] };
   try {
     const searchParams = new URLSearchParams();
     searchParams.set('search', name);
@@ -136,9 +229,6 @@ async function fetchBdlStatsForPlayerName(
     );
     let matchRows: BdlMatch[] = [];
     if (allMatchIds.length) {
-      // Fetch only 2026 season matches — this is the season filter.
-      // Stats whose match_id doesn't appear in this result are from
-      // older tournaments (2018/2022) and get dropped below.
       const matchParams = new URLSearchParams();
       matchParams.append('seasons[]', '2026');
       appendArrayParam(matchParams, 'match_ids[]', allMatchIds);
@@ -164,16 +254,43 @@ async function fetchBdlStatsForPlayerName(
 
 /**
  * Team-mode (Game Props): fetch a team's completed World Cup matches across all
- * three editions (2018 / 2022 / 2026) and their per-match team stats. The main
- * dashboard path only loads season 2026 (no completed games yet), so previous
- * World Cup bars never appear without this. Returns BDL-shaped rows tagged as
- * World Cup so the chart's competition tag resolves to "WC".
+ * three editions (2018 / 2022 / 2026) and their per-match team stats.
+ * Cache-first: reads from `wc:raw:matches:allseasons:v1` and
+ * `wc:raw:team-stats-allseasons:v1` written by the ingestion script.
  */
 async function fetchBdlTeamWorldCupHistory(
   teamId: number,
   apiKey: string
 ): Promise<{ teamMatchStats: any[]; matches: any[] }> {
-  if (!Number.isFinite(teamId) || !apiKey) return { teamMatchStats: [], matches: [] };
+  if (!Number.isFinite(teamId)) return { teamMatchStats: [], matches: [] };
+
+  // ── Cache-first path ──────────────────────────────────────────────────────
+  try {
+    const [cachedMatches, cachedTeamStats] = await Promise.all([
+      readWcCache<BdlMatch[]>(WC2026.matchesAllSeasons),
+      readWcCache<Array<Record<string, any>>>(WC2026.teamStatsAllSeasons),
+    ]);
+    if (cachedMatches && cachedTeamStats) {
+      const teamMatches = cachedMatches.filter(
+        (m) => (m.home_team?.id === teamId || m.away_team?.id === teamId) && m.status === 'completed'
+      );
+      if (teamMatches.length) {
+        const statsByMatchTeam = new Map<string, Record<string, any>>();
+        for (const row of cachedTeamStats) {
+          statsByMatchTeam.set(`${Number(row?.match_id)}:${Number(row?.team_id)}`, row);
+        }
+        return {
+          teamMatchStats: buildBdlTeamHistoryRows(teamId, teamMatches, statsByMatchTeam),
+          matches: summarizeMatches(teamMatches),
+        };
+      }
+    }
+  } catch (cacheErr) {
+    console.warn('[world-cup/dashboard] team history cache lookup failed:', cacheErr);
+  }
+
+  // ── BDL live fallback ─────────────────────────────────────────────────────
+  if (!apiKey) return { teamMatchStats: [], matches: [] };
   try {
     const seasonsParam = new URLSearchParams();
     appendArrayParam(seasonsParam, 'seasons[]', [2018, 2022, 2026]);
@@ -191,11 +308,6 @@ async function fetchBdlTeamWorldCupHistory(
     const matchIds = Array.from(
       new Set(teamMatches.map((match) => match.id).filter((id): id is number => Number.isFinite(id)))
     );
-
-    // BDL's /team_match_stats returns both teams' rows for each match. Key every
-    // row by `${match_id}:${team_id}` so the shared builder can pair each team
-    // with its opponent. Row assembly lives in lib/worldCupOpponentBreakdown so the
-    // chart and Opponent Breakdown produce identical values.
     const statsByMatchTeam = new Map<string, Record<string, any>>();
     for (let i = 0; i < matchIds.length; i += 50) {
       const chunk = matchIds.slice(i, i + 50);
@@ -690,6 +802,7 @@ async function bdlFetch<T>(path: string, params: URLSearchParams, apiKey: string
 
   const cached = bdlCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < BDL_CACHE_TTL_MS) {
+    recordWcSource(`bdl${path}`, 'bdl-memory', cacheKey);
     return cached.payload as BdlEnvelope<T>;
   }
   const inflight = bdlInflight.get(cacheKey);
@@ -717,6 +830,8 @@ async function bdlFetch<T>(path: string, params: URLSearchParams, apiKey: string
         if (response.ok) {
           const payload = (await response.json()) as BdlEnvelope<T>;
           bdlCache.set(cacheKey, { ts: Date.now(), payload });
+          recordWcSource(`bdl${path}`, 'bdl-live', cacheKey);
+          wcCacheLog('[wc-cache] BDL LIVE', { path, url: cacheKey });
           return payload;
         }
 
@@ -824,6 +939,153 @@ function findFeatureMatch(matches: BdlMatch[], selectedTeam: BdlTeam | null): Bd
     sorted[0] ??
     null
   );
+}
+
+function countTeamLineupStarters(lineups: Array<Record<string, unknown>>, teamId: number): number {
+  return lineups.filter(
+    (row) => String(row?.team_id ?? '') === String(teamId) && Boolean(row?.is_starter)
+  ).length;
+}
+
+function findLastCompletedMatchForTeam(
+  allMatches: BdlMatch[],
+  teamId: number,
+  excludeMatchId?: number | null
+): BdlMatch | null {
+  const featureTs = excludeMatchId
+    ? Date.parse(allMatches.find((m) => m.id === excludeMatchId)?.datetime || '') || Infinity
+    : Infinity;
+  return (
+    allMatches
+      .filter(
+        (match) =>
+          match.status === 'completed' &&
+          match.id !== excludeMatchId &&
+          (match.home_team?.id === teamId || match.away_team?.id === teamId)
+      )
+      .filter((match) => {
+        const ts = Date.parse(match.datetime || '') || 0;
+        return !Number.isFinite(featureTs) || ts <= featureTs;
+      })
+      .sort((a, b) => (Date.parse(b.datetime || '') || 0) - (Date.parse(a.datetime || '') || 0))[0] ?? null
+  );
+}
+
+function getOtherTeamIdFromMatch(match: BdlMatch, teamId: number): number | null {
+  if (match.home_team?.id === teamId) return match.away_team?.id ?? null;
+  if (match.away_team?.id === teamId) return match.home_team?.id ?? null;
+  return null;
+}
+
+function getMatchParticipantIds(match: BdlMatch): number[] {
+  return [match.home_team?.id, match.away_team?.id].filter(
+    (id): id is number => typeof id === 'number' && Number.isFinite(id)
+  );
+}
+
+async function loadCachedMatchLineups(matchId: number): Promise<any[]> {
+  const cached = await readWcCache<{ lineups?: any[] }>(WC2026.matchDetail(matchId));
+  if (cached?.lineups?.length) {
+    recordWcSource(`lineups:${matchId}`, 'supabase-cache');
+    return cached.lineups;
+  }
+  return [];
+}
+
+/** The one runtime BDL call we always allow — fixture lineups change until kickoff. */
+async function fetchLiveFeatureMatchLineups(matchId: number, apiKey: string): Promise<any[]> {
+  if (!apiKey) return [];
+  recordWcSource('featureLineups', 'bdl-live', String(matchId));
+  wcCacheLog('[wc-cache] feature lineups → BDL LIVE (intentional)', { matchId });
+  const params = new URLSearchParams();
+  params.append('match_ids[]', String(matchId));
+  return bdlFetchAll('/match_lineups', params, apiKey, { cursor: true, maxPages: 2 });
+}
+
+async function fillLineupsFromLastCompletedMatches(opts: {
+  lineups: any[];
+  matches: BdlMatch[];
+  allSeasonMatches: BdlMatch[];
+  selectedTeamId: number | null;
+  opponentTeamId: number | null;
+  featureMatchId: number | null;
+}): Promise<{
+  lineups: any[];
+  meta: {
+    source: 'feature' | 'last-match' | 'mixed';
+    selectedTeamLastMatchId: number | null;
+    selectedTeamLastMatchOpponentId: number | null;
+    opponentTeamLastMatchId: number | null;
+    opponentTeamLastMatchOpponentId: number | null;
+  };
+}> {
+  const meta = {
+    source: 'feature' as 'feature' | 'last-match' | 'mixed',
+    selectedTeamLastMatchId: null as number | null,
+    selectedTeamLastMatchOpponentId: null as number | null,
+    opponentTeamLastMatchId: null as number | null,
+    opponentTeamLastMatchOpponentId: null as number | null,
+  };
+  const lookupMatches = opts.allSeasonMatches.length ? opts.allSeasonMatches : opts.matches;
+  const teams: Array<{ id: number; key: 'selectedTeamLastMatchId' | 'opponentTeamLastMatchId' }> = [];
+  if (opts.selectedTeamId) teams.push({ id: opts.selectedTeamId, key: 'selectedTeamLastMatchId' });
+  if (opts.opponentTeamId && opts.opponentTeamId !== opts.selectedTeamId) {
+    teams.push({ id: opts.opponentTeamId, key: 'opponentTeamLastMatchId' });
+  }
+
+  let lineups = [...opts.lineups];
+  let usedFeatureLineups = false;
+  let usedLastMatchLineups = false;
+  for (const team of teams) {
+    if (countTeamLineupStarters(lineups, team.id) >= 10) {
+      usedFeatureLineups = true;
+      continue;
+    }
+    const lastMatch = findLastCompletedMatchForTeam(lookupMatches, team.id, opts.featureMatchId);
+    if (!lastMatch?.id) continue;
+    const prevLineups = await loadCachedMatchLineups(lastMatch.id);
+    if (countTeamLineupStarters(prevLineups, team.id) < 10) continue;
+    const participantIds = getMatchParticipantIds(lastMatch);
+    const participantSet = new Set(participantIds.map(String));
+    lineups = lineups.filter((row) => !participantSet.has(String(row?.team_id ?? '')));
+    lineups.push(...prevLineups);
+    meta[team.key] = lastMatch.id;
+    const otherTeamId = getOtherTeamIdFromMatch(lastMatch, team.id);
+    if (team.key === 'selectedTeamLastMatchId') {
+      meta.selectedTeamLastMatchOpponentId = otherTeamId;
+    } else {
+      meta.opponentTeamLastMatchOpponentId = otherTeamId;
+    }
+    usedLastMatchLineups = true;
+  }
+
+  if (usedFeatureLineups && usedLastMatchLineups) meta.source = 'mixed';
+  else if (usedLastMatchLineups) meta.source = 'last-match';
+
+  return { lineups, meta };
+}
+
+async function loadLineupPlayerPhotos(playerIds: number[]): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(playerIds.filter((id) => Number.isFinite(id))));
+  if (!unique.length) return {};
+  const { data, error } = await supabaseAdmin
+    .from('international_players')
+    .select('bdl_player_id, source, source_player_id')
+    .in('bdl_player_id', unique)
+    .eq('source', 'api-football')
+    .not('bdl_player_id', 'is', null);
+  if (error) {
+    console.warn('[world-cup/dashboard] lineup photo lookup failed:', error.message);
+    return {};
+  }
+  const out: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const bdlId = Number((row as { bdl_player_id?: unknown }).bdl_player_id);
+    const sourcePlayerId = String((row as { source_player_id?: unknown }).source_player_id ?? '').trim();
+    if (!Number.isFinite(bdlId) || !sourcePlayerId || out[String(bdlId)]) continue;
+    out[String(bdlId)] = `https://media.api-sports.io/football/players/${sourcePlayerId}.png`;
+  }
+  return out;
 }
 
 function summarizeMatches(matches: BdlMatch[]) {
@@ -1207,12 +1469,55 @@ async function handleAggregateDvp(request: NextRequest): Promise<NextResponse> {
   const windowN = Number.isFinite(windowRaw) && windowRaw > 0 ? windowRaw : 0;
   const wcOnly = request.nextUrl.searchParams.get('wcOnly') === '1';
 
-  // WC-only mode: directly fetch 2026 WC player stats from BDL and aggregate.
-  // This avoids the full loadWorldCupDvpSource() pipeline (Supabase + all 3 BDL
-  // seasons) and gives a fast, accurate result for the current tournament only.
+  // WC-only mode: read from pre-warmed cache first; compute from BDL on miss.
   let result;
   let wcTeamsWithGames: Set<string> | undefined;
   if (wcOnly) {
+    // Try the pre-warmed position-specific cache written by the ingestion script.
+    const cachedDvp = await readWcCache<{
+      opponents: string[];
+      samples: Record<string, number>;
+      teamGames: Record<string, number>;
+      totalGames: Record<string, number>;
+      names: Record<string, string>;
+      metrics: Record<string, Record<string, number>>;
+      wcTeamsWithGames?: string[];
+    }>(WC2026.dvpWc2026ForPosition(position));
+    if (cachedDvp) {
+      recordWcSource('dvpWc2026', 'supabase-cache', position);
+      wcTeamsWithGames = new Set(cachedDvp.wcTeamsWithGames ?? cachedDvp.opponents);
+      const wcSlugs = Array.from(wcTeamsWithGames);
+      const opponents = wcSlugs;
+      return NextResponse.json(
+        {
+          success: true,
+          position: positionRaw,
+          wcOnly,
+          wcTeamsWithGames: wcSlugs,
+          opponents,
+          metrics: requestedStats.reduce<
+            Record<string, { values: Record<string, number>; ranks: Record<string, number> }>
+          >((acc, stat) => {
+            const rawValues = cachedDvp.metrics[stat] ?? {};
+            const values: Record<string, number> = {};
+            for (const slug of opponents) values[slug] = rawValues[slug] ?? 0;
+            const sortedTeams = [...opponents].sort((a, b) => values[a] - values[b]);
+            const ranks: Record<string, number> = {};
+            sortedTeams.forEach((team, idx) => { ranks[team] = idx + 1; });
+            acc[stat] = { values, ranks };
+            return acc;
+          }, {}),
+          samples: cachedDvp.samples,
+          teamGames: cachedDvp.teamGames,
+          totalGames: cachedDvp.totalGames,
+          names: cachedDvp.names,
+        },
+        { headers: { 'Cache-Control': 'public, s-maxage=600' } }
+      );
+    }
+
+    // Cache miss — compute live from BDL.
+    recordWcSource('dvpWc2026', 'bdl-live', position);
     const bdl2026 = await loadBdlWc2026DvpData();
     wcTeamsWithGames = bdl2026.teamsWithGames;
     const matchInfo = new Map(
@@ -1242,6 +1547,11 @@ async function handleAggregateDvp(request: NextRequest): Promise<NextResponse> {
       window: 0,
       restrictSlugs: await loadWorldCupQualifiedSlugs(getBdlApiKey()),
     });
+    // Self-warm for subsequent requests (non-blocking).
+    setWorldCupCache(WC2026.dvpWc2026ForPosition(position), {
+      ...result,
+      wcTeamsWithGames: Array.from(bdl2026.teamsWithGames),
+    }).catch(() => {});
   } else {
     const cacheKey = buildWorldCupDvpCacheKey(position, windowN, requestedStats);
     const cached = await getWorldCupCache<{
@@ -1610,13 +1920,20 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
     return NextResponse.json({ error: 'teamId is required' }, { status: 400 });
   }
 
-  // Pull every match across all 3 World Cup seasons (small dataset).
-  const seasonsParam = new URLSearchParams();
-  appendArrayParam(seasonsParam, 'seasons[]', [2018, 2022, 2026]);
-  const allMatches = await bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, {
-    cursor: true,
-    maxPages: 6,
-  });
+  // Try pre-warmed cache first, fall back to live BDL if cold.
+  let allMatches: BdlMatch[];
+  const cachedAllMatches = await readWcCache<BdlMatch[]>(WC2026.matchesAllSeasons);
+  if (cachedAllMatches?.length) {
+    allMatches = cachedAllMatches;
+  } else {
+    if (!apiKey) return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
+    const seasonsParam = new URLSearchParams();
+    appendArrayParam(seasonsParam, 'seasons[]', [2018, 2022, 2026]);
+    allMatches = await bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, {
+      cursor: true,
+      maxPages: 6,
+    });
+  }
 
   const isCompletedMatch = (match: BdlMatch) => match.status === 'completed';
   const teamMatchesAll = allMatches.filter(
@@ -1637,21 +1954,26 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
     )
   );
 
-  const matchIdChunks: number[][] = [];
-  for (let i = 0; i < matchIds.length; i += 50) {
-    matchIdChunks.push(matchIds.slice(i, i + 50));
+  // Read team stats from cache; fall back to live BDL per-chunk fetching.
+  let rawTeamStats: Array<Record<string, unknown>> = [];
+  const cachedTeamStats = await readWcCache<Array<Record<string, unknown>>>(WC2026.teamStatsAllSeasons);
+  if (cachedTeamStats?.length) {
+    const neededIds = new Set(matchIds);
+    rawTeamStats = cachedTeamStats.filter((r) => neededIds.has(Number(r.match_id)));
+  } else if (apiKey) {
+    const matchIdChunks2: number[][] = [];
+    for (let i = 0; i < matchIds.length; i += 50) matchIdChunks2.push(matchIds.slice(i, i + 50));
+    for (const chunk of matchIdChunks2) {
+      const params = new URLSearchParams();
+      chunk.forEach((id) => params.append('match_ids[]', String(id)));
+      const rows = await bdlFetchAll<Record<string, unknown>>('/team_match_stats', params, apiKey, {
+        cursor: true,
+        maxPages: 4,
+      });
+      rawTeamStats.push(...rows);
+    }
   }
-
-  const teamMatchStats: Array<Record<string, unknown>> = [];
-  for (const chunk of matchIdChunks) {
-    const params = new URLSearchParams();
-    chunk.forEach((id) => params.append('match_ids[]', String(id)));
-    const rows = await bdlFetchAll<Record<string, unknown>>('/team_match_stats', params, apiKey, {
-      cursor: true,
-      maxPages: 4,
-    });
-    teamMatchStats.push(...rows);
-  }
+  const teamMatchStats = rawTeamStats;
 
   // Cross-source recent form (genuine last 5 games across all competitions) for
   // both the selected team and its opponent, shown side-by-side in the UI.
@@ -1659,15 +1981,14 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
   for (const row of teamMatchStats as Array<Record<string, any>>) {
     statsByMatchTeam.set(`${Number(row?.match_id)}:${Number(row?.team_id)}`, row);
   }
-  // Resolve full team metadata (name + country_code) so the cross-source
-  // assembler can map each nation to its FIFA slug. Prefer the 2026 teams list
-  // (all qualified nations, even those without a completed finals game yet),
-  // falling back to whatever appears in the match feed.
-  const teamsList = await bdlFetchAll<BdlTeam>(
-    '/teams',
-    new URLSearchParams([['seasons[]', '2026']]),
-    apiKey
-  );
+  // Resolve full team metadata (name + country_code). Prefer the cached 2026
+  // teams list, then fall back to live BDL, then scan the match feed.
+  const cachedTeamsList = await readWcCache<BdlTeam[]>(WC2026.teams);
+  const teamsList = cachedTeamsList?.length
+    ? cachedTeamsList
+    : apiKey
+      ? await bdlFetchAll<BdlTeam>('/teams', new URLSearchParams([['seasons[]', '2026']]), apiKey)
+      : [];
   const teamById = new Map(teamsList.map((team) => [team.id, team]));
   const resolveTeamObj = (id: number): BdlTeam | null =>
     teamById.get(id) ?? resolveBdlTeamFromMatches(allMatches, id);
@@ -1706,6 +2027,23 @@ async function handleWorldCupTeamForm(request: NextRequest, apiKey: string): Pro
 }
 
 export async function GET(request: NextRequest) {
+  const debug = isWcCacheDebug(request);
+  return runWithWcCacheDebug(debug, async () => {
+    const response = await handleWorldCupDashboardGet(request);
+    logWcCacheRequestComplete('dashboard', debug);
+    if (debug) {
+      const summary = getWcCacheDebugSummary();
+      if (summary) {
+        response.headers.set('X-WC-Cache-Debug', '1');
+        response.headers.set('X-WC-BDL-Live-Count', String(summary.bdlLiveCount));
+        response.headers.set('X-WC-Cache-Summary', summary.summary.slice(0, 240));
+      }
+    }
+    return response;
+  });
+}
+
+async function handleWorldCupDashboardGet(request: NextRequest) {
   const competition = parseCompetition(request.nextUrl.searchParams.get('competition'));
   const apiKey = getBdlApiKey();
 
@@ -1728,57 +2066,62 @@ export async function GET(request: NextRequest) {
     try {
       const scope =
         request.nextUrl.searchParams.get('scope') === 'worldcup' ? 'worldcup' : 'all';
-      const qualifiedUniverse =
-        scope === 'worldcup' ? await ensureWorldCupQualifiedUniverse(apiKey) : undefined;
-      const payload = await loadWorldCupPlayerPool({
-        scope,
-        seasonYear: scope === 'worldcup' ? DEFAULT_SEASON : undefined,
-        qualifiedUniverse,
-      });
-      if (scope === 'worldcup' && payload.opponentBreakdown && qualifiedUniverse?.size) {
-        payload.opponentBreakdown = expandWorldCupOpponentBreakdownUniverse(
-          payload.opponentBreakdown,
-          qualifiedUniverse
-        );
-      }
-      if (scope === 'worldcup' && apiKey) {
-        const bdlResult = await computeBdlWorldCupSeason(apiKey, DEFAULT_SEASON, qualifiedUniverse);
-        if (bdlResult.opponentBreakdown) {
-          payload.opponentBreakdown = bdlResult.opponentBreakdown;
+
+      // worldcup scope: serve the pre-warmed cache written by the ingestion script.
+      // Self-warm on first miss so subsequent requests are instant.
+      if (scope === 'worldcup') {
+        const cached = await readWcCache<Record<string, unknown>>(WC2026.playerVsPoolWc);
+        if (cached && Array.isArray(cached.players) && (cached.players as unknown[]).length > 0) {
+          recordWcSource('playerVsPool', 'supabase-cache', 'worldcup');
+          return NextResponse.json(cached, { headers: { 'Cache-Control': 'public, s-maxage=600' } });
         }
-        if (bdlResult.players.length > 0) {
-          payload.players = bdlResult.players;
+
+        // Cache cold: compute from BDL, then self-warm.
+        recordWcSource('playerVsPool', 'bdl-live', 'worldcup');
+        const qualifiedUniverse = await ensureWorldCupQualifiedUniverse(apiKey);
+        const payload = await loadWorldCupPlayerPool({
+          scope,
+          seasonYear: DEFAULT_SEASON,
+          qualifiedUniverse,
+        });
+        if (payload.opponentBreakdown && qualifiedUniverse?.size) {
+          payload.opponentBreakdown = expandWorldCupOpponentBreakdownUniverse(
+            payload.opponentBreakdown,
+            qualifiedUniverse
+          );
         }
-        if (!bdlResult.opponentBreakdown) {
-          const opponentTeamIdRaw = request.nextUrl.searchParams.get('opponentTeamId');
-          const opponentTeamName = request.nextUrl.searchParams.get('opponentTeamName') || '';
-          const opponentCountryCode = request.nextUrl.searchParams.get('opponentCountryCode');
-          const opponentTeamId = opponentTeamIdRaw ? Number.parseInt(opponentTeamIdRaw, 10) : NaN;
-          if (payload.opponentBreakdown && Number.isFinite(opponentTeamId)) {
-            const live = await computeBdlWorldCupOpponentAllowedLive(
-              opponentTeamId,
-              opponentTeamName,
-              opponentCountryCode,
-              apiKey,
-              DEFAULT_SEASON
-            );
-            if (live) {
-              payload.opponentBreakdown = mergeWorldCupOpponentAllowedSnapshot(
-                payload.opponentBreakdown,
-                live.slug,
-                live.name,
-                live.games,
-                live.allowed,
-                { qualifiedUniverse }
+        if (apiKey) {
+          const bdlResult = await computeBdlWorldCupSeason(apiKey, DEFAULT_SEASON, qualifiedUniverse);
+          if (bdlResult.opponentBreakdown) payload.opponentBreakdown = bdlResult.opponentBreakdown;
+          if (bdlResult.players.length > 0) payload.players = bdlResult.players;
+          if (!bdlResult.opponentBreakdown) {
+            const opponentTeamIdRaw = request.nextUrl.searchParams.get('opponentTeamId');
+            const opponentTeamName = request.nextUrl.searchParams.get('opponentTeamName') || '';
+            const opponentCountryCode = request.nextUrl.searchParams.get('opponentCountryCode');
+            const opponentTeamId = opponentTeamIdRaw ? Number.parseInt(opponentTeamIdRaw, 10) : NaN;
+            if (payload.opponentBreakdown && Number.isFinite(opponentTeamId)) {
+              const live = await computeBdlWorldCupOpponentAllowedLive(
+                opponentTeamId, opponentTeamName, opponentCountryCode, apiKey, DEFAULT_SEASON
               );
+              if (live) {
+                payload.opponentBreakdown = mergeWorldCupOpponentAllowedSnapshot(
+                  payload.opponentBreakdown, live.slug, live.name, live.games, live.allowed,
+                  { qualifiedUniverse }
+                );
+              }
             }
           }
         }
+        // Self-warm so next request is instant.
+        setWorldCupCache(WC2026.playerVsPoolWc, payload).catch(() => {});
+        return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
       }
+
+      // 'all' scope — unchanged path (already Supabase-backed).
+      recordWcSource('playerVsPool', 'supabase-intl', 'all');
+      const payload = await loadWorldCupPlayerPool({ scope });
       return NextResponse.json(payload, {
-        headers: {
-          'Cache-Control': scope === 'worldcup' ? 'no-store' : 'public, s-maxage=3600',
-        },
+        headers: { 'Cache-Control': 'public, s-maxage=3600' },
       });
     } catch (error) {
       return NextResponse.json(
@@ -1792,9 +2135,19 @@ export async function GET(request: NextRequest) {
     try {
       const wcOnly = request.nextUrl.searchParams.get('wcOnly') === '1';
       if (wcOnly) {
-        // Live-computed from 2026 WC matches only. Skips the precomputed cache
-        // so results reflect whatever has been played so far this tournament.
+        // Cache-first: ingestion script pre-warms this key. Fall back to live
+        // BDL computation if the cache is cold, then self-warm for next time.
+        const cached = await readWcCache<Record<string, unknown>>(WC2026.oppBreakdownWc2026);
+        if (cached && typeof cached.names === 'object') {
+          recordWcSource('oppBreakdownWc2026', 'supabase-cache');
+          return NextResponse.json({ ...cached, wcOnly: true }, {
+            headers: { 'Cache-Control': 'public, s-maxage=600' },
+          });
+        }
+        recordWcSource('oppBreakdownWc2026', 'bdl-live');
         const payload = await computeWcOnlyOppBreakdown(apiKey);
+        // Self-warm for subsequent requests.
+        setWorldCupCache(WC2026.oppBreakdownWc2026, payload).catch(() => {});
         return NextResponse.json({ ...payload, wcOnly: true }, {
           headers: { 'Cache-Control': 'no-store' },
         });
@@ -1918,10 +2271,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (!apiKey) {
-    return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
-  }
-
+  // Allow serving fully-cached responses without an API key.
+  // The key is only required when falling back to live BDL.
   const season = parseSeason(request.nextUrl.searchParams.get('season'));
   const requestedTeamId = request.nextUrl.searchParams.get('teamId');
   const requestedPlayerId = request.nextUrl.searchParams.get('playerId');
@@ -1933,9 +2284,19 @@ export async function GET(request: NextRequest) {
   // BDL national teams (with numeric ids) before any selection is made.
   if (request.nextUrl.searchParams.get('teamsOnly') === '1') {
     const teamsCacheKey = `${WC_DASHBOARD_CACHE_PREFIX}:teams:${season}`;
+    // Check the pre-warmed raw cache first, then the legacy dashboard cache.
+    const rawTeams = await readWcCache<BdlTeam[]>(WC2026.teams);
+    const rawStandings = await readWcCache<unknown[]>(WC2026.standings);
+    if (rawTeams?.length) {
+      const teamsPayload = { season, teams: rawTeams, standings: rawStandings ?? [] };
+      return NextResponse.json(teamsPayload, { headers: { 'Cache-Control': 'no-store' } });
+    }
     const cachedTeams = await getWorldCupCache<Record<string, unknown>>(teamsCacheKey);
     if (cachedTeams) {
       return NextResponse.json(cachedTeams, { headers: { 'Cache-Control': 'no-store' } });
+    }
+    if (!apiKey) {
+      return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
     }
     const [teamsOnly, standingsOnly] = await Promise.all([
       bdlFetchAll<BdlTeam>('/teams', seasonsParam, apiKey),
@@ -1944,6 +2305,10 @@ export async function GET(request: NextRequest) {
     const teamsPayload = { season, teams: teamsOnly, standings: standingsOnly };
     await setWorldCupCache(teamsCacheKey, teamsPayload);
     return NextResponse.json(teamsPayload, { headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  if (!apiKey && !(await readWcCache<unknown[]>(WC2026.matches2026))?.length) {
+    return NextResponse.json({ error: 'BALLDONTLIE_API_KEY is not configured' }, { status: 500 });
   }
 
   const dashboardCacheKey = buildDashboardCacheKey({
@@ -1965,13 +2330,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedDashboard, { headers: { 'Cache-Control': 'no-store' } });
     }
 
-    const [teams, stadiums, standings, matches, futures] = await Promise.all([
-      bdlFetchAll<BdlTeam>('/teams', seasonsParam, apiKey),
-      bdlFetchAll('/stadiums', seasonsParam, apiKey),
-      bdlFetchAll('/group_standings', seasonsParam, apiKey),
-      bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, { cursor: true }),
-      bdlFetchAll('/odds/futures', seasonsParam, apiKey),
-    ]);
+    // Read core 2026 data from the pre-warmed cache; fall back to live BDL.
+    let teams: BdlTeam[] = [];
+    let stadiums: unknown[] = [];
+    let standings: unknown[] = [];
+    let matches: BdlMatch[] = [];
+    let futures: unknown[] = [];
+
+    const cachedTeams2026 = await readWcCache<BdlTeam[]>(WC2026.teams);
+    if (cachedTeams2026?.length) {
+      recordWcSource('core2026', 'supabase-cache');
+      teams = cachedTeams2026;
+      stadiums = (await readWcCache<unknown[]>(WC2026.stadiums)) ?? [];
+      standings = (await readWcCache<unknown[]>(WC2026.standings)) ?? [];
+      matches = (await readWcCache<BdlMatch[]>(WC2026.matches2026)) ?? [];
+      futures = (await readWcCache<unknown[]>('wc:raw:odds-futures:2026:v1')) ?? [];
+    } else if (apiKey) {
+      recordWcSource('core2026', 'bdl-live');
+      [teams, stadiums, standings, matches, futures] = await Promise.all([
+        bdlFetchAll<BdlTeam>('/teams', seasonsParam, apiKey),
+        bdlFetchAll('/stadiums', seasonsParam, apiKey),
+        bdlFetchAll('/group_standings', seasonsParam, apiKey),
+        bdlFetchAll<BdlMatch>('/matches', seasonsParam, apiKey, { cursor: true }),
+        bdlFetchAll('/odds/futures', seasonsParam, apiKey),
+      ]);
+    }
 
     const selectedTeam = findSelectedTeam(teams, requestedTeamId);
     const featureMatch = findFeatureMatch(matches, selectedTeam);
@@ -2000,61 +2383,156 @@ export async function GET(request: NextRequest) {
       teamScopedParams.append('team_ids[]', String(opponentTeamId));
     }
 
-    const matchScopedParams = new URLSearchParams();
-    appendArrayParam(matchScopedParams, 'match_ids[]', statMatchIds);
-    const playerStatsParams = new URLSearchParams();
-    if (requestedPlayerId && /^\d+$/.test(requestedPlayerId)) {
-      playerStatsParams.append('player_ids[]', requestedPlayerId);
-    } else {
-      appendArrayParam(playerStatsParams, 'match_ids[]', statMatchIds);
+    // ── Rosters + player profiles — cache-first ───────────────────────────────
+    let rostersRaw: any[] = [];
+    let squadPlayers: any[] = [];
+    if (selectedTeamId) {
+      const [cachedRoster, cachedSquad] = await Promise.all([
+        readWcCache<any[]>(WC2026.rosterForTeam(selectedTeamId)),
+        readWcCache<any[]>(WC2026.playersForTeam(selectedTeamId)),
+      ]);
+      if (cachedRoster) {
+        recordWcSource('rosters', 'supabase-cache', String(selectedTeamId));
+        rostersRaw = cachedRoster;
+        squadPlayers = cachedSquad ?? [];
+        // Also add opponent roster if feature match exists
+        if (opponentTeamId && opponentTeamId !== selectedTeamId) {
+          const [oppRoster, oppPlayers] = await Promise.all([
+            readWcCache<any[]>(WC2026.rosterForTeam(opponentTeamId)),
+            readWcCache<any[]>(WC2026.playersForTeam(opponentTeamId)),
+          ]);
+          rostersRaw = [...rostersRaw, ...(oppRoster ?? [])];
+          squadPlayers = [...squadPlayers, ...(oppPlayers ?? [])];
+        }
+      } else if (apiKey) {
+        recordWcSource('rosters', 'bdl-live', String(selectedTeamId));
+        [rostersRaw, squadPlayers] = await Promise.all([
+          bdlFetchAll('/rosters', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }),
+          bdlFetchAll('/players', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }),
+        ]);
+      }
+    }
+    const rosters = enrichWorldCupRosters(rostersRaw, squadPlayers);
+
+    // ── Per-match stats: team stats + player stats (cache-first) ─────────────
+    let teamMatchStats: any[] = [];
+    let playerMatchStats: any[] = [];
+
+    if (statMatchIds.length) {
+      // Read team stats for each match from the per-match detail blobs.
+      const allCachedTeamStats = await readWcCache<any[]>(WC2026.teamStatsAllSeasons);
+      if (allCachedTeamStats) {
+        const needed = new Set(statMatchIds);
+        teamMatchStats = allCachedTeamStats.filter((r) => needed.has(Number(r?.match_id)));
+      } else if (apiKey) {
+        const matchScopedParams2 = new URLSearchParams();
+        appendArrayParam(matchScopedParams2, 'match_ids[]', statMatchIds);
+        teamMatchStats = await bdlFetchAll('/team_match_stats', matchScopedParams2, apiKey, { cursor: true, maxPages: 4 });
+      }
     }
 
-    const featureMatchParams = new URLSearchParams();
-    if (featureMatchId) featureMatchParams.append('match_ids[]', String(featureMatchId));
+    // Player stats: if a numeric playerId was given, look up by player cache key.
+    // Otherwise fetch by match IDs.
+    if (requestedPlayerId && /^\d+$/.test(requestedPlayerId)) {
+      const cachedStats = await readWcCache<any[]>(WC2026.playerStats(requestedPlayerId));
+      if (cachedStats) {
+        recordWcSource('playerStats', 'supabase-cache', requestedPlayerId);
+        playerMatchStats = cachedStats;
+      } else if (apiKey) {
+        recordWcSource('playerStats', 'bdl-live', requestedPlayerId);
+        const playerStatsParams = new URLSearchParams();
+        playerStatsParams.append('player_ids[]', requestedPlayerId);
+        playerMatchStats = await bdlFetchAll('/player_match_stats', playerStatsParams, apiKey, { cursor: true, maxPages: 6 });
+      }
+    } else if (statMatchIds.length) {
+      // Aggregate player stats for selected team's recent matches from per-match cache.
+      const matchDetails = await Promise.all(
+        statMatchIds.map((mid) => readWcCache<{ playerStats?: any[] }>(WC2026.matchDetail(mid)))
+      );
+      const fromCache = matchDetails.flatMap((d) => d?.playerStats ?? []);
+      if (fromCache.length > 0) {
+        playerMatchStats = fromCache;
+      } else if (apiKey) {
+        const playerStatsParams2 = new URLSearchParams();
+        appendArrayParam(playerStatsParams2, 'match_ids[]', statMatchIds);
+        playerMatchStats = await bdlFetchAll('/player_match_stats', playerStatsParams2, apiKey, { cursor: true, maxPages: 6 });
+      }
+    }
 
-    const [rostersRaw, squadPlayers, teamMatchStats, playerMatchStats, lineups, events, shots, momentum, bestPlayers, avgPositions, teamForm, odds] =
-      await Promise.all([
-        selectedTeamId ? bdlFetchAll('/rosters', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
-        selectedTeamId ? bdlFetchAll('/players', teamScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
-        statMatchIds.length ? bdlFetchAll('/team_match_stats', matchScopedParams, apiKey, { cursor: true, maxPages: 4 }) : Promise.resolve([]),
-        requestedPlayerId || statMatchIds.length ? bdlFetchAll('/player_match_stats', playerStatsParams, apiKey, { cursor: true, maxPages: 6 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_lineups', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_events', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_shots', featureMatchParams, apiKey, { cursor: true, maxPages: 3 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_momentum', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_best_players', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_avg_positions', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/match_team_form', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-        featureMatchId ? bdlFetchAll('/odds', featureMatchParams, apiKey, { cursor: true, maxPages: 2 }) : Promise.resolve([]),
-      ]);
-    const rosters = enrichWorldCupRosters(
-      rostersRaw as Array<Record<string, any>>,
-      squadPlayers as Array<Record<string, any>>
-    );
+    // ── Feature match detail — cache-first except lineups (always one live BDL call)
+    let lineups: any[] = [], events: any[] = [], shots: any[] = [];
+    let momentum: any[] = [], bestPlayers: any[] = [], avgPositions: any[] = [];
+    let teamForm: any[] = [], odds: any[] = [];
+    if (featureMatchId) {
+      if (apiKey) {
+        lineups = await fetchLiveFeatureMatchLineups(featureMatchId, apiKey);
+      }
 
+      const cachedDetail = await readWcCache<{
+        lineups?: any[]; events?: any[]; shots?: any[]; momentum?: any[];
+        bestPlayers?: any[]; avgPositions?: any[]; teamForm?: any[]; odds?: any[];
+      }>(WC2026.matchDetail(featureMatchId));
+      if (cachedDetail) {
+        recordWcSource('featureMatch', 'supabase-cache', String(featureMatchId));
+        events = cachedDetail.events ?? [];
+        shots = cachedDetail.shots ?? [];
+        momentum = cachedDetail.momentum ?? [];
+        bestPlayers = cachedDetail.bestPlayers ?? [];
+        avgPositions = cachedDetail.avgPositions ?? [];
+        teamForm = cachedDetail.teamForm ?? [];
+        odds = cachedDetail.odds ?? [];
+      }
+    }
+
+    const allSeasonMatches =
+      (await readWcCache<BdlMatch[]>(WC2026.matchesAllSeasons)) ?? [];
+    const lineupFill = await fillLineupsFromLastCompletedMatches({
+      lineups,
+      matches,
+      allSeasonMatches,
+      selectedTeamId,
+      opponentTeamId,
+      featureMatchId,
+    });
+    lineups = lineupFill.lineups;
+    const lineupMeta = lineupFill.meta;
+    const lineupPlayerIds = lineups
+      .map((row) => Number((row as { player_id?: unknown }).player_id ?? (row as { player?: { id?: unknown } }).player?.id))
+      .filter((id) => Number.isFinite(id));
+    const lineupPlayerPhotos = await loadLineupPlayerPhotos(lineupPlayerIds);
+
+    // ── Player shots (for numeric playerId mode) — cache-first ───────────────
     let playerMatches: BdlMatch[] = [];
     let playerShots: any[] = [];
     if (requestedPlayerId && Array.isArray(playerMatchStats) && playerMatchStats.length) {
-      const knownMatchIds = new Set(matches.map((match) => match.id));
-      const allPlayerMatchIds = Array.from(
-        new Set(
-          playerMatchStats
-            .map((row: any) => Number(row?.match_id))
-            .filter((id) => Number.isFinite(id))
-        )
-      ).slice(0, 80);
-      const playerMatchIds = allPlayerMatchIds.filter((id) => !knownMatchIds.has(id));
-      if (playerMatchIds.length) {
-        const playerMatchParams = new URLSearchParams();
-        appendArrayParam(playerMatchParams, 'seasons[]', [2018, 2022, 2026]);
-        appendArrayParam(playerMatchParams, 'match_ids[]', playerMatchIds);
-        playerMatches = await bdlFetchAll<BdlMatch>('/matches', playerMatchParams, apiKey, { cursor: true, maxPages: 2 });
-      }
-      if (allPlayerMatchIds.length) {
-        const playerShotParams = new URLSearchParams();
-        appendArrayParam(playerShotParams, 'match_ids[]', allPlayerMatchIds);
-        playerShotParams.append('player_ids[]', requestedPlayerId);
-        playerShots = await bdlFetchAll('/match_shots', playerShotParams, apiKey, { cursor: true, maxPages: 4 });
+      // Try to read player shots from the per-player cache first.
+      const cachedPlayerShots = await readWcCache<any[]>(WC2026.playerShots(requestedPlayerId));
+      if (cachedPlayerShots) {
+        recordWcSource('playerShots', 'supabase-cache', requestedPlayerId);
+        playerShots = cachedPlayerShots;
+      } else if (apiKey) {
+        recordWcSource('playerShots', 'bdl-live', requestedPlayerId);
+        const knownMatchIds = new Set(matches.map((match) => match.id));
+        const allPlayerMatchIds = Array.from(
+          new Set(
+            playerMatchStats
+              .map((row: any) => Number(row?.match_id))
+              .filter((id) => Number.isFinite(id))
+          )
+        ).slice(0, 80);
+        const playerMatchIds = allPlayerMatchIds.filter((id) => !knownMatchIds.has(id));
+        if (playerMatchIds.length) {
+          const playerMatchParams = new URLSearchParams();
+          appendArrayParam(playerMatchParams, 'seasons[]', [2018, 2022, 2026]);
+          appendArrayParam(playerMatchParams, 'match_ids[]', playerMatchIds);
+          playerMatches = await bdlFetchAll<BdlMatch>('/matches', playerMatchParams, apiKey, { cursor: true, maxPages: 2 });
+        }
+        if (allPlayerMatchIds.length) {
+          const playerShotParams = new URLSearchParams();
+          appendArrayParam(playerShotParams, 'match_ids[]', allPlayerMatchIds);
+          playerShotParams.append('player_ids[]', requestedPlayerId);
+          playerShots = await bdlFetchAll('/match_shots', playerShotParams, apiKey, { cursor: true, maxPages: 4 });
+        }
       }
     }
     const derivedShotsByMatch = new Map<number, Record<string, number>>();
@@ -2110,6 +2588,7 @@ export async function GET(request: NextRequest) {
     const requestedPlayerName = request.nextUrl.searchParams.get('playerName') || '';
     if (requestedPlayerName) {
       try {
+        recordWcSource('intlStatsByName', 'supabase-intl', requestedPlayerName);
         const [intl, bdlByName] = await Promise.all([
           loadInternationalStatsByPlayerName(requestedPlayerName, { bdlPlayerId: requestedPlayerId }),
           fetchBdlStatsForPlayerName(requestedPlayerName, apiKey),
@@ -2283,6 +2762,8 @@ export async function GET(request: NextRequest) {
       teamMatchStats: mergedTeamMatchStats,
       playerMatchStats: mergedPlayerMatchStats,
       lineups,
+      lineupMeta,
+      lineupPlayerPhotos,
       events,
       shots,
       playerShots,

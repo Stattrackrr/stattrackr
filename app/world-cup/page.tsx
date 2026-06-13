@@ -187,6 +187,14 @@ type WorldCupDashboardData = {
   teamMatchStats: Array<Record<string, any>>;
   playerMatchStats: Array<Record<string, any>>;
   lineups: Array<Record<string, any>>;
+  lineupMeta?: {
+    source: 'feature' | 'last-match' | 'mixed';
+    selectedTeamLastMatchId: number | null;
+    selectedTeamLastMatchOpponentId: number | null;
+    opponentTeamLastMatchId: number | null;
+    opponentTeamLastMatchOpponentId: number | null;
+  };
+  lineupPlayerPhotos?: Record<string, string>;
   events: Array<Record<string, any>>;
   shots: Array<Record<string, any>>;
   playerShots?: Array<Record<string, any>>;
@@ -5085,6 +5093,7 @@ type WorldCupLineupPlayer = {
   name: string;
   number: string;
   position: string;
+  imageUrl?: string | null;
 };
 
 type WorldCupTeamLineup = {
@@ -5093,9 +5102,57 @@ type WorldCupTeamLineup = {
   substitutes: WorldCupLineupPlayer[];
 };
 
+function worldCupLineupsSubtitle(
+  lineupMeta: WorldCupDashboardData['lineupMeta'] | undefined
+): string {
+  if (lineupMeta?.source === 'last-match') {
+    return 'Both teams from each side\u2019s last completed match. Headshots shown when matched to club/intl data.';
+  }
+  if (lineupMeta?.source === 'mixed') {
+    return 'Confirmed lineups where available; otherwise each team\u2019s last completed match (both sides).';
+  }
+  return 'Confirmed match-day starting XI and substitutes. Headshots shown when matched to club/intl data.';
+}
+
+function resolveWorldCupTeamOption(
+  teamId: number | string | null | undefined,
+  teamOptions: WorldCupTeamOption[],
+  teams?: WorldCupDashboardData['teams']
+): WorldCupTeamOption | null {
+  if (teamId == null || teamId === '') return null;
+  const id = String(teamId);
+  const fromOptions = teamOptions.find((team) => team.id === id);
+  if (fromOptions) return fromOptions;
+  const fromApi = teams?.find((team) => String(team.id) === id);
+  if (!fromApi) return null;
+  return {
+    id: String(fromApi.id),
+    name: fromApi.name,
+    abbreviation: fromApi.abbreviation || fromApi.country_code || fromApi.name.slice(0, 3).toUpperCase(),
+    countryCode: fromApi.country_code || fromApi.abbreviation || null,
+    group: 'World Cup',
+    confederation: fromApi.confederation || 'FIFA',
+  };
+}
+
+function buildWorldCupPlayerNameById(rosters: Array<Record<string, any>>): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of rosters) {
+    const player = row.player ?? {};
+    const id = String(player.id ?? '').trim();
+    const name = String(player.name || '').trim();
+    if (id && name) map.set(id, name);
+  }
+  return map;
+}
+
 function buildWorldCupLineup(
   lineups: Array<Record<string, any>>,
-  teamId: string | null | undefined
+  teamId: string | null | undefined,
+  opts?: {
+    nameByPlayerId?: Map<string, string>;
+    photoByPlayerId?: Record<string, string>;
+  }
 ): WorldCupTeamLineup {
   const empty: WorldCupTeamLineup = { formation: null, starters: [], substitutes: [] };
   if (!teamId || !lineups?.length) return empty;
@@ -5106,11 +5163,16 @@ function buildWorldCupLineup(
     if (String(row?.team_id ?? '') !== String(teamId)) continue;
     if (!formation && row.formation) formation = String(row.formation);
     const player = row.player ?? {};
+    const playerId = String(player.id ?? row.player_id ?? player.name ?? Math.random());
+    const rosterName = opts?.nameByPlayerId?.get(playerId);
+    const rawName = String(player.name || player.short_name || rosterName || 'Player');
+    const name = rosterName && rosterName.length > rawName.length ? rosterName : rawName;
     const entry: WorldCupLineupPlayer = {
-      id: String(player.id ?? player.name ?? Math.random()),
-      name: String(player.name || player.short_name || 'Player'),
+      id: playerId,
+      name,
       number: String(row.shirt_number ?? player.jersey_number ?? '').trim(),
       position: String(row.position || player.position || '').trim(),
+      imageUrl: opts?.photoByPlayerId?.[playerId] ?? null,
     };
     if (row.is_starter) starters.push(entry);
     else if (row.is_substitute) substitutes.push(entry);
@@ -5121,6 +5183,35 @@ function buildWorldCupLineup(
   starters.sort(byNumber);
   substitutes.sort(byNumber);
   return { formation, starters, substitutes };
+}
+
+function WorldCupLineupPlayerBadge({
+  player,
+  dotColor,
+  sizeClass = 'h-8 w-8 text-[11px]',
+}: {
+  player: WorldCupLineupPlayer;
+  dotColor: string;
+  sizeClass?: string;
+}) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(player.imageUrl) && !photoFailed;
+  if (showPhoto) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={player.imageUrl!}
+        alt={player.name}
+        className={`${sizeClass} rounded-full object-cover shadow ring-2 ${dotColor}`}
+        onError={() => setPhotoFailed(true)}
+      />
+    );
+  }
+  return (
+    <span className={`flex ${sizeClass} items-center justify-center rounded-full font-bold text-white shadow ring-2 ${dotColor}`}>
+      {player.number || '–'}
+    </span>
+  );
 }
 
 function WorldCupLineupColumn({
@@ -5139,13 +5230,14 @@ function WorldCupLineupColumn({
   const accentText = accent === 'blue'
     ? 'text-blue-600 dark:text-blue-400'
     : 'text-amber-600 dark:text-amber-400';
+  const badgeColor = accent === 'blue'
+    ? 'bg-blue-500 ring-blue-300/60'
+    : 'bg-amber-500 ring-amber-300/60';
 
   const renderRow = (entry: WorldCupLineupPlayer) => (
-    <div key={entry.id} className="flex items-center gap-2 rounded-md px-1 py-1 text-xs">
-      <span className={`w-5 shrink-0 text-right tabular-nums font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-        {entry.number || '–'}
-      </span>
-      <span className={`min-w-0 flex-1 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{entry.name}</span>
+    <div key={entry.id} className="flex items-start gap-2 rounded-md px-1 py-1.5 text-sm">
+      <WorldCupLineupPlayerBadge player={entry} dotColor={badgeColor} sizeClass="h-7 w-7 text-[11px]" />
+      <span className={`min-w-0 flex-1 break-words text-sm font-medium leading-snug ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{entry.name}</span>
       {entry.position ? (
         <span className={`shrink-0 text-[10px] font-medium uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
           {entry.position}
@@ -5325,7 +5417,7 @@ function WorldCupPitch({
           {shownFormation}
         </span>
       </div>
-      <div className="relative mx-2 my-2 h-[320px] overflow-hidden rounded-2xl bg-emerald-600/90 ring-1 ring-emerald-700 dark:bg-emerald-900/70 dark:ring-emerald-800">
+      <div className="relative mx-2 my-2 min-h-[340px] overflow-visible rounded-2xl bg-emerald-600/90 ring-1 ring-emerald-700 dark:bg-emerald-900/70 dark:ring-emerald-800">
         <div className="absolute inset-x-6 top-1/2 h-px -translate-y-1/2 bg-white/40" />
         <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
         <div className="absolute left-1/2 top-0 h-12 w-24 -translate-x-1/2 border border-t-0 border-white/40" />
@@ -5337,14 +5429,12 @@ function WorldCupPitch({
             return (
               <div
                 key={player.id}
-                className="absolute flex w-16 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+                className="absolute flex w-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
                 style={{ top: `${top}%`, left: `${left}%` }}
               >
-                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold text-white shadow ring-2 ${dotColor}`}>
-                  {player.number || '–'}
-                </span>
-                <span className="max-w-full truncate rounded bg-black/35 px-1 text-[9px] font-medium text-white">
-                  {player.name}
+                <WorldCupLineupPlayerBadge player={player} dotColor={dotColor} />
+                <span className="max-w-[7.5rem] text-center text-[11px] font-semibold leading-snug text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                  <span className="block break-words">{player.name}</span>
                 </span>
               </div>
             );
@@ -5360,19 +5450,45 @@ function WorldCupLineupsPanel({
   selectedTeam,
   opponentTeam,
   lineups,
+  lineupMeta,
+  teamOptions,
+  teams,
+  rosters,
+  lineupPlayerPhotos,
 }: {
   isDark: boolean;
   selectedTeam: WorldCupTeamOption | null;
   opponentTeam: WorldCupTeamOption | null;
   lineups: Array<Record<string, any>>;
+  lineupMeta?: WorldCupDashboardData['lineupMeta'];
+  teamOptions: WorldCupTeamOption[];
+  teams?: WorldCupDashboardData['teams'];
+  rosters: Array<Record<string, any>>;
+  lineupPlayerPhotos?: Record<string, string>;
 }) {
+  const lastMatchOpponentTeam = useMemo(() => {
+    if (!lineupMeta?.selectedTeamLastMatchId || !lineupMeta.selectedTeamLastMatchOpponentId) return null;
+    return resolveWorldCupTeamOption(
+      lineupMeta.selectedTeamLastMatchOpponentId,
+      teamOptions,
+      teams
+    );
+  }, [lineupMeta, teamOptions, teams]);
+
+  const displayOpponentTeam = lastMatchOpponentTeam ?? opponentTeam;
+  const nameByPlayerId = useMemo(() => buildWorldCupPlayerNameById(rosters), [rosters]);
+  const lineupBuildOpts = useMemo(
+    () => ({ nameByPlayerId, photoByPlayerId: lineupPlayerPhotos ?? {} }),
+    [nameByPlayerId, lineupPlayerPhotos]
+  );
+
   const selectedLineup = useMemo(
-    () => buildWorldCupLineup(lineups, selectedTeam?.id),
-    [lineups, selectedTeam?.id]
+    () => buildWorldCupLineup(lineups, selectedTeam?.id, lineupBuildOpts),
+    [lineups, selectedTeam?.id, lineupBuildOpts]
   );
   const opponentLineup = useMemo(
-    () => buildWorldCupLineup(lineups, opponentTeam?.id),
-    [lineups, opponentTeam?.id]
+    () => buildWorldCupLineup(lineups, displayOpponentTeam?.id, lineupBuildOpts),
+    [lineups, displayOpponentTeam?.id, lineupBuildOpts]
   );
 
   const renderTeam = (
@@ -5410,8 +5526,8 @@ function WorldCupLineupsPanel({
   return (
     <div className="grid grid-cols-1 gap-3 px-3 sm:grid-cols-2 sm:px-4">
       {renderTeam(selectedTeam, selectedLineup, 'blue')}
-      {opponentTeam ? (
-        renderTeam(opponentTeam, opponentLineup, 'amber')
+      {displayOpponentTeam ? (
+        renderTeam(displayOpponentTeam, opponentLineup, 'amber')
       ) : (
         <div className={`flex items-center justify-center rounded-lg border border-dashed px-3 py-6 text-center text-xs ${isDark ? 'border-gray-700 text-gray-500' : 'border-gray-200 text-gray-400'}`}>
           No opponent fixture selected.
@@ -5868,9 +5984,15 @@ function WorldCupTeamMatchupCard({
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No data available yet.</div>
         ) : (
           <div className="space-y-2">
-            <p className={`px-0.5 text-center text-[10px] leading-snug ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              Top = {teamLabel} going forward · Bottom = what opponents do against {opponentLabel}
-            </p>
+            <div className={`flex items-center justify-center gap-2 text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <span className="tabular-nums">
+                <span className="font-bold uppercase">{teamAbbr}</span> {teamGames || teamTotal} games
+              </span>
+              <span className="opacity-40">·</span>
+              <span className="tabular-nums">
+                <span className="font-bold uppercase">{oppAbbr}</span> {oppGames || oppTotal} games
+              </span>
+            </div>
 
             {rows.map((row) => {
               const minPct = 6;
@@ -5940,19 +6062,6 @@ function WorldCupTeamMatchupCard({
               );
             })}
 
-            <div className={`mt-0.5 flex items-center justify-center gap-2 text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              <span className="flex items-center gap-1">
-                <span className="font-bold uppercase">{teamAbbr}</span>
-                <span className="opacity-70">for ·</span>
-                <span className="tabular-nums">{teamGames || teamTotal}g</span>
-              </span>
-              <span className="opacity-40">|</span>
-              <span className="flex items-center gap-1">
-                <span className="font-bold uppercase">{oppAbbr}</span>
-                <span className="opacity-70">opponents face ·</span>
-                <span className="tabular-nums">{oppGames || oppTotal}g</span>
-              </span>
-            </div>
           </div>
         )}
       </div>
@@ -7098,12 +7207,17 @@ function WorldCupPageContent() {
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="px-3 sm:px-4 py-1" />
                   ) : (
                     <>
-                  <SectionHeader title="Lineups" subtitle="Confirmed match-day starting XI and substitutes." />
+                  <SectionHeader title="Lineups" subtitle={worldCupLineupsSubtitle(worldCupData?.lineupMeta)} />
                   <WorldCupLineupsPanel
                     isDark={isDark}
                     selectedTeam={activeTeam}
                     opponentTeam={opponentTeam}
                     lineups={worldCupData?.lineups ?? []}
+                    lineupMeta={worldCupData?.lineupMeta}
+                    teamOptions={teamOptions}
+                    teams={worldCupData?.teams}
+                    rosters={worldCupData?.rosters ?? []}
+                    lineupPlayerPhotos={worldCupData?.lineupPlayerPhotos}
                   />
                     </>
                   )}

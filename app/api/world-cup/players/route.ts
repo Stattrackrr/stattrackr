@@ -3,7 +3,15 @@ import {
   InternationalCompetition,
   searchInternationalPlayers,
 } from '@/lib/internationalDashboard';
-import { getWorldCupCache, setWorldCupCache } from '@/lib/worldCupCache';
+import {
+  getWorldCupCache,
+  getWcCacheDebugSummary,
+  isWcCacheDebug,
+  logWcCacheRequestComplete,
+  recordWcSource,
+  runWithWcCacheDebug,
+  setWorldCupCache,
+} from '@/lib/worldCupCache';
 import {
   getWorldCupPlayerIndex,
   searchWorldCupPlayerIndex,
@@ -58,6 +66,8 @@ async function fetchBdlPlayers(opts: {
 }): Promise<Array<Record<string, unknown>>> {
   const apiKey = getBdlApiKey();
   if (!apiKey) return [];
+  recordWcSource('playerSearch', 'bdl-live', opts.search);
+  console.log('[wc-cache] BDL LIVE /players search', { search: opts.search });
   const url = new URL(`${BDL_FIFA_BASE}/players`);
   url.searchParams.set('per_page', '25');
   if (opts.search) url.searchParams.set('search', opts.search);
@@ -126,10 +136,28 @@ function dedupePlayers(
 }
 
 export async function GET(request: NextRequest) {
+  const debug = isWcCacheDebug(request);
+  return runWithWcCacheDebug(debug, async () => {
+    const response = await handleWorldCupPlayersGet(request);
+    logWcCacheRequestComplete('players', debug);
+    if (debug) {
+      const summary = getWcCacheDebugSummary();
+      response.headers.set('X-WC-Cache-Debug', '1');
+      if (summary) {
+        response.headers.set('X-WC-BDL-Live-Count', String(summary.bdlLiveCount));
+        response.headers.set('X-WC-Cache-Summary', summary.summary.slice(0, 240));
+      }
+    }
+    return response;
+  });
+}
+
+async function handleWorldCupPlayersGet(request: NextRequest) {
   const competition = parseCompetition(request.nextUrl.searchParams.get('competition'));
   const search = request.nextUrl.searchParams.get('search')?.trim() ?? '';
   const teamId = request.nextUrl.searchParams.get('teamId')?.trim() ?? '';
   const season = request.nextUrl.searchParams.get('season')?.trim() ?? '';
+  const debug = isWcCacheDebug(request);
 
   if (!search) {
     return NextResponse.json({ data: [] }, { headers: { 'Cache-Control': 'no-store' } });
@@ -152,29 +180,51 @@ export async function GET(request: NextRequest) {
         competition: 'world-cup',
         limit: 25,
       });
+      console.log('[wc-cache] players | source=index (Supabase wc:player-index:v1)', {
+        search,
+        results: data.length,
+        bdlLive: false,
+      });
       return NextResponse.json(
-        { data, source: 'index' },
-        { headers: { 'Cache-Control': 'no-store' } }
+        {
+          data,
+          source: 'index',
+          ...(debug ? { _wcDebug: { source: 'index', bdlLive: false, indexSize: index.length } } : {}),
+        },
+        { headers: { 'Cache-Control': 'no-store', 'X-WC-Player-Search-Source': 'index' } }
       );
     }
 
     // Fallback (index not built yet): per-query cache + live lookups.
     const cached = await getWorldCupCache<Array<Record<string, unknown>>>(cacheKey);
     if (cached) {
+      console.log('[wc-cache] players | source=query-cache (Supabase)', {
+        search,
+        results: cached.length,
+        bdlLive: false,
+      });
       return NextResponse.json(
-        { data: cached, cached: true },
-        { headers: { 'Cache-Control': 'no-store' } }
+        {
+          data: cached,
+          cached: true,
+          source: 'query-cache',
+          ...(debug ? { _wcDebug: { source: 'query-cache', bdlLive: false } } : {}),
+        },
+        { headers: { 'Cache-Control': 'no-store', 'X-WC-Player-Search-Source': 'query-cache' } }
       );
     }
 
     let data: Array<Record<string, unknown>>;
     if (competition === 'world-cup') {
+      console.log('[wc-cache] players | source=bdl-live (index missing)', { search });
       data = dedupePlayers(await fetchBdlPlayers({ search, teamId, season }));
     } else if (competition === 'euros' || competition === 'nations-league') {
+      console.log('[wc-cache] players | source=supabase-intl (index missing)', { search, competition });
       data = dedupePlayers(
         await searchInternationalPlayers({ competition, query: search, limit: 25 })
       );
     } else {
+      console.log('[wc-cache] players | source=bdl-live+intl (index missing)', { search });
       // competition === 'all'
       const [bdl, intl] = await Promise.all([
         fetchBdlPlayers({ search, teamId, season }),
@@ -189,7 +239,14 @@ export async function GET(request: NextRequest) {
       await setWorldCupCache(cacheKey, data);
     }
 
-    return NextResponse.json({ data }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json(
+      {
+        data,
+        source: 'live',
+        ...(debug ? { _wcDebug: { source: 'live', bdlLive: true } } : {}),
+      },
+      { headers: { 'Cache-Control': 'no-store', 'X-WC-Player-Search-Source': 'live' } }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to search players' },
