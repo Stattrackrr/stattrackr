@@ -1,41 +1,8 @@
 {
-  "generatedAt": "2026-06-12T18:23:21.396Z",
+  "generatedAt": "2026-06-13T12:23:08.501Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "58f6273d79650220d0c6efb7011eb9b2",
-      "homeTeam": "Melbourne Demons",
-      "awayTeam": "Essendon Bombers",
-      "commenceTime": "2026-06-13T03:15:22Z",
-      "weather": {
-        "temperatureC": 15.1,
-        "precipitationMm": 0,
-        "windKmh": 15.6
-      }
-    },
-    {
-      "gameId": "9ec6a36d9762cab36419da63d8d27407",
-      "homeTeam": "North Melbourne Kangaroos",
-      "awayTeam": "West Coast Eagles",
-      "commenceTime": "2026-06-13T06:15:08Z",
-      "weather": {
-        "temperatureC": 14.9,
-        "precipitationMm": 1.5,
-        "windKmh": 13.6
-      }
-    },
-    {
-      "gameId": "e3309264abbd7dff8434b86b1cffc603",
-      "homeTeam": "Port Adelaide Power",
-      "awayTeam": "Sydney Swans",
-      "commenceTime": "2026-06-13T09:35:37Z",
-      "weather": {
-        "temperatureC": 13.8,
-        "precipitationMm": 0,
-        "windKmh": 11.7
-      }
-    },
     {
       "gameId": "e08e87d805fdb3667e4e41aa9c45aae8",
       "homeTeam": "Richmond Tigers",
@@ -44,7 +11,7 @@
       "weather": {
         "temperatureC": 13.5,
         "precipitationMm": 0,
-        "windKmh": 6.4
+        "windKmh": 7.5
       }
     },
     {
@@ -55,9 +22,9 @@
       "weather": {
         "temperatureC": 13.3,
         "precipitationMm": 0,
-        "windKmh": 7.5
+        "windKmh": 7.8
       }
     }
   ],
-  "count": 5
+  "count": 2
 }
