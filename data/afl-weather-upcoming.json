@@ -1,39 +1,17 @@
 {
-  "generatedAt": "2026-06-13T17:50:52.981Z",
+  "generatedAt": "2026-06-14T12:59:54.564Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "e08e87d805fdb3667e4e41aa9c45aae8",
-      "homeTeam": "Richmond Tigers",
-      "awayTeam": "Brisbane Lions",
-      "commenceTime": "2026-06-14T03:10:11Z",
-      "weather": {
-        "temperatureC": 13.6,
-        "precipitationMm": 0,
-        "windKmh": 5.8
-      }
-    },
-    {
-      "gameId": "eb9313d969a21be0fee7af72db7dd7cc",
-      "homeTeam": "St Kilda Saints",
-      "awayTeam": "GWS Giants",
-      "commenceTime": "2026-06-14T05:15:07Z",
-      "weather": {
-        "temperatureC": 13.4,
-        "precipitationMm": 0,
-        "windKmh": 7.3
-      }
-    },
     {
       "gameId": "941a4e6450f9da0a839233b6547b591c",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-06-18T10:10:00Z",
       "weather": {
-        "temperatureC": 13.1,
+        "temperatureC": 12.5,
         "precipitationMm": 0,
-        "windKmh": 5.1
+        "windKmh": 2.6
       }
     },
     {
@@ -42,9 +20,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-06-19T09:40:00Z",
       "weather": {
-        "temperatureC": 19.2,
+        "temperatureC": 17.5,
         "precipitationMm": 0,
-        "windKmh": 8.2
+        "windKmh": 5.4
       }
     },
     {
@@ -53,11 +31,55 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-06-20T03:15:00Z",
       "weather": {
-        "temperatureC": 13.5,
+        "temperatureC": 13.9,
+        "precipitationMm": 0.1,
+        "windKmh": 12.6
+      }
+    },
+    {
+      "gameId": "a5286f50c63fa88b86feb77136ce773f",
+      "homeTeam": "GWS Giants",
+      "awayTeam": "Carlton Blues",
+      "commenceTime": "2026-06-20T06:15:24Z",
+      "weather": {
+        "temperatureC": 17,
         "precipitationMm": 0,
-        "windKmh": 4.7
+        "windKmh": 6.1
+      }
+    },
+    {
+      "gameId": "9e088726984b16650cef072095d9f8c7",
+      "homeTeam": "Collingwood Magpies",
+      "awayTeam": "Port Adelaide Power",
+      "commenceTime": "2026-06-20T09:35:00Z",
+      "weather": {
+        "temperatureC": 13.3,
+        "precipitationMm": 0.3,
+        "windKmh": 4
+      }
+    },
+    {
+      "gameId": "06b3177f2027fa9a6aca4a68bbf8bf5b",
+      "homeTeam": "Richmond Tigers",
+      "awayTeam": "North Melbourne Kangaroos",
+      "commenceTime": "2026-06-21T03:10:24Z",
+      "weather": {
+        "temperatureC": 12.4,
+        "precipitationMm": 0,
+        "windKmh": 9.6
+      }
+    },
+    {
+      "gameId": "d76984f2f4e7b9e29b06a729bdac708f",
+      "homeTeam": "St Kilda Saints",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-06-21T05:15:59Z",
+      "weather": {
+        "temperatureC": 13.2,
+        "precipitationMm": 0,
+        "windKmh": 8.6
       }
     }
   ],
-  "count": 5
+  "count": 7
 }
