@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-06-14T08:11:36.208Z",
+  "generatedAt": "2026-06-14T11:53:00.664Z",
   "source": "footywire.com",
   "sourcePage": "ft_player_rankings (rt=LA, multiple st=)",
   "playerCount": 625,
@@ -53,7 +53,7 @@
       "handballs": 20.92,
       "marks": 2.92,
       "goals": 0.15,
-      "tackles": 4.92,
+      "tackles": 4.85,
       "clearances": 8.31,
       "inside_50s": 3.54,
       "rebound_50s": 2.31,
@@ -116,7 +116,7 @@
       "rebound_50s": 6.69,
       "contested_possessions": 5.62,
       "uncontested_possessions": 21.77,
-      "meters_gained": 625.69,
+      "meters_gained": 626,
       "free_kicks_for": 0.69
     },
     {
@@ -173,7 +173,7 @@
       "rebound_50s": 4.75,
       "contested_possessions": 4.5,
       "uncontested_possessions": 19.17,
-      "meters_gained": 464.33,
+      "meters_gained": 464.67,
       "free_kicks_for": 0.33
     },
     {
@@ -1612,7 +1612,7 @@
       "marks": 2.36,
       "goals": 0.36,
       "tackles": 5.21,
-      "clearances": 5.93,
+      "clearances": 6,
       "inside_50s": 3.43,
       "rebound_50s": 0.86,
       "contested_possessions": 9.5,
@@ -1896,7 +1896,7 @@
       "handballs": 10.08,
       "marks": 4.54,
       "goals": 0.92,
-      "tackles": 2.31,
+      "tackles": 2.23,
       "clearances": 1.31,
       "inside_50s": 3.92,
       "rebound_50s": 1.31,
@@ -1982,25 +1982,6 @@
       "free_kicks_for": 0.85
     },
     {
-      "name": "Connor Idun",
-      "team": "GWS",
-      "games": 13,
-      "number": 84,
-      "disposals": 20.69,
-      "kicks": 10.85,
-      "handballs": 9.85,
-      "marks": 6.38,
-      "goals": 0,
-      "tackles": 1.69,
-      "clearances": 0.31,
-      "inside_50s": 0.46,
-      "rebound_50s": 3.85,
-      "contested_possessions": 5.85,
-      "uncontested_possessions": 13.54,
-      "meters_gained": 240.69,
-      "free_kicks_for": 0.38
-    },
-    {
       "name": "Brodie Grundy",
       "team": "Sydney",
       "games": 13,
@@ -2018,6 +1999,25 @@
       "uncontested_possessions": 6.92,
       "meters_gained": 204,
       "free_kicks_for": 2.15
+    },
+    {
+      "name": "Connor Idun",
+      "team": "GWS",
+      "games": 13,
+      "number": 86,
+      "disposals": 20.62,
+      "kicks": 10.85,
+      "handballs": 9.77,
+      "marks": 6.38,
+      "goals": 0,
+      "tackles": 1.69,
+      "clearances": 0.31,
+      "inside_50s": 0.46,
+      "rebound_50s": 3.85,
+      "contested_possessions": 5.85,
+      "uncontested_possessions": 13.54,
+      "meters_gained": 240.69,
+      "free_kicks_for": 0.38
     },
     {
       "name": "Christian Salem",
@@ -2111,7 +2111,7 @@
       "rebound_50s": 0.78,
       "contested_possessions": 8.78,
       "uncontested_possessions": 11.89,
-      "meters_gained": 152.89,
+      "meters_gained": 152.33,
       "free_kicks_for": 1
     },
     {
@@ -2185,8 +2185,8 @@
       "clearances": 1.85,
       "inside_50s": 2.38,
       "rebound_50s": 2.38,
-      "contested_possessions": 7.85,
-      "uncontested_possessions": 12.77,
+      "contested_possessions": 7.77,
+      "uncontested_possessions": 12.85,
       "meters_gained": 265.62,
       "free_kicks_for": 0.69
     },
@@ -2200,7 +2200,7 @@
       "handballs": 9.86,
       "marks": 4.36,
       "goals": 1.14,
-      "tackles": 2.86,
+      "tackles": 2.93,
       "clearances": 4.07,
       "inside_50s": 4.36,
       "rebound_50s": 0.79,
@@ -5335,20 +5335,20 @@
       "handballs": 5.77,
       "marks": 4.69,
       "goals": 0.54,
-      "tackles": 1.92,
+      "tackles": 1.85,
       "clearances": 1,
       "inside_50s": 2.15,
       "rebound_50s": 1.08,
-      "contested_possessions": 5.38,
+      "contested_possessions": 5.31,
       "uncontested_possessions": 9.46,
-      "meters_gained": 247.92,
+      "meters_gained": 248.46,
       "free_kicks_for": 0.54
     },
     {
       "name": "Finn Maginness",
       "team": "Hawthorn",
       "games": 5,
-      "number": 86,
+      "number": 85,
       "disposals": 14.6,
       "kicks": 4.8,
       "handballs": 9.8,
@@ -8224,10 +8224,10 @@
       "marks": 4.71,
       "goals": 1.36,
       "tackles": 1.14,
-      "clearances": 0.29,
+      "clearances": 0.21,
       "inside_50s": 2.14,
       "rebound_50s": 0.29,
-      "contested_possessions": 4.57,
+      "contested_possessions": 4.5,
       "uncontested_possessions": 7.14,
       "meters_gained": 191.43,
       "free_kicks_for": 0.36
@@ -8989,7 +8989,7 @@
       "rebound_50s": 3.5,
       "contested_possessions": 4.5,
       "uncontested_possessions": 7,
-      "meters_gained": 96.5,
+      "meters_gained": 94,
       "free_kicks_for": 1.5
     },
     {
@@ -9215,10 +9215,10 @@
       "clearances": 0.56,
       "inside_50s": 0.67,
       "rebound_50s": 1.22,
-      "contested_possessions": 3.67,
+      "contested_possessions": 3.78,
       "uncontested_possessions": 6.22,
-      "meters_gained": 136.67,
-      "free_kicks_for": 0.56
+      "meters_gained": 135.67,
+      "free_kicks_for": 0.67
     },
     {
       "name": "Griffin Logue",
@@ -10165,7 +10165,7 @@
       "clearances": 0.12,
       "inside_50s": 1.38,
       "rebound_50s": 0,
-      "contested_possessions": 3.5,
+      "contested_possessions": 3.62,
       "uncontested_possessions": 5.5,
       "meters_gained": 172.5,
       "free_kicks_for": 0.62
@@ -10218,7 +10218,7 @@
       "handballs": 1.89,
       "marks": 2.56,
       "goals": 2.44,
-      "tackles": 1,
+      "tackles": 1.11,
       "clearances": 0.11,
       "inside_50s": 1.33,
       "rebound_50s": 0,
