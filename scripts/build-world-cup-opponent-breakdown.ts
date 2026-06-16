@@ -15,6 +15,7 @@
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --refresh-odds
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --trigger-odds-api
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --warm-props-stats
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --full-pipeline
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --diagnose-props-dvp
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --diagnose-props-dvp --player="Lamine Yamal"
  *   npm run build:world-cup:dashboard
@@ -312,6 +313,45 @@ async function runWarmPropsStats(): Promise<void> {
   }
 }
 
+/** End-to-end: dashboard cache, odds ingest, prod props refresh, props-stats warm. */
+async function runFullPipeline(argv: string[]): Promise<void> {
+  const warmArgs = argv.filter(
+    (a) => !['--full-pipeline', '--skip-local', '--skip-prod'].includes(a)
+  );
+
+  if (!argv.includes('--skip-local')) {
+    console.log('\n[wc-pipeline] Phase 1/4 — Dashboard cache (BDL ingest, side panels, DvP, team dashboards)\n');
+    await runDashboardWarm(warmArgs);
+
+    const apiFootballKey = (process.env.API_FOOTBALL_KEY || '').trim();
+    if (apiFootballKey) {
+      console.log('\n[wc-pipeline] Phase 2/4 — Odds ingest (API-Football to Supabase)\n');
+      await runRefreshOdds();
+    } else {
+      console.warn('[wc-pipeline] Phase 2/4 skipped — API_FOOTBALL_KEY not set');
+    }
+  } else {
+    console.log('[wc-pipeline] Skipping local build phases (--skip-local)');
+  }
+
+  const prodUrl = (process.env.PROD_URL || process.env.BASE_URL || '').trim().replace(/\/+$/, '');
+  const cronSecret = (process.env.CRON_SECRET || '').trim();
+  if (argv.includes('--skip-prod')) {
+    console.log('[wc-pipeline] Skipping production warm (--skip-prod)');
+  } else if (!prodUrl || !cronSecret) {
+    console.warn('[wc-pipeline] Phases 3–4 skipped — PROD_URL or CRON_SECRET not set');
+  } else {
+    console.log('\n[wc-pipeline] Phase 3/4 — Production odds + props list refresh\n');
+    await runTriggerWorldCupOddsApi();
+    if (process.exitCode) process.exit(process.exitCode);
+    console.log('\n[wc-pipeline] Phase 4/4 — Production props-stats warm + props page cache\n');
+    process.env.WC_WARM_USE_LIST = '1';
+    await runWarmPropsStats();
+  }
+
+  console.log('\n[wc-pipeline] All phases complete.\n');
+}
+
 async function runDiagnosePropsDvp(argv: string[]): Promise<void> {
   const playerArg = argv.find((a) => a.startsWith('--player='));
   const limitArg = argv.find((a) => a.startsWith('--limit='));
@@ -345,6 +385,12 @@ async function main() {
 
   if (argv.includes('--warm-props-stats')) {
     await runWarmPropsStats();
+    return;
+  }
+
+  if (argv.includes('--full-pipeline')) {
+    const pipeArgs = argv.filter((a) => a !== '--full-pipeline');
+    await runFullPipeline(pipeArgs);
     return;
   }
 
