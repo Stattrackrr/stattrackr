@@ -1201,7 +1201,7 @@ function wcAfHasValidOdd(value: string | undefined): boolean {
 }
 
 function wcAfCollectPlayerNamesFromOddsRows(
-  oddsRows: Array<{ bookmakers?: Array<{ bets?: Array<{ name?: string; values?: WcAfOddsValue[] }> }> }>
+  oddsRows: Array<{ bookmakers?: Array<{ name?: string; bets?: Array<{ name?: string; values?: WcAfOddsValue[] }> }> }>
 ): string[] {
   const seen = new Set<string>();
   const names: string[] = [];
