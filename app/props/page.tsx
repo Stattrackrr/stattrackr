@@ -12,7 +12,10 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
-import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
+import {
+  buildWorldCupPlayerDashboardParams,
+  prefetchWorldCupDashboard,
+} from '@/lib/worldCupDashboardClient';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -184,6 +187,17 @@ function navigateToWorldCupDashboardFromProp(
   if (selectedBook) q.set('bookmaker', selectedBook);
   if (matchDate) q.set('matchDate', matchDate);
   if (prop.wcPosition) q.set('position', prop.wcPosition);
+
+  const dashboardParams = buildWorldCupPlayerDashboardParams({
+    playerName: prop.playerName,
+    playerId: /^\d+$/.test(playerId) ? playerId : null,
+    teamId: /^\d+$/.test(teamId) ? teamId : null,
+    teamName: team || null,
+    opponentTeamId: /^\d+$/.test(opponentTeamId) ? opponentTeamId : null,
+    opponentTeamName: opponent || null,
+  });
+  const dashboardUrl = `/api/world-cup/dashboard?${dashboardParams.toString()}`;
+  prefetchWorldCupDashboard(dashboardUrl);
 
   const prefetchUrls = [
     `/api/world-cup/players?search=${encodeURIComponent(prop.playerName)}&competition=world-cup`,
