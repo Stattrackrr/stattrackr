@@ -12,6 +12,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
 import { getAflPlayerHeadshotUrl } from '@/lib/aflPlayerHeadshots';
+import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import {
   buildWorldCupPlayerDashboardParams,
   prefetchWorldCupDashboard,
