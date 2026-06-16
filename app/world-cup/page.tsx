@@ -10233,8 +10233,10 @@ export function WorldCupPageContent() {
           if (playerIdForRequest) params.set('playerId', playerIdForRequest);
           if (playerNameForRequest) params.set('playerName', playerNameForRequest);
         }
-        const payload = await fetchWorldCupDashboardJson<WorldCupDashboardData>(
-          `/api/world-cup/dashboard?${params.toString()}`,
+        const dashboardUrl = `/api/world-cup/dashboard?${params.toString()}`;
+        const payload = await loadWorldCupDashboardWithHandoff<WorldCupDashboardData>(
+          dashboardUrl,
+          worldCupDashboardRequestKey(params),
           { cache: 'no-store' }
         );
         if (cancelled) return;
