@@ -81,6 +81,53 @@ export const sharedCache = {
     if (hit.exp && Date.now() > hit.exp) { memory.delete(key); return null; }
     return hit.v as T;
   },
+  /** Batch GET via one Upstash pipeline round-trip (null per missing key). */
+  async getJSONMany<T = any>(keys: string[]): Promise<Array<T | null>> {
+    if (!keys.length) return [];
+    if (HAS_UPSTASH) {
+      try {
+        const commands = keys.map((key) => ['GET', key]);
+        const res = await fetch(`${REST_URL}/pipeline`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${REST_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(commands),
+        });
+        if (!res.ok) throw new Error(`Upstash error ${res.status}`);
+        const json = (await res.json()) as unknown[];
+        return keys.map((_, i) => {
+          const r = json?.[i];
+          const val =
+            r != null && typeof r === 'object' && 'result' in r
+              ? (r as { result: string | null }).result
+              : Array.isArray(r)
+                ? r[1]
+                : typeof r === 'string'
+                  ? r
+                  : null;
+          if (val == null || val === '') return null;
+          try {
+            return JSON.parse(val as string) as T;
+          } catch {
+            return null;
+          }
+        });
+      } catch (error) {
+        warnSharedCacheFallback('redis MGET pipeline', error);
+      }
+    }
+    return keys.map((key) => {
+      const hit = memory.get(key);
+      if (!hit) return null;
+      if (hit.exp && Date.now() > hit.exp) {
+        memory.delete(key);
+        return null;
+      }
+      return hit.v as T;
+    });
+  },
   async setJSON(key: string, value: any, ttlSeconds: number): Promise<void> {
     if (HAS_UPSTASH) {
       try {

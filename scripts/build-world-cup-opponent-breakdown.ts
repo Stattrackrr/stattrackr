@@ -290,10 +290,7 @@ async function runRefreshOdds(): Promise<void> {
 async function runWarmPropsStats(): Promise<void> {
   const {
     runWorldCupPropsStatsWarm,
-    buildWorldCupPlayerPropsList,
-    enrichWorldCupPlayerPropsList,
-    filterWorldCupPropsWithPlayerCategoryStats,
-    setWorldCupEnrichedListCache,
+    rebuildWorldCupEnrichedListFromOddsCache,
   } = await import('../lib/worldCupCache');
 
   const baseUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
@@ -304,18 +301,14 @@ async function runWarmPropsStats(): Promise<void> {
   if (!result.success) process.exit(1);
 
   try {
-    const list = await buildWorldCupPlayerPropsList();
-    console.log(`[wc-warm] Rebuilding enriched props cache (${list.data.length} odds rows)...`);
-    const enriched = await enrichWorldCupPlayerPropsList(list.data, { cacheOnly: false });
-    const filtered = filterWorldCupPropsWithPlayerCategoryStats(list.games, enriched);
-    const lastUpdated = new Date().toISOString();
-    await setWorldCupEnrichedListCache({
-      games: filtered.games,
-      data: filtered.data,
-      lastUpdated,
+    console.log('[wc-warm] Rebuilding enriched props cache from odds + warmed stats...');
+    const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
+      cacheOnly: true,
+      skipRowMeta: true,
+      writeCache: true,
     });
     console.log(
-      `[wc-warm] Enriched cache written (${filtered.data.length} props with stats, ${list.data.length} odds rows ingested)`
+      `[wc-warm] Enriched cache written (${rebuilt.data.length} props with stats, ${rebuilt.rawOddsCount} odds rows ingested)`
     );
   } catch (e) {
     console.warn('[wc-warm] enriched list rebuild failed:', e);
@@ -363,7 +356,8 @@ async function runFullPipeline(argv: string[]): Promise<void> {
       if (process.exitCode) process.exit(process.exitCode);
     }
     console.log('\n[wc-pipeline] Phase 4/4 — Props-stats warm + enriched props page cache\n');
-    process.env.WC_WARM_USE_LIST = '1';
+    // Same process as AFL cron: read props list from cache we just wrote, not prod HTTP.
+    delete process.env.WC_WARM_USE_LIST;
     await runWarmPropsStats();
   }
 

@@ -940,7 +940,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
-const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v6';
+const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v7';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
 function wcPropsMeetsMinOdds(overOdds?: string, underOdds?: string, yesOdds?: string): boolean {
@@ -1096,6 +1096,18 @@ function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolea
   }
   const base = '/api/afl/player-props/list';
   return debugStats ? `${base}?debugStats=1` : base;
+}
+
+const WC_PROPS_FETCH_TIMEOUT_MS = 25_000;
+
+async function fetchSecondaryPropsList(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), WC_PROPS_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { cache: 'no-store', signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
 const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
@@ -2518,7 +2530,7 @@ export default function NBALandingPage() {
           if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
         }
         const listUrl = getSecondaryPropsListUrl(sport, false);
-        const listRes = await fetch(listUrl, { cache: 'no-store' });
+        const listRes = await fetchSecondaryPropsList(listUrl);
         const listData = await listRes.json();
         const { games, aggregated } = aggregateSecondaryListPayload(listData, sport);
         if (listData.noAflOdds === true || listData.noWorldCupOdds === true) {
@@ -2625,7 +2637,7 @@ export default function NBALandingPage() {
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
       const listUrl = getSecondaryPropsListUrl(listSport, debugStats);
       const requestPromise = (async () => {
-        const listRes = await fetch(listUrl, { cache: 'no-store' });
+        const listRes = await fetchSecondaryPropsList(listUrl);
         if (cancelled) return { games: [], aggregated: [], noAflOdds: false };
         const listData = await listRes.json();
         if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
@@ -3098,7 +3110,7 @@ export default function NBALandingPage() {
           const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
             fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' }),
             fetch(debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list', { cache: 'no-store' }),
-            fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'no-store' }),
+            fetchSecondaryPropsList('/api/world-cup/dashboard?playerPropsList=1'),
           ]);
           const [nbaPayload, aflPayload, wcPayload] = await Promise.all([
             nbaResponse.json().catch(() => null),

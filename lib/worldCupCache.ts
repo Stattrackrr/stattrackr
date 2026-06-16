@@ -1960,12 +1960,8 @@ export async function getWorldCupPropStats(
 ): Promise<WorldCupPropStatsPayload | null> {
   const key = getWorldCupPropStatsCacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<WorldCupPropStatsPayload>(key);
-  if (cached && typeof cached === 'object') {
-    const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
-    const staleSeason = cached.seasonAvg != null && !(cached.seasonHitRate?.total);
-    const staleWc = cached.wcGameLog === undefined && hasAnyStat;
-    if (hasAnyStat && !staleSeason && !staleWc) return cached;
-  }
+  const accepted = wcAcceptCachedPropStats(cached);
+  if (accepted) return accepted;
   if (cacheOnly) return null;
   const games = await loadWorldCupPlayerGameLogs(playerName);
   if (!games.length) return null;
@@ -1978,6 +1974,41 @@ export async function getWorldCupPropStats(
 }
 
 const wcPropStatsByKeyCache = new Map<string, WorldCupPropStatsPayload | null>();
+
+function wcAcceptCachedPropStats(cached: WorldCupPropStatsPayload | null | undefined): WorldCupPropStatsPayload | null {
+  if (!cached || typeof cached !== 'object') return null;
+  const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
+  const staleSeason = cached.seasonAvg != null && !(cached.seasonHitRate?.total);
+  const staleWc = cached.wcGameLog === undefined && hasAnyStat;
+  if (hasAnyStat && !staleSeason && !staleWc) return cached;
+  return null;
+}
+
+const WC_PROP_STATS_PREFETCH_BATCH = 200;
+
+async function prefetchWorldCupPropStatsKeys(keys: string[]): Promise<void> {
+  const unique = [...new Set(keys)].filter((k) => !wcPropStatsByKeyCache.has(k));
+  for (let i = 0; i < unique.length; i += WC_PROP_STATS_PREFETCH_BATCH) {
+    const batch = unique.slice(i, i + WC_PROP_STATS_PREFETCH_BATCH);
+    const values = await sharedCache.getJSONMany<WorldCupPropStatsPayload>(batch);
+    for (let j = 0; j < batch.length; j++) {
+      wcPropStatsByKeyCache.set(batch[j]!, wcAcceptCachedPropStats(values[j] ?? null));
+    }
+  }
+}
+
+function wcPropStatsFromRowCache(row: WorldCupListPropRow): WorldCupPropStatsPayload | null {
+  const primary = getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line);
+  if (wcPropStatsByKeyCache.has(primary)) {
+    const hit = wcPropStatsByKeyCache.get(primary);
+    if (hit) return hit;
+  }
+  const reverse = getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line);
+  if (wcPropStatsByKeyCache.has(reverse)) {
+    return wcPropStatsByKeyCache.get(reverse) ?? null;
+  }
+  return null;
+}
 
 type WcDvpAggregateCached = {
   opponents: string[];
@@ -2334,31 +2365,42 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
   console.log('=== Done ===\n');
 }
 
+const WC_LIST_ENRICH_CONCURRENCY = 64;
+
 export async function enrichWorldCupPlayerPropsList(
   rows: WorldCupListPropRow[],
-  options: { cacheOnly?: boolean } = {}
+  options: { cacheOnly?: boolean; skipRowMeta?: boolean } = {}
 ): Promise<WorldCupListPropRow[]> {
   const cacheOnly = options.cacheOnly ?? true;
+  const skipRowMeta = options.skipRowMeta ?? false;
   wcPropStatsByKeyCache.clear();
-  const ctx = await loadWcPropsEnrichContext();
-  const out: WorldCupListPropRow[] = [];
   const total = rows.length;
   if (total > 0) {
-    console.log(`[wc-odds] Enriching stats for ${total} prop row(s) (cacheOnly=${cacheOnly})...`);
+    console.log(
+      `[wc-odds] Enriching stats for ${total} prop row(s) (cacheOnly=${cacheOnly}, skipRowMeta=${skipRowMeta})...`
+    );
   }
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]!;
-    const dedupe = getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line);
-    let stats = wcPropStatsByKeyCache.get(dedupe);
-    if (stats === undefined) {
-      stats = await getWorldCupPropStats(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line, cacheOnly);
+
+  const keysToFetch: string[] = [];
+  for (const row of rows) {
+    keysToFetch.push(getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line));
+    keysToFetch.push(getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line));
+  }
+  await prefetchWorldCupPropStatsKeys(keysToFetch);
+
+  const ctx = skipRowMeta ? null : await loadWcPropsEnrichContext();
+
+  const enrichOne = async (row: WorldCupListPropRow, index: number): Promise<WorldCupListPropRow> => {
+    let stats = wcPropStatsFromRowCache(row);
+    if (!stats && !cacheOnly) {
+      stats = await getWorldCupPropStats(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line, false);
       if (!stats) {
-        stats = await getWorldCupPropStats(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line, cacheOnly);
+        stats = await getWorldCupPropStats(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line, false);
       }
-      wcPropStatsByKeyCache.set(dedupe, stats);
     }
-    const meta = await wcEnrichRowMeta(row, ctx);
-    out.push({
+    const meta = ctx ? await wcEnrichRowMeta(row, ctx) : {};
+    wcProgressLog('wc-odds', index + 1, total, 'props enriched');
+    return {
       ...row,
       ...meta,
       ...(stats
@@ -2377,17 +2419,21 @@ export async function enrichWorldCupPlayerPropsList(
             dvpStatValue: meta.dvpStatValue ?? stats.dvpStatValue ?? null,
           }
         : {}),
-    });
-    wcProgressLog('wc-odds', i + 1, total, 'props enriched');
-  }
+    };
+  };
+
+  const enriched = skipRowMeta
+    ? await Promise.all(rows.map((row, index) => enrichOne(row, index)))
+    : await wcAfMapWithConcurrency(rows, WC_LIST_ENRICH_CONCURRENCY, enrichOne);
+
   if (total > 0) {
     console.log(`[wc-odds] Enrichment complete (${total} rows)`);
   }
-  return out;
+  return enriched;
 }
 
 const WC_PROPS_WARM_BATCH_SIZE = 40;
-const WC_PROPS_WARM_CONCURRENT_BATCHES = 2;
+const WC_PROPS_WARM_CONCURRENT_BATCHES = 4;
 const WC_PROPS_WARM_MAX_PROPS = 50000;
 
 type WcPropToWarm = { playerName: string; team: string; opponent: string; statType: string; line: number };
@@ -2579,6 +2625,55 @@ export async function setWorldCupEnrichedListCache(payload: {
   lastUpdated: string;
 }): Promise<void> {
   await sharedCache.setJSON(WC_LIST_ENRICHED_RESPONSE_CACHE_KEY, payload, WC_LIST_ENRICHED_CACHE_TTL_SECONDS);
+}
+
+/** Build props-page payload from odds list + warmed prop-stats caches (self-heal when enriched blob missing). */
+export async function rebuildWorldCupEnrichedListFromOddsCache(options?: {
+  cacheOnly?: boolean;
+  skipRowMeta?: boolean;
+  writeCache?: boolean;
+}): Promise<{
+  games: WorldCupListGame[];
+  data: WorldCupListPropRow[];
+  lastUpdated: string | null;
+  rawOddsCount: number;
+  ingestMessage: string;
+}> {
+  const cacheOnly = options?.cacheOnly ?? true;
+  const skipRowMeta = options?.skipRowMeta ?? true;
+  const writeCache = options?.writeCache ?? true;
+
+  const result = await buildWorldCupPlayerPropsList({ cacheOnly: true });
+  if (!result.data.length) {
+    return {
+      games: [],
+      data: [],
+      lastUpdated: result.lastUpdated,
+      rawOddsCount: 0,
+      ingestMessage: result.ingestMessage,
+    };
+  }
+
+  const enriched = await enrichWorldCupPlayerPropsList(result.data, { cacheOnly, skipRowMeta });
+  const filtered = filterWorldCupPropsWithPlayerCategoryStats(result.games, enriched);
+  const lastUpdated = result.lastUpdated ?? new Date().toISOString();
+
+  if (writeCache && filtered.data.length) {
+    await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
+  }
+
+  const ingestMessage =
+    filtered.data.length > 0
+      ? `Fetched ${filtered.data.length} props for ${filtered.games.length} games`
+      : `${result.data.length} Bet365 props in cache but none have player stats yet — re-run World Cup Process Stats.`;
+
+  return {
+    games: filtered.games,
+    data: filtered.data,
+    lastUpdated,
+    rawOddsCount: result.data.length,
+    ingestMessage,
+  };
 }
 
 /** Refresh API-Football props list + enriched cache (cron / manual). */

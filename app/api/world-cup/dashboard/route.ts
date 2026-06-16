@@ -52,6 +52,7 @@ import {
   getWorldCupCache,
   getWorldCupEnrichedListCache,
   refreshWorldCupOddsCache,
+  rebuildWorldCupEnrichedListFromOddsCache,
   runWorldCupPropsStatsWarm,
   setWorldCupEnrichedListCache,
   getWcCacheDebugSummary,
@@ -2828,7 +2829,50 @@ async function handleWorldCupPlayerPropsListGet(request: NextRequest): Promise<N
   const cacheOnly = !hasCronAuth;
 
   try {
-    if (enrich && !shouldFetchLive) {
+    if (shouldFetchLive) {
+      const result = await buildWorldCupPlayerPropsList({ refresh: true });
+      if (!enrich) {
+        return NextResponse.json(
+          {
+            success: true,
+            games: result.games,
+            data: result.data,
+            gamesCount: result.games.length,
+            propsCount: result.data.length,
+            season: 2026,
+            lastUpdated: result.lastUpdated,
+            nextUpdate: null,
+            noWorldCupOdds: result.noWorldCupOdds,
+            noAflOdds: result.noWorldCupOdds,
+            ingestMessage: result.ingestMessage,
+          },
+          { headers: { 'Cache-Control': 'private, no-store' } }
+        );
+      }
+      const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
+        cacheOnly: true,
+        skipRowMeta: true,
+        writeCache: true,
+      });
+      return NextResponse.json(
+        {
+          success: true,
+          games: rebuilt.games,
+          data: rebuilt.data,
+          gamesCount: rebuilt.games.length,
+          propsCount: rebuilt.data.length,
+          season: 2026,
+          lastUpdated: rebuilt.lastUpdated,
+          nextUpdate: null,
+          noWorldCupOdds: rebuilt.rawOddsCount === 0,
+          noAflOdds: rebuilt.rawOddsCount === 0,
+          ingestMessage: rebuilt.ingestMessage,
+        },
+        { headers: { 'Cache-Control': 'private, no-store' } }
+      );
+    }
+
+    if (enrich) {
       const enrichedCache = await getWorldCupEnrichedListCache();
       if (enrichedCache?.data?.length) {
         const filtered = filterWorldCupPropsWithPlayerCategoryStats(enrichedCache.games, enrichedCache.data);
@@ -2849,53 +2893,43 @@ async function handleWorldCupPlayerPropsListGet(request: NextRequest): Promise<N
           { headers: { 'Cache-Control': 'private, no-store' } }
         );
       }
-    }
 
-    const result = await buildWorldCupPlayerPropsList({
-      refresh: shouldFetchLive,
-      cacheOnly,
-    });
-
-    if (!enrich) {
+      // Enriched cache missing — user requests never rebuild here (pipeline/cron writes full odds+stats blob).
+      const list = await buildWorldCupPlayerPropsList({ cacheOnly: true });
       return NextResponse.json(
         {
           success: true,
-          games: result.games,
-          data: result.data,
-          gamesCount: result.games.length,
-          propsCount: result.data.length,
+          games: [],
+          data: [],
+          gamesCount: 0,
+          propsCount: 0,
           season: 2026,
-          lastUpdated: result.lastUpdated,
+          lastUpdated: list.lastUpdated,
           nextUpdate: null,
-          noWorldCupOdds: result.noWorldCupOdds,
-          noAflOdds: result.noWorldCupOdds,
-          ingestMessage: result.ingestMessage,
+          noWorldCupOdds: list.data.length === 0,
+          noAflOdds: list.data.length === 0,
+          ingestMessage:
+            list.data.length > 0
+              ? 'Props cache is refreshing — re-run World Cup Process Stats or wait for the next scheduled run.'
+              : list.ingestMessage,
         },
         { headers: { 'Cache-Control': 'private, no-store' } }
       );
     }
 
-    const enriched = await enrichWorldCupPlayerPropsList(result.data, {
-      cacheOnly,
-    });
-    const filtered = filterWorldCupPropsWithPlayerCategoryStats(result.games, enriched);
-    const lastUpdated = result.lastUpdated ?? new Date().toISOString();
-    if (filtered.data.length) {
-      await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
-    }
-
+    const result = await buildWorldCupPlayerPropsList({ refresh: false, cacheOnly });
     return NextResponse.json(
       {
         success: true,
-        games: filtered.games,
-        data: filtered.data,
-        gamesCount: filtered.games.length,
-        propsCount: filtered.data.length,
+        games: result.games,
+        data: result.data,
+        gamesCount: result.games.length,
+        propsCount: result.data.length,
         season: 2026,
-        lastUpdated,
+        lastUpdated: result.lastUpdated,
         nextUpdate: null,
-        noWorldCupOdds: filtered.data.length === 0,
-        noAflOdds: filtered.data.length === 0,
+        noWorldCupOdds: result.noWorldCupOdds,
+        noAflOdds: result.noWorldCupOdds,
         ingestMessage: result.ingestMessage,
       },
       { headers: { 'Cache-Control': 'private, no-store' } }
@@ -2936,11 +2970,14 @@ async function handleWorldCupPropsStatsWarmGet(request: NextRequest): Promise<Ne
   }
 
   try {
-    const list = await buildWorldCupPlayerPropsList();
-    const enriched = await enrichWorldCupPlayerPropsList(list.data, { cacheOnly: false });
-    const filtered = filterWorldCupPropsWithPlayerCategoryStats(list.games, enriched);
-    const lastUpdated = new Date().toISOString();
-    await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
+    const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
+      cacheOnly: true,
+      skipRowMeta: true,
+      writeCache: true,
+    });
+    console.log(
+      `[WC props-stats/warm] Enriched cache written (${rebuilt.data.length} props with stats, ${rebuilt.rawOddsCount} odds rows)`
+    );
   } catch (e) {
     console.warn('[WC props-stats/warm] enriched list rebuild failed:', e);
   }
