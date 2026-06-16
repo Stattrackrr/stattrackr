@@ -1,0 +1,494 @@
+{
+  "playerName": "Cody Gakpo",
+  "teamName": "Netherlands",
+  "fixtureId": 1489376,
+  "match": {
+    "home": "Netherlands",
+    "away": "Japan",
+    "date": "2026-06-14T20:00:00+00:00"
+  },
+  "betNameHits": [],
+  "playerHits": [
+    {
+      "bookmaker": "Bet365",
+      "betId": 92,
+      "betName": "Anytime Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "3.10",
+      "handicap": null,
+      "american": "+210"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 93,
+      "betName": "First Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "7.00",
+      "handicap": null,
+      "american": "+600"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 94,
+      "betName": "Last Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "7.00",
+      "handicap": null,
+      "american": "+600"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 1+ ",
+      "odd": "1.05",
+      "handicap": null,
+      "american": "-2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 2+ ",
+      "odd": "1.30",
+      "handicap": null,
+      "american": "-333"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 3+ ",
+      "odd": "1.83",
+      "handicap": null,
+      "american": "-120"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 4+ ",
+      "odd": "3.25",
+      "handicap": null,
+      "american": "+225"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 5+ ",
+      "odd": "5.50",
+      "handicap": null,
+      "american": "+450"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 6+ ",
+      "odd": "11.00",
+      "handicap": null,
+      "american": "+1000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 7+ ",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 215,
+      "betName": "Player Singles",
+      "kind": null,
+      "value": "Cody Gakpo - 8+ ",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 213,
+      "betName": "Player Triples",
+      "kind": null,
+      "value": "Cody Gakpo - 1+",
+      "odd": "1.53",
+      "handicap": null,
+      "american": "-189"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 213,
+      "betName": "Player Triples",
+      "kind": null,
+      "value": "Cody Gakpo - 2+",
+      "odd": "3.50",
+      "handicap": null,
+      "american": "+250"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 213,
+      "betName": "Player Triples",
+      "kind": null,
+      "value": "Cody Gakpo - 3+",
+      "odd": "8.00",
+      "handicap": null,
+      "american": "+700"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 212,
+      "betName": "Player Assists",
+      "kind": "assists",
+      "value": "Cody Gakpo",
+      "odd": "5.00",
+      "handicap": null,
+      "american": "+400"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 266,
+      "betName": "Player Fouls Committed",
+      "kind": null,
+      "value": "Cody Gakpo - 1+",
+      "odd": "1.44",
+      "handicap": null,
+      "american": "-227"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 266,
+      "betName": "Player Fouls Committed",
+      "kind": null,
+      "value": "Cody Gakpo - 2+",
+      "odd": "3.00",
+      "handicap": null,
+      "american": "+200"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 266,
+      "betName": "Player Fouls Committed",
+      "kind": null,
+      "value": "Cody Gakpo - 3+",
+      "odd": "8.00",
+      "handicap": null,
+      "american": "+700"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 266,
+      "betName": "Player Fouls Committed",
+      "kind": null,
+      "value": "Cody Gakpo - 4+",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 1+",
+      "odd": "1.05",
+      "handicap": null,
+      "american": "-2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 2+",
+      "odd": "1.30",
+      "handicap": null,
+      "american": "-333"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 3+",
+      "odd": "1.83",
+      "handicap": null,
+      "american": "-120"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 4+",
+      "odd": "3.25",
+      "handicap": null,
+      "american": "+225"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 5+",
+      "odd": "5.50",
+      "handicap": null,
+      "american": "+450"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 6+",
+      "odd": "11.00",
+      "handicap": null,
+      "american": "+1000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 7+",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 240,
+      "betName": "Home Player Shots",
+      "kind": "shots",
+      "value": "Cody Gakpo - 8+",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 242,
+      "betName": "Player Shots On Target",
+      "kind": "sot",
+      "value": "Cody Gakpo - 1+",
+      "odd": "1.44",
+      "handicap": null,
+      "american": "-227"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 242,
+      "betName": "Player Shots On Target",
+      "kind": "sot",
+      "value": "Cody Gakpo - 2+",
+      "odd": "3.25",
+      "handicap": null,
+      "american": "+225"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 242,
+      "betName": "Player Shots On Target",
+      "kind": "sot",
+      "value": "Cody Gakpo - 3+",
+      "odd": "9.00",
+      "handicap": null,
+      "american": "+800"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 242,
+      "betName": "Player Shots On Target",
+      "kind": "sot",
+      "value": "Cody Gakpo - 4+",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 228,
+      "betName": "Home Goal Method Header",
+      "kind": null,
+      "value": "Cody Gakpo",
+      "odd": "26.00",
+      "handicap": null,
+      "american": "+2500"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 229,
+      "betName": "Goal Method Outside the Box",
+      "kind": null,
+      "value": "Cody Gakpo",
+      "odd": "15.00",
+      "handicap": null,
+      "american": "+1400"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 231,
+      "betName": "Home Anytime Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "3.10",
+      "handicap": null,
+      "american": "+210"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 232,
+      "betName": "Home First Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "7.00",
+      "handicap": null,
+      "american": "+600"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 233,
+      "betName": "Home Last Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "7.00",
+      "handicap": null,
+      "american": "+600"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 269,
+      "betName": "Home Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo - 1+",
+      "odd": "1.44",
+      "handicap": null,
+      "american": "-227"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 269,
+      "betName": "Home Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo - 2+",
+      "odd": "3.25",
+      "handicap": null,
+      "american": "+225"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 269,
+      "betName": "Home Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo - 3+",
+      "odd": "9.00",
+      "handicap": null,
+      "american": "+800"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 269,
+      "betName": "Home Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo - 4+",
+      "odd": "21.00",
+      "handicap": null,
+      "american": "+2000"
+    },
+    {
+      "bookmaker": "Bet365",
+      "betId": 275,
+      "betName": "Away Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo",
+      "odd": "26.00",
+      "handicap": null,
+      "american": "+2500"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 228,
+      "betName": "Home Goal Method Header",
+      "kind": null,
+      "value": "Cody Gakpo",
+      "odd": "13.00",
+      "handicap": null,
+      "american": "+1200"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 229,
+      "betName": "Goal Method Outside the Box",
+      "kind": null,
+      "value": "Cody Gakpo",
+      "odd": "11.60",
+      "handicap": null,
+      "american": "+1060"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 231,
+      "betName": "Home Anytime Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "3.30",
+      "handicap": null,
+      "american": "+230"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 232,
+      "betName": "Home First Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "6.20",
+      "handicap": null,
+      "american": "+520"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 233,
+      "betName": "Home Last Goal Scorer",
+      "kind": "anytime",
+      "value": "Cody Gakpo",
+      "odd": "6.20",
+      "handicap": null,
+      "american": "+520"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 275,
+      "betName": "Away Player Shots On Target Total",
+      "kind": "sot",
+      "value": "Cody Gakpo",
+      "odd": "13.00",
+      "handicap": null,
+      "american": "+1200"
+    },
+    {
+      "bookmaker": "Betano",
+      "betId": 251,
+      "betName": "Player to be booked",
+      "kind": null,
+      "value": "Cody Gakpo",
+      "odd": "9.00",
+      "handicap": null,
+      "american": "+800"
+    }
+  ],
+  "bareOverUnderSample": 280
+}

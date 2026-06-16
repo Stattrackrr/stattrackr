@@ -8,9 +8,35 @@ function normalizeSecret(s: string): string {
   return (s ?? '').replace(/\r\n|\r|\n/g, '').trim();
 }
 
+function getProvidedCronSecret(request: Request): string {
+  const headerSecret = normalizeSecret(request.headers.get('x-cron-secret') ?? '');
+  const authHeader = request.headers.get('authorization');
+  const bearerSecret =
+    authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+  const authSecret = normalizeSecret(bearerSecret ?? '');
+
+  let querySecret = '';
+  try {
+    const q = new URL(request.url).searchParams.get('secret');
+    querySecret = normalizeSecret(q ?? '');
+  } catch {
+    // ignore
+  }
+
+  return normalizeSecret(querySecret || headerSecret || authSecret);
+}
+
+/** Silent check for cache-only vs cron refresh paths (no 401 logging). */
+export function isCronRequestAuthorized(request: Request): boolean {
+  const cronSecret = normalizeSecret(process.env.CRON_SECRET ?? '');
+  if (!cronSecret) return false;
+  const provided = getProvidedCronSecret(request);
+  return !!provided && provided === cronSecret;
+}
+
 /**
  * Validate that a request is authorized to trigger cron endpoints.
- * Checks: x-vercel-cron: 1, Authorization: Bearer <CRON_SECRET>, X-Cron-Secret, or ?secret=
+ * Checks: Authorization: Bearer <CRON_SECRET>, X-Cron-Secret, or ?secret=
  * Comparison is normalized (trim, strip newlines) so env var newlines don't cause 401.
  */
 export function authorizeCronRequest(request: Request): CronAuthResult {
@@ -34,21 +60,7 @@ export function authorizeCronRequest(request: Request): CronAuthResult {
     };
   }
 
-  const headerSecret = normalizeSecret(request.headers.get('x-cron-secret') ?? '');
-  const authHeader = request.headers.get('authorization');
-  const bearerSecret =
-    authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-  const authSecret = normalizeSecret(bearerSecret ?? '');
-
-  let querySecret = '';
-  try {
-    const q = new URL(request.url).searchParams.get('secret');
-    querySecret = normalizeSecret(q ?? '');
-  } catch {
-    // ignore
-  }
-
-  const provided = normalizeSecret(querySecret || headerSecret || authSecret);
+  const provided = getProvidedCronSecret(request);
 
   if (!provided || provided !== cronSecret) {
     const reason = !provided

@@ -25,6 +25,19 @@ import { cachedFetch } from '@/lib/requestCache';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import Image from 'next/image';
+import {
+  defaultPropsSport,
+  isSecondaryPropsSport,
+  NBA_PUBLIC_ENABLED,
+  propsPathForSport,
+  resolvePropsSportParam,
+  WORLD_CUP_LOGO_PATH,
+  WORLD_CUP_LOGO_MARK_CLASS,
+  WORLD_CUP_LOGO_MARK_COMPACT_CLASS,
+  WORLD_CUP_LOGO_TOGGLE_CLASS,
+  type PropsSportMode,
+} from '@/lib/nbaConstants';
+import { resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, worldCupTeamsMatch } from '@/lib/worldCupFlags';
 
 interface Game {
   id: number;
@@ -66,19 +79,108 @@ interface PlayerProp {
   seasonAvg?: number | null;
   seasonHitRate?: { hits: number; total: number } | null;
   streak?: number | null;
+  wcGamesAvg?: number | null;
+  wcGamesHitRate?: { hits: number; total: number } | null;
+  wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;
   position?: 'PG' | 'SG' | 'SF' | 'PF' | 'C' | null; // Player position (used for DvP calculation)
   dvpRating?: number | null;
   dvpStatValue?: number | null;
+  headshotUrl?: string | null;
+  wcPosition?: string | null;
   bookmakerLines?: Array<{ bookmaker: string; line: number; overOdds: string; underOdds: string }>;
   // AFL: link to game for filtering; game matchup for display
   gameId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  homeTeamCode?: string | null;
+  awayTeamCode?: string | null;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
   /** AFL Fantasy bucket (DEF/MID/FWD/RUC) for list display; from /api/afl/player-props/list. */
   aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
   /** DFS role short label (e.g. INS MID); optional when not in DFS map. */
   aflDfsRole?: string | null;
 }
+
+function normalizeWorldCupStatForDashboard(stat: string): string {
+  const value = String(stat || '').trim().toLowerCase();
+  if (!value) return 'goals';
+  if (value === 'anytime_goal_scorer' || value === 'anytime_goals' || value === 'goals_anytime') return 'goals';
+  if (value === 'goals' || value === 'goals_over') return 'goals';
+  if (value === 'assists' || value === 'assists_over') return 'assists';
+  if (value === 'shots_on_target' || value === 'sot' || value === 'shots_on_target_over') return 'shots_on_target';
+  if (value === 'total_shots' || value === 'shots' || value === 'shots_total' || value === 'shots_over') return 'total_shots';
+  if (value === 'fouls_committed' || value === 'fouls') return 'fouls_committed';
+  if (value === 'yellow_cards' || value === 'to_be_booked' || value === 'cards') return 'yellow_cards';
+  return value;
+}
+
+function navigateToWorldCupDashboardFromProp(
+  prop: Pick<PlayerProp, 'playerName' | 'team' | 'opponent' | 'statType' | 'line' | 'bookmaker'>,
+  router: { push: (href: string) => void },
+  lineValue?: number
+): void {
+  const team = String(prop.team || '').trim();
+  const opponent = String(prop.opponent || '').trim();
+  const selectedLine =
+    typeof lineValue === 'number' && Number.isFinite(lineValue)
+      ? lineValue
+      : Number.isFinite(prop.line)
+        ? prop.line
+        : null;
+  const selectedBook = String(prop.bookmaker || '').trim();
+
+  try {
+    sessionStorage.setItem(
+      'wc_player_from_props',
+      JSON.stringify({
+        name: prop.playerName,
+        team: team || undefined,
+        opponent: opponent || undefined,
+        stat: normalizeWorldCupStatForDashboard(prop.statType),
+        line: selectedLine,
+        bookmaker: selectedBook || undefined,
+      })
+    );
+  } catch {
+    // ignore
+  }
+
+  const q = new URLSearchParams();
+  q.set('mode', 'player');
+  q.set('player', prop.playerName);
+  if (team) q.set('team', team);
+  if (opponent) q.set('opponent', opponent);
+  q.set('stat', normalizeWorldCupStatForDashboard(prop.statType));
+  if (selectedLine != null) q.set('line', String(selectedLine));
+  if (selectedBook) q.set('bookmaker', selectedBook);
+  router.push(`/world-cup?${q.toString()}`);
+}
+
+function secondarySportKickoffLabel(sport: PropsSportMode): string {
+  if (sport === 'afl') return 'Bounce';
+  if (sport === 'world-cup') return 'Kick-off';
+  return 'Tipoff';
+}
+
+function rowSportKickoffLabel(rowSport: 'nba' | 'afl' | 'world-cup'): string {
+  if (rowSport === 'afl') return 'Bounce';
+  if (rowSport === 'world-cup') return 'Kick-off';
+  return 'Tipoff';
+}
+
+function propsListRowKey(
+  prop: PlayerProp,
+  rowSport: 'nba' | 'afl' | 'world-cup'
+): string {
+  return `${rowSport}|${prop.playerName}|${prop.statType}|${prop.line}|${prop.gameId ?? ''}|${prop.opponent ?? ''}`;
+}
+
+const PROPS_DESKTOP_STAT_COL_STYLE = {
+  width: '88px',
+  minWidth: '88px',
+  maxWidth: '88px',
+} as const;
 
 function normalizeAflStatForDashboard(stat: string): string {
   const value = String(stat || '').trim().toLowerCase();
@@ -156,7 +258,14 @@ interface AflGameForProps {
   homeTeam: string;
   awayTeam: string;
   commenceTime: string;
+  homeTeamCode?: string | null;
+  awayTeamCode?: string | null;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
 }
+
+type CombinedSportSource = 'nba' | 'afl' | 'world-cup';
+type CombinedPlayerPropRow = PlayerProp & { sportSource?: CombinedSportSource };
 
 type CombinedPropsSnapshotResponse = {
   success: boolean;
@@ -184,6 +293,16 @@ type CombinedPropsSnapshotResponse = {
     games?: AflGameForProps[];
     props?: PlayerProp[];
     debugMeta?: Record<string, unknown> | null;
+  };
+  worldCup?: {
+    ok: boolean;
+    status: number;
+    lastUpdated?: string | null;
+    nextUpdate?: string | null;
+    ingestMessage?: string | null;
+    noWorldCupOdds?: boolean;
+    games?: AflGameForProps[];
+    props?: PlayerProp[];
   };
 };
 
@@ -380,10 +499,13 @@ function TipoffCountdown({
   );
 }
 
-function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl'; isDark: boolean; compact?: boolean }) {
+function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl' | 'world-cup'; isDark: boolean; compact?: boolean }) {
   const [imgError, setImgError] = useState(false);
   const isAfl = sport === 'afl';
-  const imgClass = compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain';
+  const isWorldCup = sport === 'world-cup';
+  const imgClass = isWorldCup
+    ? (compact ? WORLD_CUP_LOGO_MARK_COMPACT_CLASS : WORLD_CUP_LOGO_MARK_CLASS)
+    : (compact ? 'w-6 h-6 object-contain' : 'w-8 h-8 object-contain');
   const fallbackClass = compact
     ? `inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold border ${
         isAfl
@@ -403,14 +525,15 @@ function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl'; i
             ? 'bg-blue-900/40 text-blue-200 border-blue-700'
             : 'bg-blue-100 text-blue-700 border-blue-300'
       }`;
-  const src = isAfl ? '/images/afl-logo.png' : '/images/nba-logo.png';
+  const src = isAfl ? '/images/afl-logo.png' : isWorldCup ? WORLD_CUP_LOGO_PATH : '/images/nba-logo.png';
+  const label = isAfl ? 'AFL' : isWorldCup ? 'World Cup' : 'NBA';
 
   return (
-    <span className="inline-flex items-center justify-center" aria-label={isAfl ? 'AFL' : 'NBA'} title={isAfl ? 'AFL' : 'NBA'}>
+    <span className="inline-flex items-center justify-center" aria-label={label} title={label}>
       {!imgError ? (
         <img
           src={src}
-          alt={isAfl ? 'AFL' : 'NBA'}
+          alt={label}
           className={imgClass}
           loading="eager"
           fetchPriority="high"
@@ -418,9 +541,254 @@ function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl'; i
           onError={() => setImgError(true)}
         />
       ) : (
-        <span className={fallbackClass}>{isAfl ? 'AFL' : 'NBA'}</span>
+        <span className={fallbackClass}>{label}</span>
       )}
     </span>
+  );
+}
+
+type WcPropsMatchup = {
+  homeName: string;
+  awayName: string;
+  homeFlagUrl: string | null;
+  awayFlagUrl: string | null;
+};
+
+function wcResolveTeamFlag(opts: {
+  teamName: string;
+  teamCode?: string | null;
+  teamLogo?: string | null;
+}): string | null {
+  const name = String(opts.teamName ?? '').trim();
+  if (!name) return null;
+  const code = opts.teamCode ?? resolveWorldCupFlagCode(name);
+  const fromMap = resolveBestWorldCupFlagUrl(name, code);
+  if (fromMap) return fromMap;
+  const logo = String(opts.teamLogo ?? '').trim();
+  return logo || null;
+}
+
+function lookupWcGameTeamMeta(
+  games: AflGameForProps[],
+  gameId: string | undefined,
+  teamName: string,
+  prop?: PlayerProp
+): { code: string | null; logo: string | null } {
+  const name = String(teamName ?? '').trim();
+  if (!name) return { code: null, logo: null };
+
+  const teamSlug = resolveWorldCupFlagCode(name);
+  const game = gameId ? games.find((g) => g.gameId === gameId) ?? null : null;
+  const sides = game
+    ? [
+        { name: game.homeTeam, code: game.homeTeamCode, logo: game.homeTeamLogo },
+        { name: game.awayTeam, code: game.awayTeamCode, logo: game.awayTeamLogo },
+      ]
+    : prop
+      ? [
+          { name: prop.homeTeam ?? '', code: prop.homeTeamCode, logo: prop.homeTeamLogo },
+          { name: prop.awayTeam ?? '', code: prop.awayTeamCode, logo: prop.awayTeamLogo },
+        ]
+      : [];
+
+  for (const side of sides) {
+    if (!String(side.name ?? '').trim()) continue;
+    if (worldCupTeamsMatch(name, side.name)) {
+      return {
+        code: side.code ?? resolveWorldCupFlagCode(side.name) ?? teamSlug,
+        logo: side.logo ?? null,
+      };
+    }
+  }
+
+  if (teamSlug) {
+    for (const side of sides) {
+      const sideSlug = resolveWorldCupFlagCode(side.code) ?? resolveWorldCupFlagCode(side.name);
+      if (sideSlug && sideSlug === teamSlug) {
+        return { code: side.code ?? teamSlug, logo: side.logo ?? null };
+      }
+    }
+  }
+
+  return { code: teamSlug, logo: null };
+}
+
+function wcTeamFlagUrl(
+  teamName: string,
+  opts?: { teamCode?: string | null; teamLogo?: string | null }
+): string | null {
+  return wcResolveTeamFlag({
+    teamName,
+    teamCode: opts?.teamCode,
+    teamLogo: opts?.teamLogo,
+  });
+}
+
+function wcTeamKeysMatch(a: string, b: string): boolean {
+  return worldCupTeamsMatch(a, b);
+}
+
+function resolveWcPropsMatchup(prop: PlayerProp, games: AflGameForProps[]): WcPropsMatchup {
+  const game = prop.gameId ? games.find((g) => g.gameId === prop.gameId) ?? null : null;
+  const gameHome = String(game?.homeTeam ?? prop.homeTeam ?? '').trim();
+  const gameAway = String(game?.awayTeam ?? prop.awayTeam ?? '').trim();
+  const playerTeam = String(prop.team ?? gameHome).trim();
+  const opponent =
+    playerTeam && gameHome && wcTeamKeysMatch(playerTeam, gameHome)
+      ? gameAway
+      : playerTeam && gameAway && wcTeamKeysMatch(playerTeam, gameAway)
+        ? gameHome
+        : String(prop.opponent ?? (gameAway || gameHome)).trim();
+  let homeD = playerTeam || gameHome;
+  let awayD = opponent || gameAway;
+  if (homeD && awayD && wcTeamKeysMatch(homeD, awayD)) awayD = '';
+  const homeMeta = lookupWcGameTeamMeta(games, prop.gameId, homeD, prop);
+  const awayMeta = lookupWcGameTeamMeta(games, prop.gameId, awayD, prop);
+  return {
+    homeName: homeD,
+    awayName: awayD,
+    homeFlagUrl: homeD ? wcTeamFlagUrl(homeD, { teamCode: homeMeta.code, teamLogo: homeMeta.logo }) : null,
+    awayFlagUrl: awayD ? wcTeamFlagUrl(awayD, { teamCode: awayMeta.code, teamLogo: awayMeta.logo }) : null,
+  };
+}
+
+function WcPropsMatchupLogos({
+  prop,
+  games,
+  isDark,
+  mounted,
+  size = 'md',
+}: {
+  prop: PlayerProp;
+  games: AflGameForProps[];
+  isDark: boolean;
+  mounted: boolean;
+  size?: 'sm' | 'md';
+}) {
+  const { homeName, awayName, homeFlagUrl, awayFlagUrl } = resolveWcPropsMatchup(prop, games);
+  const imgClass = size === 'sm' ? 'w-4 h-4' : 'w-6 h-6';
+  const placeholderClass = imgClass;
+  const vsClass = size === 'sm' ? 'text-[9px] leading-none' : 'text-[10px] leading-none';
+  const gapClass = size === 'sm' ? 'gap-1' : 'gap-1.5';
+  return (
+    <div className={`flex items-center ${gapClass} flex-wrap`}>
+      {homeFlagUrl ? (
+        <img
+          src={homeFlagUrl}
+          alt={homeName}
+          className={`${imgClass} object-contain flex-shrink-0 rounded-sm`}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      ) : (
+        <div
+          className={`${placeholderClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`}
+        />
+      )}
+      <span className={`${vsClass} flex-shrink-0 ${mounted && isDark ? 'text-gray-500' : 'text-gray-400'}`}>vs</span>
+      {awayFlagUrl ? (
+        <img
+          src={awayFlagUrl}
+          alt={awayName}
+          className={`${imgClass} object-contain flex-shrink-0 rounded-sm`}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      ) : (
+        <div
+          className={`${placeholderClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`}
+        />
+      )}
+    </div>
+  );
+}
+
+function SecondaryGameMatchupLogos({
+  homeTeam,
+  awayTeam,
+  homeTeamCode,
+  awayTeamCode,
+  homeTeamLogo,
+  awayTeamLogo,
+  sport,
+  aflLogoByTeam,
+  isDark,
+  mounted,
+  size = 'md',
+}: {
+  homeTeam: string;
+  awayTeam: string;
+  homeTeamCode?: string | null;
+  awayTeamCode?: string | null;
+  homeTeamLogo?: string | null;
+  awayTeamLogo?: string | null;
+  sport: PropsSportMode;
+  aflLogoByTeam: Record<string, string>;
+  isDark: boolean;
+  mounted: boolean;
+  size?: 'sm' | 'md';
+}) {
+  const imgClass = size === 'md' ? 'w-8 h-8' : 'w-5 h-5';
+  const vsClass = size === 'md' ? 'text-xs' : 'text-[10px] leading-none';
+  const vsWeight = size === 'md' ? 'font-semibold' : '';
+
+  if (sport === 'world-cup') {
+    let homeName = String(homeTeam ?? '').trim();
+    let awayName = String(awayTeam ?? '').trim();
+    if (homeName && awayName && wcTeamKeysMatch(homeName, awayName)) awayName = '';
+    const homeFlagUrl = homeName
+      ? wcTeamFlagUrl(homeName, { teamCode: homeTeamCode, teamLogo: homeTeamLogo })
+      : null;
+    const awayFlagUrl = awayName
+      ? wcTeamFlagUrl(awayName, { teamCode: awayTeamCode, teamLogo: awayTeamLogo })
+      : null;
+    return (
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {homeFlagUrl ? (
+          <img src={homeFlagUrl} alt={homeName} className={`${imgClass} object-contain flex-shrink-0 rounded-sm`} />
+        ) : (
+          <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+        )}
+        <span className={`${vsClass} ${vsWeight} flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
+        {awayFlagUrl ? (
+          <img src={awayFlagUrl} alt={awayName} className={`${imgClass} object-contain flex-shrink-0 rounded-sm`} />
+        ) : (
+          <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+        )}
+      </div>
+    );
+  }
+
+  const h = toOfficialAflTeamDisplayName(homeTeam);
+  let a = toOfficialAflTeamDisplayName(awayTeam);
+  if (h && a && h === a) a = '';
+  const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const tryAflLogo = (name: string): string | null => {
+    if (!name) return null;
+    if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
+    for (const w of name.split(/\s+/)) {
+      if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
+    }
+    return null;
+  };
+  const homeLogoUrl = h ? tryAflLogo(h) : null;
+  const awayLogoUrl = a ? tryAflLogo(a) : null;
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      {homeLogoUrl ? (
+        <img src={homeLogoUrl} alt={h} className={`${imgClass} object-contain flex-shrink-0`} />
+      ) : (
+        <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+      )}
+      <span className={`${vsClass} ${vsWeight} flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
+      {awayLogoUrl ? (
+        <img src={awayLogoUrl} alt={a} className={`${imgClass} object-contain flex-shrink-0`} />
+      ) : (
+        <div className={`${imgClass} rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
+      )}
+    </div>
   );
 }
 
@@ -515,7 +883,163 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v1';
+const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v6';
+const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
+
+function wcPropsMeetsMinOdds(overOdds?: string, underOdds?: string, yesOdds?: string): boolean {
+  const raw = String(yesOdds ?? overOdds ?? '').trim();
+  if (!raw || raw === 'N/A') return false;
+  let decimal: number | null = null;
+  const asFloat = Number.parseFloat(raw.replace(',', '.'));
+  if (Number.isFinite(asFloat) && asFloat > 1 && asFloat < 500 && !/^[+-]/.test(raw)) {
+    decimal = asFloat;
+  } else {
+    const n = Number.parseInt(raw.replace('+', ''), 10);
+    if (Number.isFinite(n)) decimal = n > 0 ? n / 100 + 1 : 100 / Math.abs(n) + 1;
+  }
+  return decimal != null && decimal >= WC_PROPS_MIN_DECIMAL_ODDS;
+}
+
+function worldCupPropHasPlayerCategoryStats(row: {
+  last5Avg?: number | null;
+  last10Avg?: number | null;
+  wcGamesAvg?: number | null;
+  wcGamesHitRate?: { hits: number; total: number } | null;
+}): boolean {
+  if (row.last5Avg != null) return true;
+  if (row.last10Avg != null) return true;
+  if (row.wcGamesAvg != null) return true;
+  return (row.wcGamesHitRate?.total ?? 0) > 0;
+}
+
+function filterWorldCupPaintableProps(props: PlayerProp[]): PlayerProp[] {
+  return props.filter(isWorldCupPaintableProp);
+}
+
+function normalizeSecondaryPropStatType(statType: string): string {
+  return String(statType || '').trim().toLowerCase().replace(/\s+/g, '_');
+}
+
+/** AFL-only markets — must never render under World Cup mode. */
+function isAflExclusivePropStatType(statType: string): boolean {
+  const n = normalizeSecondaryPropStatType(statType);
+  return (
+    n === 'disposals' ||
+    n === 'disposals_over' ||
+    n === 'kicks' ||
+    n === 'marks' ||
+    n === 'tackles' ||
+    n === 'handballs' ||
+    n === 'fantasy_points' ||
+    n.includes('disposal') ||
+    n.includes('handball') ||
+    n.includes('tackle')
+  );
+}
+
+function isWorldCupSoccerPropStatType(statType: string): boolean {
+  if (isAflExclusivePropStatType(statType)) return false;
+  const n = normalizeSecondaryPropStatType(statType);
+  return (
+    n === 'goals' ||
+    n === 'assists' ||
+    n === 'total_shots' ||
+    n === 'shots_on_target' ||
+    n === 'fouls_committed' ||
+    n === 'yellow_cards' ||
+    n === 'anytime_goal_scorer' ||
+    n === 'anytime_goals' ||
+    n === 'goals_anytime' ||
+    n.includes('goal') ||
+    n.includes('assist') ||
+    n.includes('shot') ||
+    n.includes('foul') ||
+    n.includes('yellow') ||
+    n.includes('card')
+  );
+}
+
+function isWorldCupPaintableProp(row: PlayerProp): boolean {
+  if (isAflExclusivePropStatType(row.statType)) return false;
+  return worldCupPropHasPlayerCategoryStats(row);
+}
+
+/** Rows eligible for WC-only list (matches combined interleave — stats may still be warming). */
+function isWorldCupListProp(row: PlayerProp): boolean {
+  if (isAflExclusivePropStatType(row.statType)) return false;
+  if (isWorldCupSoccerPropStatType(row.statType)) return true;
+  return worldCupPropHasPlayerCategoryStats(row);
+}
+
+function filterWorldCupListProps(props: PlayerProp[]): PlayerProp[] {
+  return props.filter(isWorldCupListProp);
+}
+
+/** Prefer paintable WC rows; fall back to any non-AFL market with stats (combined → WC hydrate). */
+function pickWorldCupHydrationProps(props: PlayerProp[]): PlayerProp[] {
+  const paintable = props.filter(isWorldCupPaintableProp);
+  if (paintable.length > 0) return paintable;
+  return props.filter(
+    (p) => !isAflExclusivePropStatType(p.statType) && worldCupPropHasPlayerCategoryStats(p)
+  );
+}
+
+/** Combined → WC: use the same rows the All feed already showed. */
+function pickWorldCupPropsFromCombinedSource(props: PlayerProp[]): PlayerProp[] {
+  const listed = filterWorldCupListProps(props);
+  if (listed.length > 0) return listed;
+  return pickWorldCupHydrationProps(props);
+}
+
+function propGameIdsFromRows(props: PlayerProp[]): Set<string> {
+  const ids = new Set<string>();
+  for (const p of props) {
+    if (p.gameId) ids.add(p.gameId);
+  }
+  return ids;
+}
+
+function gamesMatchingProps(props: PlayerProp[], games: AflGameForProps[]): AflGameForProps[] {
+  const ids = propGameIdsFromRows(props);
+  if (ids.size === 0) return games;
+  return games.filter((g) => ids.has(g.gameId));
+}
+
+/** Never restore AFL game ids over WC props (or vice versa) — only ids that match rows. */
+function selectedGameIdsForProps(
+  props: PlayerProp[],
+  games: AflGameForProps[],
+  preferredIds?: string[]
+): Set<string> {
+  const propIds = propGameIdsFromRows(props);
+  if (propIds.size === 0) return new Set<string>();
+  if (Array.isArray(preferredIds) && preferredIds.length > 0) {
+    const overlap = preferredIds.filter((id) => propIds.has(id));
+    if (overlap.length > 0) return new Set(overlap);
+  }
+  const matchedGames = gamesMatchingProps(props, games);
+  if (matchedGames.length > 0) {
+    return new Set(matchedGames.map((g) => g.gameId));
+  }
+  return new Set(propIds);
+}
+
+function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'world-cup'): boolean {
+  return rowSport !== 'world-cup';
+}
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v2';
+function getSecondaryPropsCacheKey(sport: 'afl' | 'world-cup'): string {
+  return sport === 'world-cup' ? WC_PROPS_CACHE_KEY : AFL_PROPS_CACHE_KEY;
+}
+
+function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolean): string {
+  if (sport === 'world-cup') {
+    const base = '/api/world-cup/dashboard?playerPropsList=1';
+    return debugStats ? `${base}&debugStats=1` : base;
+  }
+  const base = '/api/afl/player-props/list';
+  return debugStats ? `${base}?debugStats=1` : base;
+}
 const AFL_PROPS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 min – show cached list instantly when returning, refresh in background
 const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
 const AFL_TEAM_LOGOS_CACHE_TS_KEY = 'afl_team_logos_cache_ts_v1';
@@ -561,6 +1085,7 @@ function warmImage(href: string | null | undefined): void {
 if (typeof window !== 'undefined') {
   warmImage('/images/nba-logo.png');
   warmImage('/images/afl-logo.png');
+  warmImage(WORLD_CUP_LOGO_PATH);
 }
 
 export default function NBALandingPage() {
@@ -756,6 +1281,7 @@ export default function NBALandingPage() {
     l5: 'none',
     l10: 'none',
     h2h: 'none',
+    wc: 'none',
     season: 'none',
     streak: 'none',
     ip: 'none',
@@ -764,22 +1290,42 @@ export default function NBALandingPage() {
   const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
 
   // Props page sport: Combined (default) | NBA | AFL — restore explicit mode from URL when provided
-  const [propsSport, setPropsSport] = useState<'nba' | 'afl' | 'combined'>('combined');
+  const [propsSport, setPropsSport] = useState<PropsSportMode>(defaultPropsSport());
   const [aflGames, setAflGames] = useState<AflGameForProps[]>([]);
   const [aflProps, setAflProps] = useState<PlayerProp[]>([]);
+  const [worldCupCombinedProps, setWorldCupCombinedProps] = useState<PlayerProp[]>([]);
+  /** Always-current WC slice for combined → WC toggles (avoid stale applySportMode closure). */
+  const worldCupCombinedPropsRef = useRef<PlayerProp[]>([]);
+  worldCupCombinedPropsRef.current = worldCupCombinedProps;
   const [aflPropsLoading, setAflPropsLoading] = useState(false);
+  const [aflPropsFetchComplete, setAflPropsFetchComplete] = useState(false);
   const [combinedPropsLoading, setCombinedPropsLoading] = useState(false);
   const aflPropsFetchCompleteRef = useRef(false);
   const combinedPropsFetchCompleteRef = useRef(false);
+  /** Skip one combined API fetch after an instant warm sport toggle (AFL/WC → combined). */
+  const combinedWarmToggleRef = useRef(false);
+  /** Skip AFL/WC list fetch after instant session-cache restore (persists through Strict Mode re-runs). */
+  const secondarySkipFetchSportRef = useRef<'afl' | 'world-cup' | null>(null);
+  /** Set when applySportMode hydrates secondary rows — fetch effect must not undo it. */
+  const secondaryWarmHydrateRef = useRef(false);
+  /** Authoritative secondary list sport — stale in-flight fetches must not apply after toggle. */
+  const secondaryListSportRef = useRef<'afl' | 'world-cup' | null>(null);
   const aflRetryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const aflListFetchInFlightRef = useRef<Promise<{
-    games: AflGameForProps[];
-    aggregated: PlayerProp[];
-    ingestMessage?: string;
-    lastUpdated?: string;
-    nextUpdate?: string;
-    noAflOdds?: boolean;
-  }> | null>(null);
+  const aflListFetchInFlightRef = useRef<{
+    sport: 'afl' | 'world-cup';
+    promise: Promise<{
+      games: AflGameForProps[];
+      aggregated: PlayerProp[];
+      ingestMessage?: string;
+      lastUpdated?: string;
+      nextUpdate?: string;
+      noAflOdds?: boolean;
+    }>;
+  } | null>(null);
+  const setSecondaryPropsFetchComplete = useCallback((complete: boolean) => {
+    aflPropsFetchCompleteRef.current = complete;
+    setAflPropsFetchComplete(complete);
+  }, []);
   const [aflPropsRetryKey, setAflPropsRetryKey] = useState(0); // increment to refetch (e.g. after empty or user Retry)
   const [selectedAflGames, setSelectedAflGames] = useState<Set<string>>(new Set());
   const selectedAflGamesRef = useRef<Set<string>>(new Set());
@@ -831,14 +1377,28 @@ export default function NBALandingPage() {
     }
   }, []);
 
-  const aggregateAflListPayload = useCallback((listData: any) => {
+  const aggregateSecondaryListPayload = useCallback((listData: any, sport: 'afl' | 'world-cup') => {
     const games: AflGameForProps[] = Array.isArray(listData?.games) ? listData.games : [];
-    const rows: any[] = Array.isArray(listData?.data) ? listData.data : [];
+    const rawRows: any[] = Array.isArray(listData?.data) ? listData.data : [];
+    const rows =
+      sport === 'world-cup'
+        ? rawRows.filter(
+            (r) =>
+              wcPropsMeetsMinOdds(r.overOdds, r.underOdds, r.yesOdds) &&
+              isWorldCupListProp(r as PlayerProp)
+          )
+        : rawRows;
+    const normalizeTeamDisplay = (team: string) =>
+      sport === 'afl' ? toOfficialAflTeamDisplayName(team || '') : String(team || '').trim();
     const keyToRow = new Map<string, {
       playerName: string;
       gameId: string;
       homeTeam: string;
       awayTeam: string;
+      homeTeamCode?: string | null;
+      awayTeamCode?: string | null;
+      homeTeamLogo?: string | null;
+      awayTeamLogo?: string | null;
       playerTeam?: string | null;
       statType: string;
       line: number;
@@ -853,8 +1413,13 @@ export default function NBALandingPage() {
       last10HitRate?: { hits: number; total: number } | null;
       h2hHitRate?: { hits: number; total: number } | null;
       seasonHitRate?: { hits: number; total: number } | null;
+      wcGamesAvg?: number | null;
+      wcGamesHitRate?: { hits: number; total: number } | null;
+      wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;
       dvpRating?: number | null;
       dvpStatValue?: number | null;
+      headshotUrl?: string | null;
+      wcPosition?: string | null;
       aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
       aflDfsRole?: string | null;
     }>();
@@ -871,6 +1436,10 @@ export default function NBALandingPage() {
           gameId: r.gameId,
           homeTeam: r.homeTeam,
           awayTeam: r.awayTeam,
+          homeTeamCode: r.homeTeamCode ?? null,
+          awayTeamCode: r.awayTeamCode ?? null,
+          homeTeamLogo: r.homeTeamLogo ?? null,
+          awayTeamLogo: r.awayTeamLogo ?? null,
           playerTeam: r.playerTeam ?? null,
           statType: r.statType,
           line: r.line,
@@ -885,8 +1454,13 @@ export default function NBALandingPage() {
           last10HitRate: r.last10HitRate,
           h2hHitRate: r.h2hHitRate,
           seasonHitRate: r.seasonHitRate,
+          wcGamesAvg: r.wcGamesAvg,
+          wcGamesHitRate: r.wcGamesHitRate,
+          wcGameLog: r.wcGameLog,
           dvpRating: r.dvpRating,
           dvpStatValue: r.dvpStatValue,
+          headshotUrl: r.headshotUrl ?? null,
+          wcPosition: r.wcPosition ?? null,
           aflFantasyPosition: r.aflFantasyPosition ?? null,
           aflDfsRole: r.aflDfsRole ?? null,
         });
@@ -895,9 +1469,9 @@ export default function NBALandingPage() {
 
     const aggregated: PlayerProp[] = Array.from(keyToRow.values()).map((a) => {
       const playerTeam = a.playerTeam && String(a.playerTeam).trim() ? a.playerTeam : null;
-      const homeNorm = toOfficialAflTeamDisplayName(a.homeTeam || '');
-      const awayNorm = toOfficialAflTeamDisplayName(a.awayTeam || '');
-      const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
+      const homeNorm = normalizeTeamDisplay(a.homeTeam || '');
+      const awayNorm = normalizeTeamDisplay(a.awayTeam || '');
+      const playerNorm = playerTeam ? normalizeTeamDisplay(playerTeam) : null;
       const team = playerNorm || homeNorm;
       const opponent = playerNorm
         ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
@@ -924,6 +1498,10 @@ export default function NBALandingPage() {
         gameId: a.gameId,
         homeTeam: a.homeTeam,
         awayTeam: a.awayTeam,
+        homeTeamCode: a.homeTeamCode ?? null,
+        awayTeamCode: a.awayTeamCode ?? null,
+        homeTeamLogo: a.homeTeamLogo ?? null,
+        awayTeamLogo: a.awayTeamLogo ?? null,
         last5Avg: a.last5Avg,
         last10Avg: a.last10Avg,
         h2hAvg: a.h2hAvg,
@@ -933,8 +1511,13 @@ export default function NBALandingPage() {
         last10HitRate: a.last10HitRate,
         h2hHitRate: a.h2hHitRate,
         seasonHitRate: a.seasonHitRate,
+        wcGamesAvg: a.wcGamesAvg,
+        wcGamesHitRate: a.wcGamesHitRate,
+        wcGameLog: a.wcGameLog,
         dvpRating: a.dvpRating,
         dvpStatValue: a.dvpStatValue,
+        headshotUrl: a.headshotUrl ?? null,
+        wcPosition: a.wcPosition ?? null,
         aflFantasyPosition: a.aflFantasyPosition ?? null,
         aflDfsRole: a.aflDfsRole ?? null,
       };
@@ -946,10 +1529,15 @@ export default function NBALandingPage() {
       ingestMessage: typeof listData?.ingestMessage === 'string' ? listData.ingestMessage : undefined,
       lastUpdated: typeof listData?.lastUpdated === 'string' ? listData.lastUpdated : undefined,
       nextUpdate: typeof listData?.nextUpdate === 'string' ? listData.nextUpdate : undefined,
-      noAflOdds: listData?.noAflOdds === true,
+      noAflOdds: listData?.noAflOdds === true || listData?.noWorldCupOdds === true,
       debugMeta: listData?._meta as Record<string, unknown> | null | undefined,
     };
   }, []);
+
+  const aggregateAflListPayload = useCallback(
+    (listData: any) => aggregateSecondaryListPayload(listData, 'afl'),
+    [aggregateSecondaryListPayload]
+  );
 
   const syncSelectedAflGames = useCallback((nextGameIds: string[]) => {
     const nextSet = new Set(nextGameIds);
@@ -1019,6 +1607,22 @@ export default function NBALandingPage() {
             })
           );
         }
+
+        const wcPropsForCache = Array.isArray(snapshot?.worldCup?.props) ? snapshot.worldCup.props : [];
+        const wcGamesForCache = Array.isArray(snapshot?.worldCup?.games) ? snapshot.worldCup.games : [];
+        if (snapshot?.worldCup?.noWorldCupOdds) {
+          sessionStorage.removeItem(WC_PROPS_CACHE_KEY);
+        } else if (wcPropsForCache.length > 0 || wcGamesForCache.length > 0) {
+          sessionStorage.setItem(
+            WC_PROPS_CACHE_KEY,
+            JSON.stringify({
+              props: wcPropsForCache,
+              games: wcGamesForCache,
+              selectedGameIds,
+              timestamp: now,
+            })
+          );
+        }
       } catch {
         // Ignore session cache write failures.
       }
@@ -1042,6 +1646,7 @@ export default function NBALandingPage() {
     const nbaRows = Array.isArray(combinedSnapshot?.nba?.props) ? combinedSnapshot.nba.props : [];
     const aflGamesNext = Array.isArray(combinedSnapshot?.afl?.games) ? combinedSnapshot.afl.games : [];
     const aflPropsNext = Array.isArray(combinedSnapshot?.afl?.props) ? combinedSnapshot.afl.props : [];
+    const worldCupPropsNext = Array.isArray(combinedSnapshot?.worldCup?.props) ? combinedSnapshot.worldCup.props : [];
     const noAflOdds = combinedSnapshot?.afl?.noAflOdds === true;
     const mergedNba = mergeNbaPropsWithStoredCalculatedStats(nbaRows);
 
@@ -1055,6 +1660,7 @@ export default function NBALandingPage() {
 
     setAflGames((prev) => (noAflOdds || aflGamesNext.length > 0 ? aflGamesNext : prev));
     setAflProps((prev) => (noAflOdds || aflPropsNext.length > 0 ? aflPropsNext : prev));
+    setWorldCupCombinedProps(worldCupPropsNext);
     setAflIngestMessage(combinedSnapshot?.afl?.ingestMessage ?? null);
     setAflLastUpdated(combinedSnapshot?.afl?.lastUpdated ?? null);
     if (combinedSnapshot?.afl?.debugMeta) {
@@ -1078,7 +1684,7 @@ export default function NBALandingPage() {
       }
     }
 
-    aflPropsFetchCompleteRef.current = true;
+    setSecondaryPropsFetchComplete(true);
     setAflPropsLoading(false);
     combinedPropsFetchCompleteRef.current = true;
     setCombinedPropsLoading(false);
@@ -1086,7 +1692,7 @@ export default function NBALandingPage() {
     if (options?.persistCaches !== false) {
       persistCombinedSnapshotCaches(combinedSnapshot);
     }
-  }, [mergeNbaPropsWithStoredCalculatedStats, persistCombinedSnapshotCaches, syncSelectedAflGames]);
+  }, [mergeNbaPropsWithStoredCalculatedStats, persistCombinedSnapshotCaches, setSecondaryPropsFetchComplete, syncSelectedAflGames]);
   /** When ?debugStats=1, list API returns _meta with debugNa (why L5/L10/Season show N/A). */
   const [aflListDebugMeta, setAflListDebugMeta] = useState<Record<string, unknown> | null>(null);
   /** AFL ingest status from list API (same as NBA: "Fetched X stats for Y season, Z games"). */
@@ -1124,7 +1730,7 @@ export default function NBALandingPage() {
 
   // Reset "user modified" flag when leaving AFL-only filter mode.
   useEffect(() => {
-    if (propsSport !== 'afl') userModifiedAflGamesRef.current = false;
+    if (propsSport !== 'afl' && propsSport !== 'world-cup') userModifiedAflGamesRef.current = false;
   }, [propsSport]);
 
   // Find player (not in props / no odds) modal: bottom-right on mobile, top-right on desktop
@@ -1171,14 +1777,20 @@ export default function NBALandingPage() {
       setOddsFormat(savedFormat as 'american' | 'decimal');
     }
     
-    // Restore sport from URL when explicitly set; default launch stays combined mode.
+    // Restore sport from URL when explicitly set; default launch stays combined mode (AFL-only in offseason).
     // Only set AFL loading true if we don't have cache (useLayoutEffect may have already restored cache and set loading false)
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const sportParam = url.searchParams.get('sport');
-      if (sportParam === 'nba') {
+      const resolvedSport = resolvePropsSportParam(sportParam);
+      if (resolvedSport === 'combined' && sportParam !== 'all') {
+        const params = new URLSearchParams(url.search);
+        params.set('sport', 'all');
+        window.history.replaceState(null, '', `/props?${params.toString()}`);
+      }
+      if (resolvedSport === 'nba') {
         setPropsSport('nba');
-      } else if (sportParam === 'afl') {
+      } else if (resolvedSport === 'afl') {
         setPropsSport('afl');
         try {
           const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
@@ -1193,14 +1805,33 @@ export default function NBALandingPage() {
           setAflPropsLoading(true);
         }
         // Keep sport=afl in URL so refresh stays on AFL
+      } else if (resolvedSport === 'world-cup') {
+        setPropsSport('world-cup');
+        try {
+          const raw = sessionStorage.getItem(WC_PROPS_CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { timestamp?: number };
+            const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+            if (age >= AFL_PROPS_CACHE_TTL_MS) setAflPropsLoading(true);
+          } else {
+            setAflPropsLoading(true);
+          }
+        } catch {
+          setAflPropsLoading(true);
+        }
       } else if (sportParam === 'combined' || sportParam === 'all') {
         setPropsSport('combined');
       }
-      // When coming back from AFL dashboard "Back to Player Props", clear the search filter
-      // and debounced value so the next search (e.g. same player name) runs correctly.
+      // When coming back from AFL/World Cup dashboard "Back to Player Props", clear the search
+      // filter and debounced value so the next search (e.g. same player name) runs correctly.
       try {
         if (sessionStorage.getItem('afl_back_to_props_clear_search') === '1') {
           sessionStorage.removeItem('afl_back_to_props_clear_search');
+          setSearchQuery('');
+          setDebouncedSearchQuery('');
+        }
+        if (sessionStorage.getItem('wc_back_to_props_clear_search') === '1') {
+          sessionStorage.removeItem('wc_back_to_props_clear_search');
           setSearchQuery('');
           setDebouncedSearchQuery('');
         }
@@ -1247,17 +1878,23 @@ export default function NBALandingPage() {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const sportParam = url.searchParams.get('sport');
-    const requiresCombinedFirstPaint = (sportParam === null || sportParam === 'combined' || sportParam === 'all');
+    const requiresCombinedFirstPaint =
+      sportParam === null || sportParam === 'combined' || sportParam === 'all';
     let restoredNbaCache = false;
     let restoredAflCache = false;
     let restoredCombinedSnapshot = false;
 
     // 1) Restore sport from URL when explicitly provided
-    if (sportParam === 'nba') {
+    const resolvedSport = resolvePropsSportParam(sportParam);
+    if (resolvedSport === 'nba') {
       setPropsSport('nba');
-    } else if (sportParam === 'afl') {
+    } else if (resolvedSport === 'afl') {
       setPropsSport('afl');
-    } else if (sportParam === 'combined' || sportParam === 'all') {
+      secondaryListSportRef.current = 'afl';
+    } else if (resolvedSport === 'world-cup') {
+      setPropsSport('world-cup');
+      secondaryListSportRef.current = 'world-cup';
+    } else if (resolvedSport === 'combined') {
       setPropsSport('combined');
     }
 
@@ -1273,7 +1910,12 @@ export default function NBALandingPage() {
           const nbaProps = Array.isArray(parsed?.nba?.props) ? parsed.nba.props : [];
           const aflPropsCached = Array.isArray(parsed?.afl?.props) ? parsed.afl.props : [];
           const aflGamesCached = Array.isArray(parsed?.afl?.games) ? parsed.afl.games : [];
-          const hasSnapshotData = nbaProps.length > 0 || aflPropsCached.length > 0 || aflGamesCached.length > 0;
+          const wcPropsCached = Array.isArray(parsed?.worldCup?.props) ? parsed.worldCup.props : [];
+          const hasSnapshotData =
+            nbaProps.length > 0 ||
+            aflPropsCached.length > 0 ||
+            aflGamesCached.length > 0 ||
+            wcPropsCached.length > 0;
           if (age < CACHE_TTL_MS && hasSnapshotData) {
             applyCombinedSnapshot(parsed, {
               persistCaches: false,
@@ -1290,7 +1932,7 @@ export default function NBALandingPage() {
     }
 
     // 2) NBA player props cache (always restore so sport toggles NBA↔AFL stay instant)
-    if (!restoredCombinedSnapshot) {
+    if (!restoredCombinedSnapshot && NBA_PUBLIC_ENABLED) {
       const CACHE_KEY = 'nba-player-props-cache';
       const CACHE_TIMESTAMP_KEY = 'nba-player-props-cache-timestamp';
       const cachedData = sessionStorage.getItem(CACHE_KEY);
@@ -1356,11 +1998,21 @@ export default function NBALandingPage() {
       setGamesLoading(false);
     }
 
-    // 4) AFL: paint from fresh session cache immediately for instant back-nav experience.
-    if (sportParam === null || sportParam === 'afl' || sportParam === 'combined' || sportParam === 'all') {
+    // 4) AFL / World Cup: paint from fresh session cache immediately for instant back-nav experience.
+    if (
+      sportParam === null ||
+      sportParam === 'afl' ||
+      sportParam === 'world-cup' ||
+      sportParam === 'combined' ||
+      sportParam === 'all'
+    ) {
       try {
         if (!restoredCombinedSnapshot) {
-          const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+          const secondaryCacheKey =
+            sportParam === 'world-cup'
+              ? WC_PROPS_CACHE_KEY
+              : AFL_PROPS_CACHE_KEY;
+          const raw = sessionStorage.getItem(secondaryCacheKey);
           if (raw) {
             const parsed = JSON.parse(raw) as {
               props?: PlayerProp[];
@@ -1370,21 +2022,27 @@ export default function NBALandingPage() {
             };
             const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
             const isFresh = Number.isFinite(age) && age < AFL_PROPS_CACHE_TTL_MS;
-            const cachedProps = Array.isArray(parsed?.props) ? parsed.props : [];
+            const cachedPropsRaw = Array.isArray(parsed?.props) ? parsed.props : [];
+            const cachedProps =
+              sportParam === 'world-cup'
+                ? filterWorldCupPaintableProps(cachedPropsRaw)
+                : cachedPropsRaw;
             const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
-            if (isFresh && (cachedProps.length > 0 || cachedGames.length > 0)) {
+            const hasPaintableSecondaryRows =
+              sportParam === 'world-cup'
+                ? cachedProps.length > 0
+                : cachedProps.length > 0 || cachedGames.length > 0;
+            if (isFresh && hasPaintableSecondaryRows) {
               setAflProps(cachedProps);
-              setAflGames(cachedGames);
-              if (Array.isArray(parsed?.selectedGameIds) && parsed.selectedGameIds.length > 0) {
-                const selected = new Set(parsed.selectedGameIds);
-                selectedAflGamesRef.current = selected;
-                setSelectedAflGames(selected);
-              } else if (cachedGames.length > 0) {
-                const allIds = cachedGames.map((g) => g.gameId);
-                const selected = new Set(allIds);
-                selectedAflGamesRef.current = selected;
-                setSelectedAflGames(selected);
-              }
+              const matchedGames = gamesMatchingProps(cachedProps, cachedGames);
+              setAflGames(matchedGames);
+              const selected = selectedGameIdsForProps(
+                cachedProps,
+                matchedGames,
+                Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined
+              );
+              selectedAflGamesRef.current = selected;
+              setSelectedAflGames(selected);
               restoredAflCache = true;
             }
           }
@@ -1392,7 +2050,7 @@ export default function NBALandingPage() {
       } catch {
         // ignore cache parse errors
       }
-      aflPropsFetchCompleteRef.current = restoredAflCache;
+      setSecondaryPropsFetchComplete(restoredAflCache);
       setAflPropsLoading(!restoredAflCache);
       if (requiresCombinedFirstPaint) {
         const restoredCombinedCache = restoredCombinedSnapshot || (restoredNbaCache && restoredAflCache);
@@ -1473,6 +2131,7 @@ export default function NBALandingPage() {
         l5: 'none',
         l10: 'none',
         h2h: 'none',
+        wc: 'none',
         season: 'none',
         streak: 'none',
         ip: 'none',
@@ -1779,27 +2438,27 @@ export default function NBALandingPage() {
 
     fetchTodaysGames();
 
-    // Preload AFL list in background for sessionStorage only on NBA-first loads.
-    // Combined/AFL already run the main AFL fetch effect; a second preload just duplicates heavy list work.
-    (async () => {
+    // Preload AFL + World Cup list in background for sessionStorage (WC was missing — caused AFL→WC skeleton flash).
+    const preloadSecondaryPropsCache = async (sport: 'afl' | 'world-cup') => {
       try {
-        if (typeof window !== 'undefined') {
-          const sportParam = new URL(window.location.href).searchParams.get('sport');
-          if (sportParam !== 'nba') return;
-          const raw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw) as { timestamp?: number; props?: unknown[]; games?: unknown[] };
-            const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
-            const hasData = (Array.isArray(parsed?.props) && parsed.props.length > 0) || (Array.isArray(parsed?.games) && parsed.games.length > 0);
-            if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
-          }
+        if (typeof window === 'undefined') return;
+        const cacheKey = getSecondaryPropsCacheKey(sport);
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { timestamp?: number; props?: unknown[]; games?: unknown[] };
+          const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+          const hasData =
+            (Array.isArray(parsed?.props) && parsed.props.length > 0) ||
+            (Array.isArray(parsed?.games) && parsed.games.length > 0);
+          if (age < AFL_PROPS_CACHE_TTL_MS && hasData) return;
         }
-        const listRes = await fetch('/api/afl/player-props/list', { cache: 'no-store' });
+        const listUrl = getSecondaryPropsListUrl(sport, false);
+        const listRes = await fetch(listUrl, { cache: 'no-store' });
         const listData = await listRes.json();
-        const { games, aggregated } = aggregateAflListPayload(listData);
-        if (listData.noAflOdds === true) {
+        const { games, aggregated } = aggregateSecondaryListPayload(listData, sport);
+        if (listData.noAflOdds === true || listData.noWorldCupOdds === true) {
           try {
-            sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
+            sessionStorage.removeItem(cacheKey);
           } catch {
             // Ignore
           }
@@ -1810,46 +2469,109 @@ export default function NBALandingPage() {
             selectedGameIds: getSelectedAflGameIdsForCache(games.length > 0 ? games.map((g) => g.gameId) : []),
             timestamp: Date.now(),
           };
-          sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+          sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
         }
       } catch {
-        // Ignore; AFL tab will fetch when selected
+        // Ignore; tab will fetch when selected
+      }
+    };
+
+    (async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          const sportParam = new URL(window.location.href).searchParams.get('sport');
+          if (sportParam === 'nba') {
+            void preloadSecondaryPropsCache('afl');
+            void preloadSecondaryPropsCache('world-cup');
+            return;
+          }
+          if (
+            sportParam === null ||
+            sportParam === 'combined' ||
+            sportParam === 'all' ||
+            sportParam === 'afl'
+          ) {
+            void preloadSecondaryPropsCache('world-cup');
+          }
+        }
+      } catch {
+        // Ignore
       }
     })();
   }, []);
 
-  // Fetch AFL games + player props when sport is AFL or combined. No sessionStorage paint: list API + no-store are source of truth (avoids stale Swans v Hawks after a game).
-  // When API returns empty and we never got props this run, retry once after 2s (transient) before empty / delayed retries.
+  // Fetch AFL / World Cup games + player props when sport is AFL or World Cup only.
+  // Combined mode loads all sports from /api/props/combined.
   useEffect(() => {
-    if (propsSport !== 'afl' && propsSport !== 'combined') return;
+    if (propsSport !== 'afl' && propsSport !== 'world-cup') return;
+    const listSport: 'afl' | 'world-cup' = propsSport === 'world-cup' ? 'world-cup' : 'afl';
+    secondaryListSportRef.current = listSport;
+    const cacheKey = getSecondaryPropsCacheKey(listSport);
     let cancelled = false;
     let hadNonEmptyFresh = false;
-    // Keep cached rows visible while we refresh in background.
-    if (aflProps.length === 0) {
-      aflPropsFetchCompleteRef.current = false;
+    const hasVisibleSecondaryRows =
+      listSport === 'world-cup'
+        ? filterWorldCupListProps(aflProps).length > 0
+        : aflProps.length > 0 || aflGames.length > 0;
+    const canReplaceSecondaryProps = (aggregated: PlayerProp[]) =>
+      aggregated.length > 0 || !hasVisibleSecondaryRows;
+
+    if (secondaryWarmHydrateRef.current && secondarySkipFetchSportRef.current === listSport) {
+      secondaryWarmHydrateRef.current = false;
+      const hasListRows =
+        listSport === 'world-cup'
+          ? filterWorldCupListProps(aflProps).length > 0
+          : aflProps.some((p) => !isWorldCupSoccerPropStatType(p.statType));
+      if (hasListRows) {
+        return () => {
+          cancelled = true;
+        };
+      }
+      secondarySkipFetchSportRef.current = null;
+    }
+
+    if (secondarySkipFetchSportRef.current === listSport) {
+      const stateMatchesSport =
+        listSport === 'world-cup'
+          ? filterWorldCupListProps(aflProps).length > 0
+          : aflProps.some((p) => !isWorldCupSoccerPropStatType(p.statType));
+      if (stateMatchesSport) {
+        return () => {
+          cancelled = true;
+        };
+      }
+      secondarySkipFetchSportRef.current = null;
+    }
+
+    const commitSecondaryProps = (props: PlayerProp[]) => {
+      if (secondaryListSportRef.current !== listSport) return;
+      setAflProps(props);
+    };
+
+    if (!hasVisibleSecondaryRows) {
+      setSecondaryPropsFetchComplete(false);
       setAflPropsLoading(true);
     }
     const doFetch = async (): Promise<{ games: AflGameForProps[]; aggregated: PlayerProp[]; ingestMessage?: string; lastUpdated?: string; nextUpdate?: string; noAflOdds?: boolean }> => {
-      if (aflListFetchInFlightRef.current) {
-        return aflListFetchInFlightRef.current;
+      const inFlight = aflListFetchInFlightRef.current;
+      if (inFlight && inFlight.sport === listSport) {
+        return inFlight.promise;
       }
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
-      const listUrl = debugStats
-        ? '/api/afl/player-props/list?debugStats=1'
-        : '/api/afl/player-props/list';
+      const listUrl = getSecondaryPropsListUrl(listSport, debugStats);
       const requestPromise = (async () => {
         const listRes = await fetch(listUrl, { cache: 'no-store' });
         if (cancelled) return { games: [], aggregated: [], noAflOdds: false };
         const listData = await listRes.json();
         if (!cancelled && debugStats && listData._meta) setAflListDebugMeta(listData._meta as Record<string, unknown>);
         if (!cancelled && !debugStats) setAflListDebugMeta(null);
-        return aggregateAflListPayload(listData);
+        return aggregateSecondaryListPayload(listData, listSport);
       })();
-      aflListFetchInFlightRef.current = requestPromise;
+      aflListFetchInFlightRef.current = { sport: listSport, promise: requestPromise };
       try {
         return await requestPromise;
       } finally {
-        if (aflListFetchInFlightRef.current === requestPromise) {
+        if (aflListFetchInFlightRef.current?.sport === listSport && aflListFetchInFlightRef.current.promise === requestPromise) {
           aflListFetchInFlightRef.current = null;
         }
       }
@@ -1857,21 +2579,21 @@ export default function NBALandingPage() {
     (async () => {
       try {
         let result = await doFetch();
-        if (cancelled) return;
+        if (cancelled || secondaryListSportRef.current !== listSport) return;
         if (result.noAflOdds) {
-          if (!cancelled) {
+          if (!cancelled && secondaryListSportRef.current === listSport) {
             setAflGames([]);
-            setAflProps([]);
+            commitSecondaryProps([]);
             setAflIngestMessage(result.ingestMessage ?? null);
             setAflLastUpdated(result.lastUpdated ?? null);
             try {
-              sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
+              sessionStorage.removeItem(cacheKey);
             } catch {
               // Ignore
             }
             userModifiedAflGamesRef.current = false;
             syncSelectedAflGames([]);
-            aflPropsFetchCompleteRef.current = true;
+            setSecondaryPropsFetchComplete(true);
             setAflPropsLoading(false);
           }
           return;
@@ -1885,7 +2607,7 @@ export default function NBALandingPage() {
         if (aggregated.length > 0) hadNonEmptyFresh = true;
 
         // Retry once when empty and we never got props this run (transient failure or cache expiry)
-        if (aggregated.length === 0 && !hadNonEmptyFresh && !cancelled) {
+        if (aggregated.length === 0 && !hadNonEmptyFresh && !cancelled && (listSport === 'afl' || listSport === 'world-cup')) {
           await new Promise((r) => setTimeout(r, 2000));
           if (cancelled) return;
           result = await doFetch();
@@ -1894,13 +2616,15 @@ export default function NBALandingPage() {
           const retryAggregated = result.aggregated;
           setAflGames(retryGames);
           if (retryAggregated.length > 0 || !hadNonEmptyFresh) {
-            setAflProps(retryAggregated);
+            if (canReplaceSecondaryProps(retryAggregated)) {
+              commitSecondaryProps(retryAggregated);
+            }
             if (retryGames.length > 0) syncSelectedAflGames(retryGames.map((g) => g.gameId));
             if (!cancelled) {
               setAflIngestMessage(result.ingestMessage ?? null);
               setAflLastUpdated(result.lastUpdated ?? null);
               try {
-                sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
+                sessionStorage.setItem(cacheKey, JSON.stringify({
                   props: retryAggregated,
                   games: retryGames,
                   selectedGameIds: getSelectedAflGameIdsForCache(
@@ -1914,25 +2638,25 @@ export default function NBALandingPage() {
             }
           }
           if (!cancelled && retryAggregated.length === 0) {
-            // Retry list fetch so we pick up data when cron has run. Do not call /api/afl/odds/refresh from the client:
-            // that route runs execSync(build-afl-dvp) and heavy work that blocks the Node process and freezes the dev server.
+            // Retry list fetch so we pick up data when cron has run. Never call odds refresh from the client
+            // (AFL refresh runs execSync(build-afl-dvp); WC refresh hits API-Football). List polls are cache-read only.
             const delays = [12000, 27000, 45000];
             const timeouts: ReturnType<typeof setTimeout>[] = [];
             delays.forEach((delay) => {
               const t = setTimeout(async () => {
-                if (cancelled) return;
+                if (cancelled || secondaryListSportRef.current !== listSport) return;
                 const res = await doFetch();
-                if (cancelled) return;
+                if (cancelled || secondaryListSportRef.current !== listSport) return;
                   if (res.aggregated.length > 0) {
                     setAflGames(res.games);
-                    setAflProps(res.aggregated);
+                    commitSecondaryProps(res.aggregated);
                     if (res.games.length > 0) syncSelectedAflGames(res.games.map((g) => g.gameId));
                   if (!cancelled) {
                     setAflIngestMessage(res.ingestMessage ?? null);
                     setAflLastUpdated(res.lastUpdated ?? null);
                   }
                   try {
-                    sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify({
+                    sessionStorage.setItem(cacheKey, JSON.stringify({
                       props: res.aggregated,
                       games: res.games,
                       selectedGameIds: getSelectedAflGameIdsForCache(
@@ -1952,14 +2676,14 @@ export default function NBALandingPage() {
             aflRetryTimeoutsRef.current = timeouts;
           }
           if (!cancelled) {
-            aflPropsFetchCompleteRef.current = true;
+            setSecondaryPropsFetchComplete(true);
             setAflPropsLoading(false);
           }
           return;
         }
-        // If we already showed props this run and API returns empty without noAflOdds, keep prior rows (transient blip).
-        if (aggregated.length > 0 || !hadNonEmptyFresh) {
-          setAflProps(aggregated);
+        // Keep visible rows when WC stats filter yields empty on first response (AFL does not hit this).
+        if (canReplaceSecondaryProps(aggregated)) {
+          commitSecondaryProps(aggregated);
           if (games.length > 0) {
             syncSelectedAflGames(games.map((g) => g.gameId));
           }
@@ -1975,7 +2699,7 @@ export default function NBALandingPage() {
               ),
                 timestamp: Date.now(),
               };
-              sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+              sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
             } catch {
               // Ignore cache write (quota, etc.)
             }
@@ -1985,35 +2709,42 @@ export default function NBALandingPage() {
           syncSelectedAflGames(games.map((g) => g.gameId));
         }
       } catch (e) {
-        if (!cancelled && !hadNonEmptyFresh) {
+        if (!cancelled && !hadNonEmptyFresh && !hasVisibleSecondaryRows && secondaryListSportRef.current === listSport) {
           setAflGames([]);
-          setAflProps([]);
+          commitSecondaryProps([]);
         }
       } finally {
         if (!cancelled) {
-          aflPropsFetchCompleteRef.current = true;
+          setSecondaryPropsFetchComplete(true);
           setAflPropsLoading(false);
         }
       }
     })();
     return () => {
       cancelled = true;
+      if (aflListFetchInFlightRef.current?.sport === listSport) {
+        aflListFetchInFlightRef.current = null;
+      }
       aflRetryTimeoutsRef.current.forEach((id) => clearTimeout(id));
       aflRetryTimeoutsRef.current = [];
     };
-  }, [propsSport, aflPropsRetryKey]);
+  }, [propsSport, aflPropsRetryKey, aggregateSecondaryListPayload, setSecondaryPropsFetchComplete]);
 
-  // Persist AFL props + game filter to sessionStorage when user changes selection (so returning from dashboard restores filter)
+  // Persist AFL / World Cup props + game filter to sessionStorage when user changes selection (so returning from dashboard restores filter)
   useEffect(() => {
-    if (propsSport !== 'afl' || aflProps.length === 0 || aflGames.length === 0) return;
+    if (!isSecondaryPropsSport(propsSport) || aflProps.length === 0) return;
+    if (propsSport === 'afl' && aflGames.length === 0) return;
+    const propsToCache =
+      propsSport === 'world-cup' ? filterWorldCupListProps(aflProps) : aflProps;
+    if (propsToCache.length === 0) return;
     try {
       const toCache = {
-        props: aflProps,
+        props: propsToCache,
         games: aflGames,
         selectedGameIds: Array.from(selectedAflGames),
         timestamp: Date.now(),
       };
-      sessionStorage.setItem(AFL_PROPS_CACHE_KEY, JSON.stringify(toCache));
+      sessionStorage.setItem(getSecondaryPropsCacheKey(propsSport), JSON.stringify(toCache));
     } catch {
       // Ignore quota etc.
     }
@@ -2260,7 +2991,18 @@ export default function NBALandingPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const forceRefresh = urlParams.get('refresh') === '1';
       const debugStats = urlParams.get('debugStats') === '1';
-      const hasWarmCombinedCache = initialFetchCompletedRef.current && aflPropsFetchCompleteRef.current;
+
+      if (combinedWarmToggleRef.current && !forceRefresh && !debugStats) {
+        combinedWarmToggleRef.current = false;
+        return;
+      }
+      combinedWarmToggleRef.current = false;
+
+      const hasWarmCombinedCache =
+        combinedPropsFetchCompleteRef.current ||
+        (aflPropsFetchCompleteRef.current && aflProps.length > 0) ||
+        (propsLoadedRef.current && playerProps.length > 0) ||
+        worldCupCombinedProps.length > 0;
 
       if (!hasWarmCombinedCache) {
         setCombinedPropsLoading(true);
@@ -2279,7 +3021,7 @@ export default function NBALandingPage() {
         // Degrade gracefully: render as long as at least one sport is available.
         // A sport that's out of season (e.g. NBA with no odds) returns ok=false
         // with empty props and should not blank out the whole combined page.
-        if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok)) {
+        if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.worldCup?.ok)) {
           throw new Error(payload?.error || 'Failed to load combined props');
         }
         if (cancelled) return;
@@ -2288,20 +3030,21 @@ export default function NBALandingPage() {
         if (cancelled) return;
         console.warn('[Props] Combined payload fetch failed, falling back to direct parallel requests:', error);
         try {
-          const [nbaResponse, aflResponse] = await Promise.all([
+          const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
             fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' }),
             fetch(debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list', { cache: 'no-store' }),
+            fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'no-store' }),
           ]);
-          const [nbaPayload, aflPayload] = await Promise.all([
+          const [nbaPayload, aflPayload, wcPayload] = await Promise.all([
             nbaResponse.json().catch(() => null),
             aflResponse.json().catch(() => null),
+            wcResponse.json().catch(() => null),
           ]);
-          // Only fail if BOTH sports are unavailable. A single sport being out
-          // of season (e.g. NBA 503 with no odds) still lets us render the other.
-          if (!nbaResponse.ok && !aflResponse.ok) {
+          if (!nbaResponse.ok && !aflResponse.ok && !wcResponse.ok) {
             throw new Error('Fallback combined props requests failed');
           }
           const aflResult = aggregateAflListPayload(aflPayload);
+          const wcResult = aggregateSecondaryListPayload(wcPayload, 'world-cup');
           applyCombinedSnapshot({
             success: true,
             snapshotVersion: 1,
@@ -2326,6 +3069,16 @@ export default function NBALandingPage() {
               props: aflResult.aggregated,
               debugMeta: aflResult.debugMeta ?? null,
             },
+            worldCup: {
+              ok: wcResponse.ok,
+              status: wcResponse.status,
+              lastUpdated: wcResult.lastUpdated ?? null,
+              nextUpdate: wcResult.nextUpdate ?? null,
+              ingestMessage: wcResult.ingestMessage ?? null,
+              noWorldCupOdds: wcResult.noAflOdds === true,
+              games: wcResult.games,
+              props: wcResult.aggregated,
+            },
           });
         } catch (fallbackError) {
           console.error('[Props] Failed to load combined props:', fallbackError);
@@ -2341,7 +3094,7 @@ export default function NBALandingPage() {
     return () => {
       cancelled = true;
     };
-  }, [aggregateAflListPayload, applyCombinedSnapshot, propsSport]);
+  }, [aggregateAflListPayload, aggregateSecondaryListPayload, applyCombinedSnapshot, propsSport]);
 
   // Restore games from sessionStorage when switching sport or returning from a dashboard
   useEffect(() => {
@@ -3506,9 +4259,22 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/nba/research/dashboard?player=${encodeURIComponent(searchQuery.trim())}`);
+    if (!searchQuery.trim()) return;
+    if (propsSport === 'world-cup') {
+      const q = new URLSearchParams();
+      q.set('mode', 'player');
+      q.set('player', searchQuery.trim());
+      router.push(`/world-cup?${q.toString()}`);
+      return;
     }
+    if (!NBA_PUBLIC_ENABLED || propsSport === 'afl') {
+      const q = new URLSearchParams();
+      q.set('mode', 'player');
+      q.set('name', searchQuery.trim());
+      router.push(`/afl?${q.toString()}`);
+      return;
+    }
+    router.push(`/nba/research/dashboard?player=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const formatTime = (dateStr: string) => {
@@ -3540,6 +4306,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       'disposals_over': 'Disposals Over',
       'anytime_goal_scorer': 'Anytime Goal Scorer',
       'goals_over': 'Goals Over',
+      // World Cup
+      'goals': 'Goals',
+      'assists': 'Assists',
+      'total_shots': 'Shots',
+      'shots_on_target': 'Shots on Target',
+      'fouls_committed': 'Fouls',
+      'yellow_cards': 'Yellow Cards',
     };
     return labels[statType] || statType;
   }, []);
@@ -3755,11 +4528,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return matchedGame || null;
   }, [todaysGames]); // OPTIMIZATION: Only recreate when todaysGames changes
 
-  const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl'): Game | null => {
+  const getTipoffGameForRow = useCallback((prop: PlayerProp, rowSport: 'nba' | 'afl' | 'world-cup'): Game | null => {
     if (prop.gameDate) {
       const parsedGameDate = new Date(prop.gameDate);
       if (!Number.isNaN(parsedGameDate.getTime())) {
-        if (rowSport === 'afl') {
+        if (rowSport === 'afl' || rowSport === 'world-cup') {
           return {
             id: 0,
             date: prop.gameDate.slice(0, 10),
@@ -3811,10 +4584,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     if (aflProps.length === 0 || aflGames.length === 0) return [];
     const ids = new Set<string>();
     aflProps.forEach((p) => {
-      if (p.gameId) ids.add(p.gameId);
+      if (!p.gameId) return;
+      if (propsSport === 'world-cup' && !isWorldCupListProp(p)) return;
+      ids.add(p.gameId);
     });
     return aflGames.filter((g) => ids.has(g.gameId));
-  }, [aflProps, aflGames]);
+  }, [aflProps, aflGames, propsSport]);
 
   const availableAflBookmakers = useMemo(() => {
     const bookmakers = new Set<string>();
@@ -3828,19 +4603,32 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const availableAflPropTypes = useMemo(() => {
     const types = new Set<string>();
     aflProps.forEach((p) => p.statType && types.add(p.statType));
-    const order = ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'];
-    return Array.from(types).sort((a, b) => order.indexOf(a) - order.indexOf(b) || a.localeCompare(b));
-  }, [aflProps]);
+    const order =
+      propsSport === 'world-cup'
+        ? ['goals', 'assists', 'total_shots', 'shots_on_target', 'fouls_committed', 'yellow_cards']
+        : ['disposals', 'disposals_over', 'anytime_goal_scorer', 'goals_over'];
+    return Array.from(types).sort((a, b) => {
+      const ai = order.indexOf(a);
+      const bi = order.indexOf(b);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b);
+    });
+  }, [aflProps, propsSport]);
 
-  const effectiveBookmakers = propsSport === 'afl' ? availableAflBookmakers : availableBookmakers;
-  const effectivePropTypes = propsSport === 'afl' ? availableAflPropTypes : availablePropTypes;
+  const effectiveBookmakers = isSecondaryPropsSport(propsSport) ? availableAflBookmakers : availableBookmakers;
+  const effectivePropTypes = isSecondaryPropsSport(propsSport) ? availableAflPropTypes : availablePropTypes;
   const isCombinedMode = propsSport === 'combined';
+  const isSecondaryListMode = isSecondaryPropsSport(propsSport);
+  const isWorldCupProps = propsSport === 'world-cup';
+  const showH2hColumn = !isWorldCupProps;
+  const showWcGamesColumn = isWorldCupProps;
+  /** Combined keeps the same desktop column count as NBA/AFL-only; sport is an inline badge on the prop cell. */
+  const showCombinedDesktopSportColumn = false;
 
   // AFL: always include every bookmaker that appears in AFL data (union into selection). Uses functional
   // updates + deps on available list only so a partial overlap from NBA/localStorage expands to all AFL
   // bookmakers without re-running when the user unchecks a bookmaker (stable available list).
   useEffect(() => {
-    if (propsSport !== 'afl' || availableAflBookmakers.length === 0) return;
+    if (!isSecondaryListMode || availableAflBookmakers.length === 0) return;
     setSelectedBookmakers((prev) => {
       const next = new Set(prev);
       let changed = false;
@@ -3856,7 +4644,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   // AFL: ensure prop types selected when none or invalid (e.g. after switching from NBA)
   useEffect(() => {
-    if (propsSport !== 'afl' || aflProps.length === 0 || availableAflPropTypes.length === 0) return;
+    if (!isSecondaryListMode || aflProps.length === 0 || availableAflPropTypes.length === 0) return;
     const propTypesOverlap = Array.from(selectedPropTypes).some((t) => availableAflPropTypes.includes(t));
     if (selectedPropTypes.size > 0 && propTypesOverlap) return;
     setSelectedPropTypes(new Set(availableAflPropTypes));
@@ -3864,17 +4652,37 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   // AFL: ensure all games selected when none or invalid (e.g. after switching from NBA or cache miss)
   useEffect(() => {
-    if (propsSport !== 'afl' || aflGamesWithProps.length === 0) return;
+    if (!isSecondaryListMode) return;
+    const eligibleProps =
+      propsSport === 'world-cup'
+        ? aflProps.filter(isWorldCupListProp)
+        : propsSport === 'afl'
+          ? aflProps.filter((p) => !isWorldCupSoccerPropStatType(p.statType))
+          : aflProps;
+    const propGameIds = propGameIdsFromRows(eligibleProps);
+    if (propGameIds.size === 0 && aflGamesWithProps.length === 0) return;
     // Don't auto-select all games after the user has manually toggled them.
     if (userModifiedAflGamesRef.current) return;
-    const gameIds = new Set(aflGamesWithProps.map((g) => g.gameId));
+    const gameIds =
+      aflGamesWithProps.length > 0
+        ? new Set(aflGamesWithProps.map((g) => g.gameId))
+        : propGameIds;
     const hasOverlap = Array.from(selectedAflGames).some((id) => gameIds.has(id));
     if (selectedAflGames.size > 0 && hasOverlap) return;
-    setSelectedAflGames(new Set(gameIds));
-  }, [propsSport, aflGamesWithProps, selectedAflGames]);
+    const next = new Set(gameIds);
+    selectedAflGamesRef.current = next;
+    setSelectedAflGames(next);
+  }, [propsSport, aflGamesWithProps, selectedAflGames, aflProps]);
+
+  const secondaryGameFilterApplies = useMemo(() => {
+    if (selectedAflGames.size === 0) return false;
+    return aflProps.some((p) => p.gameId && selectedAflGames.has(p.gameId));
+  }, [aflProps, selectedAflGames]);
 
   const filteredAflProps = useMemo(() => {
     return aflProps.filter((prop) => {
+      if (propsSport === 'world-cup' && !isWorldCupListProp(prop)) return false;
+      if (propsSport === 'afl' && isWorldCupSoccerPropStatType(prop.statType)) return false;
       if (debouncedSearchQuery.trim()) {
         const q = debouncedSearchQuery.toLowerCase();
         if (!prop.playerName.toLowerCase().includes(q) && !getStatLabel(prop.statType).toLowerCase().includes(q)) return false;
@@ -3886,10 +4694,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         if (prop.bookmaker) bms.add(prop.bookmaker);
         if (!Array.from(bms).some((bm) => selectedBookmakers.has(bm))) return false;
       }
-      if (selectedAflGames.size > 0 && prop.gameId && !selectedAflGames.has(prop.gameId)) return false;
+      if (secondaryGameFilterApplies && prop.gameId && !selectedAflGames.has(prop.gameId)) return false;
       return true;
     });
-  }, [aflProps, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, getStatLabel]);
+  }, [aflProps, propsSport, debouncedSearchQuery, selectedPropTypes, selectedBookmakers, selectedAflGames, secondaryGameFilterApplies, getStatLabel]);
 
   // Combined mode: minimal filters only (search + sort + pagination).
   const filteredCombinedProps = useMemo(() => {
@@ -3925,7 +4733,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         bookmakerLines: [],
       };
     };
-    const mapWithSport = <T extends PlayerProp>(list: T[], sportSource: 'nba' | 'afl') => {
+    const mapWithSport = <T extends PlayerProp>(list: T[], sportSource: CombinedSportSource) => {
       return list
         .filter((prop) => {
           if (sportSource === 'nba' && isExcludedCombinedNbaStat(prop.statType)) return false;
@@ -3942,31 +4750,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return [
       ...mapWithSport(playerProps, 'nba'),
       ...mapWithSport(aflProps, 'afl'),
-    ] as Array<PlayerProp & { sportSource: 'nba' | 'afl' }>;
-  }, [playerProps, aflProps, debouncedSearchQuery, getStatLabel]);
+      ...mapWithSport(worldCupCombinedProps, 'world-cup'),
+    ] as CombinedPlayerPropRow[];
+  }, [playerProps, aflProps, worldCupCombinedProps, debouncedSearchQuery, getStatLabel]);
 
   const displaySortedCombinedProps = useMemo(() => {
     const percent = (hitRate?: { hits: number; total: number } | null) =>
       hitRate && hitRate.total > 0 ? (hitRate.hits / hitRate.total) * 100 : null;
     const out = [...filteredCombinedProps];
-    const blendBySport = (
-      nbaRows: Array<PlayerProp & { sportSource: 'nba' | 'afl' }>,
-      aflRows: Array<PlayerProp & { sportSource: 'nba' | 'afl' }>
-    ) => {
-      const blended: Array<PlayerProp & { sportSource: 'nba' | 'afl' }> = [];
-      const startWithNba = nbaRows.length >= aflRows.length;
-      let i = 0;
-      let j = 0;
-      while (i < nbaRows.length || j < aflRows.length) {
-        if (startWithNba) {
-          if (i < nbaRows.length) blended.push(nbaRows[i]!);
-          if (j < aflRows.length) blended.push(aflRows[j]!);
-        } else {
-          if (j < aflRows.length) blended.push(aflRows[j]!);
-          if (i < nbaRows.length) blended.push(nbaRows[i]!);
+    const blendBySport = (...sportRows: CombinedPlayerPropRow[][]) => {
+      const lists = sportRows.filter((rows) => rows.length > 0);
+      if (!lists.length) return [];
+      const blended: CombinedPlayerPropRow[] = [];
+      const indices = lists.map(() => 0);
+      const total = lists.reduce((count, rows) => count + rows.length, 0);
+      while (blended.length < total) {
+        for (let i = 0; i < lists.length; i++) {
+          const rows = lists[i]!;
+          const idx = indices[i]!;
+          if (idx < rows.length) {
+            blended.push(rows[idx]!);
+            indices[i] = idx + 1;
+          }
         }
-        i += 1;
-        j += 1;
       }
       return blended;
     };
@@ -3983,10 +4789,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     const activeColumnSort = Object.entries(columnSort).find(([_, dir]) => dir !== 'none');
     if (activeColumnSort) {
       const [column, direction] = activeColumnSort;
-      const compareByActiveColumn = (
-        a: PlayerProp & { sportSource: 'nba' | 'afl' },
-        b: PlayerProp & { sportSource: 'nba' | 'afl' }
-      ) => {
+      const compareByActiveColumn = (a: CombinedPlayerPropRow, b: CombinedPlayerPropRow) => {
         let aVal: number | null = null;
         let bVal: number | null = null;
         if (column === 'dvp') {
@@ -4000,6 +4803,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
         else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
         else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
+        else if (column === 'wc') { aVal = percent(a.wcGamesHitRate); bVal = percent(b.wcGamesHitRate); }
         else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
         else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
         else if (column === 'ip') {
@@ -4012,14 +4816,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         return direction === 'asc' ? bVal - aVal : aVal - bVal;
       };
 
-      const nbaSorted = out
-        .filter((p) => p.sportSource === 'nba')
-        .sort(compareByActiveColumn);
-      const aflSorted = out
-        .filter((p) => p.sportSource === 'afl')
-        .sort(compareByActiveColumn);
+      const nbaSorted = out.filter((p) => p.sportSource === 'nba').sort(compareByActiveColumn);
+      const aflSorted = out.filter((p) => p.sportSource === 'afl').sort(compareByActiveColumn);
+      const wcSorted = out.filter((p) => p.sportSource === 'world-cup').sort(compareByActiveColumn);
 
-      return blendBySport(nbaSorted, aflSorted);
+      return blendBySport(nbaSorted, aflSorted, wcSorted);
     }
 
     const compareByDefaultQuality = (a: PlayerProp, b: PlayerProp) => {
@@ -4051,14 +4852,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     // Combined default ranking:
     // 1) Rank each sport by quality using the same comparator.
     // 2) Interleave rows so one sport cannot crowd out the first pages.
-    const nbaSorted = out
-      .filter((p) => p.sportSource === 'nba')
-      .sort(compareByDefaultQuality);
-    const aflSorted = out
-      .filter((p) => p.sportSource === 'afl')
-      .sort(compareByDefaultQuality);
+    const nbaSorted = out.filter((p) => p.sportSource === 'nba').sort(compareByDefaultQuality);
+    const aflSorted = out.filter((p) => p.sportSource === 'afl').sort(compareByDefaultQuality);
+    const wcSorted = out.filter((p) => p.sportSource === 'world-cup').sort(compareByDefaultQuality);
 
-    return blendBySport(nbaSorted, aflSorted);
+    return blendBySport(nbaSorted, aflSorted, wcSorted);
   }, [filteredCombinedProps, propLineSort, columnSort]);
 
   // AFL: same "best to worst" default sort as NBA (DvP best first, then L10%, L5%, prob); column sort when active
@@ -4091,6 +4889,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         if (column === 'l5') { aVal = percent(a.last5HitRate); bVal = percent(b.last5HitRate); }
         else if (column === 'l10') { aVal = percent(a.last10HitRate); bVal = percent(b.last10HitRate); }
         else if (column === 'h2h') { aVal = percent(a.h2hHitRate); bVal = percent(b.h2hHitRate); }
+        else if (column === 'wc') { aVal = percent(a.wcGamesHitRate); bVal = percent(b.wcGamesHitRate); }
         else if (column === 'season') { aVal = percent(a.seasonHitRate); bVal = percent(b.seasonHitRate); }
         else if (column === 'streak') { aVal = a.streak ?? null; bVal = b.streak ?? null; }
         else if (column === 'ip') {
@@ -4415,6 +5214,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             aValue = percent(a.h2hHitRate);
             bValue = percent(b.h2hHitRate);
             break;
+
+          case 'wc':
+            aValue = percent(a.wcGamesHitRate);
+            bValue = percent(b.wcGamesHitRate);
+            break;
           
           case 'season':
             aValue = percent(a.seasonHitRate);
@@ -4643,39 +5447,57 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   const activeFilteredCount = propsSport === 'nba'
     ? filteredPlayerProps.length
-    : propsSport === 'afl'
+    : isSecondaryListMode
       ? filteredAflProps.length
       : filteredCombinedProps.length;
   const activePaginatedProps = propsSport === 'nba'
     ? finalPaginatedProps
-    : propsSport === 'afl'
+    : isSecondaryListMode
       ? finalPaginatedAflProps
       : finalPaginatedCombinedProps;
   const activeTotalPages = propsSport === 'nba'
     ? totalPages
-    : propsSport === 'afl'
+    : isSecondaryListMode
       ? aflTotalPages
       : combinedTotalPages;
   const activeCurrentPage = propsSport === 'nba' ? currentPageSafe : currentPage;
 
+  const secondaryPaintableProps = useMemo(() => {
+    if (!isSecondaryListMode) return [] as PlayerProp[];
+    if (propsSport === 'world-cup') return filterWorldCupListProps(aflProps);
+    return aflProps;
+  }, [isSecondaryListMode, propsSport, aflProps]);
+
+  const secondaryPropsPaintRows = isSecondaryListMode && secondaryPaintableProps.length > 0;
+  const propsTablePaginatedProps = activePaginatedProps;
+  const propsTableHasRows =
+    propsSport === 'nba'
+      ? activeFilteredCount > 0
+      : isSecondaryListMode
+        ? activeFilteredCount > 0 || secondaryPaintableProps.length > 0
+        : activeFilteredCount > 0;
+
   const isPropsLoadingSkeleton = useMemo(() => {
+    if (secondaryPropsPaintRows) return false;
     if (activeFilteredCount !== 0) return false;
     if (
-      (propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) ||
+      (isSecondaryListMode && (aflPropsLoading || !aflPropsFetchComplete)) ||
       (propsSport === 'nba' && !showNoPropsMessage) ||
       (propsSport === 'combined' &&
         (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))
     ) {
       return true;
     }
-    if (propsSport === 'afl' && aflPropsFetchCompleteRef.current) return false;
+    if (isSecondaryListMode && aflPropsFetchComplete) return false;
     if (propsSport === 'combined') return false;
     if (propsSport === 'nba' && showNoPropsMessage) return false;
     return true;
   }, [
+    secondaryPropsPaintRows,
     activeFilteredCount,
     propsSport,
     aflPropsLoading,
+    aflPropsFetchComplete,
     showNoPropsMessage,
     combinedPropsLoading,
     propsLoading,
@@ -4781,7 +5603,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     for (const prop of activePaginatedProps) {
       const rowSport =
         propsSport === 'combined'
-          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
           : 'afl';
       if (rowSport !== 'afl') continue;
       parts.push(`${prop.playerName}\0${prop.team ?? ''}`);
@@ -4798,7 +5620,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     for (const prop of activePaginatedProps) {
       const rowSport =
         propsSport === 'combined'
-          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
           : 'afl';
       if (rowSport !== 'afl') continue;
       const n = prop.playerName;
@@ -4819,7 +5641,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     for (const prop of activePaginatedProps) {
       const rowSport =
         propsSport === 'combined'
-          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
           : 'afl';
       if (rowSport !== 'afl') continue;
       const n = prop.playerName;
@@ -4916,7 +5738,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     for (const prop of activePaginatedProps) {
       const rowSport =
         propsSport === 'combined'
-          ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+          ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
           : propsSport;
       if (rowSport === 'nba') {
         const bdlId = getPlayerIdFromName(prop.playerName);
@@ -4946,11 +5768,160 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         const awayLogo = awayDisp ? aflLogoLookup(awayDisp) : null;
         if (homeLogo) warmImage(homeLogo);
         if (awayLogo) warmImage(awayLogo);
+      } else if (rowSport === 'world-cup') {
+        if (prop.headshotUrl) warmImage(prop.headshotUrl);
+        const matchup = resolveWcPropsMatchup(prop, aflGames);
+        if (matchup.homeFlagUrl) warmImage(matchup.homeFlagUrl);
+        if (matchup.awayFlagUrl) warmImage(matchup.awayFlagUrl);
       }
     }
-  }, [activePaginatedProps, propsSport, aflLogoByTeam, aflPortraitExtras]);
+  }, [activePaginatedProps, propsSport, aflLogoByTeam, aflPortraitExtras, aflGames]);
 
-  const applySportMode = useCallback((nextMode: 'nba' | 'afl' | 'combined') => {
+  const applySportMode = useCallback((nextMode: PropsSportMode) => {
+    if (!NBA_PUBLIC_ENABLED && nextMode === 'nba') {
+      nextMode = 'combined';
+    }
+    let combinedWarm = false;
+    if (nextMode === 'combined' && propsSport === 'world-cup') {
+      setWorldCupCombinedProps(aflProps);
+      setAflProps([]);
+      setAflGames([]);
+    }
+    if (nextMode === 'combined') {
+      try {
+        const raw = sessionStorage.getItem(COMBINED_PROPS_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as CombinedPropsSnapshotResponse & { timestamp?: number; selectedGameIds?: string[] };
+          const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+          const nbaProps = Array.isArray(parsed?.nba?.props) ? parsed.nba.props : [];
+          const aflPropsCached = Array.isArray(parsed?.afl?.props) ? parsed.afl.props : [];
+          const wcPropsCached = Array.isArray(parsed?.worldCup?.props) ? parsed.worldCup.props : [];
+          const hasSnapshotData = nbaProps.length > 0 || aflPropsCached.length > 0 || wcPropsCached.length > 0;
+          if (age < CACHE_TTL_MS && hasSnapshotData) {
+            applyCombinedSnapshot(parsed, {
+              persistCaches: false,
+              selectedGameIds: Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined,
+            });
+            combinedWarm = true;
+            combinedWarmToggleRef.current = true;
+          }
+        }
+      } catch {
+        // ignore cache parse errors; combined fetch effect will load fresh data
+      }
+
+      // AFL → combined: keep in-memory AFL rows and hydrate WC from session cache (same instant feel as WC → AFL).
+      if (!combinedWarm && propsSport === 'afl' && aflProps.length > 0) {
+        let wcPropsHydrated: PlayerProp[] = [];
+        try {
+          const wcRaw = sessionStorage.getItem(WC_PROPS_CACHE_KEY);
+          if (wcRaw) {
+            const wcParsed = JSON.parse(wcRaw) as {
+              props?: PlayerProp[];
+              games?: AflGameForProps[];
+              timestamp?: number;
+            };
+            const wcAge = wcParsed?.timestamp != null ? Date.now() - Number(wcParsed.timestamp) : Infinity;
+            const wcProps = Array.isArray(wcParsed?.props) ? wcParsed.props : [];
+            if (wcAge < AFL_PROPS_CACHE_TTL_MS && wcProps.length > 0) {
+              wcPropsHydrated = wcProps;
+              setWorldCupCombinedProps(wcProps);
+            }
+          }
+        } catch {
+          // ignore cache parse errors
+        }
+        combinedPropsFetchCompleteRef.current = true;
+        setCombinedPropsLoading(false);
+        setAflPropsLoading(false);
+        setSecondaryPropsFetchComplete(true);
+        combinedWarm = true;
+        combinedWarmToggleRef.current = true;
+        try {
+          persistCombinedSnapshotCaches({
+            success: true,
+            snapshotVersion: 1,
+            generatedAt: new Date().toISOString(),
+            staleAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+            nba: {
+              ok: playerProps.length > 0,
+              status: 200,
+              cached: true,
+              lastUpdated: null,
+              gameDate: null,
+              props: playerProps,
+            },
+            afl: {
+              ok: true,
+              status: 200,
+              lastUpdated: aflLastUpdated,
+              nextUpdate: null,
+              ingestMessage: aflIngestMessage,
+              noAflOdds: false,
+              games: aflGames,
+              props: aflProps,
+            },
+            worldCup: {
+              ok: wcPropsHydrated.length > 0,
+              status: 200,
+              lastUpdated: null,
+              nextUpdate: null,
+              ingestMessage: null,
+              noWorldCupOdds: wcPropsHydrated.length === 0,
+              games: [],
+              props: wcPropsHydrated,
+            },
+          });
+        } catch {
+          // ignore cache write failures
+        }
+      }
+
+      // World Cup → combined: restore AFL slice from session cache after WC rows were moved to worldCupCombinedProps.
+      if (!combinedWarm && propsSport === 'world-cup') {
+        try {
+          const aflRaw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+          if (aflRaw) {
+            const aflParsed = JSON.parse(aflRaw) as {
+              props?: PlayerProp[];
+              games?: AflGameForProps[];
+              selectedGameIds?: string[];
+              timestamp?: number;
+            };
+            const aflAge = aflParsed?.timestamp != null ? Date.now() - Number(aflParsed.timestamp) : Infinity;
+            const cachedAflProps = Array.isArray(aflParsed?.props) ? aflParsed.props : [];
+            const cachedAflGames = Array.isArray(aflParsed?.games) ? aflParsed.games : [];
+            if (aflAge < AFL_PROPS_CACHE_TTL_MS && (cachedAflProps.length > 0 || cachedAflGames.length > 0)) {
+              setAflProps(cachedAflProps);
+              setAflGames(cachedAflGames);
+              if (Array.isArray(aflParsed?.selectedGameIds) && aflParsed.selectedGameIds.length > 0) {
+                const selected = new Set(aflParsed.selectedGameIds);
+                selectedAflGamesRef.current = selected;
+                setSelectedAflGames(selected);
+              } else if (cachedAflGames.length > 0) {
+                const allIds = cachedAflGames.map((g) => g.gameId);
+                const selected = new Set(allIds);
+                selectedAflGamesRef.current = selected;
+                setSelectedAflGames(selected);
+              }
+              combinedPropsFetchCompleteRef.current = true;
+              setCombinedPropsLoading(false);
+              setAflPropsLoading(false);
+              setSecondaryPropsFetchComplete(true);
+              combinedWarm = true;
+              combinedWarmToggleRef.current = true;
+            }
+          }
+        } catch {
+          // ignore cache parse errors
+        }
+      }
+
+      if (!combinedWarm) {
+        combinedPropsFetchCompleteRef.current = false;
+        setCombinedPropsLoading(true);
+      }
+    }
     if (nextMode === 'nba' && !propsLoadedRef.current) {
       try {
         const CACHE_KEY = 'nba-player-props-cache';
@@ -4983,26 +5954,184 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       setGamesLoading(false);
     }
 
+    let secondaryRestoredFromCache = false;
+    if (isSecondaryPropsSport(nextMode)) {
+      secondaryListSportRef.current = nextMode;
+      aflRetryTimeoutsRef.current.forEach((id) => clearTimeout(id));
+      aflRetryTimeoutsRef.current = [];
+      aflListFetchInFlightRef.current = null;
+      const switchingSecondarySport =
+        isSecondaryPropsSport(propsSport) && propsSport !== nextMode;
+      const leavingCombinedForSecondary =
+        propsSport === 'combined' && isSecondaryPropsSport(nextMode);
+      if (switchingSecondarySport || leavingCombinedForSecondary) {
+        // AFL game/type/bookmaker filters hide every WC row (and vice versa) for one frame → skeleton.
+        setSelectedPropTypes(new Set());
+        setSelectedBookmakers(new Set());
+        userModifiedAflGamesRef.current = false;
+        selectedAflGamesRef.current = new Set();
+        setSelectedAflGames(new Set());
+      }
+
+      const applySecondaryHydrate = (
+        hydratedProps: PlayerProp[],
+        hydratedGames: AflGameForProps[],
+        preferredGameIds?: string[]
+      ) => {
+        if (hydratedProps.length === 0) return false;
+        setAflProps(hydratedProps);
+        const matchedGames = gamesMatchingProps(hydratedProps, hydratedGames);
+        setAflGames(matchedGames);
+        const selected = selectedGameIdsForProps(hydratedProps, matchedGames, preferredGameIds);
+        selectedAflGamesRef.current = selected;
+        setSelectedAflGames(selected);
+        secondaryRestoredFromCache = true;
+        setSecondaryPropsFetchComplete(true);
+        setAflPropsLoading(false);
+        secondarySkipFetchSportRef.current = nextMode;
+        secondaryWarmHydrateRef.current = true;
+        return true;
+      };
+
+      // Combined → WC: prefer in-memory All slice (what the user already sees), then combined snapshot.
+      // Do not use WC session cache here — it may carry AFL game ids that hide every WC row.
+      if (nextMode === 'world-cup' && propsSport === 'combined') {
+        let wcPropsHydrated: PlayerProp[] = [];
+        let wcGamesHydrated: AflGameForProps[] = [];
+
+        const inMemorySlice = worldCupCombinedPropsRef.current;
+        if (inMemorySlice.length > 0) {
+          wcPropsHydrated = pickWorldCupPropsFromCombinedSource(inMemorySlice);
+        }
+
+        if (wcPropsHydrated.length === 0) {
+          try {
+            const combinedRaw = sessionStorage.getItem(COMBINED_PROPS_CACHE_KEY);
+            if (combinedRaw) {
+              const combinedParsed = JSON.parse(combinedRaw) as CombinedPropsSnapshotResponse & {
+                timestamp?: number;
+              };
+              const combinedAge =
+                combinedParsed?.timestamp != null ? Date.now() - Number(combinedParsed.timestamp) : Infinity;
+              if (combinedAge < CACHE_TTL_MS) {
+                const snapshotProps = Array.isArray(combinedParsed?.worldCup?.props)
+                  ? combinedParsed.worldCup.props
+                  : [];
+                wcGamesHydrated = Array.isArray(combinedParsed?.worldCup?.games)
+                  ? combinedParsed.worldCup.games
+                  : [];
+                wcPropsHydrated = pickWorldCupPropsFromCombinedSource(snapshotProps);
+              }
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        applySecondaryHydrate(wcPropsHydrated, wcGamesHydrated);
+      }
+
+      // Session cache (AFL↔WC direct, refresh-on-WC, etc.) — skip when combined→WC already hydrated.
+      if (!secondaryRestoredFromCache && !(leavingCombinedForSecondary && nextMode === 'world-cup')) {
+      try {
+        const cacheKey = getSecondaryPropsCacheKey(nextMode);
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            props?: PlayerProp[];
+            games?: AflGameForProps[];
+            selectedGameIds?: string[];
+            timestamp?: number;
+          };
+          const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
+          const cachedPropsRaw = Array.isArray(parsed?.props) ? parsed.props : [];
+          const cachedProps =
+            nextMode === 'world-cup'
+              ? pickWorldCupPropsFromCombinedSource(cachedPropsRaw)
+              : cachedPropsRaw;
+          const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
+          const hasPaintableSecondaryRows =
+            nextMode === 'world-cup'
+              ? cachedProps.length > 0
+              : cachedProps.length > 0 || cachedGames.length > 0;
+          if (age < AFL_PROPS_CACHE_TTL_MS && hasPaintableSecondaryRows) {
+            applySecondaryHydrate(
+              cachedProps,
+              cachedGames,
+              Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined
+            );
+          }
+        }
+      } catch {
+        // ignore cache parse errors
+      }
+      }
+
+      // Combined → AFL: rows already live in aflProps on the combined feed.
+      if (
+        !secondaryRestoredFromCache &&
+        nextMode === 'afl' &&
+        propsSport === 'combined' &&
+        aflProps.length > 0
+      ) {
+        const aflRows = aflProps.filter((p) => !isWorldCupSoccerPropStatType(p.statType));
+        const matchedGames = gamesMatchingProps(aflRows, aflGames);
+        setAflGames(matchedGames);
+        const selected = selectedGameIdsForProps(aflRows, matchedGames);
+        selectedAflGamesRef.current = selected;
+        setSelectedAflGames(selected);
+        secondaryRestoredFromCache = true;
+        setSecondaryPropsFetchComplete(true);
+        setAflPropsLoading(false);
+        secondarySkipFetchSportRef.current = 'afl';
+        secondaryWarmHydrateRef.current = true;
+      }
+
+      // Secondary switch without hydrate: drop the other sport's rows.
+      if ((switchingSecondarySport || (leavingCombinedForSecondary && nextMode === 'world-cup')) && !secondaryRestoredFromCache) {
+        setAflProps([]);
+        setAflGames([]);
+        userModifiedAflGamesRef.current = false;
+        selectedAflGamesRef.current = new Set();
+        setSelectedAflGames(new Set());
+      }
+    }
+
     setPropsSport(nextMode);
-    if (nextMode !== 'nba') {
-      setAflPropsLoading(true);
+    if (nextMode !== 'combined') {
+      setWorldCupCombinedProps([]);
+    }
+    if (isSecondaryPropsSport(nextMode)) {
+      if (secondaryRestoredFromCache) {
+        // secondarySkipFetchSportRef already set during cache hydrate
+      } else {
+        secondarySkipFetchSportRef.current = null;
+        setSecondaryPropsFetchComplete(false);
+        setAflPropsLoading(true);
+      }
+    } else {
+      secondarySkipFetchSportRef.current = null;
+      secondaryListSportRef.current = null;
+      if (nextMode === 'combined') {
+        if (!combinedWarm) {
+          setAflPropsLoading(true);
+        }
+      } else if (nextMode !== 'nba') {
+        setAflPropsLoading(true);
+      }
     }
     const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const testCode = params?.get('test_event_code');
-    const basePath =
-      nextMode === 'afl'
-        ? '/props?sport=afl'
-        : nextMode === 'combined'
-          ? '/props?sport=all'
-          : '/props?sport=nba';
-    const path = basePath + (testCode ? `${basePath.includes('?') ? '&' : '?'}test_event_code=${encodeURIComponent(testCode)}` : '');
+    const effectiveMode =
+      !NBA_PUBLIC_ENABLED && nextMode === 'nba' ? 'combined' : nextMode;
+    const path = propsPathForSport(effectiveMode, testCode);
     router.replace(path, { scroll: false });
-  }, [router, mergeNbaPropsWithStoredCalculatedStats]);
+  }, [router, mergeNbaPropsWithStoredCalculatedStats, setSecondaryPropsFetchComplete, propsSport, aflProps, aflGames, aflLastUpdated, aflIngestMessage, playerProps, worldCupCombinedProps, applyCombinedSnapshot, persistCombinedSnapshotCaches]);
 
-  const toggleSportSelection = useCallback((sport: 'nba' | 'afl') => {
+  const toggleSportSelection = useCallback((sport: 'nba' | 'afl' | 'world-cup') => {
     // Combined means "no explicit single-sport filter selected".
     // Clicking an active sport toggles it off back to combined.
-    const nextMode: 'nba' | 'afl' | 'combined' = propsSport === sport ? 'combined' : sport;
+    const nextMode: PropsSportMode = propsSport === sport ? 'combined' : sport;
     applySportMode(nextMode);
   }, [propsSport, applySportMode]);
 
@@ -5248,27 +6377,29 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               }}
             >
           <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
-            {/* Sport filter: default combined (none selected), select one for single-sport view */}
+            {/* Sport filter: default combined (none selected); click active sport again to return to combined */}
             <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] lg:bg-none lg:bg-[#050d1a] border-[#352f57] lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
-              <button
-                type="button"
-                onClick={() => toggleSportSelection('nba')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
-                  propsSport === 'nba'
-                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                }`}
-                aria-label="NBA"
-              >
-                <img
-                  src="/images/nba-logo.png"
-                  alt=""
-                  className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              </button>
+              {NBA_PUBLIC_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => toggleSportSelection('nba')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                    propsSport === 'nba'
+                      ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  aria-label="NBA"
+                >
+                  <img
+                    src="/images/nba-logo.png"
+                    alt=""
+                    className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => toggleSportSelection('afl')}
@@ -5283,6 +6414,25 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   src="/images/afl-logo.png"
                   alt=""
                   className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleSportSelection('world-cup')}
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                  propsSport === 'world-cup'
+                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-label="World Cup"
+              >
+                <img
+                  src={WORLD_CUP_LOGO_PATH}
+                  alt=""
+                  className={WORLD_CUP_LOGO_TOGGLE_CLASS}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
@@ -5375,7 +6525,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             style={getMobileFilterDropdownStyle()}
                           >
                           <div className="p-2 space-y-1" style={{ width: '100%', boxSizing: 'border-box' }}>
-                            {propsSport === 'afl'
+                            {isSecondaryListMode
                               ? aflGamesWithProps.map((game) => {
                                   const isSelected = selectedAflGames.has(game.gameId);
                                   return (
@@ -5386,38 +6536,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       }`}
                                     >
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
-                                      {(() => {
-                                  const h = toOfficialAflTeamDisplayName(game.homeTeam);
-                                  let a = toOfficialAflTeamDisplayName(game.awayTeam);
-                                  const same = h && a && h === a;
-                                  if (same) a = '';
-                                  const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
-                                  const tryAflLogo = (name: string): string | null => {
-                                    if (!name) return null;
-                                    if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
-                                    for (const w of name.split(/\s+/)) {
-                                      if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
-                                    }
-                                    return null;
-                                  };
-                                  const homeLogoUrl = h ? tryAflLogo(h) : null;
-                                  const awayLogoUrl = a ? tryAflLogo(a) : null;
-                                  return (
-                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                      {homeLogoUrl ? (
-                                        <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />
-                                      ) : (
-                                        <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
-                                      )}
-                                      <span className={`text-xs font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
-                                      {awayLogoUrl ? (
-                                        <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />
-                                      ) : (
-                                        <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
-                                      )}
-                                    </div>
-                                  );
-                                })()}
+                                      <SecondaryGameMatchupLogos
+                                        homeTeam={game.homeTeam}
+                                        awayTeam={game.awayTeam}
+                                        homeTeamCode={game.homeTeamCode}
+                                        awayTeamCode={game.awayTeamCode}
+                                        homeTeamLogo={game.homeTeamLogo}
+                                        awayTeamLogo={game.awayTeamLogo}
+                                        sport={propsSport}
+                                        aflLogoByTeam={aflLogoByTeam}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="md"
+                                      />
                                     </label>
                                   );
                                 })
@@ -5469,7 +6600,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div className="flex pt-0.5">
                               <button
                                 type="button"
-                                onClick={propsSport === 'afl' ? clearAllAflGames : clearAllGames}
+                                onClick={isSecondaryListMode ? clearAllAflGames : clearAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -5481,7 +6612,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
                               <button
                                 type="button"
-                                onClick={propsSport === 'afl' ? selectAllAflGames : selectAllGames}
+                                onClick={isSecondaryListMode ? selectAllAflGames : selectAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
@@ -5510,7 +6641,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           }`}
                         >
                           <div className="p-2 space-y-1">
-                            {propsSport === 'afl'
+                            {isSecondaryListMode
                               ? aflGamesWithProps.map((game) => {
                                   const isSelected = selectedAflGames.has(game.gameId);
                                   return (
@@ -5521,38 +6652,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                       }`}
                                     >
                                       <input type="checkbox" checked={isSelected} onChange={() => toggleAflGame(game.gameId)} className="hidden" />
-                                      {(() => {
-                                        const h = toOfficialAflTeamDisplayName(game.homeTeam);
-                                        let a = toOfficialAflTeamDisplayName(game.awayTeam);
-                                        const same = h && a && h === a;
-                                        if (same) a = '';
-                                        const n = (t: string) => String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
-                                        const tryAflLogo = (name: string): string | null => {
-                                          if (!name) return null;
-                                          if (aflLogoByTeam[n(name)]) return aflLogoByTeam[n(name)];
-                                          for (const w of name.split(/\s+/)) {
-                                            if (aflLogoByTeam[n(w)]) return aflLogoByTeam[n(w)];
-                                          }
-                                          return null;
-                                        };
-                                        const homeLogoUrl = h ? tryAflLogo(h) : null;
-                                        const awayLogoUrl = a ? tryAflLogo(a) : null;
-                                        return (
-                                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            {homeLogoUrl ? (
-                                              <img src={homeLogoUrl} alt={h} className="w-8 h-8 object-contain flex-shrink-0" />
-                                            ) : (
-                                              <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
-                                            )}
-                                            <span className={`text-sm font-semibold flex-shrink-0 ${mounted && isDark ? 'text-white' : 'text-gray-700'}`}>vs</span>
-                                            {awayLogoUrl ? (
-                                              <img src={awayLogoUrl} alt={a} className="w-8 h-8 object-contain flex-shrink-0" />
-                                            ) : (
-                                              <div className={`w-8 h-8 rounded-full border flex-shrink-0 ${mounted && isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-300 bg-gray-100'}`} />
-                                            )}
-                                          </div>
-                                        );
-                                      })()}
+                                      <SecondaryGameMatchupLogos
+                                        homeTeam={game.homeTeam}
+                                        awayTeam={game.awayTeam}
+                                        homeTeamCode={game.homeTeamCode}
+                                        awayTeamCode={game.awayTeamCode}
+                                        homeTeamLogo={game.homeTeamLogo}
+                                        awayTeamLogo={game.awayTeamLogo}
+                                        sport={propsSport}
+                                        aflLogoByTeam={aflLogoByTeam}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="md"
+                                      />
                                     </label>
                                   );
                                 })
@@ -5606,7 +6718,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             <div className="flex pt-0.5">
                               <button
                                 type="button"
-                                onClick={propsSport === 'afl' ? clearAllAflGames : clearAllGames}
+                                onClick={isSecondaryListMode ? clearAllAflGames : clearAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
@@ -5618,7 +6730,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               <div className={`w-px self-stretch flex-shrink-0 ${mounted && isDark ? 'bg-gray-600' : 'bg-gray-200'}`} />
                               <button
                                 type="button"
-                                onClick={propsSport === 'afl' ? selectAllAflGames : selectAllGames}
+                                onClick={isSecondaryListMode ? selectAllAflGames : selectAllGames}
                                 className={`flex-1 px-3 py-2 rounded text-sm font-medium text-center transition-all ${
                                   mounted && isDark
                                     ? 'text-purple-400 hover:bg-gray-700 hover:text-purple-200'
@@ -6002,12 +7114,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   </details>
                 )}
                 
-                {activeFilteredCount === 0 ? (
-                    ((propsSport === 'afl' && (aflPropsLoading || !aflPropsFetchCompleteRef.current)) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))) ? (
+                {!propsTableHasRows && !secondaryPropsPaintRows ? (
+                    ((isSecondaryListMode && (aflPropsLoading || !aflPropsFetchComplete) && !secondaryPropsPaintRows) || (propsSport === 'nba' && !showNoPropsMessage) || (propsSport === 'combined' && (combinedPropsLoading || propsLoading || aflPropsLoading || !combinedPropsFetchCompleteRef.current))) ? (
                       <>
                       {/* Desktop Skeleton - AFL loading or NBA empty */}
                       <div className="hidden 2xl:block overflow-x-auto min-h-[calc(100dvh-17rem)]">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                               <th className="py-3 px-4 text-left">
@@ -6015,14 +7127,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>DvP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L5</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L10</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
-                                {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {propsSport === 'world-cup' ? 'WC' : 'H2H'}
+                              </th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>Season</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>Streak</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {secondarySportKickoffLabel(propsSport)}
                               </th>
                             </tr>
                           </thead>
@@ -6112,7 +7226,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         ))}
                       </div>
                       </>
-                    ) : propsSport === 'afl' && aflPropsFetchCompleteRef.current ? (
+                    ) : isSecondaryListMode && aflPropsFetchComplete ? (
                       aflProps.length > 0 ? (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium">No props match your search or filters</p>
@@ -6127,7 +7241,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             type="button"
                             onClick={() => {
                               userModifiedAflGamesRef.current = false;
-                              aflPropsFetchCompleteRef.current = false;
+                              secondarySkipFetchSportRef.current = null;
+                              setSecondaryPropsFetchComplete(false);
                               setAflPropsLoading(true);
                               setAflPropsRetryKey((k) => k + 1);
                             }}
@@ -6153,7 +7268,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     <>
                       {/* Desktop Skeleton - Hidden on mobile */}
                       <div className="hidden 2xl:block overflow-x-auto min-h-[calc(100dvh-17rem)]">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
                           <thead>
                             <tr className={`border-b ${isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                               <th className="py-3 px-4 text-left">
@@ -6161,14 +7276,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>DvP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L5</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>L10</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>H2H</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Season</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>Streak</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
-                                {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {propsSport === 'world-cup' ? 'WC' : 'H2H'}
+                              </th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>Season</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>Streak</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {secondarySportKickoffLabel(propsSport)}
                               </th>
                             </tr>
                           </thead>
@@ -6268,11 +7385,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                     </>
                     )
-                  ) : activeFilteredCount > 0 ? (
+                  ) : (
                     <>
                       {/* Desktop Table View - Hidden on mobile */}
                       <div className="hidden 2xl:block overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
                         <thead>
                           <tr className={`border-b ${mounted && isDark ? 'border-gray-900' : 'border-gray-200'}`}>
                             {/* Prop Line Sorter (replaces Player text) */}
@@ -6356,8 +7473,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 )}
                               </div>
                             </th>
-                            {isCombinedMode && (
+                            {isCombinedMode && showCombinedDesktopSportColumn && (
                               <th className={`text-left py-3 px-3 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>
+                                Sport
+                              </th>
+                            )}
+                            {isWorldCupProps && (
+                              <th className={`text-right py-3 pl-3 pr-14 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>
                                 Sport
                               </th>
                             )}
@@ -6385,7 +7507,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </th>
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('dvp')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6407,7 +7529,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </th>
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('l5')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6429,7 +7551,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </th>
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('l10')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6449,9 +7571,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </div>
                               </div>
                             </th>
+                            {showH2hColumn && (
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('h2h')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6471,9 +7594,34 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </div>
                               </div>
                             </th>
+                            )}
+                            {showWcGamesColumn && (
+                            <th
+                              className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
+                              onClick={() => handleColumnSort('wc')}
+                            >
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span>WC</span>
+                                <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                  columnSort.wc !== 'none'
+                                    ? mounted && isDark ? 'bg-purple-600 border-purple-500' : 'bg-purple-100 border-purple-300'
+                                    : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                                }`}>
+                                  {columnSort.wc === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                  {columnSort.wc === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                  {columnSort.wc === 'none' && (
+                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                            </th>
+                            )}
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('season')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6495,7 +7643,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </th>
                             <th 
                               className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`} 
-                              style={{ width: '80px' }}
+                              style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('streak')}
                             >
                               <div className="flex items-center justify-center gap-1.5">
@@ -6515,15 +7663,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </div>
                               </div>
                             </th>
-                            <th className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={{ width: '80px' }}>
-                              {propsSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                            <th className={`text-center py-3 px-1 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                              {secondarySportKickoffLabel(propsSport)}
                             </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {activePaginatedProps.map((prop, idx) => {
+                          {propsTablePaginatedProps.map((prop, idx) => {
                             const rowSport = propsSport === 'combined'
-                              ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+                              ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
                               : propsSport;
                             const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                             const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null; // NBA Stats ID for headshot
@@ -6567,7 +7715,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             const opponentAbbr = normalizeTeam(prop.opponent);
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                             const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
-                            const navigateToAflPlayer = (lineValue?: number, bookmakerName?: string) => {
+                              const navigateToSecondaryDashboard = (lineValue?: number, bookmakerName?: string) => {
+                              if (rowSport === 'world-cup' || propsSport === 'world-cup') {
+                                navigateToWorldCupDashboardFromProp(
+                                  {
+                                    ...prop,
+                                    bookmaker: bookmakerName || prop.bookmaker,
+                                  },
+                                  router,
+                                  lineValue
+                                );
+                                setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                return;
+                              }
                               const team = prop.team || '';
                               const opponent = prop.opponent || '';
                               const currentSeason = new Date().getFullYear();
@@ -6669,7 +7829,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             };
                             return (
                               <tr
-                                key={idx}
+                                key={propsListRowKey(prop, rowSport)}
                                 className={`border-b ${mounted && isDark ? 'border-gray-900 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}
                                 onMouseEnter={() => {
                                   if (rowSport === 'afl') return;
@@ -6699,8 +7859,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   if (navigatingRef.current) return;
                                   navigatingRef.current = true;
                                   setNavigatingToPlayer(true);
-                                  if (rowSport === 'afl') {
-                                    navigateToAflPlayer();
+                                  if (rowSport === 'afl' || rowSport === 'world-cup') {
+                                    navigateToSecondaryDashboard();
                                     return;
                                   }
                                   const clickData = {
@@ -6739,8 +7899,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 }}
                               >
                                 {/* Player Column */}
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center gap-3">
+                                <td className={`py-3 px-4 ${isCombinedMode ? 'relative' : ''}`}>
+                                  {isCombinedMode && (
+                                    <div className="absolute top-2 left-3 z-10">
+                                      <SportMark sport={rowSport} isDark={mounted && isDark} compact />
+                                    </div>
+                                  )}
+                                  <div className={`flex items-center gap-3 ${isCombinedMode ? 'pl-9' : ''}`}>
                                     {rowSport === 'nba' && headshotUrl && (
                                       <img
                                         src={headshotUrl}
@@ -6777,6 +7942,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           size="md"
                                         />
                                       ))}
+                                    {rowSport === 'world-cup' && (
+                                      <AflPropsPlayerAvatar
+                                        headshotUrl={prop.headshotUrl ?? null}
+                                        jerseyNumber={null}
+                                        initials={getAflInitials(prop.playerName)}
+                                        isDark={isDark}
+                                        mounted={mounted}
+                                        size="md"
+                                      />
+                                    )}
                                     <div>
                                       <div className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                         {prop.playerName}
@@ -6791,6 +7966,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           </div>
                                         ) : null;
                                       })()}
+                                      {rowSport === 'world-cup' && prop.wcPosition && (
+                                        <div
+                                          className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                        >
+                                          {prop.wcPosition}
+                                        </div>
+                                      )}
                                       <div className={`text-sm font-medium ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                         {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}
                                       </div>
@@ -6832,7 +8014,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               )}
                                             </div>
                                           );
-                                        })() : (
+                                        })() : rowSport === 'world-cup' ? (
+                                          <WcPropsMatchupLogos
+                                            prop={prop}
+                                            games={aflGames}
+                                            isDark={isDark}
+                                            mounted={mounted}
+                                            size="md"
+                                          />
+                                        ) : (
                                           <>
                                             <img src={teamLogoUrl} alt={prop.team} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                             <img src={opponentLogoUrl} alt={prop.opponent} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -6843,9 +8033,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   </div>
                                 </td>
 
-                                {isCombinedMode && (
+                                {isCombinedMode && showCombinedDesktopSportColumn && (
                                   <td className="py-3 px-3">
                                     <SportMark sport={rowSport} isDark={mounted && isDark} />
+                                  </td>
+                                )}
+                                {isWorldCupProps && (
+                                  <td className="py-3 pl-3 pr-14 text-right">
+                                    <span className="inline-flex justify-end">
+                                      <SportMark sport="world-cup" isDark={mounted && isDark} compact />
+                                    </span>
                                   </td>
                                 )}
                                 
@@ -6906,7 +8103,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                       if (navigatingRef.current) return;
                                                       navigatingRef.current = true;
                                                       setNavigatingToPlayer(true);
-                                                      navigateToAflPlayer(line.line, line.bookmaker);
+                                                      navigateToSecondaryDashboard(line.line, line.bookmaker);
                                                     }}>
                                                       {bookmakerInfo?.logoUrl && (
                                                         <img
@@ -6935,8 +8132,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                           return (
                                                             <>
                                                               <span className={`${mounted && isDark ? 'text-green-400' : 'text-green-600'} text-[10px] 2xl:text-xs`}>O {formatOddsValue(line.overOdds)}</span>
-                                                              <span className={`${mounted && isDark ? 'text-gray-500' : 'text-gray-400'} text-[10px] 2xl:text-xs`}>|</span>
-                                                              <span className={`${mounted && isDark ? 'text-red-400' : 'text-red-600'} text-[10px] 2xl:text-xs`}>U {formatOddsValue(line.underOdds)}</span>
+                                                              {propsRowShowsUnderOdds(rowSport) && (
+                                                                <>
+                                                                  <span className={`${mounted && isDark ? 'text-gray-500' : 'text-gray-400'} text-[10px] 2xl:text-xs`}>|</span>
+                                                                  <span className={`${mounted && isDark ? 'text-red-400' : 'text-red-600'} text-[10px] 2xl:text-xs`}>U {formatOddsValue(line.underOdds)}</span>
+                                                                </>
+                                                              )}
                                                             </>
                                                           );
                                                         })()}
@@ -7032,7 +8233,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                   navigatingRef.current = true;
                                                                   setNavigatingToPlayer(true);
                                                                   setOpenPopup(null);
-                                                                  navigateToAflPlayer(line.line, line.bookmaker);
+                                                                  navigateToSecondaryDashboard(line.line, line.bookmaker);
                                                                 }}
                                                               >
                                                                 {bookmakerInfo?.logoUrl && (
@@ -7062,8 +8263,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                     return (
                                                                       <>
                                                                         <span className="text-green-400 font-medium text-[10px] 2xl:text-xs">O {formatOddsValue(line.overOdds)}</span>
-                                                                        <span className="text-gray-500 text-[10px] 2xl:text-xs">|</span>
-                                                                        <span className="text-red-400 font-medium text-[10px] 2xl:text-xs">U {formatOddsValue(line.underOdds)}</span>
+                                                                        {propsRowShowsUnderOdds(rowSport) && (
+                                                                          <>
+                                                                            <span className="text-gray-500 text-[10px] 2xl:text-xs">|</span>
+                                                                            <span className="text-red-400 font-medium text-[10px] 2xl:text-xs">U {formatOddsValue(line.underOdds)}</span>
+                                                                          </>
+                                                                        )}
                                                                       </>
                                                                     );
                                                                   })()}
@@ -7099,7 +8304,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                             )}
                                             <div className={`text-sm ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>
                                               <div>Over: {prop.overOdds && prop.overOdds !== 'N/A' ? prop.overOdds : '—'}</div>
-                                              <div>Under: {prop.underOdds && prop.underOdds !== 'N/A' ? prop.underOdds : '—'}</div>
+                                              {propsRowShowsUnderOdds(rowSport) && (
+                                                <div>Under: {prop.underOdds && prop.underOdds !== 'N/A' ? prop.underOdds : '—'}</div>
+                                              )}
                                             </div>
                                           </div>
                                         );
@@ -7122,14 +8329,17 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                             ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
                                             : (prop.bookmakerLines || []);
                                           const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
+                                          const showUnderIp = propsRowShowsUnderOdds(rowSport);
                                           return (
                                             <>
-                                              <div className={`text-sm font-semibold ${overProb != null ? (overProb >= (underProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
+                                              <div className={`text-sm font-semibold ${overProb != null ? (showUnderIp && overProb < (underProb ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400') : ''}`}>
                                                 Over {overProb != null ? `${overProb.toFixed(1)}%` : '—'}
                                               </div>
-                                              <div className={`text-sm font-semibold ${underProb != null ? (underProb >= (overProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
-                                                Under {underProb != null ? `${underProb.toFixed(1)}%` : '—'}
-                                              </div>
+                                              {showUnderIp && (
+                                                <div className={`text-sm font-semibold ${underProb != null ? (underProb >= (overProb ?? 0) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400') : ''}`}>
+                                                  Under {underProb != null ? `${underProb.toFixed(1)}%` : '—'}
+                                                </div>
+                                              )}
                                             </>
                                           );
                                         })()}
@@ -7139,7 +8349,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* DvP Column */}
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   {displayProp.dvpRating !== null && displayProp.dvpRating !== undefined && typeof displayProp.dvpRating === 'number' && displayProp.dvpRating > 0 ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
@@ -7151,8 +8361,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         // AFL (18 teams): 1-6 hard (red), 7-12 neutral (orange), 13-18 easy (green)
                                         // NBA (30 teams): 1-10 hard (red), 11-20 neutral (orange), 21-30 easy (green)
                                         const isAflDvp = rowSport === 'afl';
-                                        const easyMin = isAflDvp ? 13 : 21;
-                                        const hardMax = isAflDvp ? 6 : 10;
+                                        const isWcDvp = rowSport === 'world-cup';
+                                        const easyMin = isAflDvp ? 13 : isWcDvp ? 34 : 21;
+                                        const hardMax = isAflDvp ? 6 : isWcDvp ? 9 : 10;
                                         if (displayProp.dvpRating! >= easyMin) {
                                           bgColor = mounted && isDark ? '#166534' : '#dcfce7'; // green-800 / green-100
                                           borderColor = '#22c55e';
@@ -7182,7 +8393,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         </div>
                                       </div>
                                     </div>
-                                  ) : propsSport === 'afl' ? (
+                                  ) : propsSport === 'afl' || rowSport === 'world-cup' ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
                                       style={{
                                         background: mounted && isDark ? '#374151' : '#f3f4f6',
@@ -7208,7 +8419,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* L5 Column */}
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   {(displayProp.last5Avg !== null && displayProp.last5Avg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
@@ -7284,7 +8495,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* L10 Column */}
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   {(displayProp.last10Avg !== null && displayProp.last10Avg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
@@ -7359,8 +8570,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   )}
                                 </td>
                                 
-                                {/* H2H Column */}
-                                <td className="py-3 px-2">
+                                {showH2hColumn && (
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   {(displayProp.h2hAvg !== null && displayProp.h2hAvg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
@@ -7434,10 +8645,80 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     </div>
                                   )}
                                 </td>
+                                )}
+
+                                {showWcGamesColumn && (
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                  {(displayProp.wcGamesHitRate?.total ?? 0) > 0 ||
+                                  (displayProp.wcGamesAvg !== null && displayProp.wcGamesAvg !== undefined) ? (
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
+                                      style={(() => {
+                                        let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
+                                        let borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
+                                        let glowColor = '';
+
+                                        if (displayProp.wcGamesHitRate) {
+                                          const hitRate = (displayProp.wcGamesHitRate.hits / displayProp.wcGamesHitRate.total) * 100;
+                                          if (hitRate < 30) {
+                                            bgColor = '#B03A3A';
+                                            borderColor = '#ef4444';
+                                            glowColor = '#ef4444';
+                                          } else if (hitRate < 70) {
+                                            bgColor = '#E88A3B';
+                                            borderColor = '#f97316';
+                                            glowColor = '#f97316';
+                                          } else {
+                                            bgColor = '#22c55e';
+                                            borderColor = '#22c55e';
+                                            glowColor = '#22c55e';
+                                          }
+                                        }
+
+                                        return {
+                                          background: bgColor !== (mounted && isDark ? '#374151' : '#f9fafb')
+                                            ? `linear-gradient(to top, ${bgColor}, ${bgColor}00)`
+                                            : bgColor,
+                                          borderColor: borderColor,
+                                          borderWidth: '1px',
+                                          boxShadow: glowColor ? `0 0 8px ${glowColor}60, 0 0 4px ${glowColor}40` : 'none',
+                                        };
+                                      })()}>
+                                      <div className="h-full w-full flex flex-col items-center justify-center text-center leading-tight gap-0">
+                                        <div className="text-sm font-semibold text-white leading-tight">
+                                          {displayProp.wcGamesAvg!.toFixed(1)}
+                                        </div>
+                                        {displayProp.wcGamesHitRate && (
+                                          <>
+                                            <div className="text-xs font-medium text-white leading-tight">
+                                              {displayProp.wcGamesHitRate.hits}/{displayProp.wcGamesHitRate.total}
+                                            </div>
+                                            <div className="text-xs font-medium text-white leading-tight">
+                                              {((displayProp.wcGamesHitRate.hits / displayProp.wcGamesHitRate.total) * 100).toFixed(0)}%
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border-2"
+                                      style={{
+                                        background: mounted && isDark ? '#374151' : '#f3f4f6',
+                                        borderColor: mounted && isDark ? '#4b5563' : '#d1d5db',
+                                        borderWidth: '2px',
+                                        boxShadow: 'none',
+                                      }}>
+                                      <div className={`text-sm font-bold ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        N/A
+                                      </div>
+                                    </div>
+                                  )}
+                                </td>
+                                )}
                                 
                                 {/* Season Column */}
-                                <td className="py-3 px-2">
-                                  {(displayProp.seasonAvg !== null && displayProp.seasonAvg !== undefined) ? (
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                  {(displayProp.seasonHitRate?.total ?? 0) > 0 ||
+                                  (displayProp.seasonAvg !== null && displayProp.seasonAvg !== undefined) ? (
                                     <div className="inline-flex flex-col items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
                                         let bgColor = mounted && isDark ? '#374151' : '#f9fafb';
@@ -7512,7 +8793,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* Streak Column */}
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   {(displayProp.streak !== null && displayProp.streak !== undefined) ? (
                                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg border"
                                       style={(() => {
@@ -7561,11 +8842,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* Tipoff Countdown Column */}
-                                <td className="py-3 px-2">
+                                <td className="py-3 px-1 text-center align-middle" style={PROPS_DESKTOP_STAT_COL_STYLE}>
                                   <TipoffCountdown
                                     game={getTipoffGameForRow(prop, rowSport)}
                                     isDark={mounted && isDark}
-                                    label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'}
+                                    label={rowSportKickoffLabel(rowSport)}
                                   />
                                 </td>
                                 
@@ -7706,6 +8987,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             </button>
 
                             {/* H2H Sort */}
+                            {showH2hColumn && (
                             <button
                               onClick={() => handleColumnSort('h2h')}
                               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
@@ -7733,6 +9015,36 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 )}
                               </div>
                             </button>
+                            )}
+                            {showWcGamesColumn && (
+                            <button
+                              onClick={() => handleColumnSort('wc')}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap flex-shrink-0 shadow-sm ${
+                                columnSort.wc !== 'none'
+                                  ? mounted && isDark
+                                    ? 'bg-purple-600 border-purple-500 text-white'
+                                    : 'bg-purple-100 border-purple-300 text-purple-900'
+                                  : mounted && isDark
+                                    ? 'bg-gray-800 border-gray-800 text-gray-400 hover:bg-gray-700'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span>WC</span>
+                              <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
+                                columnSort.wc !== 'none'
+                                  ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
+                                  : mounted && isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-300'
+                              }`}>
+                                {columnSort.wc === 'asc' && <span className="text-[8px] leading-none">↑</span>}
+                                {columnSort.wc === 'desc' && <span className="text-[8px] leading-none">↓</span>}
+                                {columnSort.wc === 'none' && (
+                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+                            )}
 
                             {/* Season Sort */}
                             <button
@@ -7798,9 +9110,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       
                       {/* Mobile Card View - Hidden on desktop */}
                       <div className={`2xl:hidden space-y-4.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
-                        {activePaginatedProps.map((prop, idx) => {
+                        {propsTablePaginatedProps.map((prop, idx) => {
                           const rowSport = propsSport === 'combined'
-                            ? ((prop as PlayerProp & { sportSource?: 'nba' | 'afl' }).sportSource ?? 'nba')
+                            ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')
                             : propsSport;
                           const bdlId = rowSport === 'nba' ? getPlayerIdFromName(prop.playerName) : null;
                           const nbaId = bdlId ? convertBdlToNbaId(bdlId) : null;
@@ -7923,15 +9235,20 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           
                           return (
                             <div
-                              key={idx}
-                              className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 ${isCombinedMode ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+                              key={propsListRowKey(prop, rowSport)}
+                              className={`relative rounded-2xl border pl-3.5 pr-3.5 py-3.5 ${isCombinedMode || isWorldCupProps ? 'pt-8' : ''} shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
                                 mounted && isDark ? 'bg-gradient-to-br from-[#0b1a2b] via-[#10253f] to-[#1b1c3d] border-[#463e6b]' : 'bg-white border-gray-200'
                               }`}
                               onClick={() => {
                                 if (navigatingRef.current) return;
                                 navigatingRef.current = true;
                                 setNavigatingToPlayer(true);
-                                if (rowSport === 'afl') {
+                                if (rowSport === 'afl' || rowSport === 'world-cup') {
+                                  if (rowSport === 'world-cup') {
+                                    navigateToWorldCupDashboardFromProp(prop, router);
+                                    setTimeout(() => { navigatingRef.current = false; setNavigatingToPlayer(false); }, 1500);
+                                    return;
+                                  }
                                   const team = prop.team || '';
                                   const opponent = prop.opponent || '';
                                   const currentSeason = new Date().getFullYear();
@@ -8048,9 +9365,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 }, 1500);
                               }}
                             >
-                              {isCombinedMode && (
-                                <div className="absolute top-2 left-2 z-10 pointer-events-none">
-                                  <SportMark sport={rowSport} isDark={mounted && isDark} />
+                              {(isCombinedMode || isWorldCupProps) && (
+                                <div
+                                  className={`absolute top-2 z-10 pointer-events-none ${
+                                    isWorldCupProps && !isCombinedMode ? 'right-10' : 'left-2'
+                                  }`}
+                                >
+                                  <SportMark sport={rowSport} isDark={mounted && isDark} compact={isWorldCupProps && !isCombinedMode} />
                                 </div>
                               )}
                               {/* Header Section */}
@@ -8080,6 +9401,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         size="sm"
                                       />
                                     )
+                                  ) : rowSport === 'world-cup' ? (
+                                    <AflPropsPlayerAvatar
+                                      headshotUrl={prop.headshotUrl ?? null}
+                                      jerseyNumber={null}
+                                      initials={getAflInitials(prop.playerName)}
+                                      isDark={isDark}
+                                      mounted={mounted}
+                                      size="sm"
+                                    />
                                   ) : headshotUrl ? (
                                     <div className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 overflow-hidden relative" style={{ borderColor: mounted && isDark ? '#4b5563' : '#e5e7eb' }}>
                                       <Image
@@ -8139,7 +9469,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               )}
                                             </>
                                           );
-                                        })() : (
+                                        })() : rowSport === 'world-cup' ? (
+                                          <WcPropsMatchupLogos
+                                            prop={prop}
+                                            games={aflGames}
+                                            isDark={isDark}
+                                            mounted={mounted}
+                                            size="sm"
+                                          />
+                                        ) : (
                                           <>
                                             {teamLogoUrl && (
                                               <img
@@ -8189,15 +9527,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           ? (prop.bookmakerLines || []).filter((line) => line.bookmaker && selectedBookmakers.has(line.bookmaker))
                                           : (prop.bookmakerLines || []);
                                         const { overProb, underProb } = getConsensusImpliedProbabilities(prop, filteredLines);
+                                        const showUnderIp = propsRowShowsUnderOdds(rowSport);
 
                                         return (
                                           <>
                                             <div className={`text-xs font-bold ${mounted && isDark ? 'text-green-500 sm:text-green-400' : 'text-green-600'}`}>
                                               {overProb !== null && overProb !== undefined ? `${overProb.toFixed(0)}%` : '-'}
                                             </div>
-                                            <div className={`text-xs font-bold ${mounted && isDark ? 'text-red-500 sm:text-red-400' : 'text-red-600'}`}>
-                                              {underProb !== null && underProb !== undefined ? `${underProb.toFixed(0)}%` : '-'}
-                                            </div>
+                                            {showUnderIp && (
+                                              <div className={`text-xs font-bold ${mounted && isDark ? 'text-red-500 sm:text-red-400' : 'text-red-600'}`}>
+                                                {underProb !== null && underProb !== undefined ? `${underProb.toFixed(0)}%` : '-'}
+                                              </div>
+                                            )}
                                           </>
                                         );
                                       })()}
@@ -8272,7 +9613,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   </div>
                                 </div>
                                 
-                                {/* H2H */}
+                                {showH2hColumn && (
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.h2hHitRate)}>
                                   <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>H2H</div>
                                   <div className={`text-sm font-bold ${
@@ -8283,6 +9624,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     {getHitRatePercent(prop.h2hHitRate)}
                                   </div>
                                 </div>
+                                )}
+                                {showWcGamesColumn && (
+                                <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(prop.wcGamesHitRate)}>
+                                  <div className={`text-[10px] font-semibold mb-0.5 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'}`}>WC</div>
+                                  <div className={`text-sm font-bold ${
+                                    (!prop.wcGamesHitRate || prop.wcGamesHitRate.total === 0)
+                                      ? (mounted && isDark ? 'text-gray-400' : 'text-gray-500')
+                                      : (mounted && isDark ? 'text-white' : 'text-gray-900')
+                                  }`}>
+                                    {getHitRatePercent(prop.wcGamesHitRate)}
+                                  </div>
+                                </div>
+                                )}
                                 
                                 {/* STRK */}
                                 <div className="flex flex-col items-center justify-center rounded-lg border-2 py-2 w-full" style={getStatBoxStyle(null, true)}>
@@ -8368,10 +9722,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               <span className={`font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`} style={{ fontSize: '12px' }}>
                                                 O {formatOddsValue(bookmaker.overOdds)}
                                               </span>
-                                              <span className={mounted && isDark ? 'text-gray-500' : 'text-gray-400'} style={{ fontSize: '11px' }}>|</span>
-                                              <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '12px' }}>
-                                                U {formatOddsValue(bookmaker.underOdds)}
-                                              </span>
+                                              {propsRowShowsUnderOdds(rowSport) && (
+                                                <>
+                                                  <span className={mounted && isDark ? 'text-gray-500' : 'text-gray-400'} style={{ fontSize: '11px' }}>|</span>
+                                                  <span className={`font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: '12px' }}>
+                                                    U {formatOddsValue(bookmaker.underOdds)}
+                                                  </span>
+                                                </>
+                                              )}
                                             </div>
                                           </div>
                                         );
@@ -8467,9 +9825,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                             <span className={`text-xs font-bold ${mounted && isDark ? 'text-green-400' : 'text-green-600'}`}>
                                                               O {formatOddsValue(line.overOdds)}
                                                             </span>
-                                                            <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
-                                                              U {formatOddsValue(line.underOdds)}
-                                                            </span>
+                                                            {propsRowShowsUnderOdds(rowSport) && (
+                                                              <span className={`text-xs font-bold ${mounted && isDark ? 'text-red-400' : 'text-red-600'}`}>
+                                                                U {formatOddsValue(line.underOdds)}
+                                                              </span>
+                                                            )}
                                                           </div>
                                                         </div>
                                                       </div>
@@ -8484,7 +9844,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     </div>
                                     {/* Tipoff Countdown - Next to bookmakers on the right */}
                                     <div className="flex items-start justify-center flex-shrink-0 pr-1 pt-0.5">
-                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
+                                      <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} />
                                     </div>
                                   </div>
                                 );
@@ -8492,7 +9852,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               {/* Tipoff Countdown - Show if no bookmakers */}
                               {(!prop.bookmakerLines || prop.bookmakerLines.length === 0) && (
                                 <div className="flex items-center justify-start pr-1">
-                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSport === 'afl' ? 'Bounce' : 'Tipoff'} />
+                                  <TipoffCountdown game={game} isDark={mounted && isDark} label={rowSportKickoffLabel(rowSport)} />
                                 </div>
                               )}
                             </div>
@@ -8538,7 +9898,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         </div>
                       </div>
                     </>
-                  ) : null}
+                  )}
                   
                   {/* Mobile Games Section - Hidden */}
                   <div className="hidden mt-6">
@@ -8816,7 +10176,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 type="text"
                 value={findPlayerQuery}
                 onChange={(e) => setFindPlayerQuery(e.target.value)}
-                placeholder={propsSport === 'afl' ? 'Search AFL players...' : propsSport === 'combined' ? 'Search NBA or AFL players...' : 'Search NBA players...'}
+                placeholder={
+                  propsSport === 'world-cup'
+                    ? 'Search World Cup players...'
+                    : propsSport === 'afl'
+                      ? 'Search AFL players...'
+                      : propsSport === 'combined'
+                        ? 'Search NBA or AFL players...'
+                        : 'Search NBA players...'
+                }
                 className={`w-full px-4 py-2.5 rounded-lg border text-sm ${
                   mounted && isDark
                     ? 'bg-[#10243e] border-gray-600 text-white placeholder-gray-500'

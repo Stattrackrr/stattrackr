@@ -75,3 +75,53 @@ export function getTeamId(abbr: string): number | null {
 export function getTeamAbbr(id: number): string | null {
   return TEAM_ID_TO_ABBR[id] ?? null;
 }
+
+const NBA_PUBLIC_ENABLED_DEFAULT = false;
+
+export const NBA_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_NBA_ENABLED === 'true' ||
+  process.env.NEXT_PUBLIC_NBA_ENABLED === '1' ||
+  (process.env.NEXT_PUBLIC_NBA_ENABLED == null && NBA_PUBLIC_ENABLED_DEFAULT);
+
+export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
+
+export const WORLD_CUP_LOGO_DOWNLOADS_STEM = 'fifa_trophy_transparent_v2';
+export const WORLD_CUP_LOGO_DOWNLOADS_EXTENSIONS = ['.png', '.webp'] as const;
+export const WORLD_CUP_LOGO_PUBLIC_FILENAME = 'world-cup-logo.png';
+export const WORLD_CUP_LOGO_SERVE_PATH = '/api/world-cup/dashboard?logo=1';
+export const WORLD_CUP_LOGO_PATH = `/images/${WORLD_CUP_LOGO_PUBLIC_FILENAME}`;
+/** Portrait trophy asset — square slots keep the trophy readable. */
+export const WORLD_CUP_LOGO_TOGGLE_CLASS = 'h-14 w-14 lg:h-16 lg:w-16 object-contain';
+export const WORLD_CUP_LOGO_MARK_CLASS = 'h-10 w-10 object-contain';
+export const WORLD_CUP_LOGO_MARK_COMPACT_CLASS = 'h-8 w-8 object-contain';
+
+export type PropsSportMode = 'nba' | 'afl' | 'world-cup' | 'combined';
+
+export function isSecondaryPropsSport(mode: PropsSportMode): mode is 'afl' | 'world-cup' {
+  return mode === 'afl' || mode === 'world-cup';
+}
+
+export function defaultPropsSport(): PropsSportMode {
+  return 'combined';
+}
+
+export function resolvePropsSportParam(sportParam: string | null): PropsSportMode {
+  if (sportParam === 'world-cup' || sportParam === 'worldcup') return 'world-cup';
+  if (sportParam === 'combined' || sportParam === 'all' || sportParam == null) return 'combined';
+  if (sportParam === 'afl') return 'afl';
+  if (sportParam === 'nba') return NBA_PUBLIC_ENABLED ? 'nba' : 'combined';
+  return 'combined';
+}
+
+export function propsPathForSport(mode: PropsSportMode, testEventCode?: string | null): string {
+  const basePath =
+    mode === 'afl'
+      ? '/props?sport=afl'
+      : mode === 'world-cup'
+        ? '/props?sport=world-cup'
+      : mode === 'combined'
+        ? '/props?sport=all'
+        : '/props?sport=nba';
+  if (!testEventCode) return basePath;
+  return `${basePath}&test_event_code=${encodeURIComponent(testEventCode)}`;
+}

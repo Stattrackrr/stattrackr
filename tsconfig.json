@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
+    "scripts",
     "**/*_backup_*.tsx",
     "**/*_backup_*.ts",
     "**/*-backup.tsx",

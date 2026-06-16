@@ -70,6 +70,9 @@
     "app/api/afl/props-stats/warm/route.ts": {
       "maxDuration": 300
     },
+    "app/api/world-cup/dashboard/route.ts": {
+      "maxDuration": 300
+    },
     "app/api/cron/warm-soccer-cache/route.ts": {
       "maxDuration": 300
     },
@@ -78,6 +81,10 @@
     }
   },
   "rewrites": [
+    {
+      "source": "/api/world-cup/odds/refresh",
+      "destination": "/api/world-cup/dashboard?oddsRefresh=1"
+    },
     {
       "source": "/api/webhooks/stripe",
       "destination": "/api/webhooks/stripe"

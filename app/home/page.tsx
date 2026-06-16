@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
+import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -52,14 +53,17 @@ function getAvatarColor(name: string): string {
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
-    router.prefetch('/props');
-    void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
+    router.prefetch('/props?sport=all');
+    if (NBA_PUBLIC_ENABLED) {
+      void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
+    }
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
+    void fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'force-cache' }).catch(() => {});
   };
 
   const goToProps = () => {
     prefetchPropsResources();
-    router.push('/props');
+    router.push('/props?sport=all');
   };
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [user, setUser] = useState<User | null>(null);
@@ -200,7 +204,12 @@ export default function HomePage() {
   useEffect(() => {
     if (!isCheckingSubscription && user && hasPremium) {
       const search = typeof window !== "undefined" ? window.location.search : "";
-      router.replace("/props" + search);
+      const params = new URLSearchParams(search);
+      if (!params.has('sport')) {
+        params.set('sport', 'all');
+      }
+      const qs = params.toString();
+      router.replace(qs ? `/props?${qs}` : '/props');
     }
   }, [isCheckingSubscription, user, hasPremium, router]);
 
@@ -1182,7 +1191,13 @@ export default function HomePage() {
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
                 <li><button onMouseEnter={prefetchPropsResources} onFocus={prefetchPropsResources} onClick={goToProps} className="hover:text-white transition-colors">Player Props</button></li>
-                <li><button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">NBA Dashboard</button></li>
+                <li>
+                  {NBA_PUBLIC_ENABLED ? (
+                    <button onClick={() => router.push('/nba/research/dashboard')} className="hover:text-white transition-colors">NBA Dashboard</button>
+                  ) : (
+                    <span className="text-gray-500">NBA Dashboard (off-season)</span>
+                  )}
+                </li>
                 <li><button onClick={() => router.push('/afl')} className="hover:text-white transition-colors">AFL Research</button></li>
               </ul>
             </div>

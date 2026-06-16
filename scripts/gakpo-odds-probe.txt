@@ -1,0 +1,6 @@
+API-Football player odds probe
+Player: Cody Gakpo
+Team: Netherlands
+Env key: found
+
+No upcoming World Cup 2026 fixture found for Netherlands

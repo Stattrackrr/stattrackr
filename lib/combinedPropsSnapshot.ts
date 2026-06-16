@@ -1,10 +1,16 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
+import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
+import { GET as getWorldCupPlayerPropsList } from '@/app/api/world-cup/dashboard/route';
+import {
+  filterWorldCupListPropsByMinOdds,
+  worldCupPropHasPlayerCategoryStats,
+} from '@/lib/worldCupCache';
 
-const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v1';
+const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v2';
 const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
 const COMBINED_PROPS_SNAPSHOT_STALE_MS = 60 * 1000;
 
@@ -49,6 +55,11 @@ export type CombinedPlayerProp = {
   gameId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  wcGamesAvg?: number | null;
+  wcGamesHitRate?: { hits: number; total: number } | null;
+  wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;
+  headshotUrl?: string | null;
+  wcPosition?: string | null;
 };
 
 export type CombinedAflGame = {
@@ -81,6 +92,16 @@ export type CombinedPropsSnapshot = {
     games: CombinedAflGame[];
     props: CombinedPlayerProp[];
     debugMeta?: Record<string, unknown> | null;
+  };
+  worldCup: {
+    ok: boolean;
+    status: number;
+    lastUpdated: string | null;
+    nextUpdate: string | null;
+    ingestMessage: string | null;
+    noWorldCupOdds: boolean;
+    games: CombinedAflGame[];
+    props: CombinedPlayerProp[];
   };
 };
 
@@ -230,6 +251,143 @@ function aggregateAflProps(listData: any): {
   };
 }
 
+function aggregateWorldCupProps(listData: any): {
+  games: CombinedAflGame[];
+  props: CombinedPlayerProp[];
+  ingestMessage: string | null;
+  lastUpdated: string | null;
+  nextUpdate: string | null;
+  noWorldCupOdds: boolean;
+} {
+  const games: CombinedAflGame[] = Array.isArray(listData?.games) ? listData.games : [];
+  const rows: any[] = filterWorldCupListPropsByMinOdds(
+    (Array.isArray(listData?.data) ? listData.data : []).filter(worldCupPropHasPlayerCategoryStats)
+  );
+  const keyToRow = new Map<string, {
+    playerName: string;
+    gameId: string;
+    homeTeam: string;
+    awayTeam: string;
+    playerTeam?: string | null;
+    statType: string;
+    line: number;
+    commenceTime: string;
+    bookmakerLines: BookmakerLine[];
+    last5Avg?: number | null;
+    last10Avg?: number | null;
+    seasonAvg?: number | null;
+    streak?: number | null;
+    last5HitRate?: { hits: number; total: number } | null;
+    last10HitRate?: { hits: number; total: number } | null;
+    seasonHitRate?: { hits: number; total: number } | null;
+    wcGamesAvg?: number | null;
+    wcGamesHitRate?: { hits: number; total: number } | null;
+    wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;
+    dvpRating?: number | null;
+    dvpStatValue?: number | null;
+    headshotUrl?: string | null;
+    wcPosition?: string | null;
+  }>();
+
+  for (const row of rows) {
+    const key = `${row.playerName}|${row.gameId}|${row.statType}|${row.line}`;
+    const existing = keyToRow.get(key);
+    const line: BookmakerLine = {
+      bookmaker: row.bookmaker,
+      line: row.line,
+      overOdds: row.overOdds || 'N/A',
+      underOdds: row.underOdds || 'N/A',
+    };
+    if (existing) {
+      existing.bookmakerLines.push(line);
+      continue;
+    }
+
+    keyToRow.set(key, {
+      playerName: row.playerName,
+      gameId: row.gameId,
+      homeTeam: row.homeTeam,
+      awayTeam: row.awayTeam,
+      playerTeam: row.playerTeam ?? null,
+      statType: row.statType,
+      line: row.line,
+      commenceTime: row.commenceTime || '',
+      bookmakerLines: [line],
+      last5Avg: row.last5Avg,
+      last10Avg: row.last10Avg,
+      seasonAvg: row.seasonAvg,
+      streak: row.streak,
+      last5HitRate: row.last5HitRate,
+      last10HitRate: row.last10HitRate,
+      seasonHitRate: row.seasonHitRate,
+      wcGamesAvg: row.wcGamesAvg,
+      wcGamesHitRate: row.wcGamesHitRate,
+      wcGameLog: row.wcGameLog,
+      dvpRating: row.dvpRating,
+      dvpStatValue: row.dvpStatValue,
+      headshotUrl: row.headshotUrl ?? null,
+      wcPosition: row.wcPosition ?? null,
+    });
+  }
+
+  const props = Array.from(keyToRow.values()).map((row): CombinedPlayerProp => {
+    const playerTeam = row.playerTeam && String(row.playerTeam).trim() ? row.playerTeam : null;
+    const homeNorm = String(row.homeTeam || '').trim();
+    const awayNorm = String(row.awayTeam || '').trim();
+    const playerNorm = playerTeam ? String(playerTeam).trim() : null;
+    const team = playerNorm || homeNorm;
+    const opponent = playerNorm
+      ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
+      : awayNorm;
+
+    return {
+      playerName: row.playerName,
+      playerId: '',
+      team,
+      opponent,
+      statType: row.statType,
+      line: row.line,
+      overProb: 0,
+      underProb: 0,
+      overOdds: row.bookmakerLines[0]?.overOdds ?? 'N/A',
+      underOdds: row.bookmakerLines[0]?.underOdds ?? 'N/A',
+      impliedOverProb: 0,
+      impliedUnderProb: 0,
+      bestLine: row.line,
+      bookmaker: row.bookmakerLines[0]?.bookmaker ?? '',
+      confidence: 'Medium',
+      gameDate: row.commenceTime,
+      bookmakerLines: row.bookmakerLines,
+      gameId: row.gameId,
+      homeTeam: row.homeTeam,
+      awayTeam: row.awayTeam,
+      last5Avg: row.last5Avg,
+      last10Avg: row.last10Avg,
+      seasonAvg: row.seasonAvg,
+      streak: row.streak,
+      last5HitRate: row.last5HitRate,
+      last10HitRate: row.last10HitRate,
+      seasonHitRate: row.seasonHitRate,
+      dvpRating: row.dvpRating,
+      dvpStatValue: row.dvpStatValue,
+      wcGamesAvg: row.wcGamesAvg,
+      wcGamesHitRate: row.wcGamesHitRate,
+      wcGameLog: row.wcGameLog,
+      headshotUrl: row.headshotUrl,
+      wcPosition: row.wcPosition,
+    };
+  });
+
+  return {
+    games,
+    props,
+    ingestMessage: normalizeString(listData?.ingestMessage),
+    lastUpdated: normalizeString(listData?.lastUpdated),
+    nextUpdate: normalizeString(listData?.nextUpdate),
+    noWorldCupOdds: normalizeBool(listData?.noWorldCupOdds),
+  };
+}
+
 function createHeaders(cronSecret?: string): Headers {
   const headers = new Headers({ Accept: 'application/json' });
   if (cronSecret) {
@@ -254,6 +412,8 @@ export async function buildCombinedPropsSnapshot(
   const { origin, refresh = false, debugStats = false, cronSecret, writeCache = true } = options;
   const nbaUrl = new URL('/api/nba/player-props', origin);
   const aflUrl = new URL('/api/afl/player-props/list', origin);
+  const wcUrl = new URL('/api/world-cup/dashboard', origin);
+  wcUrl.searchParams.set('playerPropsList', '1');
 
   if (refresh) {
     nbaUrl.searchParams.set('refresh', '1');
@@ -263,23 +423,32 @@ export async function buildCombinedPropsSnapshot(
     aflUrl.searchParams.set('debugStats', '1');
   }
 
-  const [nbaResponse, aflResponse] = await Promise.all([
-    getNbaPlayerProps(new NextRequest(nbaUrl)),
-    getAflPlayerPropsList(new Request(aflUrl, { headers: createHeaders(cronSecret) })),
+  const headers = createHeaders(cronSecret);
+  const nbaPromise = NBA_PUBLIC_ENABLED
+    ? getNbaPlayerProps(new NextRequest(nbaUrl))
+    : Promise.resolve(
+        NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
+      );
+  const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
+    nbaPromise,
+    getAflPlayerPropsList(new Request(aflUrl, { headers })),
+    getWorldCupPlayerPropsList(new NextRequest(wcUrl, { headers })),
   ]);
 
-  const [nbaPayload, aflPayload] = await Promise.all([
+  const [nbaPayload, aflPayload, wcPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
     aflResponse.json().catch(() => null),
+    wcResponse.json().catch(() => null),
   ]);
 
   const aflAggregated = aggregateAflProps(aflPayload);
+  const worldCupAggregated = aggregateWorldCupProps(wcPayload);
   const now = Date.now();
   // Degrade gracefully: the combined slate is usable as long as at least one
   // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
   // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok || aflResponse.ok,
+    success: nbaResponse.ok || aflResponse.ok || wcResponse.ok,
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),
@@ -301,6 +470,16 @@ export async function buildCombinedPropsSnapshot(
       games: aflAggregated.games,
       props: aflAggregated.props,
       debugMeta: debugStats ? aflAggregated.debugMeta ?? null : undefined,
+    },
+    worldCup: {
+      ok: wcResponse.ok,
+      status: wcResponse.status,
+      lastUpdated: worldCupAggregated.lastUpdated,
+      nextUpdate: worldCupAggregated.nextUpdate,
+      ingestMessage: worldCupAggregated.ingestMessage,
+      noWorldCupOdds: worldCupAggregated.noWorldCupOdds,
+      games: worldCupAggregated.games,
+      props: worldCupAggregated.props,
     },
   };
 

@@ -11,7 +11,9 @@
  *
  * Usage:
  *   npx tsx scripts/build-world-cup-player-index.ts
+ *   npx tsx scripts/build-world-cup-player-index.ts --squad-photos
  *   npm run build:world-cup:player-index
+ *   npm run build:world-cup:squad-photos
  */
 
 import fs from 'fs';
@@ -25,6 +27,17 @@ for (const file of ENV_FILES) {
 }
 
 async function main() {
+  if (process.argv.includes('--squad-photos')) {
+    const { buildWorldCupSquadPhotoCaches } = await import('../lib/worldCupPlayerIndex');
+    console.log('[squad-photos] warming national team squad photo caches...');
+    const started = Date.now();
+    const result = await buildWorldCupSquadPhotoCaches({ log: (msg) => console.log(msg) });
+    const seconds = ((Date.now() - started) / 1000).toFixed(1);
+    console.log(`[squad-photos] finished in ${seconds}s (warmed ${result.warmed}, skipped ${result.skipped})`);
+    if (!result.warmed) process.exitCode = 1;
+    return;
+  }
+
   const { rebuildAndPersistWorldCupPlayerIndex, WORLD_CUP_PLAYER_INDEX_CACHE_KEY } = await import(
     '../lib/worldCupPlayerIndex'
   );

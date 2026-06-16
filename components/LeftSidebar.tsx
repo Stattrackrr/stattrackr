@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
+import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -271,27 +272,42 @@ export default function LeftSidebar({
   };
 
   // Sport icons from public/images.
-  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "soccer" }) => (
-    <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center" aria-hidden>
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "world-cup" }) => (
+    <span
+      className={`flex-shrink-0 flex items-center justify-center ${
+        sport === "world-cup" ? "w-7 h-7" : "w-6 h-6"
+      }`}
+      aria-hidden
+    >
       <img
         src={
           sport === "nba"
             ? "/images/nba-logo.png"
             : sport === "afl"
               ? "/images/afl-logo.png"
-              : "/images/soccer-logo.png"
+              : WORLD_CUP_LOGO_PATH
         }
         alt=""
-        className="w-5 h-5 object-contain"
+        className={sport === "world-cup" ? "w-6 h-6 object-contain" : "w-5 h-5 object-contain"}
       />
     </span>
   );
 
   type SportEntry = { name: string; href: string; logo: React.ReactNode; comingSoon?: boolean; comingSoonText?: string; beta?: boolean };
   const sports: SportEntry[] = [
-    { name: "NBA", href: "/props", logo: <SportLogo sport="nba" /> },
+    ...(NBA_PUBLIC_ENABLED
+      ? [{ name: "NBA", href: "/props?sport=nba", logo: <SportLogo sport="nba" /> }]
+      : [
+          {
+            name: "NBA",
+            href: "/props?sport=all",
+            logo: <SportLogo sport="nba" />,
+            comingSoon: true,
+            comingSoonText: NBA_OFFSEASON_SIDEBAR_LABEL,
+          },
+        ]),
     { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
-    { name: "Soccer", href: "/soccer", logo: <SportLogo sport="soccer" />, comingSoon: true, comingSoonText: "Est. June 10th" },
+    { name: "World Cup", href: "/props?sport=world-cup", logo: <SportLogo sport="world-cup" /> },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },

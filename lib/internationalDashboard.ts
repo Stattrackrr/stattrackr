@@ -162,8 +162,16 @@ export function classifyIntlPositionString(
     )
   )
     return 'DEF';
+  // FIFA/BDL roster codes RM/LM/RW/LW are wide attackers (wingers), not central mids.
+  // Must run before the generic midfield matcher so Yamal-style RM wingers land in FWD.
   if (
-    /midfield|\bmid\b|\bcm\b|\bdm\b|\bam\b|\bcdm\b|\bcam\b|\bdmf\b|\bamf\b|\blm\b|\brm\b|\bmc\b|\brcm\b|\blcm\b|\bmf\b/.test(
+    /^(rw|lw|rm|lm|fw|lf|rf|wg|win)$/.test(raw) ||
+    /\b(right|left)\s+wing(?:er)?\b/.test(raw) ||
+    /\bwinger\b/.test(raw)
+  )
+    return 'FWD';
+  if (
+    /midfield|\bmid\b|\bcm\b|\bdm\b|\bam\b|\bcdm\b|\bcam\b|\bdmf\b|\bamf\b|\bmc\b|\brcm\b|\blcm\b|\bmf\b/.test(
       raw
     )
   )
@@ -271,6 +279,24 @@ export function buildIntlPlayerPositionMap(
     out.set(key, resolvePlayerPositionBucket(list, statsByPlayer.get(key)));
   }
   return out;
+}
+
+/**
+ * Bucket one player-game row for DvP using the position played THAT match.
+ * BDL rows must use `/match_lineups` only (same source as the pitch view).
+ */
+export function dvpBucketForStatRow(row: IntlPositionInputRow): IntlPositionBucket | null {
+  const fromString = classifyIntlPositionString(row.position);
+  if (row.source === 'bdl') return fromString;
+  if (fromString) return fromString;
+  return resolvePlayerPositionBucket([], {
+    saves: row.saves,
+    goals: row.goals,
+    shots_total: row.shots_total,
+    shots_on_target: row.shots_on_target,
+    tackles: row.tackles,
+    interceptions: row.interceptions,
+  });
 }
 
 /**
@@ -535,6 +561,7 @@ function normalizeStatRow(row: IntlStatRow): Record<string, unknown> {
   const cappedMinutes = rawMinutes == null ? null : Math.min(rawMinutes, 120);
   return {
     match_id: row.source_match_id,
+    source: row.source,
     player_id: row.source_player_id,
     player: { id: row.source_player_id },
     team_id: row.source_team_id,
@@ -701,7 +728,9 @@ export async function loadInternationalStatsByPlayerName(
     .in('normalized_name', matchNames)
     .in('source', ['statsbomb', 'api-football', 'sofascore']);
 
-  console.log('[loadIntlStatsByName] player:', playerName, '| searched:', matchNames, '| found:', (matchedPlayers ?? []).map(p => `${p.source}:${p.full_name}`));
+  if (process.env.WC_CACHE_DEBUG === '1') {
+    console.log('[loadIntlStatsByName] player:', playerName, '| searched:', matchNames, '| found:', (matchedPlayers ?? []).map(p => `${p.source}:${p.full_name}`));
+  }
 
   let players = (matchedPlayers ?? []) as Array<{
     source: string;
@@ -852,7 +881,22 @@ export async function loadInternationalStatsByPlayerName(
     }
   }
 
-  return { playerMatchStats: allStats, matches: allMatches };
+  const matchById = new Map(
+    allMatches.map((match) => [String((match as { id?: unknown }).id ?? ''), match])
+  );
+  const enrichedStats = allStats.map((row) => {
+    const match = matchById.get(String(row.match_id ?? ''));
+    if (!match || typeof match !== 'object') return row;
+    const matchRecord = match as Record<string, unknown>;
+    return {
+      ...row,
+      tournament_slug:
+        (row as Record<string, unknown>).tournament_slug ?? matchRecord.tournament_slug ?? null,
+      source: (row as Record<string, unknown>).source ?? matchRecord.source ?? null,
+    };
+  });
+
+  return { playerMatchStats: enrichedStats, matches: allMatches };
 }
 
 /**
@@ -986,7 +1030,7 @@ export const WC_DVP_OUTFIELD_STATS = [
 ] as const;
 export const WC_DVP_GK_STATS = ['saves', 'goals_conceded', 'passes_accurate', 'yellow_cards'] as const;
 export const WC_DVP_POSITIONS: IntlPositionBucket[] = ['GK', 'DEF', 'MID', 'FWD'];
-const WC_DVP_CACHE_PREFIX = 'wc:dvp-aggregate:v3';
+const WC_DVP_CACHE_PREFIX = 'wc:dvp-aggregate:v6';
 
 /** Canonical stat keys the UI requests for a given position bucket. */
 export function getWorldCupDvpStats(position: IntlPositionBucket): string[] {
@@ -1016,6 +1060,7 @@ type DvpMatchRow = {
   tournament_slug?: string | null;
   status?: string | null;
   season_year?: number | null;
+  stage?: string | null;
 };
 
 const COMPLETED_MATCH_STATUSES = new Set(['completed', 'finished', 'ft']);
@@ -1145,11 +1190,29 @@ type BdlDvpMatch = {
   id: number;
   datetime?: string | null;
   status?: string | null;
+  stage?: { id?: number; name?: string; order?: number } | null;
   home_team?: { id: number; name: string } | null;
   away_team?: { id: number; name: string } | null;
   home_score?: number | null;
   away_score?: number | null;
 };
+
+/** True for completed BDL FIFA World Cup finals matches (group / knockouts), not friendlies or qualifiers. */
+export function isBdlWorldCupTournamentStage(stageName: string | null | undefined): boolean {
+  if (!stageName) return false;
+  const s = stageName.toLowerCase().trim();
+  if (!s) return false;
+  if (s.includes('friendly')) return false;
+  if (s.includes('qualif')) return false;
+  if (s.includes('playoff') || s.includes('play-off')) return false;
+  if (s.includes('group') || s.includes('league')) return true;
+  if (s.includes('round of 16') || s.includes('last 16') || s.includes('1/8') || s.includes('eighth')) return true;
+  if (s.includes('quarter') || /\bqf\b/.test(s)) return true;
+  if (s.includes('semi')) return true;
+  if ((s.includes('third') || s.includes('3rd')) && s.includes('place')) return true;
+  if (s.includes('final')) return true;
+  return false;
+}
 
 function bdlMatchToDvpRow(match: BdlDvpMatch): DvpMatchRow | null {
   const homeId = match.home_team?.id;
@@ -1173,10 +1236,14 @@ function bdlMatchToDvpRow(match: BdlDvpMatch): DvpMatchRow | null {
     tournament_slug: 'worldcup',
     status: 'completed',
     season_year: seasonYear,
+    stage: match.stage?.name ?? null,
   };
 }
 
-function bdlPlayerStatToDvpRow(row: Record<string, unknown>): DvpStatRow | null {
+function bdlPlayerStatToDvpRow(
+  row: Record<string, unknown>,
+  opts?: { lineupPositionByPair?: Map<string, string>; lineupOnly?: boolean }
+): DvpStatRow | null {
   const matchId = row.match_id;
   const playerId = row.player_id;
   const teamId = row.team_id;
@@ -1191,13 +1258,18 @@ function bdlPlayerStatToDvpRow(row: Record<string, unknown>): DvpStatRow | null 
     dvpStatNum(row.saves) != null;
   if (!hasAppearance) return null;
 
+  const lineupPos = opts?.lineupPositionByPair?.get(`${matchId}:${playerId}`) ?? null;
+  const statPos = typeof row.position === 'string' ? row.position : null;
+  const position = opts?.lineupOnly ? lineupPos : statPos;
+  if (opts?.lineupOnly && !position) return null;
+
   return {
     source: BDL_DVP_SOURCE,
     source_match_id: String(matchId),
     source_player_id: String(playerId),
     source_team_id: String(teamId),
     is_home: row.is_home === true,
-    position: typeof row.position === 'string' ? row.position : null,
+    position,
     minutes_played: minutes,
     goals: dvpStatNum(row.goals),
     assists: dvpStatNum(row.assists),
@@ -1218,6 +1290,41 @@ function bdlPlayerStatToDvpRow(row: Record<string, unknown>): DvpStatRow | null 
   };
 }
 
+function bdlLineupRowPlayerId(row: Record<string, unknown>): number | null {
+  const nested = row.player && typeof row.player === 'object' ? (row.player as Record<string, unknown>) : null;
+  const playerId = Number(row.player_id ?? nested?.id);
+  return Number.isFinite(playerId) ? playerId : null;
+}
+
+function buildBdlLineupPositionMap(lineups: Array<Record<string, unknown>>): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of lineups) {
+    const matchId = Number(row.match_id);
+    const playerId = bdlLineupRowPlayerId(row);
+    if (!Number.isFinite(matchId) || playerId == null) continue;
+    const pos = String(row.position ?? '').trim();
+    if (!pos) continue;
+    // Starters and subs share the same position field on BDL lineup rows.
+    map.set(`${matchId}:${playerId}`, pos);
+  }
+  return map;
+}
+
+async function fetchBdlLineupPositionMap(
+  matchIds: number[],
+  apiKey: string
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  for (let i = 0; i < matchIds.length; i += 50) {
+    const chunk = matchIds.slice(i, i + 50);
+    const params = new URLSearchParams();
+    chunk.forEach((id) => params.append('match_ids[]', String(id)));
+    const rows = await bdlDvpFetchAll<Record<string, unknown>>('/match_lineups', params, apiKey, 8);
+    for (const [key, pos] of buildBdlLineupPositionMap(rows)) map.set(key, pos);
+  }
+  return map;
+}
+
 /**
  * BDL FIFA World Cup finals (2018/2022/2026) player-match stats are not stored
  * in `international_*` — they live only on the BDL API. Merge them here so DVP
@@ -1229,26 +1336,28 @@ function bdlPlayerStatToDvpRow(row: Record<string, unknown>): DvpStatRow | null 
  * WC-only DVP filter so we don't need the full loadWorldCupDvpSource() pipeline.
  * Much faster since it skips Supabase and only fetches one season.
  */
-const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v1';
-const BDL_WC2026_DVP_RAW_CACHE_KEY = 'wc:dvp-wc2026:raw:v1';
+const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v4';
+const BDL_WC2026_DVP_RAW_CACHE_KEY = 'wc:dvp-wc2026:raw:v4';
 
-export async function loadBdlWc2026DvpData(): Promise<{
+export async function loadBdlWc2026DvpData(opts?: { skipCache?: boolean }): Promise<{
   matches: DvpMatchRow[];
   statRows: DvpStatRow[];
   /** Slugs of every team that has played ≥1 completed WC 2026 game. */
   teamsWithGames: Set<string>;
 }> {
-  const cached = await getWorldCupCache<{
-    matches: DvpMatchRow[];
-    statRows: DvpStatRow[];
-    teamsWithGames: string[];
-  }>(BDL_WC2026_DVP_RAW_CACHE_KEY);
-  if (cached?.matches?.length) {
-    return {
-      matches: cached.matches,
-      statRows: cached.statRows,
-      teamsWithGames: new Set(cached.teamsWithGames ?? []),
-    };
+  if (!opts?.skipCache) {
+    const cached = await getWorldCupCache<{
+      matches: DvpMatchRow[];
+      statRows: DvpStatRow[];
+      teamsWithGames: string[];
+    }>(BDL_WC2026_DVP_RAW_CACHE_KEY);
+    if (cached?.matches?.length && (cached.statRows?.length ?? 0) > 0) {
+      return {
+        matches: cached.matches,
+        statRows: cached.statRows,
+        teamsWithGames: new Set(cached.teamsWithGames ?? []),
+      };
+    }
   }
 
   const apiKey = getBdlDvpApiKey();
@@ -1257,7 +1366,9 @@ export async function loadBdlWc2026DvpData(): Promise<{
   const seasonsParam = new URLSearchParams();
   seasonsParam.append('seasons[]', '2026');
   const rawMatches = await bdlDvpFetchAll<BdlDvpMatch>('/matches', seasonsParam, apiKey, 8);
-  const completed = rawMatches.filter((match) => match.status === 'completed');
+  const completed = rawMatches.filter(
+    (match) => match.status === 'completed' && isBdlWorldCupTournamentStage(match.stage?.name)
+  );
   const matches = completed.map(bdlMatchToDvpRow).filter((row): row is DvpMatchRow => row != null);
   if (!matches.length) return { matches: [], statRows: [], teamsWithGames: new Set() };
 
@@ -1273,15 +1384,26 @@ export async function loadBdlWc2026DvpData(): Promise<{
 
   const statRows: DvpStatRow[] = [];
   const matchIds = completed.map((m) => m.id).filter((id) => Number.isFinite(id));
+  const lineupPositionByPair = await fetchBdlLineupPositionMap(matchIds, apiKey);
+  let rawStatCount = 0;
   for (let i = 0; i < matchIds.length; i += 50) {
     const chunk = matchIds.slice(i, i + 50);
     const params = new URLSearchParams();
     chunk.forEach((id) => params.append('match_ids[]', String(id)));
     const rows = await bdlDvpFetchAll<Record<string, unknown>>('/player_match_stats', params, apiKey, 8);
+    rawStatCount += rows.length;
     for (const row of rows) {
-      const mapped = bdlPlayerStatToDvpRow(row);
+      const mapped = bdlPlayerStatToDvpRow(row, {
+        lineupPositionByPair,
+        lineupOnly: true,
+      });
       if (mapped) statRows.push(mapped);
     }
+  }
+  if (matches.length && statRows.length === 0) {
+    console.warn(
+      `[dvp] BDL WC2026: 0 stat rows after lineup join (${rawStatCount} raw stats, ${lineupPositionByPair.size} lineup positions)`
+    );
   }
 
   return { matches, statRows, teamsWithGames };
@@ -1304,7 +1426,7 @@ async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Pro
     const cached = await getWorldCupCache<{ matches: DvpMatchRow[]; statRows: DvpStatRow[] }>(
       BDL_DVP_SUPPLEMENT_CACHE_KEY
     );
-    if (cached?.matches?.length) return cached;
+    if (cached?.matches?.length && (cached.statRows?.length ?? 0) > 0) return cached;
   }
 
   const apiKey = getBdlDvpApiKey();
@@ -2035,8 +2157,10 @@ export async function diagnoseWorldCupDvpCoverage(
  * qualifiers — club games excluded), from preloaded source data. For the
  * requested position bucket, sums the stats that opposing players in that bucket
  * recorded AGAINST each team, then averages per team game. Every player with
- * data is included — their canonical GK/DEF/MID/FWD label comes from
- * `buildIntlPlayerPositionMap`, so even players who aren't searchable contribute.
+ * data is included — by default each player is bucketed by their canonical
+ * GK/DEF/MID/FWD label (`buildIntlPlayerPositionMap`). Pass
+ * `positionMode: 'lineupPerMatch'` for WC 2026-only DvP where BDL lineups
+ * define the bucket per game.
  *
  * Keyed by FIFA country slug, so the same nation's games from every source/
  * competition collapse into one ranking (matching the Opponent Breakdown join).
@@ -2048,6 +2172,12 @@ export function aggregateInternationalDvp(
     requestedStats: string[];
     window?: number;
     /**
+     * `canonical` (default): one static GK/DEF/MID/FWD label per player via
+     * `positionMap` — used by the normal all-competitions DvP panel.
+     * `lineupPerMatch`: bucket each game by that match's BDL lineup position.
+     */
+    positionMode?: 'canonical' | 'lineupPerMatch';
+    /**
      * Restrict the ranking universe to these FIFA slugs (the 48 qualified World
      * Cup nations). When empty/omitted, every nation with data is ranked.
      */
@@ -2056,6 +2186,7 @@ export function aggregateInternationalDvp(
 ): WorldCupDvpAggregateResult {
   const windowN = Number.isFinite(opts.window) && (opts.window ?? 0) > 0 ? Math.floor(opts.window!) : 0;
   const restrict = opts.restrictSlugs && opts.restrictSlugs.size > 0 ? opts.restrictSlugs : null;
+  const perMatch = opts.positionMode === 'lineupPerMatch';
 
   // Per-team window: the set of match keys counting toward each team (by slug),
   // plus the games-played denominators.
@@ -2074,8 +2205,10 @@ export function aggregateInternationalDvp(
   // always exact — no slug-join required (avoids the teamMatchesBySlug mismatch bug).
   const byOpponent = new Map<string, { sums: Record<string, number>; count: number; matchKeys: Set<string> }>();
   for (const row of src.statRows) {
-    const bucket = src.positionMap.get(intlPlayerKey(row.source, row.source_player_id));
-    if (bucket !== opts.position) continue;
+    const bucket = perMatch
+      ? dvpBucketForStatRow(row)
+      : src.positionMap.get(intlPlayerKey(row.source, row.source_player_id)) ?? 'MID';
+    if (!bucket || bucket !== opts.position) continue;
     const key = dvpMatchKey(row.source, row.source_match_id);
     const m = src.matchInfo.get(key);
     if (!m) continue;

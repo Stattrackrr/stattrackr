@@ -11,7 +11,11 @@ const nextConfig: NextConfig = {
   },
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
-    return [{ source: "/favicon.ico", destination: "/images/stattrackr-icon.png" }];
+    return [
+      { source: "/favicon.ico", destination: "/images/stattrackr-icon.png" },
+      { source: "/world-cup/player/:slug", destination: "/world-cup" },
+      { source: "/images/world-cup-logo.png", destination: "/api/world-cup/dashboard?logo=1" },
+    ];
   },
   typescript: {
     // Enable type checking during builds

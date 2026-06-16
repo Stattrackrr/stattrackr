@@ -100,7 +100,8 @@ export const FIFA_NAME_TO_CODE: Record<string, string> = {
   'bosnia and herzegovina': 'bih', 'bosnia & herzegovina': 'bih', botswana: 'bot',
   brazil: 'bra', brunei: 'bru', bulgaria: 'bul', 'burkina faso': 'bfa', burundi: 'bdi',
   cambodia: 'cam', cameroon: 'cmr', canada: 'can', 'cape verde': 'cpv',
-  'cabo verde': 'cpv', 'central african republic': 'cta', chad: 'cha', chile: 'chi',
+  'cabo verde': 'cpv', 'cape verde islands': 'cpv', 'cabo verde islands': 'cpv',
+  'central african republic': 'cta', chad: 'cha', chile: 'chi',
   china: 'chn', 'china pr': 'chn', colombia: 'col', comoros: 'com', congo: 'cgo',
   'congo dr': 'cod', 'dr congo': 'cod', 'democratic republic of the congo': 'cod',
   'congo democratic republic': 'cod', 'cook islands': 'cok', 'costa rica': 'crc',
@@ -175,6 +176,62 @@ const NORMALIZED_NAME_TO_CODE: Record<string, string> = Object.entries(
   return acc;
 }, {});
 
+/** Synonym groups for matching team labels from different data sources. */
+const WC_TEAM_ALIAS_GROUPS: string[][] = [
+  ['cape verde', 'cabo verde', 'cape verde islands', 'cabo verde islands', 'cpv', 'cv'],
+  ['ivory coast', 'cote d ivoire', 'cote divoire', 'civ'],
+  ['usa', 'united states', 'united states of america'],
+  ['south korea', 'korea republic', 'kor'],
+  ['iran', 'ir iran', 'irn'],
+  ['netherlands', 'holland', 'ned'],
+  ['czech republic', 'czechia', 'cze'],
+  ['dr congo', 'congo dr', 'democratic republic of the congo', 'cod'],
+  ['new zealand', 'nzl'],
+  ['ghana', 'gha'],
+  ['turkey', 'turkiye', 'tur'],
+];
+
+function worldCupTeamNameKeys(input: string): string[] {
+  const raw = String(input || '').trim();
+  if (!raw) return [];
+  const keys = new Set<string>();
+  keys.add(raw);
+  keys.add(normalizeName(raw));
+  const norm = normalizeName(raw);
+  if (norm.endsWith(' islands')) keys.add(norm.replace(/ islands$/, '').trim());
+  if (norm.endsWith(' national team')) keys.add(norm.replace(/ national team$/, '').trim());
+  return [...keys].filter(Boolean);
+}
+
+/** True when two team labels refer to the same nation (name, code, or alias group). */
+export function worldCupTeamsMatch(a: string, b: string): boolean {
+  const rawA = String(a || '').trim();
+  const rawB = String(b || '').trim();
+  if (!rawA || !rawB) return false;
+
+  const slugA = resolveWorldCupFlagCode(rawA);
+  const slugB = resolveWorldCupFlagCode(rawB);
+  if (slugA && slugB && slugA === slugB) return true;
+
+  const keysA = new Set(worldCupTeamNameKeys(rawA));
+  const keysB = new Set(worldCupTeamNameKeys(rawB));
+  for (const key of keysA) {
+    if (keysB.has(key)) return true;
+  }
+
+  const na = normalizeName(rawA);
+  const nb = normalizeName(rawB);
+  if (na && nb && (na === nb || na.includes(nb) || nb.includes(na))) return true;
+
+  for (const group of WC_TEAM_ALIAS_GROUPS) {
+    const inA = group.some((alias) => keysA.has(alias) || keysA.has(normalizeName(alias)) || slugA === alias);
+    const inB = group.some((alias) => keysB.has(alias) || keysB.has(normalizeName(alias)) || slugB === alias);
+    if (inA && inB) return true;
+  }
+
+  return false;
+}
+
 /**
  * Resolve any team identifier (FIFA code, ISO2, ISO3, or country name) to the
  * ESPN flag slug. Returns null when nothing matches so callers can fall back to
@@ -188,22 +245,22 @@ export function resolveWorldCupFlagCode(
   if (!raw) return null;
   const lower = raw.toLowerCase();
 
-  // 1. Verified overrides (exact code, then normalized name).
+  // 1. Verified overrides (exact code, then normalized name and common variants).
   if (GENERATED_BY_CODE[lower]) return GENERATED_BY_CODE[lower];
-  const nameKey = normalizeName(raw);
-  if (GENERATED_BY_NAME[nameKey]) return GENERATED_BY_NAME[nameKey];
+  for (const key of worldCupTeamNameKeys(raw)) {
+    if (GENERATED_BY_NAME[key]) return GENERATED_BY_NAME[key];
+  }
 
   // 2. Built-in maps.
   if (lower.length === 2 && FIFA_ISO2_TO_CODE[lower]) return FIFA_ISO2_TO_CODE[lower];
   if (lower.length === 3) {
     if (FIFA_ISO3_TO_CODE[lower]) return FIFA_ISO3_TO_CODE[lower];
   }
-  if (FIFA_NAME_TO_CODE[nameKey]) return FIFA_NAME_TO_CODE[nameKey];
-  // Also match a normalized form of each name key so inputs like
-  // "Bosnia & Herzegovina" or "Cote d'Ivoire" resolve against keys that contain
-  // "and"/apostrophes/hyphens.
-  const fromNormalizedName = NORMALIZED_NAME_TO_CODE[nameKey];
-  if (fromNormalizedName) return fromNormalizedName;
+  for (const key of worldCupTeamNameKeys(raw)) {
+    if (FIFA_NAME_TO_CODE[key]) return FIFA_NAME_TO_CODE[key];
+    const fromNormalizedName = NORMALIZED_NAME_TO_CODE[key];
+    if (fromNormalizedName) return fromNormalizedName;
+  }
 
   // 3. ISO alpha-3 identity (many FIFA codes equal ISO-3 lowercased). This is a
   // best-effort guess and can produce invalid CDN slugs for name-derived

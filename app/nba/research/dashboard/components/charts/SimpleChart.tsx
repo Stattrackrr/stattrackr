@@ -80,6 +80,12 @@ interface SimpleChartProps {
   hideBettingLineOverlay?: boolean;
   /** When true, prevent Recharts from replaying bar animations on parent re-renders. */
   disableBarAnimation?: boolean;
+  /** Bar grow animation duration in ms when animation is enabled. */
+  barAnimationDuration?: number;
+  /** Recharts bar animation easing (e.g. ease-out). */
+  barAnimationEasing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+  /** Bumps chart/bar keys so animations replay on stat/mode/timeframe changes. */
+  chartAnimationKey?: string;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -126,6 +132,9 @@ const SimpleChart = memo(function SimpleChart({
   hideBarValueLabels = false,
   hideBettingLineOverlay = false,
   disableBarAnimation = false,
+  barAnimationDuration = 180,
+  barAnimationEasing = 'ease-out',
+  chartAnimationKey = '',
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -606,6 +615,7 @@ const SimpleChart = memo(function SimpleChart({
 
   const hasSecondAxis = selectedFilterForAxis && secondAxisData && secondAxisConfig;
   const ChartComponent = hasSecondAxis ? ComposedChart : BarChart;
+  const animationKeySuffix = chartAnimationKey ? `${chartAnimationKey}-` : '';
 
   // Format label value based on stat type
   // Memoize this to a stable reference - only changes when selectedStat changes
@@ -1050,7 +1060,7 @@ const SimpleChart = memo(function SimpleChart({
       >
         <ResponsiveContainer width="100%" height="100%">
           <ChartComponent
-            key={`chart-${selectedStat}-${mergedChartData.length}-${hasSecondAxis ? 'secondaxis' : 'single'}`}
+            key={`chart-${animationKeySuffix}${selectedStat}-${mergedChartData.length}-${hasSecondAxis ? 'secondaxis' : 'single'}`}
             data={mergedChartData}
             margin={{ 
               top: isMobile ? 44 : 22,
@@ -1116,10 +1126,11 @@ const SimpleChart = memo(function SimpleChart({
 
             {/* Bar chart - invisible hover rect covers full width and top 2/3 of bar slot */}
             <Bar
-              key={`bar-${selectedStat}-${mergedChartData.length}`}
+              key={`bar-${animationKeySuffix}${selectedStat}-${mergedChartData.length}`}
               dataKey={selectedStat === 'fg3m' ? "stats.fg3a" : "value"}
               isAnimationActive={!disableBarAnimation}
-              animationDuration={disableBarAnimation ? 0 : undefined}
+              animationDuration={disableBarAnimation ? 0 : barAnimationDuration}
+              animationEasing={barAnimationEasing}
               radius={[10, 10, 10, 10]}
               shape={isCompositeStat ? (props: any) => {
                 const { x, y, width, height, payload } = props;
@@ -1398,7 +1409,9 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.withWithoutMode !== nextProps.withWithoutMode ||
     prevProps.homeAway !== nextProps.homeAway ||
     prevProps.excludeBlowouts !== nextProps.excludeBlowouts ||
-    prevProps.excludeBackToBack !== nextProps.excludeBackToBack;
+    prevProps.excludeBackToBack !== nextProps.excludeBackToBack ||
+    prevProps.chartAnimationKey !== nextProps.chartAnimationKey ||
+    prevProps.disableBarAnimation !== nextProps.disableBarAnimation;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

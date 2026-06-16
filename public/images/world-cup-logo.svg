@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="World Cup">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6e6a8"/>
+      <stop offset="45%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#9a7b1a"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#245c37"/>
+      <stop offset="100%" stop-color="#123622"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="88" fill="url(#green)" stroke="url(#gold)" stroke-width="10"/>
+  <circle cx="256" cy="248" r="148" fill="none" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M118 300c28-72 92-118 138-118s110 46 138 118" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M256 132c-34 0-62 24-70 56h140c-8-32-36-56-70-56z" fill="url(#gold)"/>
+  <ellipse cx="256" cy="118" rx="70" ry="70" fill="url(#gold)"/>
+  <path d="M214 96c8-18 24-28 42-28s34 10 42 28c-12 6-26 9-42 9s-30-3-42-9z" fill="#123622" opacity="0.35"/>
+  <path d="M196 188h120l-18 36H214l-18-36z" fill="url(#gold)"/>
+  <path d="M208 224h96l-10 118c-8 10-22 16-38 16s-30-6-38-16L208 224z" fill="url(#gold)"/>
+  <rect x="214" y="346" width="84" height="18" rx="4" fill="url(#gold)"/>
+  <rect x="198" y="364" width="116" height="22" rx="6" fill="url(#gold)"/>
+  <rect x="182" y="386" width="148" height="26" rx="8" fill="url(#gold)"/>
+</svg>

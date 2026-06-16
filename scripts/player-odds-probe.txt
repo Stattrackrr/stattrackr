@@ -1,0 +1,221 @@
+API-Football player odds probe
+Player: Cody Gakpo
+Team: Netherlands
+Env key: found
+
+Team resolved: Netherlands (#1118)
+Fixture source: live
+Fixture id: 1489376
+Match: Netherlands vs Japan
+Kickoff: 2026-06-14T20:00:00+00:00
+Status: 1H
+
+Odds HTTP 200 via prematch | rows: 1
+
+=== Bets whose MARKET NAME mentions "Cody Gakpo" (0) ===
+
+=== Raw API rows mentioning "Cody Gakpo" in value or bet name (48) ===
+Bet365 | [92] Anytime Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=3.10 | american=+210
+Bet365 | [93] First Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=7.00 | american=+600
+Bet365 | [94] Last Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=7.00 | american=+600
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 1+ " | decimal=1.05 | american=-2000
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 2+ " | decimal=1.30 | american=-333
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 3+ " | decimal=1.83 | american=-120
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 4+ " | decimal=3.25 | american=+225
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 5+ " | decimal=5.50 | american=+450
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 6+ " | decimal=11.00 | american=+1000
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 7+ " | decimal=21.00 | american=+2000
+Bet365 | [215] Player Singles | kind=unclassified | value="Cody Gakpo - 8+ " | decimal=21.00 | american=+2000
+Bet365 | [213] Player Triples | kind=unclassified | value="Cody Gakpo - 1+" | decimal=1.53 | american=-189
+Bet365 | [213] Player Triples | kind=unclassified | value="Cody Gakpo - 2+" | decimal=3.50 | american=+250
+Bet365 | [213] Player Triples | kind=unclassified | value="Cody Gakpo - 3+" | decimal=8.00 | american=+700
+Bet365 | [212] Player Assists | kind=assists | value="Cody Gakpo" | decimal=5.00 | american=+400
+Bet365 | [266] Player Fouls Committed | kind=unclassified | value="Cody Gakpo - 1+" | decimal=1.44 | american=-227
+Bet365 | [266] Player Fouls Committed | kind=unclassified | value="Cody Gakpo - 2+" | decimal=3.00 | american=+200
+Bet365 | [266] Player Fouls Committed | kind=unclassified | value="Cody Gakpo - 3+" | decimal=8.00 | american=+700
+Bet365 | [266] Player Fouls Committed | kind=unclassified | value="Cody Gakpo - 4+" | decimal=21.00 | american=+2000
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 1+" | decimal=1.05 | american=-2000
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 2+" | decimal=1.30 | american=-333
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 3+" | decimal=1.83 | american=-120
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 4+" | decimal=3.25 | american=+225
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 5+" | decimal=5.50 | american=+450
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 6+" | decimal=11.00 | american=+1000
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 7+" | decimal=21.00 | american=+2000
+Bet365 | [240] Home Player Shots | kind=shots | value="Cody Gakpo - 8+" | decimal=21.00 | american=+2000
+Bet365 | [242] Player Shots On Target | kind=sot | value="Cody Gakpo - 1+" | decimal=1.44 | american=-227
+Bet365 | [242] Player Shots On Target | kind=sot | value="Cody Gakpo - 2+" | decimal=3.25 | american=+225
+Bet365 | [242] Player Shots On Target | kind=sot | value="Cody Gakpo - 3+" | decimal=9.00 | american=+800
+Bet365 | [242] Player Shots On Target | kind=sot | value="Cody Gakpo - 4+" | decimal=21.00 | american=+2000
+Bet365 | [228] Home Goal Method Header | kind=unclassified | value="Cody Gakpo" | decimal=26.00 | american=+2500
+Bet365 | [229] Goal Method Outside the Box | kind=unclassified | value="Cody Gakpo" | decimal=15.00 | american=+1400
+Bet365 | [231] Home Anytime Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=3.10 | american=+210
+Bet365 | [232] Home First Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=7.00 | american=+600
+Bet365 | [233] Home Last Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=7.00 | american=+600
+Bet365 | [269] Home Player Shots On Target Total | kind=sot | value="Cody Gakpo - 1+" | decimal=1.44 | american=-227
+Bet365 | [269] Home Player Shots On Target Total | kind=sot | value="Cody Gakpo - 2+" | decimal=3.25 | american=+225
+Bet365 | [269] Home Player Shots On Target Total | kind=sot | value="Cody Gakpo - 3+" | decimal=9.00 | american=+800
+Bet365 | [269] Home Player Shots On Target Total | kind=sot | value="Cody Gakpo - 4+" | decimal=21.00 | american=+2000
+Bet365 | [275] Away Player Shots On Target Total | kind=sot | value="Cody Gakpo" | decimal=26.00 | american=+2500
+Betano | [228] Home Goal Method Header | kind=unclassified | value="Cody Gakpo" | decimal=13.00 | american=+1200
+Betano | [229] Goal Method Outside the Box | kind=unclassified | value="Cody Gakpo" | decimal=11.60 | american=+1060
+Betano | [231] Home Anytime Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=3.30 | american=+230
+Betano | [232] Home First Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=6.20 | american=+520
+Betano | [233] Home Last Goal Scorer | kind=anytime | value="Cody Gakpo" | decimal=6.20 | american=+520
+Betano | [275] Away Player Shots On Target Total | kind=sot | value="Cody Gakpo" | decimal=13.00 | american=+1200
+Betano | [251] Player to be booked | kind=unclassified | value="Cody Gakpo" | decimal=9.00 | american=+800
+
+=== Grouped by market ===
+Bet365 :: [212] Player Assists
+  "Cody Gakpo" -> 5.00 (+400)
+Bet365 :: [213] Player Triples
+  "Cody Gakpo - 1+" -> 1.53 (-189)
+  "Cody Gakpo - 2+" -> 3.50 (+250)
+  "Cody Gakpo - 3+" -> 8.00 (+700)
+Bet365 :: [215] Player Singles
+  "Cody Gakpo - 1+ " -> 1.05 (-2000)
+  "Cody Gakpo - 2+ " -> 1.30 (-333)
+  "Cody Gakpo - 3+ " -> 1.83 (-120)
+  "Cody Gakpo - 4+ " -> 3.25 (+225)
+  "Cody Gakpo - 5+ " -> 5.50 (+450)
+  "Cody Gakpo - 6+ " -> 11.00 (+1000)
+  "Cody Gakpo - 7+ " -> 21.00 (+2000)
+  "Cody Gakpo - 8+ " -> 21.00 (+2000)
+Bet365 :: [228] Home Goal Method Header
+  "Cody Gakpo" -> 26.00 (+2500)
+Bet365 :: [229] Goal Method Outside the Box
+  "Cody Gakpo" -> 15.00 (+1400)
+Bet365 :: [231] Home Anytime Goal Scorer
+  "Cody Gakpo" -> 3.10 (+210)
+Bet365 :: [232] Home First Goal Scorer
+  "Cody Gakpo" -> 7.00 (+600)
+Bet365 :: [233] Home Last Goal Scorer
+  "Cody Gakpo" -> 7.00 (+600)
+Bet365 :: [240] Home Player Shots
+  "Cody Gakpo - 1+" -> 1.05 (-2000)
+  "Cody Gakpo - 2+" -> 1.30 (-333)
+  "Cody Gakpo - 3+" -> 1.83 (-120)
+  "Cody Gakpo - 4+" -> 3.25 (+225)
+  "Cody Gakpo - 5+" -> 5.50 (+450)
+  "Cody Gakpo - 6+" -> 11.00 (+1000)
+  "Cody Gakpo - 7+" -> 21.00 (+2000)
+  "Cody Gakpo - 8+" -> 21.00 (+2000)
+Bet365 :: [242] Player Shots On Target
+  "Cody Gakpo - 1+" -> 1.44 (-227)
+  "Cody Gakpo - 2+" -> 3.25 (+225)
+  "Cody Gakpo - 3+" -> 9.00 (+800)
+  "Cody Gakpo - 4+" -> 21.00 (+2000)
+Bet365 :: [266] Player Fouls Committed
+  "Cody Gakpo - 1+" -> 1.44 (-227)
+  "Cody Gakpo - 2+" -> 3.00 (+200)
+  "Cody Gakpo - 3+" -> 8.00 (+700)
+  "Cody Gakpo - 4+" -> 21.00 (+2000)
+Bet365 :: [269] Home Player Shots On Target Total
+  "Cody Gakpo - 1+" -> 1.44 (-227)
+  "Cody Gakpo - 2+" -> 3.25 (+225)
+  "Cody Gakpo - 3+" -> 9.00 (+800)
+  "Cody Gakpo - 4+" -> 21.00 (+2000)
+Bet365 :: [275] Away Player Shots On Target Total
+  "Cody Gakpo" -> 26.00 (+2500)
+Bet365 :: [92] Anytime Goal Scorer
+  "Cody Gakpo" -> 3.10 (+210)
+Bet365 :: [93] First Goal Scorer
+  "Cody Gakpo" -> 7.00 (+600)
+Bet365 :: [94] Last Goal Scorer
+  "Cody Gakpo" -> 7.00 (+600)
+Betano :: [228] Home Goal Method Header
+  "Cody Gakpo" -> 13.00 (+1200)
+Betano :: [229] Goal Method Outside the Box
+  "Cody Gakpo" -> 11.60 (+1060)
+Betano :: [231] Home Anytime Goal Scorer
+  "Cody Gakpo" -> 3.30 (+230)
+Betano :: [232] Home First Goal Scorer
+  "Cody Gakpo" -> 6.20 (+520)
+Betano :: [233] Home Last Goal Scorer
+  "Cody Gakpo" -> 6.20 (+520)
+Betano :: [251] Player to be booked
+  "Cody Gakpo" -> 9.00 (+800)
+Betano :: [275] Away Player Shots On Target Total
+  "Cody Gakpo" -> 13.00 (+1200)
+
+=== What our dashboard parser would pick (Bet365 / Betano focus) ===
+--- Bet365 ---
+  anytime:
+    [92] Anytime Goal Scorer | "Cody Gakpo" -> +210
+    [93] First Goal Scorer | "Cody Gakpo" -> +600
+    [94] Last Goal Scorer | "Cody Gakpo" -> +600
+    [231] Home Anytime Goal Scorer | "Cody Gakpo" -> +210
+    [232] Home First Goal Scorer | "Cody Gakpo" -> +600
+    [233] Home Last Goal Scorer | "Cody Gakpo" -> +600
+  assists:
+    [212] Player Assists | "Cody Gakpo" -> +400
+  sot:
+    [242] Player Shots On Target | "Cody Gakpo - 1+" -> -227
+    [242] Player Shots On Target | "Cody Gakpo - 2+" -> +225
+    [242] Player Shots On Target | "Cody Gakpo - 3+" -> +800
+    [242] Player Shots On Target | "Cody Gakpo - 4+" -> +2000
+    [269] Home Player Shots On Target Total | "Cody Gakpo - 1+" -> -227
+    [269] Home Player Shots On Target Total | "Cody Gakpo - 2+" -> +225
+    [269] Home Player Shots On Target Total | "Cody Gakpo - 3+" -> +800
+    [269] Home Player Shots On Target Total | "Cody Gakpo - 4+" -> +2000
+    [275] Away Player Shots On Target Total | "Cody Gakpo" -> +2500
+  shots:
+    [240] Home Player Shots | "Cody Gakpo - 1+" -> -2000
+    [240] Home Player Shots | "Cody Gakpo - 2+" -> -333
+    [240] Home Player Shots | "Cody Gakpo - 3+" -> -120
+    [240] Home Player Shots | "Cody Gakpo - 4+" -> +225
+    [240] Home Player Shots | "Cody Gakpo - 5+" -> +450
+    [240] Home Player Shots | "Cody Gakpo - 6+" -> +1000
+    [240] Home Player Shots | "Cody Gakpo - 7+" -> +2000
+    [240] Home Player Shots | "Cody Gakpo - 8+" -> +2000
+--- Betano ---
+  anytime:
+    [231] Home Anytime Goal Scorer | "Cody Gakpo" -> +230
+    [232] Home First Goal Scorer | "Cody Gakpo" -> +520
+    [233] Home Last Goal Scorer | "Cody Gakpo" -> +520
+  sot:
+    [275] Away Player Shots On Target Total | "Cody Gakpo" -> +1200
+
+=== Bare Over/Under rows in player-ish markets (often the bad matches) ===
+Bet365 | [87] Total ShotOnGoal | "Over 8.5" -> 2.00 (+100)
+Bet365 | [87] Total ShotOnGoal | "Under 8.5" -> 1.73 (-137)
+Bet365 | [87] Total ShotOnGoal | "Over 7.5" -> 1.67 (-149)
+Bet365 | [87] Total ShotOnGoal | "Under 7.5" -> 2.10 (+110)
+Bet365 | [211] Total Shots | "Over 23.5" -> 1.83 (-120)
+Bet365 | [211] Total Shots | "Under 23.5" -> 1.83 (-120)
+Bet365 | [211] Total Shots | "Over 22.5" -> 1.80 (-125)
+Bet365 | [211] Total Shots | "Under 22.5" -> 1.91 (-110)
+Bet365 | [211] Total Shots | "Over 24.5" -> 1.91 (-110)
+Bet365 | [211] Total Shots | "Under 24.5" -> 1.80 (-125)
+Bet365 | [276] Away Player Shots Total | "Over 9.5" -> 1.73 (-137)
+Bet365 | [276] Away Player Shots Total | "Under 9.5" -> 2.00 (+100)
+Unibet | [211] Total Shots | "Over 8.5" -> 1.96 (-104)
+Unibet | [211] Total Shots | "Under 8.5" -> 1.67 (-149)
+Unibet | [211] Total Shots | "Over 9.5" -> 2.60 (+160)
+Unibet | [211] Total Shots | "Under 9.5" -> 1.38 (-263)
+Unibet | [211] Total Shots | "Over 10.5" -> 3.60 (+260)
+Unibet | [211] Total Shots | "Under 10.5" -> 1.20 (-500)
+Unibet | [211] Total Shots | "Over 7.5" -> 1.55 (-182)
+Unibet | [211] Total Shots | "Under 7.5" -> 2.15 (+115)
+Unibet | [211] Total Shots | "Over 5.5" -> 1.10 (-1000)
+Unibet | [211] Total Shots | "Under 5.5" -> 4.70 (+370)
+Unibet | [211] Total Shots | "Over 11.5" -> 5.00 (+400)
+Unibet | [211] Total Shots | "Under 11.5" -> 1.09 (-1111)
+Unibet | [211] Total Shots | "Over 6.5" -> 1.28 (-357)
+Unibet | [211] Total Shots | "Under 6.5" -> 3.05 (+205)
+Unibet | [276] Away Player Shots Total | "Over 1.5" -> 1.14 (-714)
+Unibet | [276] Away Player Shots Total | "Under 1.5" -> 4.80 (+380)
+Unibet | [276] Away Player Shots Total | "Over 2.5" -> 1.38 (-263)
+Unibet | [276] Away Player Shots Total | "Under 2.5" -> 2.75 (+175)
+Unibet | [276] Away Player Shots Total | "Over 3.5" -> 1.90 (-111)
+Unibet | [276] Away Player Shots Total | "Under 3.5" -> 1.79 (-127)
+Unibet | [276] Away Player Shots Total | "Over 4.5" -> 2.85 (+185)
+Unibet | [276] Away Player Shots Total | "Under 4.5" -> 1.35 (-286)
+Unibet | [276] Away Player Shots Total | "Over 5.5" -> 4.50 (+350)
+Unibet | [276] Away Player Shots Total | "Under 5.5" -> 1.15 (-667)
+1xBet | [87] Total ShotOnGoal | "Over 5" -> 1.03 (-3333)
+1xBet | [87] Total ShotOnGoal | "Under 5" -> 8.05 (+705)
+1xBet | [87] Total ShotOnGoal | "Over 8" -> 1.60 (-167)
+1xBet | [87] Total ShotOnGoal | "Under 8" -> 2.20 (+120)
+... +240 more bare Over/Under rows
+
+Wrote C:\Users\nduar\stattrackr\scripts\player-odds-probe.txt

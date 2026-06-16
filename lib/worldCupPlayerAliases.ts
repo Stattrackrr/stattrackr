@@ -117,3 +117,29 @@ export function getWorldCupPlayerOverride(
 
 /** BDL player ids that have a curated collision override (used by the audit). */
 export const OVERRIDDEN_WORLD_CUP_PLAYER_IDS = new Set(Object.keys(WORLD_CUP_PLAYER_OVERRIDES));
+
+function capitalizeWorldCupNamePart(part: string): string {
+  if (!part) return part;
+  return part
+    .split(/([-'])/)
+    .map((segment) => {
+      if (segment === '-' || segment === "'") return segment;
+      if (!segment) return segment;
+      const lower = segment.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
+}
+
+/** Title-case each name part for dashboard display (e.g. "cody gakpo" → "Cody Gakpo"). */
+export function formatWorldCupPlayerDisplayName(name: string): string {
+  const sanitized = String(name || '')
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-')
+    .trim();
+  if (!sanitized) return sanitized;
+  return sanitized
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(capitalizeWorldCupNamePart)
+    .join(' ');
+}
