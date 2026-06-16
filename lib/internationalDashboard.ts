@@ -770,13 +770,17 @@ export async function loadInternationalStatsByPlayerName(
   const allStats: Array<Record<string, unknown>> = [];
   const matchIdsBySource = new Map<string, Set<string>>();
 
-  for (const [source, ids] of idsBySource) {
-    const { data } = await sb
-      .from('international_player_match_stats')
-      .select('*')
-      .eq('source', source)
-      .in('source_player_id', ids);
-    const rows = (data as IntlStatRow[] | null) ?? [];
+  const statsBySource = await Promise.all(
+    Array.from(idsBySource.entries()).map(async ([source, ids]) => {
+      const { data } = await sb
+        .from('international_player_match_stats')
+        .select('*')
+        .eq('source', source)
+        .in('source_player_id', ids);
+      return { source, rows: (data as IntlStatRow[] | null) ?? [] };
+    })
+  );
+  for (const { source, rows } of statsBySource) {
     allStats.push(...rows.map(normalizeStatRow));
     const set = matchIdsBySource.get(source) ?? new Set<string>();
     for (const r of rows) set.add(r.source_match_id);
@@ -787,63 +791,88 @@ export async function loadInternationalStatsByPlayerName(
   // Also fetch team metadata so we can resolve country codes for the chart's
   // x-axis flags.
   const allMatches: Array<Record<string, unknown>> = [];
-  for (const [source, ids] of matchIdsBySource) {
-    if (!ids.size) continue;
-    const { data } = await sb
-      .from('international_matches')
-      .select(
-        `${INTL_MATCH_SELECT}, tournament_slug`
-      )
-      .eq('source', source)
-      .in('source_match_id', Array.from(ids));
-    const rows = (data ?? []) as Array<{
-      home_team_source_id: string;
-      away_team_source_id: string;
-    }>;
-    const teamIds = new Set<string>();
-    for (const r of rows) {
-      teamIds.add(r.home_team_source_id);
-      teamIds.add(r.away_team_source_id);
-    }
-    const { data: teamData } = teamIds.size
-      ? await sb
-          .from('international_teams')
-          .select('source_team_id, country_code, team_name')
-          .eq('source', source)
-          .in('source_team_id', Array.from(teamIds))
-      : { data: [] };
-    const teamMeta = new Map<
-      string,
-      { country_code: string | null; name: string }
-    >();
-    for (const t of (teamData ?? []) as Array<{
-      source_team_id: string;
-      country_code: string | null;
-      team_name: string;
-    }>) {
+  const matchBundles = await Promise.all(
+    Array.from(matchIdsBySource.entries()).map(async ([source, ids]) => {
+      if (!ids.size) {
+        return {
+          source,
+          rows: [] as Array<{
+            source_match_id: string;
+            match_date: string | null;
+            kickoff_unix: number | null;
+            stage: string | null;
+            season_year: number;
+            home_team_source_id: string;
+            away_team_source_id: string;
+            home_team_name: string;
+            away_team_name: string;
+            home_score: number | null;
+            away_score: number | null;
+            home_score_penalty?: number | null;
+            away_score_penalty?: number | null;
+            has_penalty_shootout?: boolean | null;
+            status: string | null;
+            tournament_slug: string;
+          }>,
+          teamData: [] as Array<{
+            source_team_id: string;
+            country_code: string | null;
+            team_name: string;
+          }>,
+        };
+      }
+      const { data } = await sb
+        .from('international_matches')
+        .select(`${INTL_MATCH_SELECT}, tournament_slug`)
+        .eq('source', source)
+        .in('source_match_id', Array.from(ids));
+      const rows = (data ?? []) as Array<{
+        home_team_source_id: string;
+        away_team_source_id: string;
+        source_match_id: string;
+        match_date: string | null;
+        kickoff_unix: number | null;
+        stage: string | null;
+        season_year: number;
+        home_team_name: string;
+        away_team_name: string;
+        home_score: number | null;
+        away_score: number | null;
+        home_score_penalty?: number | null;
+        away_score_penalty?: number | null;
+        has_penalty_shootout?: boolean | null;
+        status: string | null;
+        tournament_slug: string;
+      }>;
+      const teamIds = new Set<string>();
+      for (const r of rows) {
+        teamIds.add(r.home_team_source_id);
+        teamIds.add(r.away_team_source_id);
+      }
+      const { data: teamData } = teamIds.size
+        ? await sb
+            .from('international_teams')
+            .select('source_team_id, country_code, team_name')
+            .eq('source', source)
+            .in('source_team_id', Array.from(teamIds))
+        : { data: [] };
+      return { source, rows, teamData: (teamData ?? []) as Array<{
+        source_team_id: string;
+        country_code: string | null;
+        team_name: string;
+      }> };
+    })
+  );
+
+  for (const { source, rows, teamData } of matchBundles) {
+    const teamMeta = new Map<string, { country_code: string | null; name: string }>();
+    for (const t of teamData) {
       teamMeta.set(t.source_team_id, {
         country_code: t.country_code,
         name: t.team_name,
       });
     }
-    for (const row of (data ?? []) as Array<{
-      source_match_id: string;
-      match_date: string | null;
-      kickoff_unix: number | null;
-      stage: string | null;
-      season_year: number;
-      home_team_source_id: string;
-      away_team_source_id: string;
-      home_team_name: string;
-      away_team_name: string;
-      home_score: number | null;
-      away_score: number | null;
-      home_score_penalty?: number | null;
-      away_score_penalty?: number | null;
-      has_penalty_shootout?: boolean | null;
-      status: string | null;
-      tournament_slug: string;
-    }>) {
+    for (const row of rows) {
       const homeMeta = teamMeta.get(row.home_team_source_id);
       const awayMeta = teamMeta.get(row.away_team_source_id);
       const home = {
