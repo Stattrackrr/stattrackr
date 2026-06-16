@@ -88,9 +88,31 @@ function isCorruptWorldCupCacheReadError(error: unknown): boolean {
   );
 }
 
+const WC_SUPABASE_CACHE_MAX_INFLIGHT = 12;
+let wcSupabaseCacheInflight = 0;
+const wcSupabaseCacheWaiters: Array<() => void> = [];
+
+async function acquireWcSupabaseCacheSlot(): Promise<void> {
+  if (wcSupabaseCacheInflight < WC_SUPABASE_CACHE_MAX_INFLIGHT) {
+    wcSupabaseCacheInflight += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    wcSupabaseCacheWaiters.push(resolve);
+  });
+  wcSupabaseCacheInflight += 1;
+}
+
+function releaseWcSupabaseCacheSlot(): void {
+  wcSupabaseCacheInflight = Math.max(0, wcSupabaseCacheInflight - 1);
+  const next = wcSupabaseCacheWaiters.shift();
+  if (next) next();
+}
+
 /** Read a cached value by key. Returns null when missing or on error. */
 export async function getWorldCupCache<T = unknown>(cacheKey: string): Promise<T | null> {
   if (!cacheKey) return null;
+  await acquireWcSupabaseCacheSlot();
   try {
     const { data, error } = await supabaseAdmin
       .from(WORLD_CUP_CACHE_TABLE)
@@ -123,6 +145,8 @@ export async function getWorldCupCache<T = unknown>(cacheKey: string): Promise<T
       warnWorldCupCache(`Failed to read cache for ${cacheKey}`, error);
     }
     return null;
+  } finally {
+    releaseWcSupabaseCacheSlot();
   }
 }
 
@@ -1654,6 +1678,11 @@ export function clearWcBdlSupplementPayloadMem(): void {
   wcBdlSupplementPayloadMem = undefined;
 }
 
+let wcPlayerIdByNameMem: Record<string, number> | null | undefined;
+let wcPlayerIndexMem: WorldCupPlayerIndexEntry[] | null | undefined;
+const wcResolvedBdlPlayerIdMem = new Map<string, number | null>();
+const wcPlayerGameLogsMem = new Map<string, Promise<Record<string, unknown>[]>>();
+
 async function wcGetBdlSupplementPayload(): Promise<WcBdlSupplementPayload | null> {
   if (wcBdlSupplementPayloadMem !== undefined) return wcBdlSupplementPayloadMem;
   wcBdlSupplementPayloadMem = await getWorldCupCache<WcBdlSupplementPayload>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
@@ -1803,8 +1832,15 @@ export function computeWorldCupPropStatsFromGames(
 }
 
 async function wcPropStatsResolveBdlPlayerId(playerName: string): Promise<number | null> {
-  const nameIndex = await getWorldCupCache<Record<string, number>>(WC2026_CACHE_KEYS.playerIdByName);
   const normalized = normalizeWorldCupPlayerName(playerName);
+  if (wcResolvedBdlPlayerIdMem.has(normalized)) {
+    return wcResolvedBdlPlayerIdMem.get(normalized) ?? null;
+  }
+
+  if (wcPlayerIdByNameMem === undefined) {
+    wcPlayerIdByNameMem = (await getWorldCupCache<Record<string, number>>(WC2026_CACHE_KEYS.playerIdByName)) ?? null;
+  }
+  const nameIndex = wcPlayerIdByNameMem;
   const alias = resolveWorldCupAliasName(normalized);
   let playerId: number | undefined = nameIndex?.[normalized] ?? nameIndex?.[alias];
   if (!playerId) {
@@ -1817,9 +1853,16 @@ async function wcPropStatsResolveBdlPlayerId(playerName: string): Promise<number
       }
     }
   }
-  if (playerId) return playerId;
+  if (playerId) {
+    wcResolvedBdlPlayerIdMem.set(normalized, playerId);
+    return playerId;
+  }
 
-  const playerIndex = await getWorldCupCache<WorldCupPlayerIndexEntry[]>(WORLD_CUP_PLAYER_INDEX_CACHE_KEY);
+  if (wcPlayerIndexMem === undefined) {
+    wcPlayerIndexMem =
+      (await getWorldCupCache<WorldCupPlayerIndexEntry[]>(WORLD_CUP_PLAYER_INDEX_CACHE_KEY)) ?? null;
+  }
+  const playerIndex = wcPlayerIndexMem;
   const lookupKeys = new Set([normalized, alias]);
   for (const entry of playerIndex ?? []) {
     const entryKeys = [
@@ -1831,8 +1874,12 @@ async function wcPropStatsResolveBdlPlayerId(playerName: string): Promise<number
     const bdl = entry.sources.find((s) => s.source === 'bdl' && s.id);
     if (!bdl?.id) continue;
     const id = Number(bdl.id);
-    if (Number.isFinite(id)) return id;
+    if (Number.isFinite(id)) {
+      wcResolvedBdlPlayerIdMem.set(normalized, id);
+      return id;
+    }
   }
+  wcResolvedBdlPlayerIdMem.set(normalized, null);
   return null;
 }
 
@@ -1994,27 +2041,36 @@ function wcPropStatsBuildGamesFromHistory(
 }
 
 export async function loadWorldCupPlayerGameLogs(playerName: string): Promise<Record<string, unknown>[]> {
-  const [intl, bdl, bdlSupplement] = await Promise.all([
-    loadInternationalStatsByPlayerName(playerName),
-    wcPropStatsLoadBdlCachedPlayerHistory(playerName),
-    wcPropStatsLoadBdlSupplementPlayerHistory(playerName),
-  ]);
-  const intlGames = wcPropStatsBuildGamesFromHistory(intl.playerMatchStats, intl.matches);
-  const bdlGames = wcPropStatsBuildGamesFromHistory(bdl.playerMatchStats, bdl.matches);
-  const bdlSupplementGames = wcPropStatsBuildGamesFromHistory(
-    bdlSupplement.playerMatchStats,
-    bdlSupplement.matches
-  );
-  const seen = new Set<string>();
-  const merged: Record<string, unknown>[] = [];
-  for (const g of [...intlGames, ...bdlSupplementGames, ...bdlGames]) {
-    const key = `${g.match_id}|${g.source ?? ''}|${g.team_id ?? ''}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push(g);
-  }
-  merged.sort((a, b) => Date.parse(String(b.date ?? '0')) - Date.parse(String(a.date ?? '0')));
-  return merged;
+  const normalized = normalizeWorldCupPlayerName(playerName);
+  const existing = wcPlayerGameLogsMem.get(normalized);
+  if (existing) return existing;
+
+  const pending = (async () => {
+    const [intl, bdl, bdlSupplement] = await Promise.all([
+      loadInternationalStatsByPlayerName(playerName),
+      wcPropStatsLoadBdlCachedPlayerHistory(playerName),
+      wcPropStatsLoadBdlSupplementPlayerHistory(playerName),
+    ]);
+    const intlGames = wcPropStatsBuildGamesFromHistory(intl.playerMatchStats, intl.matches);
+    const bdlGames = wcPropStatsBuildGamesFromHistory(bdl.playerMatchStats, bdl.matches);
+    const bdlSupplementGames = wcPropStatsBuildGamesFromHistory(
+      bdlSupplement.playerMatchStats,
+      bdlSupplement.matches
+    );
+    const seen = new Set<string>();
+    const merged: Record<string, unknown>[] = [];
+    for (const g of [...intlGames, ...bdlSupplementGames, ...bdlGames]) {
+      const key = `${g.match_id}|${g.source ?? ''}|${g.team_id ?? ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(g);
+    }
+    merged.sort((a, b) => Date.parse(String(b.date ?? '0')) - Date.parse(String(a.date ?? '0')));
+    return merged;
+  })();
+
+  wcPlayerGameLogsMem.set(normalized, pending);
+  return pending;
 }
 
 export async function getWorldCupPropStats(
@@ -2042,6 +2098,16 @@ export async function getWorldCupPropStats(
 
 const wcPropStatsByKeyCache = new Map<string, WorldCupPropStatsPayload | null>();
 
+/** Clear in-process memoization before a props-stats warm run. */
+export function clearWcPropStatsWarmMem(): void {
+  clearWcBdlSupplementPayloadMem();
+  wcPlayerIdByNameMem = undefined;
+  wcPlayerIndexMem = undefined;
+  wcResolvedBdlPlayerIdMem.clear();
+  wcPlayerGameLogsMem.clear();
+  wcPropStatsByKeyCache.clear();
+}
+
 function wcAcceptCachedPropStats(cached: WorldCupPropStatsPayload | null | undefined): WorldCupPropStatsPayload | null {
   if (!cached || typeof cached !== 'object') return null;
   const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
@@ -2051,16 +2117,19 @@ function wcAcceptCachedPropStats(cached: WorldCupPropStatsPayload | null | undef
   return null;
 }
 
-const WC_PROP_STATS_PREFETCH_BATCH = 200;
+const WC_PROP_STATS_PREFETCH_BATCH = 40;
 
 async function prefetchWorldCupPropStatsKeys(keys: string[]): Promise<void> {
   const unique = [...new Set(keys)].filter((k) => !wcPropStatsByKeyCache.has(k));
+  if (!unique.length) return;
+  console.log(`[wc-odds] Prefetching ${unique.length} warmed prop-stat cache key(s)...`);
   for (let i = 0; i < unique.length; i += WC_PROP_STATS_PREFETCH_BATCH) {
     const batch = unique.slice(i, i + WC_PROP_STATS_PREFETCH_BATCH);
     const values = await sharedCache.getJSONMany<WorldCupPropStatsPayload>(batch);
     for (let j = 0; j < batch.length; j++) {
       wcPropStatsByKeyCache.set(batch[j]!, wcAcceptCachedPropStats(values[j] ?? null));
     }
+    wcProgressLog('wc-odds', Math.min(i + batch.length, unique.length), unique.length, 'stat keys prefetched');
   }
 }
 
@@ -2448,12 +2517,48 @@ export async function enrichWorldCupPlayerPropsList(
     );
   }
 
-  const keysToFetch: string[] = [];
+  const keysToFetch = new Set<string>();
   for (const row of rows) {
-    keysToFetch.push(getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line));
-    keysToFetch.push(getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line));
+    keysToFetch.add(getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line));
+    keysToFetch.add(getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line));
   }
-  await prefetchWorldCupPropStatsKeys(keysToFetch);
+  await prefetchWorldCupPropStatsKeys([...keysToFetch]);
+
+  const attachStats = (
+    row: WorldCupListPropRow,
+    stats: WorldCupPropStatsPayload | null,
+    meta: Record<string, unknown> = {}
+  ): WorldCupListPropRow => ({
+    ...row,
+    ...meta,
+    ...(stats
+      ? {
+          last5Avg: stats.last5Avg,
+          last10Avg: stats.last10Avg,
+          seasonAvg: stats.seasonAvg,
+          streak: stats.streak,
+          last5HitRate: stats.last5HitRate,
+          last10HitRate: stats.last10HitRate,
+          seasonHitRate: stats.seasonHitRate,
+          wcGamesAvg: stats.wcGamesAvg,
+          wcGamesHitRate: stats.wcGamesHitRate,
+          wcGameLog: stats.wcGameLog,
+          dvpRating: (meta.dvpRating as number | null | undefined) ?? stats.dvpRating ?? null,
+          dvpStatValue: (meta.dvpStatValue as number | null | undefined) ?? stats.dvpStatValue ?? null,
+        }
+      : {}),
+  });
+
+  if (skipRowMeta && cacheOnly) {
+    const enriched = rows.map((row, index) => {
+      if (index === 0 || (index + 1) % 500 === 0 || index + 1 === total) {
+        wcProgressLog('wc-odds', index + 1, total, 'props enriched');
+      }
+      return attachStats(row, wcPropStatsFromRowCache(row));
+    });
+    if (total > 0) console.log(`[wc-odds] Enrichment complete (${total} rows)`);
+    return enriched;
+  }
 
   const ctx = skipRowMeta ? null : await loadWcPropsEnrichContext();
 
@@ -2467,26 +2572,7 @@ export async function enrichWorldCupPlayerPropsList(
     }
     const meta = ctx ? await wcEnrichRowMeta(row, ctx) : {};
     wcProgressLog('wc-odds', index + 1, total, 'props enriched');
-    return {
-      ...row,
-      ...meta,
-      ...(stats
-        ? {
-            last5Avg: stats.last5Avg,
-            last10Avg: stats.last10Avg,
-            seasonAvg: stats.seasonAvg,
-            streak: stats.streak,
-            last5HitRate: stats.last5HitRate,
-            last10HitRate: stats.last10HitRate,
-            seasonHitRate: stats.seasonHitRate,
-            wcGamesAvg: stats.wcGamesAvg,
-            wcGamesHitRate: stats.wcGamesHitRate,
-            wcGameLog: stats.wcGameLog,
-            dvpRating: meta.dvpRating ?? stats.dvpRating ?? null,
-            dvpStatValue: meta.dvpStatValue ?? stats.dvpStatValue ?? null,
-          }
-        : {}),
-    };
+    return attachStats(row, stats, meta);
   };
 
   const enriched = skipRowMeta
@@ -2500,7 +2586,7 @@ export async function enrichWorldCupPlayerPropsList(
 }
 
 const WC_PROPS_WARM_BATCH_SIZE = 40;
-const WC_PROPS_WARM_CONCURRENT_BATCHES = 4;
+const WC_PROPS_WARM_CONCURRENT_BATCHES = 2;
 const WC_PROPS_WARM_MAX_PROPS = 50000;
 
 type WcPropToWarm = { playerName: string; team: string; opponent: string; statType: string; line: number };
@@ -2538,6 +2624,7 @@ export async function runWorldCupPropsStatsWarm(
   const url = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 
   try {
+    clearWcPropStatsWarmMem();
     console.log('[WC props-stats/warm] Starting... baseUrl=', url, 'useListApi=', useListApi);
 
     let rowsFromList: WorldCupListPropRow[] = [];
@@ -2726,7 +2813,10 @@ export async function rebuildWorldCupEnrichedListFromOddsCache(options?: {
   const lastUpdated = result.lastUpdated ?? new Date().toISOString();
 
   if (writeCache && filtered.data.length) {
+    console.log(`[wc-odds] Writing enriched props cache (${filtered.data.length} props, ${filtered.games.length} games)...`);
     await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
+  } else if (writeCache) {
+    console.warn(`[wc-odds] Enriched cache not written — 0 props with stats (${result.data.length} odds rows)`);
   }
 
   const ingestMessage =
