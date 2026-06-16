@@ -126,6 +126,22 @@ function buildDashboardCacheKey(opts: {
   return `${WC_DASHBOARD_CACHE_PREFIX}:${opts.competition}:${opts.season}:${teamPart}:${playerPart}:${namePart}`;
 }
 
+/** `competition=all` shares the same payload as `world-cup`; reuse warmed keys. */
+async function readDashboardCacheWithCompetitionFallback(opts: {
+  competition: CompetitionParam;
+  season: number;
+  teamId: string | null;
+  playerId: string | null;
+  playerName: string | null;
+}): Promise<Record<string, unknown> | null> {
+  const primaryKey = buildDashboardCacheKey(opts);
+  const cached = await getWorldCupCache<Record<string, unknown>>(primaryKey);
+  if (cached) return cached;
+  if (opts.competition !== 'all') return null;
+  const fallbackKey = buildDashboardCacheKey({ ...opts, competition: 'world-cup' });
+  return getWorldCupCache<Record<string, unknown>>(fallbackKey);
+}
+
 /** Fixture + side-panel fields shared with Game Props; never overwrite player chart history. */
 const TEAM_SHARED_DASHBOARD_FIELDS = [
   'featureMatch',
@@ -245,14 +261,13 @@ async function mergeTeamSharedDashboardFields(
   opts: { competition: CompetitionParam; season: number; teamId: string | null }
 ): Promise<Record<string, unknown>> {
   if (!opts.teamId || !/^\d+$/.test(opts.teamId)) return playerPayload;
-  const teamKey = buildDashboardCacheKey({
+  const teamPayload = await readDashboardCacheWithCompetitionFallback({
     competition: opts.competition,
     season: opts.season,
     teamId: opts.teamId,
     playerId: null,
     playerName: null,
   });
-  const teamPayload = await getWorldCupCache<Record<string, unknown>>(teamKey);
   if (!teamPayload) return playerPayload;
   const merged: Record<string, unknown> = { ...playerPayload };
   for (const field of TEAM_SHARED_DASHBOARD_FIELDS) {
@@ -3397,7 +3412,13 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
   try {
     const forceRebuildDashboard = request.nextUrl.searchParams.get('rebuildDashboard') === '1';
     if (!forceRebuildDashboard) {
-      const cachedDashboard = await getWorldCupCache<Record<string, unknown>>(dashboardCacheKey);
+      const cachedDashboard = await readDashboardCacheWithCompetitionFallback({
+        competition,
+        season,
+        teamId: requestedTeamId,
+        playerId: requestedPlayerId,
+        playerName: requestedPlayerNameForKey,
+      });
       if (cachedDashboard) {
         let payload = cachedDashboard;
         if (requestedPlayerId || requestedPlayerNameForKey) {

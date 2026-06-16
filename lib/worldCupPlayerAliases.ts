@@ -143,3 +143,178 @@ export function formatWorldCupPlayerDisplayName(name: string): string {
     .map(capitalizeWorldCupNamePart)
     .join(' ');
 }
+
+// --- World Cup dashboard client prefetch (browser-only) ---
+
+type WorldCupClientCacheEntry<T> = { data: T; timestamp: number };
+
+const WORLD_CUP_CLIENT_CACHE_TTL_MS = 10 * 60 * 1000;
+const WORLD_CUP_DASHBOARD_PREFETCH_TTL_MS = 120 * 1000;
+const WORLD_CUP_DASHBOARD_PREFETCH_KEY = 'wc_dashboard_prefetch';
+
+const worldCupDashboardClientCache = new Map<string, WorldCupClientCacheEntry<unknown>>();
+const worldCupDashboardInFlight = new Map<string, Promise<unknown>>();
+
+export function worldCupDashboardRequestKey(params: URLSearchParams | string): string {
+  const source = typeof params === 'string' ? new URLSearchParams(params) : params;
+  const normalized = new URLSearchParams();
+  for (const [key, value] of [...source.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    normalized.append(key, value);
+  }
+  return normalized.toString();
+}
+
+function dashboardPrefetchIdentityMatches(storedKey: string, requestedKey: string): boolean {
+  if (storedKey === requestedKey) return true;
+  const stored = new URLSearchParams(storedKey);
+  const requested = new URLSearchParams(requestedKey);
+  const storedPlayerId = stored.get('playerId');
+  const requestedPlayerId = requested.get('playerId');
+  const storedPlayerName = stored.get('playerName')?.trim().toLowerCase() ?? '';
+  const requestedPlayerName = requested.get('playerName')?.trim().toLowerCase() ?? '';
+  const storedSeason = stored.get('season') ?? '2026';
+  const requestedSeason = requested.get('season') ?? '2026';
+  if (storedSeason !== requestedSeason) return false;
+  const storedCompetition = stored.get('competition') ?? 'all';
+  const requestedCompetition = requested.get('competition') ?? 'all';
+  const competitionCompatible =
+    storedCompetition === requestedCompetition ||
+    (storedCompetition === 'all' && requestedCompetition === 'world-cup') ||
+    (storedCompetition === 'world-cup' && requestedCompetition === 'all');
+  if (!competitionCompatible) return false;
+  if (requestedPlayerId && storedPlayerId && requestedPlayerId === storedPlayerId) return true;
+  if (requestedPlayerName && storedPlayerName && requestedPlayerName === storedPlayerName) return true;
+  return false;
+}
+
+export function buildWorldCupPlayerDashboardParams(input: {
+  playerName: string;
+  playerId?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  opponentTeamId?: string | null;
+  opponentTeamName?: string | null;
+  competition?: string;
+  season?: string;
+}): URLSearchParams {
+  const params = new URLSearchParams({
+    season: input.season ?? '2026',
+    competition: input.competition ?? 'all',
+  });
+  params.set('playerName', input.playerName);
+  if (input.playerId && /^\d+$/.test(input.playerId)) params.set('playerId', input.playerId);
+  if (input.teamId && /^\d+$/.test(input.teamId)) params.set('teamId', input.teamId);
+  else if (input.teamName?.trim()) params.set('teamName', input.teamName.trim());
+  if (input.opponentTeamName?.trim()) params.set('opponentTeamName', input.opponentTeamName.trim());
+  if (input.opponentTeamId && /^\d+$/.test(input.opponentTeamId)) {
+    params.set('opponentTeamId', input.opponentTeamId);
+  }
+  return params;
+}
+
+function seedWorldCupDashboardClientCache<T>(url: string, data: T): void {
+  worldCupDashboardClientCache.set(url, { data, timestamp: Date.now() });
+}
+
+export function storeWorldCupDashboardPrefetch(requestKey: string, data: unknown): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(
+      WORLD_CUP_DASHBOARD_PREFETCH_KEY,
+      JSON.stringify({ requestKey, data, fetchedAt: Date.now() })
+    );
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function consumeWorldCupDashboardPrefetch<T>(requestKey: string): T | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(WORLD_CUP_DASHBOARD_PREFETCH_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { requestKey?: string; data?: T; fetchedAt?: number };
+    const ageMs = Date.now() - Number(parsed.fetchedAt ?? 0);
+    if (ageMs > WORLD_CUP_DASHBOARD_PREFETCH_TTL_MS) return null;
+    if (
+      parsed.requestKey !== requestKey &&
+      (!parsed.requestKey || !dashboardPrefetchIdentityMatches(parsed.requestKey, requestKey))
+    ) {
+      return null;
+    }
+    if (!parsed.data) return null;
+    sessionStorage.removeItem(WORLD_CUP_DASHBOARD_PREFETCH_KEY);
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchWorldCupDashboardJson<T>(
+  url: string,
+  init?: RequestInit & { skipCache?: boolean }
+): Promise<T> {
+  const { skipCache, ...requestInit } = init ?? {};
+  const now = Date.now();
+  if (!skipCache) {
+    const cached = worldCupDashboardClientCache.get(url);
+    if (cached && now - cached.timestamp < WORLD_CUP_CLIENT_CACHE_TTL_MS) {
+      return cached.data as T;
+    }
+  }
+
+  let request = skipCache ? undefined : worldCupDashboardInFlight.get(url);
+  if (!request) {
+    request = fetch(url, { cache: 'no-store', ...requestInit })
+      .then(async (response) => {
+        const body = (await response.json().catch(() => null)) as T | { error?: string } | null;
+        if (!response.ok) {
+          const message =
+            (body && typeof body === 'object' && 'error' in body
+              ? String((body as { error?: string }).error)
+              : null) || `Request failed (${response.status})`;
+          throw new Error(message);
+        }
+        return body as T;
+      })
+      .finally(() => {
+        if (!skipCache) worldCupDashboardInFlight.delete(url);
+      });
+    if (!skipCache) worldCupDashboardInFlight.set(url, request);
+  }
+
+  const data = (await request) as T;
+  if (!skipCache) {
+    seedWorldCupDashboardClientCache(url, data);
+  }
+  return data;
+}
+
+/** Start a dashboard fetch early (props click) — shares in-flight dedupe with the dashboard page. */
+export function prefetchWorldCupDashboard(url: string): void {
+  void fetchWorldCupDashboardJson(url)
+    .then((data) => {
+      const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+      storeWorldCupDashboardPrefetch(worldCupDashboardRequestKey(query), data);
+    })
+    .catch(() => {
+      // Navigation should continue even if prefetch misses.
+    });
+}
+
+export async function loadWorldCupDashboardWithHandoff<T>(
+  url: string,
+  requestKey: string,
+  init?: RequestInit & { skipCache?: boolean }
+): Promise<T> {
+  const prefetched = consumeWorldCupDashboardPrefetch<T>(requestKey);
+  if (prefetched) {
+    seedWorldCupDashboardClientCache(url, prefetched);
+    return prefetched;
+  }
+  if (!init?.skipCache) {
+    const inFlight = worldCupDashboardInFlight.get(url);
+    if (inFlight) return inFlight as Promise<T>;
+  }
+  return fetchWorldCupDashboardJson<T>(url, init);
+}

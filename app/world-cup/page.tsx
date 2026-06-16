@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, memo, useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, Search } from 'lucide-react';
@@ -14,7 +14,14 @@ import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdo
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabaseClient';
-import { formatWorldCupPlayerDisplayName } from '@/lib/worldCupPlayerAliases';
+import {
+  buildWorldCupPlayerDashboardParams,
+  consumeWorldCupDashboardPrefetch,
+  fetchWorldCupDashboardJson,
+  formatWorldCupPlayerDisplayName,
+  loadWorldCupDashboardWithHandoff,
+  worldCupDashboardRequestKey,
+} from '@/lib/worldCupPlayerAliases';
 import { getWorldCupFlagUrl, resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, FIFA_NAME_TO_CODE, worldCupTeamsMatch } from '@/lib/worldCupFlags';
 import { americanToDecimal } from '@/lib/currencyUtils';
 import { getBookmakerInfo } from '@/lib/bookmakers';
@@ -30,12 +37,6 @@ import {
   parseWorldCupOddsLine,
   type WorldCupPlayerOddsBook,
 } from '@/lib/impliedProbability';
-import {
-  fetchWorldCupDashboardJson,
-  loadWorldCupDashboardWithHandoff,
-  worldCupDashboardRequestKey,
-} from '@/lib/worldCupDashboardClient';
-
 const WC_URL_SPECIAL_LETTERS = new RegExp(
   '[\\u00f8\\u0153\\u00e6\\u00e5\\u00df\\u00fe\\u00f0\\u0111\\u0142\\u0131\\u014b\\u0138\\u02bb\']',
   'g'
@@ -999,6 +1000,91 @@ function buildWorldCupPlayerFromHandoff(parsed: WorldCupPropsHandoff): WorldCupP
     positionGroup,
     club: null,
   };
+}
+
+function tryApplyWorldCupDashboardPrefetchFromHandoff(
+  parsed: WorldCupPropsHandoff,
+  setWorldCupData: (value: WorldCupDashboardData | null) => void,
+  loadedDashboardKeyRef: MutableRefObject<string | null>
+): boolean {
+  const playerName = String(parsed.name || '').trim();
+  if (!playerName) return false;
+  const params = buildWorldCupPlayerDashboardParams({
+    playerName,
+    playerId: /^\d+$/.test(String(parsed.playerId || '')) ? String(parsed.playerId) : null,
+    teamId: /^\d+$/.test(String(parsed.teamId || '')) ? String(parsed.teamId) : null,
+    teamName: parsed.team || null,
+    opponentTeamId: /^\d+$/.test(String(parsed.opponentTeamId || '')) ? String(parsed.opponentTeamId) : null,
+    opponentTeamName: parsed.opponent || null,
+    competition: 'all',
+  });
+  const prefetched = consumeWorldCupDashboardPrefetch<WorldCupDashboardData>(
+    worldCupDashboardRequestKey(params)
+  );
+  if (!prefetched) return false;
+  setWorldCupData(prefetched);
+  loadedDashboardKeyRef.current = buildWorldCupDashboardKey(
+    'player',
+    /^\d+$/.test(String(parsed.teamId || '')) ? String(parsed.teamId) : null,
+    /^\d+$/.test(String(parsed.playerId || '')) ? String(parsed.playerId) : null
+  );
+  return true;
+}
+
+function applyWorldCupPropsHandoffState(
+  parsed: WorldCupPropsHandoff,
+  teamOptions: WorldCupTeamOption[],
+  setters: {
+    setFixtureOpponentName: (value: string | null) => void;
+    setChartContext: Dispatch<SetStateAction<WorldCupChartContext>>;
+    setWcCurrentLineValue: (value: number) => void;
+    setSelectedTeam: (value: WorldCupTeamOption | null) => void;
+    setTeamSearchQuery: (value: string) => void;
+    setPropsMode: (value: PropsMode) => void;
+    setSelectedPlayer: (value: WorldCupPlayerOption | null) => void;
+    setPlayerSearchQuery: (value: string) => void;
+    setCompetition: (value: Competition) => void;
+    setWorldCupData: (value: WorldCupDashboardData | null) => void;
+  },
+  refs: {
+    propsHandoffPositionRef: MutableRefObject<string | null>;
+    preferredWcBookmakerRef: MutableRefObject<string | null>;
+    hasIncomingWcBookOrLineRef: MutableRefObject<boolean>;
+    urlPlayerResolvedRef: MutableRefObject<boolean>;
+    previousCompetition: MutableRefObject<Competition | null>;
+    loadedDashboardKeyRef: MutableRefObject<string | null>;
+  }
+): boolean {
+  if (parsed.opponent) setters.setFixtureOpponentName(parsed.opponent);
+  if (parsed.stat) {
+    setters.setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe));
+  }
+  if (parsed.line != null && Number.isFinite(Number(parsed.line))) {
+    refs.hasIncomingWcBookOrLineRef.current = true;
+    setters.setWcCurrentLineValue(Number(parsed.line));
+  }
+  if (parsed.bookmaker) {
+    refs.preferredWcBookmakerRef.current = parsed.bookmaker;
+    refs.hasIncomingWcBookOrLineRef.current = true;
+  }
+  setters.setCompetition('all');
+  refs.previousCompetition.current = 'all';
+  const team = resolveWorldCupTeamFromHandoff(parsed, teamOptions);
+  if (team) {
+    setters.setSelectedTeam(team);
+    setters.setTeamSearchQuery('');
+  }
+  const player = buildWorldCupPlayerFromHandoff(parsed);
+  if (!player) return false;
+  refs.propsHandoffPositionRef.current = String(parsed.position || '').trim() || null;
+  setters.setPropsMode('player');
+  setters.setSelectedPlayer(player);
+  setters.setPlayerSearchQuery(player.name);
+  if (/^\d+$/.test(player.id)) {
+    refs.urlPlayerResolvedRef.current = true;
+  }
+  tryApplyWorldCupDashboardPrefetchFromHandoff(parsed, setters.setWorldCupData, refs.loadedDashboardKeyRef);
+  return true;
 }
 
 function worldCupPlayerMatchesUrlTarget(
@@ -9096,7 +9182,7 @@ export function WorldCupPageContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState<OddsFormat>('american');
   const [propsMode, setPropsMode] = useState<PropsMode>('player');
-  const [competition, setCompetition] = useState<Competition>('world-cup');
+  const [competition, setCompetition] = useState<Competition>('all');
   const [selectedTeam, setSelectedTeam] = useState<WorldCupTeamOption | null>(null);
   /** Game Props team pick — independent from the player's nation (mirrors AFL `aflTeamFilter`). */
   const [gamePropsTeam, setGamePropsTeam] = useState<WorldCupTeamOption | null>(null);
@@ -9521,40 +9607,33 @@ export function WorldCupPageContent() {
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
-    try {
-      const parsed = parseWorldCupPropsHandoff(sessionStorage.getItem('wc_player_from_props'));
-      if (!parsed) return;
-      sessionStorage.removeItem('wc_player_from_props');
-      if (parsed.opponent) setFixtureOpponentName(parsed.opponent);
-      if (parsed.stat) {
-        setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe));
+    const parsed = parseWorldCupPropsHandoff(sessionStorage.getItem('wc_player_from_props'));
+    if (!parsed) return;
+    sessionStorage.removeItem('wc_player_from_props');
+    applyWorldCupPropsHandoffState(
+      parsed,
+      teamOptions,
+      {
+        setFixtureOpponentName,
+        setChartContext,
+        setWcCurrentLineValue,
+        setSelectedTeam,
+        setTeamSearchQuery,
+        setPropsMode,
+        setSelectedPlayer,
+        setPlayerSearchQuery,
+        setCompetition,
+        setWorldCupData,
+      },
+      {
+        propsHandoffPositionRef,
+        preferredWcBookmakerRef,
+        hasIncomingWcBookOrLineRef,
+        urlPlayerResolvedRef,
+        previousCompetition,
+        loadedDashboardKeyRef,
       }
-      if (parsed.line != null && Number.isFinite(Number(parsed.line))) {
-        hasIncomingWcBookOrLineRef.current = true;
-        setWcCurrentLineValue(Number(parsed.line));
-      }
-      if (parsed.bookmaker) {
-        preferredWcBookmakerRef.current = parsed.bookmaker;
-        hasIncomingWcBookOrLineRef.current = true;
-      }
-      const team = resolveWorldCupTeamFromHandoff(parsed, teamOptions);
-      if (team) {
-        setSelectedTeam(team);
-        setTeamSearchQuery('');
-      }
-      const player = buildWorldCupPlayerFromHandoff(parsed);
-      if (player) {
-        propsHandoffPositionRef.current = String(parsed.position || '').trim() || null;
-        setPropsMode('player');
-        setSelectedPlayer(player);
-        setPlayerSearchQuery(player.name);
-        if (/^\d+$/.test(player.id)) {
-          urlPlayerResolvedRef.current = true;
-        }
-      }
-    } catch {
-      // ignore malformed session payload
-    }
+    );
   }, [hydratedFromStorage, teamOptions]);
 
   // Rehydrate page context on refresh only (sessionStorage — cleared when tab closes).
@@ -9577,34 +9656,30 @@ export function WorldCupPageContent() {
       const parsed = parseWorldCupPropsHandoff(sessionStorage.getItem('wc_player_from_props'));
       if (!parsed) return false;
       sessionStorage.removeItem('wc_player_from_props');
-      if (parsed.opponent) setFixtureOpponentName(parsed.opponent);
-      if (parsed.stat) {
-        setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe));
-      }
-      if (parsed.line != null && Number.isFinite(Number(parsed.line))) {
-        hasIncomingWcBookOrLineRef.current = true;
-        setWcCurrentLineValue(Number(parsed.line));
-      }
-      if (parsed.bookmaker) {
-        preferredWcBookmakerRef.current = parsed.bookmaker;
-        hasIncomingWcBookOrLineRef.current = true;
-      }
-      const team = resolveWorldCupTeamFromHandoff(parsed, []);
-      if (team) {
-        setSelectedTeam(team);
-        setTeamSearchQuery('');
-      }
-      const player = buildWorldCupPlayerFromHandoff(parsed);
-      if (player) {
-        propsHandoffPositionRef.current = String(parsed.position || '').trim() || null;
-        setPropsMode('player');
-        setSelectedPlayer(player);
-        setPlayerSearchQuery(player.name);
-        if (/^\d+$/.test(player.id)) {
-          urlPlayerResolvedRef.current = true;
+      return applyWorldCupPropsHandoffState(
+        parsed,
+        [],
+        {
+          setFixtureOpponentName,
+          setChartContext,
+          setWcCurrentLineValue,
+          setSelectedTeam,
+          setTeamSearchQuery,
+          setPropsMode,
+          setSelectedPlayer,
+          setPlayerSearchQuery,
+          setCompetition,
+          setWorldCupData,
+        },
+        {
+          propsHandoffPositionRef,
+          preferredWcBookmakerRef,
+          hasIncomingWcBookOrLineRef,
+          urlPlayerResolvedRef,
+          previousCompetition,
+          loadedDashboardKeyRef,
         }
-      }
-      return Boolean(player);
+      );
     };
 
     const seedPlayerFromUrl = (alreadyHasPlayer: boolean) => {
@@ -9652,17 +9727,36 @@ export function WorldCupPageContent() {
     let restoredStoredPlayer = false;
     try {
       const storedMode = storage.getItem(WORLD_CUP_STORAGE_KEYS.propsMode);
+      let restoredCompetition: Competition = 'all';
+      const storedCompetition = storage.getItem(WORLD_CUP_STORAGE_KEYS.competition);
+
       if (urlHasPlayer) {
         setPropsMode('player');
+        setCompetition('all');
+        restoredCompetition = 'all';
       } else if (urlMode === 'team' || urlMode === 'player') {
         setPropsMode(urlMode);
+        if (
+          storedCompetition === 'all' ||
+          storedCompetition === 'world-cup' ||
+          storedCompetition === 'euros' ||
+          storedCompetition === 'nations-league'
+        ) {
+          restoredCompetition = storedCompetition;
+          setCompetition(storedCompetition);
+        }
       } else if (storedMode === 'player' || storedMode === 'team') {
         setPropsMode(storedMode);
-      }
-
-      let restoredCompetition: Competition = 'world-cup';
-      const storedCompetition = storage.getItem(WORLD_CUP_STORAGE_KEYS.competition);
-      if (
+        if (
+          storedCompetition === 'all' ||
+          storedCompetition === 'world-cup' ||
+          storedCompetition === 'euros' ||
+          storedCompetition === 'nations-league'
+        ) {
+          restoredCompetition = storedCompetition;
+          setCompetition(storedCompetition);
+        }
+      } else if (
         storedCompetition === 'all' ||
         storedCompetition === 'world-cup' ||
         storedCompetition === 'euros' ||

@@ -16,7 +16,7 @@ import { formatAflFantasyDfsPositionLabel } from '@/lib/aflDfsRoleLabels';
 import {
   buildWorldCupPlayerDashboardParams,
   prefetchWorldCupDashboard,
-} from '@/lib/worldCupDashboardClient';
+} from '@/lib/worldCupPlayerAliases';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 import { getEspnLogoUrl } from '@/lib/nbaAbbr';
 import { PLAYER_ID_MAPPINGS, convertBdlToNbaId } from '@/lib/playerIdMapping';
@@ -196,12 +196,13 @@ function navigateToWorldCupDashboardFromProp(
     teamName: team || null,
     opponentTeamId: /^\d+$/.test(opponentTeamId) ? opponentTeamId : null,
     opponentTeamName: opponent || null,
+    competition: 'all',
   });
   const dashboardUrl = `/api/world-cup/dashboard?${dashboardParams.toString()}`;
   prefetchWorldCupDashboard(dashboardUrl);
 
   const prefetchUrls = [
-    `/api/world-cup/players?search=${encodeURIComponent(prop.playerName)}&competition=world-cup`,
+    `/api/world-cup/players?search=${encodeURIComponent(prop.playerName)}&competition=all`,
     `/api/world-cup/dashboard?playerOdds=1&playerName=${encodeURIComponent(prop.playerName)}&homeTeam=${encodeURIComponent(team)}&awayTeam=${encodeURIComponent(opponent)}${matchDate ? `&matchDate=${encodeURIComponent(matchDate)}` : ''}`,
   ];
   prefetchUrls.forEach((url) => {
