@@ -56,6 +56,38 @@ export async function deleteWorldCupCacheByPrefix(prefix: string): Promise<numbe
   }
 }
 
+/** Delete a single cache row by exact key. */
+export async function deleteWorldCupCacheKey(cacheKey: string): Promise<boolean> {
+  if (!cacheKey) return false;
+  try {
+    const { error } = await supabaseAdmin.from(WORLD_CUP_CACHE_TABLE).delete().eq('cache_key', cacheKey);
+    if (error) {
+      warnWorldCupCache(`Failed to delete cache key ${cacheKey}`, error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    warnWorldCupCache(`Failed to delete cache key ${cacheKey}`, error);
+    return false;
+  }
+}
+
+function isCorruptWorldCupCacheReadError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error ?? '');
+  const details =
+    typeof error === 'object' && error != null && 'details' in error
+      ? String((error as { details?: string }).details ?? '')
+      : '';
+  const combined = `${msg}\n${details}`.toLowerCase();
+  return (
+    combined.includes('syntaxerror') ||
+    combined.includes('unterminated string') ||
+    combined.includes('json.parse') ||
+    combined.includes('unexpected token') ||
+    combined.includes('unexpected end of json')
+  );
+}
+
 /** Read a cached value by key. Returns null when missing or on error. */
 export async function getWorldCupCache<T = unknown>(cacheKey: string): Promise<T | null> {
   if (!cacheKey) return null;
@@ -67,13 +99,29 @@ export async function getWorldCupCache<T = unknown>(cacheKey: string): Promise<T
       .maybeSingle();
 
     if (error) {
-      warnWorldCupCache(`Failed to read cache for ${cacheKey}`, error);
+      if (isCorruptWorldCupCacheReadError(error)) {
+        console.warn(
+          `[World Cup Cache] Corrupt JSON for ${cacheKey} — deleting row and treating as cache miss`
+        );
+        await deleteWorldCupCacheKey(cacheKey);
+        if (cacheKey.startsWith('wc:bdl-dvp-supplement:')) clearWcBdlSupplementPayloadMem();
+      } else {
+        warnWorldCupCache(`Failed to read cache for ${cacheKey}`, error);
+      }
       return null;
     }
     if (!data) return null;
     return (data as { payload: T }).payload ?? null;
   } catch (error) {
-    warnWorldCupCache(`Failed to read cache for ${cacheKey}`, error);
+    if (isCorruptWorldCupCacheReadError(error)) {
+      console.warn(
+        `[World Cup Cache] Corrupt JSON for ${cacheKey} — deleting row and treating as cache miss`
+      );
+      await deleteWorldCupCacheKey(cacheKey);
+      if (cacheKey.startsWith('wc:bdl-dvp-supplement:')) clearWcBdlSupplementPayloadMem();
+    } else {
+      warnWorldCupCache(`Failed to read cache for ${cacheKey}`, error);
+    }
     return null;
   }
 }
@@ -85,6 +133,11 @@ export async function getWorldCupCache<T = unknown>(cacheKey: string): Promise<T
 export async function setWorldCupCache(cacheKey: string, payload: unknown): Promise<boolean> {
   if (!cacheKey || payload == null) return false;
   try {
+    const serialized = JSON.stringify(payload);
+    if (!serialized || serialized.length < 2) {
+      warnWorldCupCache(`Refusing to write empty/invalid cache for ${cacheKey}`, new Error('empty payload'));
+      return false;
+    }
     const nowIso = new Date().toISOString();
     const { error } = await supabaseAdmin.from(WORLD_CUP_CACHE_TABLE).upsert(
       {
@@ -1588,7 +1641,24 @@ const WC_PROP_STATS_CACHE_PREFIX = 'wc_prop_stats_v5';
 const WC_PROP_STATS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const WC_PROPS_STATS_SEASON = 2026;
 /** BDL FIFA finals player stats for 2018/2022/2026 — built by `build:world-cup:bdl-cache` step 2. */
-const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v4';
+const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v5';
+
+type WcBdlSupplementPayload = {
+  matches?: BdlDvpSupplementMatch[];
+  statRows?: BdlDvpSupplementRow[];
+};
+
+let wcBdlSupplementPayloadMem: WcBdlSupplementPayload | null | undefined;
+
+export function clearWcBdlSupplementPayloadMem(): void {
+  wcBdlSupplementPayloadMem = undefined;
+}
+
+async function wcGetBdlSupplementPayload(): Promise<WcBdlSupplementPayload | null> {
+  if (wcBdlSupplementPayloadMem !== undefined) return wcBdlSupplementPayloadMem;
+  wcBdlSupplementPayloadMem = await getWorldCupCache<WcBdlSupplementPayload>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
+  return wcBdlSupplementPayloadMem;
+}
 
 function wcPropStatsNormalizePlayerKey(name: string): string {
   return resolveWorldCupAliasName(normalizeWorldCupPlayerName(name));
@@ -1831,10 +1901,7 @@ async function wcPropStatsLoadBdlSupplementPlayerHistory(playerName: string): Pr
   const playerId = await wcPropStatsResolveBdlPlayerId(playerName);
   if (!playerId) return { playerMatchStats: [], matches: [] };
 
-  const supplement = await getWorldCupCache<{
-    matches?: BdlDvpSupplementMatch[];
-    statRows?: BdlDvpSupplementRow[];
-  }>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
+  const supplement = await wcGetBdlSupplementPayload();
   if (!supplement?.statRows?.length) return { playerMatchStats: [], matches: [] };
 
   const playerIdStr = String(playerId);

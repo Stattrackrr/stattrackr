@@ -11,7 +11,7 @@ import { supabaseAdmin } from './supabaseAdmin';
 import { normalizeWorldCupPlayerName } from './worldCupPlayerIndex';
 import { getWorldCupNameAliases, getWorldCupPlayerOverride } from './worldCupPlayerAliases';
 import { resolveWorldCupFlagCode } from './worldCupFlags';
-import { getWorldCupCache, setWorldCupCache } from './worldCupCache';
+import { getWorldCupCache, setWorldCupCache, clearWcBdlSupplementPayloadMem } from './worldCupCache';
 
 function rankOpponentAllowedValues(entries: { slug: string; value: number }[]): Record<string, number> {
   if (!entries.length) return {};
@@ -1365,7 +1365,7 @@ async function fetchBdlLineupPositionMap(
  * WC-only DVP filter so we don't need the full loadWorldCupDvpSource() pipeline.
  * Much faster since it skips Supabase and only fetches one season.
  */
-const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v4';
+const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v5';
 const BDL_WC2026_DVP_RAW_CACHE_KEY = 'wc:dvp-wc2026:raw:v4';
 
 export async function loadBdlWc2026DvpData(opts?: { skipCache?: boolean }): Promise<{
@@ -1489,7 +1489,8 @@ async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Pro
   }
 
   const payload = { matches, statRows };
-  await setWorldCupCache(BDL_DVP_SUPPLEMENT_CACHE_KEY, payload);
+  const ok = await setWorldCupCache(BDL_DVP_SUPPLEMENT_CACHE_KEY, payload);
+  if (ok) clearWcBdlSupplementPayloadMem();
   return payload;
 }
 
