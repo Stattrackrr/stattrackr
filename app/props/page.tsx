@@ -39,6 +39,7 @@ import {
   WORLD_CUP_LOGO_MARK_CLASS,
   WORLD_CUP_LOGO_MARK_COMPACT_CLASS,
   WORLD_CUP_LOGO_TOGGLE_CLASS,
+  WORLD_CUP_PUBLIC_ENABLED,
   type PropsSportMode,
 } from '@/lib/nbaConstants';
 import { resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, worldCupTeamsMatch } from '@/lib/worldCupFlags';
@@ -940,7 +941,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
-const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v7';
+const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v8';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
 function wcPropsMeetsMinOdds(overOdds?: string, underOdds?: string, yesOdds?: string): boolean {
@@ -1737,7 +1738,7 @@ export default function NBALandingPage() {
 
     setAflGames((prev) => (noAflOdds || aflGamesNext.length > 0 ? aflGamesNext : prev));
     setAflProps((prev) => (noAflOdds || aflPropsNext.length > 0 ? aflPropsNext : prev));
-    setWorldCupCombinedProps(worldCupPropsNext);
+    setWorldCupCombinedProps(WORLD_CUP_PUBLIC_ENABLED ? worldCupPropsNext : []);
     setAflIngestMessage(combinedSnapshot?.afl?.ingestMessage ?? null);
     setAflLastUpdated(combinedSnapshot?.afl?.lastUpdated ?? null);
     if (combinedSnapshot?.afl?.debugMeta) {
@@ -1860,6 +1861,11 @@ export default function NBALandingPage() {
       const url = new URL(window.location.href);
       const sportParam = url.searchParams.get('sport');
       const resolvedSport = resolvePropsSportParam(sportParam);
+      if (!WORLD_CUP_PUBLIC_ENABLED && (sportParam === 'world-cup' || sportParam === 'worldcup')) {
+        const params = new URLSearchParams(url.search);
+        params.set('sport', 'all');
+        window.history.replaceState(null, '', `/props?${params.toString()}`);
+      }
       if (resolvedSport === 'combined' && sportParam !== 'all') {
         const params = new URLSearchParams(url.search);
         params.set('sport', 'all');
@@ -1882,7 +1888,7 @@ export default function NBALandingPage() {
           setAflPropsLoading(true);
         }
         // Keep sport=afl in URL so refresh stays on AFL
-      } else if (resolvedSport === 'world-cup') {
+      } else if (resolvedSport === 'world-cup' && WORLD_CUP_PUBLIC_ENABLED) {
         setPropsSport('world-cup');
         try {
           const raw = sessionStorage.getItem(WC_PROPS_CACHE_KEY);
@@ -1987,14 +1993,34 @@ export default function NBALandingPage() {
           const nbaProps = Array.isArray(parsed?.nba?.props) ? parsed.nba.props : [];
           const aflPropsCached = Array.isArray(parsed?.afl?.props) ? parsed.afl.props : [];
           const aflGamesCached = Array.isArray(parsed?.afl?.games) ? parsed.afl.games : [];
-          const wcPropsCached = Array.isArray(parsed?.worldCup?.props) ? parsed.worldCup.props : [];
+          const wcPropsCached = WORLD_CUP_PUBLIC_ENABLED
+            ? Array.isArray(parsed?.worldCup?.props)
+              ? parsed.worldCup.props
+              : []
+            : [];
           const hasSnapshotData =
             nbaProps.length > 0 ||
             aflPropsCached.length > 0 ||
             aflGamesCached.length > 0 ||
             wcPropsCached.length > 0;
           if (age < CACHE_TTL_MS && hasSnapshotData) {
-            applyCombinedSnapshot(parsed, {
+            applyCombinedSnapshot(
+              WORLD_CUP_PUBLIC_ENABLED
+                ? parsed
+                : {
+                    ...parsed,
+                    worldCup: {
+                      ok: false,
+                      status: 200,
+                      lastUpdated: null,
+                      nextUpdate: null,
+                      ingestMessage: null,
+                      noWorldCupOdds: true,
+                      games: [],
+                      props: [],
+                    },
+                  },
+              {
               persistCaches: false,
               selectedGameIds: Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined,
             });
@@ -2517,6 +2543,7 @@ export default function NBALandingPage() {
 
     // Preload AFL + World Cup list in background for sessionStorage (WC was missing — caused AFL→WC skeleton flash).
     const preloadSecondaryPropsCache = async (sport: 'afl' | 'world-cup') => {
+      if (sport === 'world-cup' && !WORLD_CUP_PUBLIC_ENABLED) return;
       try {
         if (typeof window === 'undefined') return;
         const cacheKey = getSecondaryPropsCacheKey(sport);
@@ -3098,7 +3125,11 @@ export default function NBALandingPage() {
         // Degrade gracefully: render as long as at least one sport is available.
         // A sport that's out of season (e.g. NBA with no odds) returns ok=false
         // with empty props and should not blank out the whole combined page.
-        if (!response.ok || !payload?.success || (!payload?.nba?.ok && !payload?.afl?.ok && !payload?.worldCup?.ok)) {
+        if (
+          !response.ok ||
+          !payload?.success ||
+          (!payload?.nba?.ok && !payload?.afl?.ok && (!WORLD_CUP_PUBLIC_ENABLED || !payload?.worldCup?.ok))
+        ) {
           throw new Error(payload?.error || 'Failed to load combined props');
         }
         if (cancelled) return;
@@ -3107,10 +3138,24 @@ export default function NBALandingPage() {
         if (cancelled) return;
         console.warn('[Props] Combined payload fetch failed, falling back to direct parallel requests:', error);
         try {
+          const wcFetchPromise = WORLD_CUP_PUBLIC_ENABLED
+            ? fetchSecondaryPropsList('/api/world-cup/dashboard?playerPropsList=1')
+            : Promise.resolve(
+                new Response(
+                  JSON.stringify({
+                    success: true,
+                    games: [],
+                    data: [],
+                    noWorldCupOdds: true,
+                    noAflOdds: true,
+                  }),
+                  { status: 200, headers: { 'Content-Type': 'application/json' } }
+                )
+              );
           const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
             fetch('/api/nba/player-props', { cache: forceRefresh ? 'no-store' : 'default' }),
             fetch(debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list', { cache: 'no-store' }),
-            fetchSecondaryPropsList('/api/world-cup/dashboard?playerPropsList=1'),
+            wcFetchPromise,
           ]);
           const [nbaPayload, aflPayload, wcPayload] = await Promise.all([
             nbaResponse.json().catch(() => null),
@@ -4827,7 +4872,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     return [
       ...mapWithSport(playerProps, 'nba'),
       ...mapWithSport(aflProps, 'afl'),
-      ...mapWithSport(worldCupCombinedProps, 'world-cup'),
+      ...(WORLD_CUP_PUBLIC_ENABLED ? mapWithSport(worldCupCombinedProps, 'world-cup') : []),
     ] as CombinedPlayerPropRow[];
   }, [playerProps, aflProps, worldCupCombinedProps, debouncedSearchQuery, getStatLabel]);
 
@@ -5858,6 +5903,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     if (!NBA_PUBLIC_ENABLED && nextMode === 'nba') {
       nextMode = 'combined';
     }
+    if (!WORLD_CUP_PUBLIC_ENABLED && nextMode === 'world-cup') {
+      nextMode = 'combined';
+    }
     let combinedWarm = false;
     if (nextMode === 'combined' && propsSport === 'world-cup') {
       setWorldCupCombinedProps(aflProps);
@@ -6206,6 +6254,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   }, [router, mergeNbaPropsWithStoredCalculatedStats, setSecondaryPropsFetchComplete, propsSport, aflProps, aflGames, aflLastUpdated, aflIngestMessage, playerProps, worldCupCombinedProps, applyCombinedSnapshot, persistCombinedSnapshotCaches]);
 
   const toggleSportSelection = useCallback((sport: 'nba' | 'afl' | 'world-cup') => {
+    if (sport === 'world-cup' && !WORLD_CUP_PUBLIC_ENABLED) return;
     // Combined means "no explicit single-sport filter selected".
     // Clicking an active sport toggles it off back to combined.
     const nextMode: PropsSportMode = propsSport === sport ? 'combined' : sport;
@@ -6498,13 +6547,19 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               </button>
               <button
                 type="button"
+                disabled={!WORLD_CUP_PUBLIC_ENABLED}
                 onClick={() => toggleSportSelection('world-cup')}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
-                  propsSport === 'world-cup'
-                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  !WORLD_CUP_PUBLIC_ENABLED
+                    ? mounted && isDark
+                      ? 'bg-[#0d1528] text-gray-500 border-[#2a2545] opacity-60 cursor-not-allowed grayscale'
+                      : 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 cursor-not-allowed grayscale'
+                    : propsSport === 'world-cup'
+                      ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="World Cup"
+                aria-disabled={!WORLD_CUP_PUBLIC_ENABLED}
               >
                 <img
                   src={WORLD_CUP_LOGO_PATH}

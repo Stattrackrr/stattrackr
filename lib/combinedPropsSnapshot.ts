@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
-import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
@@ -429,10 +429,24 @@ export async function buildCombinedPropsSnapshot(
     : Promise.resolve(
         NextResponse.json({ success: true, data: [], cached: false, lastUpdated: null, gameDate: null })
       );
+  const wcPromise = WORLD_CUP_PUBLIC_ENABLED
+    ? getWorldCupPlayerPropsList(new NextRequest(wcUrl, { headers }))
+    : Promise.resolve(
+        NextResponse.json({
+          success: true,
+          games: [],
+          data: [],
+          gamesCount: 0,
+          propsCount: 0,
+          noWorldCupOdds: true,
+          noAflOdds: true,
+          ingestMessage: 'World Cup props are not available.',
+        })
+      );
   const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
-    getWorldCupPlayerPropsList(new NextRequest(wcUrl, { headers })),
+    wcPromise,
   ]);
 
   const [nbaPayload, aflPayload, wcPayload] = await Promise.all([

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH } from "@/lib/nbaConstants";
+import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH, WORLD_CUP_OFFSEASON_SIDEBAR_LABEL, WORLD_CUP_PUBLIC_ENABLED } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -307,7 +307,17 @@ export default function LeftSidebar({
           },
         ]),
     { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
-    { name: "World Cup", href: "/props?sport=world-cup", logo: <SportLogo sport="world-cup" /> },
+    ...(WORLD_CUP_PUBLIC_ENABLED
+      ? [{ name: "World Cup", href: "/props?sport=world-cup", logo: <SportLogo sport="world-cup" /> }]
+      : [
+          {
+            name: "World Cup",
+            href: "/props?sport=all",
+            logo: <SportLogo sport="world-cup" />,
+            comingSoon: true,
+            comingSoonText: WORLD_CUP_OFFSEASON_SIDEBAR_LABEL,
+          },
+        ]),
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
     // { name: "NBL", href: "/nbl/research/dashboard" },
