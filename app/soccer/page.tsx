@@ -26,6 +26,7 @@ import { SoccerInjuriesCard } from '@/app/soccer/components/SoccerInjuriesCard';
 import { SoccerPlayerPropsTestCard } from '@/app/soccer/components/SoccerPlayerPropsTestCard';
 import { SoccerPlayerSupportingStats } from '@/app/soccer/components/SoccerPlayerSupportingStats';
 import type { SoccerPlayerPropsChartSnapshot } from '@/app/soccer/components/soccerPlayerPropsTypes';
+import { normalizeSoccerPositionCode } from '@/lib/soccerPlayerPosition';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -217,6 +218,7 @@ function buildSoccerPlayerOptionFromRosterRow(
       : row.displayName.slice(0, 3);
   const norm = normalizeSoccerName(row.displayName);
   const info = lookupSoccerLineupPlayerInfo(lineupInfoLookup, row.playerKey, row.displayName);
+  const role = normalizeSoccerPositionCode(row.position) ?? info?.position ?? null;
   return {
     id: row.playerKey,
     name: row.displayName,
@@ -225,7 +227,7 @@ function buildSoccerPlayerOptionFromRosterRow(
     teamHref: href || null,
     number: info?.number ?? null,
     imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-    role: row.position ?? info?.position ?? null,
+    role,
     status: row.matchCount > 0 ? ('cached' as const) : ('test' as const),
     cachedMatchCount: row.matchCount > 0 ? row.matchCount : undefined,
   };
@@ -985,7 +987,7 @@ function SoccerPageContent() {
           teamHref: rowTeamHref || null,
           number: info?.number ?? null,
           imageUrl: lineupImageByNormalizedName.get(norm) ?? null,
-          role: row.position ?? info?.position ?? null,
+          role: normalizeSoccerPositionCode(row.position) ?? info?.position ?? null,
           status: matchCount > 0 ? ('cached' as const) : ('test' as const),
           cachedMatchCount: matchCount > 0 ? matchCount : undefined,
         };
@@ -1046,7 +1048,7 @@ function SoccerPageContent() {
             displayName: String(p.displayName || '').trim(),
             matchCount: Number(p.matchCount) || 0,
             teamHref: normalizeTeamHref(String(p.teamHref || '')),
-            position: String(p.position || '').trim() || null,
+            position: normalizeSoccerPositionCode(p.position),
           }))
           .filter((p) => p.playerKey && p.displayName && p.teamHref && p.matchCount > 0);
         if (!cancelled) setGlobalCachedPlayers(list);
@@ -1084,7 +1086,7 @@ function SoccerPageContent() {
         );
         const data = (await res.json().catch(() => null)) as {
           success?: boolean;
-          players?: Array<{ playerKey?: string; displayName?: string; matchCount?: number }>;
+          players?: Array<{ playerKey?: string; displayName?: string; matchCount?: number; position?: string | null }>;
         } | null;
         if (!res.ok || !data?.success || !Array.isArray(data.players)) {
           if (!cancelled) setCachedSoccerPlayerRoster([]);
@@ -1096,6 +1098,7 @@ function SoccerPageContent() {
             displayName: String(p.displayName || '').trim(),
             matchCount: Number(p.matchCount) || 0,
             teamHref: href,
+            position: normalizeSoccerPositionCode(p.position),
           }))
           .filter((p) => p.playerKey && p.displayName);
         if (!cancelled) setCachedSoccerPlayerRoster(list);

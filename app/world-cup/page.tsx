@@ -814,6 +814,12 @@ function formatWorldCupRole(value: string | null | undefined): string {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+function formatWorldCupPlayerRole(player: WorldCupPlayerOption | null | undefined): string {
+  if (!player) return '';
+  if (classifyWorldCupPositionGroup(player.role)) return formatWorldCupRole(player.role);
+  return formatWorldCupRole(player.positionGroup ?? getWorldCupPlayerGroup(player));
+}
+
 function resolveWorldCupTeamForPlayer(
   player: WorldCupPlayerOption | null,
   teamOptions: WorldCupTeamOption[]
@@ -910,6 +916,8 @@ function mapWorldCupApiPlayerRow(
   const parts = name.split(/\s+/).filter(Boolean);
   const countryName = String(player.country_name || player.country_code || 'World Cup');
   const countryCode = String(player.country_code || '').trim() || null;
+  const rawPosition = String(player.position || '').trim();
+  const positionGroup = resolveWorldCupPlayerGroup(rawPosition);
   const draft: WorldCupPlayerOption = {
     id: String(player.id ?? name),
     name,
@@ -918,8 +926,8 @@ function mapWorldCupApiPlayerRow(
     teamId: null,
     countryCode,
     number: String(player.jersey_number || ''),
-    role: String(player.position || 'FIFA'),
-    positionGroup: resolveWorldCupPlayerGroup(String(player.position || '')),
+    role: classifyWorldCupPositionGroup(rawPosition) ? rawPosition : positionGroup,
+    positionGroup,
     club: String(player.club || player.club_name || player.current_club || '').trim() || null,
   };
   const matchedTeam = resolveWorldCupTeamForPlayer(draft, teamOptions);
@@ -941,7 +949,8 @@ function worldCupPlayerPlaceholderFromHint(hint: string, id?: string | null): Wo
     teamId: null,
     countryCode: null,
     number: '',
-    role: 'FIFA',
+    role: 'MID',
+    positionGroup: 'MID',
     club: null,
   };
 }
@@ -9145,6 +9154,8 @@ export function WorldCupPageContent() {
       const teamId = row.team_id != null ? String(row.team_id) : worldCupData.selectedTeam?.id != null ? String(worldCupData.selectedTeam.id) : null;
       const teamName = teamOptions.find((team) => team.id === teamId)?.name || selectedTeam?.name || worldCupData.selectedTeam?.name || 'World Cup';
       const club = String(player.club || player.club_name || player.current_club || row.club || '').trim() || null;
+      const rawPosition = String(row.position || player.position || '').trim();
+      const positionGroup = resolveWorldCupPlayerGroup(rawPosition);
       return {
         id: String(player.id ?? name),
         name,
@@ -9153,8 +9164,8 @@ export function WorldCupPageContent() {
         teamId,
         countryCode: String(player.country_code || '').trim() || null,
         number: String(player.jersey_number || row.shirt_number || ''),
-        role: String(row.position || player.position || 'FIFA'),
-        positionGroup: resolveWorldCupPlayerGroup(row.position || player.position),
+        role: classifyWorldCupPositionGroup(rawPosition) ? rawPosition : positionGroup,
+        positionGroup,
         club,
       };
     });
@@ -10271,9 +10282,9 @@ export function WorldCupPageContent() {
                               <div className="text-xs text-gray-600 dark:text-gray-400">
                                 {selectedPlayer.teamName || '—'}
                               </div>
-                              {selectedPlayer.role ? (
+                              {formatWorldCupPlayerRole(selectedPlayer) ? (
                                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  Position: {formatWorldCupRole(selectedPlayer.role)}
+                                  Position: {formatWorldCupPlayerRole(selectedPlayer)}
                                 </div>
                               ) : null}
                             </>
@@ -10425,9 +10436,9 @@ export function WorldCupPageContent() {
                                 <div className="text-xs text-gray-600 dark:text-gray-400">
                                   {selectedPlayer.teamName || '—'}
                                 </div>
-                                {selectedPlayer.role ? (
+                                {formatWorldCupPlayerRole(selectedPlayer) ? (
                                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                                    {formatWorldCupRole(selectedPlayer.role)}
+                                    {formatWorldCupPlayerRole(selectedPlayer)}
                                   </div>
                                 ) : null}
                               </div>

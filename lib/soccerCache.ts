@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { enrichPlayerStatsWithPositions } from '@/lib/soccerPlayerPosition';
+import { enrichPlayerStatsWithPositions, normalizeSoccerPositionCode } from '@/lib/soccerPlayerPosition';
 import { getCurrentSoccerSeasonYear } from '@/lib/soccerOpponentBreakdown';
 import {
   filterPlayerMatchStatsToSeasonYear,
@@ -753,7 +753,7 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
         if (!playerKey || !displayName || !teamHref) continue;
 
         const dedupeKey = `${teamHref}|${playerKey}`;
-        const position = String(record.primary_position || '').trim() || null;
+        const position = normalizeSoccerPositionCode(record.primary_position);
         const cacheKey = String(record.cache_key || '');
         const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
         const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
@@ -806,7 +806,7 @@ export async function listSoccerCachedPlayersIndex(options: { quiet?: boolean } 
 
         const dedupeKey = `${teamHref}|${playerKey}`;
         const matchCount = matches.length;
-        const position = String(payload?.primaryPosition || '').trim() || null;
+        const position = normalizeSoccerPositionCode(payload?.primaryPosition);
         const cacheKey = String(record.cache_key || '');
         const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
         const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
@@ -876,7 +876,7 @@ export async function listSoccerCachedPlayerStatsPayloads(
 
         const cacheKey = String(record.cache_key || '');
         const dedupeKey = `${teamHref}|${playerKey}`;
-        const position = String(payload?.primaryPosition || '').trim() || null;
+        const position = normalizeSoccerPositionCode(payload?.primaryPosition);
         const prefersFullSeason = cacheKey.includes(':season:') || cacheKey.endsWith(':season');
         const prefersAllCategories = cacheKey.endsWith(':all') || cacheKey.includes(':all:');
         const matchCount = matches.length;

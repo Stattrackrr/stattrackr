@@ -7,6 +7,7 @@ import {
   type PlayerMatchStats,
 } from '@/lib/soccerPlayerStatsScrape';
 import { fetchSoccerwaySquadPlayers } from '@/lib/soccerwaySquadHtml';
+import { normalizeSoccerPositionCode } from '@/lib/soccerPlayerPosition';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
       return {
         playerKey: p.playerKey,
         displayName: p.displayName,
-        position: cached?.primaryPosition ?? p.position ?? null,
+        position: normalizeSoccerPositionCode(cached?.primaryPosition) ?? normalizeSoccerPositionCode(p.position),
         cached: matches.length > 0,
         generatedAt: cached?.generatedAt ?? null,
         matchCount: matches.length,

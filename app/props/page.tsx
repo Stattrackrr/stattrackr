@@ -7127,7 +7127,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {propsSport === 'world-cup' && (
+                                  <div className="mb-0.5 text-[9px] font-bold uppercase leading-tight text-amber-500 dark:text-amber-300">
+                                    1+ game 2026 World Cup
+                                  </div>
+                                )}
+                                DvP
+                              </th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
@@ -7276,7 +7283,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               </th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
                               <th className={`py-3 px-4 text-left ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>IP</th>
-                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>DvP</th>
+                              <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
+                                {propsSport === 'world-cup' && (
+                                  <div className="mb-0.5 text-[9px] font-bold uppercase leading-tight text-amber-500 dark:text-amber-300">
+                                    1+ game 2026 World Cup
+                                  </div>
+                                )}
+                                DvP
+                              </th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L5</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>L10</th>
                               <th className={`text-center py-3 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_STAT_COL_STYLE}>
@@ -7510,8 +7524,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               style={PROPS_DESKTOP_STAT_COL_STYLE}
                               onClick={() => handleColumnSort('dvp')}
                             >
-                              <div className="flex items-center justify-center gap-1.5">
-                                <span>DvP</span>
+                              <div className="flex flex-col items-center justify-center gap-0.5">
+                                {isWorldCupProps && (
+                                  <span className="text-[9px] font-bold uppercase leading-tight text-amber-500 dark:text-amber-300">
+                                    1+ game 2026 World Cup
+                                  </span>
+                                )}
+                                <span className="flex items-center justify-center gap-1.5">
+                                  <span>DvP</span>
                                 <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                   columnSort.dvp !== 'none' 
                                     ? mounted && isDark ? 'bg-purple-600 border-purple-500' : 'bg-purple-100 border-purple-300'
@@ -7525,6 +7545,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     </svg>
                                   )}
                                 </div>
+                                </span>
                               </div>
                             </th>
                             <th 
@@ -8912,7 +8933,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                               }`}
                             >
-                              <span>DvP</span>
+                              <span className="flex flex-col items-start leading-tight">
+                                {isWorldCupProps && (
+                                  <span className="mb-0.5 flex flex-col text-[8px] font-bold uppercase leading-[0.9] text-amber-500 dark:text-amber-300">
+                                    <span>1+ game 2026</span>
+                                    <span>World Cup</span>
+                                  </span>
+                                )}
+                                <span>DvP</span>
+                              </span>
                               <div className={`inline-flex items-center justify-center w-4 h-4 rounded border ${
                                 columnSort.dvp !== 'none'
                                   ? mounted && isDark ? 'bg-purple-500 border-purple-400' : 'bg-purple-200 border-purple-400'
