@@ -397,7 +397,23 @@ async function wcAfFetch<T>(path: string, params: Record<string, string | number
   for (const [k, v] of Object.entries(params)) {
     if (v != null && v !== '') url.searchParams.set(k, String(v));
   }
-  const response = await fetch(url.toString(), { headers: { 'x-apisports-key': key }, cache: 'no-store' });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), WC_AF_FETCH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      headers: { 'x-apisports-key': key },
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`API-Football ${path} timed out after ${WC_AF_FETCH_TIMEOUT_MS / 1000}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error(`API-Football ${path} failed: ${response.status}`);
   const json = (await response.json()) as { response?: T };
   return (json.response ?? []) as T;
@@ -1071,6 +1087,17 @@ const WC_LIST_ODDS_HORIZON_MS = 36 * 60 * 60 * 1000;
 const WC_LIST_MAX_FIXTURES = 15;
 const WC_LIST_FIXTURE_CONCURRENCY = 3;
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
+const WC_AF_FETCH_TIMEOUT_MS = 120_000;
+
+/** Log x/total during long loops (GitHub Actions has no live spinner). */
+function wcProgressLog(tag: string, done: number, total: number, detail?: string): void {
+  if (total <= 0) return;
+  const step = total <= 25 ? 5 : total <= 100 ? 10 : 25;
+  const suffix = detail ? ` — ${detail}` : '';
+  if (done === 1 || done === total || done % step === 0) {
+    console.log(`[${tag}] ${done}/${total}${suffix}`);
+  }
+}
 
 function wcAfAmericanToDecimal(american: string): number | null {
   const raw = String(american ?? '').trim();
@@ -1318,30 +1345,47 @@ async function wcAfListUpcomingFixtures(): Promise<WorldCupListGame[]> {
   );
 }
 
-async function wcAfProcessFixtureForList(game: WorldCupListGame): Promise<WorldCupListPropRow[]> {
+type WcFixtureListCtx = { index: number; total: number };
+
+async function wcAfProcessFixtureForList(
+  game: WorldCupListGame,
+  ctx?: WcFixtureListCtx
+): Promise<WorldCupListPropRow[]> {
   const fixtureId = Number.parseInt(game.gameId, 10);
   if (!Number.isFinite(fixtureId)) return [];
+  const matchup = `${game.homeTeam} vs ${game.awayTeam}`;
+  const fixTag = ctx ? `fixture ${ctx.index}/${ctx.total}` : 'fixture';
+  console.log(`[wc-odds] ${fixTag} — loading odds (${matchup})...`);
+
   const rawKey = `${WC_AF_ODDS_CACHE_PREFIX}:raw:${fixtureId}`;
   let oddsRows = await sharedCache.getJSON<Parameters<typeof wcAfBuildPlayerOddsBooks>[0]>(rawKey);
   if (!oddsRows?.length) {
     oddsRows = await wcAfFetchOddsRows(fixtureId);
     if (oddsRows.length) await sharedCache.setJSON(rawKey, oddsRows, WC_AF_ODDS_CACHE_TTL_SECONDS);
   }
-  if (!oddsRows?.length) return [];
+  if (!oddsRows?.length) {
+    console.log(`[wc-odds] ${fixTag} — no odds returned (${matchup})`);
+    return [];
+  }
 
   const playerNames = wcAfCollectPlayerNamesFromOddsRows(oddsRows);
+  const totalPlayers = playerNames.length;
+  console.log(`[wc-odds] ${fixTag} — parsing ${totalPlayers} players (${matchup})`);
   const rows: WorldCupListPropRow[] = [];
-  for (const playerName of playerNames) {
+  for (let pi = 0; pi < playerNames.length; pi++) {
+    const playerName = playerNames[pi]!;
     const books = wcAfBuildPlayerOddsBooks(oddsRows, playerName);
     rows.push(...wcAfBooksToListRows(game, playerName, books));
+    wcProgressLog('wc-odds', pi + 1, totalPlayers, `${fixTag} players (${matchup})`);
   }
+  console.log(`[wc-odds] ${fixTag} — ${rows.length} prop rows (${matchup})`);
   return rows;
 }
 
 async function wcAfMapWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  fn: (item: T) => Promise<R>
+  fn: (item: T, index: number) => Promise<R>
 ): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let nextIndex = 0;
@@ -1351,7 +1395,7 @@ async function wcAfMapWithConcurrency<T, R>(
       while (true) {
         const i = nextIndex++;
         if (i >= items.length) break;
-        out[i] = await fn(items[i]!);
+        out[i] = await fn(items[i]!, i);
       }
     })
   );
@@ -1464,11 +1508,16 @@ export async function buildWorldCupPlayerPropsList(opts?: {
   }
 
   try {
+    console.log('[wc-odds] Fetching fixtures in next 36h...');
     const games = await wcAfListUpcomingFixtures();
     const maxFixtures = opts?.maxFixtures ?? WC_LIST_MAX_FIXTURES;
     const targetGames = games.slice(0, maxFixtures);
-    const chunks = await wcAfMapWithConcurrency(targetGames, WC_LIST_FIXTURE_CONCURRENCY, wcAfProcessFixtureForList);
+    console.log(`[wc-odds] ${targetGames.length} fixture(s) in 36h window (max ${maxFixtures})`);
+    const chunks = await wcAfMapWithConcurrency(targetGames, WC_LIST_FIXTURE_CONCURRENCY, (game, index) =>
+      wcAfProcessFixtureForList(game, { index: index + 1, total: targetGames.length })
+    );
     const data = filterWorldCupListPropsByMinOdds(chunks.flat());
+    console.log(`[wc-odds] ${data.length} prop rows after min-odds filter — writing cache...`);
     const lastUpdated = new Date().toISOString();
     if (data.length || targetGames.length) {
       await sharedCache.setJSON(
@@ -2284,7 +2333,12 @@ export async function enrichWorldCupPlayerPropsList(
   wcPropStatsByKeyCache.clear();
   const ctx = await loadWcPropsEnrichContext();
   const out: WorldCupListPropRow[] = [];
-  for (const row of rows) {
+  const total = rows.length;
+  if (total > 0) {
+    console.log(`[wc-odds] Enriching stats for ${total} prop row(s) (cacheOnly=${cacheOnly})...`);
+  }
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
     const dedupe = getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line);
     let stats = wcPropStatsByKeyCache.get(dedupe);
     if (stats === undefined) {
@@ -2315,6 +2369,10 @@ export async function enrichWorldCupPlayerPropsList(
           }
         : {}),
     });
+    wcProgressLog('wc-odds', i + 1, total, 'props enriched');
+  }
+  if (total > 0) {
+    console.log(`[wc-odds] Enrichment complete (${total} rows)`);
   }
   return out;
 }
@@ -2451,9 +2509,7 @@ export async function runWorldCupPropsStatsWarm(
       }
       await Promise.all(batchPromises);
       const done = Math.min(i + WC_PROPS_WARM_BATCH_SIZE * WC_PROPS_WARM_CONCURRENT_BATCHES, toProcess.length);
-      if (done % 100 === 0 || done >= toProcess.length) {
-        console.log('[WC props-stats/warm] Progress:', done, '/', toProcess.length, 'warmed:', warmed);
-      }
+      wcProgressLog('wc-warm', done, toProcess.length, `warmed: ${warmed}`);
     }
 
     const coveragePct = toProcess.length > 0 ? Math.round((warmed / toProcess.length) * 100) : 100;
@@ -2527,6 +2583,9 @@ export async function refreshWorldCupOddsCache(): Promise<{
 }> {
   try {
     const result = await buildWorldCupPlayerPropsList({ refresh: true });
+    console.log(
+      `[wc-odds] List build done — ${result.games.length} games, ${result.data.length} raw props`
+    );
     if (!result.data.length) {
       return {
         success: true,
