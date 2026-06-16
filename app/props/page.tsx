@@ -56,6 +56,8 @@ interface PlayerProp {
   playerId: string;
   team: string;
   opponent: string;
+  wcTeamId?: string | null;
+  wcOpponentTeamId?: string | null;
   statType: string;
   line: number;
   overProb: number;
@@ -116,12 +118,29 @@ function normalizeWorldCupStatForDashboard(stat: string): string {
 }
 
 function navigateToWorldCupDashboardFromProp(
-  prop: Pick<PlayerProp, 'playerName' | 'team' | 'opponent' | 'statType' | 'line' | 'bookmaker'>,
+  prop: Pick<
+    PlayerProp,
+    | 'playerName'
+    | 'playerId'
+    | 'team'
+    | 'opponent'
+    | 'wcTeamId'
+    | 'wcOpponentTeamId'
+    | 'statType'
+    | 'line'
+    | 'bookmaker'
+    | 'gameDate'
+    | 'wcPosition'
+  >,
   router: { push: (href: string) => void },
   lineValue?: number
 ): void {
   const team = String(prop.team || '').trim();
   const opponent = String(prop.opponent || '').trim();
+  const playerId = String(prop.playerId || '').trim();
+  const teamId = String(prop.wcTeamId || '').trim();
+  const opponentTeamId = String(prop.wcOpponentTeamId || '').trim();
+  const matchDate = String(prop.gameDate || '').trim();
   const selectedLine =
     typeof lineValue === 'number' && Number.isFinite(lineValue)
       ? lineValue
@@ -135,11 +154,17 @@ function navigateToWorldCupDashboardFromProp(
       'wc_player_from_props',
       JSON.stringify({
         name: prop.playerName,
+        playerId: /^\d+$/.test(playerId) ? playerId : undefined,
         team: team || undefined,
+        teamId: /^\d+$/.test(teamId) ? teamId : undefined,
         opponent: opponent || undefined,
+        opponentTeamId: /^\d+$/.test(opponentTeamId) ? opponentTeamId : undefined,
         stat: normalizeWorldCupStatForDashboard(prop.statType),
         line: selectedLine,
         bookmaker: selectedBook || undefined,
+        matchDate: matchDate || undefined,
+        position: prop.wcPosition || undefined,
+        fetchedAt: Date.now(),
       })
     );
   } catch {
@@ -149,11 +174,27 @@ function navigateToWorldCupDashboardFromProp(
   const q = new URLSearchParams();
   q.set('mode', 'player');
   q.set('player', prop.playerName);
+  if (/^\d+$/.test(playerId)) q.set('playerId', playerId);
   if (team) q.set('team', team);
+  if (/^\d+$/.test(teamId)) q.set('teamId', teamId);
   if (opponent) q.set('opponent', opponent);
+  if (/^\d+$/.test(opponentTeamId)) q.set('opponentTeamId', opponentTeamId);
   q.set('stat', normalizeWorldCupStatForDashboard(prop.statType));
   if (selectedLine != null) q.set('line', String(selectedLine));
   if (selectedBook) q.set('bookmaker', selectedBook);
+  if (matchDate) q.set('matchDate', matchDate);
+  if (prop.wcPosition) q.set('position', prop.wcPosition);
+
+  const prefetchUrls = [
+    `/api/world-cup/players?search=${encodeURIComponent(prop.playerName)}&competition=world-cup`,
+    `/api/world-cup/dashboard?playerOdds=1&playerName=${encodeURIComponent(prop.playerName)}&homeTeam=${encodeURIComponent(team)}&awayTeam=${encodeURIComponent(opponent)}${matchDate ? `&matchDate=${encodeURIComponent(matchDate)}` : ''}`,
+  ];
+  prefetchUrls.forEach((url) => {
+    fetch(url, { cache: 'default' }).catch(() => {
+      // Navigation should continue even if a prefetch misses.
+    });
+  });
+
   router.push(`/world-cup?${q.toString()}`);
 }
 
@@ -1420,6 +1461,9 @@ export default function NBALandingPage() {
       dvpStatValue?: number | null;
       headshotUrl?: string | null;
       wcPosition?: string | null;
+      playerId?: string | null;
+      teamId?: string | null;
+      opponentTeamId?: string | null;
       aflFantasyPosition?: 'DEF' | 'MID' | 'FWD' | 'RUC' | null;
       aflDfsRole?: string | null;
     }>();
@@ -1461,6 +1505,9 @@ export default function NBALandingPage() {
           dvpStatValue: r.dvpStatValue,
           headshotUrl: r.headshotUrl ?? null,
           wcPosition: r.wcPosition ?? null,
+          playerId: r.playerId != null ? String(r.playerId) : null,
+          teamId: r.teamId != null ? String(r.teamId) : null,
+          opponentTeamId: r.opponentTeamId != null ? String(r.opponentTeamId) : null,
           aflFantasyPosition: r.aflFantasyPosition ?? null,
           aflDfsRole: r.aflDfsRole ?? null,
         });
@@ -1479,9 +1526,11 @@ export default function NBALandingPage() {
 
       return {
         playerName: a.playerName,
-        playerId: '',
+        playerId: a.playerId && /^\d+$/.test(a.playerId) ? a.playerId : '',
         team,
         opponent,
+        wcTeamId: a.teamId && /^\d+$/.test(a.teamId) ? a.teamId : null,
+        wcOpponentTeamId: a.opponentTeamId && /^\d+$/.test(a.opponentTeamId) ? a.opponentTeamId : null,
         statType: a.statType,
         line: a.line,
         overProb: 0,

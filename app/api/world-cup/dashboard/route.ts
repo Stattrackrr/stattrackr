@@ -3411,11 +3411,14 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           const canonicalPlayerMatches = Array.isArray(payload.playerMatches)
             ? (payload.playerMatches as Array<Record<string, any>>)
             : [];
-          const freshPlayer = await refreshDashboardPlayerStats({
-            requestedPlayerId,
-            requestedTeamId,
-            apiKey,
-          });
+          const shouldRefreshPlayerStats = request.nextUrl.searchParams.get('refreshPlayerStats') === '1';
+          const freshPlayer = shouldRefreshPlayerStats
+            ? await refreshDashboardPlayerStats({
+                requestedPlayerId,
+                requestedTeamId,
+                apiKey,
+              })
+            : { playerMatchStats: [], playerMatches: [], matches: [] };
           const existingStats = Array.isArray(payload.playerMatchStats)
             ? (payload.playerMatchStats as Array<Record<string, any>>)
             : [];
@@ -3506,7 +3509,11 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
               lineupPlayerPhotos: (payload.lineupPlayerPhotos as Record<string, string> | undefined) ?? {},
               resolvedSelectedTeam: (payload.selectedTeam as BdlTeam | null | undefined) ?? null,
             }
-          : await resolveDashboardLineups(payload, requestedTeamId, apiKey);
+          : await resolveDashboardLineups(
+              payload,
+              requestedTeamId,
+              request.nextUrl.searchParams.get('refreshLineups') === '1' ? apiKey : undefined
+            );
         let responseBody: Record<string, unknown> = {
           ...payload,
           lineups: lineupRefresh.lineups,
@@ -3549,8 +3556,9 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
     let standings: unknown[] = [];
     let matches: BdlMatch[] = [];
     let futures: unknown[] = [];
+    const allowLiveLineupRefresh = request.nextUrl.searchParams.get('refreshLineups') === '1';
     const { matches2026: liveMatches2026, allSeasonMatches: dashboardAllSeasonMatches } =
-      await loadLineupLookupMatches(apiKey);
+      await loadLineupLookupMatches(apiKey, { cacheOnly: !allowLiveLineupRefresh });
 
     const cachedTeams2026 = await readWcCache<BdlTeam[]>(WC2026.teams);
     if (cachedTeams2026?.length) {
@@ -3689,7 +3697,7 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
         }
       }
 
-      if (!playerMatchStats.length && apiKey) {
+      if (!playerMatchStats.length && apiKey && request.nextUrl.searchParams.get('refreshPlayerStats') === '1') {
         const live = await fetchLivePlayerStatsById(requestedPlayerId, apiKey);
         if (live.length) {
           recordWcSource('playerStats', 'bdl-live', requestedPlayerId);
@@ -3742,7 +3750,7 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           : null,
       },
       requestedTeamId,
-      apiKey
+      allowLiveLineupRefresh ? apiKey : undefined
     );
 
     // ── Player shots (for numeric playerId mode) — cache-first ───────────────

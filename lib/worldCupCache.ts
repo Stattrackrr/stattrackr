@@ -1053,13 +1053,16 @@ export type WorldCupListPropRow = {
   headshotUrl?: string | null;
   wcPosition?: string | null;
   playerTeam?: string | null;
+  playerId?: string | null;
+  teamId?: string | null;
+  opponentTeamId?: string | null;
   wcGamesAvg?: number | null;
   wcGamesHitRate?: { hits: number; total: number } | null;
   wcGameLog?: WorldCupWcGameLogEntry[];
 };
 
 const WC_LIST_RESPONSE_CACHE_KEY = 'wc_props_list_response_v6';
-const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v5';
+const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v7';
 /** Never expire; only replaced when cron runs (same as AFL odds / player-props cache). */
 export const WC_LIST_RESPONSE_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 export const WC_LIST_ENRICHED_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
@@ -1947,8 +1950,14 @@ function wcBuildDvpRankMaps(cached: WcDvpAggregateCached): WcDvpRankMaps {
   const out: WcDvpRankMaps = {};
   for (const [metric, rawValues] of Object.entries(cached.metrics ?? {})) {
     const values: Record<string, number> = {};
-    for (const slug of opponents) values[slug] = rawValues[slug] ?? 0;
-    const sorted = [...opponents].sort((a, b) => values[a] - values[b]);
+    const rankable = opponents.filter((slug) => {
+      const sampleCount = cached.samples?.[slug] ?? 0;
+      const value = rawValues[slug];
+      if (sampleCount <= 0 || value == null || !Number.isFinite(Number(value))) return false;
+      values[slug] = Number(value);
+      return true;
+    });
+    const sorted = [...rankable].sort((a, b) => values[a] - values[b]);
     const ranks: Record<string, number> = {};
     sorted.forEach((slug, idx) => {
       ranks[slug] = idx + 1;
@@ -2001,6 +2010,7 @@ function wcLookupDvpRank(
   if (sampleCount <= 0) return null;
   const entry = rankMaps[metric];
   if (!entry) return null;
+  if (entry.values[slug] == null || !Number.isFinite(Number(entry.values[slug]))) return null;
   const rank = entry.ranks[slug];
   if (!rank) return null;
   return { rank, value: entry.values[slug] ?? 0 };
@@ -2032,6 +2042,13 @@ function wcResolvePlayerPosition(entry: WorldCupPlayerIndexEntry | null): IntlPo
   const wcSource = entry.sources.find((s) => s.competition === 'world-cup' && s.position);
   const raw = wcSource?.position ?? entry.sources.find((s) => s.position)?.position ?? null;
   return classifyIntlPositionString(raw);
+}
+
+function wcResolvePlayerBdlId(entry: WorldCupPlayerIndexEntry | null): string | null {
+  if (!entry) return null;
+  const wcSource = entry.sources.find((s) => s.competition === 'world-cup' && s.source === 'bdl' && s.id);
+  const id = String(wcSource?.id ?? '').trim();
+  return /^\d+$/.test(id) ? id : null;
 }
 
 function wcResolvePlayerTeamForRow(
@@ -2117,10 +2134,16 @@ async function wcResolveBdlTeamId(
 async function wcEnrichRowMeta(
   row: WorldCupListPropRow,
   ctx: WcPropsEnrichContext
-): Promise<Pick<WorldCupListPropRow, 'dvpRating' | 'dvpStatValue' | 'headshotUrl' | 'wcPosition' | 'playerTeam'>> {
+): Promise<
+  Pick<
+    WorldCupListPropRow,
+    'dvpRating' | 'dvpStatValue' | 'headshotUrl' | 'wcPosition' | 'playerTeam' | 'playerId' | 'teamId' | 'opponentTeamId'
+  >
+> {
   const normalized = resolveWorldCupAliasName(normalizeWorldCupPlayerName(row.playerName));
   const entry = ctx.indexByName.get(normalized) ?? ctx.indexByName.get(normalizeWorldCupPlayerName(row.playerName)) ?? null;
   const position = wcResolvePlayerPosition(entry);
+  const playerId = wcResolvePlayerBdlId(entry);
   const { playerTeam, opponent } = wcResolvePlayerTeamForRow(row, entry);
   const metric = wcPropStatToDvpMetric(row.statType);
 
@@ -2150,6 +2173,11 @@ async function wcEnrichRowMeta(
     bdlTeamIds: [playerTeamBdlId, homeBdlId, awayBdlId],
     indexEntry: entry,
   });
+  const opponentTeamBdlId = wcNationMatchesTeam(opponent, row.homeTeam)
+    ? homeBdlId
+    : wcNationMatchesTeam(opponent, row.awayTeam)
+      ? awayBdlId
+      : null;
 
   return {
     dvpRating,
@@ -2157,6 +2185,9 @@ async function wcEnrichRowMeta(
     headshotUrl,
     wcPosition: position,
     playerTeam,
+    playerId,
+    teamId: playerTeamBdlId != null ? String(playerTeamBdlId) : null,
+    opponentTeamId: opponentTeamBdlId != null ? String(opponentTeamBdlId) : null,
   };
 }
 
