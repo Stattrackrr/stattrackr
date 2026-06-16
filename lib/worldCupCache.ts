@@ -247,7 +247,7 @@ const WC_AF_ODDS_BASE = 'https://v3.football.api-sports.io';
 const WC_AF_LEAGUE_ID = 1;
 const WC_AF_SEASON = 2026;
 const WC_AF_ODDS_CACHE_PREFIX = 'wc_af_player_odds_v9';
-const WC_AF_ODDS_PARSER_VERSION = 2;
+const WC_AF_ODDS_PARSER_VERSION = 3;
 const WC_AF_ODDS_CACHE_TTL_SECONDS = 30 * 60;
 
 export async function fetchWorldCupPlayerOdds(opts: {
@@ -794,8 +794,8 @@ function wcAfBuildPlayerOddsBooks(
   for (const row of oddsRows) {
     for (const bookmaker of row.bookmakers ?? []) {
       const name = String(bookmaker.name ?? '').trim();
-      if (!name) continue;
-      const book: WorldCupPlayerOddsBook = { name };
+      if (!name || !wcAfIsListBookmaker(name)) continue;
+      const book: WorldCupPlayerOddsBook = { name: WC_LIST_BOOKMAKER };
       let anytimeMeta: { priority: number; betName: string } | null = null;
       let bookedMeta: { priority: number; betName: string } | null = null;
       const lineMaps: Record<
@@ -955,6 +955,7 @@ export async function probeWorldCupPlayerOddsRaw(opts: {
 
   for (const row of oddsRows) {
     for (const bookmaker of row.bookmakers ?? []) {
+      if (!wcAfIsListBookmaker(String(bookmaker.name ?? ''))) continue;
       for (const bet of bookmaker.bets ?? []) {
         const betName = String(bet.name ?? '');
         const betScope = wcAfBetNamePlayerScope(betName, playerKeys);
@@ -1077,8 +1078,10 @@ export type WorldCupListPropRow = {
   wcGameLog?: WorldCupWcGameLogEntry[];
 };
 
-const WC_LIST_RESPONSE_CACHE_KEY = 'wc_props_list_response_v6';
-const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v7';
+const WC_LIST_RESPONSE_CACHE_KEY = 'wc_props_list_response_v7';
+const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v8';
+/** Props page + ingest: only this bookmaker (API-Football name). */
+const WC_LIST_BOOKMAKER = 'Bet365';
 /** Never expire; only replaced when cron runs (same as AFL odds / player-props cache). */
 export const WC_LIST_RESPONSE_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 export const WC_LIST_ENRICHED_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
@@ -1088,6 +1091,11 @@ const WC_LIST_MAX_FIXTURES = 15;
 const WC_LIST_FIXTURE_CONCURRENCY = 3;
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 const WC_AF_FETCH_TIMEOUT_MS = 120_000;
+
+function wcAfIsListBookmaker(bookmakerName: string): boolean {
+  const n = String(bookmakerName ?? '').trim().toLowerCase();
+  return n === 'bet365' || n.startsWith('bet365 ');
+}
 
 /** Log x/total during long loops (GitHub Actions has no live spinner). */
 function wcProgressLog(tag: string, done: number, total: number, detail?: string): void {
@@ -1208,6 +1216,7 @@ function wcAfCollectPlayerNamesFromOddsRows(
 
   for (const row of oddsRows) {
     for (const bookmaker of row.bookmakers ?? []) {
+      if (!wcAfIsListBookmaker(String(bookmaker.name ?? ''))) continue;
       for (const bet of bookmaker.bets ?? []) {
         if (!wcAfClassifyBet(String(bet.name ?? ''))) continue;
         for (const value of bet.values ?? []) {
@@ -1508,7 +1517,7 @@ export async function buildWorldCupPlayerPropsList(opts?: {
   }
 
   try {
-    console.log('[wc-odds] Fetching fixtures in next 36h...');
+    console.log('[wc-odds] Fetching fixtures in next 36h (Bet365 only)...');
     const games = await wcAfListUpcomingFixtures();
     const maxFixtures = opts?.maxFixtures ?? WC_LIST_MAX_FIXTURES;
     const targetGames = games.slice(0, maxFixtures);
@@ -2586,24 +2595,13 @@ export async function refreshWorldCupOddsCache(): Promise<{
     console.log(
       `[wc-odds] List build done — ${result.games.length} games, ${result.data.length} raw props`
     );
-    if (!result.data.length) {
-      return {
-        success: true,
-        gamesCount: result.games.length,
-        propsCount: 0,
-        lastUpdated: result.lastUpdated,
-        ingestMessage: result.ingestMessage || 'No World Cup props returned.',
-      };
-    }
-    const enriched = await enrichWorldCupPlayerPropsList(result.data, { cacheOnly: true });
-    const filtered = filterWorldCupPropsWithPlayerCategoryStats(result.games, enriched);
-    const lastUpdated = result.lastUpdated ?? new Date().toISOString();
-    await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
+    // Odds list cache is written by buildWorldCupPlayerPropsList above.
+    // Enriched cache (odds + hit rates) is built after props-stats warm — not here.
     return {
       success: true,
-      gamesCount: filtered.games.length,
-      propsCount: filtered.data.length,
-      lastUpdated,
+      gamesCount: result.games.length,
+      propsCount: result.data.length,
+      lastUpdated: result.lastUpdated,
       ingestMessage: result.ingestMessage,
     };
   } catch (err) {

@@ -283,7 +283,7 @@ async function runRefreshOdds(): Promise<void> {
   if (!result.propsCount) {
     console.warn('[wc-odds] No props returned. Check API_FOOTBALL_KEY and fixtures in the next 36h.');
   } else {
-    console.log(`[wc-odds] Enriched cache written (${result.propsCount} rows)`);
+    console.log(`[wc-odds] Odds list cache written (${result.propsCount} rows; stats warm in Phase 4)`);
   }
 }
 
@@ -292,6 +292,7 @@ async function runWarmPropsStats(): Promise<void> {
     runWorldCupPropsStatsWarm,
     buildWorldCupPlayerPropsList,
     enrichWorldCupPlayerPropsList,
+    filterWorldCupPropsWithPlayerCategoryStats,
     setWorldCupEnrichedListCache,
   } = await import('../lib/worldCupCache');
 
@@ -304,10 +305,18 @@ async function runWarmPropsStats(): Promise<void> {
 
   try {
     const list = await buildWorldCupPlayerPropsList();
+    console.log(`[wc-warm] Rebuilding enriched props cache (${list.data.length} odds rows)...`);
     const enriched = await enrichWorldCupPlayerPropsList(list.data, { cacheOnly: false });
+    const filtered = filterWorldCupPropsWithPlayerCategoryStats(list.games, enriched);
     const lastUpdated = new Date().toISOString();
-    await setWorldCupEnrichedListCache({ games: list.games, data: enriched, lastUpdated });
-    console.log(`[wc-warm] Enriched list rebuilt (${enriched.length} rows)`);
+    await setWorldCupEnrichedListCache({
+      games: filtered.games,
+      data: filtered.data,
+      lastUpdated,
+    });
+    console.log(
+      `[wc-warm] Enriched cache written (${filtered.data.length} props with stats, ${list.data.length} odds rows ingested)`
+    );
   } catch (e) {
     console.warn('[wc-warm] enriched list rebuild failed:', e);
   }
@@ -319,6 +328,8 @@ async function runFullPipeline(argv: string[]): Promise<void> {
     (a) => !['--full-pipeline', '--skip-local', '--skip-prod'].includes(a)
   );
 
+  let localOddsIngested = false;
+
   if (!argv.includes('--skip-local')) {
     console.log('\n[wc-pipeline] Phase 1/4 — Dashboard cache (BDL ingest, side panels, DvP, team dashboards)\n');
     await runDashboardWarm(warmArgs);
@@ -327,6 +338,7 @@ async function runFullPipeline(argv: string[]): Promise<void> {
     if (apiFootballKey) {
       console.log('\n[wc-pipeline] Phase 2/4 — Odds ingest (API-Football to Supabase)\n');
       await runRefreshOdds();
+      if (!process.exitCode) localOddsIngested = true;
     } else {
       console.warn('[wc-pipeline] Phase 2/4 skipped — API_FOOTBALL_KEY not set');
     }
@@ -341,10 +353,16 @@ async function runFullPipeline(argv: string[]): Promise<void> {
   } else if (!prodUrl || !cronSecret) {
     console.warn('[wc-pipeline] Phases 3–4 skipped — PROD_URL or CRON_SECRET not set');
   } else {
-    console.log('\n[wc-pipeline] Phase 3/4 — Production odds + props list refresh\n');
-    await runTriggerWorldCupOddsApi();
-    if (process.exitCode) process.exit(process.exitCode);
-    console.log('\n[wc-pipeline] Phase 4/4 — Production props-stats warm + props page cache\n');
+    if (localOddsIngested) {
+      console.log(
+        '\n[wc-pipeline] Phase 3/4 skipped — odds list already in shared cache from Phase 2 (prod reads same Supabase/Upstash)\n'
+      );
+    } else {
+      console.log('\n[wc-pipeline] Phase 3/4 — Production odds + props list refresh\n');
+      await runTriggerWorldCupOddsApi();
+      if (process.exitCode) process.exit(process.exitCode);
+    }
+    console.log('\n[wc-pipeline] Phase 4/4 — Props-stats warm + enriched props page cache\n');
     process.env.WC_WARM_USE_LIST = '1';
     await runWarmPropsStats();
   }
