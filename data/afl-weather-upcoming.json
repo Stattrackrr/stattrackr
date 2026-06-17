@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T15:51:18.087Z",
+  "generatedAt": "2026-06-17T14:25:50.156Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-06-18T10:10:00Z",
       "weather": {
-        "temperatureC": 12.5,
+        "temperatureC": 12,
         "precipitationMm": 0,
-        "windKmh": 1.9
+        "windKmh": 2.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-06-19T09:40:00Z",
       "weather": {
-        "temperatureC": 18.1,
+        "temperatureC": 18,
         "precipitationMm": 0,
-        "windKmh": 11.4
+        "windKmh": 12.1
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-06-20T03:15:00Z",
       "weather": {
-        "temperatureC": 13,
-        "precipitationMm": 0.1,
-        "windKmh": 8.5
+        "temperatureC": 13.4,
+        "precipitationMm": 0,
+        "windKmh": 5.8
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-06-20T06:15:24Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 17.6,
         "precipitationMm": 0,
-        "windKmh": 11.8
+        "windKmh": 1.5
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-06-20T09:35:00Z",
       "weather": {
-        "temperatureC": 11.4,
-        "precipitationMm": 1.2,
-        "windKmh": 15.8
+        "temperatureC": 10.4,
+        "precipitationMm": 0,
+        "windKmh": 6.2
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-06-21T03:10:24Z",
       "weather": {
-        "temperatureC": 12.1,
-        "precipitationMm": 0.1,
-        "windKmh": 7.1
+        "temperatureC": 10.6,
+        "precipitationMm": 0,
+        "windKmh": 2.3
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-06-21T05:15:59Z",
       "weather": {
-        "temperatureC": 12,
-        "precipitationMm": 0.4,
-        "windKmh": 11.9
+        "temperatureC": 11.4,
+        "precipitationMm": 0,
+        "windKmh": 4.2
       }
     }
   ],
