@@ -2228,8 +2228,6 @@ function wcLookupDvpRank(
   if (!cached || !rankMaps) return null;
   const slug = wcResolveOpponentDvpSlug(opponentTeamName, cached);
   if (!slug) return null;
-  const sampleCount = cached.samples?.[slug] ?? 0;
-  if (sampleCount <= 0) return null;
   const entry = rankMaps[metric];
   if (!entry) return null;
   if (entry.values[slug] == null || !Number.isFinite(Number(entry.values[slug]))) return null;
@@ -2243,6 +2241,7 @@ function wcPropStatToDvpMetric(statType: string): string | null {
   if (statType === 'assists') return 'assists';
   if (statType === 'total_shots') return 'shots_total';
   if (statType === 'shots_on_target') return 'shots_on_target';
+  if (statType === 'fouls_committed') return 'fouls';
   if (statType === 'yellow_cards') return 'yellow_cards';
   return null;
 }
@@ -2591,10 +2590,10 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
       const reasons: string[] = [];
       if (!entry) reasons.push('player not in index (npm run build:world-cup:player-index)');
       if (!position) reasons.push('no position on index entry');
-      if (!metric) reasons.push(`stat "${row.statType}" has no DvP metric (fouls are unsupported)`);
+      if (!metric) reasons.push(`stat "${row.statType}" has no DvP metric`);
       else if (!metricOk) reasons.push(`metric "${metric}" not tracked for ${position}`);
       if (!position || !ctx.dvpByPosition.has(position)) reasons.push('2026 WC DvP cache empty (npm run build:world-cup:bdl-cache)');
-      else if (!slugResolved) reasons.push(`opponent "${opponent}" not in DvP slug map`);
+      else if (position && metricOk && !slugResolved) reasons.push(`opponent "${opponent}" not in DvP slug map`);
       console.log(`  DvP N/A because: ${reasons.join('; ')}`);
     }
     console.log('');
