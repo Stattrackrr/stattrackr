@@ -1873,7 +1873,6 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
               playerUrl.searchParams.set('teamId', String(teamId));
               playerUrl.searchParams.set('playerId', String(playerId));
               playerUrl.searchParams.set('playerName', playerName);
-              playerUrl.searchParams.set('rebuildDashboard', '1');
               const playerRes = await GET(new NextRequest(playerUrl));
               if (playerRes.ok) playersWarmed += 1;
             } catch {
@@ -1888,7 +1887,7 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
                 `(${skippedNoOdds} without odds, ${unresolved} unresolved)`
             );
           } else if (candidates > 0) {
-            log(`[team-dashboard] ${teamName} live-odds players warmed/attempted: ${candidates} (${skippedNoOdds} roster players skipped)`);
+            log(`[team-dashboard] ${teamName} live-odds players cache-checked/warmed: ${candidates} (${skippedNoOdds} roster players skipped)`);
           }
         }
       })
