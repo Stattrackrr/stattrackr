@@ -4651,7 +4651,7 @@ export default function AFLPage() {
                           ) : aflDisposalsPastLinesCompleted.length === 0 ? (
                             <div className="text-xs text-gray-500 dark:text-gray-400">No completed games yet.</div>
                           ) : (
-                            <div className="overflow-x-auto">
+                            <div className="max-h-[15.5rem] overflow-y-auto overflow-x-auto pr-1">
                               <table className="min-w-full text-sm">
                                 <thead>
                                   <tr className="text-left text-gray-700 dark:text-white border-b border-gray-200 dark:border-gray-700">
@@ -5146,7 +5146,7 @@ export default function AFLPage() {
                         ) : aflDisposalsPastLinesCompleted.length === 0 ? (
                           <div className="text-xs text-gray-500 dark:text-gray-400">No completed games yet.</div>
                         ) : (
-                          <div className="overflow-x-auto">
+                          <div className="max-h-[15.5rem] overflow-y-auto overflow-x-auto pr-1">
                             <table className="min-w-full text-sm">
                               <thead>
                                 <tr className="text-left text-gray-700 dark:text-white border-b border-gray-200 dark:border-gray-700">

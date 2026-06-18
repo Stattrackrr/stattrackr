@@ -36,9 +36,9 @@ async function runDashboardWarm(argv: string[]): Promise<void> {
   const skipPhotos = argv.includes('--skip-photos');
   const skipIntl = argv.includes('--skip-intl');
   const skipTeamDashboards = argv.includes('--skip-team-dashboards');
-const skipCachedTeams = argv.includes('--skip-cached-teams');
-const skipPlayerDashboards = argv.includes('--skip-player-dashboards');
-const dryRun = argv.includes('--dry-run');
+  const skipCachedTeams = argv.includes('--skip-cached-teams');
+  const skipPlayerDashboards = argv.includes('--skip-player-dashboards');
+  const dryRun = argv.includes('--dry-run');
 
   function passThroughFlags(): string[] {
     const out: string[] = [];

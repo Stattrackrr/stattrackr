@@ -78,10 +78,10 @@ jobs:
             exit 1
           fi
 
-      - name: Ingest BDL stats and warm dashboard, side panels, and DvP
+      - name: Ingest BDL stats and warm team dashboards, side panels, and DvP
         run: |
           set -euo pipefail
-          ARGS="--dashboard-warm"
+          ARGS="--dashboard-warm --skip-player-dashboards"
           if [ "${{ github.event.inputs.full_rebuild }}" = "true" ]; then
             ARGS="${ARGS} --full"
           fi
@@ -98,6 +98,14 @@ jobs:
           set -euo pipefail
           echo "Refreshing API-Football Bet365 player props list for next 36h..."
           npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --refresh-odds
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Warm live-odds player dashboards
+        run: |
+          set -euo pipefail
+          echo "Warming World Cup player dashboards only for players with live Bet365 odds..."
+          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --dashboard-warm --step=10 --skip-intl --skip-cached-teams
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
 

@@ -17,8 +17,9 @@
  * Breakdown card is instant. Re-run the precompute script to refresh.
  */
 import { resolveWorldCupFlagCode } from './worldCupFlags';
-import { getWorldCupCache, setWorldCupCache, deleteWorldCupCacheByPrefix } from './worldCupCache';
+import { getWorldCupCache, setWorldCupCache, deleteWorldCupCacheByPrefix, buildWorldCupPlayerPropsList } from './worldCupCache';
 import { loadInternationalTeamStatsByCountry } from './internationalDashboard';
+import { resolveWorldCupAliasName } from './worldCupPlayerAliases';
 
 // ---------------------------------------------------------------------------
 // Shared team-match-stat building blocks (also used by the Game Props chart)
@@ -1614,6 +1615,36 @@ function bdlPlayerNameFromRow(row: Record<string, unknown>): string {
   ).trim();
 }
 
+function normalizeWarmPlayerName(name: string): string {
+  return resolveWorldCupAliasName(
+    String(name || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  );
+}
+
+async function loadLiveOddsPlayerDashboardTargets(log: (msg: string) => void): Promise<{
+  names: Set<string>;
+  ids: Set<string>;
+  rows: number;
+}> {
+  const list = await buildWorldCupPlayerPropsList({ cacheOnly: true });
+  const names = new Set<string>();
+  const ids = new Set<string>();
+
+  for (const row of list.data ?? []) {
+    const normalizedName = normalizeWarmPlayerName(row.playerName);
+    if (normalizedName) names.add(normalizedName);
+    if (row.playerId) ids.add(String(row.playerId));
+  }
+
+  log(`[team-dashboard] live-odds player targets: ${names.size} names, ${ids.size} ids from ${list.data.length} prop rows`);
+  return { names, ids, rows: list.data.length };
+}
+
 /** Team Share fields embedded on the team dashboard cache blob (2026 WC only). */
 export async function buildTeamShareFieldsForTeamDashboard(
   teamId: number,
@@ -1716,9 +1747,14 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
   let playersWarmed = 0;
   let skipped = 0;
   let failed = 0;
+  const liveOddsTargets = skipPlayerDashboards ? null : await loadLiveOddsPlayerDashboardTargets(log);
 
   log(
-    `[team-dashboard] warming ${teamIds.length} team dashboards (concurrency=${concurrency}, force rebuild${skipPlayerDashboards ? ', skip player dashboards' : ' + player props'})`
+    `[team-dashboard] warming ${teamIds.length} team dashboards (concurrency=${concurrency}, ${
+      incremental ? 'cached teams allowed' : 'force rebuild'
+    }${
+      skipPlayerDashboards ? ', skip player dashboards' : ' + live-odds player dashboards'
+    })`
   );
 
   for (let i = 0; i < teamIds.length; i += concurrency) {
@@ -1773,6 +1809,11 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
         }
 
         if (teamReady && !skipPlayerDashboards) {
+          if (!liveOddsTargets || liveOddsTargets.rows === 0) {
+            log(`[team-dashboard] ${teamName} player warm skipped — no live odds targets in cache`);
+            return;
+          }
+
           const [roster, squad] = await Promise.all([
             getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.rosterForTeam(teamId)),
             getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playersForTeam(teamId)),
@@ -1786,11 +1827,18 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
 
           let candidates = 0;
           let unresolved = 0;
+          let skippedNoOdds = 0;
           for (const row of roster ?? []) {
             const playerId = bdlPlayerIdFromRow(row);
             const playerName = playerId != null ? bdlPlayerNameFromRow(row) || nameById.get(playerId) : '';
             if (playerId == null || !playerName) {
               unresolved += 1;
+              continue;
+            }
+            const hasLiveOdds =
+              liveOddsTargets.ids.has(String(playerId)) || liveOddsTargets.names.has(normalizeWarmPlayerName(playerName));
+            if (!hasLiveOdds) {
+              skippedNoOdds += 1;
               continue;
             }
             candidates += 1;
@@ -1811,7 +1859,12 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
           }
 
           if ((roster?.length ?? 0) > 0 && candidates === 0) {
-            log(`[team-dashboard] ${teamName} player warm skipped — ${unresolved} roster row(s) had no resolvable player id/name`);
+            log(
+              `[team-dashboard] ${teamName} player warm skipped — no roster players with live odds ` +
+                `(${skippedNoOdds} without odds, ${unresolved} unresolved)`
+            );
+          } else if (candidates > 0) {
+            log(`[team-dashboard] ${teamName} live-odds players warmed/attempted: ${candidates} (${skippedNoOdds} roster players skipped)`);
           }
         }
       })
