@@ -1496,7 +1496,7 @@ async function readWorldCupPlayerPropsListCache(): Promise<{
   data: WorldCupListPropRow[];
   lastUpdated: string | null;
 } | null> {
-  const cached = await sharedCache.getJSON<{
+  const cached = await getWorldCupCache<{
     games: WorldCupListGame[];
     data: WorldCupListPropRow[];
     lastUpdated: string;
@@ -1608,11 +1608,7 @@ export async function buildWorldCupPlayerPropsList(opts?: {
     const data = filterWorldCupListPropsByMinOdds(chunks.flat());
     console.log(`[wc-odds] ${data.length} prop rows after min-odds filter — writing cache...`);
     const lastUpdated = new Date().toISOString();
-    await sharedCache.setJSON(
-      WC_LIST_RESPONSE_CACHE_KEY,
-      { games: targetGames, data, lastUpdated },
-      WC_LIST_RESPONSE_CACHE_TTL_SECONDS
-    );
+    await setWorldCupCache(WC_LIST_RESPONSE_CACHE_KEY, { games: targetGames, data, lastUpdated });
     return {
       games: targetGames,
       data,
@@ -2873,7 +2869,7 @@ export async function getWorldCupEnrichedListCache(): Promise<{
   data: WorldCupListPropRow[];
   lastUpdated: string;
 } | null> {
-  const cached = await sharedCache.getJSON<{
+  const cached = await getWorldCupCache<{
     games: WorldCupListGame[];
     data: WorldCupListPropRow[];
     lastUpdated: string;
@@ -2896,7 +2892,7 @@ export async function setWorldCupEnrichedListCache(payload: {
   data: WorldCupListPropRow[];
   lastUpdated: string;
 }): Promise<void> {
-  await sharedCache.setJSON(WC_LIST_ENRICHED_RESPONSE_CACHE_KEY, payload, WC_LIST_ENRICHED_CACHE_TTL_SECONDS);
+  await setWorldCupCache(WC_LIST_ENRICHED_RESPONSE_CACHE_KEY, payload);
 }
 
 /** Build props-page payload from odds list + warmed prop-stats caches (self-heal when enriched blob missing). */

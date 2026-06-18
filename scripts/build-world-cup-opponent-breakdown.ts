@@ -273,6 +273,7 @@ async function runRefreshOdds(): Promise<void> {
   const { refreshWorldCupOddsCache } = await import('../lib/worldCupCache');
 
   console.log('[wc-odds] Refreshing World Cup props list (API-Football)...');
+  console.log('[wc-odds] odds list cache backend: Supabase world_cup_cache');
   const result = await refreshWorldCupOddsCache();
   console.log(`[wc-odds] games=${result.gamesCount} props=${result.propsCount}`);
   if (result.ingestMessage) console.log(`[wc-odds] ${result.ingestMessage}`);
@@ -296,6 +297,7 @@ async function runWarmPropsStats(): Promise<void> {
 
   const baseUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
   const useListApi = process.env.WC_WARM_USE_LIST === '1';
+  console.log('[wc-warm] odds/enriched list cache backend: Supabase world_cup_cache');
   console.log(`[wc-warm] Warming props stats (useListApi=${useListApi})...`);
   const result = await runWorldCupPropsStatsWarm(baseUrl, { useListApi });
   console.log('[wc-warm]', JSON.stringify(result, null, 2));

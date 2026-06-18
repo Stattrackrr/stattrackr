@@ -1631,6 +1631,7 @@ async function loadLiveOddsPlayerDashboardTargets(log: (msg: string) => void): P
   ids: Set<string>;
   rows: number;
 }> {
+  log('[team-dashboard] reading live-odds targets from Supabase world_cup_cache');
   const list = await buildWorldCupPlayerPropsList({ cacheOnly: true });
   const names = new Set<string>();
   const ids = new Set<string>();
