@@ -1740,6 +1740,7 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
   competition?: string;
   incremental?: boolean;
   skipPlayerDashboards?: boolean;
+  liveOddsPlayerOnly?: boolean;
   concurrency?: number;
   politeMs?: number;
   log?: (msg: string) => void;
@@ -1748,6 +1749,7 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
   const competition = opts?.competition ?? 'world-cup';
   const incremental = opts?.incremental ?? true;
   const skipPlayerDashboards = opts?.skipPlayerDashboards ?? false;
+  const liveOddsPlayerOnly = opts?.liveOddsPlayerOnly ?? false;
   const concurrency = Math.max(1, Math.min(opts?.concurrency ?? 3, 6));
   const politeMs = opts?.politeMs ?? 150;
   const log = opts?.log ?? (() => {});
@@ -1773,7 +1775,11 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
     `[team-dashboard] warming ${teamIds.length} team dashboards (concurrency=${concurrency}, ${
       incremental ? 'cached teams allowed' : 'force rebuild'
     }${
-      skipPlayerDashboards ? ', skip player dashboards' : ' + live-odds player dashboards'
+      skipPlayerDashboards
+        ? ', skip player dashboards'
+        : liveOddsPlayerOnly
+          ? ', live-odds players only'
+          : ' + live-odds player dashboards'
     })`
   );
 
@@ -1784,6 +1790,11 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
         const teamName = teams.find((t) => Number(t.id) === teamId)?.name ?? String(teamId);
         const cacheKey = teamDashboardCacheKey(competition, season, teamId);
         let teamReady = false;
+
+        if (liveOddsPlayerOnly && liveOddsTargets && !liveOddsTargets.teams.has(normalizeWarmTeamName(teamName))) {
+          skipped += 1;
+          return;
+        }
 
         if (incremental) {
           const cached = await getWorldCupCache<Record<string, unknown>>(cacheKey);
@@ -1798,6 +1809,12 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
               teamReady = true;
             }
           }
+        }
+
+        if (liveOddsPlayerOnly && !teamReady) {
+          failed += 1;
+          log(`[team-dashboard] ${teamName} player warm skipped — team dashboard cache missing`);
+          return;
         }
 
         if (!teamReady) {

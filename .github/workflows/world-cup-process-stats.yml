@@ -1,8 +1,7 @@
-# Single World Cup stats workflow, mirrored from AFL Process Stats:
-# 1. Incrementally ingest BDL 2026 stats and rebuild dashboard side panels + DvP.
-# 2. Refresh API-Football Bet365 player props for fixtures in the next 36 hours.
-# 3. Warm props-page hit-rate caches for every player with odds, then rebuild the enriched props list.
-# 4. Warm the combined props snapshot so /props and /props?sport=world-cup serve fresh rows immediately.
+# Frequent World Cup props-page workflow:
+# 1. Refresh API-Football Bet365 player props for fixtures in the next 36 hours.
+# 2. Warm props-page hit-rate caches and rebuild the enriched/combined props caches.
+# Heavy BDL/DvP/team/player dashboard warming lives in world-cup-dashboard-warm.yml.
 name: World Cup Process Stats
 
 on:
@@ -10,16 +9,6 @@ on:
     - cron: '0 */2 * * *' # Every 2 hours, same cadence as AFL
   workflow_dispatch:
     inputs:
-      full_rebuild:
-        description: 'Full BDL rebuild instead of incremental'
-        required: false
-        type: boolean
-        default: false
-      with_photos:
-        description: 'Include squad photo warm'
-        required: false
-        type: boolean
-        default: false
       diagnose_limit:
         description: 'Number of props rows to print in the final diagnostic sample'
         required: false
@@ -35,7 +24,7 @@ env:
 jobs:
   process_stats:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
     env:
       PROD_URL: ${{ secrets.PROD_URL }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -78,34 +67,11 @@ jobs:
             exit 1
           fi
 
-      - name: Ingest BDL stats and warm team dashboards, side panels, and DvP
-        run: |
-          set -euo pipefail
-          ARGS="--dashboard-warm --skip-player-dashboards"
-          if [ "${{ github.event.inputs.full_rebuild }}" = "true" ]; then
-            ARGS="${ARGS} --full"
-          fi
-          if [ "${{ github.event.inputs.with_photos }}" = "true" ]; then
-            ARGS="${ARGS} --with-photos"
-          fi
-          echo "Running: npx tsx scripts/build-world-cup-opponent-breakdown.ts ${ARGS}"
-          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts ${ARGS}
-        env:
-          NODE_OPTIONS: '--max-old-space-size=8192'
-
       - name: Refresh Bet365 odds for next 36 hours
         run: |
           set -euo pipefail
           echo "Refreshing API-Football Bet365 player props list for next 36h..."
           npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --refresh-odds
-        env:
-          NODE_OPTIONS: '--max-old-space-size=8192'
-
-      - name: Warm live-odds player dashboards
-        run: |
-          set -euo pipefail
-          echo "Warming World Cup player dashboards only for players with live Bet365 odds..."
-          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --dashboard-warm --step=10 --skip-intl --skip-cached-teams
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
 
@@ -118,6 +84,7 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=8192'
 
       - name: Diagnose props DvP and hit-rate coverage
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
           LIMIT="${{ github.event.inputs.diagnose_limit || '40' }}"

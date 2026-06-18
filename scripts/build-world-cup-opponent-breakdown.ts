@@ -38,6 +38,7 @@ async function runDashboardWarm(argv: string[]): Promise<void> {
   const skipTeamDashboards = argv.includes('--skip-team-dashboards');
   const skipCachedTeams = argv.includes('--skip-cached-teams');
   const skipPlayerDashboards = argv.includes('--skip-player-dashboards');
+  const liveOddsPlayerOnly = argv.includes('--live-odds-player-only');
   const dryRun = argv.includes('--dry-run');
 
   function passThroughFlags(): string[] {
@@ -120,6 +121,7 @@ async function runDashboardWarm(argv: string[]): Promise<void> {
       const result = await warmWorldCupTeamDashboardCaches({
         incremental: skipCachedTeams,
         skipPlayerDashboards,
+        liveOddsPlayerOnly,
         log: (msg) => console.log(msg),
       });
       if (result.failed && !result.warmed) process.exitCode = 1;
