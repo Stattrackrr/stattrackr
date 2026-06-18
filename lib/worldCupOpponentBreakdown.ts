@@ -1626,24 +1626,43 @@ function normalizeWarmPlayerName(name: string): string {
   );
 }
 
+function normalizeWarmTeamName(name: string): string {
+  return String(name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 async function loadLiveOddsPlayerDashboardTargets(log: (msg: string) => void): Promise<{
   names: Set<string>;
   ids: Set<string>;
+  teams: Set<string>;
   rows: number;
 }> {
   log('[team-dashboard] reading live-odds targets from Supabase world_cup_cache');
   const list = await buildWorldCupPlayerPropsList({ cacheOnly: true });
   const names = new Set<string>();
   const ids = new Set<string>();
+  const teams = new Set<string>();
 
   for (const row of list.data ?? []) {
     const normalizedName = normalizeWarmPlayerName(row.playerName);
     if (normalizedName) names.add(normalizedName);
     if (row.playerId) ids.add(String(row.playerId));
+    const homeTeam = normalizeWarmTeamName(row.homeTeam);
+    const awayTeam = normalizeWarmTeamName(row.awayTeam);
+    const playerTeam = normalizeWarmTeamName(row.playerTeam ?? '');
+    if (homeTeam) teams.add(homeTeam);
+    if (awayTeam) teams.add(awayTeam);
+    if (playerTeam) teams.add(playerTeam);
   }
 
-  log(`[team-dashboard] live-odds player targets: ${names.size} names, ${ids.size} ids from ${list.data.length} prop rows`);
-  return { names, ids, rows: list.data.length };
+  log(
+    `[team-dashboard] live-odds player targets: ${names.size} names, ${ids.size} ids, ${teams.size} teams from ${list.data.length} prop rows`
+  );
+  return { names, ids, teams, rows: list.data.length };
 }
 
 /** Team Share fields embedded on the team dashboard cache blob (2026 WC only). */
@@ -1812,6 +1831,10 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
         if (teamReady && !skipPlayerDashboards) {
           if (!liveOddsTargets || liveOddsTargets.rows === 0) {
             log(`[team-dashboard] ${teamName} player warm skipped — no live odds targets in cache`);
+            return;
+          }
+          if (!liveOddsTargets.teams.has(normalizeWarmTeamName(teamName))) {
+            log(`[team-dashboard] ${teamName} player warm skipped — team not in live odds window`);
             return;
           }
 
