@@ -1595,6 +1595,25 @@ function hasEmbeddedTeamShare(payload: Record<string, unknown> | null | undefine
   );
 }
 
+function bdlPlayerIdFromRow(row: Record<string, unknown>): number | null {
+  const nested = row.player && typeof row.player === 'object' ? (row.player as Record<string, unknown>) : {};
+  const id = Number(row.player_id ?? nested.id ?? row.id);
+  return Number.isFinite(id) ? id : null;
+}
+
+function bdlPlayerNameFromRow(row: Record<string, unknown>): string {
+  const nested = row.player && typeof row.player === 'object' ? (row.player as Record<string, unknown>) : {};
+  return String(
+    row.name ??
+      row.full_name ??
+      row.short_name ??
+      nested.name ??
+      nested.full_name ??
+      nested.short_name ??
+      ''
+  ).trim();
+}
+
 /** Team Share fields embedded on the team dashboard cache blob (2026 WC only). */
 export async function buildTeamShareFieldsForTeamDashboard(
   teamId: number,
@@ -1754,38 +1773,47 @@ export async function warmWorldCupTeamDashboardCaches(opts?: {
         }
 
         if (teamReady && !skipPlayerDashboards) {
-            const [roster, squad] = await Promise.all([
-              getWorldCupCache<Array<{ player_id?: number }>>(WC2026_CACHE_KEYS.rosterForTeam(teamId)),
-              getWorldCupCache<Array<{ id?: number; name?: string; short_name?: string }>>(
-                WC2026_CACHE_KEYS.playersForTeam(teamId)
-              ),
-            ]);
-            const nameById = new Map<number, string>();
-            for (const p of squad ?? []) {
-              const id = Number(p.id);
-              const name = String(p.name || p.short_name || '').trim();
-              if (Number.isFinite(id) && name) nameById.set(id, name);
-            }
-            for (const row of roster ?? []) {
-              const playerId = Number(row.player_id);
-              const playerName = Number.isFinite(playerId) ? nameById.get(playerId) : undefined;
-              if (!Number.isFinite(playerId) || !playerName) continue;
-              try {
-                const playerUrl = new URL('http://localhost/api/world-cup/dashboard');
-                playerUrl.searchParams.set('season', String(season));
-                playerUrl.searchParams.set('competition', competition);
-                playerUrl.searchParams.set('teamId', String(teamId));
-                playerUrl.searchParams.set('playerId', String(playerId));
-                playerUrl.searchParams.set('playerName', playerName);
-                playerUrl.searchParams.set('rebuildDashboard', '1');
-                const playerRes = await GET(new NextRequest(playerUrl));
-                if (playerRes.ok) playersWarmed += 1;
-              } catch {
-                /* non-fatal: team blob still drives shared fixture fields */
-              }
-              await warmDashboardSleep(60);
-            }
+          const [roster, squad] = await Promise.all([
+            getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.rosterForTeam(teamId)),
+            getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playersForTeam(teamId)),
+          ]);
+          const nameById = new Map<number, string>();
+          for (const p of squad ?? []) {
+            const id = bdlPlayerIdFromRow(p);
+            const name = bdlPlayerNameFromRow(p);
+            if (id != null && name) nameById.set(id, name);
           }
+
+          let candidates = 0;
+          let unresolved = 0;
+          for (const row of roster ?? []) {
+            const playerId = bdlPlayerIdFromRow(row);
+            const playerName = playerId != null ? bdlPlayerNameFromRow(row) || nameById.get(playerId) : '';
+            if (playerId == null || !playerName) {
+              unresolved += 1;
+              continue;
+            }
+            candidates += 1;
+            try {
+              const playerUrl = new URL('http://localhost/api/world-cup/dashboard');
+              playerUrl.searchParams.set('season', String(season));
+              playerUrl.searchParams.set('competition', competition);
+              playerUrl.searchParams.set('teamId', String(teamId));
+              playerUrl.searchParams.set('playerId', String(playerId));
+              playerUrl.searchParams.set('playerName', playerName);
+              playerUrl.searchParams.set('rebuildDashboard', '1');
+              const playerRes = await GET(new NextRequest(playerUrl));
+              if (playerRes.ok) playersWarmed += 1;
+            } catch {
+              /* non-fatal: team blob still drives shared fixture fields */
+            }
+            await warmDashboardSleep(60);
+          }
+
+          if ((roster?.length ?? 0) > 0 && candidates === 0) {
+            log(`[team-dashboard] ${teamName} player warm skipped — ${unresolved} roster row(s) had no resolvable player id/name`);
+          }
+        }
       })
     );
     if (i + concurrency < teamIds.length) await warmDashboardSleep(politeMs);

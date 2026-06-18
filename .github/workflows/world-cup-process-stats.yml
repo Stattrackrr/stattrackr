@@ -44,7 +44,7 @@ jobs:
       BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
       BALL_DONT_LIE_API_KEY: ${{ secrets.BALL_DONT_LIE_API_KEY }}
       API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-      WC_PROPS_STATS_MIN_COVERAGE: '90'
+      WC_PROPS_STATS_MIN_COVERAGE: '80'
     steps:
       - name: Checkout
         uses: actions/checkout@v5

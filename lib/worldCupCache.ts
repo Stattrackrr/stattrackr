@@ -2763,7 +2763,7 @@ export async function runWorldCupPropsStatsWarm(
     const listResult =
       useListApi && rowsFromList.length > 0
         ? { games: [] as { gameId: string }[], data: rowsFromList }
-        : await buildWorldCupPlayerPropsList();
+        : await buildWorldCupPlayerPropsList({ cacheOnly: true });
 
     const rows = listResult.data ?? [];
     if (!rows.length) {
