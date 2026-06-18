@@ -292,6 +292,7 @@ async function runWarmPropsStats(): Promise<void> {
     runWorldCupPropsStatsWarm,
     rebuildWorldCupEnrichedListFromOddsCache,
   } = await import('../lib/worldCupCache');
+  const { warmCombinedPropsSnapshot } = await import('../lib/combinedPropsSnapshot');
 
   const baseUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
   const useListApi = process.env.WC_WARM_USE_LIST === '1';
@@ -299,6 +300,18 @@ async function runWarmPropsStats(): Promise<void> {
   const result = await runWorldCupPropsStatsWarm(baseUrl, { useListApi });
   console.log('[wc-warm]', JSON.stringify(result, null, 2));
   if (!result.success) process.exit(1);
+  const minCoverage = Number(process.env.WC_PROPS_STATS_MIN_COVERAGE ?? '0');
+  if (
+    Number.isFinite(minCoverage) &&
+    minCoverage > 0 &&
+    (result.total ?? 0) > 0 &&
+    (result.coveragePct ?? 0) < minCoverage
+  ) {
+    console.error(
+      `[wc-warm] Props-stats coverage below threshold (${result.coveragePct ?? 0}% < ${minCoverage}%)`
+    );
+    process.exit(1);
+  }
 
   try {
     console.log('[wc-warm] Rebuilding enriched props cache from odds + warmed stats...');
@@ -312,6 +325,20 @@ async function runWarmPropsStats(): Promise<void> {
     );
   } catch (e) {
     console.warn('[wc-warm] enriched list rebuild failed:', e);
+  }
+
+  try {
+    const cronSecret = (process.env.CRON_SECRET || '').trim();
+    console.log('[wc-warm] Warming combined props snapshot cache...');
+    const snapshot = await warmCombinedPropsSnapshot({
+      origin: baseUrl,
+      cronSecret: cronSecret || undefined,
+    });
+    console.log(
+      `[wc-warm] Combined props snapshot written (wc=${snapshot.worldCup.props.length} props, afl=${snapshot.afl.props.length} props)`
+    );
+  } catch (e) {
+    console.warn('[wc-warm] combined props snapshot warm failed:', e);
   }
 }
 

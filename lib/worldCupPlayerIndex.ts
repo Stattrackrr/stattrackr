@@ -1190,6 +1190,34 @@ export async function getWorldCupPlayerPhotoUrl(
   return resolvePhotoFromTeamSquadCache(playerName, null, cache);
 }
 
+/** Fast sync headshot lookup using preloaded squad caches + player index (props enrich). */
+export function resolveWorldCupPropsPlayerPhotoFromCaches(opts: {
+  playerName: string;
+  bdlTeamIds?: Array<number | null | undefined>;
+  indexEntry?: WorldCupPlayerIndexEntry | null;
+  squadCachesByTeamId?: Map<number, WorldCupSquadPhotoCache>;
+}): string | null {
+  const teamIds = [
+    ...new Set(
+      (opts.bdlTeamIds ?? []).filter((id): id is number => id != null && Number.isFinite(id))
+    ),
+  ];
+  for (const teamId of teamIds) {
+    const fromSquad = resolvePhotoFromTeamSquadCache(
+      opts.playerName,
+      null,
+      opts.squadCachesByTeamId?.get(teamId)
+    );
+    if (fromSquad) return fromSquad;
+  }
+  const entry = opts.indexEntry;
+  if (entry) {
+    const apiFootball = entry.sources.find((s) => s.source === 'api-football' && s.id);
+    if (apiFootball?.id) return apiFootballPlayerPhotoUrl(apiFootball.id);
+  }
+  return null;
+}
+
 /** Props-page headshot resolver: squad caches, player index, BDL per-player cache, intl DB. */
 export async function resolveWorldCupPropsPlayerPhotoUrl(opts: {
   playerName: string;

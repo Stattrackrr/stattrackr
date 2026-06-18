@@ -1,8 +1,13 @@
+# Single World Cup stats workflow, mirrored from AFL Process Stats:
+# 1. Incrementally ingest BDL 2026 stats and rebuild dashboard side panels + DvP.
+# 2. Refresh API-Football Bet365 player props for fixtures in the next 36 hours.
+# 3. Warm props-page hit-rate caches for every player with odds, then rebuild the enriched props list.
+# 4. Warm the combined props snapshot so /props and /props?sport=world-cup serve fresh rows immediately.
 name: World Cup Process Stats
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 */2 * * *' # Every 2 hours, same cadence as AFL
   workflow_dispatch:
     inputs:
       full_rebuild:
@@ -11,15 +16,14 @@ on:
         type: boolean
         default: false
       with_photos:
-        description: 'Include squad photo warm (Phase 6)'
+        description: 'Include squad photo warm'
         required: false
         type: boolean
         default: false
-      skip_local:
-        description: 'Skip Supabase dashboard build (production warm only)'
+      diagnose_limit:
+        description: 'Number of props rows to print in the final diagnostic sample'
         required: false
-        type: boolean
-        default: false
+        default: '40'
 
 concurrency:
   group: world-cup-process-stats
@@ -29,7 +33,7 @@ env:
   TZ: Australia/Melbourne
 
 jobs:
-  world_cup_pipeline:
+  process_stats:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
@@ -40,9 +44,12 @@ jobs:
       BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
       BALL_DONT_LIE_API_KEY: ${{ secrets.BALL_DONT_LIE_API_KEY }}
       API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      WC_PROPS_STATS_MIN_COVERAGE: '90'
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -53,20 +60,59 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run full World Cup pipeline
+      - name: Validate required secrets
         run: |
           set -euo pipefail
-          ARGS="--full-pipeline --incremental"
+          missing=0
+          for name in PROD_URL CRON_SECRET NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY API_FOOTBALL_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required secret/env: ${name}"
+              missing=1
+            fi
+          done
+          if [ -z "${BALLDONTLIE_API_KEY:-}" ] && [ -z "${BALL_DONT_LIE_API_KEY:-}" ]; then
+            echo "Missing required secret/env: BALLDONTLIE_API_KEY or BALL_DONT_LIE_API_KEY"
+            missing=1
+          fi
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Ingest BDL stats and warm dashboard, side panels, and DvP
+        run: |
+          set -euo pipefail
+          ARGS="--dashboard-warm"
           if [ "${{ github.event.inputs.full_rebuild }}" = "true" ]; then
             ARGS="${ARGS} --full"
           fi
           if [ "${{ github.event.inputs.with_photos }}" = "true" ]; then
             ARGS="${ARGS} --with-photos"
           fi
-          if [ "${{ github.event.inputs.skip_local }}" = "true" ]; then
-            ARGS="${ARGS} --skip-local"
-          fi
           echo "Running: npx tsx scripts/build-world-cup-opponent-breakdown.ts ${ARGS}"
           npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts ${ARGS}
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Refresh Bet365 odds for next 36 hours
+        run: |
+          set -euo pipefail
+          echo "Refreshing API-Football Bet365 player props list for next 36h..."
+          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --refresh-odds
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Warm World Cup props hit rates and props-page caches
+        run: |
+          set -euo pipefail
+          echo "Warming L5/L10/WC hit-rate caches and enriched props list..."
+          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --warm-props-stats
+        env:
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Diagnose props DvP and hit-rate coverage
+        run: |
+          set -euo pipefail
+          LIMIT="${{ github.event.inputs.diagnose_limit || '40' }}"
+          npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --diagnose-props-dvp --limit="${LIMIT}"
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'

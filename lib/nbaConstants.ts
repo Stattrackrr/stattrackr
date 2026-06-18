@@ -85,7 +85,7 @@ export const NBA_PUBLIC_ENABLED =
 
 export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
 
-const WORLD_CUP_PUBLIC_ENABLED_DEFAULT = false;
+const WORLD_CUP_PUBLIC_ENABLED_DEFAULT = true;
 
 export const WORLD_CUP_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === 'true' ||

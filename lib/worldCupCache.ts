@@ -3,8 +3,11 @@ import { WC2026_CACHE_KEYS } from '@/lib/worldCupOpponentBreakdown';
 import {
   normalizeWorldCupPlayerName,
   WORLD_CUP_PLAYER_INDEX_CACHE_KEY,
+  resolveWorldCupPropsPlayerPhotoFromCaches,
   resolveWorldCupPropsPlayerPhotoUrl,
+  worldCupSquadPhotoCacheKey,
   type WorldCupPlayerIndexEntry,
+  type WorldCupSquadPhotoCache,
 } from '@/lib/worldCupPlayerIndex';
 import { resolveWorldCupFlagCode, worldCupTeamsMatch } from '@/lib/worldCupFlags';
 import { AsyncLocalStorage } from 'async_hooks';
@@ -1605,13 +1608,11 @@ export async function buildWorldCupPlayerPropsList(opts?: {
     const data = filterWorldCupListPropsByMinOdds(chunks.flat());
     console.log(`[wc-odds] ${data.length} prop rows after min-odds filter — writing cache...`);
     const lastUpdated = new Date().toISOString();
-    if (data.length || targetGames.length) {
-      await sharedCache.setJSON(
-        WC_LIST_RESPONSE_CACHE_KEY,
-        { games: targetGames, data, lastUpdated },
-        WC_LIST_RESPONSE_CACHE_TTL_SECONDS
-      );
-    }
+    await sharedCache.setJSON(
+      WC_LIST_RESPONSE_CACHE_KEY,
+      { games: targetGames, data, lastUpdated },
+      WC_LIST_RESPONSE_CACHE_TTL_SECONDS
+    );
     return {
       games: targetGames,
       data,
@@ -2344,6 +2345,111 @@ async function loadWcPropsEnrichContext(): Promise<WcPropsEnrichContext> {
   return { indexByName, teamNameToBdlId, dvpByPosition, dvpRankMaps };
 }
 
+type WcPropsPhotoContext = {
+  indexByName: Map<string, WorldCupPlayerIndexEntry>;
+  teamNameToBdlId: Map<string, number>;
+  squadCachesByTeamId: Map<number, WorldCupSquadPhotoCache>;
+};
+
+function wcLookupPlayerIndexEntry(
+  playerName: string,
+  indexByName: Map<string, WorldCupPlayerIndexEntry>
+): WorldCupPlayerIndexEntry | null {
+  const normalized = resolveWorldCupAliasName(normalizeWorldCupPlayerName(playerName));
+  return (
+    indexByName.get(normalized) ??
+    indexByName.get(normalizeWorldCupPlayerName(playerName)) ??
+    null
+  );
+}
+
+function wcResolveBdlTeamIdSync(teamName: string, teamNameToBdlId: Map<string, number>): number | null {
+  const teamKey = normalizeWorldCupPlayerName(teamName);
+  const id =
+    teamNameToBdlId.get(teamKey) ??
+    teamNameToBdlId.get(String(resolveWorldCupFlagCode(teamName) ?? '').toLowerCase()) ??
+    null;
+  return id != null && Number.isFinite(id) ? id : null;
+}
+
+async function loadWcPropsPhotoContext(rows: WorldCupListPropRow[]): Promise<WcPropsPhotoContext> {
+  const [playerIndex, bdlTeams] = await Promise.all([
+    getWorldCupCache<WorldCupPlayerIndexEntry[]>(WORLD_CUP_PLAYER_INDEX_CACHE_KEY),
+    getWorldCupCache<Array<{ id: number; name: string; country_code?: string | null }>>(WC2026_CACHE_KEYS.teams),
+  ]);
+
+  const indexByName = new Map<string, WorldCupPlayerIndexEntry>();
+  for (const entry of playerIndex ?? []) {
+    indexByName.set(entry.normalizedName, entry);
+    indexByName.set(normalizeWorldCupPlayerName(entry.name), entry);
+    indexByName.set(resolveWorldCupAliasName(normalizeWorldCupPlayerName(entry.name)), entry);
+  }
+
+  const teamNameToBdlId = new Map<string, number>();
+  for (const team of bdlTeams ?? []) {
+    const id = Number(team.id);
+    if (!Number.isFinite(id)) continue;
+    teamNameToBdlId.set(normalizeWorldCupPlayerName(team.name), id);
+    if (team.country_code) teamNameToBdlId.set(String(team.country_code).trim().toLowerCase(), id);
+    const slug = resolveWorldCupFlagCode(team.name);
+    if (slug) teamNameToBdlId.set(slug.toLowerCase(), id);
+  }
+
+  const teamIds = new Set<number>();
+  for (const row of rows) {
+    for (const name of [row.homeTeam, row.awayTeam]) {
+      const id = wcResolveBdlTeamIdSync(name, teamNameToBdlId);
+      if (id != null) teamIds.add(id);
+    }
+  }
+
+  const squadCachesByTeamId = new Map<number, WorldCupSquadPhotoCache>();
+  await Promise.all(
+    [...teamIds].map(async (teamId) => {
+      const cache = await getWorldCupCache<WorldCupSquadPhotoCache>(worldCupSquadPhotoCacheKey(teamId));
+      if (cache) squadCachesByTeamId.set(teamId, cache);
+    })
+  );
+
+  return { indexByName, teamNameToBdlId, squadCachesByTeamId };
+}
+
+function wcEnrichRowPhotoMeta(
+  row: WorldCupListPropRow,
+  photoCtx: WcPropsPhotoContext
+): Pick<
+  WorldCupListPropRow,
+  'headshotUrl' | 'wcPosition' | 'playerTeam' | 'playerId' | 'teamId' | 'opponentTeamId'
+> {
+  const entry = wcLookupPlayerIndexEntry(row.playerName, photoCtx.indexByName);
+  const position = wcResolvePlayerPosition(entry);
+  const playerId = wcResolvePlayerBdlId(entry);
+  const { playerTeam, opponent } = wcResolvePlayerTeamForRow(row, entry);
+  const playerTeamBdlId = wcResolveBdlTeamIdSync(playerTeam, photoCtx.teamNameToBdlId);
+  const homeBdlId = wcResolveBdlTeamIdSync(row.homeTeam, photoCtx.teamNameToBdlId);
+  const awayBdlId = wcResolveBdlTeamIdSync(row.awayTeam, photoCtx.teamNameToBdlId);
+  const headshotUrl = resolveWorldCupPropsPlayerPhotoFromCaches({
+    playerName: row.playerName,
+    bdlTeamIds: [playerTeamBdlId, homeBdlId, awayBdlId],
+    indexEntry: entry,
+    squadCachesByTeamId: photoCtx.squadCachesByTeamId,
+  });
+  const opponentTeamBdlId = wcNationMatchesTeam(opponent, row.homeTeam)
+    ? homeBdlId
+    : wcNationMatchesTeam(opponent, row.awayTeam)
+      ? awayBdlId
+      : null;
+
+  return {
+    headshotUrl,
+    wcPosition: position,
+    playerTeam,
+    playerId,
+    teamId: playerTeamBdlId != null ? String(playerTeamBdlId) : null,
+    opponentTeamId: opponentTeamBdlId != null ? String(opponentTeamBdlId) : null,
+  };
+}
+
 async function wcResolveBdlTeamId(
   teamName: string,
   ctx: WcPropsEnrichContext
@@ -2505,15 +2611,16 @@ const WC_LIST_ENRICH_CONCURRENCY = 64;
 
 export async function enrichWorldCupPlayerPropsList(
   rows: WorldCupListPropRow[],
-  options: { cacheOnly?: boolean; skipRowMeta?: boolean } = {}
+  options: { cacheOnly?: boolean; skipRowMeta?: boolean; includePhotos?: boolean } = {}
 ): Promise<WorldCupListPropRow[]> {
   const cacheOnly = options.cacheOnly ?? true;
   const skipRowMeta = options.skipRowMeta ?? false;
+  const includePhotos = options.includePhotos ?? true;
   wcPropStatsByKeyCache.clear();
   const total = rows.length;
   if (total > 0) {
     console.log(
-      `[wc-odds] Enriching stats for ${total} prop row(s) (cacheOnly=${cacheOnly}, skipRowMeta=${skipRowMeta})...`
+      `[wc-odds] Enriching stats for ${total} prop row(s) (cacheOnly=${cacheOnly}, skipRowMeta=${skipRowMeta}, includePhotos=${includePhotos})...`
     );
   }
 
@@ -2550,13 +2657,24 @@ export async function enrichWorldCupPlayerPropsList(
   });
 
   if (skipRowMeta && cacheOnly) {
+    const photoCtx = includePhotos ? await loadWcPropsPhotoContext(rows) : null;
+    if (photoCtx) {
+      console.log(
+        `[wc-odds] Photo context loaded (${photoCtx.indexByName.size} index entries, ${photoCtx.squadCachesByTeamId.size} squad caches)`
+      );
+    }
+    let withPhotos = 0;
     const enriched = rows.map((row, index) => {
       if (index === 0 || (index + 1) % 500 === 0 || index + 1 === total) {
         wcProgressLog('wc-odds', index + 1, total, 'props enriched');
       }
-      return attachStats(row, wcPropStatsFromRowCache(row));
+      const meta = photoCtx ? wcEnrichRowPhotoMeta(row, photoCtx) : {};
+      if (meta.headshotUrl) withPhotos += 1;
+      return attachStats(row, wcPropStatsFromRowCache(row), meta);
     });
-    if (total > 0) console.log(`[wc-odds] Enrichment complete (${total} rows)`);
+    if (total > 0) {
+      console.log(`[wc-odds] Enrichment complete (${total} rows, ${withPhotos} with headshots)`);
+    }
     return enriched;
   }
 
@@ -2816,7 +2934,8 @@ export async function rebuildWorldCupEnrichedListFromOddsCache(options?: {
     console.log(`[wc-odds] Writing enriched props cache (${filtered.data.length} props, ${filtered.games.length} games)...`);
     await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
   } else if (writeCache) {
-    console.warn(`[wc-odds] Enriched cache not written — 0 props with stats (${result.data.length} odds rows)`);
+    console.warn(`[wc-odds] Writing empty enriched props cache — 0 props with stats (${result.data.length} odds rows)`);
+    await setWorldCupEnrichedListCache({ games: filtered.games, data: [], lastUpdated });
   }
 
   const ingestMessage =
