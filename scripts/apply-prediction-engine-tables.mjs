@@ -15,7 +15,13 @@ function readJsonFileAnyEncoding(filePath) {
   if (looksUtf16Le) {
     text = raw.toString('utf16le').replace(/^\uFEFF/, '');
   } else if (raw.length >= 2 && raw[0] === 0xfe && raw[1] === 0xff) {
-    text = raw.toString('utf16be').replace(/^\uFEFF/, '');
+    const body = raw.subarray(2);
+    const swapped = Buffer.alloc(body.length);
+    for (let i = 0; i < body.length - 1; i += 2) {
+      swapped[i] = body[i + 1];
+      swapped[i + 1] = body[i];
+    }
+    text = swapped.toString('utf16le');
   } else {
     text = raw.toString('utf8').replace(/^\uFEFF/, '');
   }

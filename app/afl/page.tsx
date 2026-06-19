@@ -486,6 +486,14 @@ function aflTopPicksModalPickShowResult(pick: AflTopPicksModalPick): boolean {
   return pick.result === 'Hit' || pick.result === 'Miss' || pick.result === 'Pending';
 }
 
+function AflPredictionModelNotice({ className = '' }: { className?: string }) {
+  return (
+    <p className={`text-[11px] leading-relaxed text-gray-500 dark:text-gray-400 ${className}`}>
+      Predictions refresh every night for upcoming games. We recommend taking picks a few hours before bounce, not days out. The model uses the stats available on game day.
+    </p>
+  );
+}
+
 function AflTopPicksModal({
   isOpen,
   onClose,
@@ -750,6 +758,7 @@ function AflTopPicksModal({
             })}
           </div>
         ) : null}
+        {isCurrentRound ? <AflPredictionModelNotice className="mb-3 text-center" /> : null}
         {!isCurrentRound && summary ? (
           <div className="mb-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
             <span className="text-emerald-500">{summary.hits}</span>
@@ -996,7 +1005,6 @@ export default function AFLPage() {
   const [aflPlayerPropsBooks, setAflPlayerPropsBooks] = useState<AflBookRow[]>([]);
   const [aflDisposalsModelProjection, setAflDisposalsModelProjection] = useState<AflDisposalsModelProjection | null>(null);
   const [aflDisposalsModelLoading, setAflDisposalsModelLoading] = useState(false);
-  const [aflDisposalsModelRefreshLoading, setAflDisposalsModelRefreshLoading] = useState(false);
   const [showAflTopPicksModal, setShowAflTopPicksModal] = useState(false);
   const [aflDisposalsPastLines, setAflDisposalsPastLines] = useState<AflDisposalsPastLineRow[]>([]);
   const [aflDisposalsPastLinesLoading, setAflDisposalsPastLinesLoading] = useState(false);
@@ -2264,32 +2272,6 @@ export default function AFLPage() {
   const openAflTopPicksModal = useCallback(() => {
     setShowAflTopPicksModal(true);
   }, []);
-
-  const refreshAflDisposalsModelForCurrentLine = useCallback(async () => {
-    if (!selectedPlayer?.name || !aflOddsHomeTeam || !aflOddsAwayTeam) return;
-    const lineToUse = aflCurrentLineValue;
-    if (lineToUse == null || !Number.isFinite(lineToUse)) return;
-    setAflDisposalsModelRefreshLoading(true);
-    try {
-      const res = await fetch('/api/afl/model/disposals/refresh-player', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerName: String(selectedPlayer.name),
-          homeTeam: aflOddsHomeTeam,
-          awayTeam: aflOddsAwayTeam,
-          line: lineToUse,
-        }),
-      });
-      if (!res.ok) return;
-      const payload = (await res.json().catch(() => null)) as { projection?: AflDisposalsModelProjection } | null;
-      if (payload?.projection && typeof payload.projection.expectedDisposals === 'number') {
-        setAflDisposalsModelProjection(payload.projection);
-      }
-    } finally {
-      setAflDisposalsModelRefreshLoading(false);
-    }
-  }, [selectedPlayer?.name, aflOddsHomeTeam, aflOddsAwayTeam, aflCurrentLineValue]);
 
   useEffect(() => {
     if (aflPropsMode !== 'player' || !selectedPlayer?.name) {
@@ -4961,15 +4943,13 @@ export default function AFLPage() {
                         }`}
                       >
                         Prediction Model
-                        <span
-                          className={`absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm ${
-                            AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
-                              ? 'border-amber-600 bg-amber-600 dark:border-amber-500/80 dark:bg-amber-700'
-                              : 'border-red-300 bg-red-500 dark:border-red-500/70 dark:bg-red-600'
-                          }`}
-                        >
-                          {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? 'MAINTENANCE' : 'BETA'}
-                        </span>
+                        {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? (
+                          <span
+                            className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700"
+                          >
+                            MAINTENANCE
+                          </span>
+                        ) : null}
                       </button>
                     </div>
                     {!showAflPredictionPanel ? (
@@ -5049,6 +5029,7 @@ export default function AFLPage() {
                       <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                       <div className="mb-1.5">
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                        <AflPredictionModelNotice className="mt-1.5 text-left" />
                       </div>
                         {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
@@ -5063,14 +5044,6 @@ export default function AFLPage() {
                             <div className="text-gray-600 dark:text-gray-300">
                               Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={refreshAflDisposalsModelForCurrentLine}
-                              disabled={aflDisposalsModelRefreshLoading}
-                              className="w-full text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline disabled:opacity-60"
-                            >
-                              {aflDisposalsModelRefreshLoading ? 'Refreshing model...' : 'Line changed? refresh here'}
-                            </button>
                           </div>
                         ) : (
                         <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -5451,15 +5424,13 @@ export default function AFLPage() {
                       }`}
                     >
                       Prediction Model
-                      <span
-                        className={`absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm ${
-                          AFL_PREDICTION_MODEL_UNDER_MAINTENANCE
-                            ? 'border-amber-600 bg-amber-600 dark:border-amber-500/80 dark:bg-amber-700'
-                            : 'border-red-300 bg-red-500 dark:border-red-500/70 dark:bg-red-600'
-                        }`}
-                      >
-                        {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? 'MAINTENANCE' : 'BETA'}
-                      </span>
+                      {AFL_PREDICTION_MODEL_UNDER_MAINTENANCE ? (
+                        <span
+                          className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700"
+                        >
+                          MAINTENANCE
+                        </span>
+                      ) : null}
                     </button>
                   </div>
                   {!showAflPredictionPanel ? (
@@ -5544,6 +5515,7 @@ export default function AFLPage() {
                     <div className={`rounded-lg border px-1.5 py-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                       <div className="mb-1.5">
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Prediction Model</h4>
+                        <AflPredictionModelNotice className="mt-1.5 text-left" />
                       </div>
                       {aflDisposalsModelProjection ? (
                         <div className="space-y-2 text-sm text-center">
@@ -5558,14 +5530,6 @@ export default function AFLPage() {
                           <div className="text-gray-600 dark:text-gray-300">
                             Expected Disposals: <span className="font-bold text-gray-900 dark:text-white">{aflDisposalsModelProjection.expectedDisposals.toFixed(1)}</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={refreshAflDisposalsModelForCurrentLine}
-                            disabled={aflDisposalsModelRefreshLoading}
-                            className="w-full text-xs font-semibold text-purple-600 dark:text-purple-300 hover:underline disabled:opacity-60"
-                          >
-                            {aflDisposalsModelRefreshLoading ? 'Refreshing model...' : 'Line changed? refresh here'}
-                          </button>
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500 dark:text-gray-400">
