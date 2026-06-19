@@ -63,6 +63,7 @@ export type AflTopGamePick = {
   recommendedEdge: number | null;
   recommendedProb: number | null;
   rank: number | null;
+  actualDisposals?: number | null;
 };
 
 export type AflTopPicksGameGroup = {
