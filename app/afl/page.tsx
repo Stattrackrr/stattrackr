@@ -559,6 +559,81 @@ function aflTopPicksModalPickShowResult(pick: AflTopPicksModalPick): boolean {
   return pick.result === 'Hit' || pick.result === 'Miss' || pick.result === 'Pending';
 }
 
+const AFL_TOP_PICKS_GAME_LOG_BATCH_SIZE = 16;
+
+function aflTopPicksModalGradePickWithLogs(
+  pick: AflTopPicksModalPick,
+  gameDate: string,
+  season: number,
+  gamesByKey: Map<string, Record<string, unknown>[]>
+): AflTopPicksModalPick {
+  const storedActual =
+    typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals) ? pick.actualDisposals : null;
+  if (storedActual != null) {
+    return {
+      ...pick,
+      actualDisposals: storedActual,
+      result: aflTopPicksModalGrade(pick.recommendedSide, pick.line, storedActual),
+    };
+  }
+  if (!gameDate || gameDate > aflTopPicksModalLocalIsoDate(new Date())) {
+    return { ...pick, result: '-' };
+  }
+  const lookupName = aflTopPicksModalGameLogPlayerName(pick.playerName);
+  const games = gamesByKey.get(`${season}|${lookupName.toLowerCase()}`);
+  if (!games?.length) return { ...pick, result: 'Pending' as const };
+  const match = aflTopPicksModalMatchGame(gameDate, games);
+  if (!match) return { ...pick, result: 'Pending' as const };
+  const actual = typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
+  if (!Number.isFinite(actual)) return { ...pick, result: 'Pending' as const };
+  return {
+    ...pick,
+    actualDisposals: actual,
+    result: aflTopPicksModalGrade(pick.recommendedSide, pick.line, actual),
+  };
+}
+
+function aflTopPicksModalGroupsFromRecords(
+  records: AflTopPicksHistoryRecord[],
+  gamesByKey: Map<string, Record<string, unknown>[]>
+): AflTopPicksModalGroup[] {
+  return records.map((record) => {
+    const gameDate = String(record.commenceTime ?? '').slice(0, 10);
+    const season = Number.parseInt(gameDate.slice(0, 4), 10);
+    return {
+      gameKey: record.gameKey,
+      homeTeam: record.homeTeam,
+      awayTeam: record.awayTeam,
+      commenceTime: record.commenceTime,
+      roundKey: record.roundKey ?? null,
+      picks: record.picks.map((pick) => aflTopPicksModalGradePickWithLogs(pick, gameDate, season, gamesByKey)),
+    };
+  });
+}
+
+function aflTopPicksModalFilterHistoryRecordsByRound(
+  records: AflTopPicksHistoryRecord[],
+  roundKeys: string[]
+): AflTopPicksHistoryRecord[] {
+  if (roundKeys.length === 0) return records;
+  const allowed = new Set(roundKeys);
+  return records.filter((record) => record.roundKey && allowed.has(record.roundKey));
+}
+
+function aflTopPicksModalNeedsGameLogHydration(records: AflTopPicksHistoryRecord[]): boolean {
+  const todayIso = aflTopPicksModalLocalIsoDate(new Date());
+  for (const record of records) {
+    const gameDate = String(record.commenceTime ?? '').slice(0, 10);
+    if (!gameDate || gameDate > todayIso) continue;
+    for (const pick of record.picks) {
+      const storedActual =
+        typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals) ? pick.actualDisposals : null;
+      if (storedActual == null) return true;
+    }
+  }
+  return false;
+}
+
 function AflPredictionModelNotice({ className = '' }: { className?: string }) {
   return (
     <p className={`text-[11px] leading-relaxed text-gray-500 dark:text-gray-400 ${className}`}>
@@ -589,6 +664,7 @@ function AflTopPicksModal({
   const [currentGroups, setCurrentGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [latestRoundHistoryGroups, setLatestRoundHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [historyGroups, setHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
+  const gameLogsCacheRef = useRef(new Map<string, Record<string, unknown>[]>());
 
   const roundOptions = useMemo(() => aflTopPicksModalBuildRoundNav(roundKeys), [roundKeys]);
 
@@ -620,30 +696,26 @@ function AflTopPicksModal({
   }, [historyGroups, isCurrentRound]);
 
   const resolveHistoryResults = useCallback(async (records: AflTopPicksHistoryRecord[]) => {
-    const groups: AflTopPicksModalGroup[] = records.map((record) => ({
-      gameKey: record.gameKey,
-      homeTeam: record.homeTeam,
-      awayTeam: record.awayTeam,
-      commenceTime: record.commenceTime,
-      roundKey: record.roundKey ?? null,
-      picks: record.picks,
-    }));
     const todayIso = aflTopPicksModalLocalIsoDate(new Date());
     const requestKeys = new Map<string, { season: number; playerName: string }>();
     for (const record of records) {
       const gameDate = String(record.commenceTime ?? '').slice(0, 10);
       if (!gameDate || gameDate > todayIso) continue;
       for (const pick of record.picks) {
+        const storedActual =
+          typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals) ? pick.actualDisposals : null;
+        if (storedActual != null) continue;
         const season = Number.parseInt(gameDate.slice(0, 4), 10);
         const lookupName = aflTopPicksModalGameLogPlayerName(pick.playerName);
         const key = `${season}|${lookupName.toLowerCase()}`;
         if (!requestKeys.has(key)) requestKeys.set(key, { season, playerName: lookupName });
       }
     }
-    const gamesByKey = new Map<string, Record<string, unknown>[]>();
-    const requestList = [...requestKeys.entries()];
-    for (let i = 0; i < requestList.length; i += 8) {
-      const batch = requestList.slice(i, i + 8);
+
+    const gamesByKey = gameLogsCacheRef.current;
+    const requestList = [...requestKeys.entries()].filter(([requestKey]) => !gamesByKey.has(requestKey));
+    for (let i = 0; i < requestList.length; i += AFL_TOP_PICKS_GAME_LOG_BATCH_SIZE) {
+      const batch = requestList.slice(i, i + AFL_TOP_PICKS_GAME_LOG_BATCH_SIZE);
       const results = await Promise.all(
         batch.map(async ([requestKey, request]) => {
           try {
@@ -665,37 +737,8 @@ function AflTopPicksModal({
         if (result) gamesByKey.set(result.requestKey, result.games);
       }
     }
-    return groups.map((group) => {
-      const gameDate = String(group.commenceTime ?? '').slice(0, 10);
-      const season = Number.parseInt(gameDate.slice(0, 4), 10);
-      return {
-        ...group,
-        picks: group.picks.map((pick) => {
-          const storedActual =
-            typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals) ? pick.actualDisposals : null;
-          if (storedActual != null) {
-            return {
-              ...pick,
-              actualDisposals: storedActual,
-              result: aflTopPicksModalGrade(pick.recommendedSide, pick.line, storedActual),
-            };
-          }
-          const lookupName = aflTopPicksModalGameLogPlayerName(pick.playerName);
-          const games = gamesByKey.get(`${season}|${lookupName.toLowerCase()}`);
-          if (!games?.length) return { ...pick, result: 'Pending' as const };
-          const match = aflTopPicksModalMatchGame(gameDate, games);
-          if (!match) return { ...pick, result: 'Pending' as const };
-          const actual =
-            typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
-          if (!Number.isFinite(actual)) return { ...pick, result: 'Pending' as const };
-          return {
-            ...pick,
-            actualDisposals: actual,
-            result: aflTopPicksModalGrade(pick.recommendedSide, pick.line, actual),
-          };
-        }),
-      };
-    });
+
+    return aflTopPicksModalGroupsFromRecords(records, gamesByKey);
   }, []);
 
   const loadHistoryRound = useCallback(
@@ -712,7 +755,10 @@ function AflTopPicksModal({
         return;
       }
       const records = Array.isArray(data.records) ? (data.records as AflTopPicksHistoryRecord[]) : [];
-      setHistoryGroups(await resolveHistoryResults(records));
+      setHistoryGroups(aflTopPicksModalGroupsFromRecords(records, gameLogsCacheRef.current));
+      if (aflTopPicksModalNeedsGameLogHydration(records)) {
+        setHistoryGroups(await resolveHistoryResults(records));
+      }
     },
     [resolveHistoryResults]
   );
@@ -740,20 +786,30 @@ function AflTopPicksModal({
           commenceTime: group.commenceTime,
           picks: group.picks,
         })) as AflTopPicksHistoryRecord[];
-        setCurrentGroups(await resolveHistoryResults(liveRecords));
+        const historyRecords = Array.isArray(historyPayload?.records)
+          ? (historyPayload.records as AflTopPicksHistoryRecord[])
+          : [];
         const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
+        const latestRoundKey = rounds.length > 0 ? rounds[rounds.length - 1] : null;
+        const latestRoundRecords = latestRoundKey
+          ? aflTopPicksModalFilterHistoryRecordsByRound(historyRecords, [latestRoundKey])
+          : [];
+
+        setCurrentGroups(aflTopPicksModalGroupsFromRecords(liveRecords, gameLogsCacheRef.current));
+        setLatestRoundHistoryGroups(aflTopPicksModalGroupsFromRecords(latestRoundRecords, gameLogsCacheRef.current));
         setRoundKeys(rounds);
         setRoundIndex(aflTopPicksModalBuildRoundNav(rounds).length - 1);
-        const latestRoundKey = rounds.length > 0 ? rounds[rounds.length - 1] : null;
-        if (latestRoundKey) {
-          const roundRes = await fetch(
-            `/api/afl/model/disposals/top-picks?${new URLSearchParams({ history: '1', limit: '500', roundKey: latestRoundKey }).toString()}`,
-            { cache: 'no-store' }
-          );
-          const roundPayload = roundRes.ok ? await roundRes.json() : null;
+
+        const needsHydration =
+          aflTopPicksModalNeedsGameLogHydration(liveRecords) || aflTopPicksModalNeedsGameLogHydration(latestRoundRecords);
+        if (needsHydration && !cancelled) {
+          const [resolvedLive, resolvedLatest] = await Promise.all([
+            resolveHistoryResults(liveRecords),
+            resolveHistoryResults(latestRoundRecords),
+          ]);
           if (!cancelled) {
-            const records = Array.isArray(roundPayload?.records) ? (roundPayload.records as AflTopPicksHistoryRecord[]) : [];
-            setLatestRoundHistoryGroups(await resolveHistoryResults(records));
+            setCurrentGroups(resolvedLive);
+            setLatestRoundHistoryGroups(resolvedLatest);
           }
         }
       } finally {

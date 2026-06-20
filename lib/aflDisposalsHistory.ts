@@ -670,6 +670,33 @@ export function upsertAflTopPicksHistoryRecords(
   return { added, replaced, skipped, records };
 }
 
+export function filterAflTopPicksHistoryRecords(
+  records: AflTopPickSnapshotRecord[],
+  opts: {
+    weekKey?: string | null;
+    roundKey?: string | null;
+    gameKey?: string | null;
+    playerName?: string | null;
+    limit?: number;
+  } = {}
+): AflTopPickSnapshotRecord[] {
+  const player = String(opts.playerName ?? '').trim().toLowerCase();
+  const roundKeysFilter = opts.roundKey
+    ? opts.roundKey
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+  const rows = records.filter((record) => {
+    if (opts.weekKey && record.weekKey !== opts.weekKey) return false;
+    if (roundKeysFilter.length > 0 && (!record.roundKey || !roundKeysFilter.includes(record.roundKey))) return false;
+    if (opts.gameKey && record.gameKey !== opts.gameKey) return false;
+    if (player && !record.picks.some((pick) => pick.playerName.toLowerCase() === player)) return false;
+    return true;
+  });
+  return rows.slice(0, Math.max(1, Math.min(opts.limit ?? 500, 2000)));
+}
+
 export function filterAflTopPicksHistory(opts: {
   weekKey?: string | null;
   roundKey?: string | null;
@@ -678,20 +705,6 @@ export function filterAflTopPicksHistory(opts: {
   limit?: number;
 } = {}): AflTopPickSnapshotRecord[] {
   const history = readAflTopPicksHistory();
-  const player = String(opts.playerName ?? '').trim().toLowerCase();
-  const roundKeysFilter = opts.roundKey
-    ? opts.roundKey
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean)
-    : [];
-  const rows = history.records.filter((record) => {
-    if (opts.weekKey && record.weekKey !== opts.weekKey) return false;
-    if (roundKeysFilter.length > 0 && (!record.roundKey || !roundKeysFilter.includes(record.roundKey))) return false;
-    if (opts.gameKey && record.gameKey !== opts.gameKey) return false;
-    if (player && !record.picks.some((pick) => pick.playerName.toLowerCase() === player)) return false;
-    return true;
-  });
-  return rows.slice(0, Math.max(1, Math.min(opts.limit ?? 500, 2000)));
+  return filterAflTopPicksHistoryRecords(history.records, opts);
 }
 
