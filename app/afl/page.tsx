@@ -388,6 +388,7 @@ type AflTopPicksModalGroup = {
   homeTeam: string;
   awayTeam: string;
   commenceTime: string | null;
+  roundKey?: string | null;
   picks: AflTopPicksModalPick[];
 };
 
@@ -396,7 +397,13 @@ type AflTopPicksHistoryRecord = {
   homeTeam: string;
   awayTeam: string;
   commenceTime: string | null;
+  roundKey?: string | null;
   picks: AflTopPicksModalPick[];
+};
+
+type AflTopPicksRoundSection = {
+  roundKey: string;
+  groups: AflTopPicksModalGroup[];
 };
 
 const AFL_TOP_PICKS_CURRENT = 'current';
@@ -412,8 +419,55 @@ function aflTopPicksModalParseRoundKey(roundKey: string | null | undefined): { s
 
 function aflTopPicksModalRoundLabel(roundKey: string): string {
   if (roundKey === AFL_TOP_PICKS_CURRENT) return 'Current';
+  if (roundKey.includes('|')) {
+    const parsed = roundKey
+      .split('|')
+      .map((key) => aflTopPicksModalParseRoundKey(key))
+      .filter((value): value is { season: number; round: number } => value != null);
+    if (parsed.length >= 2 && parsed.every((value) => value.season === parsed[0].season)) {
+      const rounds = parsed.map((value) => value.round).sort((a, b) => a - b);
+      const min = rounds[0];
+      const max = rounds[rounds.length - 1];
+      return min === max ? `Round ${min}` : `Round ${min}-${max}`;
+    }
+  }
   const parsed = aflTopPicksModalParseRoundKey(roundKey);
   return parsed ? `Round ${parsed.round}` : roundKey;
+}
+
+type AflTopPicksRoundNavOption = {
+  id: string;
+  roundKeys: string[];
+  isCurrent: boolean;
+};
+
+function aflTopPicksModalBuildRoundNav(roundKeys: string[]): AflTopPicksRoundNavOption[] {
+  const options: AflTopPicksRoundNavOption[] = roundKeys.map((roundKey) => ({
+    id: roundKey,
+    roundKeys: [roundKey],
+    isCurrent: false,
+  }));
+  options.push({ id: AFL_TOP_PICKS_CURRENT, roundKeys: [], isCurrent: true });
+  return options;
+}
+
+function aflTopPicksModalGroupHistoryByRound(
+  groups: AflTopPicksModalGroup[],
+  roundOrder: string[]
+): AflTopPicksRoundSection[] {
+  const byRound = new Map<string, AflTopPicksModalGroup[]>();
+  for (const group of groups) {
+    const key = String(group.roundKey ?? '').trim();
+    if (!key) continue;
+    const list = byRound.get(key) ?? [];
+    list.push(group);
+    byRound.set(key, list);
+  }
+  const orderedKeys = roundOrder.length > 0 ? roundOrder.filter((roundKey) => byRound.has(roundKey)) : [...byRound.keys()].sort();
+  return orderedKeys.map((roundKey) => ({
+    roundKey,
+    groups: (byRound.get(roundKey) ?? []).sort((a, b) => String(a.commenceTime ?? '').localeCompare(String(b.commenceTime ?? ''))),
+  }));
 }
 
 function aflTopPicksModalGameLogPlayerName(playerName: string): string {
@@ -481,19 +535,20 @@ function aflTopPicksModalIsUpcomingGame(commenceTime: string | null | undefined)
 }
 
 function aflTopPicksModalMergeCurrentGroups(
-  latestRoundGroups: AflTopPicksModalGroup[],
+  latestRoundHistoryGroups: AflTopPicksModalGroup[],
   liveGroups: AflTopPicksModalGroup[]
 ): AflTopPicksModalGroup[] {
   const byKey = new Map<string, AflTopPicksModalGroup>();
-  for (const group of latestRoundGroups) {
+  for (const group of latestRoundHistoryGroups) {
     if (!aflTopPicksModalIsUpcomingGame(group.commenceTime)) {
       byKey.set(group.gameKey, group);
     }
   }
   for (const group of liveGroups) {
-    if (aflTopPicksModalIsUpcomingGame(group.commenceTime)) {
-      byKey.set(group.gameKey, group);
-    } else if (!byKey.has(group.gameKey)) {
+    byKey.set(group.gameKey, group);
+  }
+  for (const group of latestRoundHistoryGroups) {
+    if (!byKey.has(group.gameKey)) {
       byKey.set(group.gameKey, group);
     }
   }
@@ -532,16 +587,22 @@ function AflTopPicksModal({
   const [roundKeys, setRoundKeys] = useState<string[]>([]);
   const [roundIndex, setRoundIndex] = useState(0);
   const [currentGroups, setCurrentGroups] = useState<AflTopPicksModalGroup[]>([]);
-  const [latestRoundGroups, setLatestRoundGroups] = useState<AflTopPicksModalGroup[]>([]);
+  const [latestRoundHistoryGroups, setLatestRoundHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [historyGroups, setHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
 
-  const roundOptions = useMemo(() => [...roundKeys, AFL_TOP_PICKS_CURRENT], [roundKeys]);
-  const activeRound = roundOptions[roundIndex] ?? AFL_TOP_PICKS_CURRENT;
-  const isCurrentRound = activeRound === AFL_TOP_PICKS_CURRENT;
+  const roundOptions = useMemo(() => aflTopPicksModalBuildRoundNav(roundKeys), [roundKeys]);
+
+  const activeRound = roundOptions[roundIndex] ?? roundOptions[roundOptions.length - 1];
+  const isCurrentRound = activeRound?.isCurrent ?? true;
   const displayGroups = useMemo(() => {
     if (!isCurrentRound) return historyGroups;
-    return aflTopPicksModalMergeCurrentGroups(latestRoundGroups, currentGroups);
-  }, [isCurrentRound, historyGroups, latestRoundGroups, currentGroups]);
+    return aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups);
+  }, [isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups]);
+  const displayRoundSections = useMemo(() => {
+    if (isCurrentRound || (activeRound?.roundKeys.length ?? 0) <= 1) return [];
+    return aflTopPicksModalGroupHistoryByRound(historyGroups, activeRound?.roundKeys ?? []);
+  }, [isCurrentRound, historyGroups, activeRound?.roundKeys]);
+  const showHistoryGroups = isCurrentRound || displayRoundSections.length === 0;
   const loading = bootLoading || historyLoading;
 
   const summary = useMemo(() => {
@@ -564,6 +625,7 @@ function AflTopPicksModal({
       homeTeam: record.homeTeam,
       awayTeam: record.awayTeam,
       commenceTime: record.commenceTime,
+      roundKey: record.roundKey ?? null,
       picks: record.picks,
     }));
     const todayIso = aflTopPicksModalLocalIsoDate(new Date());
@@ -637,8 +699,12 @@ function AflTopPicksModal({
   }, []);
 
   const loadHistoryRound = useCallback(
-    async (roundKey: string) => {
-      const params = new URLSearchParams({ history: '1', limit: '500', roundKey });
+    async (roundKeysToLoad: string[]) => {
+      if (roundKeysToLoad.length === 0) {
+        setHistoryGroups([]);
+        return;
+      }
+      const params = new URLSearchParams({ history: '1', limit: '500', roundKey: roundKeysToLoad.join(',') });
       const res = await fetch(`/api/afl/model/disposals/top-picks?${params.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data?.success) {
@@ -657,7 +723,7 @@ function AflTopPicksModal({
     const load = async () => {
       setBootLoading(true);
       setHistoryGroups([]);
-      setLatestRoundGroups([]);
+      setLatestRoundHistoryGroups([]);
       try {
         const [currentRes, historyRes] = await Promise.all([
           fetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' }),
@@ -677,7 +743,7 @@ function AflTopPicksModal({
         setCurrentGroups(await resolveHistoryResults(liveRecords));
         const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
         setRoundKeys(rounds);
-        setRoundIndex(rounds.length);
+        setRoundIndex(aflTopPicksModalBuildRoundNav(rounds).length - 1);
         const latestRoundKey = rounds.length > 0 ? rounds[rounds.length - 1] : null;
         if (latestRoundKey) {
           const roundRes = await fetch(
@@ -687,10 +753,8 @@ function AflTopPicksModal({
           const roundPayload = roundRes.ok ? await roundRes.json() : null;
           if (!cancelled) {
             const records = Array.isArray(roundPayload?.records) ? (roundPayload.records as AflTopPicksHistoryRecord[]) : [];
-            setLatestRoundGroups(await resolveHistoryResults(records));
+            setLatestRoundHistoryGroups(await resolveHistoryResults(records));
           }
-        } else {
-          setLatestRoundGroups([]);
         }
       } finally {
         if (!cancelled) setBootLoading(false);
@@ -705,13 +769,13 @@ function AflTopPicksModal({
   useEffect(() => {
     if (!isOpen || bootLoading) return;
     const round = roundOptions[roundIndex];
-    if (!round || round === AFL_TOP_PICKS_CURRENT) {
+    if (!round || round.isCurrent) {
       setHistoryGroups([]);
       return;
     }
     let cancelled = false;
     setHistoryLoading(true);
-    void loadHistoryRound(round).finally(() => {
+    void loadHistoryRound(round.roundKeys).finally(() => {
       if (!cancelled) setHistoryLoading(false);
     });
     return () => {
@@ -749,7 +813,7 @@ function AflTopPicksModal({
             ←
           </button>
           <span className="min-w-[7rem] text-center text-sm font-semibold text-gray-900 dark:text-white">
-            {aflTopPicksModalRoundLabel(activeRound)}
+            {aflTopPicksModalRoundLabel(activeRound?.id ?? AFL_TOP_PICKS_CURRENT)}
           </span>
           <button
             type="button"
@@ -763,11 +827,11 @@ function AflTopPicksModal({
         </div>
         {roundOptions.length > 1 ? (
           <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-            {roundOptions.map((roundKey, idx) => {
+            {roundOptions.map((round, idx) => {
               const active = idx === roundIndex;
               return (
                 <button
-                  key={roundKey}
+                  key={round.id}
                   type="button"
                   disabled={loading}
                   onClick={() => setRoundIndex(idx)}
@@ -777,7 +841,7 @@ function AflTopPicksModal({
                       : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  {aflTopPicksModalRoundLabel(roundKey)}
+                  {aflTopPicksModalRoundLabel(round.id)}
                 </button>
               );
             })}
@@ -795,7 +859,7 @@ function AflTopPicksModal({
         ) : null}
         {loading ? (
           <div className="text-sm text-gray-500 dark:text-gray-400">Loading top picks...</div>
-        ) : displayGroups.length === 0 ? (
+        ) : (showHistoryGroups ? displayGroups.length === 0 : displayRoundSections.length === 0) ? (
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {isCurrentRound ? 'No ranked top picks available yet.' : 'No saved top picks for this round.'}
           </div>
@@ -816,62 +880,77 @@ function AflTopPicksModal({
                 </tr>
               </thead>
               <tbody>
-                {displayGroups.map((group, groupIdx) => {
-                  const homeLogo = resolveTeamLogo(group.homeTeam, logoByTeam);
-                  const awayLogo = resolveTeamLogo(group.awayTeam, logoByTeam);
-                  const groupStripeClass =
-                    groupIdx % 2 === 0 ? (isDark ? 'bg-[#0b2138]' : 'bg-white') : isDark ? 'bg-[#102a44]' : 'bg-gray-50';
-                  return group.picks.map((pick, idx) => {
-                    const bookmakerInfo = getBookmakerInfo(String(pick.bookmaker ?? ''));
-                    const resultClass =
-                      pick.result === 'Hit' ? 'text-emerald-500' : pick.result === 'Miss' ? 'text-rose-500' : 'text-gray-500';
-                    return (
-                      <tr key={`${group.gameKey}-${pick.rank ?? 0}-${pick.playerName}`} className={`${groupStripeClass} border-b border-gray-100 dark:border-gray-800/60`}>
-                        {idx === 0 ? (
-                          <td rowSpan={group.picks.length} className="px-2.5 py-2 align-middle">
-                            <div className="flex items-center justify-center gap-2">
-                              {homeLogo ? <img src={homeLogo} alt={group.homeTeam} className="h-6 w-6 rounded object-contain" /> : <span className="h-6 w-6 rounded bg-gray-400/50" />}
-                              <span className="text-sm font-semibold text-gray-900 dark:text-white">vs</span>
-                              {awayLogo ? <img src={awayLogo} alt={group.awayTeam} className="h-6 w-6 rounded object-contain" /> : <span className="h-6 w-6 rounded bg-gray-400/50" />}
-                            </div>
-                            <div className="mt-1.5 text-center text-[13px] font-semibold text-gray-700 dark:text-gray-300">
-                              {group.commenceTime ? formatPastLineDate(String(group.commenceTime).slice(0, 10)) : 'Game'}
-                            </div>
-                          </td>
-                        ) : null}
-                        <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">{pick.rank ?? '—'}</td>
-                        <td className="px-2.5 py-2 text-gray-900 dark:text-white">{pick.playerName}</td>
-                        <td className="px-2.5 py-2 text-gray-700 dark:text-gray-200">{pick.recommendedSide ?? '—'}</td>
-                        <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">{pick.line != null ? pick.line.toFixed(1) : '—'}</td>
-                        <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
-                          {pick.recommendedEdge != null ? `${pick.recommendedEdge >= 0 ? '+' : ''}${(pick.recommendedEdge * 100).toFixed(1)}%` : '—'}
-                        </td>
-                        <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
-                          {aflTopPicksModalPickShowResult(pick) && pick.actualDisposals != null ? pick.actualDisposals : '—'}
-                        </td>
-                        <td className="px-2.5 py-2 text-center">
-                          {aflTopPicksModalPickShowResult(pick) ? (
-                            <span className={`text-base font-bold tabular-nums ${resultClass}`}>{aflTopPicksModalResultMark(pick.result)}</span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-2.5 py-2">
-                          {pick.bookmaker ? (
-                            bookmakerInfo.logoUrl ? (
-                              <img src={bookmakerInfo.logoUrl} alt={bookmakerInfo.name} className="w-5 h-5 rounded object-contain" />
-                            ) : (
-                              <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white" style={{ backgroundColor: bookmakerInfo.color }}>
-                                {bookmakerInfo.logo}
-                              </span>
-                            )
-                          ) : (
-                            '—'
-                          )}
+                {(showHistoryGroups
+                  ? [{ roundKey: '', groups: displayGroups }]
+                  : displayRoundSections
+                ).flatMap((section, sectionIdx) => {
+                  const sectionHeader =
+                    !showHistoryGroups && section.roundKey ? (
+                      <tr key={`section-${section.roundKey}`} className={isDark ? 'bg-[#081523]' : 'bg-gray-100'}>
+                        <td colSpan={9} className="px-2.5 py-2 text-sm font-bold text-gray-900 dark:text-white">
+                          {aflTopPicksModalRoundLabel(section.roundKey)}
                         </td>
                       </tr>
-                    );
+                    ) : null;
+                  const rows = section.groups.flatMap((group, groupIdx) => {
+                    const homeLogo = resolveTeamLogo(group.homeTeam, logoByTeam);
+                    const awayLogo = resolveTeamLogo(group.awayTeam, logoByTeam);
+                    const stripeIdx = showHistoryGroups ? groupIdx : sectionIdx * 100 + groupIdx;
+                    const groupStripeClass =
+                      stripeIdx % 2 === 0 ? (isDark ? 'bg-[#0b2138]' : 'bg-white') : isDark ? 'bg-[#102a44]' : 'bg-gray-50';
+                    return group.picks.map((pick, idx) => {
+                      const bookmakerInfo = getBookmakerInfo(String(pick.bookmaker ?? ''));
+                      const resultClass =
+                        pick.result === 'Hit' ? 'text-emerald-500' : pick.result === 'Miss' ? 'text-rose-500' : 'text-gray-500';
+                      return (
+                        <tr key={`${group.gameKey}-${pick.rank ?? 0}-${pick.playerName}`} className={`${groupStripeClass} border-b border-gray-100 dark:border-gray-800/60`}>
+                          {idx === 0 ? (
+                            <td rowSpan={group.picks.length} className="px-2.5 py-2 align-middle">
+                              <div className="flex items-center justify-center gap-2">
+                                {homeLogo ? <img src={homeLogo} alt={group.homeTeam} className="h-6 w-6 rounded object-contain" /> : <span className="h-6 w-6 rounded bg-gray-400/50" />}
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">vs</span>
+                                {awayLogo ? <img src={awayLogo} alt={group.awayTeam} className="h-6 w-6 rounded object-contain" /> : <span className="h-6 w-6 rounded bg-gray-400/50" />}
+                              </div>
+                              <div className="mt-1.5 text-center text-[13px] font-semibold text-gray-700 dark:text-gray-300">
+                                {group.commenceTime ? formatPastLineDate(String(group.commenceTime).slice(0, 10)) : 'Game'}
+                              </div>
+                            </td>
+                          ) : null}
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">{pick.rank ?? '—'}</td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white">{pick.playerName}</td>
+                          <td className="px-2.5 py-2 text-gray-700 dark:text-gray-200">{pick.recommendedSide ?? '—'}</td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">{pick.line != null ? pick.line.toFixed(1) : '—'}</td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
+                            {pick.recommendedEdge != null ? `${pick.recommendedEdge >= 0 ? '+' : ''}${(pick.recommendedEdge * 100).toFixed(1)}%` : '—'}
+                          </td>
+                          <td className="px-2.5 py-2 text-gray-900 dark:text-white tabular-nums">
+                            {aflTopPicksModalPickShowResult(pick) && pick.actualDisposals != null ? pick.actualDisposals : '—'}
+                          </td>
+                          <td className="px-2.5 py-2 text-center">
+                            {aflTopPicksModalPickShowResult(pick) ? (
+                              <span className={`text-base font-bold tabular-nums ${resultClass}`}>{aflTopPicksModalResultMark(pick.result)}</span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="px-2.5 py-2">
+                            {pick.bookmaker ? (
+                              bookmakerInfo.logoUrl ? (
+                                <img src={bookmakerInfo.logoUrl} alt={bookmakerInfo.name} className="w-5 h-5 rounded object-contain" />
+                              ) : (
+                                <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold text-white" style={{ backgroundColor: bookmakerInfo.color }}>
+                                  {bookmakerInfo.logo}
+                                </span>
+                              )
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    });
                   });
+                  return sectionHeader ? [sectionHeader, ...rows] : rows;
                 })}
               </tbody>
             </table>

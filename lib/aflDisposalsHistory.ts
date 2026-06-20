@@ -359,6 +359,7 @@ function loadTopPicksHistoryRecords(): AflTopPickSnapshotRecord[] {
   }
 
   records = mergeBackfillIntoTopPicksRecords(records);
+  records = enrichTopPicksRecordsWithRoundKeys(records);
   if (records.length > 0) {
     return sortAflTopPickSnapshotRecords(records);
   }
@@ -506,6 +507,17 @@ export function mergeAflTopPickSnapshotRecords(
     ...incoming,
     roundKey,
     picks: mergeAflTopPickPicks(incoming.picks, existing.picks),
+  });
+}
+
+function enrichTopPicksRecordsWithRoundKeys(records: AflTopPickSnapshotRecord[]): AflTopPickSnapshotRecord[] {
+  if (records.length === 0) return records;
+  const roundLookup = buildAflTopPicksRoundLookup(records);
+  return records.map((record) => {
+    const roundKey =
+      record.roundKey ?? roundLookup.get(record.gameKey) ?? inferAflTopPicksRoundKey(record.commenceTime, records);
+    if (!roundKey || roundKey === record.roundKey) return record;
+    return normalizeAflTopPickSnapshotRecord({ ...record, roundKey });
   });
 }
 
@@ -667,9 +679,15 @@ export function filterAflTopPicksHistory(opts: {
 } = {}): AflTopPickSnapshotRecord[] {
   const history = readAflTopPicksHistory();
   const player = String(opts.playerName ?? '').trim().toLowerCase();
+  const roundKeysFilter = opts.roundKey
+    ? opts.roundKey
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
   const rows = history.records.filter((record) => {
     if (opts.weekKey && record.weekKey !== opts.weekKey) return false;
-    if (opts.roundKey && record.roundKey !== opts.roundKey) return false;
+    if (roundKeysFilter.length > 0 && (!record.roundKey || !roundKeysFilter.includes(record.roundKey))) return false;
     if (opts.gameKey && record.gameKey !== opts.gameKey) return false;
     if (player && !record.picks.some((pick) => pick.playerName.toLowerCase() === player)) return false;
     return true;
