@@ -138,7 +138,8 @@
     "afl:model:test-local": "powershell -ExecutionPolicy Bypass -File scripts/afl_model/test-local-training-loop.ps1",
     "afl:model:run": "python scripts/afl_model/build_dataset.py && python scripts/afl_model/train_disposals_model.py && python scripts/afl_model/score_upcoming.py",
     "snapshot:afl:top-picks": "npx tsx scripts/snapshot-afl-top-picks.ts",
-    "backfill:afl:top-picks": "npx tsx scripts/backfill-afl-top-picks-history.ts"
+    "enrich:afl:top-picks": "node scripts/enrich-afl-top-picks-actuals.mjs",
+    "backfill:afl:top-picks": "node scripts/apply-prediction-engine-tables.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "137.0.1",

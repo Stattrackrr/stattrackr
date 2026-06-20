@@ -241,6 +241,31 @@ jobs:
             echo "✅ AFL props-stats warm completed"
           fi
 
+      - name: Enrich Top Picks actual disposals
+        if: steps.check.outputs.configured == 'true'
+        run: npm run enrich:afl:top-picks -- --base-url="${{ secrets.PROD_URL }}"
+
+      - name: Commit Top Picks actuals if changed
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          git stash --include-untracked 2>/dev/null || true
+          git checkout -B master origin/master
+          git stash pop 2>/dev/null || true
+          git add data/afl-model/history/top-picks-history.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No Top Picks actuals changes"
+          else
+            git commit -m "chore(data): enrich AFL top picks actual disposals [skip ci]"
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+            git push origin HEAD:master
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       # Guardrail: ensure list DvP ranks match DvP card source for all props rows.
       # Fails workflow on any mismatch so regressions are caught before users see split ranks.
       - name: Validate AFL DvP consistency across all props players

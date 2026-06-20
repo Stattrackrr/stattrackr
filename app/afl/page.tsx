@@ -471,13 +471,31 @@ function aflTopPicksModalResultMark(result: AflTopPicksModalPick['result']): str
   return '—';
 }
 
+function aflTopPicksModalIsUpcomingGame(commenceTime: string | null | undefined): boolean {
+  if (!commenceTime) return true;
+  const kickoff = Date.parse(commenceTime);
+  if (Number.isFinite(kickoff)) return kickoff > Date.now();
+  const gameDate = commenceTime.slice(0, 10);
+  const todayIso = aflTopPicksModalLocalIsoDate(new Date());
+  return gameDate >= todayIso;
+}
+
 function aflTopPicksModalMergeCurrentGroups(
   latestRoundGroups: AflTopPicksModalGroup[],
   liveGroups: AflTopPicksModalGroup[]
 ): AflTopPicksModalGroup[] {
-  const byKey = new Map(latestRoundGroups.map((group) => [group.gameKey, group]));
+  const byKey = new Map<string, AflTopPicksModalGroup>();
+  for (const group of latestRoundGroups) {
+    if (!aflTopPicksModalIsUpcomingGame(group.commenceTime)) {
+      byKey.set(group.gameKey, group);
+    }
+  }
   for (const group of liveGroups) {
-    if (!byKey.has(group.gameKey)) byKey.set(group.gameKey, group);
+    if (aflTopPicksModalIsUpcomingGame(group.commenceTime)) {
+      byKey.set(group.gameKey, group);
+    } else if (!byKey.has(group.gameKey)) {
+      byKey.set(group.gameKey, group);
+    }
   }
   return [...byKey.values()].sort((a, b) => String(a.commenceTime ?? '').localeCompare(String(b.commenceTime ?? '')));
 }
@@ -649,7 +667,14 @@ function AflTopPicksModal({
         const historyPayload = historyRes.ok ? await historyRes.json() : null;
         if (cancelled) return;
         const groups = Array.isArray(currentPayload?.groups) ? (currentPayload.groups as AflTopPicksModalGroup[]) : [];
-        setCurrentGroups(groups);
+        const liveRecords = groups.map((group) => ({
+          gameKey: group.gameKey,
+          homeTeam: group.homeTeam,
+          awayTeam: group.awayTeam,
+          commenceTime: group.commenceTime,
+          picks: group.picks,
+        })) as AflTopPicksHistoryRecord[];
+        setCurrentGroups(await resolveHistoryResults(liveRecords));
         const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
         setRoundKeys(rounds);
         setRoundIndex(rounds.length);

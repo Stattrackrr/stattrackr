@@ -50,6 +50,7 @@ jobs:
         env:
           WINDOW_HOURS: ${{ github.event.inputs.window_hours || '2' }}
           FORCE_SNAPSHOT: ${{ github.event.inputs.force || 'false' }}
+          PROD_URL: ${{ secrets.PROD_URL }}
         run: |
           set -euo pipefail
           ARGS="--window-hours=${WINDOW_HOURS}"
@@ -57,6 +58,9 @@ jobs:
             ARGS="${ARGS} --force"
           fi
           npm run snapshot:afl:top-picks -- ${ARGS}
+          if [ -n "${PROD_URL}" ]; then
+            npm run enrich:afl:top-picks -- --base-url="${PROD_URL}"
+          fi
 
       - name: Commit and push Top Picks history if changed
         env:

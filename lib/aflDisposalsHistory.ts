@@ -346,16 +346,21 @@ function readBackfillTopPicksRecords(): AflTopPickSnapshotRecord[] {
 }
 
 function loadTopPicksHistoryRecords(): AflTopPickSnapshotRecord[] {
+  let records: AflTopPickSnapshotRecord[] = [];
   if (fs.existsSync(AFL_TOP_PICKS_HISTORY_PATH)) {
     try {
       const parsed = readJsonFileAnyEncoding(AFL_TOP_PICKS_HISTORY_PATH) as AflTopPickSnapshotPayload;
-      const records = Array.isArray(parsed.records)
+      records = Array.isArray(parsed.records)
         ? parsed.records.map((record) => normalizeAflTopPickSnapshotRecord(record))
         : [];
-      if (records.length > 0) return sortAflTopPickSnapshotRecords(records);
     } catch {
-      // fall through
+      records = [];
     }
+  }
+
+  records = mergeBackfillIntoTopPicksRecords(records);
+  if (records.length > 0) {
+    return sortAflTopPickSnapshotRecords(records);
   }
 
   const backfillRecords = readBackfillTopPicksRecords();
@@ -423,6 +428,133 @@ export function listAflTopPicksRoundKeys(records: AflTopPickSnapshotRecord[]): s
   );
 }
 
+function mergeAflTopPickPicks(
+  primaryPicks: AflTopGamePick[],
+  secondaryPicks: AflTopGamePick[]
+): AflTopGamePick[] {
+  const secondaryByPlayer = new Map(secondaryPicks.map((pick) => [pick.playerName.toLowerCase(), pick]));
+  return primaryPicks.map((pick, idx) => {
+    const secondary = secondaryByPlayer.get(pick.playerName.toLowerCase()) ?? secondaryPicks[idx];
+    return {
+      ...pick,
+      bookmaker: pick.bookmaker ?? secondary?.bookmaker ?? null,
+      actualDisposals: pick.actualDisposals ?? secondary?.actualDisposals ?? null,
+    };
+  });
+}
+
+export function buildAflTopPicksRoundLookup(records: AflTopPickSnapshotRecord[]): Map<string, string> {
+  const lookup = new Map<string, string>();
+  for (const record of records) {
+    if (!record.roundKey) continue;
+    lookup.set(record.gameKey, record.roundKey);
+  }
+  return lookup;
+}
+
+export function inferAflTopPicksRoundKey(
+  commenceTime: string | null,
+  records: AflTopPickSnapshotRecord[]
+): string | null {
+  if (!commenceTime) return null;
+  const date = commenceTime.slice(0, 10);
+  const weekKey = aflTopPicksWeekKeyFromCommenceTime(commenceTime);
+  const withRound = records.filter((record) => record.roundKey && record.commenceTime);
+  if (weekKey) {
+    const sameWeek = withRound.find((record) => record.weekKey === weekKey);
+    if (sameWeek?.roundKey) return sameWeek.roundKey;
+  }
+  const roundBounds = new Map<string, { min: string; max: string }>();
+  for (const record of withRound) {
+    const gameDate = String(record.commenceTime).slice(0, 10);
+    const roundKey = record.roundKey!;
+    const bounds = roundBounds.get(roundKey) ?? { min: gameDate, max: gameDate };
+    if (gameDate < bounds.min) bounds.min = gameDate;
+    if (gameDate > bounds.max) bounds.max = gameDate;
+    roundBounds.set(roundKey, bounds);
+  }
+  for (const [roundKey, bounds] of roundBounds) {
+    if (date >= bounds.min && date <= bounds.max) return roundKey;
+  }
+  const sortedRoundKeys = sortAflTopPicksRoundKeys([...roundBounds.keys()]);
+  const latestRoundKey = sortedRoundKeys[sortedRoundKeys.length - 1];
+  if (!latestRoundKey) return null;
+  const latestBounds = roundBounds.get(latestRoundKey);
+  const parsed = parseAflTopPicksRoundKey(latestRoundKey);
+  if (latestBounds && parsed && date > latestBounds.max) {
+    return `${parsed.season}-R${parsed.round + 1}`;
+  }
+  return null;
+}
+
+export function mergeAflTopPickSnapshotRecords(
+  existing: AflTopPickSnapshotRecord | undefined,
+  incoming: AflTopPickSnapshotRecord,
+  roundLookup: Map<string, string>,
+  allRecords: AflTopPickSnapshotRecord[]
+): AflTopPickSnapshotRecord {
+  const roundKey =
+    incoming.roundKey ??
+    existing?.roundKey ??
+    roundLookup.get(incoming.gameKey) ??
+    inferAflTopPicksRoundKey(incoming.commenceTime, allRecords);
+  if (!existing) {
+    return normalizeAflTopPickSnapshotRecord({ ...incoming, roundKey });
+  }
+  return normalizeAflTopPickSnapshotRecord({
+    ...existing,
+    ...incoming,
+    roundKey,
+    picks: mergeAflTopPickPicks(incoming.picks, existing.picks),
+  });
+}
+
+function mergeBackfillIntoTopPicksRecords(records: AflTopPickSnapshotRecord[]): AflTopPickSnapshotRecord[] {
+  const backfillRecords = readBackfillTopPicksRecords();
+  if (backfillRecords.length === 0) return records;
+  const combined = [...records];
+  for (const backfillRecord of backfillRecords) {
+    const index = combined.findIndex((record) => record.gameKey === backfillRecord.gameKey);
+    if (index < 0) {
+      combined.push(backfillRecord);
+      continue;
+    }
+    combined[index] = normalizeAflTopPickSnapshotRecord({
+      ...combined[index],
+      roundKey: combined[index].roundKey ?? backfillRecord.roundKey,
+      picks: mergeAflTopPickPicks(combined[index].picks, backfillRecord.picks),
+    });
+  }
+  return sortAflTopPickSnapshotRecords(combined);
+}
+
+function dedupeTopPickPlayers(picks: AflTopGamePick[]): AflTopGamePick[] {
+  const byPlayer = new Map<string, AflTopGamePick>();
+  for (const pick of picks) {
+    const key = pick.playerName.trim().toLowerCase();
+    if (!key) continue;
+    const existing = byPlayer.get(key);
+    if (!existing) {
+      byPlayer.set(key, pick);
+      continue;
+    }
+    const rankA = pick.rank ?? Number.MAX_SAFE_INTEGER;
+    const rankB = existing.rank ?? Number.MAX_SAFE_INTEGER;
+    if (rankA < rankB) {
+      byPlayer.set(key, pick);
+      continue;
+    }
+    if (rankA > rankB) continue;
+    const edgeA = pick.recommendedEdge ?? -1;
+    const edgeB = existing.recommendedEdge ?? -1;
+    if (edgeA > edgeB) byPlayer.set(key, pick);
+  }
+  return [...byPlayer.values()]
+    .sort((a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER))
+    .slice(0, 3)
+    .map((pick, idx) => ({ ...pick, rank: idx + 1 }));
+}
+
 export function normalizeAflTopPickSnapshotRecord(
   record: Omit<Partial<AflTopPickSnapshotRecord>, 'picks'> & { picks?: Partial<AflTopGamePick>[] }
 ): AflTopPickSnapshotRecord {
@@ -450,6 +582,8 @@ export function normalizeAflTopPickSnapshotRecord(
       typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals) ? pick.actualDisposals : null,
   }));
 
+  const uniquePicks = dedupeTopPickPlayers(picks);
+
   return {
     gameKey,
     finalizedAt: record.finalizedAt ?? new Date().toISOString(),
@@ -461,7 +595,7 @@ export function normalizeAflTopPickSnapshotRecord(
     commenceTime,
     weekKey,
     roundKey,
-    picks,
+    picks: uniquePicks,
   };
 }
 
@@ -509,9 +643,12 @@ export function upsertAflTopPicksHistoryRecords(
       skipped += 1;
       continue;
     }
+    const existing = byGame.get(normalized.gameKey);
+    const roundLookup = buildAflTopPicksRoundLookup([...byGame.values()]);
+    const merged = mergeAflTopPickSnapshotRecords(existing, normalized, roundLookup, [...byGame.values()]);
     if (byGame.has(normalized.gameKey)) replaced += 1;
     else added += 1;
-    byGame.set(normalized.gameKey, normalized);
+    byGame.set(normalized.gameKey, merged);
   }
 
   const records = sortAflTopPickSnapshotRecords([...byGame.values()]);

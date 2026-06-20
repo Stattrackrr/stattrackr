@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/soccer/player-stats-batch': [...chromiumBinTrace],
     '/api/soccer/player-props-test': [...chromiumBinTrace],
+    '/api/afl/model/disposals/top-picks': ['./data/afl-model/history/**/*'],
+    '/api/afl/model/disposals/top-picks/route': ['./data/afl-model/history/**/*'],
   },
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
