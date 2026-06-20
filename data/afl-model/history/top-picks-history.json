@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-19T15:51:06.847Z",
-  "count": 7,
+  "generatedAt": "2026-06-20T04:52:28.185Z",
+  "count": 8,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -12,7 +12,6 @@
       "awayTeam": "Melbourne",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Mason Redman",
@@ -22,8 +21,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.094,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         }
       ]
     },
@@ -37,7 +35,6 @@
       "awayTeam": "West Coast",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Cooper Harvey",
@@ -47,8 +44,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.11800000000000001,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         }
       ]
     },
@@ -62,7 +58,6 @@
       "awayTeam": "Sydney",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Logan Evans",
@@ -72,8 +67,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         },
         {
           "playerName": "Jai Serong",
@@ -83,8 +77,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.043,
           "recommendedProb": null,
-          "rank": 2,
-          "actualDisposals": null
+          "rank": 2
         },
         {
           "playerName": "Brodie Grundy",
@@ -94,8 +87,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.037000000000000005,
           "recommendedProb": null,
-          "rank": 3,
-          "actualDisposals": null
+          "rank": 3
         }
       ]
     },
@@ -109,7 +101,6 @@
       "awayTeam": "Brisbane",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
-      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Dion Prestia",
@@ -119,8 +110,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         },
         {
           "playerName": "Sam Banks",
@@ -130,8 +120,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 2,
-          "actualDisposals": null
+          "rank": 2
         },
         {
           "playerName": "Jacob Hopper",
@@ -141,8 +130,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3,
-          "actualDisposals": null
+          "rank": 3
         }
       ]
     },
@@ -156,7 +144,6 @@
       "awayTeam": "GWS",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
-      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Finn Callaghan",
@@ -166,8 +153,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         },
         {
           "playerName": "Harrison Himmelberg",
@@ -177,8 +163,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 2,
-          "actualDisposals": null
+          "rank": 2
         },
         {
           "playerName": "Callum Wilkie",
@@ -188,8 +173,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3,
-          "actualDisposals": null
+          "rank": 3
         }
       ]
     },
@@ -203,7 +187,6 @@
       "awayTeam": "Fremantle",
       "commenceTime": "2026-06-18",
       "weekKey": "2026-W25",
-      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "Karl Worner",
@@ -213,8 +196,7 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.091,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         },
         {
           "playerName": "Matt Johnson",
@@ -224,8 +206,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.142,
           "recommendedProb": null,
-          "rank": 2,
-          "actualDisposals": 15
+          "rank": 2
         }
       ]
     },
@@ -239,7 +220,6 @@
       "awayTeam": "Hawthorn",
       "commenceTime": "2026-06-19",
       "weekKey": "2026-W25",
-      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "John Noble",
@@ -249,8 +229,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 1,
-          "actualDisposals": null
+          "rank": 1
         },
         {
           "playerName": "Cam Mackenzie",
@@ -260,8 +239,7 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 2,
-          "actualDisposals": 16
+          "rank": 2
         },
         {
           "playerName": "Jarman Impey",
@@ -271,8 +249,30 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3,
-          "actualDisposals": null
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "gameKey": "gwsgiants|carltonblues|2026-06-20",
+      "finalizedAt": "2026-06-20T04:52:28.185Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+      "modelVersion": "afl-disp-20260619-183138",
+      "homeTeam": "GWS Giants",
+      "awayTeam": "Carlton Blues",
+      "commenceTime": "2026-06-20T06:15:24Z",
+      "weekKey": "2026-W25",
+      "picks": [
+        {
+          "playerName": "Patrick Cripps",
+          "bookmaker": "PointsBet (AU)",
+          "line": 25.5,
+          "expectedDisposals": 27.36,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0782,
+          "recommendedProb": 0.5782,
+          "rank": 1
         }
       ]
     }
