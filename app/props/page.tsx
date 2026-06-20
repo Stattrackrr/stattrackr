@@ -201,6 +201,7 @@ function navigateToWorldCupDashboardFromProp(
   });
   const dashboardUrl = `/api/world-cup/dashboard?${dashboardParams.toString()}`;
   prefetchWorldCupDashboard(dashboardUrl);
+  prefetchWorldCupDashboard('/api/world-cup/dashboard?oppBreakdown=1&wcOnly=1');
 
   const prefetchUrls = [
     `/api/world-cup/players?search=${encodeURIComponent(prop.playerName)}&competition=all`,
@@ -238,6 +239,18 @@ const PROPS_DESKTOP_STAT_COL_STYLE = {
   width: '88px',
   minWidth: '88px',
   maxWidth: '88px',
+} as const;
+
+const PROPS_DESKTOP_ODDS_COL_STYLE = {
+  width: '300px',
+  minWidth: '300px',
+  maxWidth: '300px',
+} as const;
+
+const PROPS_DESKTOP_IP_COL_STYLE = {
+  width: '120px',
+  minWidth: '120px',
+  maxWidth: '120px',
 } as const;
 
 function normalizeAflStatForDashboard(stat: string): string {
@@ -941,7 +954,7 @@ function normalizeNbaTeam(team: string): string {
 }
 
 const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
-const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v8';
+const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v9';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
 function wcPropsMeetsMinOdds(overOdds?: string, underOdds?: string, yesOdds?: string): boolean {
@@ -1085,7 +1098,7 @@ function selectedGameIdsForProps(
 function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'world-cup'): boolean {
   return rowSport !== 'world-cup';
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v2';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v3';
 function getSecondaryPropsCacheKey(sport: 'afl' | 'world-cup'): string {
   return sport === 'world-cup' ? WC_PROPS_CACHE_KEY : AFL_PROPS_CACHE_KEY;
 }
@@ -7629,9 +7642,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 Sport
                               </th>
                             )}
-                            <th className={`text-left py-3 px-4 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`}>Odds</th>
+                            <th className={`text-left py-3 px-4 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm`} style={PROPS_DESKTOP_ODDS_COL_STYLE}>Odds</th>
                             <th 
                               className={`text-left py-3 px-4 ${mounted && isDark ? 'text-gray-300' : 'text-gray-700'} font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity select-none`}
+                              style={PROPS_DESKTOP_IP_COL_STYLE}
                               onClick={() => handleColumnSort('ip')}
                             >
                               <div className="flex items-center gap-1.5">
@@ -8200,8 +8214,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 )}
                                 
                                 {/* Odds Column - Show bookmakers grouped by line with expand/collapse */}
-                                <td className="py-3 px-4">
-                                  <div className="space-y-2">
+                                <td className="py-3 px-4 align-top" style={PROPS_DESKTOP_ODDS_COL_STYLE}>
+                                  <div className="space-y-2 max-w-full">
                                     {prop.bookmakerLines && prop.bookmakerLines.length > 0 ? (
                                       (() => {
                                         // Filter bookmakerLines by selected bookmakers (if any are selected)
@@ -8237,7 +8251,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           const isPopupOpen = openPopup === expandKey;
 
                                           return (
-                                            <div key={lineValue} className="flex items-center gap-1.5">
+                                            <div key={lineValue} className="flex flex-wrap items-center gap-1.5 max-w-full">
                                               {/* Show visible bookmakers for this line */}
                                               {visibleLines.map((line, lineIdx) => {
                                                 const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
@@ -8469,8 +8483,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 </td>
                                 
                                 {/* IP Column - Implied Odds */}
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center gap-6">
+                                <td className="py-3 px-4 align-top whitespace-nowrap" style={PROPS_DESKTOP_IP_COL_STYLE}>
+                                  <div className="flex items-center">
                                     {/* Bookmakers */}
                                     <div className="flex flex-col gap-1">
                                       <div className={`text-[10px] ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
