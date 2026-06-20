@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-20T04:52:28.185Z",
-  "count": 8,
+  "generatedAt": "2026-06-20T08:22:38.985Z",
+  "count": 9,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -273,6 +273,39 @@
           "recommendedEdge": 0.0782,
           "recommendedProb": 0.5782,
           "rank": 1
+        }
+      ]
+    },
+    {
+      "gameKey": "collingwoodmagpies|portadelaidepower|2026-06-20",
+      "finalizedAt": "2026-06-20T08:22:38.985Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+      "modelVersion": "afl-disp-20260619-183138",
+      "homeTeam": "Collingwood Magpies",
+      "awayTeam": "Port Adelaide Power",
+      "commenceTime": "2026-06-20T09:35:00Z",
+      "weekKey": "2026-W25",
+      "picks": [
+        {
+          "playerName": "Jack Lukosius",
+          "bookmaker": "PointsBet (AU)",
+          "line": 16.5,
+          "expectedDisposals": 10.84,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1604,
+          "recommendedProb": 0.6604,
+          "rank": 1
+        },
+        {
+          "playerName": "Jase Burgoyne",
+          "bookmaker": "PointsBet (AU)",
+          "line": 22.5,
+          "expectedDisposals": 18.09,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0737,
+          "recommendedProb": 0.5737,
+          "rank": 2
         }
       ]
     }
