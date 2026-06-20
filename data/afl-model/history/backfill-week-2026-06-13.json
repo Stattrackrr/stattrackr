@@ -198,5 +198,86 @@
         "rank": 3
       }
     ]
+  },
+  {
+    "homeTeam": "Adelaide Crows",
+    "awayTeam": "Melbourne Demons",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T01:15:00.000Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T03:15:00Z",
+    "picks": [
+      {
+        "playerName": "Ed Langdon",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 20.5,
+        "actualDisposals": 18,
+        "edge": "16.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Tom Sparrow",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 22.5,
+        "actualDisposals": 28,
+        "edge": "16.7%",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "homeTeam": "GWS Giants",
+    "awayTeam": "Carlton Blues",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T04:52:28.185Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T06:15:24Z",
+    "picks": [
+      {
+        "playerName": "Patrick Cripps",
+        "bookmaker": "PointsBet (AU)",
+        "side": "OVER",
+        "line": 25.5,
+        "actualDisposals": 33,
+        "edge": "7.8%",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "homeTeam": "Collingwood Magpies",
+    "awayTeam": "Port Adelaide Power",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T08:22:38.985Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T09:35:00Z",
+    "picks": [
+      {
+        "playerName": "Jack Lukosius",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 16.5,
+        "actualDisposals": 10,
+        "edge": "16.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Jase Burgoyne",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 22.5,
+        "actualDisposals": 23,
+        "edge": "7.4%",
+        "rank": 2
+      }
+    ]
   }
 ]

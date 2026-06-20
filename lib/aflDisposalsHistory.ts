@@ -462,8 +462,16 @@ export function inferAflTopPicksRoundKey(
   const weekKey = aflTopPicksWeekKeyFromCommenceTime(commenceTime);
   const withRound = records.filter((record) => record.roundKey && record.commenceTime);
   if (weekKey) {
-    const sameWeek = withRound.find((record) => record.weekKey === weekKey);
-    if (sameWeek?.roundKey) return sameWeek.roundKey;
+    const sameWeekRoundKeys = sortAflTopPicksRoundKeys(
+      Array.from(
+        new Set(
+          withRound.filter((record) => record.weekKey === weekKey).map((record) => record.roundKey!)
+        )
+      )
+    );
+    if (sameWeekRoundKeys.length > 0) {
+      return sameWeekRoundKeys[sameWeekRoundKeys.length - 1] ?? null;
+    }
   }
   const roundBounds = new Map<string, { min: string; max: string }>();
   for (const record of withRound) {
@@ -476,14 +484,6 @@ export function inferAflTopPicksRoundKey(
   }
   for (const [roundKey, bounds] of roundBounds) {
     if (date >= bounds.min && date <= bounds.max) return roundKey;
-  }
-  const sortedRoundKeys = sortAflTopPicksRoundKeys([...roundBounds.keys()]);
-  const latestRoundKey = sortedRoundKeys[sortedRoundKeys.length - 1];
-  if (!latestRoundKey) return null;
-  const latestBounds = roundBounds.get(latestRoundKey);
-  const parsed = parseAflTopPicksRoundKey(latestRoundKey);
-  if (latestBounds && parsed && date > latestBounds.max) {
-    return `${parsed.season}-R${parsed.round + 1}`;
   }
   return null;
 }

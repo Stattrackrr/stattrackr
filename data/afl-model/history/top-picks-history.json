@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-06-20T08:22:38.985Z",
-  "count": 9,
+  "count": 10,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -187,6 +187,7 @@
       "awayTeam": "Fremantle",
       "commenceTime": "2026-06-18",
       "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "Karl Worner",
@@ -220,6 +221,7 @@
       "awayTeam": "Hawthorn",
       "commenceTime": "2026-06-19",
       "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "John Noble",
@@ -254,6 +256,42 @@
       ]
     },
     {
+      "gameKey": "adelaidecrows|melbournedemons|2026-06-20",
+      "finalizedAt": "2026-06-20T01:15:00.000Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+      "modelVersion": "afl-disp-20260619-183138",
+      "homeTeam": "Adelaide Crows",
+      "awayTeam": "Melbourne Demons",
+      "commenceTime": "2026-06-20T03:15:00Z",
+      "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
+      "picks": [
+        {
+          "playerName": "Ed Langdon",
+          "bookmaker": "PointsBet (AU)",
+          "line": 20.5,
+          "expectedDisposals": 14.82,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1604,
+          "recommendedProb": 0.6604,
+          "rank": 1,
+          "actualDisposals": 18
+        },
+        {
+          "playerName": "Tom Sparrow",
+          "bookmaker": "Sportsbet",
+          "line": 22.5,
+          "expectedDisposals": 16.81,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1671,
+          "recommendedProb": 0.6591,
+          "rank": 2,
+          "actualDisposals": 28
+        }
+      ]
+    },
+    {
       "gameKey": "gwsgiants|carltonblues|2026-06-20",
       "finalizedAt": "2026-06-20T04:52:28.185Z",
       "windowHours": 2,
@@ -263,6 +301,7 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-06-20T06:15:24Z",
       "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "Patrick Cripps",
@@ -272,7 +311,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.0782,
           "recommendedProb": 0.5782,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 33
         }
       ]
     },
@@ -286,6 +326,7 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-06-20T09:35:00Z",
       "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
       "picks": [
         {
           "playerName": "Jack Lukosius",
@@ -295,7 +336,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1604,
           "recommendedProb": 0.6604,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 10
         },
         {
           "playerName": "Jase Burgoyne",
@@ -305,7 +347,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.0737,
           "recommendedProb": 0.5737,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 23
         }
       ]
     }
