@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-20T12:26:26.269Z",
+  "generatedAt": "2026-06-20T17:52:26.465Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -11,7 +11,7 @@
       "weather": {
         "temperatureC": 13.4,
         "precipitationMm": 0,
-        "windKmh": 8.3
+        "windKmh": 6.8
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-06-21T05:15:59Z",
       "weather": {
-        "temperatureC": 13.4,
+        "temperatureC": 13.3,
         "precipitationMm": 0,
-        "windKmh": 8.7
+        "windKmh": 8
       }
     }
   ],
