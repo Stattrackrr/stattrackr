@@ -42,6 +42,7 @@ import {
   WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY,
   WC_BACK_TO_PROPS_SKIP_FETCH_KEY,
   WC_PROPS_RETURN_SPORT_KEY,
+  clearWorldCupDashboardPersistence,
   WORLD_CUP_LOGO_PATH,
   WORLD_CUP_LOGO_MARK_CLASS,
   WORLD_CUP_LOGO_MARK_COMPACT_CLASS,
@@ -163,6 +164,7 @@ function navigateToWorldCupDashboardFromProp(
   const selectedBook = String(prop.bookmaker || '').trim();
 
   try {
+    clearWorldCupDashboardPersistence();
     sessionStorage.setItem(WC_PROPS_RETURN_SPORT_KEY, returnSport);
     sessionStorage.setItem(
       'wc_player_from_props',

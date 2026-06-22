@@ -112,6 +112,51 @@ export const WC_PROPS_RETURN_SPORT_KEY = 'wc_props_return_sport';
 export const WC_BACK_TO_PROPS_SKIP_FETCH_KEY = 'wc_back_to_props_skip_fetch';
 export const WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY = 'wc_back_to_props_clear_search';
 
+export const WORLD_CUP_SELECTION_KEYS = {
+  propsMode: 'world-cup:propsMode',
+  competition: 'world-cup:competition',
+  selectedTeam: 'world-cup:selectedTeam',
+  gamePropsTeam: 'world-cup:gamePropsTeam',
+  selectedPlayer: 'world-cup:selectedPlayer',
+  chartContext: 'world-cup:chartContext',
+} as const;
+
+/** Survives refresh; cleared when the tab/browser session ends. */
+export function worldCupSelectionStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** Drop legacy localStorage keys from before session-only persistence. */
+export function clearLegacyWorldCupLocalStorage(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    for (const key of Object.values(WORLD_CUP_SELECTION_KEYS)) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearWorldCupDashboardPersistence(): void {
+  const storage = worldCupSelectionStorage();
+  if (storage) {
+    try {
+      for (const key of Object.values(WORLD_CUP_SELECTION_KEYS)) {
+        storage.removeItem(key);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  clearLegacyWorldCupLocalStorage();
+}
+
 export function isSecondaryPropsSport(mode: PropsSportMode): mode is 'afl' | 'world-cup' {
   return mode === 'afl' || mode === 'world-cup';
 }
