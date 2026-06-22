@@ -6,6 +6,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import type { SoccerwayMatchStat, SoccerwayRecentMatch } from '@/lib/soccerwayTeamResults';
 import { getBookmakerInfo } from '@/lib/bookmakers';
+import { DEFAULT_ODDS_FORMAT } from '@/lib/currencyUtils';
 
 export type SoccerTimeframe = 'last5' | 'last10' | 'last20' | 'last50' | 'h2h' | 'all' | `season:${number}`;
 type SoccerVenueFilter = 'all' | 'HOME' | 'AWAY';
@@ -1068,7 +1069,7 @@ export const SoccerStatsChart = memo(function SoccerStatsChart({
   nextOpponentName = null,
   selectedTeamHref,
   nextFixtureMatchId,
-  oddsFormat = 'american',
+  oddsFormat = DEFAULT_ODDS_FORMAT,
   isDark,
   onSelectedStatChange,
   onSelectedTimeframeChange,

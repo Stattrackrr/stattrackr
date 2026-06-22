@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { OfficialPicksRecordModal } from '@/components/chat/OfficialPicksRecordModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { ArrowLeft, BarChart3, CornerUpLeft, Loader2, MessageSquareText, Pin, Plus, Send, Trash2, X } from 'lucide-react';
 
 type OddsFormat = 'american' | 'decimal';
@@ -264,7 +265,7 @@ export default function ChatPageClient() {
 
   const [viewer, setViewer] = useState<ViewerState>(DEFAULT_VIEWER);
   const [showPicksRecordModal, setShowPicksRecordModal] = useState(false);
-  const [oddsFormat, setOddsFormat] = useState<OddsFormat>('american');
+  const [oddsFormat, setOddsFormat] = useState<OddsFormat>(DEFAULT_ODDS_FORMAT);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -396,10 +397,7 @@ export default function ChatPageClient() {
 
   useEffect(() => {
     try {
-      const storedOddsFormat = window.localStorage.getItem('oddsFormat');
-      if (storedOddsFormat === 'american' || storedOddsFormat === 'decimal') {
-        setOddsFormat(storedOddsFormat);
-      }
+      setOddsFormat(readOddsFormatPreference());
     } catch {
       // Ignore local storage access issues.
     }

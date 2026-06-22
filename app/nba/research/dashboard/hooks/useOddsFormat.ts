@@ -1,20 +1,16 @@
 import { useEffect } from 'react';
+import { readOddsFormatPreference, type OddsDisplayFormat } from '@/lib/currencyUtils';
 
 export interface UseOddsFormatParams {
-  setOddsFormat: (format: 'american' | 'decimal') => void;
+  setOddsFormat: (format: OddsDisplayFormat) => void;
 }
 
-/**
- * Custom hook to load odds format from localStorage
- */
+/** Hydrate odds format from localStorage; defaults to decimal when unset. */
 export function useOddsFormat({
   setOddsFormat,
 }: UseOddsFormatParams) {
   useEffect(() => {
-    try {
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('oddsFormat') : null;
-      if (saved === 'decimal' || saved === 'american') setOddsFormat(saved as any);
-    } catch {}
+    setOddsFormat(readOddsFormatPreference());
   }, [setOddsFormat]);
 }
 

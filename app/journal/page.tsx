@@ -11,7 +11,7 @@ import { StatTrackrLogo, StatTrackrLogoWithText } from "@/components/StatTrackrL
 import { useTheme } from "@/contexts/ThemeContext";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts';
 import { getBookmakerInfo } from '@/lib/bookmakers';
-import { formatOdds } from '@/lib/currencyUtils';
+import { DEFAULT_ODDS_FORMAT, formatOdds, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { getFullTeamName } from '@/lib/teamMapping';
 import { generateInsights, type Insight } from '@/components/RightSidebar';
 import type { JournalBet as InsightsJournalBet } from '@/lib/insightsUtils';
@@ -381,7 +381,7 @@ function JournalContent() {
   };
   
   // Previously exposed a manual checkJournalBets helper on window; removed as part of resetting the journal resolving system.
-  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('decimal');
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
   const [dateRange, setDateRange] = useState<'all' | 'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -588,6 +588,14 @@ function JournalContent() {
   const [sidebarOpen] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [hasDesktopSidebar, setHasDesktopSidebar] = useState(false);
+
+  useEffect(() => {
+    try {
+      setOddsFormat(readOddsFormatPreference());
+    } catch {
+      // ignore
+    }
+  }, []);
   
   // Save all filter preferences to localStorage
   useEffect(() => {

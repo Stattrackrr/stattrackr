@@ -196,7 +196,9 @@ export type WcDataSource =
   | 'bdl-memory'
   | 'supabase-intl'
   | 'computed'
-  | 'match-detail-fallback';
+  | 'merged'
+  | 'match-detail-fallback'
+  | 'match-detail-scan';
 
 export type WcCacheDebugSummary = {
   bdlLiveCount: number;
@@ -1159,7 +1161,7 @@ export type WorldCupListPropRow = {
 };
 
 const WC_LIST_RESPONSE_CACHE_KEY = 'wc_props_list_response_v7';
-const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v8';
+const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v15';
 /** Props page + ingest: only this bookmaker (API-Football name). */
 const WC_LIST_BOOKMAKER = 'Bet365';
 /** Never expire; only replaced when cron runs (same as AFL odds / player-props cache). */
@@ -1218,16 +1220,18 @@ export function filterWorldCupListPropsByMinOdds(rows: WorldCupListPropRow[]): W
   return rows.filter((r) => wcMeetsMinPropsOdds(r.overOdds, r.underOdds, r.yesOdds));
 }
 
-/** Props page L5 / L10 / WC columns — require at least one populated category. */
+/** Props page L5 / L10 / WC / DvP columns — require at least one populated category. */
 export function worldCupPropHasPlayerCategoryStats(row: {
   last5Avg?: number | null;
   last10Avg?: number | null;
   wcGamesAvg?: number | null;
   wcGamesHitRate?: { hits: number; total: number } | null;
+  dvpRating?: number | null;
 }): boolean {
   if (row.last5Avg != null) return true;
   if (row.last10Avg != null) return true;
   if (row.wcGamesAvg != null) return true;
+  if (row.dvpRating != null && row.dvpRating > 0) return true;
   return (row.wcGamesHitRate?.total ?? 0) > 0;
 }
 
@@ -1657,33 +1661,66 @@ export type WorldCupPropStatsPayload = {
   wcGameLog?: WorldCupWcGameLogEntry[];
 };
 
-const WC_PROP_STATS_CACHE_PREFIX = 'wc_prop_stats_v5';
+const WC_PROP_STATS_CACHE_PREFIX = 'wc_prop_stats_v10';
+const WC_PROP_STATS_LEGACY_PREFIXES = ['wc_prop_stats_v10', 'wc_prop_stats_v9', 'wc_prop_stats_v8', 'wc_prop_stats_v7', 'wc_prop_stats_v6', 'wc_prop_stats_v5'] as const;
 /** Same as AFL prop-stats cache: replaced on warm; 24h TTL is a safety net only. */
 const WC_PROP_STATS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const WC_PROPS_STATS_SEASON = 2026;
+/** WC column + dashboard BDL history: FIFA World Cup finals 2018 / 2022 / 2026. DvP stays 2026-only. */
+const WC_PROPS_WC_COLUMN_SEASONS = new Set([2018, 2022, 2026]);
 /** BDL FIFA finals player stats for 2018/2022/2026 — built by `build:world-cup:bdl-cache` step 2. */
-const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v5';
+const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v8';
+const BDL_DVP_SUPPLEMENT_LEGACY_KEYS = [
+  'wc:bdl-dvp-supplement:v8',
+  'wc:bdl-dvp-supplement:v7',
+  'wc:bdl-dvp-supplement:v6',
+  'wc:bdl-dvp-supplement:v5',
+] as const;
 
 type WcBdlSupplementPayload = {
   matches?: BdlDvpSupplementMatch[];
   statRows?: BdlDvpSupplementRow[];
+  playerIdsByName?: Record<string, number[]>;
 };
 
 let wcBdlSupplementPayloadMem: WcBdlSupplementPayload | null | undefined;
 
 export function clearWcBdlSupplementPayloadMem(): void {
   wcBdlSupplementPayloadMem = undefined;
+  wcBdlSupplementPayloadKeyMem = undefined;
 }
 
 let wcPlayerIdByNameMem: Record<string, number> | null | undefined;
 let wcPlayerIndexMem: WorldCupPlayerIndexEntry[] | null | undefined;
 const wcResolvedBdlPlayerIdMem = new Map<string, number | null>();
-const wcPlayerGameLogsMem = new Map<string, Promise<Record<string, unknown>[]>>();
+const wcPlayerGameLogsMem = new Map<
+  string,
+  Promise<{
+    games: Record<string, unknown>[];
+    matches: Record<string, unknown>[];
+    mergedStatRows: Record<string, unknown>[];
+  }>
+>();
+
+let wcBdlSupplementPayloadKeyMem: string | null | undefined;
 
 async function wcGetBdlSupplementPayload(): Promise<WcBdlSupplementPayload | null> {
   if (wcBdlSupplementPayloadMem !== undefined) return wcBdlSupplementPayloadMem;
-  wcBdlSupplementPayloadMem = await getWorldCupCache<WcBdlSupplementPayload>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
-  return wcBdlSupplementPayloadMem;
+  wcBdlSupplementPayloadKeyMem = null;
+  for (const key of BDL_DVP_SUPPLEMENT_LEGACY_KEYS) {
+    const cached = await getWorldCupCache<WcBdlSupplementPayload>(key);
+    if (cached?.statRows?.length) {
+      wcBdlSupplementPayloadMem = cached;
+      wcBdlSupplementPayloadKeyMem = key;
+      return cached;
+    }
+  }
+  wcBdlSupplementPayloadMem = null;
+  return null;
+}
+
+function wcGetBdlSupplementCacheKey(): string | null {
+  return wcBdlSupplementPayloadKeyMem ?? null;
 }
 
 function wcPropStatsNormalizePlayerKey(name: string): string {
@@ -1714,18 +1751,235 @@ function wcPropStatsGetStatValue(game: Record<string, unknown>, statType: string
   return null;
 }
 
+function wcPropStatsPlayerAppearedInGame(game: Record<string, unknown>): boolean {
+  const minutes = Number(game.minutes_played);
+  if (Number.isFinite(minutes) && minutes > 0) return true;
+  const appearanceSignals = [
+    'goals',
+    'assists',
+    'shots_total',
+    'derived_shots_total',
+    'shots',
+    'shots_on_target',
+    'derived_shots_on_target',
+    'fouls_committed',
+    'fouls',
+    'yellow_cards',
+    'saves',
+  ];
+  return appearanceSignals.some((key) => game[key] != null);
+}
+
+/** WC column: count tournament appearances even when the stat line is 0. */
+function wcPropStatsGetWcColumnStatValue(game: Record<string, unknown>, statType: string): number | null {
+  const value = wcPropStatsGetStatValue(game, statType);
+  if (value !== null) return value;
+  return wcPropStatsPlayerAppearedInGame(game) ? 0 : null;
+}
+
+function wcPropStatsNameLookupKeys(playerName: string): Set<string> {
+  const normalized = normalizeWorldCupPlayerName(playerName);
+  const canonical = resolveWorldCupAliasName(normalized);
+  return new Set([normalized, canonical, ...getWorldCupNameAliases(canonical)].filter(Boolean));
+}
+
+function wcPropStatsNameKeysMatch(requestedName: string, indexedName: string): boolean {
+  const lookupKeys = wcPropStatsNameLookupKeys(requestedName);
+  const indexedKeys = wcPropStatsNameLookupKeys(indexedName);
+  for (const key of lookupKeys) {
+    if (indexedKeys.has(key)) return true;
+  }
+  const reqNorm = normalizeWorldCupPlayerName(requestedName);
+  const idxNorm = normalizeWorldCupPlayerName(indexedName);
+  if (reqNorm === idxNorm) return true;
+  const reqParts = reqNorm.split(' ').filter(Boolean);
+  const idxParts = idxNorm.split(' ').filter(Boolean);
+  const reqFamily = reqParts[reqParts.length - 1] ?? '';
+  const idxFamily = idxParts[idxParts.length - 1] ?? '';
+  if (!reqFamily || reqFamily.length < 4 || reqFamily !== idxFamily) return false;
+  const reqGiven = reqParts[0] ?? '';
+  const idxGiven = idxParts[0] ?? '';
+  return reqGiven === idxGiven || (reqGiven.length > 0 && idxGiven.length > 0 && reqGiven[0] === idxGiven[0]);
+}
+
+async function wcPropStatsResolveAllBdlPlayerIds(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null; playerId?: string | null }
+): Promise<Set<string>> {
+  const explicitId = String(opts?.playerId ?? '').trim();
+  if (/^\d+$/.test(explicitId)) {
+    return new Set([explicitId]);
+  }
+
+  const ids = new Set<string>();
+  const primary = await wcPropStatsResolveBdlPlayerId(playerName);
+  if (primary) ids.add(String(primary));
+
+  const lookupKeys = wcPropStatsNameLookupKeys(playerName);
+  const supplement = await wcGetBdlSupplementPayload();
+  const family = normalizeWorldCupPlayerName(playerName).split(' ').filter(Boolean).pop() ?? '';
+
+  for (const [nameKey, idList] of Object.entries(supplement?.playerIdsByName ?? {})) {
+    const keyNorm = normalizeWorldCupPlayerName(nameKey);
+    const nameMatch =
+      wcPropStatsNameKeysMatch(playerName, nameKey) ||
+      (family.length >= 4 && keyNorm.includes(family) && wcPropStatsNameKeysMatch(playerName, nameKey));
+    if (!nameMatch) continue;
+    for (const id of idList) {
+      if (Number.isFinite(id)) ids.add(String(id));
+    }
+  }
+  if (family.length >= 4) {
+    for (const id of supplement?.playerIdsByName?.[family] ?? []) {
+      if (Number.isFinite(id)) ids.add(String(id));
+    }
+  }
+  for (const key of lookupKeys) {
+    for (const id of supplement?.playerIdsByName?.[key] ?? []) {
+      if (Number.isFinite(id)) ids.add(String(id));
+    }
+  }
+
+  const teamId = String(opts?.teamId ?? '').trim();
+  const teamIds = teamId
+    ? wcExpandBdlTeamIdsFromSupplement(supplement, teamId, opts?.nationHint)
+    : new Set<string>();
+  if (teamId && supplement?.statRows?.length) {
+    const wcMatchIds = new Set(
+      (supplement.matches ?? [])
+        .filter((m) => WC_PROPS_WC_COLUMN_SEASONS.has(Number(m.season_year ?? -1)))
+        .map((m) => String(m.source_match_id ?? ''))
+    );
+    const idToNames = new Map<number, string[]>();
+    for (const [nameKey, idList] of Object.entries(supplement.playerIdsByName ?? {})) {
+      for (const id of idList) {
+        if (!Number.isFinite(id)) continue;
+        const names = idToNames.get(id) ?? [];
+        names.push(nameKey);
+        idToNames.set(id, names);
+      }
+    }
+    for (const row of supplement.statRows) {
+      if (!teamIds.has(String(row.source_team_id ?? ''))) continue;
+      if (!wcMatchIds.has(String(row.source_match_id ?? ''))) continue;
+      const pid = Number(row.source_player_id);
+      if (!Number.isFinite(pid)) continue;
+      const names = idToNames.get(pid) ?? [];
+      if (names.some((nameKey) => wcPropStatsNameKeysMatch(playerName, nameKey))) {
+        ids.add(String(pid));
+      }
+    }
+  }
+
+  if (wcPlayerIndexMem === undefined) {
+    wcPlayerIndexMem =
+      (await getWorldCupCache<WorldCupPlayerIndexEntry[]>(WORLD_CUP_PLAYER_INDEX_CACHE_KEY)) ?? null;
+  }
+  for (const entry of wcPlayerIndexMem ?? []) {
+    const entryKeys = new Set([
+      normalizeWorldCupPlayerName(entry.name),
+      resolveWorldCupAliasName(normalizeWorldCupPlayerName(entry.name)),
+    ]);
+    if (![...lookupKeys].some((key) => entryKeys.has(key)) && !wcPropStatsNameKeysMatch(playerName, entry.name)) {
+      continue;
+    }
+    for (const source of entry.sources) {
+      if (source.source === 'bdl' && source.id) ids.add(String(source.id));
+    }
+  }
+
+  if (ids.size <= 1) {
+    const liveIds = await wcPropStatsFetchBdlPlayerIdsFromLiveApi(playerName);
+    for (const id of liveIds) ids.add(id);
+  }
+
+  return ids;
+}
+
+async function wcPropStatsFetchBdlPlayerIdsFromLiveApi(playerName: string): Promise<Set<string>> {
+  const rawKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
+  if (!rawKey) return new Set();
+  const auth = rawKey.startsWith('Bearer ') ? rawKey : `Bearer ${rawKey}`;
+  const target = normalizeWorldCupPlayerName(playerName);
+  const family = target.split(' ').filter(Boolean).pop() ?? '';
+  const given = target.split(' ')[0] ?? '';
+
+  const out = new Set<string>();
+  const params = new URLSearchParams();
+  for (const y of WC_PROPS_WC_COLUMN_SEASONS) params.append('seasons[]', String(y));
+  params.set('per_page', '100');
+
+  let cursor: string | null = null;
+  for (let page = 0; page < 25; page += 1) {
+    const p = new URLSearchParams(params);
+    if (cursor) p.set('cursor', cursor);
+    const res = await fetch(`https://api.balldontlie.io/fifa/worldcup/v1/players?${p.toString()}`, {
+      headers: { Authorization: auth, Accept: 'application/json' },
+    });
+    if (!res.ok) break;
+    const json = (await res.json()) as {
+      data?: Array<{ id?: number; name?: string; first_name?: string; last_name?: string }>;
+      meta?: { next_cursor?: string | null };
+    };
+    for (const row of json.data ?? []) {
+      const id = Number(row.id);
+      if (!Number.isFinite(id)) continue;
+      const composed = [row.first_name, row.last_name].filter(Boolean).join(' ').trim();
+      const name = String(row.name ?? composed).trim();
+      const norm = normalizeWorldCupPlayerName(name);
+      if (
+        norm === target ||
+        wcPropStatsNameKeysMatch(playerName, name) ||
+        (family.length >= 4 &&
+          norm.endsWith(` ${family}`) &&
+          given.length > 0 &&
+          (norm.split(' ')[0] === given || norm.split(' ')[0]?.[0] === given[0]))
+      ) {
+        out.add(String(id));
+      }
+    }
+    cursor = json.meta?.next_cursor != null ? String(json.meta.next_cursor) : null;
+    if (!cursor) break;
+  }
+  return out;
+}
+
 export function getWorldCupPropStatsCacheKey(
   playerName: string,
   team: string,
   opponent: string,
   statType: string,
-  line: number
+  line: number,
+  prefix: string = WC_PROP_STATS_CACHE_PREFIX
 ): string {
   const s = `${wcPropStatsNormalizePlayerKey(playerName)}|${wcPropStatsNormalizeOpponentKey(team)}|${wcPropStatsNormalizeOpponentKey(opponent)}|${statType}|${line}`;
-  return `${WC_PROP_STATS_CACHE_PREFIX}:${Buffer.from(s, 'utf8').toString('base64url')}`;
+  return `${prefix}:${Buffer.from(s, 'utf8').toString('base64url')}`;
+}
+
+function wcPropStatsCacheKeysForRow(row: WorldCupListPropRow): string[] {
+  const keys = new Set<string>();
+  for (const prefix of WC_PROP_STATS_LEGACY_PREFIXES) {
+    keys.add(getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line, prefix));
+    keys.add(getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line, prefix));
+  }
+  return [...keys];
+}
+
+function wcPropStatsGameSeason(g: Record<string, unknown>): number | null {
+  const seasonRaw = g.season;
+  if (typeof seasonRaw === 'number' && Number.isFinite(seasonRaw)) return seasonRaw;
+  if (seasonRaw && typeof seasonRaw === 'object') {
+    const year = Number((seasonRaw as { year?: number }).year);
+    if (Number.isFinite(year)) return year;
+  }
+  if (typeof seasonRaw === 'string' && /^\d{4}$/.test(seasonRaw)) return Number(seasonRaw);
+  const dateRaw = String((g.date ?? g.datetime ?? g.match_date ?? g.match_datetime ?? '') as string).trim();
+  return /^\d{4}/.test(dateRaw) ? Number(dateRaw.slice(0, 4)) : null;
 }
 
 function wcPropStatsIsWorldCupTournamentGame(g: Record<string, unknown>): boolean {
+  const season = wcPropStatsGameSeason(g);
+  if (season == null || !WC_PROPS_WC_COLUMN_SEASONS.has(season)) return false;
   const source = String(g.source ?? '').trim().toLowerCase();
   if (source === 'bdl') return true;
   return isCompletedWorldCupFinalsMatch({
@@ -1741,7 +1995,7 @@ function wcPropStatsIsWorldCupTournamentGame(g: Record<string, unknown>): boolea
     kickoff_unix: null,
     tournament_slug: String(g.tournament_slug ?? ''),
     status: String(g.status ?? 'completed'),
-    season_year: typeof g.season === 'number' ? g.season : null,
+    season_year: season,
   });
 }
 
@@ -1801,7 +2055,7 @@ export function computeWorldCupPropStatsFromGames(
   const wcGameLog: WorldCupWcGameLogEntry[] = [];
   for (const g of games) {
     if (!wcPropStatsIsWorldCupTournamentGame(g)) continue;
-    const v = wcPropStatsGetStatValue(g, statType);
+    const v = wcPropStatsGetWcColumnStatValue(g, statType);
     if (v === null) continue;
     const opp = String(g.opponent ?? '');
     const dateRaw = String((g.date ?? g.datetime ?? g.match_date ?? '') as string).trim();
@@ -1887,17 +2141,30 @@ type BdlDvpSupplementRow = {
   source_team_id?: string;
   is_home?: boolean;
   position?: string | null;
+  minutes_played?: number | null;
   goals?: number | null;
   assists?: number | null;
   shots_total?: number | null;
   shots_on_target?: number | null;
+  passes_total?: number | null;
+  passes?: number | null;
+  passes_accurate?: number | null;
+  expected_goals?: number | null;
   yellow_cards?: number | null;
+  red_cards?: number | null;
+  tackles?: number | null;
+  interceptions?: number | null;
   fouls?: number | null;
+  was_fouled?: number | null;
+  saves?: number | null;
+  big_chances_created?: number | null;
 };
 
 type BdlDvpSupplementMatch = {
   source?: string;
   source_match_id?: string;
+  home_team_source_id?: string;
+  away_team_source_id?: string;
   home_team_name?: string;
   away_team_name?: string;
   match_date?: string | null;
@@ -1905,6 +2172,119 @@ type BdlDvpSupplementMatch = {
   status?: string | null;
   season_year?: number | null;
 };
+
+/** BDL re-issues team ids per WC cycle — expand 2026 id (e.g. 37) to 2018/2022/2026 Argentina ids. */
+function wcExpandBdlTeamIdsFromSupplement(
+  supplement: WcBdlSupplementPayload | null | undefined,
+  primaryTeamId: string,
+  nationHint?: string | null
+): Set<string> {
+  const out = new Set<string>();
+  const primary = String(primaryTeamId ?? '').trim();
+  if (primary) out.add(primary);
+
+  let nationToken = String(nationHint ?? '')
+    .trim()
+    .toLowerCase();
+  if (!nationToken && primary) {
+    for (const m of supplement?.matches ?? []) {
+      if (String(m.home_team_source_id ?? '') === primary) {
+        nationToken = String(m.home_team_name ?? '').trim().toLowerCase();
+        break;
+      }
+      if (String(m.away_team_source_id ?? '') === primary) {
+        nationToken = String(m.away_team_name ?? '').trim().toLowerCase();
+        break;
+      }
+    }
+  }
+  if (!nationToken) return out;
+
+  for (const m of supplement?.matches ?? []) {
+    const homeName = String(m.home_team_name ?? '').toLowerCase();
+    const awayName = String(m.away_team_name ?? '').toLowerCase();
+    if (homeName.includes(nationToken)) {
+      const id = String(m.home_team_source_id ?? '').trim();
+      if (id) out.add(id);
+    }
+    if (awayName.includes(nationToken)) {
+      const id = String(m.away_team_source_id ?? '').trim();
+      if (id) out.add(id);
+    }
+  }
+  return out;
+}
+
+function wcSupplementNationTeamIdForMatch(
+  m: BdlDvpSupplementMatch,
+  nationToken: string
+): string | null {
+  const token = nationToken.toLowerCase();
+  if (!token) return null;
+  const homeName = String(m.home_team_name ?? '').toLowerCase();
+  const awayName = String(m.away_team_name ?? '').toLowerCase();
+  if (homeName.includes(token)) {
+    const id = String(m.home_team_source_id ?? '').trim();
+    return id || null;
+  }
+  if (awayName.includes(token)) {
+    const id = String(m.away_team_source_id ?? '').trim();
+    return id || null;
+  }
+  return null;
+}
+
+function wcDashboardStatNum(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+const WC_DASHBOARD_STAT_RICHNESS_KEYS = [
+  'minutes_played',
+  'passes_total',
+  'passes',
+  'passes_accurate',
+  'goals',
+  'assists',
+  'shots_total',
+  'derived_shots_total',
+  'shots_on_target',
+  'tackles',
+  'interceptions',
+  'fouls',
+  'fouls_committed',
+  'was_fouled',
+  'duels_won',
+  'saves',
+  'expected_goals',
+  'big_chances_created',
+] as const;
+
+function wcDashboardPlayerStatMergeKey(row: Record<string, unknown>): string {
+  return `${row.match_id ?? ''}|${row.team_id ?? ''}`;
+}
+
+function wcDashboardPlayerStatRichness(row: Record<string, unknown>): number {
+  let score = 0;
+  for (const key of WC_DASHBOARD_STAT_RICHNESS_KEYS) {
+    if (row[key] != null) score += 1;
+  }
+  return score;
+}
+
+function wcDashboardMergePlayerStatRowsPreferRich(
+  rows: Record<string, unknown>[]
+): Record<string, unknown>[] {
+  const byKey = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    const key = wcDashboardPlayerStatMergeKey(row);
+    const existing = byKey.get(key);
+    if (!existing || wcDashboardPlayerStatRichness(row) > wcDashboardPlayerStatRichness(existing)) {
+      byKey.set(key, row);
+    }
+  }
+  return [...byKey.values()];
+}
 
 function wcPropStatsMapBdlSupplementStatRow(row: BdlDvpSupplementRow): Record<string, unknown> {
   return {
@@ -1915,43 +2295,81 @@ function wcPropStatsMapBdlSupplementStatRow(row: BdlDvpSupplementRow): Record<st
     team_id: row.source_team_id,
     is_home: row.is_home === true,
     position: row.position ?? null,
+    minutes_played: row.minutes_played ?? null,
     goals: row.goals ?? null,
     assists: row.assists ?? null,
     shots_total: row.shots_total ?? null,
     shots_on_target: row.shots_on_target ?? null,
+    derived_shots_total: row.shots_total ?? null,
+    passes_total: wcDashboardStatNum(row.passes_total) ?? wcDashboardStatNum(row.passes),
+    passes: wcDashboardStatNum(row.passes),
+    passes_accurate: row.passes_accurate ?? null,
+    expected_goals: row.expected_goals ?? null,
     yellow_cards: row.yellow_cards ?? null,
+    red_cards: row.red_cards ?? null,
+    tackles: row.tackles ?? null,
+    interceptions: row.interceptions ?? null,
     fouls: row.fouls ?? null,
     fouls_committed: row.fouls ?? null,
+    was_fouled: row.was_fouled ?? null,
+    saves: row.saves ?? null,
+    big_chances_created: row.big_chances_created ?? null,
   };
 }
 
 function wcPropStatsMapBdlSupplementMatch(row: BdlDvpSupplementMatch): Record<string, unknown> {
+  const homeId = row.home_team_source_id != null ? Number(row.home_team_source_id) : undefined;
+  const awayId = row.away_team_source_id != null ? Number(row.away_team_source_id) : undefined;
   return {
     id: row.source_match_id,
     datetime: row.match_date ?? null,
     status: row.status ?? 'completed',
     season: { year: row.season_year ?? null },
-    home_team: { name: row.home_team_name ?? '' },
-    away_team: { name: row.away_team_name ?? '' },
+    home_team: { name: row.home_team_name ?? '', ...(homeId != null && Number.isFinite(homeId) ? { id: homeId } : {}) },
+    away_team: { name: row.away_team_name ?? '', ...(awayId != null && Number.isFinite(awayId) ? { id: awayId } : {}) },
+    home_team_source_id: row.home_team_source_id ?? null,
+    away_team_source_id: row.away_team_source_id ?? null,
     tournament_slug: row.tournament_slug ?? 'worldcup',
     source: row.source ?? 'bdl',
   };
 }
 
-async function wcPropStatsLoadBdlSupplementPlayerHistory(playerName: string): Promise<{
+async function wcPropStatsLoadBdlSupplementPlayerHistory(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null; playerId?: string | null }
+): Promise<{
   playerMatchStats: Record<string, unknown>[];
   matches: Record<string, unknown>[];
 }> {
-  const playerId = await wcPropStatsResolveBdlPlayerId(playerName);
-  if (!playerId) return { playerMatchStats: [], matches: [] };
-
   const supplement = await wcGetBdlSupplementPayload();
   if (!supplement?.statRows?.length) return { playerMatchStats: [], matches: [] };
 
-  const playerIdStr = String(playerId);
-  const playerStats = supplement.statRows
-    .filter((row) => String(row.source_player_id ?? '') === playerIdStr)
+  const matchingIds = await wcPropStatsResolveAllBdlPlayerIds(playerName, opts);
+  if (matchingIds.size === 0) return { playerMatchStats: [], matches: [] };
+
+  let playerStats = supplement.statRows
+    .filter((row) => matchingIds.has(String(row.source_player_id ?? '')))
     .map(wcPropStatsMapBdlSupplementStatRow);
+
+  const teamId = String(opts?.teamId ?? '').trim();
+  const teamIds = teamId ? wcExpandBdlTeamIdsFromSupplement(supplement, teamId, opts?.nationHint) : new Set<string>();
+  if (teamId && playerStats.length < 12) {
+    const wcMatchIds = new Set(
+      (supplement.matches ?? [])
+        .filter((m) => WC_PROPS_WC_COLUMN_SEASONS.has(Number(m.season_year ?? -1)))
+        .map((m) => String(m.source_match_id ?? ''))
+    );
+    const teamRows = supplement.statRows
+      .filter(
+        (row) =>
+          teamIds.has(String(row.source_team_id ?? '')) &&
+          wcMatchIds.has(String(row.source_match_id ?? '')) &&
+          matchingIds.has(String(row.source_player_id ?? ''))
+      )
+      .map(wcPropStatsMapBdlSupplementStatRow);
+    playerStats = wcDashboardMergePlayerStatRowsPreferRich([...playerStats, ...teamRows]);
+  }
+
   if (!playerStats.length) return { playerMatchStats: [], matches: [] };
 
   const matchIds = new Set(playerStats.map((row) => String(row.match_id ?? '')));
@@ -1962,17 +2380,13 @@ async function wcPropStatsLoadBdlSupplementPlayerHistory(playerName: string): Pr
   return { playerMatchStats: playerStats, matches };
 }
 
-async function wcPropStatsLoadBdlCachedPlayerHistory(playerName: string): Promise<{
-  playerMatchStats: Record<string, unknown>[];
-  matches: Record<string, unknown>[];
-}> {
-  const playerId = await wcPropStatsResolveBdlPlayerId(playerName);
-  if (!playerId) return { playerMatchStats: [], matches: [] };
-  const [cachedStats, cachedShots, cachedMatchesAll, cachedMatches2026] = await Promise.all([
+async function wcPropStatsLoadBdlCachedPlayerHistoryById(
+  playerId: number | string,
+  matchPool: Array<Record<string, unknown>>
+): Promise<{ playerMatchStats: Record<string, unknown>[]; matches: Record<string, unknown>[] }> {
+  const [cachedStats, cachedShots] = await Promise.all([
     getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playerStats(playerId)),
     getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playerShots(playerId)),
-    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matchesAllSeasons),
-    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026),
   ]);
   if (!cachedStats?.length) return { playerMatchStats: [], matches: [] };
   const shotsByMatch = new Map<number, number>();
@@ -1986,7 +2400,6 @@ async function wcPropStatsLoadBdlCachedPlayerHistory(playerName: string): Promis
     tournament_slug: 'worldcup',
     derived_shots_total: shotsByMatch.get(Number(row.match_id)) ?? row.derived_shots_total ?? null,
   }));
-  const matchPool = (cachedMatchesAll?.length ? cachedMatchesAll : cachedMatches2026) ?? [];
   const matchIdsInStats = new Set(stats.map((s) => String(s.match_id ?? '')));
   const matches = matchPool.filter((m) => {
     const id = String((m as { id?: number }).id ?? '');
@@ -1995,6 +2408,54 @@ async function wcPropStatsLoadBdlCachedPlayerHistory(playerName: string): Promis
     return status === 'completed';
   });
   return { playerMatchStats: stats, matches };
+}
+
+async function wcPropStatsLoadBdlCachedPlayerHistoryForAllIds(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null; playerId?: string | null }
+): Promise<{
+  playerMatchStats: Record<string, unknown>[];
+  matches: Record<string, unknown>[];
+}> {
+  const [cachedMatchesAll, cachedMatches2026] = await Promise.all([
+    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matchesAllSeasons),
+    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026),
+  ]);
+  const matchPool = (cachedMatchesAll?.length ? cachedMatchesAll : cachedMatches2026) ?? [];
+  const explicitId = String(opts?.playerId ?? '').trim();
+  if (/^\d+$/.test(explicitId)) {
+    return wcPropStatsLoadBdlCachedPlayerHistoryById(explicitId, matchPool);
+  }
+
+  const ids = await wcPropStatsResolveAllBdlPlayerIds(playerName, opts);
+  const allStats: Record<string, unknown>[] = [];
+  const chunks = await Promise.all(
+    [...ids].map((id) => wcPropStatsLoadBdlCachedPlayerHistoryById(id, matchPool))
+  );
+  for (const chunk of chunks) {
+    allStats.push(...chunk.playerMatchStats);
+  }
+  const matchIdsInStats = new Set(allStats.map((row) => String(row.match_id ?? '')));
+  const matches = matchPool.filter((m) => {
+    const id = String((m as { id?: number }).id ?? '');
+    if (!matchIdsInStats.has(id)) return false;
+    return String((m as { status?: string }).status ?? '') === 'completed';
+  });
+  return { playerMatchStats: allStats, matches };
+}
+
+async function wcPropStatsLoadBdlCachedPlayerHistory(playerName: string): Promise<{
+  playerMatchStats: Record<string, unknown>[];
+  matches: Record<string, unknown>[];
+}> {
+  const playerId = await wcPropStatsResolveBdlPlayerId(playerName);
+  if (!playerId) return { playerMatchStats: [], matches: [] };
+  const [cachedMatchesAll, cachedMatches2026] = await Promise.all([
+    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matchesAllSeasons),
+    getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026),
+  ]);
+  const matchPool = (cachedMatchesAll?.length ? cachedMatchesAll : cachedMatches2026) ?? [];
+  return wcPropStatsLoadBdlCachedPlayerHistoryById(playerId, matchPool);
 }
 
 function wcPropStatsTeamNameFromMatchSide(match: Record<string, unknown>, side: 'home' | 'away'): string {
@@ -2037,36 +2498,122 @@ function wcPropStatsBuildGamesFromHistory(
   return games;
 }
 
-export async function loadWorldCupPlayerGameLogs(playerName: string): Promise<Record<string, unknown>[]> {
+function wcDashboardMatchSeason(match: Record<string, unknown>): number | null {
+  const seasonObj = match.season as { year?: number } | undefined;
+  if (typeof seasonObj?.year === 'number' && Number.isFinite(seasonObj.year)) return seasonObj.year;
+  const raw = match.season_year ?? match.season;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  const date = String(match.datetime ?? match.match_date ?? match.match_datetime ?? '');
+  return /^\d{4}/.test(date) ? Number(date.slice(0, 4)) : null;
+}
+
+/** BDL World Cup finals rows (2018 / 2022 / 2026) for dashboard charts — all roster IDs for the player. */
+export async function loadWorldCupPlayerBdlFinalsHistory(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null }
+): Promise<{
+  playerMatchStats: Record<string, unknown>[];
+  matches: Record<string, unknown>[];
+}> {
+  const [supplement, cachedAllIds] = await Promise.all([
+    wcPropStatsLoadBdlSupplementPlayerHistory(playerName, opts),
+    wcPropStatsLoadBdlCachedPlayerHistoryForAllIds(playerName, opts),
+  ]);
+
+  const playerMatchStats = wcDashboardMergePlayerStatRowsPreferRich([
+    ...supplement.playerMatchStats,
+    ...cachedAllIds.playerMatchStats,
+  ]);
+
+  const matchById = new Map<string, Record<string, unknown>>();
+  for (const m of [...supplement.matches, ...cachedAllIds.matches]) {
+    const id = String(m.id ?? '');
+    if (id) matchById.set(id, m);
+  }
+
+  const allowedMatchIds = new Set<string>();
+  for (const [id, match] of matchById) {
+    const season = wcDashboardMatchSeason(match);
+    if (season != null && WC_PROPS_WC_COLUMN_SEASONS.has(season)) allowedMatchIds.add(id);
+  }
+  for (const row of playerMatchStats) {
+    const season = wcPropStatsGameSeason(row);
+    if (season != null && WC_PROPS_WC_COLUMN_SEASONS.has(season)) {
+      allowedMatchIds.add(String(row.match_id ?? ''));
+    }
+  }
+
+  const matches = [...matchById.values()].filter((m) => allowedMatchIds.has(String(m.id ?? '')));
+  return {
+    playerMatchStats: playerMatchStats.filter((row) =>
+      allowedMatchIds.has(String(row.match_id ?? ''))
+    ),
+    matches,
+  };
+}
+
+export async function loadWorldCupPlayerGameLogs(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null }
+): Promise<Record<string, unknown>[]> {
+  const bundle = await loadWorldCupPlayerHistoryBundle(playerName, opts);
+  return bundle.games;
+}
+
+/** Same merged intl + BDL pool as props; includes match metadata for dashboard charts. */
+export async function loadWorldCupPlayerHistoryBundle(
+  playerName: string,
+  opts?: { teamId?: string | null; nationHint?: string | null; playerId?: string | null }
+): Promise<{
+  games: Record<string, unknown>[];
+  matches: Record<string, unknown>[];
+  mergedStatRows: Record<string, unknown>[];
+}> {
   const normalized = normalizeWorldCupPlayerName(playerName);
-  const existing = wcPlayerGameLogsMem.get(normalized);
-  if (existing) return existing;
+  const memKey = `${normalized}|team:${opts?.teamId ?? ''}|nation:${opts?.nationHint ?? ''}`;
+  const supabaseKey = `wc:player-history-bundle:v1:${normalized}:team:${opts?.teamId ?? ''}:nation:${opts?.nationHint ?? ''}`;
+  const existing = wcPlayerGameLogsMem.get(memKey);
+  if (existing) {
+    const cached = await existing;
+    return cached;
+  }
 
   const pending = (async () => {
-    const [intl, bdl, bdlSupplement] = await Promise.all([
-      loadInternationalStatsByPlayerName(playerName),
-      wcPropStatsLoadBdlCachedPlayerHistory(playerName),
-      wcPropStatsLoadBdlSupplementPlayerHistory(playerName),
-    ]);
-    const intlGames = wcPropStatsBuildGamesFromHistory(intl.playerMatchStats, intl.matches);
-    const bdlGames = wcPropStatsBuildGamesFromHistory(bdl.playerMatchStats, bdl.matches);
-    const bdlSupplementGames = wcPropStatsBuildGamesFromHistory(
-      bdlSupplement.playerMatchStats,
-      bdlSupplement.matches
-    );
-    const seen = new Set<string>();
-    const merged: Record<string, unknown>[] = [];
-    for (const g of [...intlGames, ...bdlSupplementGames, ...bdlGames]) {
-      const key = `${g.match_id}|${g.source ?? ''}|${g.team_id ?? ''}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push(g);
+    const persisted = await getWorldCupCache<{
+      games: Record<string, unknown>[];
+      matches: Record<string, unknown>[];
+      mergedStatRows: Record<string, unknown>[];
+    }>(supabaseKey);
+    if (persisted?.mergedStatRows?.length) {
+      return persisted;
     }
-    merged.sort((a, b) => Date.parse(String(b.date ?? '0')) - Date.parse(String(a.date ?? '0')));
-    return merged;
+
+    const [intl, bdlAllIds, bdlSupplement] = await Promise.all([
+      loadInternationalStatsByPlayerName(playerName, { bdlPlayerId: opts?.playerId ?? null }),
+      wcPropStatsLoadBdlCachedPlayerHistoryForAllIds(playerName, opts),
+      wcPropStatsLoadBdlSupplementPlayerHistory(playerName, opts),
+    ]);
+    const mergedStatRows = wcDashboardMergePlayerStatRowsPreferRich([
+      ...(intl.playerMatchStats as Record<string, unknown>[]),
+      ...bdlSupplement.playerMatchStats,
+      ...bdlAllIds.playerMatchStats,
+    ]);
+    const matchById = new Map<string, Record<string, unknown>>();
+    for (const m of [...intl.matches, ...bdlSupplement.matches, ...bdlAllIds.matches]) {
+      const id = String(m.id ?? m.match_id ?? '');
+      if (id) matchById.set(id, m);
+    }
+    const matches = [...matchById.values()];
+    const games = wcPropStatsBuildGamesFromHistory(mergedStatRows, matches);
+    games.sort((a, b) => Date.parse(String(b.date ?? '0')) - Date.parse(String(a.date ?? '0')));
+    const result = { games, matches, mergedStatRows };
+    if (mergedStatRows.length) {
+      void setWorldCupCache(supabaseKey, result);
+    }
+    return result;
   })();
 
-  wcPlayerGameLogsMem.set(normalized, pending);
+  wcPlayerGameLogsMem.set(memKey, pending);
   return pending;
 }
 
@@ -2107,10 +2654,13 @@ export function clearWcPropStatsWarmMem(): void {
 
 function wcAcceptCachedPropStats(cached: WorldCupPropStatsPayload | null | undefined): WorldCupPropStatsPayload | null {
   if (!cached || typeof cached !== 'object') return null;
-  const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
-  const staleSeason = cached.seasonAvg != null && !(cached.seasonHitRate?.total);
-  const staleWc = cached.wcGameLog === undefined && hasAnyStat;
-  if (hasAnyStat && !staleSeason && !staleWc) return cached;
+  const hasAnyStat =
+    cached.last5Avg != null ||
+    cached.last10Avg != null ||
+    cached.seasonAvg != null ||
+    cached.h2hAvg != null;
+  const hasWc = cached.wcGamesAvg != null || (cached.wcGamesHitRate?.total ?? 0) > 0;
+  if (hasAnyStat || hasWc) return cached;
   return null;
 }
 
@@ -2120,27 +2670,58 @@ async function prefetchWorldCupPropStatsKeys(keys: string[]): Promise<void> {
   const unique = [...new Set(keys)].filter((k) => !wcPropStatsByKeyCache.has(k));
   if (!unique.length) return;
   console.log(`[wc-odds] Prefetching ${unique.length} warmed prop-stat cache key(s)...`);
+  let hits = 0;
   for (let i = 0; i < unique.length; i += WC_PROP_STATS_PREFETCH_BATCH) {
     const batch = unique.slice(i, i + WC_PROP_STATS_PREFETCH_BATCH);
     const values = await sharedCache.getJSONMany<WorldCupPropStatsPayload>(batch);
     for (let j = 0; j < batch.length; j++) {
-      wcPropStatsByKeyCache.set(batch[j]!, wcAcceptCachedPropStats(values[j] ?? null));
+      const accepted = wcAcceptCachedPropStats(values[j] ?? null);
+      wcPropStatsByKeyCache.set(batch[j]!, accepted);
+      if (accepted) hits += 1;
     }
     wcProgressLog('wc-odds', Math.min(i + batch.length, unique.length), unique.length, 'stat keys prefetched');
   }
+  console.log(`[wc-odds] Prop-stat cache hits: ${hits}/${unique.length}`);
 }
 
 function wcPropStatsFromRowCache(row: WorldCupListPropRow): WorldCupPropStatsPayload | null {
-  const primary = getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line);
-  if (wcPropStatsByKeyCache.has(primary)) {
-    const hit = wcPropStatsByKeyCache.get(primary);
+  for (const key of wcPropStatsCacheKeysForRow(row)) {
+    if (!wcPropStatsByKeyCache.has(key)) continue;
+    const hit = wcPropStatsByKeyCache.get(key);
     if (hit) return hit;
   }
-  const reverse = getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line);
-  if (wcPropStatsByKeyCache.has(reverse)) {
-    return wcPropStatsByKeyCache.get(reverse) ?? null;
-  }
   return null;
+}
+
+async function wcComputeWc2026PropFields(
+  row: WorldCupListPropRow,
+  gamesByPlayer: Map<string, Record<string, unknown>[]>,
+  indexByName: Map<string, WorldCupPlayerIndexEntry>
+): Promise<Pick<WorldCupPropStatsPayload, 'wcGamesAvg' | 'wcGamesHitRate' | 'wcGameLog'>> {
+  let games = gamesByPlayer.get(row.playerName);
+  if (!games) {
+    games = await loadWorldCupPlayerGameLogs(row.playerName);
+    gamesByPlayer.set(row.playerName, games);
+  }
+  const entry = wcLookupPlayerIndexEntry(row.playerName, indexByName);
+  const { opponent } = wcResolvePlayerTeamForRow(row, entry);
+  return computeWorldCupPropStatsFromGames(games, row.statType, opponent, row.line, WC_PROPS_STATS_SEASON);
+}
+
+async function wcRefreshWc2026FieldsForRow(
+  row: WorldCupListPropRow,
+  stats: WorldCupPropStatsPayload | null,
+  gamesByPlayer: Map<string, Record<string, unknown>[]>,
+  indexByName: Map<string, WorldCupPlayerIndexEntry>
+): Promise<WorldCupPropStatsPayload | null> {
+  if (!stats) return null;
+  const wcFields = await wcComputeWc2026PropFields(row, gamesByPlayer, indexByName);
+  return {
+    ...stats,
+    wcGamesAvg: wcFields.wcGamesAvg,
+    wcGamesHitRate: wcFields.wcGamesHitRate,
+    wcGameLog: wcFields.wcGameLog,
+  };
 }
 
 type WcDvpAggregateCached = {
@@ -2152,6 +2733,12 @@ type WcDvpAggregateCached = {
 };
 
 type WcDvpRankMaps = Record<string, { ranks: Record<string, number>; values: Record<string, number> }>;
+
+/** Full ranking pool for 2026 WC DvP — every team with at least one completed match. */
+function wcDvpRankingPoolSlugs(cached: WcDvpAggregateCached): string[] {
+  if (cached.wcTeamsWithGames?.length) return cached.wcTeamsWithGames;
+  return cached.opponents?.length ? cached.opponents : [];
+}
 
 /** Teams with real defensive DvP samples — not the full "has played" pool. */
 function wcDvpRankableOpponentSlugs(cached: WcDvpAggregateCached): string[] {
@@ -2167,19 +2754,15 @@ function wcNormalizeTeamLabel(value: string): string {
 }
 
 function wcBuildDvpRankMaps(cached: WcDvpAggregateCached): WcDvpRankMaps {
-  const opponents = wcDvpRankableOpponentSlugs(cached);
-  if (!opponents.length) return {};
+  const rankSlugs = wcDvpRankingPoolSlugs(cached);
+  if (!rankSlugs.length) return {};
   const out: WcDvpRankMaps = {};
   for (const [metric, rawValues] of Object.entries(cached.metrics ?? {})) {
     const values: Record<string, number> = {};
-    const rankable = opponents.filter((slug) => {
-      const sampleCount = cached.samples?.[slug] ?? 0;
-      const value = rawValues[slug];
-      if (sampleCount <= 0 || value == null || !Number.isFinite(Number(value))) return false;
-      values[slug] = Number(value);
-      return true;
-    });
-    const sorted = [...rankable].sort((a, b) => values[a] - values[b]);
+    for (const slug of rankSlugs) {
+      values[slug] = Number(rawValues[slug] ?? 0);
+    }
+    const sorted = [...rankSlugs].sort((a, b) => values[a] - values[b]);
     const ranks: Record<string, number> = {};
     sorted.forEach((slug, idx) => {
       ranks[slug] = idx + 1;
@@ -2190,7 +2773,7 @@ function wcBuildDvpRankMaps(cached: WcDvpAggregateCached): WcDvpRankMaps {
 }
 
 function wcResolveOpponentDvpSlug(opponentTeamName: string, cached: WcDvpAggregateCached): string | null {
-  const opponents = wcDvpRankableOpponentSlugs(cached);
+  const opponents = wcDvpRankingPoolSlugs(cached);
   const candidates = new Set<string>();
   const code = resolveWorldCupFlagCode(opponentTeamName);
   if (code) candidates.add(code.toLowerCase());
@@ -2213,6 +2796,13 @@ function wcResolveOpponentDvpSlug(opponentTeamName: string, cached: WcDvpAggrega
     if (labelCode && candidates.has(labelCode.toLowerCase())) return slug;
   }
 
+  for (const slug of opponents) {
+    const label = cached.names?.[slug] ?? slug;
+    if (worldCupTeamsMatch(opponentTeamName, label) || worldCupTeamsMatch(opponentTeamName, slug)) {
+      return slug;
+    }
+  }
+
   return null;
 }
 
@@ -2230,9 +2820,8 @@ function wcLookupDvpRank(
   if (!slug) return null;
   const entry = rankMaps[metric];
   if (!entry) return null;
-  if (entry.values[slug] == null || !Number.isFinite(Number(entry.values[slug]))) return null;
   const rank = entry.ranks[slug];
-  if (!rank) return null;
+  if (rank == null || !Number.isFinite(rank)) return null;
   return { rank, value: entry.values[slug] ?? 0 };
 }
 
@@ -2272,15 +2861,56 @@ function wcResolvePlayerBdlId(entry: WorldCupPlayerIndexEntry | null): string | 
   return /^\d+$/.test(id) ? id : null;
 }
 
+function wcInferTeamFromFixtureGames(
+  row: WorldCupListPropRow,
+  games: Record<string, unknown>[]
+): { playerTeam: string; opponent: string } | null {
+  const wc2026 = games.filter((g) => wcPropStatsGameSeason(g) === WC_PROPS_STATS_SEASON);
+  const pool = wc2026.length ? wc2026 : games;
+  for (const g of pool) {
+    const opp = String(g.opponent ?? '').trim();
+    if (!opp) continue;
+    if (worldCupTeamsMatch(opp, row.homeTeam) && !worldCupTeamsMatch(opp, row.awayTeam)) {
+      return { playerTeam: row.awayTeam, opponent: row.homeTeam };
+    }
+    if (worldCupTeamsMatch(opp, row.awayTeam) && !worldCupTeamsMatch(opp, row.homeTeam)) {
+      return { playerTeam: row.homeTeam, opponent: row.awayTeam };
+    }
+  }
+  return null;
+}
+
+function wcResolvePlayerPositionWithFallback(
+  entry: WorldCupPlayerIndexEntry | null,
+  games?: Record<string, unknown>[]
+): IntlPositionBucket | null {
+  const fromIndex = wcResolvePlayerPosition(entry);
+  if (fromIndex) return fromIndex;
+  if (!games?.length) return null;
+  for (const g of games) {
+    const pos = classifyIntlPositionString(String(g.position ?? ''));
+    if (pos) return pos;
+  }
+  return null;
+}
+
 function wcResolvePlayerTeamForRow(
   row: WorldCupListPropRow,
-  entry: WorldCupPlayerIndexEntry | null
+  entry: WorldCupPlayerIndexEntry | null,
+  games?: Record<string, unknown>[]
 ): { playerTeam: string; opponent: string } {
   const country = wcResolvePlayerCountry(entry);
   if (country) {
     if (wcNationMatchesTeam(country, row.homeTeam)) return { playerTeam: row.homeTeam, opponent: row.awayTeam };
     if (wcNationMatchesTeam(country, row.awayTeam)) return { playerTeam: row.awayTeam, opponent: row.homeTeam };
   }
+  const explicit = String(row.playerTeam ?? '').trim();
+  if (explicit) {
+    if (wcNationMatchesTeam(explicit, row.homeTeam)) return { playerTeam: row.homeTeam, opponent: row.awayTeam };
+    if (wcNationMatchesTeam(explicit, row.awayTeam)) return { playerTeam: row.awayTeam, opponent: row.homeTeam };
+  }
+  const inferred = games?.length ? wcInferTeamFromFixtureGames(row, games) : null;
+  if (inferred) return inferred;
   return { playerTeam: row.homeTeam, opponent: row.awayTeam };
 }
 
@@ -2457,20 +3087,37 @@ async function wcResolveBdlTeamId(
   return id != null && Number.isFinite(id) ? id : null;
 }
 
-async function wcEnrichRowMeta(
+async function wcLookupBdlPlayerPositionFromCache(playerName: string): Promise<IntlPositionBucket | null> {
+  const playerId = await wcPropStatsResolveBdlPlayerId(playerName);
+  if (!playerId) return null;
+  const stats = await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playerStats(playerId));
+  for (const row of stats ?? []) {
+    const pos = classifyIntlPositionString(String(row.position ?? ''));
+    if (pos) return pos;
+  }
+  return null;
+}
+
+async function wcEnrichRowDvpMeta(
   row: WorldCupListPropRow,
-  ctx: WcPropsEnrichContext
-): Promise<
-  Pick<
-    WorldCupListPropRow,
-    'dvpRating' | 'dvpStatValue' | 'headshotUrl' | 'wcPosition' | 'playerTeam' | 'playerId' | 'teamId' | 'opponentTeamId'
-  >
-> {
+  ctx: WcPropsEnrichContext,
+  gamesByPlayer?: Map<string, Record<string, unknown>[]>
+): Promise<Pick<WorldCupListPropRow, 'dvpRating' | 'dvpStatValue'>> {
   const normalized = resolveWorldCupAliasName(normalizeWorldCupPlayerName(row.playerName));
-  const entry = ctx.indexByName.get(normalized) ?? ctx.indexByName.get(normalizeWorldCupPlayerName(row.playerName)) ?? null;
-  const position = wcResolvePlayerPosition(entry);
-  const playerId = wcResolvePlayerBdlId(entry);
-  const { playerTeam, opponent } = wcResolvePlayerTeamForRow(row, entry);
+  const entry =
+    ctx.indexByName.get(normalized) ?? ctx.indexByName.get(normalizeWorldCupPlayerName(row.playerName)) ?? null;
+  let games = gamesByPlayer?.get(row.playerName);
+  let position = wcResolvePlayerPosition(entry);
+  const needsGames = !entry || !position || !wcResolvePlayerCountry(entry);
+  if (needsGames && gamesByPlayer && !games) {
+    games = await loadWorldCupPlayerGameLogs(row.playerName);
+    gamesByPlayer.set(row.playerName, games);
+  }
+  position = wcResolvePlayerPositionWithFallback(entry, games);
+  if (!position) {
+    position = await wcLookupBdlPlayerPositionFromCache(row.playerName);
+  }
+  const { opponent } = wcResolvePlayerTeamForRow(row, entry, games);
   const metric = wcPropStatToDvpMetric(row.statType);
 
   let dvpRating: number | null = null;
@@ -2488,6 +3135,24 @@ async function wcEnrichRowMeta(
       }
     }
   }
+  return { dvpRating, dvpStatValue };
+}
+
+async function wcEnrichRowMeta(
+  row: WorldCupListPropRow,
+  ctx: WcPropsEnrichContext
+): Promise<
+  Pick<
+    WorldCupListPropRow,
+    'dvpRating' | 'dvpStatValue' | 'headshotUrl' | 'wcPosition' | 'playerTeam' | 'playerId' | 'teamId' | 'opponentTeamId'
+  >
+> {
+  const normalized = resolveWorldCupAliasName(normalizeWorldCupPlayerName(row.playerName));
+  const entry = ctx.indexByName.get(normalized) ?? ctx.indexByName.get(normalizeWorldCupPlayerName(row.playerName)) ?? null;
+  const position = wcResolvePlayerPosition(entry);
+  const playerId = wcResolvePlayerBdlId(entry);
+  const { playerTeam, opponent } = wcResolvePlayerTeamForRow(row, entry);
+  const { dvpRating, dvpStatValue } = await wcEnrichRowDvpMeta(row, ctx);
 
   const [playerTeamBdlId, homeBdlId, awayBdlId] = await Promise.all([
     wcResolveBdlTeamId(playerTeam, ctx),
@@ -2545,9 +3210,12 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
   for (const position of ['GK', 'DEF', 'MID', 'FWD'] as IntlPositionBucket[]) {
     const wc2026Key = WC2026_CACHE_KEYS.dvpWc2026ForPosition(position);
     const wc2026 = await getWorldCupCache<WcDvpAggregateCached>(wc2026Key);
-    const wc2026Count = wc2026?.opponents?.length ?? Object.keys(wc2026?.names ?? {}).length ?? 0;
+    const wc2026Count = wc2026?.wcTeamsWithGames?.length ?? wc2026?.opponents?.length ?? Object.keys(wc2026?.names ?? {}).length ?? 0;
+    const wc2026Sampled = wc2026?.opponents?.length ?? 0;
     const loaded = ctx.dvpByPosition.has(position);
-    console.log(`DvP ${position} (2026 WC only): ${wc2026Count} teams | props cache: ${loaded ? 'loaded' : 'MISSING'} (${wc2026Key})`);
+    console.log(
+      `DvP ${position} (2026 WC only): ${wc2026Count} teams with games (${wc2026Sampled} with samples) | props cache: ${loaded ? 'loaded' : 'MISSING'} (${wc2026Key})`
+    );
     if (!loaded) console.log('  -> run: npm run build:world-cup:bdl-cache (step 6 builds wc2026 DvP)');
   }
 
@@ -2572,7 +3240,8 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
     }
     const meta = await wcEnrichRowMeta(row, ctx);
     const games = await loadWorldCupPlayerGameLogs(row.playerName);
-    const wcGames = games.filter(wcPropStatsIsWorldCupTournamentGame);
+    const wcGames = games.filter((g) => wcPropStatsIsWorldCupTournamentGame(g));
+    const wc2026Games = wcGames.filter((g) => wcPropStatsGameSeason(g) === WC_PROPS_STATS_SEASON);
     const stats = computeWorldCupPropStatsFromGames(games, row.statType, opponent, row.line, WC_PROPS_STATS_SEASON);
     const supplement = await getWorldCupCache<{ statRows?: unknown[] }>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
 
@@ -2584,7 +3253,7 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
     );
     console.log(`  DvP slug: ${slugResolved ?? 'unresolved'} | rank: ${meta.dvpRating ?? 'N/A'}`);
     console.log(
-      `  WC finals games in log: ${wcGames.length} | wc column entries: ${stats.wcGameLog?.length ?? 0} | seasons: ${[...new Set(wcGames.map((g) => String(g.season ?? '?')))] .join(', ')} | BDL supplement rows: ${supplement?.statRows?.length ?? 0}`
+      `  WC 2026 games in log: ${wc2026Games.length} | all WC finals in log: ${wcGames.length} | wc column entries: ${stats.wcGameLog?.length ?? 0} | seasons: ${[...new Set(wcGames.map((g) => String(g.season ?? '?')))] .join(', ')} | BDL supplement rows: ${supplement?.statRows?.length ?? 0}`
     );
     if (!meta.dvpRating) {
       const reasons: string[] = [];
@@ -2621,8 +3290,9 @@ export async function enrichWorldCupPlayerPropsList(
 
   const keysToFetch = new Set<string>();
   for (const row of rows) {
-    keysToFetch.add(getWorldCupPropStatsCacheKey(row.playerName, row.homeTeam, row.awayTeam, row.statType, row.line));
-    keysToFetch.add(getWorldCupPropStatsCacheKey(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line));
+    for (const key of wcPropStatsCacheKeysForRow(row)) {
+      keysToFetch.add(key);
+    }
   }
   await prefetchWorldCupPropStatsKeys([...keysToFetch]);
 
@@ -2637,10 +3307,12 @@ export async function enrichWorldCupPlayerPropsList(
       ? {
           last5Avg: stats.last5Avg,
           last10Avg: stats.last10Avg,
+          h2hAvg: stats.h2hAvg,
           seasonAvg: stats.seasonAvg,
           streak: stats.streak,
           last5HitRate: stats.last5HitRate,
           last10HitRate: stats.last10HitRate,
+          h2hHitRate: stats.h2hHitRate,
           seasonHitRate: stats.seasonHitRate,
           wcGamesAvg: stats.wcGamesAvg,
           wcGamesHitRate: stats.wcGamesHitRate,
@@ -2651,28 +3323,67 @@ export async function enrichWorldCupPlayerPropsList(
       : {}),
   });
 
-  if (skipRowMeta && cacheOnly) {
+  if (cacheOnly) {
     const photoCtx = includePhotos ? await loadWcPropsPhotoContext(rows) : null;
+    const dvpCtx = skipRowMeta ? null : await loadWcPropsEnrichContext();
     if (photoCtx) {
       console.log(
         `[wc-odds] Photo context loaded (${photoCtx.indexByName.size} index entries, ${photoCtx.squadCachesByTeamId.size} squad caches)`
       );
     }
+    if (dvpCtx) {
+      console.log(
+        `[wc-odds] DvP context loaded (${dvpCtx.dvpByPosition.size} positions, ${dvpCtx.indexByName.size} index entries)`
+      );
+    }
     let withPhotos = 0;
-    const enriched = rows.map((row, index) => {
-      if (index === 0 || (index + 1) % 500 === 0 || index + 1 === total) {
-        wcProgressLog('wc-odds', index + 1, total, 'props enriched');
-      }
-      const meta = photoCtx ? wcEnrichRowPhotoMeta(row, photoCtx) : {};
-      if (meta.headshotUrl) withPhotos += 1;
-      return attachStats(row, wcPropStatsFromRowCache(row), meta);
-    });
+    let withDvp = 0;
+    let withWc = 0;
+    let withL5 = 0;
+    const gamesByPlayer = new Map<string, Record<string, unknown>[]>();
+    const indexByName = dvpCtx?.indexByName ?? photoCtx?.indexByName ?? new Map();
+    const refreshWc2026 = process.env.WC_SKIP_WC2026_RECOMPUTE !== '1';
+    const enriched = await Promise.all(
+      rows.map(async (row, index) => {
+        if (index === 0 || (index + 1) % 500 === 0 || index + 1 === total) {
+          wcProgressLog('wc-odds', index + 1, total, 'props enriched');
+        }
+        const photoMeta = photoCtx ? wcEnrichRowPhotoMeta(row, photoCtx) : {};
+        const dvpMeta = dvpCtx ? await wcEnrichRowDvpMeta(row, dvpCtx, gamesByPlayer) : {};
+        if (photoMeta.headshotUrl) withPhotos += 1;
+        if (dvpMeta.dvpRating != null) withDvp += 1;
+        let stats = wcPropStatsFromRowCache(row);
+        let wcFields: Pick<WorldCupPropStatsPayload, 'wcGamesAvg' | 'wcGamesHitRate' | 'wcGameLog'> | null =
+          null;
+        if (refreshWc2026) {
+          wcFields = await wcComputeWc2026PropFields(row, gamesByPlayer, indexByName);
+          if (stats) {
+            stats = { ...stats, ...wcFields };
+          }
+        }
+        if ((wcFields?.wcGamesHitRate?.total ?? stats?.wcGamesHitRate?.total ?? 0) > 0) withWc += 1;
+        let enrichedRow = attachStats(row, stats, { ...photoMeta, ...dvpMeta });
+        if (wcFields) {
+          enrichedRow = {
+            ...enrichedRow,
+            wcGamesAvg: wcFields.wcGamesAvg,
+            wcGamesHitRate: wcFields.wcGamesHitRate,
+            wcGameLog: wcFields.wcGameLog,
+          };
+        }
+        if (enrichedRow.last5Avg != null || enrichedRow.last10Avg != null) withL5 += 1;
+        return enrichedRow;
+      })
+    );
     if (total > 0) {
-      console.log(`[wc-odds] Enrichment complete (${total} rows, ${withPhotos} with headshots)`);
+      console.log(
+        `[wc-odds] Enrichment complete (${total} rows, ${withPhotos} with headshots, ${withDvp} with DvP, ${withL5} with L5/L10, ${withWc} with WC 2018/2022/2026)`
+      );
     }
     return enriched;
   }
 
+  const photoCtx = includePhotos ? await loadWcPropsPhotoContext(rows) : null;
   const ctx = skipRowMeta ? null : await loadWcPropsEnrichContext();
 
   const enrichOne = async (row: WorldCupListPropRow, index: number): Promise<WorldCupListPropRow> => {
@@ -2683,14 +3394,13 @@ export async function enrichWorldCupPlayerPropsList(
         stats = await getWorldCupPropStats(row.playerName, row.awayTeam, row.homeTeam, row.statType, row.line, false);
       }
     }
-    const meta = ctx ? await wcEnrichRowMeta(row, ctx) : {};
+    const photoMeta = photoCtx ? wcEnrichRowPhotoMeta(row, photoCtx) : {};
+    const dvpMeta = ctx ? await wcEnrichRowDvpMeta(row, ctx) : {};
     wcProgressLog('wc-odds', index + 1, total, 'props enriched');
-    return attachStats(row, stats, meta);
+    return attachStats(row, stats, { ...photoMeta, ...dvpMeta });
   };
 
-  const enriched = skipRowMeta
-    ? await Promise.all(rows.map((row, index) => enrichOne(row, index)))
-    : await wcAfMapWithConcurrency(rows, WC_LIST_ENRICH_CONCURRENCY, enrichOne);
+  const enriched = await wcAfMapWithConcurrency(rows, WC_LIST_ENRICH_CONCURRENCY, enrichOne);
 
   if (total > 0) {
     console.log(`[wc-odds] Enrichment complete (${total} rows)`);
@@ -2907,7 +3617,7 @@ export async function rebuildWorldCupEnrichedListFromOddsCache(options?: {
   ingestMessage: string;
 }> {
   const cacheOnly = options?.cacheOnly ?? true;
-  const skipRowMeta = options?.skipRowMeta ?? true;
+  const skipRowMeta = options?.skipRowMeta ?? false;
   const writeCache = options?.writeCache ?? true;
 
   const result = await buildWorldCupPlayerPropsList({ cacheOnly: true });
@@ -2921,26 +3631,83 @@ export async function rebuildWorldCupEnrichedListFromOddsCache(options?: {
     };
   }
 
-  const enriched = await enrichWorldCupPlayerPropsList(result.data, { cacheOnly, skipRowMeta });
+  const previousEnriched = writeCache ? await getWorldCupEnrichedListCache() : null;
+  const previousByKey = new Map<string, WorldCupListPropRow>();
+  for (const row of previousEnriched?.data ?? []) {
+    previousByKey.set(`${row.playerName}|${row.statType}|${row.line}|${row.gameId}`, row);
+  }
+
+  let enriched = await enrichWorldCupPlayerPropsList(result.data, { cacheOnly, skipRowMeta });
+  if (previousByKey.size) {
+    let restoredHeadshots = 0;
+    let restoredStats = 0;
+    enriched = enriched.map((row) => {
+      const key = `${row.playerName}|${row.statType}|${row.line}|${row.gameId}`;
+      const prev = previousByKey.get(key);
+      if (!prev) return row;
+      let next = row;
+      if (!row.headshotUrl && prev.headshotUrl) {
+        next = { ...next, headshotUrl: prev.headshotUrl };
+        restoredHeadshots += 1;
+      }
+      const needsStats =
+        row.last5Avg == null &&
+        row.last10Avg == null &&
+        row.seasonAvg == null &&
+        (row.wcGamesHitRate?.total ?? 0) === 0 &&
+        row.wcGamesAvg == null;
+      const prevHasStats =
+        prev.last5Avg != null ||
+        prev.last10Avg != null ||
+        prev.seasonAvg != null ||
+        prev.wcGamesAvg != null ||
+        (prev.wcGamesHitRate?.total ?? 0) > 0;
+      if (needsStats && prevHasStats) {
+        next = {
+          ...next,
+          last5Avg: prev.last5Avg,
+          last10Avg: prev.last10Avg,
+          h2hAvg: prev.h2hAvg,
+          seasonAvg: prev.seasonAvg,
+          streak: prev.streak,
+          last5HitRate: prev.last5HitRate,
+          last10HitRate: prev.last10HitRate,
+          h2hHitRate: prev.h2hHitRate,
+          seasonHitRate: prev.seasonHitRate,
+          wcGamesAvg: prev.wcGamesAvg,
+          wcGamesHitRate: prev.wcGamesHitRate,
+          wcGameLog: prev.wcGameLog,
+        };
+        restoredStats += 1;
+      }
+      return next;
+    });
+    if (restoredHeadshots) console.log(`[wc-odds] Restored ${restoredHeadshots} headshot(s) from previous enriched cache`);
+    if (restoredStats) console.log(`[wc-odds] Restored ${restoredStats} stat row(s) from previous enriched cache`);
+  }
   const filtered = filterWorldCupPropsWithPlayerCategoryStats(result.games, enriched);
   const lastUpdated = result.lastUpdated ?? new Date().toISOString();
 
-  if (writeCache && filtered.data.length) {
-    console.log(`[wc-odds] Writing enriched props cache (${filtered.data.length} props, ${filtered.games.length} games)...`);
-    await setWorldCupEnrichedListCache({ games: filtered.games, data: filtered.data, lastUpdated });
+  if (writeCache && enriched.length) {
+    console.log(
+      `[wc-odds] Writing enriched props cache (${enriched.length} rows, ${filtered.data.length} paintable, ${filtered.games.length} games)...`
+    );
+    await setWorldCupEnrichedListCache({ games: result.games, data: enriched, lastUpdated });
   } else if (writeCache) {
-    console.warn(`[wc-odds] Writing empty enriched props cache — 0 props with stats (${result.data.length} odds rows)`);
-    await setWorldCupEnrichedListCache({ games: filtered.games, data: [], lastUpdated });
+    console.warn(`[wc-odds] Writing empty enriched props cache — 0 odds rows`);
+    await setWorldCupEnrichedListCache({ games: [], data: [], lastUpdated });
   }
 
   const ingestMessage =
     filtered.data.length > 0
-      ? `Fetched ${filtered.data.length} props for ${filtered.games.length} games`
-      : `${result.data.length} Bet365 props in cache but none have player stats yet — re-run World Cup Process Stats.`;
+      ? `Fetched ${filtered.data.length} paintable props (${enriched.length} enriched rows) for ${filtered.games.length} games`
+      : enriched.length > 0
+        ? `${enriched.length} enriched props in cache but none paintable yet — re-run World Cup Process Stats for L5/L10/WC.`
+        : `${result.data.length} Bet365 props in cache but none have player stats yet — re-run World Cup Process Stats.`;
 
   return {
-    games: filtered.games,
-    data: filtered.data,
+    games: result.games,
+    data: enriched,
     lastUpdated,
     rawOddsCount: result.data.length,
     ingestMessage,
@@ -2980,5 +3747,411 @@ export async function refreshWorldCupOddsCache(): Promise<{
       ingestMessage: 'World Cup odds refresh failed.',
       error: message,
     };
+  }
+}
+
+export type WorldCupPlayerHistoryDebugOpts = {
+  playerName?: string;
+  teamId?: string;
+  nationHint?: string;
+  playerId?: string | null;
+  outPath?: string;
+  live?: boolean;
+};
+
+function wcDebugNum(v: unknown): number | null {
+  const parsed = typeof v === 'number' ? v : Number.parseFloat(String(v ?? ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function wcDebugSeasonFromMatch(m: Record<string, unknown>): number | null {
+  return wcDashboardMatchSeason(m);
+}
+
+function wcDebugFormatGameRow(opts: {
+  matchId: string;
+  date: string;
+  season: number | null;
+  opponent: string;
+  playerId: string;
+  minutes: number | null;
+  passes: number | null;
+  sot: number | null;
+  source: string;
+}): string {
+  return [
+    opts.date.slice(0, 10) || '????-??-??',
+    opts.season ?? '????',
+    `vs ${opts.opponent}`.padEnd(18),
+    `match=${opts.matchId}`.padEnd(10),
+    `pid=${opts.playerId}`.padEnd(8),
+    `mins=${opts.minutes ?? '?'}`.padEnd(8),
+    `pass=${opts.passes ?? '?'}`.padEnd(8),
+    `sot=${opts.sot ?? '?'}`.padEnd(6),
+    opts.source,
+  ].join(' | ');
+}
+
+function wcDebugOpponentLabel(match: Record<string, unknown>, playerTeamId: string, isHome: boolean): string {
+  const home = String(
+    (match.home_team as { name?: string } | undefined)?.name ?? match.home_team_name ?? 'Home'
+  );
+  const away = String(
+    (match.away_team as { name?: string } | undefined)?.name ?? match.away_team_name ?? 'Away'
+  );
+  const homeId = String(
+    match.home_team_source_id ?? (match.home_team as { id?: number } | undefined)?.id ?? ''
+  );
+  const playerIsHome = playerTeamId && homeId ? homeId === playerTeamId : isHome;
+  return playerIsHome ? away : home;
+}
+
+/** Console + JSON debug for WC player history (dashboard vs props). */
+export async function debugWorldCupPlayerHistory(opts: WorldCupPlayerHistoryDebugOpts = {}): Promise<void> {
+  const playerName = opts.playerName ?? 'Lionel Messi';
+  const teamId = opts.teamId ?? '37';
+  const nationHint = opts.nationHint ?? 'Argentina';
+  const playerIdArg = opts.playerId ?? '';
+  const historyOpts = { teamId, nationHint };
+  const outPath = opts.outPath ?? '';
+  const doLive = opts.live === true;
+  const wcSeasons = [...WC_PROPS_WC_COLUMN_SEASONS];
+
+  clearWcBdlSupplementPayloadMem();
+
+  console.log('='.repeat(72));
+  console.log('World Cup player history debug');
+  console.log('='.repeat(72));
+  console.log(`Player: ${playerName}`);
+  console.log(`Team ID (BDL): ${teamId}`);
+  console.log(`Nation: ${nationHint}`);
+  if (playerIdArg) console.log(`URL playerId: ${playerIdArg}`);
+  console.log('');
+
+  const supplement = await wcGetBdlSupplementPayload();
+  const expandedTeamIds = wcExpandBdlTeamIdsFromSupplement(supplement, teamId, nationHint);
+  console.log(`  Argentina BDL team ids (all cycles): ${[...expandedTeamIds].join(', ') || teamId}`);
+  console.log('');
+  const supplementCacheKey = wcGetBdlSupplementCacheKey();
+  console.log('-- Supplement cache --');
+  if (!supplement?.statRows?.length) {
+    console.log('  MISSING - no supplement stat rows');
+    console.log('  Fix: npm run rebuild:wc:bdl-supplement');
+  } else {
+    console.log(`  Cache key: ${supplementCacheKey ?? 'unknown'}${supplementCacheKey !== BDL_DVP_SUPPLEMENT_CACHE_KEY ? ' (STALE — rebuild required)' : ''}`);
+    console.log(`  Stat rows: ${supplement.statRows.length}`);
+    console.log(`  Matches: ${supplement.matches?.length ?? 0}`);
+    console.log(`  playerIdsByName keys: ${Object.keys(supplement.playerIdsByName ?? {}).length}`);
+    const statRowsByMatch = new Map<string, number>();
+    for (const r of supplement.statRows) {
+      const mid = String(r.source_match_id ?? '');
+      if (mid) statRowsByMatch.set(mid, (statRowsByMatch.get(mid) ?? 0) + 1);
+    }
+    const perMatchCounts = [...statRowsByMatch.values()].sort((a, b) => a - b);
+    const matchesWithStats = statRowsByMatch.size;
+    const matchesTotal = supplement.matches?.length ?? 0;
+    const matchesZeroStats = Math.max(0, matchesTotal - matchesWithStats);
+    console.log(
+      `  Stat coverage: ${matchesWithStats}/${matchesTotal} matches have rows; ${matchesZeroStats} matches have statRows=0`
+    );
+    if (perMatchCounts.length) {
+      console.log(
+        `  Rows/match: min=${perMatchCounts[0]} median=${perMatchCounts[Math.floor(perMatchCounts.length / 2)]} max=${perMatchCounts[perMatchCounts.length - 1]}`
+      );
+    }
+    if (matchesZeroStats > 0 || supplementCacheKey !== BDL_DVP_SUPPLEMENT_CACHE_KEY) {
+      console.log(
+        '  Likely cause: stale v7 supplement (50-match chunks + 8-page cap). Rebuild writes v8 with full pagination.'
+      );
+      console.log('  Fix: npm run rebuild:wc:bdl-supplement');
+    }
+  }
+  console.log('');
+
+  const allIds = await wcPropStatsResolveAllBdlPlayerIds(playerName, historyOpts);
+  const primaryId = await wcPropStatsResolveBdlPlayerId(playerName);
+  const liveIds = await wcPropStatsFetchBdlPlayerIdsFromLiveApi(playerName);
+  const fromSupplementKeys = new Map<string, number[]>();
+  const family = normalizeWorldCupPlayerName(playerName).split(' ').filter(Boolean).pop() ?? '';
+  for (const [nameKey, ids] of Object.entries(supplement?.playerIdsByName ?? {})) {
+    if (wcPropStatsNameKeysMatch(playerName, nameKey)) fromSupplementKeys.set(nameKey, ids);
+  }
+  const fuzzyNameKeys = Object.entries(supplement?.playerIdsByName ?? {}).filter(([nameKey]) =>
+    family.length >= 4 ? normalizeWorldCupPlayerName(nameKey).includes(family) : false
+  );
+
+  console.log('-- BDL player ID resolution --');
+  console.log(`  Primary (2026 name index): ${primaryId ?? 'none'}`);
+  console.log(`  ALL resolved IDs (${allIds.size}): ${[...allIds].join(', ') || 'none'}`);
+  if (liveIds.size) console.log(`  BDL live /players IDs: ${[...liveIds].join(', ')}`);
+  if (fuzzyNameKeys.length) {
+    console.log(`  playerIdsByName keys containing "${family}":`);
+    for (const [nameKey, ids] of fuzzyNameKeys.slice(0, 15)) {
+      console.log(`    "${nameKey}" -> [${ids.join(', ')}]`);
+    }
+    if (fuzzyNameKeys.length > 15) console.log(`    ...and ${fuzzyNameKeys.length - 15} more`);
+  }
+  if (fromSupplementKeys.size) {
+    console.log('  playerIdsByName matches:');
+    for (const [nameKey, ids] of fromSupplementKeys) console.log(`    "${nameKey}" -> [${ids.join(', ')}]`);
+  } else {
+    console.log('  playerIdsByName matches: NONE');
+  }
+  console.log('');
+
+  const matchById = new Map<string, Record<string, unknown>>();
+  for (const m of supplement?.matches ?? []) {
+    const id = String(m.source_match_id ?? '');
+    if (id) {
+      matchById.set(id, {
+        id,
+        datetime: m.match_date,
+        season: { year: m.season_year },
+        home_team: { name: m.home_team_name },
+        away_team: { name: m.away_team_name },
+        status: m.status ?? 'completed',
+      });
+    }
+  }
+
+  console.log('-- Per-ID row counts --');
+  for (const pid of allIds) {
+    const suppRows = (supplement?.statRows ?? []).filter((r) => String(r.source_player_id ?? '') === pid);
+    const cachedStats = (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playerStats(pid))) ?? [];
+    const wcSupp = suppRows.filter((r) => {
+      const mid = String(r.source_match_id ?? '');
+      const m = matchById.get(mid);
+      const season = m ? wcDebugSeasonFromMatch(m) : null;
+      return season != null && WC_PROPS_WC_COLUMN_SEASONS.has(season);
+    });
+    console.log(
+      `  ID ${pid}: supplement=${suppRows.length} (WC finals ${wcSupp.length}) | wc:player:stats cache=${cachedStats.length}`
+    );
+  }
+  console.log('');
+
+  const supplementGames = new Map<string, { row: Record<string, unknown>; match: Record<string, unknown>; season: number }>();
+  for (const row of supplement?.statRows ?? []) {
+    if (!allIds.has(String(row.source_player_id ?? ''))) continue;
+    const mid = String(row.source_match_id ?? '');
+    const m = matchById.get(mid);
+    if (!m) continue;
+    const season = wcDebugSeasonFromMatch(m);
+    if (season == null || !WC_PROPS_WC_COLUMN_SEASONS.has(season)) continue;
+    supplementGames.set(`${mid}|${row.source_team_id ?? ''}`, { row, match: m, season });
+  }
+
+  console.log(`-- Supplement WC finals games for resolved IDs: ${supplementGames.size} --`);
+  for (const { row, match, season } of [...supplementGames.values()].sort((a, b) =>
+    String(a.match?.datetime ?? '').localeCompare(String(b.match?.datetime ?? ''))
+  )) {
+    const playerTeamId = String(row.source_team_id ?? '');
+    const isHome = row.is_home === true;
+    console.log(
+      wcDebugFormatGameRow({
+        matchId: String(row.source_match_id ?? ''),
+        date: String(match?.datetime ?? ''),
+        season,
+        opponent: wcDebugOpponentLabel(match, playerTeamId, isHome),
+        playerId: String(row.source_player_id ?? ''),
+        minutes: wcDebugNum(row.minutes_played),
+        passes: wcDebugNum(row.passes_total) ?? wcDebugNum(row.passes),
+        sot: wcDebugNum(row.shots_on_target),
+        source: 'supplement',
+      })
+    );
+  }
+  console.log('');
+
+  const idToNames = new Map<number, string[]>();
+  for (const [nameKey, idList] of Object.entries(supplement?.playerIdsByName ?? {})) {
+    for (const id of idList) {
+      if (!Number.isFinite(id)) continue;
+      const names = idToNames.get(id) ?? [];
+      names.push(nameKey);
+      idToNames.set(id, names);
+    }
+  }
+  const messiMatchIds = new Set(
+    [...supplementGames.values()].map(({ row }) => String(row.source_match_id ?? ''))
+  );
+  const argWcMatches = (supplement?.matches ?? []).filter((m) => {
+    if (!WC_PROPS_WC_COLUMN_SEASONS.has(Number(m.season_year ?? -1))) return false;
+    const home = String(m.home_team_name ?? '').toLowerCase();
+    const away = String(m.away_team_name ?? '').toLowerCase();
+    return home.includes('argentina') || away.includes('argentina');
+  });
+  const nationToken = nationHint.toLowerCase();
+  const missingBdl = argWcMatches.filter((m) => !messiMatchIds.has(String(m.source_match_id ?? '')));
+  if (missingBdl.length) {
+    console.log(`-- Argentina WC finals matches with NO BDL row for Messi ids [${[...allIds].join(', ')}]: ${missingBdl.length} --`);
+    for (const m of missingBdl.sort((a, b) => String(a.match_date ?? '').localeCompare(String(b.match_date ?? '')))) {
+      const mid = String(m.source_match_id ?? '');
+      const home = String(m.home_team_name ?? '');
+      const away = String(m.away_team_name ?? '');
+      const argTeamIdForMatch = wcSupplementNationTeamIdForMatch(m, nationToken) ?? teamId;
+      const allMatchRows = (supplement?.statRows ?? []).filter((r) => String(r.source_match_id ?? '') === mid);
+      const teamRows = allMatchRows.filter((r) => String(r.source_team_id ?? '') === argTeamIdForMatch);
+      const top = [...teamRows]
+        .sort((a, b) => (wcDebugNum(b.minutes_played) ?? 0) - (wcDebugNum(a.minutes_played) ?? 0))
+        .slice(0, 3)
+        .map((r) => {
+          const pid = Number(r.source_player_id);
+          const names = idToNames.get(pid) ?? [];
+          return `pid=${pid}${names.length ? ` (${names[0]})` : ''} mins=${wcDebugNum(r.minutes_played) ?? '?'}`;
+        });
+      console.log(
+        `  ${String(m.match_date ?? '').slice(0, 10)} | ${m.season_year ?? '????'} | ${home} vs ${away} | match=${mid} | argTeamId=${argTeamIdForMatch} | statRows=${allMatchRows.length} | top: ${top.join(', ') || 'none'}`
+      );
+    }
+    console.log('  (If statRows>0 but top:none, BDL uses different team id per WC cycle — not missing finals data)');
+    console.log('');
+
+    if (doLive && missingBdl.length) {
+      const apiKey = process.env.BALLDONTLIE_API_KEY;
+      const missingZeroStats = missingBdl.filter((m) => {
+        const mid = String(m.source_match_id ?? '');
+        return !(supplement?.statRows ?? []).some((r) => String(r.source_match_id ?? '') === mid);
+      });
+      if (!apiKey) {
+        console.log('-- Live BDL check (--live) --');
+        console.log('  Skipped: BALLDONTLIE_API_KEY not set');
+        console.log('');
+      } else if (!missingZeroStats.length) {
+        console.log('-- Live BDL check (--live) --');
+        console.log('  Skipped: missing Messi rows but those matches have other player stat rows in supplement');
+        console.log('');
+      } else {
+        console.log('-- Live BDL check (--live) for matches with statRows=0 in supplement --');
+        const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
+        const messiPid = [...allIds][0];
+        for (const m of missingZeroStats.slice(0, 5)) {
+          const mid = String(m.source_match_id ?? '');
+          const params = new URLSearchParams();
+          params.append('match_ids[]', mid);
+          params.set('per_page', '100');
+          let liveCount = 0;
+          let messiLive: { minutes_played?: number | null } | null = null;
+          let cursor: string | number | null = null;
+          for (let page = 0; page < 20; page++) {
+            if (cursor != null) params.set('cursor', String(cursor));
+            else params.delete('cursor');
+            const res = await fetch(`${BDL_FIFA_BASE}/player_match_stats?${params.toString()}`, {
+              headers: { Accept: 'application/json', Authorization: apiKey },
+              cache: 'no-store',
+            });
+            if (!res.ok) {
+              console.log(`  match=${mid}: live fetch HTTP ${res.status}`);
+              break;
+            }
+            const payload = (await res.json()) as {
+              data?: Array<{ player_id?: number; minutes_played?: number | null }>;
+              meta?: { next_cursor?: number | string | null };
+            };
+            const batch = payload.data ?? [];
+            liveCount += batch.length;
+            if (!messiLive && messiPid != null) {
+              messiLive = batch.find((row) => String(row.player_id) === String(messiPid)) ?? null;
+            }
+            cursor = payload.meta?.next_cursor ?? null;
+            if (!cursor) break;
+          }
+          console.log(
+            `  match=${mid} | supplement statRows=0 | live API total rows=${liveCount}${messiLive ? ` | Messi pid=${messiPid} mins=${messiLive.minutes_played ?? '?'}` : ''}`
+          );
+        }
+        console.log('');
+      }
+    }
+  }
+
+  const { loadInternationalStatsByPlayerName } = await import('@/lib/internationalDashboard');
+  console.log('-- App loaders --');
+  const [bdlFinals, bundle, intl] = await Promise.all([
+    loadWorldCupPlayerBdlFinalsHistory(playerName, historyOpts),
+    loadWorldCupPlayerHistoryBundle(playerName, historyOpts),
+    loadInternationalStatsByPlayerName(playerName, { bdlPlayerId: playerIdArg || null }),
+  ]);
+  const gameLogs = bundle.games;
+
+  const wcGameLogs = gameLogs.filter((g) => {
+    const season = wcDebugSeasonFromMatch(g);
+    return season != null && WC_PROPS_WC_COLUMN_SEASONS.has(season);
+  });
+
+  console.log(`  loadWorldCupPlayerBdlFinalsHistory: ${bdlFinals.playerMatchStats.length} stat rows, ${bdlFinals.matches.length} matches`);
+  console.log(`  loadWorldCupPlayerHistoryBundle (WC finals): ${wcGameLogs.length} games`);
+  console.log(`  loadInternationalStatsByPlayerName: ${intl.playerMatchStats.length} stat rows`);
+
+  const propsBySource = new Map<string, number>();
+  for (const g of wcGameLogs) {
+    const src = String(g.source ?? 'unknown');
+    propsBySource.set(src, (propsBySource.get(src) ?? 0) + 1);
+  }
+  if (propsBySource.size) {
+    console.log('  Props WC games by source:');
+    for (const [src, count] of propsBySource) console.log(`    ${src}: ${count}`);
+  }
+  console.log('');
+  console.log('-- loadWorldCupPlayerBdlFinalsHistory games --');
+
+  const finalsMatchById = new Map(bdlFinals.matches.map((m) => [String(m.id ?? ''), m]));
+  for (const row of bdlFinals.playerMatchStats.sort((a, b) =>
+    String(finalsMatchById.get(String(a.match_id ?? ''))?.datetime ?? '').localeCompare(
+      String(finalsMatchById.get(String(b.match_id ?? ''))?.datetime ?? '')
+    )
+  )) {
+    const mid = String(row.match_id ?? '');
+    const match = finalsMatchById.get(mid) ?? {};
+    const playerTeamId = String(row.team_id ?? row.source_team_id ?? '');
+    const isHome = row.is_home === true;
+    console.log(
+      wcDebugFormatGameRow({
+        matchId: mid,
+        date: String(match.datetime ?? row.match_datetime ?? ''),
+        season: wcDebugSeasonFromMatch(match),
+        opponent: wcDebugOpponentLabel(match, playerTeamId, isHome),
+        playerId: String(row.player_id ?? ''),
+        minutes: wcDebugNum(row.minutes_played),
+        passes: wcDebugNum(row.passes_total) ?? wcDebugNum(row.passes),
+        sot: wcDebugNum(row.shots_on_target),
+        source: String(row.source ?? 'bdl'),
+      })
+    );
+  }
+
+  console.log('');
+  console.log('-- Summary --');
+  console.log(`  Resolved BDL IDs: ${allIds.size}`);
+  console.log(`  Supplement WC games: ${supplementGames.size}`);
+  console.log(`  Dashboard loader (bdlFinals only): ${bdlFinals.playerMatchStats.length}`);
+  console.log(`  Dashboard/props bundle (WC finals): ${wcGameLogs.length}`);
+  if (doLive && !missingBdl.length) console.log('  (--live: all Argentina WC matches have supplement rows for resolved IDs)');
+  console.log('='.repeat(72));
+
+  if (outPath) {
+    const fs = await import('fs');
+    const report = {
+      playerName,
+      teamId,
+      supplementStatRows: supplement?.statRows?.length ?? 0,
+      resolvedIds: [...allIds],
+      primaryId,
+      supplementWcGames: [...supplementGames.values()].map(({ row, match, season }) => ({
+        matchId: String(row.source_match_id ?? ''),
+        date: String(match?.datetime ?? ''),
+        season,
+        playerId: String(row.source_player_id ?? ''),
+        minutes: wcDebugNum(row.minutes_played),
+        passes: wcDebugNum(row.passes_total) ?? wcDebugNum(row.passes),
+        sot: wcDebugNum(row.shots_on_target),
+      })),
+      bdlFinalsCount: bdlFinals.playerMatchStats.length,
+      propsWcGameLogsCount: wcGameLogs.length,
+      intlStatRows: intl.playerMatchStats.length,
+      wcSeasons,
+    };
+    fs.writeFileSync(outPath, JSON.stringify(report, null, 2), 'utf8');
+    console.log(`\nWrote report -> ${outPath}`);
   }
 }

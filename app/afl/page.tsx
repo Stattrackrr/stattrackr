@@ -44,6 +44,7 @@ import { dfsRoleGroupToShortLabel as dfsRoleGroupToHeaderLabel } from '@/lib/afl
 import { buildAflJournalQuickPreset } from '@/lib/buildAflJournalQuickPreset';
 import { buildAflGameDedupeKey, dedupeAflGames } from '@/lib/aflGameDedupe';
 import { playerHasFootywireSlugOverride } from '@/lib/aflFootywireSlugOverrides';
+import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 
 /** Match /props player cards: purple-tint border + soft violet outer glow (light + dark). */
 const AFL_DASH_CARD_GLOW =
@@ -1020,7 +1021,7 @@ function AflTopPicksModal({
 export default function AFLPage() {
   const router = useRouter();
   const { theme, setTheme, isDark } = useTheme();
-  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPro, setIsPro] = useState(false);
@@ -1610,10 +1611,7 @@ export default function AFLPage() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('oddsFormat');
-      if (stored === 'american' || stored === 'decimal') {
-        setOddsFormat(stored);
-      }
+      setOddsFormat(readOddsFormatPreference());
     } catch {
       // Ignore localStorage read errors.
     }

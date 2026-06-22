@@ -15,9 +15,14 @@
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --refresh-odds
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --trigger-odds-api
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --warm-props-stats
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --rebuild-enriched-only
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --full-pipeline
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --diagnose-props-dvp
  *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --diagnose-props-dvp --player="Lamine Yamal"
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --inspect-team netherlands
+ *   npx tsx scripts/build-world-cup-opponent-breakdown.ts --inspect-team netherlands --all-keys
+ *   npm run debug:wc:opp-breakdown
+ *   npm run debug:wc:opp-breakdown -- --team norway --verbose
  *   npm run build:world-cup:dashboard
  */
 import fs from 'fs';
@@ -290,7 +295,42 @@ async function runRefreshOdds(): Promise<void> {
   }
 }
 
-async function runWarmPropsStats(): Promise<void> {
+async function runRebuildEnrichedOnly(): Promise<void> {
+  const { rebuildWorldCupEnrichedListFromOddsCache } = await import('../lib/worldCupCache');
+  const { warmCombinedPropsSnapshot } = await import('../lib/combinedPropsSnapshot');
+
+  console.log('[wc-rebuild] Rebuilding enriched props from existing odds + stat caches (skipping stat warm)...');
+  const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
+    cacheOnly: true,
+    skipRowMeta: false,
+    writeCache: true,
+  });
+  console.log(
+    `[wc-rebuild] Enriched cache written (${rebuilt.data.length} enriched rows, ${rebuilt.rawOddsCount} odds rows)`
+  );
+
+  try {
+    const baseUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
+    const cronSecret = (process.env.CRON_SECRET || '').trim();
+    console.log('[wc-rebuild] Warming combined props snapshot cache...');
+    const snapshot = await warmCombinedPropsSnapshot({
+      origin: baseUrl,
+      cronSecret: cronSecret || undefined,
+    });
+    console.log(
+      `[wc-rebuild] Combined props snapshot written (wc=${snapshot.worldCup.props.length} props, afl=${snapshot.afl.props.length} props)`
+    );
+  } catch (e) {
+    console.warn('[wc-rebuild] combined props snapshot warm failed:', e);
+  }
+}
+
+async function runWarmPropsStats(argv: string[]): Promise<void> {
+  if (argv.includes('--rebuild-enriched-only')) {
+    await runRebuildEnrichedOnly();
+    return;
+  }
+
   const {
     runWorldCupPropsStatsWarm,
     rebuildWorldCupEnrichedListFromOddsCache,
@@ -309,7 +349,7 @@ async function runWarmPropsStats(): Promise<void> {
     console.log('[wc-warm] Rebuilding enriched props cache from odds + warmed stats...');
     const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
       cacheOnly: true,
-      skipRowMeta: true,
+      skipRowMeta: false,
       writeCache: true,
     });
     console.log(
@@ -390,7 +430,7 @@ async function runFullPipeline(argv: string[]): Promise<void> {
     console.log('\n[wc-pipeline] Phase 4/4 — Props-stats warm + enriched props page cache\n');
     // Same process as AFL cron: read props list from cache we just wrote, not prod HTTP.
     delete process.env.WC_WARM_USE_LIST;
-    await runWarmPropsStats();
+    await runWarmPropsStats([]);
   }
 
   console.log('\n[wc-pipeline] All phases complete.\n');
@@ -408,8 +448,545 @@ async function runDiagnosePropsDvp(argv: string[]): Promise<void> {
   });
 }
 
+function inspectTeamCacheNormalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function inspectTeamCacheSummarize(payload: unknown): string {
+  if (payload == null) return '(null)';
+  if (Array.isArray(payload)) {
+    const sample = payload.slice(0, 2).map((x) => {
+      if (x && typeof x === 'object') {
+        const o = x as Record<string, unknown>;
+        const name = o.name ?? o.full_name ?? o.player_name ?? o.display_name;
+        const id = o.id ?? o.player_id ?? o.bdl_player_id;
+        return [name, id].filter(Boolean).join('#') || JSON.stringify(o).slice(0, 80);
+      }
+      return String(x).slice(0, 80);
+    });
+    return `array(${payload.length}) sample=[${sample.join(', ')}]`;
+  }
+  if (typeof payload === 'object') {
+    const o = payload as Record<string, unknown>;
+    const keys = Object.keys(o);
+    const parts = [`object keys=${keys.slice(0, 12).join(',')}${keys.length > 12 ? '...' : ''}`];
+    for (const prop of ['teams', 'players', 'roster', 'games', 'data'] as const) {
+      if (Array.isArray(o[prop])) parts.push(`${prop}=${o[prop].length}`);
+    }
+    if (o.team && typeof o.team === 'object') {
+      const t = o.team as Record<string, unknown>;
+      parts.push(`team=${t.name ?? t.full_name ?? t.id}`);
+    }
+    if (o.player && typeof o.player === 'object') {
+      const p = o.player as Record<string, unknown>;
+      parts.push(`player=${p.name ?? p.full_name ?? p.id}`);
+    }
+    return parts.join(' ');
+  }
+  const s = String(payload);
+  return s.length > 120 ? `${s.slice(0, 120)}...` : s;
+}
+
+type InspectMatchRow = {
+  id?: number;
+  datetime?: string | null;
+  status?: string | null;
+  stage?: string | null;
+  home_team?: { id?: number; name?: string } | null;
+  away_team?: { id?: number; name?: string } | null;
+  home_score?: number | null;
+  away_score?: number | null;
+};
+
+function inspectTeamInMatch(match: InspectMatchRow, teamId: number): boolean {
+  return match.home_team?.id === teamId || match.away_team?.id === teamId;
+}
+
+function inspectStageLabel(stage: unknown): string {
+  if (stage == null || stage === '') return '';
+  if (typeof stage === 'string') return stage;
+  if (typeof stage === 'object') {
+    const o = stage as Record<string, unknown>;
+    return String(o.name ?? o.slug ?? o.short_name ?? o.type ?? '').trim();
+  }
+  return String(stage);
+}
+
+function inspectTeamGoals(
+  row: Record<string, unknown>,
+  match: InspectMatchRow,
+  teamId: number
+): number | null {
+  const direct = inspectNum(row.goals);
+  if (direct != null) return direct;
+  if (match.home_team?.id === teamId) return inspectNum(match.home_score);
+  if (match.away_team?.id === teamId) return inspectNum(match.away_score);
+  return null;
+}
+
+async function runInspectTeamGames(
+  teamId: number,
+  teamName: string,
+  getWorldCupCache: <T = unknown>(cacheKey: string) => Promise<T | null>,
+  WC2026_CACHE_KEYS: typeof import('../lib/worldCupOpponentBreakdown').WC2026_CACHE_KEYS
+): Promise<void> {
+  const [matches2026, matchesAll, players] = await Promise.all([
+    getWorldCupCache<InspectMatchRow[]>(WC2026_CACHE_KEYS.matches2026),
+    getWorldCupCache<InspectMatchRow[]>(WC2026_CACHE_KEYS.matchesAllSeasons),
+    getWorldCupCache<Array<{ id?: number; name?: string }>>(WC2026_CACHE_KEYS.playersForTeam(teamId)),
+  ]);
+
+  const playerNames = new Map<number, string>();
+  for (const p of players ?? []) {
+    if (Number.isFinite(p.id)) playerNames.set(Number(p.id), String(p.name ?? p.id));
+  }
+
+  const byId = new Map<number, InspectMatchRow>();
+  for (const m of [...(matchesAll ?? []), ...(matches2026 ?? [])]) {
+    if (Number.isFinite(m.id)) byId.set(Number(m.id), m);
+  }
+
+  const teamMatches = [...byId.values()]
+    .filter((m) => inspectTeamInMatch(m, teamId))
+    .sort((a, b) => String(b.datetime ?? '').localeCompare(String(a.datetime ?? '')));
+
+  console.log(`\n=== Games for ${teamName} (${teamMatches.length} fixtures in cache) ===\n`);
+  if (!teamMatches.length) {
+    console.log('No fixtures found in wc:raw:matches:2026:v1 or wc:raw:matches:allseasons:v1.');
+    return;
+  }
+
+  for (const m of teamMatches.slice(0, 12)) {
+    const home = m.home_team?.name ?? '?';
+    const away = m.away_team?.name ?? '?';
+    const isHome = m.home_team?.id === teamId;
+    const opponent = isHome ? away : home;
+    const venue = isHome ? 'H' : 'A';
+    const score =
+      m.status === 'completed'
+        ? `${m.home_score ?? '?'}-${m.away_score ?? '?'}`
+        : String(m.status ?? 'scheduled');
+    const detail = await getWorldCupCache<{
+      playerStats?: Array<Record<string, unknown>>;
+      teamStats?: Array<Record<string, unknown>>;
+    }>(WC2026_CACHE_KEYS.matchDetail(m.id!));
+    const playerCount = detail?.playerStats?.length ?? 0;
+    const teamCount = detail?.teamStats?.length ?? 0;
+    const detailLabel = detail
+      ? `detail cached (${playerCount} player rows, ${teamCount} team rows)`
+      : 'detail MISSING';
+    console.log(
+      `${String(m.datetime ?? '').slice(0, 16)} | id ${m.id} | ${venue} vs ${opponent} | ${score} | ${inspectStageLabel(m.stage)} | ${detailLabel}`
+    );
+  }
+
+  const lastCompleted = teamMatches.find((m) => m.status === 'completed');
+  if (!lastCompleted?.id) {
+    console.log('\nNo completed games cached yet for this team.');
+    return;
+  }
+
+  const lastId = lastCompleted.id;
+  const home = lastCompleted.home_team?.name ?? '?';
+  const away = lastCompleted.away_team?.name ?? '?';
+  console.log(`\n=== Last completed game: match ${lastId} ===`);
+  console.log(
+    `${String(lastCompleted.datetime ?? '').slice(0, 16)} | ${home} ${lastCompleted.home_score ?? '?'}-${lastCompleted.away_score ?? '?'} ${away}`
+  );
+  console.log(`Cache key: ${WC2026_CACHE_KEYS.matchDetail(lastId)}`);
+
+  const detail = await getWorldCupCache<{
+    playerStats?: Array<Record<string, unknown>>;
+    teamStats?: Array<Record<string, unknown>>;
+    shots?: Array<Record<string, unknown>>;
+  }>(WC2026_CACHE_KEYS.matchDetail(lastId));
+
+  if (!detail) {
+    console.log('Match detail blob not cached — run bdl-cache step 4 to warm wc:match:{id}:v1.');
+    return;
+  }
+
+  console.log('\nTeam stats:');
+  for (const row of detail.teamStats ?? []) {
+    const rowTeamId = inspectNum(row.team_id);
+    const label =
+      rowTeamId === lastCompleted.home_team?.id
+        ? home
+        : rowTeamId === lastCompleted.away_team?.id
+          ? away
+          : String(rowTeamId ?? '?');
+    const bits = [
+      `goals=${inspectTeamGoals(row, lastCompleted, rowTeamId ?? -1) ?? '?'}`,
+      `shots=${inspectNum(row.shots_total) ?? '?'}`,
+      `sot=${inspectNum(row.shots_on_target) ?? '?'}`,
+      `poss=${inspectNum(row.possession_pct) ?? inspectNum(row.possession) ?? '?'}`,
+      `passes=${inspectNum(row.passes_total) ?? '?'}`,
+      `fouls=${inspectNum(row.fouls) ?? '?'}`,
+    ];
+    console.log(`  ${label}: ${bits.join(', ')}`);
+  }
+
+  const nlPlayerStats = (detail.playerStats ?? []).filter(
+    (row) => inspectNum(row.team_id) === teamId
+  );
+  if (!nlPlayerStats.length) {
+    const rosterIds = new Set(
+      (players ?? []).map((p) => Number(p.id)).filter((id) => Number.isFinite(id))
+    );
+    const fromPlayerCache: Array<Record<string, unknown>> = [];
+    for (const pid of rosterIds) {
+      const rows =
+        (await getWorldCupCache<Array<Record<string, unknown>>>(
+          WC2026_CACHE_KEYS.playerStats(pid)
+        )) ?? [];
+      for (const row of rows) {
+        if (inspectNum(row.match_id) === lastId) fromPlayerCache.push(row);
+      }
+    }
+    if (fromPlayerCache.length) {
+      console.log(
+        `\n${teamName} player stats (0 in match blob; ${fromPlayerCache.length} in wc:player:stats:* for this match):`
+      );
+      const sortedFallback = [...fromPlayerCache].sort(
+        (a, b) => (inspectNum(b.goals) ?? 0) - (inspectNum(a.goals) ?? 0) ||
+          (inspectNum(b.shots_total) ?? 0) - (inspectNum(a.shots_total) ?? 0)
+      );
+      for (const row of sortedFallback.slice(0, 15)) {
+        const pid = inspectNum(row.player_id);
+        const name =
+          (pid != null ? playerNames.get(pid) : null) ?? String(row.player_name ?? pid ?? '?');
+        console.log(
+          `  ${name}: goals=${inspectNum(row.goals) ?? 0}, ast=${inspectNum(row.assists) ?? 0}, shots=${inspectNum(row.shots_total) ?? 0}, sot=${inspectNum(row.shots_on_target) ?? 0}, mins=${inspectNum(row.minutes_played) ?? inspectNum(row.minutes) ?? '?'}`
+        );
+      }
+      if (sortedFallback.length > 15) {
+        console.log(`  ... and ${sortedFallback.length - 15} more`);
+      }
+      return;
+    }
+    console.log(
+      `\n${teamName} player stats: none in wc:match:${lastId}:v1 and none in wc:player:stats:* for this match.`
+    );
+    console.log(
+      'Refresh with: npx tsx scripts/build-world-cup-opponent-breakdown.ts --bdl-cache --incremental --step=4 --force'
+    );
+    return;
+  }
+
+  console.log(`\n${teamName} player stats (${nlPlayerStats.length} rows):`);
+  const sortedPlayers = [...nlPlayerStats].sort(
+    (a, b) => (inspectNum(b.goals) ?? 0) - (inspectNum(a.goals) ?? 0) ||
+      (inspectNum(b.shots_total) ?? 0) - (inspectNum(a.shots_total) ?? 0)
+  );
+  for (const row of sortedPlayers.slice(0, 15)) {
+    const pid = inspectNum(row.player_id);
+    const name = (pid != null ? playerNames.get(pid) : null) ?? String(row.player_name ?? pid ?? '?');
+    console.log(
+      `  ${name}: goals=${inspectNum(row.goals) ?? 0}, ast=${inspectNum(row.assists) ?? 0}, shots=${inspectNum(row.shots_total) ?? 0}, sot=${inspectNum(row.shots_on_target) ?? 0}, mins=${inspectNum(row.minutes_played) ?? inspectNum(row.minutes) ?? '?'}`
+    );
+  }
+  if (sortedPlayers.length > 15) {
+    console.log(`  ... and ${sortedPlayers.length - 15} more`);
+  }
+}
+
+async function runInspectTeamCache(argv: string[]): Promise<void> {
+  const showAllKeys = argv.includes('--all-keys');
+  const teamIdArg = argv.find((a) => a.startsWith('--team-id='))?.split('=')[1];
+  const teamQuery =
+    argv.find((a) => a.startsWith('--inspect-team='))?.slice('--inspect-team='.length) ??
+    (() => {
+      const idx = argv.indexOf('--inspect-team');
+      if (idx >= 0 && argv[idx + 1] && !argv[idx + 1].startsWith('--')) return argv[idx + 1];
+      return argv.find((a) => !a.startsWith('--')) ?? 'netherlands';
+    })();
+
+  const { supabaseAdmin } = await import('../lib/supabaseAdmin');
+  const { getWorldCupCache } = await import('../lib/worldCupCache');
+  const { WC2026_CACHE_KEYS } = await import('../lib/worldCupOpponentBreakdown');
+
+  let teamId = teamIdArg ? Number(teamIdArg) : NaN;
+  let teamName = teamIdArg ? `teamId=${teamIdArg}` : teamQuery;
+
+  if (!Number.isFinite(teamId)) {
+    const teams =
+      (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.teams)) ?? [];
+    const q = inspectTeamCacheNormalize(teamQuery);
+    const aliases = new Set([q, 'holland', 'netherlands', 'nld', 'ned']);
+    const match = teams.find((t) => {
+      const name = inspectTeamCacheNormalize(String(t.name ?? t.full_name ?? ''));
+      const abbr = inspectTeamCacheNormalize(String(t.abbreviation ?? t.code ?? ''));
+      return aliases.has(name) || aliases.has(abbr) || name.includes(q) || q.includes(name);
+    });
+    if (!match) {
+      console.log(`No team match for "${teamQuery}" in ${WC2026_CACHE_KEYS.teams} (${teams.length} teams cached).`);
+      console.log(
+        'Sample teams:',
+        teams.slice(0, 8).map((t) => `${t.id}:${t.name}`).join(', ')
+      );
+      return;
+    }
+    teamId = Number(match.id);
+    teamName = String(match.name ?? match.full_name ?? teamQuery);
+    console.log(`Resolved ${teamName} -> BDL team id ${teamId}\n`);
+  }
+
+  await runInspectTeamGames(teamId, teamName, getWorldCupCache, WC2026_CACHE_KEYS);
+
+  if (!showAllKeys) return;
+
+  const patterns = [
+    `%${teamId}%`,
+    `%${inspectTeamCacheNormalize(teamName).replace(/ /g, '%')}%`,
+    '%netherlands%',
+    '%holland%',
+  ];
+
+  const seen = new Map<string, { updated_at?: string; summary: string; bytes: number }>();
+
+  for (const pattern of patterns) {
+    const { data, error } = await supabaseAdmin
+      .from('world_cup_cache')
+      .select('cache_key, payload, updated_at')
+      .ilike('cache_key', pattern)
+      .order('cache_key');
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const bytes = Buffer.byteLength(JSON.stringify(row.payload ?? null), 'utf8');
+      seen.set(row.cache_key, {
+        updated_at: row.updated_at,
+        summary: inspectTeamCacheSummarize(row.payload),
+        bytes,
+      });
+    }
+  }
+
+  const expectedKeys = [
+    WC2026_CACHE_KEYS.rosterForTeam(teamId),
+    WC2026_CACHE_KEYS.playersForTeam(teamId),
+    `wc:lineup-squad-photos:${teamId}:v1`,
+    `wc:dashboard:v23:WC:2026:${teamId}:none:none`,
+    `wc:dashboard:v23:world-cup:2026:${teamId}:none:none`,
+  ];
+
+  for (const k of expectedKeys) {
+    if (seen.has(k)) continue;
+    const { data, error } = await supabaseAdmin
+      .from('world_cup_cache')
+      .select('cache_key, payload, updated_at')
+      .eq('cache_key', k)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      const bytes = Buffer.byteLength(JSON.stringify(data.payload ?? null), 'utf8');
+      seen.set(data.cache_key, {
+        updated_at: data.updated_at,
+        summary: inspectTeamCacheSummarize(data.payload),
+        bytes,
+      });
+    }
+  }
+
+  const rows = [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  console.log(`Found ${rows.length} cache entries for ${teamName} (id ${teamId}):\n`);
+
+  let totalBytes = 0;
+  for (const [cacheKey, meta] of rows) {
+    totalBytes += meta.bytes;
+    console.log(`${cacheKey}`);
+    console.log(`  updated: ${meta.updated_at ?? 'n/a'}  size: ${(meta.bytes / 1024).toFixed(1)} KB`);
+    console.log(`  ${meta.summary}\n`);
+  }
+  console.log(`Total payload size: ${(totalBytes / 1024).toFixed(1)} KB`);
+
+  const missing = [
+    WC2026_CACHE_KEYS.rosterForTeam(teamId),
+    WC2026_CACHE_KEYS.playersForTeam(teamId),
+    `wc:lineup-squad-photos:${teamId}:v1`,
+  ].filter((k) => !seen.has(k));
+  if (missing.length) {
+    console.log('\nMissing expected keys:');
+    for (const k of missing) console.log(`  - ${k}`);
+  }
+}
+
+function debugOppArg(argv: string[], name: string): string | undefined {
+  const eq = argv.find((a) => a.startsWith(`--${name}=`));
+  if (eq) return eq.slice(name.length + 3);
+  const idx = argv.indexOf(`--${name}`);
+  if (idx >= 0 && argv[idx + 1] && !argv[idx + 1]!.startsWith('--')) return argv[idx + 1];
+  return undefined;
+}
+
+async function runDebugWc2026OppBreakdown(argv: string[]): Promise<void> {
+  const { debugWc2026OpponentBreakdown } = await import('../lib/worldCupOpponentBreakdown');
+
+  const teamFilter = debugOppArg(argv, 'team');
+  const matchRaw = debugOppArg(argv, 'match');
+  const matchId = matchRaw ? Number.parseInt(matchRaw, 10) : undefined;
+  const verbose = argv.includes('--verbose');
+  const outPath = debugOppArg(argv, 'out');
+
+  console.log('[wc-opp-debug] Tracing WC 2026 opponent breakdown pipeline...\n');
+
+  const report = await debugWc2026OpponentBreakdown({
+    teamFilter,
+    matchId: Number.isFinite(matchId) ? matchId : undefined,
+  });
+
+  const fmtSide = (side: import('../lib/worldCupOpponentBreakdown').Wc2026OppBreakdownDebugSide | null): string => {
+    if (!side) return '  (no side data)';
+    const status = side.qualified ? 'QUALIFIED' : `REJECTED - ${side.rejectReason ?? 'unknown'}`;
+    const vol = Object.entries(side.volumeTotals)
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(', ');
+    return [
+      `  ${side.defendingName} (${side.defendingSlug}) allowed vs ${side.opponentName}: ${status}`,
+      `    opponent team stat row: ${side.opponentPlayerRows ? 'yes' : 'no'}, rich (Game Props gate): ${side.eligibleOpponentRows ? 'yes' : 'no'}`,
+      `    volume: ${vol || '(none)'}`,
+      `    corners (team sheet): ${side.cornersFromTeamSheet ?? '-'}`,
+      side.qualified
+        ? `    totals: goals=${side.allTotals.goals}, shots=${side.allTotals.shots_total}, sot=${side.allTotals.shots_on_target}, passes=${side.allTotals.passes_accurate}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  };
+
+  const printMatch = (m: import('../lib/worldCupOpponentBreakdown').Wc2026OppBreakdownDebugMatch): void => {
+    const score =
+      m.homeScore != null && m.awayScore != null ? `${m.homeScore}-${m.awayScore}` : '?-?';
+    console.log(
+      `\n-- Match #${m.matchId} | ${m.datetime} | ${m.stage}\n   ${m.homeName} vs ${m.awayName} (${score})`
+    );
+    if (!m.hasDetail) {
+      console.log('   NO team_match_stats for both teams - both sides skipped');
+      return;
+    }
+    console.log(`   player stat rows: ${m.playerStatRows}`);
+    console.log(fmtSide(m.homeSide));
+    console.log(fmtSide(m.awaySide));
+  };
+
+  const printHistogram = (label: string, hist: Record<string, number>): void => {
+    const entries = Object.entries(hist).sort((a, b) => Number(a[0]) - Number(b[0]));
+    if (!entries.length) {
+      console.log(`  ${label}: (empty)`);
+      return;
+    }
+    console.log(`  ${label}:`);
+    for (const [games, count] of entries) {
+      console.log(`    ${games} game(s): ${count} team(s)`);
+    }
+  };
+
+  console.log('=== FIXTURES (wc:raw:matches:2026:v1) ===');
+  console.log(`  Total fixtures in cache:     ${report.fixtures.totalFixtures}`);
+  console.log(`  Completed:                   ${report.fixtures.completedFixtures}`);
+  console.log(`  With team_match_stats rows:  ${report.fixtures.withMatchDetail}`);
+  console.log(`  Missing team_match_stats:    ${report.fixtures.withoutMatchDetail}`);
+  console.log('  Stage breakdown (completed):');
+  for (const [stage, count] of Object.entries(report.fixtures.stageCounts).sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${count}x  ${stage}`);
+  }
+
+  console.log('\n=== BUILD FUNNEL (recomputed from cache) ===');
+  console.log(`  Defensive sides evaluated:   ${report.buildFunnel.sidesEvaluated}`);
+  console.log(`  Sides qualified (counted):   ${report.buildFunnel.sidesQualified}`);
+  console.log(`  Rejected (no volume stats):  ${report.buildFunnel.sidesRejectedNoVolume}`);
+  console.log(`  Rejected (corners only):     ${report.buildFunnel.sidesRejectedCornersOnly}`);
+  console.log(`  Skipped (no match detail):   ${report.buildFunnel.sidesSkippedNoDetail}`);
+  console.log(`  Teams with >=1 game:         ${report.buildFunnel.teamsWithGames}`);
+
+  console.log('\n=== CACHED PAYLOAD (wc:opp-breakdown:wc2026:v3) ===');
+  console.log(`  Present:                     ${report.cachedPayload.present}`);
+  console.log(`  Generated at:                ${report.cachedPayload.generatedAt ?? '-'}`);
+  console.log(`  Teams in cache:              ${report.cachedPayload.teamCount}`);
+  console.log(`  Teams with games > 0:        ${report.cachedPayload.teamsWithGames}`);
+  printHistogram('Cached game-count histogram', report.cachedPayload.gameCountHistogram);
+
+  console.log('\n=== RECOMPUTED (same logic as step 7 build) ===');
+  console.log(`  Teams:                       ${report.recomputed.teamCount}`);
+  console.log(`  Allowing 1+ goals/game:      ${report.recomputed.nonZeroGoalsTeams}`);
+  console.log(`  Allowing 1+ SOT/game:        ${report.recomputed.nonZeroSotTeams}`);
+  printHistogram('Recomputed game-count histogram', report.recomputed.gameCountHistogram);
+
+  if (report.cachedPayload.teamCount !== report.recomputed.teamCount) {
+    console.log(
+      `\n  MISMATCH: cached has ${report.cachedPayload.teamCount} teams, recompute has ${report.recomputed.teamCount}`
+    );
+    console.log('    Re-run: npm run build:world-cup:bdl-cache -- --step=7 --force --incremental');
+  }
+
+  if (report.recomputed.teamsWithGames >= 40 && report.fixtures.completedFixtures < 20) {
+    console.log(
+      `\n  WARNING: ${report.recomputed.teamsWithGames} teams have games but only ${report.fixtures.completedFixtures} fixtures — check stage breakdown.`
+    );
+  } else if (report.recomputed.teamsWithGames === 48) {
+    console.log(
+      `\n  Note: all 48 teams have >=1 group-stage game (${report.fixtures.completedFixtures} fixtures, ${report.buildFunnel.sidesQualified} defensive samples).`
+    );
+  }
+
+  console.log('\n=== TEAMS (sorted by games desc) ===');
+  const teamLimit = verbose ? report.teams.length : Math.min(report.teams.length, 20);
+  for (const team of report.teams.slice(0, teamLimit)) {
+    console.log(
+      `\n${team.name} (${team.slug}) - ${team.games} game(s) | goals=${team.averages.goals} sot=${team.averages.shots_on_target} shots=${team.averages.shots_total} passes=${team.averages.passes_accurate}`
+    );
+    for (const pm of team.perMatch) {
+      console.log(
+        `  #${pm.matchId} ${pm.datetime} vs ${pm.opponent} [${pm.stage}] - qualified by: ${pm.qualifyingStats.join(', ') || '?'}`
+      );
+      if (verbose) {
+        console.log(
+          `      allowed: g=${pm.totals.goals} sot=${pm.totals.shots_on_target} shots=${pm.totals.shots_total} pass=${pm.totals.passes_accurate} corners=${pm.totals.corners ?? 0}`
+        );
+      }
+    }
+  }
+  if (!verbose && report.teams.length > teamLimit) {
+    console.log(`\n  ... ${report.teams.length - teamLimit} more teams (use --verbose to show all)`);
+  }
+
+  if (teamFilter || matchId != null) {
+    console.log('\n=== MATCH DETAIL ===');
+    if (!report.matches.length) {
+      console.log('  No matches matched the filter.');
+    } else {
+      for (const m of report.matches) printMatch(m);
+    }
+  } else if (verbose) {
+    console.log('\n=== ALL MATCHES ===');
+    for (const m of report.matches) printMatch(m);
+  } else {
+    console.log('\n=== SAMPLE MATCHES (first 5) ===');
+    console.log('  Tip: --team norway or --match 12345 or --verbose for full match trace');
+    for (const m of report.matches.slice(0, 5)) printMatch(m);
+  }
+
+  if (outPath) {
+    const resolved = path.resolve(process.cwd(), outPath);
+    fs.writeFileSync(resolved, JSON.stringify(report, null, 2), 'utf8');
+    console.log(`\n[wc-opp-debug] Full JSON written to ${resolved}`);
+  }
+
+  console.log('\n[wc-opp-debug] Done.');
+}
+
 async function main() {
   const argv = process.argv.slice(2);
+
+  if (argv.includes('--inspect-team') || argv.some((a) => a.startsWith('--inspect-team='))) {
+    await runInspectTeamCache(argv.filter((a) => a !== '--inspect-team'));
+    return;
+  }
+
+  if (argv.includes('--debug-opp-breakdown')) {
+    await runDebugWc2026OppBreakdown(argv.filter((a) => a !== '--debug-opp-breakdown'));
+    return;
+  }
 
   if (argv.includes('--diagnose-props-dvp')) {
     const args = argv.filter((a) => a !== '--diagnose-props-dvp');
@@ -427,8 +1004,13 @@ async function main() {
     return;
   }
 
+  if (argv.includes('--rebuild-enriched-only')) {
+    await runRebuildEnrichedOnly();
+    return;
+  }
+
   if (argv.includes('--warm-props-stats')) {
-    await runWarmPropsStats();
+    await runWarmPropsStats(argv.filter((a) => a !== '--warm-props-stats'));
     return;
   }
 

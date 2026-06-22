@@ -27,6 +27,7 @@ import { SoccerPlayerPropsTestCard } from '@/app/soccer/components/SoccerPlayerP
 import { SoccerPlayerSupportingStats } from '@/app/soccer/components/SoccerPlayerSupportingStats';
 import type { SoccerPlayerPropsChartSnapshot } from '@/app/soccer/components/soccerPlayerPropsTypes';
 import { normalizeSoccerPositionCode } from '@/lib/soccerPlayerPosition';
+import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 
 /** Same card chrome as `app/afl/page.tsx` (AFL dashboard). */
 const AFL_DASH_CARD_GLOW =
@@ -659,7 +660,7 @@ function SoccerPageContent() {
   const { theme, setTheme, isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
   const [isPro, setIsPro] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
@@ -743,10 +744,7 @@ function SoccerPageContent() {
   useEffect(() => {
     setMounted(true);
     try {
-      const stored = localStorage.getItem('oddsFormat');
-      if (stored === 'american' || stored === 'decimal') {
-        setOddsFormat(stored);
-      }
+      setOddsFormat(readOddsFormatPreference());
     } catch {
       /* ignore */
     }

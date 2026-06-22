@@ -63,6 +63,7 @@ import {
   runWithWcCacheDebug,
   setWorldCupCache,
   wcCacheLog,
+  loadWorldCupPlayerHistoryBundle,
 } from '@/lib/worldCupCache';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { resolveWorldCupFlagCode } from '@/lib/worldCupFlags';
@@ -95,9 +96,9 @@ const WC2026 = {
   playerStats: (id: number | string) => `wc:player:stats:${id}:v1`,
   playerShots: (id: number | string) => `wc:player:shots:${id}:v1`,
   playerIdByName: 'wc:player-id-by-name:v1',
-  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v4:${pos}`,
-  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v3',
-  oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v2',
+  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v5:${pos}`,
+  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v5',
+  oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v3',
   playerVsPoolWc: 'wc:player-vs-pool:worldcup:v2',
 } as const;
 
@@ -212,6 +213,29 @@ function resolveRequestedPlayerName(
     if (id !== playerId) continue;
     const name = String(row.player?.name ?? row.player?.short_name ?? '').trim();
     if (name) return name;
+  }
+  return null;
+}
+
+async function resolveRequestedPlayerNameWithFallback(
+  payload: Record<string, unknown>,
+  playerId: string | null,
+  playerNameParam: string | null
+): Promise<string | null> {
+  const direct = resolveRequestedPlayerName(payload, playerId, playerNameParam);
+  if (direct) return direct;
+  if (!playerId) return null;
+  const nameIndex = await readWcCache<Record<string, number>>(WC2026.playerIdByName);
+  if (nameIndex) {
+    for (const [normalizedName, id] of Object.entries(nameIndex)) {
+      if (String(id) === playerId && normalizedName.trim()) {
+        return normalizedName
+          .split(' ')
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+      }
+    }
   }
   return null;
 }
@@ -346,6 +370,17 @@ async function attachPlayerSidePanelData(
   const playerVsPool = await readWcCache<Record<string, unknown>>(WC2026.playerVsPoolWc);
   if (playerVsPool && Array.isArray(playerVsPool.players) && (playerVsPool.players as unknown[]).length > 0) {
     recordWcSource('playerVsPool', 'supabase-cache', 'dashboard-bundle');
+    const poolOppBreakdown = playerVsPool.opponentBreakdown;
+    if (
+      !out.wc2026OpponentBreakdown &&
+      poolOppBreakdown &&
+      typeof poolOppBreakdown === 'object' &&
+      typeof (poolOppBreakdown as Record<string, unknown>).names === 'object' &&
+      Object.keys((poolOppBreakdown as { names: Record<string, unknown> }).names).length > 0
+    ) {
+      recordWcSource('oppBreakdownWc2026', 'supabase-cache', 'player-vs-pool-fallback');
+      out.wc2026OpponentBreakdown = poolOppBreakdown;
+    }
     out.playerVsPool = {
       ...playerVsPool,
       ...(out.wc2026OpponentBreakdown ? { wc2026OpponentBreakdown: out.wc2026OpponentBreakdown } : {}),
@@ -496,7 +531,7 @@ async function fetchBdlStatsForPlayerName(
           readWcCache<Array<Record<string, any>>>(WC2026.playerShots(playerId)),
           readWcCache<BdlMatch[]>(WC2026.matches2026),
         ]);
-        if (cachedStats) {
+        if (cachedStats?.length) {
           recordWcSource('playerStatsByName', 'supabase-cache', String(playerId));
           // Attach shot-derived fields from the shot cache
           const shotsByMatch = new Map<number, number>();
@@ -516,6 +551,26 @@ async function fetchBdlStatsForPlayerName(
             matches: summarizeMatches(wc2026.filter((m) =>
               stats.some((s) => Number(s.match_id) === m.id)
             )),
+          };
+        }
+
+        const wc2026 = (cachedMatches2026 ?? []).filter((m) => m.status === 'completed');
+        const fromMatches = await loadCachedPlayerStatsWithFallback({
+          playerId: String(playerId),
+          matches2026: wc2026,
+          apiKey,
+        });
+        if (fromMatches.length) {
+          recordWcSource('playerStatsByName', 'match-detail-fallback', String(playerId));
+          return {
+            playerMatchStats: fromMatches.map((row) => ({
+              ...row,
+              source: 'bdl',
+              tournament_slug: 'worldcup',
+            })),
+            matches: summarizeMatches(
+              wc2026.filter((m) => fromMatches.some((s) => Number(s.match_id) === m.id))
+            ),
           };
         }
       }
@@ -592,9 +647,10 @@ function readBdlPlayerStat(row: Record<string, unknown>, stat: string, shotsFrom
   if (stat === 'fouls') return bdlStatNum(row.fouls) ?? bdlStatNum(row.fouls_committed);
   if (stat === 'was_fouled') return bdlStatNum(row.was_fouled) ?? bdlStatNum(row.fouls_suffered);
   if (stat === 'shots_total') {
-    const fromRow = bdlStatNum(row.shots_total) ?? bdlStatNum(row.shots) ?? bdlStatNum(row.derived_shots_total);
-    if (shotsFromEndpoint != null && fromRow != null) return Math.max(shotsFromEndpoint, fromRow);
-    return shotsFromEndpoint ?? fromRow ?? null;
+    const fromRow =
+      bdlStatNum(row.shots_total) ?? bdlStatNum(row.shots) ?? bdlStatNum(row.derived_shots_total);
+    if (fromRow != null) return fromRow;
+    return shotsFromEndpoint ?? null;
   }
   if (stat === 'passes_total') return bdlStatNum(row.passes_total) ?? bdlStatNum(row.passes);
   return bdlStatNum(row[stat]);
@@ -693,6 +749,64 @@ async function computeBdlWorldCupOpponentAllowedLive(
     console.warn('[world-cup/dashboard] live opponent allowed failed:', err);
     return null;
   }
+}
+
+function parseOpponentTeamIdFromRequest(request: NextRequest): {
+  opponentTeamId: number;
+  opponentTeamName: string;
+  opponentCountryCode: string | null;
+} | null {
+  const opponentTeamIdRaw = request.nextUrl.searchParams.get('opponentTeamId');
+  const opponentTeamId = opponentTeamIdRaw ? Number.parseInt(opponentTeamIdRaw, 10) : NaN;
+  if (!Number.isFinite(opponentTeamId)) return null;
+  return {
+    opponentTeamId,
+    opponentTeamName: request.nextUrl.searchParams.get('opponentTeamName') || '',
+    opponentCountryCode: request.nextUrl.searchParams.get('opponentCountryCode'),
+  };
+}
+
+async function mergeLiveOpponentAllowedIntoBreakdown(
+  breakdown: WorldCupPlayerVsOpponentBreakdown | null | undefined,
+  opts: {
+    opponentTeamId: number;
+    opponentTeamName: string;
+    opponentCountryCode?: string | null;
+    apiKey: string;
+    qualifiedUniverse?: Map<string, string>;
+  }
+): Promise<WorldCupPlayerVsOpponentBreakdown | null | undefined> {
+  if (!breakdown || !opts.apiKey) return breakdown;
+  const slugs = new Set<string>();
+  for (const candidate of [opts.opponentCountryCode, opts.opponentTeamName]) {
+    const code = resolveWorldCupFlagCode(candidate);
+    if (code) slugs.add(code);
+  }
+  const nameKey = opts.opponentTeamName.trim().toLowerCase();
+  if (nameKey) slugs.add(nameKey);
+  const hasValues = [...slugs].some((slug) => {
+    if ((breakdown.games?.[slug] ?? 0) < 1) return false;
+    const goals = breakdown.metrics?.goals?.values?.[slug];
+    return typeof goals === 'number' && Number.isFinite(goals);
+  });
+  if (hasValues) return breakdown;
+
+  const live = await computeBdlWorldCupOpponentAllowedLive(
+    opts.opponentTeamId,
+    opts.opponentTeamName,
+    opts.opponentCountryCode,
+    opts.apiKey,
+    DEFAULT_SEASON
+  );
+  if (!live) return breakdown;
+  return mergeWorldCupOpponentAllowedSnapshot(
+    breakdown,
+    live.slug,
+    live.name,
+    live.games,
+    live.allowed,
+    { qualifiedUniverse: opts.qualifiedUniverse }
+  );
 }
 
 type BdlWorldCupSeasonResult = {
@@ -1366,6 +1480,50 @@ function playerStatRowKey(row: Record<string, any>): string {
   return `${row.match_id ?? ''}|${row.team_id ?? ''}|${row.player_id ?? ''}`;
 }
 
+function playerStatRowRichness(row: Record<string, any>): number {
+  const keys = [
+    'minutes_played',
+    'passes_total',
+    'passes',
+    'passes_accurate',
+    'goals',
+    'assists',
+    'shots_total',
+    'derived_shots_total',
+    'shots_on_target',
+    'tackles',
+    'fouls',
+    'fouls_committed',
+    'was_fouled',
+    'saves',
+  ];
+  let score = 0;
+  for (const key of keys) {
+    if (row[key] != null) score += 1;
+  }
+  return score;
+}
+
+function playerStatRowMergeKey(row: Record<string, any>): string {
+  return `${row.match_id ?? ''}|${row.team_id ?? ''}`;
+}
+
+function mergePlayerStatRowsPreferRich(
+  existing: Array<Record<string, any>>,
+  incoming: Array<Record<string, any>>
+): Array<Record<string, any>> {
+  const byKey = new Map<string, Record<string, any>>();
+  for (const row of existing) byKey.set(playerStatRowMergeKey(row), row);
+  for (const row of incoming) {
+    const key = playerStatRowMergeKey(row);
+    const prev = byKey.get(key);
+    if (!prev || playerStatRowRichness(row) > playerStatRowRichness(prev)) {
+      byKey.set(key, row);
+    }
+  }
+  return [...byKey.values()];
+}
+
 function mergePlayerStatRows(
   existing: Array<Record<string, any>>,
   incoming: Array<Record<string, any>>
@@ -1379,6 +1537,68 @@ function mergePlayerStatRows(
     merged.push(row);
   }
   return merged;
+}
+
+function preserveDashboardPlayerStatRow(row: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = { ...row };
+  if (row.source != null && String(row.source).trim()) out.source = row.source;
+  else if (!out.source) out.source = 'bdl';
+  if (row.tournament_slug != null && String(row.tournament_slug).trim()) {
+    out.tournament_slug = row.tournament_slug;
+  } else {
+    delete out.tournament_slug;
+  }
+  return out;
+}
+
+/** Props-identical intl + club + BDL WC pool for dashboard charts. */
+async function mergePlayerCrossSourceWorldCupHistory(opts: {
+  playerName: string;
+  playerId?: string | null;
+  teamId?: string | null;
+  nationHint?: string | null;
+  playerMatchStats: Array<Record<string, any>>;
+  playerMatches: Map<string, Record<string, any>>;
+}): Promise<Array<Record<string, any>>> {
+  recordWcSource('propsGameLogs', 'merged', opts.playerName);
+  const bundle = await loadWorldCupPlayerHistoryBundle(opts.playerName, {
+    teamId: opts.teamId,
+    nationHint: opts.nationHint,
+    playerId: opts.playerId,
+  });
+
+  const withPlayerId = (row: Record<string, any>): Record<string, any> => {
+    const normalized = preserveDashboardPlayerStatRow(row);
+    if (!opts.playerId) return normalized;
+    return {
+      ...normalized,
+      player_id: opts.playerId,
+      player: normalized.player ? { ...normalized.player, id: opts.playerId } : { id: opts.playerId },
+    };
+  };
+
+  const historyRows = (bundle.mergedStatRows as Array<Record<string, any>>).map((row) =>
+    withPlayerId({
+      ...row,
+      match_id: row.match_id ?? row.source_match_id,
+    })
+  );
+
+  let stats = mergePlayerStatRowsPreferRich(
+    historyRows,
+    opts.playerMatchStats.map((row) => withPlayerId(row))
+  );
+
+  for (const match of bundle.matches as Array<Record<string, any>>) {
+    const id = String(match.id ?? match.match_id ?? '');
+    if (!id) continue;
+    const existing = opts.playerMatches.get(id);
+    if (!existing || dashboardMatchRichness(match) >= dashboardMatchRichness(existing)) {
+      opts.playerMatches.set(id, match);
+    }
+  }
+
+  return stats;
 }
 
 /** Copy `source` / `tournament_slug` from match metadata onto stat rows for chart tags + logos. */
@@ -1427,7 +1647,22 @@ function playerHasWc2026Appearance(
   return rows.some((row) => {
     if (!completed2026Ids.has(Number(row.match_id))) return false;
     const minutes = bdlStatNum(row.minutes_played);
-    return minutes != null && minutes >= 1;
+    if (minutes != null && minutes >= 1) return true;
+    return [
+      'goals',
+      'assists',
+      'shots_total',
+      'shots_on_target',
+      'passes_total',
+      'passes_accurate',
+      'tackles',
+      'fouls',
+      'fouls_committed',
+      'was_fouled',
+      'fouls_suffered',
+      'yellow_cards',
+      'red_cards',
+    ].some((key) => bdlStatNum(row[key]) != null);
   });
 }
 
@@ -1495,6 +1730,124 @@ async function loadPlayerStatsFromTeamCompletedMatches(opts: {
   return stats;
 }
 
+async function loadPlayerStatsFrom2026MatchDetails(opts: {
+  playerId: string;
+  matches2026: BdlMatch[];
+  maxMatches?: number;
+  apiKey?: string;
+}): Promise<Array<Record<string, any>>> {
+  const completedIds = opts.matches2026
+    .filter((match) => match.status === 'completed')
+    .map((match) => match.id)
+    .filter((id): id is number => Number.isFinite(id))
+    .slice(0, opts.maxMatches ?? 64);
+  if (!completedIds.length) return [];
+
+  const stats: Array<Record<string, any>> = [];
+  const coveredMatchIds = new Set<number>();
+  const details = await Promise.all(
+    completedIds.map((matchId) => readWcCache<{ playerStats?: any[] }>(WC2026.matchDetail(matchId)))
+  );
+
+  for (let index = 0; index < completedIds.length; index++) {
+    const rows = details[index]?.playerStats ?? [];
+    if (!rows.length) continue;
+    coveredMatchIds.add(completedIds[index]);
+    for (const row of rows) {
+      const rowPlayerId = String(row.player_id ?? row.player?.id ?? '');
+      if (rowPlayerId === opts.playerId) stats.push(row);
+    }
+  }
+
+  const missing = completedIds.filter((matchId) => !coveredMatchIds.has(matchId));
+  if (missing.length && opts.apiKey) {
+    for (let offset = 0; offset < missing.length; offset += 50) {
+      const chunk = missing.slice(offset, offset + 50);
+      const params = new URLSearchParams();
+      chunk.forEach((matchId) => params.append('match_ids[]', String(matchId)));
+      try {
+        const live = await bdlFetchAll<Record<string, unknown>>(
+          '/player_match_stats',
+          params,
+          opts.apiKey,
+          { cursor: true, maxPages: 4 }
+        );
+        for (const row of live) {
+          const rowPlayerId = String(
+            row.player_id ?? (row.player as Record<string, unknown> | undefined)?.id ?? ''
+          );
+          if (rowPlayerId !== opts.playerId) continue;
+          stats.push(row as Record<string, any>);
+        }
+      } catch {
+        // best effort
+      }
+    }
+  }
+
+  return stats;
+}
+
+async function loadCachedPlayerStatsWithFallback(opts: {
+  playerId: string;
+  teamId?: number | null;
+  matches2026?: BdlMatch[];
+  apiKey?: string;
+}): Promise<Array<Record<string, any>>> {
+  let playerMatchStats: Array<Record<string, any>> = [];
+  const cachedStats = await readWcCache<any[]>(WC2026.playerStats(opts.playerId));
+  if (cachedStats?.length) {
+    recordWcSource('playerStats', 'supabase-cache', opts.playerId);
+    playerMatchStats = cachedStats;
+  } else {
+    recordWcSource('playerStats', 'cache-miss', opts.playerId);
+  }
+
+  const matches2026 =
+    opts.matches2026 ??
+    (await readWcCache<BdlMatch[]>(WC2026.matches2026)) ??
+    [];
+  const completed2026Ids = wc2026CompletedMatchIdSet(matches2026);
+  const needsTeamFallback =
+    Boolean(opts.teamId && Number.isFinite(opts.teamId)) &&
+    (!playerMatchStats.length || !playerHasWc2026Appearance(playerMatchStats, completed2026Ids));
+
+  if (needsTeamFallback) {
+    const fromTeam = await loadPlayerStatsFromTeamCompletedMatches({
+      teamId: Number(opts.teamId),
+      matches2026,
+      playerId: opts.playerId,
+      apiKey: opts.apiKey,
+    });
+    if (fromTeam.length) {
+      recordWcSource('playerStats', 'match-detail-fallback', String(opts.teamId));
+      playerMatchStats = mergePlayerStatRows(playerMatchStats, fromTeam);
+    }
+  }
+
+  if (!playerMatchStats.length) {
+    const fromMatches = await loadPlayerStatsFrom2026MatchDetails({
+      playerId: opts.playerId,
+      matches2026,
+      apiKey: opts.apiKey,
+    });
+    if (fromMatches.length) {
+      recordWcSource('playerStats', 'match-detail-scan', opts.playerId);
+      playerMatchStats = mergePlayerStatRows(playerMatchStats, fromMatches);
+    }
+  }
+
+  if (!playerMatchStats.length && opts.apiKey) {
+    const live = await fetchLivePlayerStatsById(opts.playerId, opts.apiKey);
+    if (live.length) {
+      recordWcSource('playerStats', 'bdl-live', opts.playerId);
+      playerMatchStats = live;
+    }
+  }
+
+  return playerMatchStats;
+}
+
 async function fetchLivePlayerStatsById(
   playerId: string,
   apiKey: string
@@ -1521,40 +1874,15 @@ async function refreshDashboardPlayerStats(opts: {
   apiKey?: string;
 }): Promise<{ playerMatchStats: Array<Record<string, any>>; playerMatches: Array<Record<string, any>>; matches: Array<Record<string, any>> }> {
   const { matches2026, allSeasonMatches } = await loadLineupLookupMatches(opts.apiKey);
-  let playerMatchStats: Array<Record<string, any>> = [];
-
-  const cachedStats = await readWcCache<any[]>(WC2026.playerStats(opts.requestedPlayerId));
-  if (cachedStats?.length) {
-    recordWcSource('playerStatsRefresh', 'supabase-cache', opts.requestedPlayerId);
-    playerMatchStats = cachedStats;
-  }
-
-  const completed2026Ids = wc2026CompletedMatchIdSet(matches2026);
-  const needsTeamFallback =
-    !playerHasWc2026Appearance(playerMatchStats, completed2026Ids) &&
-    opts.requestedTeamId &&
-    /^\d+$/.test(opts.requestedTeamId);
-
-  if (needsTeamFallback) {
-    const fromTeam = await loadPlayerStatsFromTeamCompletedMatches({
-      teamId: Number(opts.requestedTeamId),
-      matches2026,
-      playerId: opts.requestedPlayerId,
-      apiKey: opts.apiKey,
-    });
-    if (fromTeam.length) {
-      recordWcSource('playerStatsRefresh', 'match-detail-fallback', opts.requestedTeamId!);
-      playerMatchStats = mergePlayerStatRows(playerMatchStats, fromTeam);
-    }
-  }
-
-  if (!playerMatchStats.length && opts.apiKey) {
-    const live = await fetchLivePlayerStatsById(opts.requestedPlayerId, opts.apiKey);
-    if (live.length) {
-      recordWcSource('playerStatsRefresh', 'bdl-live', opts.requestedPlayerId);
-      playerMatchStats = live;
-    }
-  }
+  const playerMatchStats = await loadCachedPlayerStatsWithFallback({
+    playerId: opts.requestedPlayerId,
+    teamId:
+      opts.requestedTeamId && /^\d+$/.test(opts.requestedTeamId)
+        ? Number(opts.requestedTeamId)
+        : null,
+    matches2026,
+    apiKey: opts.apiKey,
+  });
 
   const mergedAll = mergeBdlMatches(allSeasonMatches, matches2026);
   const neededIds = new Set(
@@ -1562,9 +1890,7 @@ async function refreshDashboardPlayerStats(opts: {
   );
   const playerMatches = summarizeMatches(mergedAll.filter((match) => neededIds.has(Number(match.id))));
   const normalizedStats = playerMatchStats.map((row) => ({
-    ...row,
-    source: 'bdl',
-    tournament_slug: 'worldcup',
+    ...preserveDashboardPlayerStatRow(row),
     player_id: opts.requestedPlayerId,
     player: row.player
       ? { ...row.player, id: opts.requestedPlayerId }
@@ -2851,7 +3177,7 @@ async function handleWorldCupPlayerPropsListGet(request: NextRequest): Promise<N
       }
       const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
         cacheOnly: true,
-        skipRowMeta: true,
+        skipRowMeta: false,
         writeCache: true,
       });
       return NextResponse.json(
@@ -2875,20 +3201,19 @@ async function handleWorldCupPlayerPropsListGet(request: NextRequest): Promise<N
     if (enrich) {
       const enrichedCache = await getWorldCupEnrichedListCache();
       if (enrichedCache?.data?.length) {
-        const filtered = filterWorldCupPropsWithPlayerCategoryStats(enrichedCache.games, enrichedCache.data);
         return NextResponse.json(
           {
             success: true,
-            games: filtered.games,
-            data: filtered.data,
-            gamesCount: filtered.games.length,
-            propsCount: filtered.data.length,
+            games: enrichedCache.games,
+            data: enrichedCache.data,
+            gamesCount: enrichedCache.games.length,
+            propsCount: enrichedCache.data.length,
             season: 2026,
             lastUpdated: enrichedCache.lastUpdated,
             nextUpdate: null,
             noWorldCupOdds: false,
             noAflOdds: false,
-            ingestMessage: `Fetched ${filtered.data.length} props for ${filtered.games.length} games`,
+            ingestMessage: `Fetched ${enrichedCache.data.length} props for ${enrichedCache.games.length} games`,
           },
           { headers: { 'Cache-Control': 'private, no-store' } }
         );
@@ -2972,7 +3297,7 @@ async function handleWorldCupPropsStatsWarmGet(request: NextRequest): Promise<Ne
   try {
     const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
       cacheOnly: true,
-      skipRowMeta: true,
+      skipRowMeta: false,
       writeCache: true,
     });
     console.log(
@@ -3132,12 +3457,91 @@ async function handleWorldCupPlayerOddsGet(request: NextRequest) {
   }
 }
 
+async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  const playerName = params.get('playerName')?.trim() || params.get('player')?.trim() || '';
+  const requestedPlayerId = params.get('playerId');
+  const requestedTeamId = params.get('teamId');
+  const requestedTeamName =
+    params.get('teamName')?.trim() || params.get('team')?.trim() || null;
+  const opponentTeamNameHint =
+    params.get('opponentTeamName')?.trim() || params.get('opponent')?.trim() || null;
+
+  if (!playerName) {
+    return NextResponse.json({ error: 'playerName is required' }, { status: 400 });
+  }
+
+  try {
+    const bundle = await loadWorldCupPlayerHistoryBundle(playerName, {
+      teamId: requestedTeamId,
+      nationHint: requestedTeamName,
+      playerId: requestedPlayerId,
+    });
+
+    const teams = (await readWcCache<BdlTeam[]>(WC2026.teams)) ?? [];
+    const matches2026 = (await readWcCache<BdlMatch[]>(WC2026.matches2026)) ?? [];
+    const selectedTeam =
+      resolveRequestedTeam(teams, requestedTeamId, null) ??
+      (requestedTeamName ? findBdlTeamByName(teams, requestedTeamName) : null);
+    const featureMatch = findFeatureMatchWithOpponentHint(
+      matches2026,
+      selectedTeam,
+      opponentTeamNameHint
+    );
+
+    let playerMatchStats = bundle.mergedStatRows.map((row) => preserveDashboardPlayerStatRow(row));
+    if (requestedPlayerId && /^\d+$/.test(requestedPlayerId)) {
+      playerMatchStats = playerMatchStats.map((row) => ({
+        ...row,
+        player_id: requestedPlayerId,
+        player: row.player
+          ? { ...(row.player as Record<string, unknown>), id: requestedPlayerId }
+          : { id: requestedPlayerId },
+      }));
+    }
+
+    const summarizedMatches = summarizeMatches(bundle.matches as BdlMatch[]);
+    const playerMatchStatsWithContext = attachStatRowMatchContext(
+      playerMatchStats,
+      summarizedMatches
+    );
+
+    return NextResponse.json(
+      {
+        playerChartOnly: true,
+        season: parseSeason(params.get('season')),
+        teams,
+        matches: summarizedMatches,
+        playerMatches: summarizedMatches,
+        playerMatchStats: playerMatchStatsWithContext,
+        selectedTeam,
+        featureMatch: featureMatch
+          ? {
+              ...summarizeMatches([featureMatch])[0],
+              raw: featureMatch,
+            }
+          : null,
+      },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to load player chart data' },
+      { status: 500 }
+    );
+  }
+}
+
 async function handleWorldCupDashboardGet(request: NextRequest) {
   const competition = parseCompetition(request.nextUrl.searchParams.get('competition'));
   const apiKey = getBdlApiKey();
 
   if (request.nextUrl.searchParams.get('playerOdds') === '1') {
     return handleWorldCupPlayerOddsGet(request);
+  }
+
+  if (request.nextUrl.searchParams.get('playerChartOnly') === '1') {
+    return handleWorldCupPlayerChartOnlyGet(request);
   }
 
   if (request.nextUrl.searchParams.get('dvpBatch') === '1') {
@@ -3163,10 +3567,20 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
       // worldcup scope: serve the pre-warmed cache written by the ingestion script.
       // Self-warm on first miss so subsequent requests are instant.
       if (scope === 'worldcup') {
+        const opponentRequest = parseOpponentTeamIdFromRequest(request);
         const cached = await readWcCache<Record<string, unknown>>(WC2026.playerVsPoolWc);
         if (cached && Array.isArray(cached.players) && (cached.players as unknown[]).length > 0) {
           recordWcSource('playerVsPool', 'supabase-cache', 'worldcup');
-          return NextResponse.json(cached, { headers: { 'Cache-Control': 'public, s-maxage=600' } });
+          let payload = cached as Record<string, unknown>;
+          if (opponentRequest && apiKey && payload.opponentBreakdown) {
+            const qualifiedUniverse = await ensureWorldCupQualifiedUniverse(apiKey);
+            const patched = await mergeLiveOpponentAllowedIntoBreakdown(
+              payload.opponentBreakdown as WorldCupPlayerVsOpponentBreakdown,
+              { ...opponentRequest, apiKey, qualifiedUniverse }
+            );
+            if (patched) payload = { ...payload, opponentBreakdown: patched };
+          }
+          return NextResponse.json(payload, { headers: { 'Cache-Control': 'public, s-maxage=600' } });
         }
 
         // Cache cold: compute from BDL, then self-warm.
@@ -3187,22 +3601,13 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           const bdlResult = await computeBdlWorldCupSeason(apiKey, DEFAULT_SEASON, qualifiedUniverse);
           if (bdlResult.opponentBreakdown) payload.opponentBreakdown = bdlResult.opponentBreakdown;
           if (bdlResult.players.length > 0) payload.players = bdlResult.players;
-          if (!bdlResult.opponentBreakdown) {
-            const opponentTeamIdRaw = request.nextUrl.searchParams.get('opponentTeamId');
-            const opponentTeamName = request.nextUrl.searchParams.get('opponentTeamName') || '';
-            const opponentCountryCode = request.nextUrl.searchParams.get('opponentCountryCode');
-            const opponentTeamId = opponentTeamIdRaw ? Number.parseInt(opponentTeamIdRaw, 10) : NaN;
-            if (payload.opponentBreakdown && Number.isFinite(opponentTeamId)) {
-              const live = await computeBdlWorldCupOpponentAllowedLive(
-                opponentTeamId, opponentTeamName, opponentCountryCode, apiKey, DEFAULT_SEASON
-              );
-              if (live) {
-                payload.opponentBreakdown = mergeWorldCupOpponentAllowedSnapshot(
-                  payload.opponentBreakdown, live.slug, live.name, live.games, live.allowed,
-                  { qualifiedUniverse }
-                );
-              }
-            }
+          const opponentRequest = parseOpponentTeamIdFromRequest(request);
+          if (opponentRequest && payload.opponentBreakdown) {
+            const patched = await mergeLiveOpponentAllowedIntoBreakdown(
+              payload.opponentBreakdown,
+              { ...opponentRequest, apiKey, qualifiedUniverse }
+            );
+            if (patched) payload.opponentBreakdown = patched;
           }
         }
         // Self-warm so next request is instant.
@@ -3228,6 +3633,18 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
     try {
       const wcOnly = request.nextUrl.searchParams.get('wcOnly') === '1';
       if (wcOnly) {
+        const opponentRequest = parseOpponentTeamIdFromRequest(request);
+        const qualifiedUniverse = opponentRequest && apiKey ? await ensureWorldCupQualifiedUniverse(apiKey) : undefined;
+
+        const patchWcOnlyPayload = async (raw: Record<string, unknown>) => {
+          if (!opponentRequest || !apiKey || !raw.metrics) return raw;
+          const patched = await mergeLiveOpponentAllowedIntoBreakdown(
+            raw as WorldCupPlayerVsOpponentBreakdown,
+            { ...opponentRequest, apiKey, qualifiedUniverse }
+          );
+          return patched ? { ...raw, ...patched } : raw;
+        };
+
         // Cache-first: ingestion script pre-warms this key. Fall back to a fast
         // Supabase-only compute, then live BDL only if blobs are still cold.
         const cached = await readWcCache<Record<string, unknown>>(WC2026.oppBreakdownWc2026);
@@ -3238,8 +3655,9 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           Object.keys(cached.names).length > 0
         ) {
           recordWcSource('oppBreakdownWc2026', 'supabase-cache');
+          const body = await patchWcOnlyPayload(cached);
           return NextResponse.json(
-            { ...cached, wcOnly: true },
+            { ...body, wcOnly: true },
             {
               headers: {
                 'Cache-Control': 'public, s-maxage=600',
@@ -3254,11 +3672,29 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           recordWcSource('oppBreakdownWc2026', 'bdl-live');
           payload = await computeWcOnlyOppBreakdown(apiKey, { allowLiveBdl: true });
         }
+        if (Object.values(payload.games ?? {}).every((g) => (g ?? 0) < 1)) {
+          const poolCached = await readWcCache<{
+            opponentBreakdown?: WorldCupPlayerVsOpponentBreakdown;
+          }>(WC2026.playerVsPoolWc);
+          const poolOb = poolCached?.opponentBreakdown;
+          if (poolOb && Object.keys(poolOb.names ?? {}).length > 0) {
+            recordWcSource('oppBreakdownWc2026', 'supabase-cache', 'player-vs-pool-fallback');
+            payload = {
+              window: poolOb.window ?? 0,
+              generatedAt: new Date().toISOString(),
+              names: poolOb.names,
+              games: poolOb.games ?? {},
+              totalGames: poolOb.totalGames ?? {},
+              metrics: poolOb.metrics,
+            };
+          }
+        }
         if (Object.keys(payload.names).length > 0) {
           setWorldCupCache(WC2026.oppBreakdownWc2026, payload).catch(() => {});
         }
+        const body = await patchWcOnlyPayload(payload as unknown as Record<string, unknown>);
         return NextResponse.json(
-          { ...payload, wcOnly: true },
+          { ...body, wcOnly: true },
           {
             headers: {
               'Cache-Control': Object.keys(payload.names).length > 0 ? 'public, s-maxage=600' : 'no-store',
@@ -3469,7 +3905,26 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           const canonicalPlayerMatches = Array.isArray(payload.playerMatches)
             ? (payload.playerMatches as Array<Record<string, any>>)
             : [];
-          const shouldRefreshPlayerStats = request.nextUrl.searchParams.get('refreshPlayerStats') === '1';
+          const existingStats = Array.isArray(payload.playerMatchStats)
+            ? (payload.playerMatchStats as Array<Record<string, any>>)
+            : [];
+          const payloadMatches = Array.isArray(payload.matches)
+            ? (payload.matches as Array<Record<string, any>>)
+            : [];
+          let completed2026Ids = new Set(
+            payloadMatches
+              .filter((match) => String(match.status ?? '') === 'completed')
+              .map((match) => Number(match.id))
+              .filter(Number.isFinite)
+          );
+          if (!completed2026Ids.size) {
+            const cachedMatches2026 = await readWcCache<BdlMatch[]>(WC2026.matches2026);
+            completed2026Ids = wc2026CompletedMatchIdSet(cachedMatches2026 ?? []);
+          }
+          const shouldRefreshPlayerStats =
+            request.nextUrl.searchParams.get('refreshPlayerStats') === '1' ||
+            existingStats.length === 0 ||
+            !playerHasWc2026Appearance(existingStats, completed2026Ids);
           const freshPlayer = shouldRefreshPlayerStats
             ? await refreshDashboardPlayerStats({
                 requestedPlayerId,
@@ -3477,9 +3932,6 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
                 apiKey,
               })
             : { playerMatchStats: [], playerMatches: [], matches: [] };
-          const existingStats = Array.isArray(payload.playerMatchStats)
-            ? (payload.playerMatchStats as Array<Record<string, any>>)
-            : [];
           let mergedPlayerMatchStats: Array<Record<string, any>> = mergePlayerStatRows(
             existingStats,
             freshPlayer.playerMatchStats
@@ -3491,7 +3943,7 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
               : { id: requestedPlayerId },
           }));
 
-          const resolvedPlayerName = resolveRequestedPlayerName(
+          const resolvedPlayerName = await resolveRequestedPlayerNameWithFallback(
             payload,
             requestedPlayerId,
             requestedPlayerNameForKey
@@ -3509,30 +3961,21 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           }
           if (resolvedPlayerName) {
             try {
-              const intl = await loadInternationalStatsByPlayerName(resolvedPlayerName, {
-                bdlPlayerId: requestedPlayerId,
+              mergedPlayerMatchStats = await mergePlayerCrossSourceWorldCupHistory({
+                playerName: resolvedPlayerName,
+                playerId: requestedPlayerId,
+                teamId: requestedTeamId,
+                nationHint: requestedTeamName,
+                playerMatchStats: mergedPlayerMatchStats,
+                playerMatches: mergedPlayerMatches,
               });
-              mergedPlayerMatchStats = mergePlayerStatRows(
-                mergedPlayerMatchStats,
-                (intl.playerMatchStats as Array<Record<string, any>>).map((row) => ({
-                  ...row,
-                  player_id: requestedPlayerId,
-                  player: row.player
-                    ? { ...row.player, id: requestedPlayerId }
-                    : { id: requestedPlayerId },
-                }))
-              );
-              for (const match of intl.matches as Array<Record<string, any>>) {
-                const id = String(match.id ?? '');
-                if (!id) continue;
-                const existing = mergedPlayerMatches.get(id);
-                if (!existing || dashboardMatchRichness(match) >= dashboardMatchRichness(existing)) {
-                  mergedPlayerMatches.set(id, match);
-                }
-              }
-            } catch {
-              /* non-fatal */
+            } catch (mergeError) {
+              console.warn('[world-cup/dashboard] cached player cross-source merge failed:', mergeError);
             }
+          } else {
+            console.warn('[world-cup/dashboard] missing playerName for historical WC merge', {
+              playerId: requestedPlayerId,
+            });
           }
 
           const repairedPlayerMatches = await repairPlayerMatchesFromIntl(
@@ -3730,39 +4173,14 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
     let playerStatsFromCache = false;
     const completed2026Ids = wc2026CompletedMatchIdSet(matches);
     if (requestedPlayerId && /^\d+$/.test(requestedPlayerId)) {
-      const cachedStats = await readWcCache<any[]>(WC2026.playerStats(requestedPlayerId));
-      if (cachedStats?.length) {
-        recordWcSource('playerStats', 'supabase-cache', requestedPlayerId);
-        playerMatchStats = cachedStats;
-        playerStatsFromCache = true;
-      } else {
-        recordWcSource('playerStats', 'cache-miss', requestedPlayerId);
-      }
-
-      const needsTeamFallback =
-        !playerHasWc2026Appearance(playerMatchStats, completed2026Ids) && selectedTeamId;
-      if (needsTeamFallback) {
-        const fromTeam = await loadPlayerStatsFromTeamCompletedMatches({
-          teamId: selectedTeamId,
-          matches2026: matches,
-          playerId: requestedPlayerId,
-          apiKey,
-        });
-        if (fromTeam.length) {
-          recordWcSource('playerStats', 'match-detail-fallback', String(selectedTeamId));
-          playerMatchStats = mergePlayerStatRows(playerMatchStats, fromTeam);
-          playerStatsFromCache = playerMatchStats.length > 0;
-        }
-      }
-
-      if (!playerMatchStats.length && apiKey && request.nextUrl.searchParams.get('refreshPlayerStats') === '1') {
-        const live = await fetchLivePlayerStatsById(requestedPlayerId, apiKey);
-        if (live.length) {
-          recordWcSource('playerStats', 'bdl-live', requestedPlayerId);
-          playerMatchStats = live;
-          playerStatsFromCache = true;
-        }
-      }
+      playerMatchStats = await loadCachedPlayerStatsWithFallback({
+        playerId: requestedPlayerId,
+        teamId: selectedTeamId,
+        matches2026: matches,
+        apiKey:
+          request.nextUrl.searchParams.get('refreshPlayerStats') === '1' ? apiKey : undefined,
+      });
+      playerStatsFromCache = playerMatchStats.length > 0;
     } else if (statMatchIds.length) {
       // Aggregate player stats for selected team's recent matches from per-match cache.
       const matchDetails = await Promise.all(
@@ -3877,57 +4295,30 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
     );
 
     // Always merge stats from every source we have for the currently selected
-    // player so the main chart shows every game across BDL + Euros + Nations
-    // League. This runs whenever a `playerName` is provided.
-    let mergedPlayerMatchStats: Array<Record<string, any>> = wc2026PlayerMatchStats.map((row) => ({
-      ...row,
-      source: 'bdl',
-      tournament_slug: 'worldcup',
-    }));
+    // player so the main chart shows every game across club + BDL + intl.
+    // Keep the full BDL player cache as the base (not 2026-WC-only); wc2026 filter
+    // below is only for PvT / team-resolution helpers.
+    let mergedPlayerMatchStats: Array<Record<string, any>> = playerRowsWithDerivedShots.map((row) =>
+      preserveDashboardPlayerStatRow(row)
+    );
     let mergedPlayerMatches: Array<Record<string, any>> = summarizeMatches(playerMatches);
     const requestedPlayerName = request.nextUrl.searchParams.get('playerName') || '';
     if (requestedPlayerName) {
       try {
-        recordWcSource('intlStatsByName', 'supabase-intl', requestedPlayerName);
-        const intl = await loadInternationalStatsByPlayerName(requestedPlayerName, {
-          bdlPlayerId: requestedPlayerId,
-        });
-        const bdlByName =
-          playerStatsFromCache || playerRowsWithDerivedShots.length
-            ? { playerMatchStats: [], matches: [] }
-            : await fetchBdlStatsForPlayerName(requestedPlayerName, apiKey);
-
-        const statRowKey = (row: Record<string, any>) =>
-          `${row.match_id ?? ''}|${row.team_id ?? ''}|${row.player_id ?? ''}`;
-        const seenStatKeys = new Set(mergedPlayerMatchStats.map(statRowKey));
-        const appendStats = (rows: Array<Record<string, any>>) => {
-          for (const row of rows) {
-            const key = statRowKey(row);
-            if (seenStatKeys.has(key)) continue;
-            seenStatKeys.add(key);
-            mergedPlayerMatchStats.push(row);
-          }
-        };
-
-        appendStats(
-          bdlByName.playerMatchStats.map((row) => ({
-            ...row,
-            source: 'bdl',
-            tournament_slug: 'worldcup',
-          }))
-        );
-        appendStats(intl.playerMatchStats);
-
-        const knownIds = new Set([
-          ...mergedPlayerMatches.map((m) => String(m.id)),
-          ...summarizeMatches(matches).map((m) => String(m.id)),
-        ]);
-        for (const m of [...bdlByName.matches, ...intl.matches]) {
-          if (!knownIds.has(String(m.id))) {
-            mergedPlayerMatches.push(m);
-            knownIds.add(String(m.id));
-          }
+        const playerMatchMap = new Map<string, Record<string, any>>();
+        for (const match of mergedPlayerMatches) {
+          const id = String(match.id ?? '');
+          if (id) playerMatchMap.set(id, match);
         }
+        mergedPlayerMatchStats = await mergePlayerCrossSourceWorldCupHistory({
+          playerName: requestedPlayerName,
+          playerId: requestedPlayerId,
+          teamId: requestedTeamId,
+          nationHint: requestedTeamName,
+          playerMatchStats: mergedPlayerMatchStats,
+          playerMatches: playerMatchMap,
+        });
+        mergedPlayerMatches = Array.from(playerMatchMap.values());
       } catch (mergeError) {
         console.warn('[world-cup/dashboard] cross-source merge failed:', mergeError);
       }

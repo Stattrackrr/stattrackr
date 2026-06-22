@@ -43,7 +43,41 @@ function fmtEntry(e: {
   return `  • "${e.normalizedName}"\n      WC:   ${wc}\n      INTL: ${intl}\n      why:  ${e.reasons.join('; ')}`;
 }
 
+function getArg(name: string, fallback = ''): string {
+  const pref = `--${name}=`;
+  const fromEq = process.argv.find((a) => a.startsWith(pref));
+  if (fromEq) return fromEq.slice(pref.length).trim();
+  const idx = process.argv.indexOf(`--${name}`);
+  if (idx >= 0 && process.argv[idx + 1] && !process.argv[idx + 1]!.startsWith('--')) {
+    return process.argv[idx + 1]!.trim();
+  }
+  return fallback;
+}
+
 async function main() {
+  if (process.argv.includes('--rebuild-supplement')) {
+    const { warmBdlWorldCupDvpSupplementCache } = await import('../lib/internationalDashboard');
+    const { clearWcBdlSupplementPayloadMem } = await import('../lib/worldCupCache');
+    console.log('[wc] Rebuilding BDL DVP supplement (2018/2022/2026 player stats)...');
+    clearWcBdlSupplementPayloadMem();
+    await warmBdlWorldCupDvpSupplementCache({ force: true });
+    console.log('[wc] Done. Re-run: npm run debug:wc:player-history -- --player "Lionel Messi" --teamId 37 --team Argentina');
+    return;
+  }
+
+  if (process.argv.includes('--player-history')) {
+    const { debugWorldCupPlayerHistory } = await import('../lib/worldCupCache');
+    await debugWorldCupPlayerHistory({
+      playerName: getArg('player', 'Lionel Messi'),
+      teamId: getArg('teamId', '37'),
+      nationHint: getArg('team', getArg('nation', 'Argentina')),
+      playerId: getArg('playerId', '') || null,
+      outPath: getArg('out', ''),
+      live: process.argv.includes('--live'),
+    });
+    return;
+  }
+
   const { auditWorldCupPlayerMatches } = await import('../lib/worldCupPlayerMatchAudit');
 
   console.log('[match-audit] auditing World Cup / Euros / Nations League name matching...');

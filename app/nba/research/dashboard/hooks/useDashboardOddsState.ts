@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { DEFAULT_ODDS_FORMAT } from '@/lib/currencyUtils';
 import { OddsSnapshot } from '@/lib/odds';
 import { BookRow } from '../types';
 
@@ -31,7 +32,7 @@ export function useDashboardOddsState() {
   const [lineMovementLoading, setLineMovementLoading] = useState(false);
 
   // Odds display format
-  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>('american');
+  const [oddsFormat, setOddsFormat] = useState<'american' | 'decimal'>(DEFAULT_ODDS_FORMAT);
 
   // Real odds data state
   const [realOddsData, setRealOddsData] = useState<BookRow[]>([]);

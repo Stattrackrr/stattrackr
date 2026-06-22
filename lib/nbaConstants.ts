@@ -88,7 +88,9 @@ export const NBA_OFFSEASON_SIDEBAR_LABEL = 'Off-season';
 const WORLD_CUP_PUBLIC_ENABLED_DEFAULT = false;
 
 export const WORLD_CUP_PUBLIC_ENABLED =
-  false;
+  process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === 'true' ||
+  process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === '1' ||
+  (process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED == null && WORLD_CUP_PUBLIC_ENABLED_DEFAULT);
 
 export const WORLD_CUP_OFFSEASON_SIDEBAR_LABEL = 'Coming Soon';
 

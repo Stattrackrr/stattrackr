@@ -1054,8 +1054,8 @@ export const WC_DVP_OUTFIELD_STATS = [
   'shots_total',
   'shots_on_target',
   'passes_accurate',
+  'fouls',
   'yellow_cards',
-  'red_cards',
 ] as const;
 export const WC_DVP_GK_STATS = ['saves', 'goals_conceded', 'passes_accurate', 'yellow_cards'] as const;
 export const WC_DVP_POSITIONS: IntlPositionBucket[] = ['GK', 'DEF', 'MID', 'FWD'];
@@ -1130,6 +1130,9 @@ const dvpTeamSlug = (name: string): string =>
 const BDL_DVP_SOURCE = 'bdl';
 const BDL_FIFA_BASE = 'https://api.balldontlie.io/fifa/worldcup/v1';
 const BDL_DVP_SEASONS = [2018, 2022, 2026] as const;
+/** Smaller chunks + full pagination — 50-match batches hit the old 8-page cap (~800 rows) and dropped stats. */
+const BDL_PLAYER_STATS_MATCH_CHUNK = 10;
+const BDL_PLAYER_STATS_MAX_PAGES: number | null = null;
 
 function dvpStatNum(value: unknown): number | null {
   const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value ?? ''));
@@ -1155,13 +1158,13 @@ async function bdlDvpFetchAll<T>(
   path: string,
   baseParams: URLSearchParams,
   apiKey: string,
-  maxPages = 8
+  maxPages: number | null = 8
 ): Promise<T[]> {
   const rows: T[] = [];
   const auths = bdlDvpAuthCandidates(apiKey);
   let cursor: string | number | null = null;
 
-  for (let page = 0; page < maxPages; page++) {
+  for (let page = 0; maxPages == null || page < maxPages; page++) {
     const params = new URLSearchParams(baseParams);
     if (!params.has('per_page')) params.set('per_page', '100');
     if (cursor != null) params.set('cursor', String(cursor));
@@ -1284,6 +1287,8 @@ function bdlPlayerStatToDvpRow(
     dvpStatNum(row.goals) != null ||
     dvpStatNum(row.assists) != null ||
     dvpStatNum(row.shots_total) != null ||
+    dvpStatNum(row.passes_total) != null ||
+    dvpStatNum(row.passes) != null ||
     dvpStatNum(row.saves) != null;
   if (!hasAppearance) return null;
 
@@ -1365,7 +1370,36 @@ async function fetchBdlLineupPositionMap(
  * WC-only DVP filter so we don't need the full loadWorldCupDvpSource() pipeline.
  * Much faster since it skips Supabase and only fetches one season.
  */
-const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v5';
+const BDL_DVP_SUPPLEMENT_CACHE_KEY = 'wc:bdl-dvp-supplement:v8';
+const BDL_DVP_SUPPLEMENT_READ_KEYS = [
+  'wc:bdl-dvp-supplement:v8',
+  'wc:bdl-dvp-supplement:v7',
+  'wc:bdl-dvp-supplement:v6',
+  'wc:bdl-dvp-supplement:v5',
+] as const;
+
+async function readBdlDvpSupplementCache(): Promise<{
+  matches: DvpMatchRow[];
+  statRows: DvpStatRow[];
+  playerIdsByName?: Record<string, number[]>;
+} | null> {
+  for (const key of BDL_DVP_SUPPLEMENT_READ_KEYS) {
+    const cached = await getWorldCupCache<{
+      matches: DvpMatchRow[];
+      statRows: DvpStatRow[];
+      playerIdsByName?: Record<string, number[]>;
+    }>(key);
+    if (
+      cached?.matches?.length &&
+      (cached.statRows?.length ?? 0) > 0 &&
+      cached.playerIdsByName &&
+      Object.keys(cached.playerIdsByName).length > 0
+    ) {
+      return cached;
+    }
+  }
+  return null;
+}
 const BDL_WC2026_DVP_RAW_CACHE_KEY = 'wc:dvp-wc2026:raw:v4';
 
 export async function loadBdlWc2026DvpData(opts?: { skipCache?: boolean }): Promise<{
@@ -1415,11 +1449,16 @@ export async function loadBdlWc2026DvpData(opts?: { skipCache?: boolean }): Prom
   const matchIds = completed.map((m) => m.id).filter((id) => Number.isFinite(id));
   const lineupPositionByPair = await fetchBdlLineupPositionMap(matchIds, apiKey);
   let rawStatCount = 0;
-  for (let i = 0; i < matchIds.length; i += 50) {
-    const chunk = matchIds.slice(i, i + 50);
+  for (let i = 0; i < matchIds.length; i += BDL_PLAYER_STATS_MATCH_CHUNK) {
+    const chunk = matchIds.slice(i, i + BDL_PLAYER_STATS_MATCH_CHUNK);
     const params = new URLSearchParams();
     chunk.forEach((id) => params.append('match_ids[]', String(id)));
-    const rows = await bdlDvpFetchAll<Record<string, unknown>>('/player_match_stats', params, apiKey, 8);
+    const rows = await bdlDvpFetchAll<Record<string, unknown>>(
+      '/player_match_stats',
+      params,
+      apiKey,
+      BDL_PLAYER_STATS_MAX_PAGES
+    );
     rawStatCount += rows.length;
     for (const row of rows) {
       const mapped = bdlPlayerStatToDvpRow(row, {
@@ -1438,11 +1477,55 @@ export async function loadBdlWc2026DvpData(opts?: { skipCache?: boolean }): Prom
   return { matches, statRows, teamsWithGames };
 }
 
+async function buildBdlWorldCupPlayerIdsByName(apiKey: string): Promise<Record<string, number[]>> {
+  const { normalizeWorldCupPlayerName } = await import('./worldCupPlayerIndex');
+  const { resolveWorldCupAliasName, getWorldCupNameAliases } = await import('./worldCupPlayerAliases');
+  const seasonsParam = new URLSearchParams();
+  BDL_DVP_SEASONS.forEach((season) => seasonsParam.append('seasons[]', String(season)));
+  const rawPlayers = await bdlDvpFetchAll<{
+    id?: number;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+  }>('/players', seasonsParam, apiKey, 12);
+  const byName = new Map<string, Set<number>>();
+  const addIdForName = (rawName: string, id: number) => {
+    const normalized = normalizeWorldCupPlayerName(rawName);
+    if (!normalized) return;
+    const canonical = resolveWorldCupAliasName(normalized);
+    const keys = new Set<string>([normalized, canonical, ...getWorldCupNameAliases(canonical)]);
+    const parts = normalized.split(' ').filter(Boolean);
+    const family = parts[parts.length - 1];
+    const given = parts[0];
+    if (family && given && family.length >= 4) {
+      keys.add(`${given} ${family}`);
+    }
+    if (family && family.length >= 4) {
+      keys.add(family);
+    }
+    for (const key of keys) {
+      const set = byName.get(key) ?? new Set<number>();
+      set.add(id);
+      byName.set(key, set);
+    }
+  };
+  for (const row of rawPlayers) {
+    const id = Number(row.id);
+    if (!Number.isFinite(id)) continue;
+    const composed = [row.first_name, row.last_name].filter(Boolean).join(' ').trim();
+    const name = String(row.name ?? composed).trim();
+    if (name) addIdForName(name, id);
+  }
+  const out: Record<string, number[]> = {};
+  for (const [key, ids] of byName) out[key] = [...ids];
+  return out;
+}
+
 /** Pre-warm BDL 2018/2022/2026 player stats used by DVP + player-vs-pool (all scope). */
 export async function warmBdlWorldCupDvpSupplementCache(opts?: { force?: boolean }): Promise<void> {
   if (!opts?.force) {
-    const existing = await getWorldCupCache<{ matches: DvpMatchRow[] }>(BDL_DVP_SUPPLEMENT_CACHE_KEY);
-    if (existing?.matches?.length) return;
+    const cached = await readBdlDvpSupplementCache();
+    if (cached) return;
   }
   await loadBdlWorldCupDvpSupplement({ skipCache: true });
 }
@@ -1450,12 +1533,11 @@ export async function warmBdlWorldCupDvpSupplementCache(opts?: { force?: boolean
 async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Promise<{
   matches: DvpMatchRow[];
   statRows: DvpStatRow[];
+  playerIdsByName?: Record<string, number[]>;
 }> {
   if (!opts?.skipCache) {
-    const cached = await getWorldCupCache<{ matches: DvpMatchRow[]; statRows: DvpStatRow[] }>(
-      BDL_DVP_SUPPLEMENT_CACHE_KEY
-    );
-    if (cached?.matches?.length && (cached.statRows?.length ?? 0) > 0) return cached;
+    const cached = await readBdlDvpSupplementCache();
+    if (cached) return cached;
   }
 
   const apiKey = getBdlDvpApiKey();
@@ -1464,7 +1546,9 @@ async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Pro
   const seasonsParam = new URLSearchParams();
   BDL_DVP_SEASONS.forEach((season) => seasonsParam.append('seasons[]', String(season)));
   const rawMatches = await bdlDvpFetchAll<BdlDvpMatch>('/matches', seasonsParam, apiKey, 8);
-  const completed = rawMatches.filter((match) => match.status === 'completed');
+  const completed = rawMatches.filter(
+    (match) => match.status === 'completed' && isBdlWorldCupTournamentStage(match.stage?.name)
+  );
   const matches = completed
     .map(bdlMatchToDvpRow)
     .filter((row): row is DvpMatchRow => row != null);
@@ -1472,15 +1556,15 @@ async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Pro
 
   const statRows: DvpStatRow[] = [];
   const matchIds = completed.map((match) => match.id).filter((id) => Number.isFinite(id));
-  for (let i = 0; i < matchIds.length; i += 50) {
-    const chunk = matchIds.slice(i, i + 50);
+  for (let i = 0; i < matchIds.length; i += BDL_PLAYER_STATS_MATCH_CHUNK) {
+    const chunk = matchIds.slice(i, i + BDL_PLAYER_STATS_MATCH_CHUNK);
     const params = new URLSearchParams();
     chunk.forEach((id) => params.append('match_ids[]', String(id)));
     const rows = await bdlDvpFetchAll<Record<string, unknown>>(
       '/player_match_stats',
       params,
       apiKey,
-      8
+      BDL_PLAYER_STATS_MAX_PAGES
     );
     for (const row of rows) {
       const mapped = bdlPlayerStatToDvpRow(row);
@@ -1488,9 +1572,25 @@ async function loadBdlWorldCupDvpSupplement(opts?: { skipCache?: boolean }): Pro
     }
   }
 
-  const payload = { matches, statRows };
+  const statRowsByMatch = new Map<string, number>();
+  for (const row of statRows) {
+    const mid = String(row.source_match_id ?? '');
+    if (mid) statRowsByMatch.set(mid, (statRowsByMatch.get(mid) ?? 0) + 1);
+  }
+  const matchesMissingStats = matchIds.filter((id) => !statRowsByMatch.has(String(id)));
+  if (matchesMissingStats.length) {
+    console.warn(
+      `[dvp] BDL supplement: ${matchesMissingStats.length}/${matchIds.length} WC matches have 0 player stat rows (sample: ${matchesMissingStats.slice(0, 8).join(', ')})`
+    );
+  }
+
+  const playerIdsByName = await buildBdlWorldCupPlayerIdsByName(apiKey);
+  const payload = { matches, statRows, playerIdsByName };
   const ok = await setWorldCupCache(BDL_DVP_SUPPLEMENT_CACHE_KEY, payload);
   if (ok) clearWcBdlSupplementPayloadMem();
+  console.log(
+    `[dvp] BDL supplement cached: ${matches.length} matches, ${statRows.length} stat rows, ${Object.keys(playerIdsByName).length} name keys`
+  );
   return payload;
 }
 

@@ -248,7 +248,6 @@ export const OPP_BREAKDOWN_STATS = [
   'corners',
   'passes_accurate',
   'yellow_cards',
-  'red_cards',
   'fouls',
   'was_fouled',
 ] as const;
@@ -845,6 +844,550 @@ export async function getOpponentBreakdown(window: number, _apiKey: string): Pro
 }
 
 /**
+ * WC 2026 allowed averages from cached BDL team_match_stats — the same
+ * team-level pipeline as Game Props (buildBdlTeamHistoryRows → opp_* →
+ * isRichTeamStatRow). Player match stats are for DVP / player props only.
+ */
+type Wc2026TeamAllowedMaps = {
+  byTeamMatch: Map<number, Map<number, Record<string, number>>>;
+  teamMeta: Map<number, { name: string; slug: string }>;
+  bdlMatches: BdlHistoryMatch[];
+  statsByMatchTeam: Map<string, Record<string, unknown>>;
+  completedMatches: Array<Record<string, unknown>>;
+  completedMatchIds: Set<number>;
+};
+
+async function loadWc2026TeamAllowedMapsFromCache(): Promise<Wc2026TeamAllowedMaps | null> {
+  const matches2026 =
+    (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026)) ?? [];
+  const completedMatches = matches2026.filter(
+    (m) => m.status === 'completed' && Number.isFinite(Number(m.id))
+  );
+  if (!completedMatches.length) return null;
+
+  const teams =
+    (await getWorldCupCache<Array<{ id?: number; name?: string; country_code?: string | null }>>(
+      WC2026_CACHE_KEYS.teams
+    )) ?? [];
+  const teamIdToSlug = new Map<number, string>();
+  const teamIdToName = new Map<number, string>();
+  for (const t of teams) {
+    const id = Number(t.id);
+    if (!Number.isFinite(id)) continue;
+    teamIdToSlug.set(
+      id,
+      resolveWorldCupFlagCode(t.country_code) ||
+        resolveWorldCupFlagCode(t.name) ||
+        String(t.name ?? '').toLowerCase()
+    );
+    teamIdToName.set(id, String(t.name ?? ''));
+  }
+
+  const completedMatchIds = new Set(completedMatches.map((m) => Number(m.id)));
+  const teamStatsRows =
+    (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.teamStatsAllSeasons)) ??
+    [];
+  const statsByMatchTeam = new Map<string, Record<string, unknown>>();
+  for (const row of teamStatsRows) {
+    const matchId = Number(row.match_id);
+    const teamId = Number(row.team_id);
+    if (!completedMatchIds.has(matchId) || !Number.isFinite(teamId)) continue;
+    statsByMatchTeam.set(`${matchId}:${teamId}`, row);
+  }
+
+  const bdlMatches: BdlHistoryMatch[] = completedMatches.map((m) => ({
+    id: Number(m.id),
+    home_team: m.home_team as BdlHistoryMatch['home_team'],
+    away_team: m.away_team as BdlHistoryMatch['away_team'],
+    home_score: (m.home_score as number | null | undefined) ?? null,
+    away_score: (m.away_score as number | null | undefined) ?? null,
+  }));
+
+  const byTeamMatch = new Map<number, Map<number, Record<string, number>>>();
+  const teamMeta = new Map<number, { name: string; slug: string }>();
+
+  for (const t of teams) {
+    const teamId = Number(t.id);
+    if (!Number.isFinite(teamId)) continue;
+    const slug = teamIdToSlug.get(teamId);
+    if (!slug) continue;
+    teamMeta.set(teamId, { name: teamIdToName.get(teamId) ?? String(t.name ?? ''), slug });
+
+    let rows = buildBdlTeamHistoryRows(
+      teamId,
+      bdlMatches,
+      statsByMatchTeam as Map<string, Record<string, any>>
+    );
+    rows = enrichTeamStatRowsWithScoreline(rows, completedMatches);
+    rows = rows.map(normalizeDerivedTeamStats).filter(isRichTeamStatRow);
+
+    for (const row of rows) {
+      const matchId = Number(row.match_id);
+      if (!completedMatchIds.has(matchId)) continue;
+      const allowed = extractAllowedFromTeamRow(row);
+      const matchMap = byTeamMatch.get(teamId) ?? new Map();
+      matchMap.set(matchId, allowed);
+      byTeamMatch.set(teamId, matchMap);
+    }
+  }
+
+  return {
+    byTeamMatch,
+    teamMeta,
+    bdlMatches,
+    statsByMatchTeam,
+    completedMatches,
+    completedMatchIds,
+  };
+}
+
+function payloadFromWc2026TeamAllowedMaps(maps: Wc2026TeamAllowedMaps): OppBreakdownPayload {
+  const { byTeamMatch, teamMeta } = maps;
+  const names: Record<string, string> = {};
+  const games: Record<string, number> = {};
+  const totalGames: Record<string, number> = {};
+  const metrics: Record<string, OppBreakdownMetric> = {};
+  for (const stat of OPP_BREAKDOWN_STATS) metrics[stat] = { values: {}, ranks: {} };
+
+  for (const [teamId, matchMap] of byTeamMatch) {
+    const meta = teamMeta.get(teamId);
+    if (!meta || !matchMap.size) continue;
+    names[meta.slug] = meta.name;
+    games[meta.slug] = matchMap.size;
+    totalGames[meta.slug] = matchMap.size;
+    for (const stat of OPP_BREAKDOWN_STATS) {
+      let sum = 0;
+      for (const s of matchMap.values()) sum += s[stat] ?? 0;
+      metrics[stat].values[meta.slug] = Number((sum / matchMap.size).toFixed(3));
+    }
+  }
+
+  for (const stat of OPP_BREAKDOWN_STATS) {
+    metrics[stat].ranks = rankAscending(metrics[stat].values);
+  }
+
+  return {
+    window: OPP_BREAKDOWN_ALL_WINDOW,
+    generatedAt: new Date().toISOString(),
+    names,
+    games,
+    totalGames,
+    metrics,
+  };
+}
+
+function wc2026TeamAllowedRowForMatch(
+  teamId: number,
+  matchId: number,
+  maps: Wc2026TeamAllowedMaps
+): {
+  row: Record<string, any> | null;
+  allowed: Record<string, number> | null;
+  qualified: boolean;
+  rejectReason?: string;
+} {
+  const match = maps.bdlMatches.find((m) => m.id === matchId);
+  if (!match) {
+    return { row: null, allowed: null, qualified: false, rejectReason: 'match not in 2026 cache' };
+  }
+  const ourRow = maps.statsByMatchTeam.get(`${matchId}:${teamId}`);
+  if (!ourRow) {
+    return { row: null, allowed: null, qualified: false, rejectReason: 'missing team_match_stats row' };
+  }
+
+  let rows = buildBdlTeamHistoryRows(
+    teamId,
+    [match],
+    maps.statsByMatchTeam as Map<string, Record<string, any>>
+  );
+  rows = enrichTeamStatRowsWithScoreline(rows, maps.completedMatches);
+  rows = rows.map(normalizeDerivedTeamStats);
+  const row = rows[0] ?? null;
+  if (!row) {
+    return { row: null, allowed: null, qualified: false, rejectReason: 'could not build team history row' };
+  }
+  if (!isRichTeamStatRow(row)) {
+    return {
+      row,
+      allowed: null,
+      qualified: false,
+      rejectReason: 'sparse team_match_stats (failed isRichTeamStatRow — same gate as Game Props)',
+    };
+  }
+  return { row, allowed: extractAllowedFromTeamRow(row), qualified: true };
+}
+
+export async function buildWc2026OpponentBreakdownFromBdlCache(): Promise<OppBreakdownPayload> {
+  const maps = await loadWc2026TeamAllowedMapsFromCache();
+  if (!maps) return emptyPayload(OPP_BREAKDOWN_ALL_WINDOW);
+  return payloadFromWc2026TeamAllowedMaps(maps);
+}
+
+function debugWc2026StageLabel(stage: unknown): string {
+  if (stage == null || stage === '') return '(no stage)';
+  if (typeof stage === 'string') return stage;
+  if (typeof stage === 'object') {
+    const o = stage as Record<string, unknown>;
+    return String(o.name ?? o.slug ?? o.short_name ?? o.type ?? JSON.stringify(o));
+  }
+  return String(stage);
+}
+
+export type Wc2026OppBreakdownDebugSide = {
+  defendingId: number;
+  defendingName: string;
+  defendingSlug: string;
+  opponentId: number;
+  opponentName: string;
+  opponentSlug: string;
+  qualified: boolean;
+  rejectReason?: string;
+  qualifyingStats: string[];
+  volumeTotals: Record<string, number>;
+  allTotals: Record<string, number>;
+  opponentPlayerRows: number;
+  eligibleOpponentRows: number;
+  cornersFromTeamSheet: number | null;
+};
+
+export type Wc2026OppBreakdownDebugMatch = {
+  matchId: number;
+  datetime: string;
+  stage: string;
+  homeId: number;
+  homeName: string;
+  awayId: number;
+  awayName: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  hasDetail: boolean;
+  playerStatRows: number;
+  homeSide: Wc2026OppBreakdownDebugSide | null;
+  awaySide: Wc2026OppBreakdownDebugSide | null;
+};
+
+export type Wc2026OppBreakdownDebugTeam = {
+  teamId: number;
+  slug: string;
+  name: string;
+  games: number;
+  matchIds: number[];
+  averages: Record<string, number>;
+  perMatch: Array<{
+    matchId: number;
+    opponent: string;
+    datetime: string;
+    stage: string;
+    qualifyingStats: string[];
+    totals: Record<string, number>;
+  }>;
+};
+
+export type Wc2026OppBreakdownDebugReport = {
+  generatedAt: string;
+  dataSource: 'bdl-cache-recompute' | 'empty';
+  fixtures: {
+    totalFixtures: number;
+    completedFixtures: number;
+    withMatchDetail: number;
+    withoutMatchDetail: number;
+    stageCounts: Record<string, number>;
+  };
+  buildFunnel: {
+    sidesEvaluated: number;
+    sidesQualified: number;
+    sidesRejectedNoVolume: number;
+    sidesRejectedCornersOnly: number;
+    sidesSkippedNoDetail: number;
+    teamsWithGames: number;
+  };
+  cachedPayload: {
+    present: boolean;
+    generatedAt: string | null;
+    teamCount: number;
+    teamsWithGames: number;
+    gameCountHistogram: Record<string, number>;
+  };
+  recomputed: {
+    teamCount: number;
+    teamsWithGames: number;
+    gameCountHistogram: Record<string, number>;
+    nonZeroSotTeams: number;
+    nonZeroGoalsTeams: number;
+  };
+  matches: Wc2026OppBreakdownDebugMatch[];
+  teams: Wc2026OppBreakdownDebugTeam[];
+};
+
+function debugWc2026QualifyingStats(allowed: Record<string, number>): string[] {
+  return OPP_BREAKDOWN_STATS.filter((stat) => (allowed[stat] ?? 0) > 0).map(
+    (stat) => `${stat}=${allowed[stat]}`
+  );
+}
+
+function debugWc2026GameCountHistogram(games: Record<string, number>): Record<string, number> {
+  const hist: Record<string, number> = {};
+  for (const count of Object.values(games)) {
+    const key = String(count ?? 0);
+    hist[key] = (hist[key] ?? 0) + 1;
+  }
+  return Object.fromEntries(
+    Object.entries(hist).sort((a, b) => Number(a[0]) - Number(b[0]))
+  );
+}
+
+/**
+ * Trace WC 2026 opponent breakdown inputs from team_match_stats (Game Props
+ * pipeline). Player match stats are not used here.
+ */
+export async function debugWc2026OpponentBreakdown(options: {
+  teamFilter?: string;
+  matchId?: number;
+} = {}): Promise<Wc2026OppBreakdownDebugReport> {
+  const teamFilter = options.teamFilter?.trim().toLowerCase() ?? '';
+  const matchIdFilter = options.matchId;
+
+  const matches2026 =
+    (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026)) ?? [];
+  const completedMatches = matches2026.filter(
+    (m) => m.status === 'completed' && Number.isFinite(Number(m.id))
+  );
+
+  const cachedPayload =
+    (await getWorldCupCache<OppBreakdownPayload>(WC2026_CACHE_KEYS.oppBreakdownWc2026)) ?? null;
+
+  const maps = await loadWc2026TeamAllowedMapsFromCache();
+  const teamIdToName = new Map<number, string>();
+  const teamIdToSlug = new Map<number, string>();
+  for (const [teamId, meta] of maps?.teamMeta ?? []) {
+    teamIdToName.set(teamId, meta.name);
+    teamIdToSlug.set(teamId, meta.slug);
+  }
+
+  const stageCounts: Record<string, number> = {};
+  for (const m of completedMatches) {
+    const label = debugWc2026StageLabel(m.stage);
+    stageCounts[label] = (stageCounts[label] ?? 0) + 1;
+  }
+
+  const debugMatches: Wc2026OppBreakdownDebugMatch[] = [];
+  let sidesEvaluated = 0;
+  let sidesQualified = 0;
+  let sidesRejectedNoVolume = 0;
+  let sidesRejectedCornersOnly = 0;
+  let sidesSkippedNoDetail = 0;
+  let withMatchDetail = 0;
+  let withoutMatchDetail = 0;
+
+  if (maps) {
+    for (const match of completedMatches) {
+      const matchId = Number(match.id);
+      if (matchIdFilter != null && matchId !== matchIdFilter) continue;
+
+      const homeId = Number((match.home_team as Record<string, unknown>)?.id);
+      const awayId = Number((match.away_team as Record<string, unknown>)?.id);
+      if (!Number.isFinite(matchId) || !Number.isFinite(homeId) || !Number.isFinite(awayId)) continue;
+
+      const homeName =
+        teamIdToName.get(homeId) ?? String((match.home_team as Record<string, unknown>)?.name ?? homeId);
+      const awayName =
+        teamIdToName.get(awayId) ?? String((match.away_team as Record<string, unknown>)?.name ?? awayId);
+      const stage = debugWc2026StageLabel(match.stage);
+      const datetime = String(match.datetime ?? match.date ?? '').slice(0, 16);
+      const homeScore = bdlCacheStatNum(match.home_score);
+      const awayScore = bdlCacheStatNum(match.away_score);
+
+      const hasTeamStats =
+        maps.statsByMatchTeam.has(`${matchId}:${homeId}`) &&
+        maps.statsByMatchTeam.has(`${matchId}:${awayId}`);
+      if (!hasTeamStats) {
+        withoutMatchDetail += 1;
+        sidesSkippedNoDetail += 2;
+        debugMatches.push({
+          matchId,
+          datetime,
+          stage,
+          homeId,
+          homeName,
+          awayId,
+          awayName,
+          homeScore,
+          awayScore,
+          hasDetail: false,
+          playerStatRows: 0,
+          homeSide: null,
+          awaySide: null,
+        });
+        continue;
+      }
+      withMatchDetail += 1;
+
+      const buildSide = (defendingId: number, opponentId: number): Wc2026OppBreakdownDebugSide => {
+        sidesEvaluated += 1;
+        const evaluated = wc2026TeamAllowedRowForMatch(defendingId, matchId, maps);
+        const allowed = evaluated.allowed ?? Object.fromEntries(OPP_BREAKDOWN_STATS.map((s) => [s, 0]));
+        const cornersFromTeamSheet = bdlCacheStatNum(allowed.corners);
+        const qualifyingStats = debugWc2026QualifyingStats(allowed);
+        const qualified = evaluated.qualified;
+        if (qualified) sidesQualified += 1;
+        else {
+          sidesRejectedNoVolume += 1;
+          const onlyCorners =
+            (allowed.corners ?? 0) > 0 &&
+            OPP_BREAKDOWN_STATS.filter((s) => s !== 'corners').every((s) => (allowed[s] ?? 0) <= 0);
+          if (onlyCorners) sidesRejectedCornersOnly += 1;
+        }
+
+        return {
+          defendingId,
+          defendingName: teamIdToName.get(defendingId) ?? String(defendingId),
+          defendingSlug: teamIdToSlug.get(defendingId) ?? '',
+          opponentId,
+          opponentName: teamIdToName.get(opponentId) ?? String(opponentId),
+          opponentSlug: teamIdToSlug.get(opponentId) ?? '',
+          qualified,
+          rejectReason: evaluated.rejectReason,
+          qualifyingStats,
+          volumeTotals: Object.fromEntries(
+            OPP_BREAKDOWN_STATS.map((stat) => [stat, allowed[stat] ?? 0])
+          ),
+          allTotals: { ...allowed },
+          opponentPlayerRows: evaluated.row ? 1 : 0,
+          eligibleOpponentRows: qualified ? 1 : 0,
+          cornersFromTeamSheet,
+        };
+      };
+
+      const homeSide = buildSide(homeId, awayId);
+      const awaySide = buildSide(awayId, homeId);
+
+      const teamFilterHit =
+        !teamFilter ||
+        [homeSide, awaySide].some(
+          (side) =>
+            side.defendingSlug.includes(teamFilter) ||
+            side.defendingName.toLowerCase().includes(teamFilter) ||
+            side.opponentSlug.includes(teamFilter) ||
+            side.opponentName.toLowerCase().includes(teamFilter)
+        );
+
+      if (teamFilterHit) {
+        debugMatches.push({
+          matchId,
+          datetime,
+          stage,
+          homeId,
+          homeName,
+          awayId,
+          awayName,
+          homeScore,
+          awayScore,
+          hasDetail: true,
+          playerStatRows: 0,
+          homeSide,
+          awaySide,
+        });
+      }
+    }
+  }
+
+  const debugTeams: Wc2026OppBreakdownDebugTeam[] = [];
+  for (const [teamId, matchMap] of maps?.byTeamMatch ?? []) {
+    const meta = maps!.teamMeta.get(teamId);
+    if (!meta || !matchMap.size) continue;
+    if (
+      teamFilter &&
+      !meta.slug.includes(teamFilter) &&
+      !meta.name.toLowerCase().includes(teamFilter)
+    ) {
+      continue;
+    }
+
+    const averages: Record<string, number> = {};
+    for (const stat of OPP_BREAKDOWN_STATS) {
+      let sum = 0;
+      for (const s of matchMap.values()) sum += s[stat] ?? 0;
+      averages[stat] = Number((sum / matchMap.size).toFixed(3));
+    }
+
+    const perMatch = [...matchMap.entries()]
+      .map(([mid, totals]) => {
+        const fixture = completedMatches.find((m) => Number(m.id) === mid);
+        const homeId = Number((fixture?.home_team as Record<string, unknown>)?.id);
+        const awayId = Number((fixture?.away_team as Record<string, unknown>)?.id);
+        const opponentId = homeId === teamId ? awayId : homeId;
+        return {
+          matchId: mid,
+          opponent: teamIdToName.get(opponentId) ?? String(opponentId),
+          datetime: String(fixture?.datetime ?? fixture?.date ?? '').slice(0, 16),
+          stage: debugWc2026StageLabel(fixture?.stage),
+          qualifyingStats: debugWc2026QualifyingStats(totals),
+          totals: { ...totals },
+        };
+      })
+      .sort((a, b) => a.datetime.localeCompare(b.datetime) || a.matchId - b.matchId);
+
+    debugTeams.push({
+      teamId,
+      slug: meta.slug,
+      name: meta.name,
+      games: matchMap.size,
+      matchIds: [...matchMap.keys()].sort((a, b) => a - b),
+      averages,
+      perMatch,
+    });
+  }
+  debugTeams.sort((a, b) => b.games - a.games || a.name.localeCompare(b.name));
+
+  const recomputedGames: Record<string, number> = {};
+  for (const team of debugTeams) recomputedGames[team.slug] = team.games;
+
+  const cachedGames = cachedPayload?.games ?? {};
+  const nonZeroSot = debugTeams.filter((t) => (t.averages.shots_on_target ?? 0) > 0).length;
+  const nonZeroGoals = debugTeams.filter((t) => (t.averages.goals ?? 0) > 0).length;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    dataSource: completedMatches.length ? 'bdl-cache-recompute' : 'empty',
+    fixtures: {
+      totalFixtures: matches2026.length,
+      completedFixtures: completedMatches.length,
+      withMatchDetail,
+      withoutMatchDetail,
+      stageCounts,
+    },
+    buildFunnel: {
+      sidesEvaluated,
+      sidesQualified,
+      sidesRejectedNoVolume,
+      sidesRejectedCornersOnly,
+      sidesSkippedNoDetail,
+      teamsWithGames: debugTeams.length,
+    },
+    cachedPayload: {
+      present: Boolean(cachedPayload && Object.keys(cachedPayload.names ?? {}).length),
+      generatedAt: cachedPayload?.generatedAt ?? null,
+      teamCount: Object.keys(cachedPayload?.names ?? {}).length,
+      teamsWithGames: Object.values(cachedGames).filter((g) => (g ?? 0) > 0).length,
+      gameCountHistogram: debugWc2026GameCountHistogram(cachedGames),
+    },
+    recomputed: {
+      teamCount: debugTeams.length,
+      teamsWithGames: debugTeams.length,
+      gameCountHistogram: debugWc2026GameCountHistogram(recomputedGames),
+      nonZeroSotTeams: nonZeroSot,
+      nonZeroGoalsTeams: nonZeroGoals,
+    },
+    matches: debugMatches.sort((a, b) => a.datetime.localeCompare(b.datetime) || a.matchId - b.matchId),
+    teams: debugTeams,
+  };
+}
+
+function wc2026TeamsWithCompletedGames(payload: OppBreakdownPayload): number {
+  return Object.values(payload.games ?? {}).filter((g) => (g ?? 0) > 0).length;
+}
+
+/**
  * Compute an opponent breakdown using ONLY completed BDL season=2026 matches,
  * but through the SAME per-nation pipeline as the Game Props chart
  * (`appearancesForNation`). This keeps goals/shots/corners allowed in sync with
@@ -854,6 +1397,9 @@ export async function computeWcOnlyOppBreakdown(
   apiKey: string,
   options: { allowLiveBdl?: boolean } = {}
 ): Promise<OppBreakdownPayload> {
+  const fromBdlCache = await buildWc2026OpponentBreakdownFromBdlCache();
+  if (wc2026TeamsWithCompletedGames(fromBdlCache) > 0) return fromBdlCache;
+
   const allowLiveBdl = options.allowLiveBdl !== false;
   const matches2026 = await loadMatches2026FromCache(allowLiveBdl ? apiKey : '');
   const matchIds2026 = new Set(matches2026.map((match) => String(match.id)));
@@ -905,9 +1451,9 @@ export const WC2026_CACHE_KEYS = {
   playerStats: (playerId: number | string) => `wc:player:stats:${playerId}:v1`,
   playerShots: (playerId: number | string) => `wc:player:shots:${playerId}:v1`,
   playerIdByName: 'wc:player-id-by-name:v1',
-  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v4:${pos}`,
-  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v4',
-  oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v2',
+  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v5:${pos}`,
+  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v5',
+  oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v3',
   playerVsPoolWc: 'wc:player-vs-pool:worldcup:v2',
 } as const;
 
@@ -992,9 +1538,13 @@ function readBdlCachePlayerStat(row: Record<string, unknown>, stat: string, shot
   if (stat === 'fouls') return bdlCacheStatNum(row.fouls) ?? bdlCacheStatNum(row.fouls_committed);
   if (stat === 'was_fouled') return bdlCacheStatNum(row.was_fouled) ?? bdlCacheStatNum(row.fouls_suffered);
   if (stat === 'shots_total') {
-    const fromRow = bdlCacheStatNum(row.shots_total) ?? bdlCacheStatNum(row.shots) ?? bdlCacheStatNum(row.derived_shots_total);
-    if (shotsFromEndpoint != null && fromRow != null) return Math.max(shotsFromEndpoint, fromRow);
-    return shotsFromEndpoint ?? fromRow ?? null;
+    const fromRow =
+      bdlCacheStatNum(row.shots_total) ??
+      bdlCacheStatNum(row.shots) ??
+      bdlCacheStatNum(row.derived_shots_total);
+    // Prefer row totals — the /match_shots count can over-count vs BDL stat rows.
+    if (fromRow != null) return fromRow;
+    return shotsFromEndpoint ?? null;
   }
   if (stat === 'passes_total') return bdlCacheStatNum(row.passes_total) ?? bdlCacheStatNum(row.passes);
   return bdlCacheStatNum(row[stat]);
@@ -1002,6 +1552,60 @@ function readBdlCachePlayerStat(row: Record<string, unknown>, stat: string, shot
 
 const BDL_CACHE_POOL_STATS = ['goals', 'assists', 'shots_total', 'shots_on_target', 'fouls', 'was_fouled', 'passes_total', 'yellow_cards', 'red_cards', 'saves'] as const;
 const BDL_CACHE_OPP_STATS = ['goals', 'shots_total', 'shots_on_target', 'fouls', 'was_fouled', 'passes_total', 'yellow_cards', 'red_cards', 'saves'] as const;
+/** Volume stats that prove the opponent actually attacked in a match. */
+const OPP_ALLOWED_MATCH_VOLUME_STATS = [
+  'goals',
+  'shots_total',
+  'shots_on_target',
+  'passes_total',
+] as const;
+
+function opponentAllowedMatchQualifies(matchSums: Record<string, number>): boolean {
+  // Corners from team_match_stats alone must not count a game — several fixtures
+  // have team-sheet corners but zero player_match_stats rows, which produced
+  // phantom 0.00 allowed averages and broke rankings.
+  return OPP_ALLOWED_MATCH_VOLUME_STATS.some((stat) => (matchSums[stat] ?? 0) > 0);
+}
+
+function bdlCachePlayerRowEligible(row: Record<string, unknown>): boolean {
+  const minutes = bdlCacheStatNum(row.minutes_played);
+  if (minutes != null && minutes < 1) return false;
+  if (minutes != null && minutes >= 1) return true;
+  return BDL_CACHE_OPP_STATS.some((stat) => {
+    const value = readBdlCachePlayerStat(row, stat);
+    return value != null && value > 0;
+  });
+}
+
+/** Player-stats + team-sheet corners for WC 2026 allowed breakdown. */
+const WC2026_BDL_OPP_STATS = [
+  'goals',
+  'shots_total',
+  'shots_on_target',
+  'corners',
+  'fouls',
+  'was_fouled',
+  'passes_total',
+  'yellow_cards',
+  'red_cards',
+  'saves',
+] as const;
+
+function readBdlTeamCornersAllowed(
+  defendingId: number,
+  opponentId: number,
+  matchId: number,
+  teamStatsByMatchTeam: Map<string, Record<string, unknown>>
+): number | null {
+  const defRow = teamStatsByMatchTeam.get(`${matchId}:${defendingId}`);
+  const oppRow = teamStatsByMatchTeam.get(`${matchId}:${opponentId}`);
+  return (
+    bdlCacheStatNum(defRow?.opp_corners) ??
+    bdlCacheStatNum(defRow?.corners_against) ??
+    bdlCacheStatNum(oppRow?.corners) ??
+    null
+  );
+}
 
 export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
   const { normalizeWorldCupPlayerName } = await import('./worldCupPlayerIndex');
@@ -1368,10 +1972,24 @@ export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
   }
 
   if (bdlCacheOnlyStep(argv, 7)) {
-    console.log('\n-- Step 7: Opponent Breakdown WC 2026 only --');
+    console.log('\n-- Step 7: Opponent Breakdown WC 2026 only (BDL team_match_stats) --');
+    const matches2026 =
+      (await getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.matches2026)) ?? [];
+    const completedMatches = matches2026.filter(
+      (m) => m.status === 'completed' && Number.isFinite(Number(m.id))
+    ).length;
     const payload = await computeWcOnlyOppBreakdown(apiKey);
     await set(WC2026_CACHE_KEYS.oppBreakdownWc2026, payload, `${Object.keys(payload.names).length} teams`);
-    console.log(`  opp breakdown cached: ${Object.keys(payload.names).length} teams`);
+    const withGames = Object.values(payload.games ?? {}).filter((g) => (g ?? 0) > 0).length;
+    const withNonZeroGoals = Object.values(payload.metrics?.goals?.values ?? {}).filter(
+      (value) => typeof value === 'number' && value > 0
+    ).length;
+    const withNonZeroSot = Object.values(payload.metrics?.shots_on_target?.values ?? {}).filter(
+      (value) => typeof value === 'number' && value > 0
+    ).length;
+    console.log(
+      `  opp breakdown cached: ${Object.keys(payload.names).length} teams (${withGames} with qualifying WC games, ${withNonZeroGoals} allowing 1+ goals/game, ${withNonZeroSot} allowing 1+ SOT/game) from ${completedMatches} completed fixtures`
+    );
   }
 
   if (bdlCacheOnlyStep(argv, 8)) {
@@ -1403,8 +2021,6 @@ export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
       }
       const byPlayer = new Map<number, { teamId: number; position: string | null; matchStats: Map<number, Record<string, number>> }>();
       for (const [pid, r] of rosterByPlayer) byPlayer.set(pid, { teamId: r.teamId, position: r.position, matchStats: new Map() });
-      const byTeamMatch = new Map<number, Map<number, Record<string, number>>>();
-      const teamMeta = new Map<number, { name: string; slug: string }>();
       for (const match of completedMatches) {
         const matchId = Number(match.id);
         const homeId = Number((match.home_team as Record<string, unknown>)?.id);
@@ -1417,65 +2033,29 @@ export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
           const pid = Number(shot.player_id);
           if (Number.isFinite(pid)) shotsForPlayer.set(pid, (shotsForPlayer.get(pid) ?? 0) + 1);
         }
-        const homeSlug = teamIdToSlug.get(homeId) ?? '';
-        const awaySlug = teamIdToSlug.get(awayId) ?? '';
-        if (homeSlug) teamMeta.set(homeId, { name: teamIdToName.get(homeId) ?? '', slug: homeSlug });
-        if (awaySlug) teamMeta.set(awayId, { name: teamIdToName.get(awayId) ?? '', slug: awaySlug });
-        for (const side of [{ defendingId: homeId, opponentId: awayId }, { defendingId: awayId, opponentId: homeId }]) {
-          const matchMap = byTeamMatch.get(side.defendingId) ?? new Map();
-          const matchSums: Record<string, number> = matchMap.get(matchId) ?? Object.fromEntries(BDL_CACHE_OPP_STATS.map((s) => [s, 0]));
-          for (const row of detail.playerStats ?? []) {
-            if ((bdlCacheStatNum(row.minutes_played) ?? 1) < 1) continue;
-            const rowTeamId = Number(row.team_id);
-            const rowPid = Number(row.player_id);
-            const shots = Number.isFinite(rowPid) ? shotsForPlayer.get(rowPid) : undefined;
-            if (rowTeamId === side.opponentId) {
-              for (const stat of BDL_CACHE_OPP_STATS) {
-                const v = readBdlCachePlayerStat(row, stat, stat === 'shots_total' ? shots : undefined);
-                if (v != null) matchSums[stat] = (matchSums[stat] ?? 0) + v;
-              }
-            }
-            if (side.defendingId === homeId && Number.isFinite(rowPid)) {
-              const existing = byPlayer.get(rowPid);
-              const entry = existing ?? { teamId: rowTeamId, position: String(row.position ?? '') || null, matchStats: new Map() };
-              if (!entry.matchStats.has(matchId)) entry.matchStats.set(matchId, Object.fromEntries(BDL_CACHE_POOL_STATS.map((s) => [s, 0])));
-              const ps = entry.matchStats.get(matchId)!;
-              for (const stat of BDL_CACHE_POOL_STATS) {
-                const v = readBdlCachePlayerStat(row, stat, stat === 'shots_total' ? shots : undefined);
-                if (v != null) ps[stat] = (ps[stat] ?? 0) + v;
-              }
-              if (!existing) byPlayer.set(rowPid, entry);
-            }
+        for (const row of detail.playerStats ?? []) {
+          if (!bdlCachePlayerRowEligible(row)) continue;
+          const rowPid = Number(row.player_id);
+          if (!Number.isFinite(rowPid)) continue;
+          const rowTeamId = Number(row.team_id);
+          const existing = byPlayer.get(rowPid);
+          const entry = existing ?? { teamId: rowTeamId, position: String(row.position ?? '') || null, matchStats: new Map() };
+          if (!entry.matchStats.has(matchId)) entry.matchStats.set(matchId, Object.fromEntries(BDL_CACHE_POOL_STATS.map((s) => [s, 0])));
+          const ps = entry.matchStats.get(matchId)!;
+          for (const stat of BDL_CACHE_POOL_STATS) {
+            const v = readBdlCachePlayerStat(row, stat, stat === 'shots_total' ? shotsForPlayer.get(rowPid) : undefined);
+            if (v != null) ps[stat] = (ps[stat] ?? 0) + v;
           }
-          matchMap.set(matchId, matchSums);
-          byTeamMatch.set(side.defendingId, matchMap);
+          if (!existing) byPlayer.set(rowPid, entry);
         }
       }
-      const names: Record<string, string> = {};
-      const games: Record<string, number> = {};
-      const totalGames: Record<string, number> = {};
-      const metrics: Record<string, { values: Record<string, number>; ranks: Record<string, number> }> = {};
-      for (const stat of BDL_CACHE_OPP_STATS) metrics[stat] = { values: {}, ranks: {} };
-      for (const [teamId, matchMap] of byTeamMatch) {
-        const meta = teamMeta.get(teamId);
-        if (!meta || !matchMap.size) continue;
-        names[meta.slug] = meta.name;
-        games[meta.slug] = matchMap.size;
-        totalGames[meta.slug] = matchMap.size;
-        for (const stat of BDL_CACHE_OPP_STATS) {
-          let sum = 0;
-          for (const s of matchMap.values()) sum += s[stat] ?? 0;
-          metrics[stat].values[meta.slug] = Number((sum / matchMap.size).toFixed(3));
-        }
-      }
+      const oppMaps = await loadWc2026TeamAllowedMapsFromCache();
+      const oppPayload = oppMaps ? payloadFromWc2026TeamAllowedMaps(oppMaps) : null;
+      const names = oppPayload?.names ?? {};
+      const games = oppPayload?.games ?? {};
+      const totalGames = oppPayload?.totalGames ?? {};
+      const metrics = oppPayload?.metrics ?? {};
       const allSlugs = Object.keys(names);
-      for (const stat of BDL_CACHE_OPP_STATS) {
-        const vals = metrics[stat].values;
-        const sorted = [...allSlugs].sort((a, b) => (vals[a] ?? 0) - (vals[b] ?? 0));
-        const ranks: Record<string, number> = {};
-        sorted.forEach((sl, idx) => { ranks[sl] = idx + 1; });
-        metrics[stat].ranks = ranks;
-      }
       const SQUAD_SIZE = 26;
       const playersByTeam = new Map<string, number>();
       const poolPlayers: Array<{ playerKey: string; source: string; sourcePlayerId: string; teamSlug: string; position: string | null; games: number; averages: Record<string, number> }> = [];
@@ -1488,7 +2068,7 @@ export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
         return 'FWD';
       };
       for (const [pid, data] of byPlayer) {
-        const slug = teamMeta.get(data.teamId)?.slug ?? teamIdToSlug.get(data.teamId) ?? '';
+        const slug = oppMaps?.teamMeta.get(data.teamId)?.slug ?? teamIdToSlug.get(data.teamId) ?? '';
         if (!slug) continue;
         const gc = data.matchStats.size;
         const avgs: Record<string, number> = {};

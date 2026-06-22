@@ -33,6 +33,31 @@ export function getCurrencySymbol(currency: string): string {
   return CURRENCY_SYMBOLS[currency] || '$';
 }
 
+export type OddsDisplayFormat = 'american' | 'decimal';
+
+/** Default odds display for new users (no saved preference). */
+export const DEFAULT_ODDS_FORMAT: OddsDisplayFormat = 'decimal';
+
+export function readOddsFormatPreference(): OddsDisplayFormat {
+  if (typeof window === 'undefined') return DEFAULT_ODDS_FORMAT;
+  try {
+    const saved = localStorage.getItem('oddsFormat');
+    if (saved === 'decimal' || saved === 'american') return saved;
+  } catch {
+    // ignore
+  }
+  return DEFAULT_ODDS_FORMAT;
+}
+
+export function writeOddsFormatPreference(format: OddsDisplayFormat): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('oddsFormat', format);
+  } catch {
+    // ignore
+  }
+}
+
 // Convert decimal odds to American odds
 export function decimalToAmerican(decimal: number): string {
   if (decimal >= 2.0) {
@@ -54,7 +79,7 @@ export function americanToDecimal(american: number): number {
 // Format odds based on user preference
 export function formatOdds(
   decimal: number | null | undefined,
-  format: 'american' | 'decimal'
+  format: OddsDisplayFormat
 ): string {
   if (decimal == null || !Number.isFinite(decimal) || decimal <= 1) {
     return '--';
