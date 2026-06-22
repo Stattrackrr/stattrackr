@@ -25,6 +25,7 @@ import {
   readWorldCupDashboardLocalCache,
   readWorldCupPlayerOddsPrefetch,
   readPrefetchedWorldCupDashboardMem,
+  worldCupDashboardRequestIdentityMatches,
   worldCupDashboardRequestKey,
 } from '@/lib/worldCupPlayerAliases';
 import { getWorldCupFlagUrl, resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, FIFA_NAME_TO_CODE, worldCupTeamsMatch } from '@/lib/worldCupFlags';
@@ -3454,9 +3455,14 @@ function WorldCupGameByGameChart({
   const statKey = mode === 'player' ? statConfig.playerKey : statConfig.teamKey;
   const isMoneyline = mode === 'team' && statConfig.id === 'moneyline';
   const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
-  const selectedTeamId = selectedTeam?.id ?? selectedPlayer?.teamId ?? null;
+  const selectedTeamId =
+    (selectedTeam?.id && /^\d+$/.test(selectedTeam.id) ? selectedTeam.id : null) ??
+    (selectedPlayer?.teamId && /^\d+$/.test(selectedPlayer.teamId) ? selectedPlayer.teamId : null) ??
+    (data?.selectedTeam?.id != null ? String(data.selectedTeam.id) : null);
   const selectedTeamName =
-    selectedTeam?.name ?? selectedPlayer?.teamName ?? null;
+    selectedTeam?.name ??
+    selectedPlayer?.teamName ??
+    (data?.selectedTeam?.name ? String(data.selectedTeam.name) : null);
 
   const baseChartRows = useMemo(() => {
     if (!data || !statKey) return [];
@@ -3476,7 +3482,9 @@ function WorldCupGameByGameChart({
           selectedTeamName
         );
         if (match) return true;
-        return Boolean(String(row.opponent ?? row.opponent_name ?? '').trim());
+        if (String(row.opponent ?? row.opponent_name ?? '').trim()) return true;
+        const slug = String(row.tournament_slug ?? '').toLowerCase();
+        return slug === 'worldcup' || slug === 'world-cup' || slug === 'fifa-world-cup';
       })
       .map((row) => {
         const match = resolveWorldCupMatchForStatRow(
@@ -9976,10 +9984,6 @@ export function WorldCupPageContent() {
   const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
   const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
   const activeTeamNeedsHydration = !resolvedActiveTeamId;
-  // Keep insight panels (DVP, opponent breakdown, team form) on skeleton until the
-  // dashboard API has hydrated the real BDL team — avoids flashing placeholder teams
-  // (e.g. Argentina from WORLD_CUP_TEAMS) while a player search is loading.
-  const awaitingDashboardData = hasSelection && !worldCupData && !worldCupError;
   const hasChartStats = Boolean(worldCupData?.playerMatchStats?.length);
 
   const dashboardRequestKey = useMemo(() => {
@@ -10137,12 +10141,11 @@ export function WorldCupPageContent() {
     return () => window.clearTimeout(timer);
   }, [chartRevealKey, worldCupData?.playerMatchStats?.length]);
   const chartAreaLoading =
-    chartRevealHold ||
-    (hasSelection && !worldCupError && !hasChartStats && (worldCupLoading || !worldCupData));
-  const showInsightsSkeleton =
-    !hasSelection ||
-    (!hasChartStats && (chartAreaLoading || awaitingDashboardData || activeTeamNeedsHydration));
+    !hasChartStats &&
+    (chartRevealHold ||
+      (hasSelection && !worldCupError && (worldCupLoading || !worldCupData)));
   const showContentSkeleton = !hasSelection || (!hasChartStats && chartAreaLoading);
+  const showInsightsSkeleton = showContentSkeleton;
 
   const playerOptions = useMemo<WorldCupPlayerOption[]>(() => {
     const rosterPlayers = !worldCupData?.rosters?.length ? [] : worldCupData.rosters.slice(0, 80).map((row, i) => {
@@ -11233,7 +11236,13 @@ export function WorldCupPageContent() {
   }, [router, pathname, searchParams]);
 
   useEffect(() => {
-    if (prevDashboardRequestKeyRef.current && prevDashboardRequestKeyRef.current !== dashboardRequestKey) {
+    const prevKey = prevDashboardRequestKeyRef.current;
+    if (
+      prevKey &&
+      dashboardRequestKey &&
+      prevKey !== dashboardRequestKey &&
+      !worldCupDashboardRequestIdentityMatches(prevKey, dashboardRequestKey)
+    ) {
       loadedDashboardKeyRef.current = null;
       dashboardFetchInFlightKeyRef.current = null;
       setWorldCupData(null);
@@ -11263,9 +11272,17 @@ export function WorldCupPageContent() {
       playerIdForRequest
     );
     if (worldCupData && loadedDashboardKeyRef.current === expectedLoadedKey) {
-      setWorldCupLoading(false);
-      setWorldCupError(null);
-      return;
+      const playerPayloadIncomplete =
+        propsMode === 'player' &&
+        Boolean(playerIdForRequest) &&
+        (worldCupData.playerChartOnly ||
+          !hasFullPlayerPropsData(worldCupData, playerIdForRequest));
+      if (!playerPayloadIncomplete) {
+        setWorldCupLoading(false);
+        setWorldCupError(null);
+        return;
+      }
+      loadedDashboardKeyRef.current = null;
     }
 
     if (
@@ -11924,7 +11941,7 @@ export function WorldCupPageContent() {
                       mode={propsMode}
                       selectedPlayerRole={selectedPlayer?.role}
                       selectedPlayerId={selectedPlayerId}
-                      selectedTeamId={activeTeamId}
+                      selectedTeamId={resolvedActiveTeamId}
                       selectedTeamName={selectedTeam?.name ?? selectedPlayer?.teamName ?? urlTeamQuery ?? null}
                       opponentTeam={opponentTeam}
                       chartContext={chartContext}

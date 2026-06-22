@@ -249,7 +249,7 @@ export function worldCupDashboardRequestKey(params: URLSearchParams | string): s
   return normalized.toString();
 }
 
-function dashboardPrefetchIdentityMatches(storedKey: string, requestedKey: string): boolean {
+export function worldCupDashboardRequestIdentityMatches(storedKey: string, requestedKey: string): boolean {
   if (storedKey === requestedKey) return true;
   const stored = new URLSearchParams(storedKey);
   const requested = new URLSearchParams(requestedKey);
@@ -414,7 +414,7 @@ export function consumeWorldCupDashboardPrefetch<T>(requestKey: string): T | nul
     if (ageMs > WORLD_CUP_DASHBOARD_PREFETCH_TTL_MS) return null;
     if (
       parsed.requestKey !== requestKey &&
-      (!parsed.requestKey || !dashboardPrefetchIdentityMatches(parsed.requestKey, requestKey))
+      (!parsed.requestKey || !worldCupDashboardRequestIdentityMatches(parsed.requestKey, requestKey))
     ) {
       return null;
     }
