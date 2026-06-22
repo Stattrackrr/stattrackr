@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-22T15:49:55.265Z",
+  "generatedAt": "2026-06-22T19:53:04.420Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -20,7 +20,7 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-06-26T09:40:00Z",
       "weather": {
-        "temperatureC": 10.5,
+        "temperatureC": 9.9,
         "precipitationMm": 0,
         "windKmh": 5.8
       }
@@ -31,7 +31,7 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-06-27T03:15:00Z",
       "weather": {
-        "temperatureC": 11.8,
+        "temperatureC": 10.7,
         "precipitationMm": 0,
         "windKmh": 5.2
       }
@@ -42,7 +42,7 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-06-27T06:15:33Z",
       "weather": {
-        "temperatureC": 12.5,
+        "temperatureC": 10.3,
         "precipitationMm": 0,
         "windKmh": 6.7
       }
@@ -53,7 +53,7 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-06-27T09:35:00Z",
       "weather": {
-        "temperatureC": 11.7,
+        "temperatureC": 12.3,
         "precipitationMm": 0,
         "windKmh": 5.1
       }
@@ -64,7 +64,7 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-06-28T05:15:42Z",
       "weather": {
-        "temperatureC": 12.1,
+        "temperatureC": 12.4,
         "precipitationMm": 0,
         "windKmh": 2.9
       }
@@ -75,8 +75,8 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-06-28T07:10:00Z",
       "weather": {
-        "temperatureC": 16.6,
-        "precipitationMm": 0.2,
+        "temperatureC": 15.8,
+        "precipitationMm": 0.5,
         "windKmh": 18.7
       }
     }

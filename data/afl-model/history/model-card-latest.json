@@ -1,53 +1,71 @@
 {
-  "generatedAt": "2026-06-22T15:52:12Z",
-  "modelVersion": "afl-disp-20260622-155028",
+  "generatedAt": "2026-06-22T20:14:28Z",
+  "modelVersion": "afl-disp-20260622-200959",
   "sampleCount": 1627,
-  "guardrailsPass": false,
-  "promoted": false,
+  "guardrailsPass": true,
+  "promoted": true,
   "candidateMetrics": {
     "name": "candidate",
     "sampleCount": 1627,
-    "hitRate": 0.533497,
-    "brierScore": 0.249251,
-    "logLoss": 0.713233,
-    "mae": 4.614708,
-    "avgClvLite": -0.002078,
-    "positiveClvRate": 0.214505,
+    "hitRate": 0.542102,
+    "brierScore": 0.247762,
+    "logLoss": 0.688654,
+    "mae": 4.489916,
+    "avgClvLite": -0.002184,
+    "positiveClvRate": 0.21512,
     "clvSampleCount": 1627,
     "calibrationBins": [
       {
         "bin": 0,
-        "count": 2,
-        "avgPred": 0.0234,
-        "avgActual": 0.5
+        "count": 1,
+        "avgPred": 0.0,
+        "avgActual": 0.0
       },
       {
-        "bin": 3,
-        "count": 31,
-        "avgPred": 0.3444,
-        "avgActual": 0.3548
+        "bin": 1,
+        "count": 26,
+        "avgPred": 0.1905,
+        "avgActual": 0.3077
       },
       {
         "bin": 4,
-        "count": 1417,
-        "avgPred": 0.4708,
-        "avgActual": 0.4707
+        "count": 1161,
+        "avgPred": 0.4612,
+        "avgActual": 0.4591
       },
       {
         "bin": 5,
-        "count": 171,
-        "avgPred": 0.5419,
-        "avgActual": 0.5497
+        "count": 432,
+        "avgPred": 0.5275,
+        "avgActual": 0.5324
+      },
+      {
+        "bin": 6,
+        "count": 1,
+        "avgPred": 0.6208,
+        "avgActual": 1.0
+      },
+      {
+        "bin": 7,
+        "count": 4,
+        "avgPred": 0.75,
+        "avgActual": 0.75
+      },
+      {
+        "bin": 8,
+        "count": 1,
+        "avgPred": 0.801,
+        "avgActual": 0.0
       },
       {
         "bin": 9,
-        "count": 6,
+        "count": 1,
         "avgPred": 1.0,
-        "avgActual": 0.5
+        "avgActual": 1.0
       }
     ],
     "calibrationMethod": "isotonic",
-    "modelVersion": "afl-disp-20260622-155028"
+    "modelVersion": "afl-disp-20260622-200959"
   },
   "currentMetrics": {
     "name": "current",
@@ -56,8 +74,8 @@
     "brierScore": 0.247547,
     "logLoss": 0.694808,
     "mae": 4.489709,
-    "avgClvLite": -0.002206,
-    "positiveClvRate": 0.210203,
+    "avgClvLite": -0.00221,
+    "positiveClvRate": 0.208974,
     "clvSampleCount": 1627,
     "calibrationBins": [
       {
@@ -107,58 +125,58 @@
     "modelVersion": "afl-disp-20260621-181653"
   },
   "deltas": {
-    "brierImprovement": -0.006884,
-    "logLossChange": 0.026518,
-    "hitRateDelta": -0.00799
+    "brierImprovement": -0.000869,
+    "logLossChange": -0.008857,
+    "hitRateDelta": 0.000615
   },
   "confidenceBuckets": [
     {
       "bucketType": "confidence",
       "bucket": "high_0.65_plus",
-      "count": 39,
-      "hitRate": 0.615385
+      "count": 33,
+      "hitRate": 0.69697
     },
     {
       "bucketType": "confidence",
       "bucket": "low",
-      "count": 1411,
-      "hitRate": 0.523742
+      "count": 1585,
+      "hitRate": 0.538801
     },
     {
       "bucketType": "confidence",
       "bucket": "mid_0.57_0.65",
-      "count": 177,
-      "hitRate": 0.59322
+      "count": 9,
+      "hitRate": 0.555556
     }
   ],
   "edgeBuckets": [
     {
       "bucketType": "edge",
       "bucket": "edge_5_8",
-      "count": 90,
-      "hitRate": 0.577778
+      "count": 224,
+      "hitRate": 0.571429
     },
     {
       "bucketType": "edge",
       "bucket": "edge_8_plus",
-      "count": 169,
-      "hitRate": 0.597633
+      "count": 38,
+      "hitRate": 0.710526
     },
     {
       "bucketType": "edge",
       "bucket": "edge_under_5",
-      "count": 1368,
-      "hitRate": 0.522661
+      "count": 1365,
+      "hitRate": 0.532601
     }
   ],
   "topLossTypes": [
     {
       "type": "Under->Over",
-      "count": 679
+      "count": 541
     },
     {
       "type": "Over->Under",
-      "count": 80
+      "count": 204
     }
   ]
 }
