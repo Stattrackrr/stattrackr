@@ -1676,8 +1676,8 @@ function normalizeDashboardChartMatches(matches: Array<Record<string, any>>): Ar
       id,
       source_match_id: match.source_match_id ?? id,
       match_id: match.match_id ?? id,
-      source: match.source ?? summarized.source,
-      tournament_slug: match.tournament_slug ?? summarized.tournament_slug,
+      ...(match.source != null ? { source: match.source } : {}),
+      ...(match.tournament_slug != null ? { tournament_slug: match.tournament_slug } : {}),
     };
   });
 }
