@@ -1188,7 +1188,10 @@ function dvpRowStatValue(
     return dvpResolvedShotsTotal(row);
   }
   if (stat === 'passes_total') {
-    return dvpStatNum(row.passes_total) ?? dvpStatNum(row.passes);
+    return (
+      dvpStatNum(row.passes_total) ??
+      dvpStatNum((row as unknown as Record<string, number | null | undefined>).passes)
+    );
   }
   return dvpStatNum((row as unknown as Record<string, number | null | undefined>)[stat]);
 }
