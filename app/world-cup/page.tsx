@@ -10051,6 +10051,7 @@ export function WorldCupPageContent() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [navigatingToProps, setNavigatingToProps] = useState(false);
+  const navigatingToPropsRef = useRef(false);
   const profileDropdownRef = useRef<HTMLDivElement | null>(null);
   const journalDropdownRef = useRef<HTMLDivElement | null>(null);
   const settingsDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -10075,29 +10076,12 @@ export function WorldCupPageContent() {
   const isLgDesktop = useIsLgDesktop();
   const deferPanelFallbacks = Boolean(worldCupData?.playerChartOnly);
 
-  const resetWorldCupPlayerContextForPropsExit = useCallback(() => {
-    setSelectedPlayer(null);
-    setSelectedTeam(null);
-    setWorldCupData(null);
-    setWorldCupError(null);
-    setWorldCupLoading(false);
-    setFixtureOpponentName(null);
-    setTeamSearchQuery('');
-    setSearchedPlayers([]);
-    loadedDashboardKeyRef.current = null;
-    dashboardFetchInFlightKeyRef.current = null;
-    prevDashboardRequestKeyRef.current = null;
-    urlPlayerResolvedRef.current = false;
-    urlPlayerFetchInFlightRef.current = false;
-    propsHandoffPositionRef.current = null;
-    lastAppliedDeepLinkKeyRef.current = '';
-  }, []);
-
   const navigateBackToPlayerProps = useCallback(() => {
+    navigatingToPropsRef.current = true;
+    setNavigatingToProps(true);
     let returnSport: PropsSportMode = 'world-cup';
     try {
       clearWorldCupDashboardPersistence();
-      resetWorldCupPlayerContextForPropsExit();
       const stored = sessionStorage.getItem(WC_PROPS_RETURN_SPORT_KEY)?.trim();
       if (stored === 'combined' || stored === 'nba' || stored === 'afl' || stored === 'world-cup') {
         returnSport = stored;
@@ -10110,7 +10094,7 @@ export function WorldCupPageContent() {
     }
     setNavigatingToProps(true);
     router.push(propsPathForSport(returnSport));
-  }, [router, resetWorldCupPlayerContextForPropsExit]);
+  }, [router]);
 
   useEffect(() => {
     router.prefetch(propsPathForSport('world-cup'));
@@ -10738,6 +10722,7 @@ export function WorldCupPageContent() {
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
+    if (navigatingToPropsRef.current || navigatingToProps) return;
     const key = [urlPlayerQuery ?? '', urlPlayerId ?? '', urlPlayerSlug ?? ''].join('|');
     if (prevUrlPlayerDeepLinkKeyRef.current && prevUrlPlayerDeepLinkKeyRef.current !== key) {
       setSelectedPlayer(null);
@@ -10753,10 +10738,11 @@ export function WorldCupPageContent() {
       propsHandoffPositionRef.current = null;
     }
     prevUrlPlayerDeepLinkKeyRef.current = key;
-  }, [hydratedFromStorage, urlPlayerQuery, urlPlayerId, urlPlayerSlug]);
+  }, [hydratedFromStorage, navigatingToProps, urlPlayerQuery, urlPlayerId, urlPlayerSlug]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
+    if (navigatingToPropsRef.current || navigatingToProps) return;
     const parsed = parseWorldCupPropsHandoff(sessionStorage.getItem('wc_player_from_props'));
     if (!parsed) return;
     sessionStorage.removeItem('wc_player_from_props');
@@ -10783,7 +10769,7 @@ export function WorldCupPageContent() {
         loadedDashboardKeyRef,
       }
     );
-  }, [hydratedFromStorage, teamOptions, urlDeepLinkKey]);
+  }, [hydratedFromStorage, navigatingToProps, teamOptions, urlDeepLinkKey]);
 
   // Rehydrate page context on refresh only (sessionStorage — cleared when tab closes).
   useLayoutEffect(() => {
@@ -11047,6 +11033,7 @@ export function WorldCupPageContent() {
   // Resolve a player from /world-cup/player/[slug] or ?player= / ?playerId= query params.
   useEffect(() => {
     if (!hydratedFromStorage || !hasUrlPlayerTarget) return;
+    if (navigatingToPropsRef.current || navigatingToProps) return;
     if (
       urlPlayerId &&
       selectedPlayer?.id &&
@@ -11096,7 +11083,7 @@ export function WorldCupPageContent() {
         if (!response.ok) {
           throw new Error(payload?.error || 'Failed to load World Cup player');
         }
-        if (cancelled) return;
+        if (cancelled || navigatingToPropsRef.current) return;
 
         const players = (payload?.data ?? []).map((player) => mapWorldCupApiPlayerRow(player, teamOptions));
         let match: WorldCupPlayerOption | null = null;
@@ -11115,6 +11102,7 @@ export function WorldCupPageContent() {
         }
         if (!match) match = players[0] ?? null;
         if (!match) return;
+        if (navigatingToPropsRef.current) return;
 
         const handoffPosition = propsHandoffPositionRef.current;
         if (handoffPosition) {
@@ -11160,6 +11148,7 @@ export function WorldCupPageContent() {
     };
   }, [
     hydratedFromStorage,
+    navigatingToProps,
     hasUrlPlayerTarget,
     urlPlayerSlug,
     urlPlayerQuery,
@@ -11174,6 +11163,7 @@ export function WorldCupPageContent() {
   // Keep the address bar in sync with the active player or Game Props mode.
   useEffect(() => {
     if (!hydratedFromStorage) return;
+    if (navigatingToPropsRef.current || navigatingToProps) return;
 
     if (propsMode === 'team') {
       if (pathname?.startsWith('/world-cup/player/')) {
@@ -11214,6 +11204,7 @@ export function WorldCupPageContent() {
     }
   }, [
     hydratedFromStorage,
+    navigatingToProps,
     propsMode,
     selectedPlayer?.id,
     selectedPlayer?.name,
@@ -11496,6 +11487,7 @@ export function WorldCupPageContent() {
       }
       return;
     }
+    if (navigatingToPropsRef.current || navigatingToProps) return;
 
     const params = new URLSearchParams(dashboardRequestKey);
     const activeTeamIdForRequest = params.get('teamId');
@@ -11740,7 +11732,7 @@ export function WorldCupPageContent() {
         dashboardFetchInFlightKeyRef.current = null;
       }
     };
-  }, [dashboardRequestKey, chartDashboardRequestKey, hydratedFromStorage, hasSelection, propsMode]);
+  }, [dashboardRequestKey, chartDashboardRequestKey, hydratedFromStorage, navigatingToProps, hasSelection, propsMode]);
 
   // Load the real BDL national-team list up front so Game Props team search can
   // resolve to numeric team ids (and the correct team) before any selection.
