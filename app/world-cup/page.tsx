@@ -3795,7 +3795,7 @@ function WorldCupGameByGameChart({
     !error &&
     chartRows.length === 0 &&
     Boolean(selectedPlayer || selectedTeam) &&
-    (loading || !data || !(data.playerMatchStats?.length || data.teamMatchStats?.length));
+    (!data || !(data.playerMatchStats?.length || data.teamMatchStats?.length));
 
   if (error) {
     return <EmptyState text={error} className="h-full" />;
@@ -4093,7 +4093,7 @@ function WorldCupGameByGameChart({
             </span>
           </div>
         ) : null}
-        {loading || awaitingChartRows ? (
+        {(loading && !data) || awaitingChartRows ? (
           <WorldCupChartSkeleton isDark={isDark} />
         ) : chartRows.length ? (
           <SimpleChart
@@ -9967,9 +9967,15 @@ export function WorldCupPageContent() {
   const hasApiTeams = Boolean(worldCupData?.teams?.length || apiTeams?.length);
   const selectedTeamId = selectedTeam?.id ?? null;
   const activeTeamId = activeTeam?.id ?? null;
+  const resolvedActiveTeamId =
+    activeTeamId && /^\d+$/.test(activeTeamId)
+      ? activeTeamId
+      : urlTeamIdQuery && /^\d+$/.test(urlTeamIdQuery)
+        ? urlTeamIdQuery
+        : null;
   const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
   const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
-  const activeTeamNeedsHydration = !activeTeamId || !/^\d+$/.test(activeTeamId);
+  const activeTeamNeedsHydration = !resolvedActiveTeamId;
   // Keep insight panels (DVP, opponent breakdown, team form) on skeleton until the
   // dashboard API has hydrated the real BDL team — avoids flashing placeholder teams
   // (e.g. Argentina from WORLD_CUP_TEAMS) while a player search is loading.
@@ -10108,6 +10114,12 @@ export function WorldCupPageContent() {
   const [chartRevealHold, setChartRevealHold] = useState(false);
   const chartRevealKeyRef = useRef('');
   useEffect(() => {
+    if (worldCupData?.playerMatchStats?.length) {
+      setChartRevealHold(false);
+    }
+  }, [worldCupData?.playerMatchStats?.length]);
+
+  useEffect(() => {
     if (!chartRevealKey) {
       setChartRevealHold(false);
       chartRevealKeyRef.current = '';
@@ -10128,7 +10140,8 @@ export function WorldCupPageContent() {
     chartRevealHold ||
     (hasSelection && !worldCupError && !hasChartStats && (worldCupLoading || !worldCupData));
   const showInsightsSkeleton =
-    !hasSelection || chartAreaLoading || activeTeamNeedsHydration || (awaitingDashboardData && !hasChartStats);
+    !hasSelection ||
+    (!hasChartStats && (chartAreaLoading || awaitingDashboardData || activeTeamNeedsHydration));
   const showContentSkeleton = !hasSelection || (!hasChartStats && chartAreaLoading);
 
   const playerOptions = useMemo<WorldCupPlayerOption[]>(() => {
@@ -10255,7 +10268,12 @@ export function WorldCupPageContent() {
   const opponentTeamLogo = getWorldCupFlagUrl(opponentTeam?.countryCode || opponentTeam?.abbreviation);
   const selectedTeamAbbr = activeTeam?.abbreviation || activeTeam?.name?.slice(0, 3).toUpperCase() || 'TBD';
   const opponentTeamAbbr = opponentTeam?.abbreviation || opponentTeam?.name?.slice(0, 3).toUpperCase() || 'TBD';
-  const hasMatchup = hasSelection && !showInsightsSkeleton && Boolean(opponentTeam && activeTeam);
+  const hasMatchup =
+    hasSelection &&
+    Boolean(
+      (opponentTeam || urlOpponentQuery || fixtureOpponentName) &&
+        (activeTeam || (urlTeamIdQuery && (urlTeamQuery || selectedPlayer?.teamName)))
+    );
 
   useEffect(() => {
     const { homeName, awayName, matchDate } = resolveWorldCupPlayerOddsMatchup({
