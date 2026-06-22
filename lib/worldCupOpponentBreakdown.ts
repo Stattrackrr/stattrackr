@@ -1451,8 +1451,8 @@ export const WC2026_CACHE_KEYS = {
   playerStats: (playerId: number | string) => `wc:player:stats:${playerId}:v1`,
   playerShots: (playerId: number | string) => `wc:player:shots:${playerId}:v1`,
   playerIdByName: 'wc:player-id-by-name:v1',
-  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v5:${pos}`,
-  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v5',
+  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v8:${pos}`,
+  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v8',
   oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v3',
   playerVsPoolWc: 'wc:player-vs-pool:worldcup:v2',
 } as const;
@@ -1930,45 +1930,9 @@ export async function runBuildWorldCup2026Cache(argv: string[]): Promise<void> {
 
   if (bdlCacheOnlyStep(argv, 6)) {
     console.log('\n-- Step 6: DVP WC 2026 only --');
-    const bdl2026 = await loadBdlWc2026DvpData({ skipCache: true });
-    const teamsWithGames = Array.from(bdl2026.teamsWithGames);
-    if (!bdl2026.matches.length) {
-      console.log('  no WC 2026 games yet -- skipping');
-    } else {
-      await set(WC2026_CACHE_KEYS.dvpWc2026Raw, { matches: bdl2026.matches, statRows: bdl2026.statRows, teamsWithGames });
-      const qualifiedSlugs = await loadWorldCupQualifiedSlugs(apiKey);
-      const positionMap = buildIntlPlayerPositionMap(bdl2026.statRows);
-      const matchesWithStats = new Set(bdl2026.statRows.map((r) => `bdl:${r.source_match_id}`));
-      const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
-      const addTeamMatch = (name: string, key: string, ts: number) => {
-        const s = resolveWorldCupFlagCode(name) || name.trim().toLowerCase();
-        if (!s) return;
-        const list = teamMatchesBySlug.get(s) ?? [];
-        if (!list.some((e) => e.key === key)) list.push({ key, ts });
-        teamMatchesBySlug.set(s, list);
-      };
-      const matchInfo = new Map(bdl2026.matches.map((m) => [`bdl:${m.source_match_id}`, m] as const));
-      for (const m of bdl2026.matches) {
-        const key = `bdl:${m.source_match_id}`;
-        if (!matchesWithStats.has(key)) continue;
-        const ts = m.kickoff_unix ? m.kickoff_unix * 1000 : m.match_date ? Date.parse(m.match_date) : 0;
-        addTeamMatch(m.home_team_name, key, ts);
-        addTeamMatch(m.away_team_name, key, ts);
-      }
-      const wcSrc = { matchInfo, teamMatchesBySlug, slugNames: new Map<string, string>(), statRows: bdl2026.statRows, positionMap };
-      for (const position of WC_DVP_POSITIONS) {
-        const result = aggregateInternationalDvp(wcSrc, {
-          position,
-          requestedStats: getWorldCupDvpStats(position),
-          window: 0,
-          positionMode: 'lineupPerMatch',
-          restrictSlugs: qualifiedSlugs,
-        });
-        await set(WC2026_CACHE_KEYS.dvpWc2026ForPosition(position), { ...result, wcTeamsWithGames: teamsWithGames });
-        console.log(`  ${position}: cached (${teamsWithGames.length} teams)`);
-      }
-      console.log(`  stat rows joined with BDL lineups: ${bdl2026.statRows.length}`);
-    }
+    const { refreshWorldCup2026DvpCache } = await import('./internationalDashboard');
+    const qualifiedSlugs = await loadWorldCupQualifiedSlugs(apiKey);
+    await refreshWorldCup2026DvpCache((msg) => console.log(`  ${msg}`), qualifiedSlugs, { skipCache: true });
   }
 
   if (bdlCacheOnlyStep(argv, 7)) {

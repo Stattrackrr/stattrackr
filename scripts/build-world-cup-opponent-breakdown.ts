@@ -76,22 +76,17 @@ async function runDashboardWarm(argv: string[]): Promise<void> {
   });
 
   if (!skipIntl) {
-    await phase('Phase 2/6 — International DvP (DEF/MID/ATT × L5/L10/All)', async () => {
+    await phase('Phase 2/6 — WC 2026 DvP (GK/DEF/MID/FWD, lineupPerMatch)', async () => {
       const apiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
-      const { refreshWorldCupDvpCache, WC_DVP_POSITIONS, WC_DVP_WINDOWS } = await import(
-        '../lib/internationalDashboard'
-      );
+      const { refreshWorldCupDvpCache, WC_DVP_POSITIONS } = await import('../lib/internationalDashboard');
       const { loadWorldCupQualifiedSlugs } = await import('../lib/worldCupOpponentBreakdown');
-      const label = (w: number) => (w === 0 ? 'All' : `L${w}`);
-      console.log(
-        `[dvp] ${WC_DVP_POSITIONS.length} positions × ${WC_DVP_WINDOWS.length} windows (${WC_DVP_WINDOWS.map(label).join('/')})`
-      );
+      console.log(`[dvp] WC 2026 only — ${WC_DVP_POSITIONS.join('/')} × qualified 48 nations`);
       const qualifiedSlugs = await loadWorldCupQualifiedSlugs(apiKey);
       const { entries, teams } = await refreshWorldCupDvpCache(
         (msg) => console.log(`[dvp] ${msg}`),
         qualifiedSlugs
       );
-      console.log(`[dvp] cached ${entries} entries across ${teams} nations`);
+      console.log(`[dvp] cached ${entries} position entries across ${teams} ranked nations`);
     });
 
     await phase('Phase 3/6 — International Opponent Breakdown (L5/L10/All)', async () => {
@@ -299,14 +294,15 @@ async function runRebuildEnrichedOnly(): Promise<void> {
   const { rebuildWorldCupEnrichedListFromOddsCache } = await import('../lib/worldCupCache');
   const { warmCombinedPropsSnapshot } = await import('../lib/combinedPropsSnapshot');
 
-  console.log('[wc-rebuild] Rebuilding enriched props from existing odds + stat caches (skipping stat warm)...');
+  console.log('[wc-rebuild] Rebuilding enriched props from odds + BDL game logs + DvP cache (no separate stat warm)...');
   const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
     cacheOnly: true,
     skipRowMeta: false,
     writeCache: true,
   });
+  const withDvp = rebuilt.data.filter((r) => r.dvpRating != null && r.dvpRating > 0).length;
   console.log(
-    `[wc-rebuild] Enriched cache written (${rebuilt.data.length} enriched rows, ${rebuilt.rawOddsCount} odds rows)`
+    `[wc-rebuild] Enriched cache written (${rebuilt.data.length} enriched rows, ${rebuilt.rawOddsCount} odds rows, ${withDvp} with DvP rank)`
   );
 
   try {
@@ -1042,16 +1038,42 @@ async function main() {
     return;
   }
 
+  if (process.argv.includes('--debug-dvp-shots')) {
+    const apiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
+    const { diagnoseWorldCupDvpShots } = await import('../lib/internationalDashboard');
+    const { loadWorldCupQualifiedTeamMap } = await import('../lib/worldCupOpponentBreakdown');
+    const args = process.argv.slice(2).filter((a) => a !== '--debug-dvp-shots');
+    const readArg = (name: string): string | null => {
+      const prefix = `--${name}=`;
+      const hit = args.find((a) => a.startsWith(prefix));
+      if (hit) return hit.slice(prefix.length).trim() || null;
+      const idx = args.indexOf(`--${name}`);
+      if (idx >= 0 && args[idx + 1] && !args[idx + 1]!.startsWith('--')) return args[idx + 1]!.trim();
+      return null;
+    };
+    const positionRaw = (readArg('position') || 'MID').toUpperCase();
+    const windowRaw = Number.parseInt(readArg('window') || '0', 10);
+    const qualified = await loadWorldCupQualifiedTeamMap(apiKey);
+    await diagnoseWorldCupDvpShots(
+      {
+        qualified,
+        position: positionRaw as 'GK' | 'DEF' | 'MID' | 'FWD',
+        window: Number.isFinite(windowRaw) && windowRaw > 0 ? windowRaw : 0,
+        wcOnly: args.includes('--wc-only'),
+        teamSlug: readArg('team'),
+        refreshBdl: args.includes('--refresh-bdl'),
+      },
+      (m) => console.log(`[dvp-shots] ${m}`)
+    );
+    return;
+  }
+
   if (process.argv.includes('--dvp-only')) {
     const dvpApiKey = (process.env.BALLDONTLIE_API_KEY || process.env.BALL_DONT_LIE_API_KEY || '').trim();
-    const { refreshWorldCupDvpCache, WC_DVP_POSITIONS, WC_DVP_WINDOWS } = await import(
-      '../lib/internationalDashboard'
-    );
+    const { refreshWorldCupDvpCache, WC_DVP_POSITIONS } = await import('../lib/internationalDashboard');
     const { loadWorldCupQualifiedSlugs } = await import('../lib/worldCupOpponentBreakdown');
-    const label = (w: number) => (w === 0 ? 'All' : `L${w}`);
     console.log(
-      `[dvp] computing ${WC_DVP_POSITIONS.length} positions x ${WC_DVP_WINDOWS.length} windows ` +
-        `(${WC_DVP_POSITIONS.join('/')} x ${WC_DVP_WINDOWS.map(label).join('/')})`
+      `[dvp] WC 2026 World Cup finals only — ${WC_DVP_POSITIONS.join('/')} (lineupPerMatch, qualified nations)`
     );
     console.log('[dvp] prefer running with the dev server stopped to avoid DB contention.');
     const qualifiedSlugs = await loadWorldCupQualifiedSlugs(dvpApiKey);
@@ -1059,7 +1081,8 @@ async function main() {
     const started = Date.now();
     const { entries, teams } = await refreshWorldCupDvpCache(
       (msg) => console.log(`[dvp] ${msg}`),
-      qualifiedSlugs
+      qualifiedSlugs,
+      { skipCache: process.argv.includes('--force') }
     );
     console.log(
       `[dvp] done - ${entries} entries (up to ${teams} nations) in ${(
@@ -1067,6 +1090,32 @@ async function main() {
         1000
       ).toFixed(1)}s`
     );
+    const { rebuildWorldCupEnrichedListFromOddsCache } = await import('../lib/worldCupCache');
+    console.log('[dvp] Rebuilding props enriched cache (odds rows + WC 2026 DvP ranks)...');
+    const rebuilt = await rebuildWorldCupEnrichedListFromOddsCache({
+      cacheOnly: true,
+      skipRowMeta: false,
+      writeCache: true,
+    });
+    const withDvp = rebuilt.data.filter((r) => r.dvpRating != null && r.dvpRating > 0).length;
+    console.log(
+      `[dvp] Props page cache: ${withDvp}/${rebuilt.data.length} rows with DvP rank (key wc_list_enriched_response_v16)`
+    );
+    try {
+      const { warmCombinedPropsSnapshot } = await import('../lib/combinedPropsSnapshot');
+      const baseUrl = (process.env.PROD_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
+      const cronSecret = (process.env.CRON_SECRET || '').trim();
+      console.log('[dvp] Warming combined props snapshot cache...');
+      const snapshot = await warmCombinedPropsSnapshot({
+        origin: baseUrl,
+        cronSecret: cronSecret || undefined,
+      });
+      console.log(
+        `[dvp] Combined snapshot written (wc=${snapshot.worldCup.props.length} props with DvP where matched)`
+      );
+    } catch (e) {
+      console.warn('[dvp] combined props snapshot warm failed (props tab still uses enriched cache):', e);
+    }
     return;
   }
 

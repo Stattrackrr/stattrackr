@@ -1353,6 +1353,14 @@ function averageMetric(rows: Array<Record<string, any>>, key: string): string {
 function getWorldCupStatNumber(row: Record<string, any>, key: string): number | null {
   const parsed = toNumber(row[key]);
   if (parsed != null) return parsed;
+  if (key === 'fouls_committed') {
+    const fouls = toNumber(row.fouls);
+    if (fouls != null) return fouls;
+  }
+  if (key === 'was_fouled') {
+    const foulsDrawn = toNumber(row.fouls_drawn ?? row.fouls_suffered);
+    if (foulsDrawn != null) return foulsDrawn;
+  }
   return ZERO_DEFAULT_STAT_KEYS.has(key) ? 0 : null;
 }
 
@@ -1646,7 +1654,7 @@ function WorldCupCardSkeleton({
 
 /** Bar-chart-shaped skeleton shown in the game-by-game chart while a player's
  * stats are loading (e.g. right after switching players). */
-const WC_CHART_REVEAL_HOLD_MS = 1000;
+const WC_CHART_REVEAL_HOLD_MS = 200;
 
 function WorldCupChartSkeleton({ isDark, className = '' }: { isDark: boolean; className?: string }) {
   const bar = isDark ? 'bg-gray-800' : 'bg-gray-200';
@@ -3512,12 +3520,7 @@ function WorldCupGameByGameChart({
           if (isMoneyline) return outcome == null ? null : outcome === 'W' ? 1 : outcome === 'L' ? -1 : 0;
           if (!statKey) return null;
           if (mode === 'team') return resolveWorldCupTeamStatValue(row, match, statKey, perspective);
-          const readKey = (key: string): number | null => {
-            const parsed = toNumber(row[key]);
-            if (parsed != null) return parsed;
-            return ZERO_DEFAULT_STAT_KEYS.has(statKey) ? 0 : null;
-          };
-          return readKey(statKey);
+          return getWorldCupStatNumber(row, statKey);
         })();
         const competitionTag = deriveWorldCupCompetitionTag(row, match);
         const competitionGroup = worldCupCompetitionChartGroup(competitionTag);
@@ -3792,7 +3795,7 @@ function WorldCupGameByGameChart({
     !error &&
     chartRows.length === 0 &&
     Boolean(selectedPlayer || selectedTeam) &&
-    (loading || !data || Boolean(data.playerChartOnly) || !(data.playerMatchStats?.length || data.teamMatchStats?.length));
+    (loading || !data || !(data.playerMatchStats?.length || data.teamMatchStats?.length));
 
   if (error) {
     return <EmptyState text={error} className="h-full" />;
@@ -10112,14 +10115,18 @@ export function WorldCupPageContent() {
     }
     if (chartRevealKey === chartRevealKeyRef.current) return;
     chartRevealKeyRef.current = chartRevealKey;
+    // Skip the skeleton flash when chart rows are already on screen (cache / prefetch).
+    if (worldCupData?.playerMatchStats?.length) {
+      setChartRevealHold(false);
+      return;
+    }
     setChartRevealHold(true);
     const timer = window.setTimeout(() => setChartRevealHold(false), WC_CHART_REVEAL_HOLD_MS);
     return () => window.clearTimeout(timer);
-  }, [chartRevealKey]);
+  }, [chartRevealKey, worldCupData?.playerMatchStats?.length]);
   const chartAreaLoading =
-    worldCupLoading ||
     chartRevealHold ||
-    (hasSelection && !worldCupError && !hasChartStats && !worldCupData);
+    (hasSelection && !worldCupError && !hasChartStats && (worldCupLoading || !worldCupData));
   const showInsightsSkeleton =
     !hasSelection || chartAreaLoading || activeTeamNeedsHydration || (awaitingDashboardData && !hasChartStats);
   const showContentSkeleton = !hasSelection || (!hasChartStats && chartAreaLoading);
@@ -11379,11 +11386,19 @@ export function WorldCupPageContent() {
             chartDashboardRequestKey
           );
           if (cancelled) return;
-          if (chartPayload?.playerMatchStats?.length && loadedDashboardKeyRef.current !== expectedLoadedKey) {
-            applyDashboardPayload(chartPayload, false);
+          if (chartPayload?.playerMatchStats?.length) {
+            const needsChartApply =
+              loadedDashboardKeyRef.current !== expectedLoadedKey ||
+              !(worldCupData?.playerMatchStats?.length);
+            if (needsChartApply) {
+              applyDashboardPayload(chartPayload, false);
+            } else {
+              setWorldCupLoading(false);
+            }
           }
           if (cancelled) return;
           if (loadedDashboardKeyRef.current === expectedLoadedKey && hasFullPlayerPropsData(chartPayload, playerIdForRequest ?? '')) {
+            setWorldCupLoading(false);
             return;
           }
 
@@ -11427,6 +11442,10 @@ export function WorldCupPageContent() {
 
     return () => {
       cancelled = true;
+      // A superseding effect run must not leave the in-flight guard stuck (blank chart forever).
+      if (dashboardFetchInFlightKeyRef.current === dashboardRequestKey) {
+        dashboardFetchInFlightKeyRef.current = null;
+      }
     };
   }, [dashboardRequestKey, chartDashboardRequestKey, hydratedFromStorage, hasSelection, propsMode]);
 

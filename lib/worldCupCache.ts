@@ -1161,7 +1161,7 @@ export type WorldCupListPropRow = {
 };
 
 const WC_LIST_RESPONSE_CACHE_KEY = 'wc_props_list_response_v7';
-const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v15';
+const WC_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'wc_list_enriched_response_v16';
 /** Props page + ingest: only this bookmaker (API-Football name). */
 const WC_LIST_BOOKMAKER = 'Bet365';
 /** Never expire; only replaced when cron runs (same as AFL odds / player-props cache). */
@@ -2693,19 +2693,41 @@ function wcPropStatsFromRowCache(row: WorldCupListPropRow): WorldCupPropStatsPay
   return null;
 }
 
-async function wcComputeWc2026PropFields(
+async function wcComputePropStatsFromRow(
   row: WorldCupListPropRow,
   gamesByPlayer: Map<string, Record<string, unknown>[]>,
   indexByName: Map<string, WorldCupPlayerIndexEntry>
-): Promise<Pick<WorldCupPropStatsPayload, 'wcGamesAvg' | 'wcGamesHitRate' | 'wcGameLog'>> {
+): Promise<WorldCupPropStatsPayload | null> {
   let games = gamesByPlayer.get(row.playerName);
   if (!games) {
     games = await loadWorldCupPlayerGameLogs(row.playerName);
     gamesByPlayer.set(row.playerName, games);
   }
+  if (!games.length) return null;
   const entry = wcLookupPlayerIndexEntry(row.playerName, indexByName);
-  const { opponent } = wcResolvePlayerTeamForRow(row, entry);
-  return computeWorldCupPropStatsFromGames(games, row.statType, opponent, row.line, WC_PROPS_STATS_SEASON);
+  const { opponent } = wcResolvePlayerTeamForRow(row, entry, games);
+  const computed = computeWorldCupPropStatsFromGames(
+    games,
+    row.statType,
+    opponent,
+    row.line,
+    WC_PROPS_STATS_SEASON
+  );
+  const payload: WorldCupPropStatsPayload = { ...computed, dvpRating: null, dvpStatValue: null };
+  return wcAcceptCachedPropStats(payload);
+}
+
+async function wcComputeWc2026PropFields(
+  row: WorldCupListPropRow,
+  gamesByPlayer: Map<string, Record<string, unknown>[]>,
+  indexByName: Map<string, WorldCupPlayerIndexEntry>
+): Promise<Pick<WorldCupPropStatsPayload, 'wcGamesAvg' | 'wcGamesHitRate' | 'wcGameLog'>> {
+  const full = await wcComputePropStatsFromRow(row, gamesByPlayer, indexByName);
+  return {
+    wcGamesAvg: full?.wcGamesAvg ?? null,
+    wcGamesHitRate: full?.wcGamesHitRate ?? null,
+    wcGameLog: full?.wcGameLog ?? [],
+  };
 }
 
 async function wcRefreshWc2026FieldsForRow(
@@ -2816,10 +2838,20 @@ function wcLookupDvpRank(
   const cached = dvpByPosition.get(position);
   const rankMaps = dvpRankMaps.get(position);
   if (!cached || !rankMaps) return null;
-  const slug = wcResolveOpponentDvpSlug(opponentTeamName, cached);
-  if (!slug) return null;
   const entry = rankMaps[metric];
   if (!entry) return null;
+
+  const pool = wcDvpRankingPoolSlugs(cached);
+  const directSlug = resolveWorldCupFlagCode(opponentTeamName)?.toLowerCase();
+  if (directSlug && pool.includes(directSlug)) {
+    const rank = entry.ranks[directSlug];
+    if (rank != null && Number.isFinite(rank)) {
+      return { rank, value: entry.values[directSlug] ?? 0 };
+    }
+  }
+
+  const slug = wcResolveOpponentDvpSlug(opponentTeamName, cached);
+  if (!slug) return null;
   const rank = entry.ranks[slug];
   if (rank == null || !Number.isFinite(rank)) return null;
   return { rank, value: entry.values[slug] ?? 0 };
@@ -3117,15 +3149,30 @@ async function wcEnrichRowDvpMeta(
   if (!position) {
     position = await wcLookupBdlPlayerPositionFromCache(row.playerName);
   }
-  const { opponent } = wcResolvePlayerTeamForRow(row, entry, games);
+  const { opponent, playerTeam } = wcResolvePlayerTeamForRow(row, entry, games);
   const metric = wcPropStatToDvpMetric(row.statType);
 
   let dvpRating: number | null = null;
   let dvpStatValue: number | null = null;
   if (position && metric && getWorldCupDvpStats(position).includes(metric)) {
-    const opponentCandidates = [opponent, row.awayTeam, row.homeTeam].filter(
-      (name, idx, arr) => name && arr.indexOf(name) === idx
-    );
+    const otherFixtureTeam =
+      playerTeam && wcNationMatchesTeam(playerTeam, row.homeTeam)
+        ? row.awayTeam
+        : playerTeam && wcNationMatchesTeam(playerTeam, row.awayTeam)
+          ? row.homeTeam
+          : null;
+    const opponentCandidates = [
+      opponent,
+      otherFixtureTeam,
+      playerTeam && !wcNationMatchesTeam(row.homeTeam, playerTeam) ? row.homeTeam : null,
+      playerTeam && !wcNationMatchesTeam(row.awayTeam, playerTeam) ? row.awayTeam : null,
+      row.homeTeamCode,
+      row.awayTeamCode,
+    ].filter((name, idx, arr): name is string => {
+      if (!name) return false;
+      if (playerTeam && wcNationMatchesTeam(name, playerTeam)) return false;
+      return arr.indexOf(name) === idx;
+    });
     for (const opp of opponentCandidates) {
       const hit = wcLookupDvpRank(ctx.dvpByPosition, ctx.dvpRankMaps, position, metric, opp);
       if (hit) {
@@ -3216,7 +3263,7 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
     console.log(
       `DvP ${position} (2026 WC only): ${wc2026Count} teams with games (${wc2026Sampled} with samples) | props cache: ${loaded ? 'loaded' : 'MISSING'} (${wc2026Key})`
     );
-    if (!loaded) console.log('  -> run: npm run build:world-cup:bdl-cache (step 6 builds wc2026 DvP)');
+    if (!loaded) console.log('  -> run: npm run build:world-cup:dvp -- --force');
   }
 
   if (!sample.length) {
@@ -3262,7 +3309,9 @@ export async function diagnoseWorldCupPropsEnrichment(opts: {
       if (!metric) reasons.push(`stat "${row.statType}" has no DvP metric`);
       else if (!metricOk) reasons.push(`metric "${metric}" not tracked for ${position}`);
       if (!position || !ctx.dvpByPosition.has(position)) reasons.push('2026 WC DvP cache empty (npm run build:world-cup:bdl-cache)');
-      else if (position && metricOk && !slugResolved) reasons.push(`opponent "${opponent}" not in DvP slug map`);
+      else if (position && metricOk && !slugResolved) {
+        reasons.push(`opponent "${opponent}" not in DvP slug map (run npm run build:world-cup:dvp -- --force)`);
+      }
       console.log(`  DvP N/A because: ${reasons.join('; ')}`);
     }
     console.log('');
@@ -3353,24 +3402,13 @@ export async function enrichWorldCupPlayerPropsList(
         if (photoMeta.headshotUrl) withPhotos += 1;
         if (dvpMeta.dvpRating != null) withDvp += 1;
         let stats = wcPropStatsFromRowCache(row);
-        let wcFields: Pick<WorldCupPropStatsPayload, 'wcGamesAvg' | 'wcGamesHitRate' | 'wcGameLog'> | null =
-          null;
-        if (refreshWc2026) {
-          wcFields = await wcComputeWc2026PropFields(row, gamesByPlayer, indexByName);
-          if (stats) {
-            stats = { ...stats, ...wcFields };
-          }
+        if (!stats) {
+          stats = await wcComputePropStatsFromRow(row, gamesByPlayer, indexByName);
+        } else if (refreshWc2026 && stats.wcGamesAvg == null && (stats.wcGamesHitRate?.total ?? 0) === 0) {
+          stats = await wcRefreshWc2026FieldsForRow(row, stats, gamesByPlayer, indexByName);
         }
-        if ((wcFields?.wcGamesHitRate?.total ?? stats?.wcGamesHitRate?.total ?? 0) > 0) withWc += 1;
-        let enrichedRow = attachStats(row, stats, { ...photoMeta, ...dvpMeta });
-        if (wcFields) {
-          enrichedRow = {
-            ...enrichedRow,
-            wcGamesAvg: wcFields.wcGamesAvg,
-            wcGamesHitRate: wcFields.wcGamesHitRate,
-            wcGameLog: wcFields.wcGameLog,
-          };
-        }
+        if ((stats?.wcGamesHitRate?.total ?? 0) > 0 || stats?.wcGamesAvg != null) withWc += 1;
+        const enrichedRow = attachStats(row, stats, { ...photoMeta, ...dvpMeta });
         if (enrichedRow.last5Avg != null || enrichedRow.last10Avg != null) withL5 += 1;
         return enrichedRow;
       })

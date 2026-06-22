@@ -25,9 +25,8 @@ import {
   WorldCupPlayerPoolEntry,
   WorldCupPlayerVsOpponentBreakdown,
   WORLD_CUP_PLAYER_VS_POOL_STAT_KEYS,
+  buildWorldCup2026DvpAggregate,
   loadBdlWc2026DvpData,
-  aggregateInternationalDvp,
-  buildIntlPlayerPositionMap,
 } from '@/lib/internationalDashboard';
 import {
   getOpponentBreakdown,
@@ -96,8 +95,8 @@ const WC2026 = {
   playerStats: (id: number | string) => `wc:player:stats:${id}:v1`,
   playerShots: (id: number | string) => `wc:player:shots:${id}:v1`,
   playerIdByName: 'wc:player-id-by-name:v1',
-  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v5:${pos}`,
-  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v5',
+  dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v8:${pos}`,
+  dvpWc2026Raw: 'wc:dvp-wc2026:raw:v8',
   oppBreakdownWc2026: 'wc:opp-breakdown:wc2026:v3',
   playerVsPoolWc: 'wc:player-vs-pool:worldcup:v2',
 } as const;
@@ -2597,7 +2596,13 @@ function buildDvpBatchPayload(
     wcOnly && wcTeamsWithGames
       ? Array.from(wcTeamsWithGames instanceof Set ? wcTeamsWithGames : new Set(wcTeamsWithGames))
       : null;
-  const rankSlugs = result.opponents?.length ? result.opponents : wcSlugs ?? [];
+  // WC 2026: rank every nation that has played, not only those with samples yet.
+  const rankSlugs =
+    wcOnly && wcSlugs?.length
+      ? wcSlugs
+      : result.opponents?.length
+        ? result.opponents
+        : wcSlugs ?? [];
   return {
     success: true,
     position: positionRaw,
@@ -2696,34 +2701,9 @@ async function handleAggregateDvp(request: NextRequest): Promise<NextResponse> {
     recordWcSource('dvpWc2026', 'bdl-live', position);
     const bdl2026 = await loadBdlWc2026DvpData();
     wcTeamsWithGames = bdl2026.teamsWithGames;
-    const matchInfo = new Map(
-      bdl2026.matches.map((m) => [`bdl:${m.source_match_id}`, m] as const)
-    );
-    const positionMap = buildIntlPlayerPositionMap(bdl2026.statRows);
-    const matchesWithStats = new Set(bdl2026.statRows.map((r) => `bdl:${r.source_match_id}`));
-    const teamMatchesBySlug = new Map<string, Array<{ key: string; ts: number }>>();
-    const addTeamMatch = (name: string, key: string, ts: number) => {
-      const s = resolveWorldCupFlagCode(name) || name.trim().toLowerCase();
-      if (!s) return;
-      const list = teamMatchesBySlug.get(s) ?? [];
-      if (!list.some((e) => e.key === key)) list.push({ key, ts });
-      teamMatchesBySlug.set(s, list);
-    };
-    for (const m of bdl2026.matches) {
-      const key = `bdl:${m.source_match_id}`;
-      if (!matchesWithStats.has(key)) continue;
-      const ts = m.kickoff_unix ? m.kickoff_unix * 1000 : m.match_date ? Date.parse(m.match_date) : 0;
-      addTeamMatch(m.home_team_name, key, ts);
-      addTeamMatch(m.away_team_name, key, ts);
-    }
-    const wcSrc = { matchInfo, teamMatchesBySlug, slugNames: new Map<string, string>(), statRows: bdl2026.statRows, positionMap };
-    result = aggregateInternationalDvp(wcSrc, {
-      position,
-      requestedStats,
-      window: 0,
-      positionMode: 'lineupPerMatch',
-      restrictSlugs: await loadWorldCupQualifiedSlugs(getBdlApiKey()),
-    });
+    const restrictSlugs = await loadWorldCupQualifiedSlugs(getBdlApiKey());
+    const qualifiedMap = await loadWorldCupQualifiedTeamMap(getBdlApiKey());
+    result = buildWorldCup2026DvpAggregate(bdl2026, position, restrictSlugs, qualifiedMap);
     // Self-warm for subsequent requests (non-blocking).
     setWorldCupCache(WC2026.dvpWc2026ForPosition(position), {
       ...result,
