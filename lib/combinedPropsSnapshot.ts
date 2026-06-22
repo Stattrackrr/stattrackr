@@ -7,7 +7,6 @@ import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/ro
 import { GET as getWorldCupPlayerPropsList } from '@/app/api/world-cup/dashboard/route';
 import {
   filterWorldCupListPropsByMinOdds,
-  worldCupPropHasPlayerCategoryStats,
 } from '@/lib/worldCupCache';
 
 const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v2';
@@ -260,8 +259,10 @@ function aggregateWorldCupProps(listData: any): {
   noWorldCupOdds: boolean;
 } {
   const games: CombinedAflGame[] = Array.isArray(listData?.games) ? listData.games : [];
+  // Match the WC-only props list: min-odds filter only. Stats may still be warming —
+  // requiring category stats here empties the combined "All" feed on first load.
   const rows: any[] = filterWorldCupListPropsByMinOdds(
-    (Array.isArray(listData?.data) ? listData.data : []).filter(worldCupPropHasPlayerCategoryStats)
+    Array.isArray(listData?.data) ? listData.data : []
   );
   const keyToRow = new Map<string, {
     playerName: string;

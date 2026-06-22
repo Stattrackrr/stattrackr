@@ -1054,9 +1054,18 @@ function combinedModeHasVisibleRows(
 function combinedModeNeedsDataRefresh(
   nbaProps: PlayerProp[],
   aflProps: PlayerProp[],
-  worldCupProps: PlayerProp[]
+  worldCupProps: PlayerProp[],
+  partialWcRefetchAttempted: boolean
 ): boolean {
   if (!combinedModeHasVisibleRows(nbaProps, aflProps, worldCupProps)) return true;
+  if (
+    WORLD_CUP_PUBLIC_ENABLED &&
+    filterWorldCupListProps(worldCupProps).length === 0 &&
+    combinedModeHasVisibleRows(nbaProps, aflProps, worldCupProps) &&
+    !partialWcRefetchAttempted
+  ) {
+    return true;
+  }
   if (filterWorldCupListProps(worldCupProps).length > 0 && worldCupPropsMissingHistoricalStats(worldCupProps)) {
     return true;
   }
@@ -1490,6 +1499,7 @@ export default function NBALandingPage() {
   const combinedPropsFetchCompleteRef = useRef(false);
   /** Skip one combined API fetch after an instant warm sport toggle (AFL/WC → combined). */
   const combinedWarmToggleRef = useRef(false);
+  const combinedPartialWcRefetchAttemptedRef = useRef(false);
   /** Skip AFL/WC list fetch after instant session-cache restore (persists through Strict Mode re-runs). */
   const secondarySkipFetchSportRef = useRef<'afl' | 'world-cup' | null>(null);
   /** Set when applySportMode hydrates secondary rows — fetch effect must not undo it. */
@@ -2163,29 +2173,57 @@ export default function NBALandingPage() {
             aflGamesCached.length > 0 ||
             wcPropsCached.length > 0;
           if (age < CACHE_TTL_MS && hasSnapshotData) {
-            applyCombinedSnapshot(
-              WORLD_CUP_PUBLIC_ENABLED
-                ? parsed
-                : {
-                    ...parsed,
-                    worldCup: {
-                      ok: false,
-                      status: 200,
-                      lastUpdated: null,
-                      nextUpdate: null,
-                      ingestMessage: null,
-                      noWorldCupOdds: true,
-                      games: [],
-                      props: [],
-                    },
+            let snapshotForApply: CombinedPropsSnapshotResponse = WORLD_CUP_PUBLIC_ENABLED
+              ? parsed
+              : {
+                  ...parsed,
+                  worldCup: {
+                    ok: false,
+                    status: 200,
+                    lastUpdated: null,
+                    nextUpdate: null,
+                    ingestMessage: null,
+                    noWorldCupOdds: true,
+                    games: [],
+                    props: [],
                   },
-              {
+                };
+            let wcHydrated = wcPropsCached;
+            if (WORLD_CUP_PUBLIC_ENABLED && wcHydrated.length === 0) {
+              const wcSession = hydrateWorldCupPropsFromSessionCache();
+              if (wcSession.length > 0) {
+                wcHydrated = wcSession;
+                snapshotForApply = {
+                  ...snapshotForApply,
+                  worldCup: {
+                    ok: true,
+                    status: 200,
+                    lastUpdated: snapshotForApply.worldCup?.lastUpdated ?? null,
+                    nextUpdate: snapshotForApply.worldCup?.nextUpdate ?? null,
+                    ingestMessage: snapshotForApply.worldCup?.ingestMessage ?? null,
+                    noWorldCupOdds: false,
+                    games: snapshotForApply.worldCup?.games ?? [],
+                    props: wcSession,
+                  },
+                };
+              }
+            }
+            applyCombinedSnapshot(snapshotForApply, {
               persistCaches: false,
               selectedGameIds: Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : undefined,
             });
             restoredNbaCache = nbaProps.length > 0;
             restoredAflCache = aflPropsCached.length > 0 || aflGamesCached.length > 0;
-            restoredCombinedSnapshot = true;
+            const partialCombinedCache =
+              WORLD_CUP_PUBLIC_ENABLED &&
+              filterWorldCupListProps(wcHydrated).length === 0 &&
+              (nbaProps.length > 0 || aflPropsCached.length > 0 || aflGamesCached.length > 0);
+            if (partialCombinedCache) {
+              combinedPropsFetchCompleteRef.current = false;
+              restoredCombinedSnapshot = false;
+            } else {
+              restoredCombinedSnapshot = true;
+            }
           }
         }
       } catch {
@@ -2339,6 +2377,12 @@ export default function NBALandingPage() {
         const restoredCombinedCache = restoredCombinedSnapshot || (restoredNbaCache && restoredAflCache);
         combinedPropsFetchCompleteRef.current = restoredCombinedCache;
         setCombinedPropsLoading(!restoredCombinedCache);
+        if (WORLD_CUP_PUBLIC_ENABLED && !restoredCombinedSnapshot) {
+          const wcHydrated = hydrateWorldCupPropsFromSessionCache();
+          if (wcHydrated.length > 0) {
+            setWorldCupCombinedProps(wcHydrated);
+          }
+        }
       }
       // 5) AFL team logos cache for instant logo-only matchup rendering.
       //    Prefer sessionStorage (fresh-this-tab), then fall back to localStorage so a
@@ -3284,7 +3328,8 @@ export default function NBALandingPage() {
           !combinedModeNeedsDataRefresh(
             playerProps,
             aflProps,
-            worldCupCombinedProps
+            worldCupCombinedProps,
+            combinedPartialWcRefetchAttemptedRef.current
           )
         ) {
           return;
@@ -3324,6 +3369,23 @@ export default function NBALandingPage() {
         }
         if (cancelled) return;
         applyCombinedSnapshot(payload);
+        if (
+          WORLD_CUP_PUBLIC_ENABLED &&
+          filterWorldCupListProps(Array.isArray(payload?.worldCup?.props) ? payload.worldCup.props : []).length === 0
+        ) {
+          try {
+            const wcResponse = await fetchSecondaryPropsList('/api/world-cup/dashboard?playerPropsList=1');
+            if (cancelled) return;
+            const wcPayload = await wcResponse.json();
+            const wcResult = aggregateSecondaryListPayload(wcPayload, 'world-cup');
+            if (wcResult.aggregated.length > 0) {
+              setWorldCupCombinedProps(wcResult.aggregated);
+            }
+          } catch {
+            // Combined snapshot may legitimately have no WC odds; WC-only tab still works.
+          }
+        }
+        combinedPartialWcRefetchAttemptedRef.current = true;
       } catch (error) {
         if (cancelled) return;
         console.warn('[Props] Combined payload fetch failed, falling back to direct parallel requests:', error);
@@ -3392,6 +3454,7 @@ export default function NBALandingPage() {
               props: wcResult.aggregated,
             },
           });
+          combinedPartialWcRefetchAttemptedRef.current = true;
         } catch (fallbackError) {
           console.error('[Props] Failed to load combined props:', fallbackError);
           combinedPropsFetchCompleteRef.current = false;
@@ -6145,7 +6208,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           worldCupCombinedPropsRef.current
         );
         setWorldCupCombinedProps(wcMerged);
-        const needsCombinedRefresh = combinedModeNeedsDataRefresh(playerProps, aflProps, wcMerged);
+        const needsCombinedRefresh = combinedModeNeedsDataRefresh(
+          playerProps,
+          aflProps,
+          wcMerged,
+          combinedPartialWcRefetchAttemptedRef.current
+        );
         combinedPropsFetchCompleteRef.current = !needsCombinedRefresh;
         setCombinedPropsLoading(needsCombinedRefresh);
         setAflPropsLoading(false);
@@ -8095,6 +8163,18 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             };
                             const teamAbbr = normalizeTeam(prop.team);
                             const opponentAbbr = normalizeTeam(prop.opponent);
+                            const oddsBookmakerLineCount = (() => {
+                              const lines = prop.bookmakerLines ?? [];
+                              if (!lines.length) return 0;
+                              const filtered =
+                                !isCombinedMode && selectedBookmakers.size > 0
+                                  ? lines.filter(
+                                      (line) => line.bookmaker && selectedBookmakers.has(line.bookmaker)
+                                    )
+                                  : lines;
+                              return filtered.length;
+                            })();
+                            const singleBookmakerOddsCell = oddsBookmakerLineCount === 1;
                             const teamLogoUrl = getEspnLogoUrl(teamAbbr);
                             const opponentLogoUrl = getEspnLogoUrl(opponentAbbr);
                               const navigateToSecondaryDashboard = (lineValue?: number, bookmakerName?: string) => {
@@ -8429,8 +8509,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 )}
                                 
                                 {/* Odds Column - Show bookmakers grouped by line with expand/collapse */}
-                                <td className="py-3 px-4 align-top" style={PROPS_DESKTOP_ODDS_COL_STYLE}>
-                                  <div className="space-y-2 max-w-full">
+                                <td
+                                  className={`py-3 px-4 ${singleBookmakerOddsCell ? 'align-middle' : 'align-top'}`}
+                                  style={PROPS_DESKTOP_ODDS_COL_STYLE}
+                                >
                                     {prop.bookmakerLines && prop.bookmakerLines.length > 0 ? (
                                       (() => {
                                         // Filter bookmakerLines by selected bookmakers (if any are selected)
@@ -8456,8 +8538,12 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           return b[1].length - a[1].length; // More bookmakers first
                                         });
 
+                                        const singleBookmakerRow = filteredLines.length === 1;
+
                                         // Render each unique line value
-                                        return sortedLines.map(([lineValue, lines]) => {
+                                        return (
+                                          <div className={singleBookmakerRow ? 'max-w-full' : 'space-y-2 max-w-full'}>
+                                            {sortedLines.map(([lineValue, lines]) => {
                                           // Use a stable key: player name + stat type + line value
                                           const expandKey = `${prop.playerName}|${prop.statType}|${lineValue}`;
                                           // Show 2 initially, or all if there are 2 or fewer
@@ -8466,7 +8552,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                           const isPopupOpen = openPopup === expandKey;
 
                                           return (
-                                            <div key={lineValue} className="flex flex-wrap items-center gap-1.5 max-w-full">
+                                            <div
+                                              key={lineValue}
+                                              className="flex flex-wrap items-center gap-1.5 max-w-full"
+                                            >
                                               {/* Show visible bookmakers for this line */}
                                               {visibleLines.map((line, lineIdx) => {
                                                 const bookmakerInfo = getBookmakerInfo(line.bookmaker || '');
@@ -8666,7 +8755,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                               )}
                                             </div>
                                           );
-                                        });
+                                        })}
+                                          </div>
+                                        );
                                       })()
                                     ) : (
                                       // Fallback to main bookmaker if no bookmakerLines
@@ -8694,11 +8785,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         );
                                       })()
                                     )}
-                                  </div>
                                 </td>
                                 
                                 {/* IP Column - Implied Odds */}
-                                <td className="py-3 px-4 align-top whitespace-nowrap" style={PROPS_DESKTOP_IP_COL_STYLE}>
+                                <td
+                                  className={`py-3 px-4 whitespace-nowrap ${singleBookmakerOddsCell ? 'align-middle' : 'align-top'}`}
+                                  style={PROPS_DESKTOP_IP_COL_STYLE}
+                                >
                                   <div className="flex items-center">
                                     {/* Bookmakers */}
                                     <div className="flex flex-col gap-1">
