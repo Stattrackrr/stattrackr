@@ -11274,7 +11274,8 @@ export function WorldCupPageContent() {
     if (worldCupData && loadedDashboardKeyRef.current === expectedLoadedKey) {
       const playerPayloadIncomplete =
         propsMode === 'player' &&
-        Boolean(playerIdForRequest) &&
+        typeof playerIdForRequest === 'string' &&
+        /^\d+$/.test(playerIdForRequest) &&
         (worldCupData.playerChartOnly ||
           !hasFullPlayerPropsData(worldCupData, playerIdForRequest));
       if (!playerPayloadIncomplete) {
