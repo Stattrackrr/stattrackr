@@ -966,11 +966,14 @@ function buildWorldCupPlayerDeepLinkQuery(params: {
   matchDate?: string | null;
 }): string {
   const qs = new URLSearchParams();
-  if (params.playerId?.trim()) qs.set('playerId', params.playerId.trim());
+  const numericPlayerId = String(params.playerId || '').trim();
+  if (/^\d+$/.test(numericPlayerId)) qs.set('playerId', numericPlayerId);
   if (params.team?.trim()) qs.set('team', params.team.trim());
-  if (params.teamId?.trim()) qs.set('teamId', params.teamId.trim());
+  const numericTeamId = String(params.teamId || '').trim();
+  if (/^\d+$/.test(numericTeamId)) qs.set('teamId', numericTeamId);
   if (params.opponent?.trim()) qs.set('opponent', params.opponent.trim());
-  if (params.opponentTeamId?.trim()) qs.set('opponentTeamId', params.opponentTeamId.trim());
+  const numericOpponentTeamId = String(params.opponentTeamId || '').trim();
+  if (/^\d+$/.test(numericOpponentTeamId)) qs.set('opponentTeamId', numericOpponentTeamId);
   if (params.stat?.trim()) qs.set('stat', params.stat.trim());
   if (params.line?.trim()) qs.set('line', params.line.trim());
   if (params.bookmaker?.trim()) qs.set('bookmaker', params.bookmaker.trim());
@@ -978,6 +981,12 @@ function buildWorldCupPlayerDeepLinkQuery(params: {
   if (params.matchDate?.trim()) qs.set('matchDate', params.matchDate.trim());
   const serialized = qs.toString();
   return serialized ? `?${serialized}` : '';
+}
+
+function worldCupStableUrlPlayerKey(urlPlayerSlug: string | null, urlPlayerQuery: string | null): string {
+  const slug = urlPlayerSlug?.trim().toLowerCase() ?? '';
+  const query = urlPlayerQuery ? normalizeWorldCupPlayerName(urlPlayerQuery) : '';
+  return [slug, query].filter(Boolean).join('|');
 }
 
 function mapWorldCupApiPlayerRow(
@@ -1163,8 +1172,6 @@ function applyWorldCupPropsHandoffState(
     loadedDashboardKeyRef: MutableRefObject<string | null>;
   }
 ): boolean {
-  setters.setWorldCupData(null);
-  refs.loadedDashboardKeyRef.current = null;
   if (parsed.opponent) setters.setFixtureOpponentName(parsed.opponent);
   if (parsed.stat) {
     setters.setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe));
@@ -1359,6 +1366,88 @@ function mergeWorldCupPlayerStatRows(
     }
   }
   return Array.from(byKey.values());
+}
+
+function worldCupStatRowDateKey(row: Record<string, any>, match: Record<string, any> | undefined): string {
+  const raw = match?.datetime ?? row.match_date ?? row.date ?? row.game_date;
+  if (raw) {
+    const ms = Date.parse(String(raw));
+    if (Number.isFinite(ms)) return new Date(ms).toISOString().slice(0, 10);
+  }
+  return String(row.match_id ?? row.source_match_id ?? '').trim();
+}
+
+function worldCupChartGameIdentityKey(
+  row: Record<string, any>,
+  match: Record<string, any> | undefined,
+  selectedTeamName: string | null,
+  opponentLabel: string,
+  competitionTag: WorldCupCompetitionTag
+): string {
+  const nation = String(selectedTeamName ?? '').trim().toLowerCase();
+  const opponent = String(opponentLabel || row.opponent || row.opponent_name || '').trim().toLowerCase();
+  const dateKey = worldCupStatRowDateKey(row, match);
+  if (!dateKey || !opponent || opponent === 'opponent') return worldCupStatRowMergeKey(row);
+  const compGroup = worldCupCompetitionChartGroup(competitionTag);
+  return `${compGroup}|${dateKey}|${nation}|${opponent}`;
+}
+
+function scoreWorldCupStatRowForDedupe(
+  row: Record<string, any>,
+  match: Record<string, any> | undefined,
+  selectedTeamId: string | null,
+  selectedTeamName: string | null
+): number {
+  let score = worldCupStatRowRichness(row);
+  const source = String(row.source ?? '').trim().toLowerCase();
+  if (source === 'bdl') score += 200;
+  else if (source === 'api-football' || source === 'statsbomb') score += 100;
+  if (match && worldCupStatRowTeamInMatch(row, match, selectedTeamId, selectedTeamName)) score += 150;
+  if (getWorldCupStatNumber(row, 'goals') != null) score += 20;
+  if (getWorldCupStatNumber(row, 'minutes_played') != null) score += 10;
+  return score;
+}
+
+function dedupeWorldCupPlayerStatRowsByGame(
+  rows: Array<Record<string, any>>,
+  matches: Array<Record<string, any>>,
+  playerMatches: Array<Record<string, any>>,
+  selectedTeamId: string | null,
+  selectedTeamName: string | null
+): Array<Record<string, any>> {
+  if (!rows.length) return rows;
+  const countryLookup = buildWorldCupTeamCountryLookup([]);
+  const matchForRow = (row: Record<string, any>) =>
+    resolveWorldCupMatchForStatRow(row, matches, playerMatches, selectedTeamId, selectedTeamName);
+  const byGame = new Map<string, Record<string, any>>();
+  const scoreForRow = (row: Record<string, any>) =>
+    scoreWorldCupStatRowForDedupe(row, matchForRow(row), selectedTeamId, selectedTeamName);
+
+  for (const row of rows) {
+    const match = matchForRow(row);
+    const { opponentLabel } = resolveWorldCupPlayerChartContext(
+      row,
+      match,
+      selectedTeamId,
+      countryLookup,
+      selectedTeamName
+    );
+    if (selectedTeamName && worldCupTeamsMatch(selectedTeamName, opponentLabel)) continue;
+    const competitionTag = deriveWorldCupCompetitionTag(row, match);
+    const identityKey = worldCupChartGameIdentityKey(
+      row,
+      match,
+      selectedTeamName,
+      opponentLabel,
+      competitionTag
+    );
+    if (!identityKey) continue;
+    const existing = byGame.get(identityKey);
+    if (!existing || scoreForRow(row) >= scoreForRow(existing)) {
+      byGame.set(identityKey, row);
+    }
+  }
+  return byGame.size ? Array.from(byGame.values()) : rows;
 }
 
 function mergeWorldCupMatchRows(...groups: Array<Array<Record<string, any>>>): Array<Record<string, any>> {
@@ -2043,7 +2132,7 @@ function resolveWorldCupPlayerChartContext(
 
   if (!validMatch) {
     const opponent = String(row.opponent ?? row.opponent_name ?? '').trim();
-    if (opponent) {
+    if (opponent && !(nation && worldCupTeamsMatch(nation, opponent))) {
       const nameKey = opponent.toLowerCase();
       return {
         isHome: true,
@@ -2066,11 +2155,27 @@ function resolveWorldCupPlayerChartContext(
 
   const teamId = worldCupStatRowTeamId(row, selectedTeamId);
   const { homeId, awayId } = worldCupMatchSideIds(validMatch);
-  const isHome =
-    row.is_home === true ||
-    Boolean(homeId && teamId && homeId === teamId) ||
-    Boolean(nation && worldCupTeamsMatch(nation, worldCupMatchSideNames(validMatch).homeName));
-  const opponentLabel = isHome
+  const { homeName, awayName } = worldCupMatchSideNames(validMatch);
+  const parsedIsHome = parseWorldCupStatRowIsHome(row.is_home);
+  const nationMatchesHome = Boolean(nation && worldCupTeamsMatch(nation, homeName));
+  const nationMatchesAway = Boolean(nation && worldCupTeamsMatch(nation, awayName));
+  let isHome: boolean;
+  if (parsedIsHome === true) {
+    isHome = true;
+  } else if (parsedIsHome === false) {
+    isHome = false;
+  } else if (homeId && teamId && homeId === teamId) {
+    isHome = true;
+  } else if (awayId && teamId && awayId === teamId) {
+    isHome = false;
+  } else if (nationMatchesHome && !nationMatchesAway) {
+    isHome = true;
+  } else if (nationMatchesAway && !nationMatchesHome) {
+    isHome = false;
+  } else {
+    isHome = nationMatchesHome;
+  }
+  let opponentLabel = isHome
     ? String(
         validMatch?.awayLabel ||
           validMatch?.awayTeam?.name ||
@@ -2085,13 +2190,18 @@ function resolveWorldCupPlayerChartContext(
           validMatch?.home_team_name ||
           'Opponent'
       );
+  let opponentTeamId = isHome ? awayId : homeId;
+  if (nation && worldCupTeamsMatch(nation, opponentLabel)) {
+    isHome = !isHome;
+    opponentLabel = isHome ? awayName || 'Opponent' : homeName || 'Opponent';
+    opponentTeamId = isHome ? awayId : homeId;
+  }
   const opponentCountryCode = resolveWorldCupOpponentCountryCode(
     validMatch,
     isHome,
     opponentLabel,
     countryLookup
   );
-  const opponentTeamId = isHome ? awayId : homeId;
   return { isHome, opponentLabel, opponentCountryCode, opponentTeamId };
 }
 
@@ -3594,10 +3704,17 @@ function WorldCupGameByGameChart({
   const baseChartRows = useMemo(() => {
     if (!data || !statKey) return [];
     const countryLookup = buildWorldCupTeamCountryLookup(data.teams ?? []);
-    const sourceRows =
-      mode === 'player'
-        ? getWorldCupPlayerStatRows(data.playerMatchStats ?? [], selectedPlayerId)
-        : (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId);
+    const sourceRows = dedupeWorldCupPlayerStatRowsByGame(
+      mergeWorldCupPlayerStatRows(
+        mode === 'player'
+          ? getWorldCupPlayerStatRows(data.playerMatchStats ?? [], selectedPlayerId)
+          : (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId)
+      ),
+      data.matches ?? [],
+      data.playerMatches ?? [],
+      selectedTeamId,
+      selectedTeamName
+    );
 
     const rows = sourceRows
       .filter((row) => {
@@ -3613,7 +3730,7 @@ function WorldCupGameByGameChart({
         const slug = String(row.tournament_slug ?? '').toLowerCase();
         return slug === 'worldcup' || slug === 'world-cup' || slug === 'fifa-world-cup';
       })
-      .map((row) => {
+      .map((row, index) => {
         const match = resolveWorldCupMatchForStatRow(
           row,
           data.matches ?? [],
@@ -3669,9 +3786,10 @@ function WorldCupGameByGameChart({
           opponentLabel,
           opponentCountryCode,
         });
+        const rowKey = worldCupStatRowMergeKey(row) || `chart-row-${index}`;
         return {
-          key: String(row.match_id ?? row.source_match_id ?? '') || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
-          xKey: String(row.match_id ?? row.source_match_id ?? '') || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
+          key: rowKey,
+          xKey: rowKey,
           tickLabel: getTeamAbbreviationFromLabel(opponentLabel),
           tickDateLabel: getWorldCupTickDateLabel(match?.datetime),
           competitionTag,
@@ -3696,7 +3814,11 @@ function WorldCupGameByGameChart({
           minutes: getWorldCupStatNumber(row, 'minutes_played'),
         };
       })
-      .filter((row) => row.value != null)
+      .filter((row) => {
+        if (row.value == null) return false;
+        if (!selectedTeamName) return true;
+        return !worldCupTeamsMatch(selectedTeamName, row.opponent);
+      })
       .sort((a, b) => a.gameTimestamp - b.gameTimestamp);
 
     return rows;
@@ -4383,12 +4505,18 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
   const rows = useMemo(
     () =>
       filterWorldCupRowsByTimeframe(
-        getWorldCupRowsForMode(data, mode, selectedPlayerId, selectedTeamId),
+        dedupeWorldCupPlayerStatRowsByGame(
+          getWorldCupRowsForMode(data, mode, selectedPlayerId, selectedTeamId),
+          data?.matches ?? [],
+          data?.playerMatches ?? [],
+          selectedTeamId,
+          effectiveTeamName
+        ),
         data,
         chartContext.timeframe,
         opponentTeam
       ),
-    [chartContext.timeframe, data, mode, selectedPlayerId, selectedTeamId, opponentTeam]
+    [chartContext.timeframe, data, mode, selectedPlayerId, selectedTeamId, effectiveTeamName, opponentTeam]
   );
   // Full team rows (not timeframe-limited) used to detect which supporting
   // stats are symmetric across every competition the team played.
@@ -4476,7 +4604,8 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
   const selectedRows = useMemo(() => {
     if (!selectedSupportingStat) return [];
     const countryLookup = buildWorldCupTeamCountryLookup(data?.teams ?? []);
-    return rows.map((row) => {
+    const uniqueRows = rows;
+    return uniqueRows.map((row, index) => {
       const match = resolveWorldCupMatchForStatRow(
         row,
         data?.matches ?? [],
@@ -4500,9 +4629,13 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
         opponentLabel,
         opponentCountryCode,
       });
+      const rowKey = worldCupStatRowMergeKey(row) || `supporting-row-${index}`;
+      if (effectiveTeamName && worldCupTeamsMatch(effectiveTeamName, opponentLabel)) {
+        return null;
+      }
       return {
-        key: String(row.match_id),
-        xKey: String(row.match_id),
+        key: rowKey,
+        xKey: rowKey,
         tickLabel: getTeamAbbreviationFromLabel(opponentLabel),
         tickDateLabel: getWorldCupTickDateLabel(match?.datetime),
         opponent: opponentLabel,
@@ -4513,7 +4646,7 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
         gameDate: typeof match?.datetime === 'string' ? match.datetime : '',
         matchLabel: match ? `${match.homeLabel || 'TBD'} vs ${match.awayLabel || 'TBD'}` : `Match ${String(row.match_id)}`,
       };
-    });
+    }).filter((row): row is NonNullable<typeof row> => row != null);
   }, [data?.teams, rows, selectedSupportingStat, selectedTeamId, effectiveTeamName, resolveSupportingStatValue]);
 
   const supportingAnimationTrigger = useMemo(
@@ -7480,8 +7613,8 @@ function WorldCupRecentFormColumn({
       {games.length ? (
         <>
           <div className="flex flex-col gap-0.5">
-            {games.map((game) => (
-              <WorldCupRecentGameRow key={game.matchId} isDark={isDark} game={game} />
+            {games.map((game, index) => (
+              <WorldCupRecentGameRow key={`${game.matchId}-${index}`} isDark={isDark} game={game} />
             ))}
           </div>
 
@@ -9964,13 +10097,11 @@ function WorldCupInsightsPanel({
 }
 
 function useIsLgDesktop(): boolean {
-  const [isLgDesktop, setIsLgDesktop] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(min-width: 1024px)').matches;
-  });
-  useEffect(() => {
+  const [isLgDesktop, setIsLgDesktop] = useState(false);
+  useLayoutEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)');
     const sync = () => setIsLgDesktop(mq.matches);
+    sync();
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
   }, []);
@@ -10651,7 +10782,7 @@ export function WorldCupPageContent() {
 
   const urlPlayerResolveKey = [
     urlPlayerSlug?.toLowerCase() ?? '',
-    urlPlayerId ?? '',
+    urlPlayerId && /^\d+$/.test(urlPlayerId) ? urlPlayerId : '',
     urlPlayerQuery ? normalizeWorldCupPlayerName(urlPlayerQuery) : '',
   ].join('|');
   const hasUrlPlayerTarget = Boolean(urlPlayerSlug || urlPlayerQuery || urlPlayerId);
@@ -10723,8 +10854,9 @@ export function WorldCupPageContent() {
   useEffect(() => {
     if (!hydratedFromStorage) return;
     if (navigatingToPropsRef.current || navigatingToProps) return;
-    const key = [urlPlayerQuery ?? '', urlPlayerId ?? '', urlPlayerSlug ?? ''].join('|');
-    if (prevUrlPlayerDeepLinkKeyRef.current && prevUrlPlayerDeepLinkKeyRef.current !== key) {
+    const stablePlayerKey = worldCupStableUrlPlayerKey(urlPlayerSlug, urlPlayerQuery);
+    if (!stablePlayerKey) return;
+    if (prevUrlPlayerDeepLinkKeyRef.current && prevUrlPlayerDeepLinkKeyRef.current !== stablePlayerKey) {
       setSelectedPlayer(null);
       setSelectedTeam(null);
       setWorldCupData(null);
@@ -10737,8 +10869,8 @@ export function WorldCupPageContent() {
       urlPlayerFetchInFlightRef.current = false;
       propsHandoffPositionRef.current = null;
     }
-    prevUrlPlayerDeepLinkKeyRef.current = key;
-  }, [hydratedFromStorage, navigatingToProps, urlPlayerQuery, urlPlayerId, urlPlayerSlug]);
+    prevUrlPlayerDeepLinkKeyRef.current = stablePlayerKey;
+  }, [hydratedFromStorage, navigatingToProps, urlPlayerQuery, urlPlayerSlug]);
 
   useEffect(() => {
     if (!hydratedFromStorage) return;
@@ -11177,9 +11309,19 @@ export function WorldCupPageContent() {
       if (!slug) return;
       const target = `/world-cup/player/${encodeURIComponent(slug)}`;
       const qs = buildWorldCupPlayerDeepLinkQuery({
-        playerId: urlPlayerId || selectedPlayer.id,
+        playerId:
+          urlPlayerId && /^\d+$/.test(urlPlayerId)
+            ? urlPlayerId
+            : selectedPlayer.id && /^\d+$/.test(selectedPlayer.id)
+              ? selectedPlayer.id
+              : null,
         team: urlTeamQuery || selectedTeam?.name || null,
-        teamId: urlTeamIdQuery || selectedTeam?.id || null,
+        teamId:
+          urlTeamIdQuery && /^\d+$/.test(urlTeamIdQuery)
+            ? urlTeamIdQuery
+            : selectedTeam?.id && /^\d+$/.test(selectedTeam.id)
+              ? selectedTeam.id
+              : null,
         opponent: fixtureOpponentName || urlOpponentQuery,
         opponentTeamId: urlOpponentTeamIdQuery || opponentTeam?.id || null,
         stat: chartContext.statId,
@@ -12204,7 +12346,7 @@ export function WorldCupPageContent() {
                 </div>
 
                 {isLgDesktop ? (
-                <div className={`w-full min-w-0 flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 flex`}>
+                <div className={`w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="px-3 sm:px-4 py-1" />
                   ) : (
