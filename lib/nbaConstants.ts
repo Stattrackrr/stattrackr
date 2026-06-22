@@ -100,11 +100,17 @@ export const WORLD_CUP_LOGO_PUBLIC_FILENAME = 'world-cup-logo.png';
 export const WORLD_CUP_LOGO_SERVE_PATH = '/api/world-cup/dashboard?logo=1';
 export const WORLD_CUP_LOGO_PATH = `/images/${WORLD_CUP_LOGO_PUBLIC_FILENAME}`;
 /** Portrait trophy asset — square slots keep the trophy readable. */
-export const WORLD_CUP_LOGO_TOGGLE_CLASS = 'h-14 w-14 lg:h-16 lg:w-16 object-contain';
+export const WORLD_CUP_LOGO_TOGGLE_CLASS = 'w-10 h-10 lg:w-12 lg:h-12 object-contain';
 export const WORLD_CUP_LOGO_MARK_CLASS = 'h-10 w-10 object-contain';
 export const WORLD_CUP_LOGO_MARK_COMPACT_CLASS = 'h-8 w-8 object-contain';
 
 export type PropsSportMode = 'nba' | 'afl' | 'world-cup' | 'combined';
+
+/** sessionStorage: props sport tab to restore when leaving World Cup dashboard. */
+export const WC_PROPS_RETURN_SPORT_KEY = 'wc_props_return_sport';
+/** sessionStorage: paint cached WC rows instantly on back-nav; refresh list in background. */
+export const WC_BACK_TO_PROPS_SKIP_FETCH_KEY = 'wc_back_to_props_skip_fetch';
+export const WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY = 'wc_back_to_props_clear_search';
 
 export function isSecondaryPropsSport(mode: PropsSportMode): mode is 'afl' | 'world-cup' {
   return mode === 'afl' || mode === 'world-cup';

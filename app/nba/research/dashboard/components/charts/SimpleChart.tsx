@@ -52,6 +52,8 @@ interface SimpleChartProps {
   averageOverlayLowerExtra?: boolean;
   /** When true, lift the Avg + Hit overlay further above the chart (used by World Cup dashboard). */
   averageOverlayHigher?: boolean;
+  /** When true, sit the Avg + Hit overlay inside the chart top edge (World Cup mobile/desktop). */
+  averageOverlayInsideChart?: boolean;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
   /** Optional desktop left inset for plotted area + overlays. */
@@ -118,6 +120,7 @@ const SimpleChart = memo(function SimpleChart({
   averageOverlayLower = false,
   averageOverlayLowerExtra = false,
   averageOverlayHigher = false,
+  averageOverlayInsideChart = false,
   secondaryRankAxisMax,
   desktopChartLeftInset = 32,
   desktopChartRightInset = 14,
@@ -884,7 +887,9 @@ const SimpleChart = memo(function SimpleChart({
       {averageDisplay && !hideAverageOverlay && (
         <div
           className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${
-            averageOverlayHigher
+            averageOverlayInsideChart
+              ? 'top-3 z-[30] sm:-top-5 sm:z-[30]'
+              : averageOverlayHigher
               ? '-top-9 sm:-top-10'
               : averageOverlayLowerOnMobile
               ? (

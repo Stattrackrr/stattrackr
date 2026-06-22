@@ -1,0 +1,64 @@
+{
+  "playerName": "Lionel Messi",
+  "teamId": "37",
+  "supplementStatRows": 1982,
+  "resolvedIds": [
+    "238"
+  ],
+  "primaryId": 238,
+  "supplementWcGames": [
+    {
+      "matchId": "279",
+      "date": "2018-06-16T13:00:00.000Z",
+      "season": 2018,
+      "playerId": "238",
+      "minutes": 90,
+      "passes": 70,
+      "sot": 3
+    },
+    {
+      "matchId": "1000",
+      "date": "2022-11-22T10:00:00.000Z",
+      "season": 2022,
+      "playerId": "238",
+      "minutes": 90,
+      "passes": 40,
+      "sot": 3
+    },
+    {
+      "matchId": "1019",
+      "date": "2022-11-26T19:00:00.000Z",
+      "season": 2022,
+      "playerId": "238",
+      "minutes": 90,
+      "passes": 41,
+      "sot": 1
+    },
+    {
+      "matchId": "767",
+      "date": "2022-11-30T19:00:00.000Z",
+      "season": 2022,
+      "playerId": "238",
+      "minutes": 90,
+      "passes": 70,
+      "sot": 4
+    },
+    {
+      "matchId": "996",
+      "date": "2022-12-13T19:00:00.000Z",
+      "season": 2022,
+      "playerId": "238",
+      "minutes": 90,
+      "passes": 40,
+      "sot": 2
+    }
+  ],
+  "bdlFinalsCount": 5,
+  "propsWcGameLogsCount": 17,
+  "intlStatRows": 53,
+  "wcSeasons": [
+    2018,
+    2022,
+    2026
+  ]
+}

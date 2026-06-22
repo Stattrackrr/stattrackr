@@ -1,0 +1,320 @@
+warning: in the working copy of 'app/nba/research/dashboard/components/charts/SimpleChart.tsx', CRLF will be replaced by LF the next time Git touches it
+[1mdiff --git a/app/api/world-cup/dashboard/route.ts b/app/api/world-cup/dashboard/route.ts[m
+[1mindex 35fb339d..921235f7 100644[m
+[1m--- a/app/api/world-cup/dashboard/route.ts[m
+[1m+++ b/app/api/world-cup/dashboard/route.ts[m
+[36m@@ -1601,7 +1601,88 @@[m [masync function mergePlayerCrossSourceWorldCupHistory(opts: {[m
+   return stats;[m
+ }[m
+ [m
+[31m-/** Copy `source` / `tournament_slug` from match metadata onto stat rows for chart tags + logos. */[m
+[32m+[m[32mfunction parseDashboardStatRowIsHome(value: unknown): boolean | null {[m
+[32m+[m[32m  if (value === true || value === 1) return true;[m
+[32m+[m[32m  if (value === false || value === 0) return false;[m
+[32m+[m[32m  if (typeof value === 'string') {[m
+[32m+[m[32m    const normalized = value.trim().toLowerCase();[m
+[32m+[m[32m    if (normalized === 'true' || normalized === '1') return true;[m
+[32m+[m[32m    if (normalized === 'false' || normalized === '0') return false;[m
+[32m+[m[32m  }[m
+[32m+[m[32m  return null;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction dashboardMatchSideIds(match: Record<string, any>): { homeId: string; awayId: string } {[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    homeId: String([m
+[32m+[m[32m      match?.homeTeam?.id ??[m
+[32m+[m[32m        match?.home_team?.id ??[m
+[32m+[m[32m        match?.home_team_source_id ??[m
+[32m+[m[32m        match?.raw?.home_team?.id ??[m
+[32m+[m[32m        ''[m
+[32m+[m[32m    ).trim(),[m
+[32m+[m[32m    awayId: String([m
+[32m+[m[32m      match?.awayTeam?.id ??[m
+[32m+[m[32m        match?.away_team?.id ??[m
+[32m+[m[32m        match?.away_team_source_id ??[m
+[32m+[m[32m        match?.raw?.away_team?.id ??[m
+[32m+[m[32m        ''[m
+[32m+[m[32m    ).trim(),[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction dashboardMatchSideNames(match: Record<string, any>): { homeName: string; awayName: string } {[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    homeName: String([m
+[32m+[m[32m      match?.homeLabel ?? match?.homeTeam?.name ?? match?.home_team?.name ?? match?.home_team_name ?? ''[m
+[32m+[m[32m    ).trim(),[m
+[32m+[m[32m    awayName: String([m
+[32m+[m[32m      match?.awayLabel ?? match?.awayTeam?.name ?? match?.away_team?.name ?? match?.away_team_name ?? ''[m
+[32m+[m[32m    ).trim(),[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction inferDashboardStatRowIsHome(row: Record<string, any>, match: Record<string, any>): boolean | null {[m
+[32m+[m[32m  const teamId = String(row.team_id ?? row.source_team_id ?? '').trim();[m
+[32m+[m[32m  const { homeId, awayId } = dashboardMatchSideIds(match);[m
+[32m+[m[32m  if (teamId && homeId && teamId === homeId) return true;[m
+[32m+[m[32m  if (teamId && awayId && teamId === awayId) return false;[m
+[32m+[m[32m  return parseDashboardStatRowIsHome(row.is_home);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction opponentLabelFromDashboardMatch(row: Record<string, any>, match: Record<string, any>): string {[m
+[32m+[m[32m  const { homeName, awayName } = dashboardMatchSideNames(match);[m
+[32m+[m[32m  const isHome = inferDashboardStatRowIsHome(row, match);[m
+[32m+[m[32m  if (isHome === true) return awayName;[m
+[32m+[m[32m  if (isHome === false) return homeName;[m
+[32m+[m[32m  return '';[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/** Normalize mixed intl/BDL match rows for chart lookup (preserve source + ids). */[m
+[32m+[m[32mfunction normalizeDashboardChartMatches(matches: Array<Record<string, any>>): Array<Record<string, any>> {[m
+[32m+[m[32m  return matches.map((match) => {[m
+[32m+[m[32m    if (match?.homeLabel != null && (match?.homeTeam || match?.home_team)) {[m
+[32m+[m[32m      const id = match.id ?? match.source_match_id ?? match.match_id;[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        ...match,[m
+[32m+[m[32m        ...(id != null ? { id, source_match_id: match.source_match_id ?? id, match_id: match.match_id ?? id } : {}),[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[32m    const [summarized] = summarizeMatches([match as BdlMatch]);[m
+[32m+[m[32m    if (!summarized) return match;[m
+[32m+[m[32m    const id = match.id ?? match.source_match_id ?? match.match_id ?? summarized.id;[m
+[32m+[m[32m    return {[m
+[32m+[m[32m      ...summarized,[m
+[32m+[m[32m      id,[m
+[32m+[m[32m      source_match_id: match.source_match_id ?? id,[m
+[32m+[m[32m      match_id: match.match_id ?? id,[m
+[32m+[m[32m      source: match.source ?? summarized.source,[m
+[32m+[m[32m      tournament_slug: match.tournament_slug ?? summarized.tournament_slug,[m
+[32m+[m[32m    };[m
+[32m+[m[32m  });[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/** Copy match metadata onto stat rows for chart tags, logos, and opponent labels. */[m
+ function attachStatRowMatchContext([m
+   stats: Array<Record<string, any>>,[m
+   matches: Array<Record<string, any>>[m
+[36m@@ -1623,11 +1704,17 @@[m [mfunction attachStatRowMatchContext([m
+     if (!match) return row;[m
+     const tournamentSlug = row.tournament_slug ?? match.tournament_slug ?? match.tournamentSlug;[m
+     const source = row.source ?? match.source;[m
+[31m-    if (tournamentSlug == null && source == null) return row;[m
+[32m+[m[32m    const opponentName = opponentLabelFromDashboardMatch(row, match);[m
+     return {[m
+       ...row,[m
+       ...(tournamentSlug != null ? { tournament_slug: tournamentSlug } : {}),[m
+       ...(source != null ? { source } : {}),[m
+[32m+[m[32m      ...(opponentName[m
+[32m+[m[32m        ? {[m
+[32m+[m[32m            opponent: row.opponent ?? row.opponent_name ?? opponentName,[m
+[32m+[m[32m            opponent_name: row.opponent_name ?? row.opponent ?? opponentName,[m
+[32m+[m[32m          }[m
+[32m+[m[32m        : {}),[m
+     };[m
+   });[m
+ }[m
+[36m@@ -3501,10 +3588,10 @@[m [masync function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {[m
+       }));[m
+     }[m
+ [m
+[31m-    const summarizedMatches = summarizeMatches(bundle.matches as BdlMatch[]);[m
+[32m+[m[32m    const chartMatches = normalizeDashboardChartMatches(bundle.matches as Array<Record<string, any>>);[m
+     const playerMatchStatsWithContext = attachStatRowMatchContext([m
+       playerMatchStats,[m
+[31m-      summarizedMatches[m
+[32m+[m[32m      chartMatches[m
+     );[m
+ [m
+     return NextResponse.json([m
+[36m@@ -3512,8 +3599,8 @@[m [masync function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {[m
+         playerChartOnly: true,[m
+         season: parseSeason(params.get('season')),[m
+         teams,[m
+[31m-        matches: summarizedMatches,[m
+[31m-        playerMatches: summarizedMatches,[m
+[32m+[m[32m        matches: chartMatches,[m
+[32m+[m[32m        playerMatches: chartMatches,[m
+         playerMatchStats: playerMatchStatsWithContext,[m
+         selectedTeam,[m
+         featureMatch: featureMatch[m
+[1mdiff --git a/app/nba/research/dashboard/components/charts/SimpleChart.tsx b/app/nba/research/dashboard/components/charts/SimpleChart.tsx[m
+[1mindex 1d2eac98..519c3d8d 100644[m
+[1m--- a/app/nba/research/dashboard/components/charts/SimpleChart.tsx[m
+[1m+++ b/app/nba/research/dashboard/components/charts/SimpleChart.tsx[m
+[36m@@ -52,6 +52,8 @@[m [minterface SimpleChartProps {[m
+   averageOverlayLowerExtra?: boolean;[m
+   /** When true, lift the Avg + Hit overlay further above the chart (used by World Cup dashboard). */[m
+   averageOverlayHigher?: boolean;[m
+[32m+[m[32m  /** When true, sit the Avg + Hit overlay inside the chart top edge (World Cup mobile/desktop). */[m
+[32m+[m[32m  averageOverlayInsideChart?: boolean;[m
+   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */[m
+   secondaryRankAxisMax?: number;[m
+   /** Optional desktop left inset for plotted area + overlays. */[m
+[36m@@ -118,6 +120,7 @@[m [mconst SimpleChart = memo(function SimpleChart({[m
+   averageOverlayLower = false,[m
+   averageOverlayLowerExtra = false,[m
+   averageOverlayHigher = false,[m
+[32m+[m[32m  averageOverlayInsideChart = false,[m
+   secondaryRankAxisMax,[m
+   desktopChartLeftInset = 32,[m
+   desktopChartRightInset = 14,[m
+[36m@@ -884,7 +887,9 @@[m [mconst SimpleChart = memo(function SimpleChart({[m
+       {averageDisplay && !hideAverageOverlay && ([m
+         <div[m
+           className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${[m
+[31m-            averageOverlayHigher[m
+[32m+[m[32m            averageOverlayInsideChart[m
+[32m+[m[32m              ? 'top-3 z-[30] sm:-top-5 sm:z-[30]'[m
+[32m+[m[32m              : averageOverlayHigher[m
+               ? '-top-9 sm:-top-10'[m
+               : averageOverlayLowerOnMobile[m
+               ? ([m
+[1mdiff --git a/app/props/page.tsx b/app/props/page.tsx[m
+[1mindex cf0b237f..f7400ede 100644[m
+[1m--- a/app/props/page.tsx[m
+[1m+++ b/app/props/page.tsx[m
+[36m@@ -39,6 +39,9 @@[m [mimport {[m
+   NBA_PUBLIC_ENABLED,[m
+   propsPathForSport,[m
+   resolvePropsSportParam,[m
+[32m+[m[32m  WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY,[m
+[32m+[m[32m  WC_BACK_TO_PROPS_SKIP_FETCH_KEY,[m
+[32m+[m[32m  WC_PROPS_RETURN_SPORT_KEY,[m
+   WORLD_CUP_LOGO_PATH,[m
+   WORLD_CUP_LOGO_MARK_CLASS,[m
+   WORLD_CUP_LOGO_MARK_COMPACT_CLASS,[m
+[36m@@ -142,7 +145,8 @@[m [mfunction navigateToWorldCupDashboardFromProp([m
+     | 'wcPosition'[m
+   >,[m
+   router: { push: (href: string) => void },[m
+[31m-  lineValue?: number[m
+[32m+[m[32m  lineValue?: number,[m
+[32m+[m[32m  returnSport: PropsSportMode = 'world-cup'[m
+ ): void {[m
+   const team = String(prop.team || '').trim();[m
+   const opponent = String(prop.opponent || '').trim();[m
+[36m@@ -159,6 +163,7 @@[m [mfunction navigateToWorldCupDashboardFromProp([m
+   const selectedBook = String(prop.bookmaker || '').trim();[m
+ [m
+   try {[m
+[32m+[m[32m    sessionStorage.setItem(WC_PROPS_RETURN_SPORT_KEY, returnSport);[m
+     sessionStorage.setItem([m
+       'wc_player_from_props',[m
+       JSON.stringify({[m
+[36m@@ -582,7 +587,15 @@[m [mfunction TipoffCountdown({[m
+   );[m
+ }[m
+ [m
+[31m-function SportMark({ sport, isDark, compact = false }: { sport: 'nba' | 'afl' | 'world-cup'; isDark: boolean; compact?: boolean }) {[m
+[32m+[m[32mfunction SportMark({[m
+[32m+[m[32m  sport,[m
+[32m+[m[32m  isDark,[m
+[32m+[m[32m  compact = false,[m
+[32m+[m[32m}: {[m
+[32m+[m[32m  sport: 'nba' | 'afl' | 'world-cup';[m
+[32m+[m[32m  isDark: boolean;[m
+[32m+[m[32m  compact?: boolean;[m
+[32m+[m[32m}) {[m
+   const [imgError, setImgError] = useState(false);[m
+   const isAfl = sport === 'afl';[m
+   const isWorldCup = sport === 'world-cup';[m
+[36m@@ -969,6 +982,24 @@[m [mconst AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';[m
+ const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v9';[m
+ const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;[m
+ [m
+[32m+[m[32mfunction worldCupBackNavSkipFetchPending(): boolean {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    return sessionStorage.getItem(WC_BACK_TO_PROPS_SKIP_FETCH_KEY) === '1';[m
+[32m+[m[32m  } catch {[m
+[32m+[m[32m    return false;[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction consumeWorldCupBackNavSkipFetch(): boolean {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const pending = sessionStorage.getItem(WC_BACK_TO_PROPS_SKIP_FETCH_KEY) === '1';[m
+[32m+[m[32m    if (pending) sessionStorage.removeItem(WC_BACK_TO_PROPS_SKIP_FETCH_KEY);[m
+[32m+[m[32m    return pending;[m
+[32m+[m[32m  } catch {[m
+[32m+[m[32m    return false;[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+ function wcPropsMeetsMinOdds(overOdds?: string, underOdds?: string, yesOdds?: string): boolean {[m
+   const raw = String(yesOdds ?? overOdds ?? '').trim();[m
+   if (!raw || raw === 'N/A') return false;[m
+[36m@@ -2082,8 +2113,8 @@[m [mexport default function NBALandingPage() {[m
+           setSearchQuery('');[m
+           setDebouncedSearchQuery('');[m
+         }[m
+[31m-        if (sessionStorage.getItem('wc_back_to_props_clear_search') === '1') {[m
+[31m-          sessionStorage.removeItem('wc_back_to_props_clear_search');[m
+[32m+[m[32m        if (sessionStorage.getItem(WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY) === '1') {[m
+[32m+[m[32m          sessionStorage.removeItem(WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY);[m
+           setSearchQuery('');[m
+           setDebouncedSearchQuery('');[m
+         }[m
+[36m@@ -2224,6 +2255,12 @@[m [mexport default function NBALandingPage() {[m
+             } else {[m
+               restoredCombinedSnapshot = true;[m
+             }[m
+[32m+[m[32m            if (worldCupBackNavSkipFetchPending()) {[m
+[32m+[m[32m              consumeWorldCupBackNavSkipFetch();[m
+[32m+[m[32m              combinedPropsFetchCompleteRef.current = true;[m
+[32m+[m[32m              setCombinedPropsLoading(false);[m
+[32m+[m[32m              setAflPropsLoading(false);[m
+[32m+[m[32m            }[m
+           }[m
+         }[m
+       } catch {[m
+[36m@@ -2349,7 +2386,9 @@[m [mexport default function NBALandingPage() {[m
+                 const listSport = sportParam === 'world-cup' ? 'world-cup' : 'afl';[m
+                 secondaryListSportRef.current = listSport;[m
+                 secondaryRestoreCanSkipFetch =[m
+[31m-                  listSport !== 'world-cup' || !worldCupPropsMissingHistoricalStats(cachedProps);[m
+[32m+[m[32m                  listSport !== 'world-cup' ||[m
+[32m+[m[32m                  !worldCupPropsMissingHistoricalStats(cachedProps) ||[m
+[32m+[m[32m                  worldCupBackNavSkipFetchPending();[m
+                 if (secondaryRestoreCanSkipFetch) {[m
+                   secondarySkipFetchSportRef.current = listSport;[m
+                   secondaryWarmHydrateRef.current = true;[m
+[36m@@ -2850,11 +2889,18 @@[m [mexport default function NBALandingPage() {[m
+           ? filterWorldCupListProps(aflProps).length > 0[m
+           : aflProps.some((p) => !isWorldCupSoccerPropStatType(p.statType));[m
+       if (!hasListRows) return false;[m
+[31m-      if (listSport === 'world-cup' && worldCupPropsMissingHistoricalStats(aflProps)) return false;[m
+[32m+[m[32m      if (listSport === 'world-cup' && worldCupPropsMissingHistoricalStats(aflProps)) {[m
+[32m+[m[32m        return worldCupBackNavSkipFetchPending();[m
+[32m+[m[32m      }[m
+       return true;[m
+     };[m
+ [m
+[31m-    if (secondaryWarmHydrateRef.current && secondarySkipFetchSportRef.current === listSport) {[m
+[32m+[m[32m    const backNavSilentRefresh =[m
+[32m+[m[32m      listSport === 'world-cup' && consumeWorldCupBackNavSkipFetch() && hasVisibleSecondaryRows;[m
+[32m+[m[32m    if (backNavSilentRefresh) {[m
+[32m+[m[32m      setSecondaryPropsFetchComplete(true);[m
+[32m+[m[32m      setAflPropsLoading(false);[m
+[32m+[m[32m    } else if (secondaryWarmHydrateRef.current && secondarySkipFetchSportRef.current === listSport) {[m
+       secondaryWarmHydrateRef.current = false;[m
+       if (secondaryWarmHydrateCanSkipFetch()) {[m
+         return () => {[m
+[36m@@ -2878,7 +2924,7 @@[m [mexport default function NBALandingPage() {[m
+       setAflProps(props);[m
+     };[m
+ [m
+[31m-    if (!hasVisibleSecondaryRows) {[m
+[32m+[m[32m    if (!backNavSilentRefresh && !hasVisibleSecondaryRows) {[m
+       setSecondaryPropsFetchComplete(false);[m
+       setAflPropsLoading(true);[m
+     }[m
+[36m@@ -3322,6 +3368,18 @@[m [mexport default function NBALandingPage() {[m
+       const forceRefresh = urlParams.get('refresh') === '1';[m
+       const debugStats = urlParams.get('debugStats') === '1';[m
+ [m
+[32m+[m[32m      if ([m
+[32m+[m[32m        !forceRefresh &&[m
+[32m+[m[32m        !debugStats &&[m
+[32m+[m[32m        combinedPropsFetchCompleteRef.current &&[m
+[32m+[m[32m        combinedModeHasVisibleRows(playerProps, aflProps, worldCupCombinedProps)[m
+[32m+[m[32m      ) {[m
+[32m+[m[32m        setCombinedPropsLoa

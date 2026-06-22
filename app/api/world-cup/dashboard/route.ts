@@ -1601,7 +1601,88 @@ async function mergePlayerCrossSourceWorldCupHistory(opts: {
   return stats;
 }
 
-/** Copy `source` / `tournament_slug` from match metadata onto stat rows for chart tags + logos. */
+function parseDashboardStatRowIsHome(value: unknown): boolean | null {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0) return false;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0') return false;
+  }
+  return null;
+}
+
+function dashboardMatchSideIds(match: Record<string, any>): { homeId: string; awayId: string } {
+  return {
+    homeId: String(
+      match?.homeTeam?.id ??
+        match?.home_team?.id ??
+        match?.home_team_source_id ??
+        match?.raw?.home_team?.id ??
+        ''
+    ).trim(),
+    awayId: String(
+      match?.awayTeam?.id ??
+        match?.away_team?.id ??
+        match?.away_team_source_id ??
+        match?.raw?.away_team?.id ??
+        ''
+    ).trim(),
+  };
+}
+
+function dashboardMatchSideNames(match: Record<string, any>): { homeName: string; awayName: string } {
+  return {
+    homeName: String(
+      match?.homeLabel ?? match?.homeTeam?.name ?? match?.home_team?.name ?? match?.home_team_name ?? ''
+    ).trim(),
+    awayName: String(
+      match?.awayLabel ?? match?.awayTeam?.name ?? match?.away_team?.name ?? match?.away_team_name ?? ''
+    ).trim(),
+  };
+}
+
+function inferDashboardStatRowIsHome(row: Record<string, any>, match: Record<string, any>): boolean | null {
+  const teamId = String(row.team_id ?? row.source_team_id ?? '').trim();
+  const { homeId, awayId } = dashboardMatchSideIds(match);
+  if (teamId && homeId && teamId === homeId) return true;
+  if (teamId && awayId && teamId === awayId) return false;
+  return parseDashboardStatRowIsHome(row.is_home);
+}
+
+function opponentLabelFromDashboardMatch(row: Record<string, any>, match: Record<string, any>): string {
+  const { homeName, awayName } = dashboardMatchSideNames(match);
+  const isHome = inferDashboardStatRowIsHome(row, match);
+  if (isHome === true) return awayName;
+  if (isHome === false) return homeName;
+  return '';
+}
+
+/** Normalize mixed intl/BDL match rows for chart lookup (preserve source + ids). */
+function normalizeDashboardChartMatches(matches: Array<Record<string, any>>): Array<Record<string, any>> {
+  return matches.map((match) => {
+    if (match?.homeLabel != null && (match?.homeTeam || match?.home_team)) {
+      const id = match.id ?? match.source_match_id ?? match.match_id;
+      return {
+        ...match,
+        ...(id != null ? { id, source_match_id: match.source_match_id ?? id, match_id: match.match_id ?? id } : {}),
+      };
+    }
+    const [summarized] = summarizeMatches([match as BdlMatch]);
+    if (!summarized) return match;
+    const id = match.id ?? match.source_match_id ?? match.match_id ?? summarized.id;
+    return {
+      ...summarized,
+      id,
+      source_match_id: match.source_match_id ?? id,
+      match_id: match.match_id ?? id,
+      source: match.source ?? summarized.source,
+      tournament_slug: match.tournament_slug ?? summarized.tournament_slug,
+    };
+  });
+}
+
+/** Copy match metadata onto stat rows for chart tags, logos, and opponent labels. */
 function attachStatRowMatchContext(
   stats: Array<Record<string, any>>,
   matches: Array<Record<string, any>>
@@ -1623,11 +1704,17 @@ function attachStatRowMatchContext(
     if (!match) return row;
     const tournamentSlug = row.tournament_slug ?? match.tournament_slug ?? match.tournamentSlug;
     const source = row.source ?? match.source;
-    if (tournamentSlug == null && source == null) return row;
+    const opponentName = opponentLabelFromDashboardMatch(row, match);
     return {
       ...row,
       ...(tournamentSlug != null ? { tournament_slug: tournamentSlug } : {}),
       ...(source != null ? { source } : {}),
+      ...(opponentName
+        ? {
+            opponent: row.opponent ?? row.opponent_name ?? opponentName,
+            opponent_name: row.opponent_name ?? row.opponent ?? opponentName,
+          }
+        : {}),
     };
   });
 }
@@ -3501,10 +3588,10 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
       }));
     }
 
-    const summarizedMatches = summarizeMatches(bundle.matches as BdlMatch[]);
+    const chartMatches = normalizeDashboardChartMatches(bundle.matches as Array<Record<string, any>>);
     const playerMatchStatsWithContext = attachStatRowMatchContext(
       playerMatchStats,
-      summarizedMatches
+      chartMatches
     );
 
     return NextResponse.json(
@@ -3512,8 +3599,8 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
         playerChartOnly: true,
         season: parseSeason(params.get('season')),
         teams,
-        matches: summarizedMatches,
-        playerMatches: summarizedMatches,
+        matches: chartMatches,
+        playerMatches: chartMatches,
         playerMatchStats: playerMatchStatsWithContext,
         selectedTeam,
         featureMatch: featureMatch
