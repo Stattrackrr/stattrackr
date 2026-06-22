@@ -1618,7 +1618,8 @@ function attachStatRowMatchContext(
     }
   }
   return stats.map((row) => {
-    const match = byId.get(String(row.match_id ?? ''));
+    const matchId = String(row.match_id ?? row.source_match_id ?? '').trim();
+    const match = matchId ? byId.get(matchId) : undefined;
     if (!match) return row;
     const tournamentSlug = row.tournament_slug ?? match.tournament_slug ?? match.tournamentSlug;
     const source = row.source ?? match.source;

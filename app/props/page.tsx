@@ -1063,6 +1063,12 @@ function combinedModeNeedsDataRefresh(
   return false;
 }
 
+function hydrateWorldCupPropsFromCacheRows(cachedPropsRaw: PlayerProp[]): PlayerProp[] {
+  const paintable = filterWorldCupPaintableProps(cachedPropsRaw);
+  if (paintable.length > 0) return paintable;
+  return pickWorldCupPropsFromCombinedSource(cachedPropsRaw);
+}
+
 function hydrateWorldCupPropsFromSessionCache(): PlayerProp[] {
   try {
     const wcRaw = sessionStorage.getItem(WC_PROPS_CACHE_KEY);
@@ -1074,9 +1080,7 @@ function hydrateWorldCupPropsFromSessionCache(): PlayerProp[] {
     const wcAge = wcParsed?.timestamp != null ? Date.now() - Number(wcParsed.timestamp) : Infinity;
     const wcProps = Array.isArray(wcParsed?.props) ? wcParsed.props : [];
     if (wcAge >= AFL_PROPS_CACHE_TTL_MS || wcProps.length === 0) return [];
-    const paintable = filterWorldCupPaintableProps(wcProps);
-    if (paintable.length > 0) return paintable;
-    return pickWorldCupPropsFromCombinedSource(wcProps);
+    return hydrateWorldCupPropsFromCacheRows(wcProps);
   } catch {
     return [];
   }
@@ -2052,14 +2056,8 @@ export default function NBALandingPage() {
       } else if (resolvedSport === 'world-cup' && WORLD_CUP_PUBLIC_ENABLED) {
         setPropsSport('world-cup');
         try {
-          const raw = sessionStorage.getItem(WC_PROPS_CACHE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw) as { timestamp?: number };
-            const age = parsed?.timestamp != null ? Date.now() - Number(parsed.timestamp) : Infinity;
-            if (age >= AFL_PROPS_CACHE_TTL_MS) setAflPropsLoading(true);
-          } else {
-            setAflPropsLoading(true);
-          }
+          const hydrated = hydrateWorldCupPropsFromSessionCache();
+          if (hydrated.length === 0) setAflPropsLoading(true);
         } catch {
           setAflPropsLoading(true);
         }
@@ -2270,6 +2268,7 @@ export default function NBALandingPage() {
       sportParam === 'combined' ||
       sportParam === 'all'
     ) {
+      let secondaryRestoreCanSkipFetch = false;
       try {
         if (!restoredCombinedSnapshot) {
           const secondaryCacheKey =
@@ -2289,7 +2288,7 @@ export default function NBALandingPage() {
             const cachedPropsRaw = Array.isArray(parsed?.props) ? parsed.props : [];
             const cachedProps =
               sportParam === 'world-cup'
-                ? filterWorldCupPaintableProps(cachedPropsRaw)
+                ? hydrateWorldCupPropsFromCacheRows(cachedPropsRaw)
                 : cachedPropsRaw;
             const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
             const hasPaintableSecondaryRows =
@@ -2308,14 +2307,34 @@ export default function NBALandingPage() {
               selectedAflGamesRef.current = selected;
               setSelectedAflGames(selected);
               restoredAflCache = true;
+              if (sportParam === 'afl' || sportParam === 'world-cup') {
+                const listSport = sportParam === 'world-cup' ? 'world-cup' : 'afl';
+                secondaryListSportRef.current = listSport;
+                secondaryRestoreCanSkipFetch =
+                  listSport !== 'world-cup' || !worldCupPropsMissingHistoricalStats(cachedProps);
+                if (secondaryRestoreCanSkipFetch) {
+                  secondarySkipFetchSportRef.current = listSport;
+                  secondaryWarmHydrateRef.current = true;
+                }
+              }
             }
           }
         }
       } catch {
         // ignore cache parse errors
       }
-      setSecondaryPropsFetchComplete(restoredAflCache);
-      setAflPropsLoading(!restoredAflCache);
+      if (sportParam === 'afl' || sportParam === 'world-cup') {
+        if (restoredAflCache) {
+          setSecondaryPropsFetchComplete(secondaryRestoreCanSkipFetch);
+          setAflPropsLoading(!secondaryRestoreCanSkipFetch);
+        } else {
+          setSecondaryPropsFetchComplete(false);
+          setAflPropsLoading(true);
+        }
+      } else {
+        setSecondaryPropsFetchComplete(restoredAflCache);
+        setAflPropsLoading(!restoredAflCache);
+      }
       if (requiresCombinedFirstPaint) {
         const restoredCombinedCache = restoredCombinedSnapshot || (restoredNbaCache && restoredAflCache);
         combinedPropsFetchCompleteRef.current = restoredCombinedCache;
@@ -6376,11 +6395,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           const cachedPropsRaw = Array.isArray(parsed?.props) ? parsed.props : [];
           const cachedProps =
             nextMode === 'world-cup'
-              ? (() => {
-                  const paintable = filterWorldCupPaintableProps(cachedPropsRaw);
-                  if (paintable.length > 0) return paintable;
-                  return pickWorldCupPropsFromCombinedSource(cachedPropsRaw);
-                })()
+              ? hydrateWorldCupPropsFromCacheRows(cachedPropsRaw)
               : cachedPropsRaw;
           const cachedGames = Array.isArray(parsed?.games) ? parsed.games : [];
           const hasPaintableSecondaryRows =
@@ -8464,7 +8479,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                         : 'bg-white border-gray-300 hover:bg-gray-50'
                                                     }`}
                                                     onClick={(e) => {
-                                                      if (rowSport !== 'afl') return;
+                                                      if (rowSport !== 'afl' && rowSport !== 'world-cup') return;
                                                       e.preventDefault();
                                                       e.stopPropagation();
                                                       if (navigatingRef.current) return;
@@ -8593,7 +8608,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                                                     : 'bg-gray-800 border-gray-500'
                                                                 }`}
                                                                 onClick={(e) => {
-                                                                  if (rowSport !== 'afl') return;
+                                                                  if (rowSport !== 'afl' && rowSport !== 'world-cup') return;
                                                                   e.preventDefault();
                                                                   e.stopPropagation();
                                                                   if (navigatingRef.current) return;

@@ -917,8 +917,18 @@ export async function loadInternationalStatsByPlayerName(
     const match = matchById.get(String(row.match_id ?? ''));
     if (!match || typeof match !== 'object') return row;
     const matchRecord = match as Record<string, unknown>;
+    const teamId = String((row as Record<string, unknown>).team_id ?? '').trim();
+    const homeId = String((matchRecord.home_team as { id?: string } | undefined)?.id ?? '').trim();
+    const awayId = String((matchRecord.away_team as { id?: string } | undefined)?.id ?? '').trim();
+    const isHome =
+      (row as Record<string, unknown>).is_home === true ||
+      Boolean(teamId && homeId && teamId === homeId);
+    const opponentName = isHome
+      ? String(matchRecord.awayLabel ?? (matchRecord.away_team as { name?: string } | undefined)?.name ?? '')
+      : String(matchRecord.homeLabel ?? (matchRecord.home_team as { name?: string } | undefined)?.name ?? '');
     return {
       ...row,
+      ...(opponentName ? { opponent: opponentName, opponent_name: opponentName } : {}),
       tournament_slug:
         (row as Record<string, unknown>).tournament_slug ?? matchRecord.tournament_slug ?? null,
       source: (row as Record<string, unknown>).source ?? matchRecord.source ?? null,

@@ -39,7 +39,10 @@ import {
   getOddsMarketForStat,
   getPrimaryOddsLineForStat,
   getWorldCupOddsLinesForStat,
+  hasWorldCupOddsForTargetLine,
   parseWorldCupOddsLine,
+  resolveWorldCupOddsLineForTarget,
+  worldCupOddsLinesMatch,
   type WorldCupPlayerOddsBook,
 } from '@/lib/impliedProbability';
 const WC_URL_SPECIAL_LETTERS = new RegExp(
@@ -894,6 +897,32 @@ function chartContextFromStatParam(stat: string, timeframe: WorldCupChartTimefra
   };
 }
 
+function resolveWorldCupPlayerOddsMatchup(input: {
+  urlTeamQuery: string | null;
+  urlOpponentQuery: string | null;
+  urlMatchDateQuery: string | null;
+  activeTeam: WorldCupTeamOption | null;
+  opponentTeam: WorldCupTeamOption | null;
+  selectedPlayer: WorldCupPlayerOption | null;
+  fixtureOpponentName: string | null;
+  featureMatchDatetime?: string | null;
+}): { homeName: string; awayName: string; matchDate: string } {
+  const homeName =
+    input.urlTeamQuery ||
+    input.selectedPlayer?.teamName ||
+    input.activeTeam?.name ||
+    '';
+  const awayName =
+    input.urlOpponentQuery ||
+    input.fixtureOpponentName ||
+    input.opponentTeam?.name ||
+    '';
+  const matchDate =
+    input.urlMatchDateQuery ||
+    (input.featureMatchDatetime ? String(input.featureMatchDatetime) : '');
+  return { homeName, awayName, matchDate };
+}
+
 function buildWorldCupPlayerDeepLinkQuery(params: {
   playerId?: string | null;
   team?: string | null;
@@ -1688,6 +1717,10 @@ function worldCupMatchSideNames(match: Record<string, any>): { homeName: string;
   };
 }
 
+function worldCupStatRowTeamId(row: Record<string, any>, selectedTeamId: string | null): string {
+  return String(row.team_id ?? row.source_team_id ?? selectedTeamId ?? '').trim();
+}
+
 function worldCupStatRowTeamInMatch(
   row: Record<string, any>,
   match: Record<string, any> | undefined,
@@ -1695,14 +1728,40 @@ function worldCupStatRowTeamInMatch(
   selectedTeamName: string | null
 ): boolean {
   if (!match) return false;
-  const teamId = String(row.team_id ?? selectedTeamId ?? '').trim();
+  const teamId = worldCupStatRowTeamId(row, selectedTeamId);
   const { homeId, awayId } = worldCupMatchSideIds(match);
   if (teamId && homeId && teamId === homeId) return true;
   if (teamId && awayId && teamId === awayId) return true;
+  if (row.is_home === true && homeId) return true;
+  if (row.is_home === false && awayId) return true;
   const nation = String(selectedTeamName ?? '').trim();
   if (!nation) return false;
   const { homeName, awayName } = worldCupMatchSideNames(match);
   return worldCupTeamsMatch(nation, homeName) || worldCupTeamsMatch(nation, awayName);
+}
+
+/** Resolve opponent from match sides using the stat row's team id / is_home — works even when selectedTeam is stale. */
+function resolveWorldCupOpponentFromMatchSides(
+  row: Record<string, any>,
+  match: Record<string, any>
+): { isHome: boolean; opponentLabel: string; opponentTeamId: string } | null {
+  const teamId = worldCupStatRowTeamId(row, null);
+  const { homeId, awayId } = worldCupMatchSideIds(match);
+  const { homeName, awayName } = worldCupMatchSideNames(match);
+
+  if (teamId && homeId && teamId === homeId) {
+    return { isHome: true, opponentLabel: awayName || 'Opponent', opponentTeamId: awayId };
+  }
+  if (teamId && awayId && teamId === awayId) {
+    return { isHome: false, opponentLabel: homeName || 'Opponent', opponentTeamId: homeId };
+  }
+  if (row.is_home === true) {
+    return { isHome: true, opponentLabel: awayName || 'Opponent', opponentTeamId: awayId };
+  }
+  if (row.is_home === false) {
+    return { isHome: false, opponentLabel: homeName || 'Opponent', opponentTeamId: homeId };
+  }
+  return null;
 }
 
 function resolveWorldCupMatchForStatRow(
@@ -1740,7 +1799,14 @@ function resolveWorldCupMatchForStatRow(
   // attach a BDL stat row to a fixture the selected nation did not play in.
   if (rowSource === 'bdl' || !rowSource) return undefined;
   if (rowSource) {
-    return candidates.find((match) => String(match.source ?? '').trim().toLowerCase() === rowSource);
+    const sourceCandidates = candidates.filter(
+      (match) => String(match.source ?? '').trim().toLowerCase() === rowSource
+    );
+    for (const match of sourceCandidates) {
+      if (worldCupStatRowTeamInMatch(row, match, selectedTeamId, selectedTeamName)) return match;
+      if (resolveWorldCupOpponentFromMatchSides(row, match)) return match;
+    }
+    return undefined;
   }
   return candidates[0];
 }
@@ -1781,6 +1847,21 @@ function resolveWorldCupPlayerChartContext(
   const validMatch =
     match && worldCupStatRowTeamInMatch(row, match, selectedTeamId, nation) ? match : undefined;
 
+  if (!validMatch && match) {
+    const fromSides = resolveWorldCupOpponentFromMatchSides(row, match);
+    if (fromSides) {
+      return {
+        ...fromSides,
+        opponentCountryCode: resolveWorldCupOpponentCountryCode(
+          match,
+          fromSides.isHome,
+          fromSides.opponentLabel,
+          countryLookup
+        ),
+      };
+    }
+  }
+
   if (!validMatch) {
     const opponent = String(row.opponent ?? row.opponent_name ?? '').trim();
     if (opponent) {
@@ -1804,7 +1885,7 @@ function resolveWorldCupPlayerChartContext(
     };
   }
 
-  const teamId = String(row.team_id ?? selectedTeamId ?? '');
+  const teamId = worldCupStatRowTeamId(row, selectedTeamId);
   const { homeId, awayId } = worldCupMatchSideIds(validMatch);
   const isHome =
     row.is_home === true ||
@@ -2114,12 +2195,44 @@ function deriveWorldCupCompetitionTag(
  */
 function resolveWorldCupClubLogoUrl(
   opponentTeamId: string | number | null | undefined,
-  source: unknown
+  source: unknown,
+  opts?: { isClubCompetition?: boolean }
 ): string | null {
   const id = String(opponentTeamId ?? '').trim();
   if (!/^\d+$/.test(id)) return null;
-  if (String(source ?? '').toLowerCase() !== 'api-football') return null;
+  const src = String(source ?? '').toLowerCase();
+  if (src !== 'api-football' && !opts?.isClubCompetition) return null;
   return `https://media.api-sports.io/football/teams/${id}.png`;
+}
+
+function resolveWorldCupOpponentLogoUrl(args: {
+  row: Record<string, any>;
+  match: Record<string, any> | undefined;
+  competitionTag: WorldCupCompetitionTag;
+  opponentTeamId: string;
+  opponentLabel: string;
+  opponentCountryCode: string | null;
+}): string | null {
+  const { row, match, competitionTag, opponentTeamId, opponentLabel, opponentCountryCode } = args;
+  const isClub = competitionTag === 'Club';
+
+  if (isClub) {
+    const source = match?.source ?? row?.source;
+    const sides = match ? resolveWorldCupOpponentFromMatchSides(row, match) : null;
+    const opponentSide = sides
+      ? sides.isHome
+        ? match?.awayTeam ?? match?.away_team
+        : match?.homeTeam ?? match?.home_team
+      : null;
+    const embeddedLogo = opponentSide?.logo ?? opponentSide?.logo_url;
+    if (embeddedLogo) return String(embeddedLogo);
+
+    const teamId = opponentTeamId || sides?.opponentTeamId || '';
+    const clubLogo = resolveWorldCupClubLogoUrl(teamId, source, { isClubCompetition: true });
+    if (clubLogo) return clubLogo;
+  }
+
+  return resolveBestWorldCupFlagUrl(opponentLabel, opponentCountryCode);
 }
 
 /** Indicator stats used to decide whether a competition has full team-level data. */
@@ -2236,13 +2349,16 @@ function getWorldCupPlayerStatRows(
 function WorldCupXAxisTick({ x, y, payload, data, isDark, hideTickDetails }: any) {
   const [logoFailed, setLogoFailed] = useState(false);
   const dataPoint = data?.find((row: any) => row.xKey === payload.value);
-  if (!dataPoint) return null;
-  const label = dataPoint.tickLabel || payload.value;
-  const opponentCountryCode = dataPoint.opponentCountryCode as string | null | undefined;
-  const opponentName = dataPoint.opponent as string | null | undefined;
+  const label = dataPoint?.tickLabel || payload.value;
+  const opponentCountryCode = dataPoint?.opponentCountryCode as string | null | undefined;
+  const opponentName = dataPoint?.opponent as string | null | undefined;
   const rawLogoUrl =
-    (dataPoint.opponentLogoUrl as string | null | undefined) ||
+    (dataPoint?.opponentLogoUrl as string | null | undefined) ||
     resolveBestWorldCupFlagUrl(opponentName, opponentCountryCode);
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [rawLogoUrl]);
+  if (!dataPoint) return null;
   const logoUrl = !logoFailed && rawLogoUrl ? rawLogoUrl : null;
   const dateFill = isDark ? '#94a3b8' : '#64748b';
   const compFill = isDark ? '#a78bfa' : '#7c3aed';
@@ -2891,6 +3007,20 @@ const WC_PLAYER_ODDS_STATS = new Set<WorldCupChartStatId>([
   'yellow_cards',
 ]);
 
+function worldCupBookOffersOddsLine(
+  statId: WorldCupChartStatId,
+  book: WorldCupPlayerOddsBook,
+  lineValue: number | null | undefined
+): boolean {
+  if (!WC_PLAYER_ODDS_STATS.has(statId)) return true;
+  if (lineValue == null || !Number.isFinite(lineValue)) return true;
+  if (statId === 'goals' || statId === 'yellow_cards') return true;
+  const lines = getAvailableWorldCupOddsLines(statId, [book]);
+  if (!lines.length) return false;
+  const resolved = resolveWorldCupOddsLineForTarget(statId, lines, lineValue);
+  return resolved != null && lines.some((line) => worldCupOddsLinesMatch(line, resolved));
+}
+
 function wcFmtOdds(americanStr: string | undefined, format: OddsFormat): string {
   if (!americanStr || americanStr === 'N/A') return 'N/A';
   const am = Number.parseFloat(String(americanStr).replace(/[^0-9.+-]/g, ''));
@@ -2980,20 +3110,12 @@ function WorldCupLineSelector({
   const ref = useRef<HTMLDivElement>(null);
   const dropdownItems = useMemo(() => buildWorldCupOddsDropdownItems(statId, books), [statId, books]);
   const selectedBook = books[selectedBookIndex];
-  const selectedBookLines = selectedBook ? getAvailableWorldCupOddsLines(statId, [selectedBook]) : [];
-  const isYesNoStat = statId === 'goals' || statId === 'yellow_cards';
-  const selectedBookHasCurrentLine =
-    currentLineValue == null ||
-    !Number.isFinite(currentLineValue) ||
-    selectedBookLines.some((line) => Math.abs(line - currentLineValue) < 0.01);
-  const selectedBookLineMismatch =
+  const hasOddsForLine =
     currentLineValue != null &&
     Number.isFinite(currentLineValue) &&
-    !isYesNoStat &&
-    selectedBookLines.length > 0 &&
-    !selectedBookHasCurrentLine;
+    hasWorldCupOddsForTargetLine(statId, books, currentLineValue);
   const displayMarket =
-    selectedBook && selectedBookHasCurrentLine && !selectedBookLineMismatch
+    hasOddsForLine && selectedBook
       ? getOddsMarketForStat(statId, selectedBook, currentLineValue)
       : null;
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
@@ -3003,19 +3125,23 @@ function WorldCupLineSelector({
   const displayYes = displayMarket && 'yes' in displayMarket ? displayMarket.yes : undefined;
   const displayNo = displayMarket && 'no' in displayMarket ? displayMarket.no : undefined;
   const hasDisplayableOdds =
+    hasOddsForLine &&
     books.length > 0 &&
     Boolean(selectedBook) &&
     displayMarket != null &&
     (isYesNo
       ? Boolean(displayYes && displayYes !== 'N/A')
       : Boolean(displayOver && displayOver !== 'N/A'));
+
+  const noOddsForCurrentLine =
+    currentLineValue != null &&
+    Number.isFinite(currentLineValue) &&
+    books.length > 0 &&
+    !loading &&
+    !hasOddsForLine;
+
   const showSkeleton =
-    loading ||
-    disabled ||
-    !WC_PLAYER_ODDS_STATS.has(statId) ||
-    books.length === 0 ||
-    !hasDisplayableOdds ||
-    selectedBookLineMismatch;
+    (loading || books.length === 0 || !hasDisplayableOdds || noOddsForCurrentLine) && !disabled;
 
   useEffect(() => {
     const onDocMouseDown = (event: MouseEvent) => {
@@ -3025,12 +3151,14 @@ function WorldCupLineSelector({
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, []);
 
+  if (!WC_PLAYER_ODDS_STATS.has(statId)) return null;
+
   return (
     <div className="relative flex-shrink-0 w-[100px] sm:w-[110px] md:w-[120px]" ref={ref}>
       <button
         type="button"
-        onClick={() => !disabled && !loading && setIsOpen((open) => !open)}
-        disabled={disabled || loading}
+        onClick={() => !disabled && setIsOpen((open) => !open)}
+        disabled={disabled}
         className="w-full px-1.5 sm:px-2 py-1 sm:py-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between transition-colors h-[32px] sm:h-[36px] overflow-hidden disabled:opacity-60"
       >
         <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0 overflow-hidden">
@@ -3086,7 +3214,9 @@ function WorldCupLineSelector({
               </div>
             </>
           ) : (
-            <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Odds</span>
+            <div className="flex flex-col items-start gap-0.5 min-w-0">
+              <span className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300 font-medium">Odds</span>
+            </div>
           )}
         </div>
         <svg className={`w-4 h-4 flex-shrink-0 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3327,10 +3457,14 @@ function WorldCupGameByGameChart({
         const competitionGroup = worldCupCompetitionChartGroup(competitionTag);
         const competitionDetailKey = deriveWorldCupCompetitionDetailKey(row, match);
         const competitionDetailMeta = worldCupCompetitionDetailMeta(competitionDetailKey);
-        const opponentLogoUrl =
-          (competitionTag === 'Club'
-            ? resolveWorldCupClubLogoUrl(opponentTeamId, match?.source)
-            : null) ?? resolveBestWorldCupFlagUrl(opponentLabel, opponentCountryCode);
+        const opponentLogoUrl = resolveWorldCupOpponentLogoUrl({
+          row,
+          match,
+          competitionTag,
+          opponentTeamId,
+          opponentLabel,
+          opponentCountryCode,
+        });
         return {
           key: String(row.match_id ?? row.source_match_id ?? '') || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
           xKey: String(row.match_id ?? row.source_match_id ?? '') || `${row.player_id ?? row.team_id}-${row.team_id ?? 'row'}`,
@@ -4151,10 +4285,14 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
         selectedTeamName
       );
       const competitionTag = deriveWorldCupCompetitionTag(row, match);
-      const opponentLogoUrl =
-        (competitionTag === 'Club'
-          ? resolveWorldCupClubLogoUrl(opponentTeamId, match?.source)
-          : null) ?? resolveBestWorldCupFlagUrl(opponentLabel, opponentCountryCode);
+      const opponentLogoUrl = resolveWorldCupOpponentLogoUrl({
+        row,
+        match,
+        competitionTag,
+        opponentTeamId,
+        opponentLabel,
+        opponentCountryCode,
+      });
       return {
         key: String(row.match_id),
         xKey: String(row.match_id),
@@ -9650,11 +9788,15 @@ export function WorldCupPageContent() {
     setChartContext((prev) => {
       if (worldCupChartContextEqual(prev, next)) return prev;
       if (prev.statId !== next.statId) {
-        hasIncomingWcBookOrLineRef.current = false;
+        const urlStat = searchParams.get('stat')?.trim();
+        const urlStatId = urlStat ? normalizeWorldCupStatFromUrl(urlStat) : null;
+        if (urlStatId !== next.statId) {
+          hasIncomingWcBookOrLineRef.current = false;
+        }
       }
       return next;
     });
-  }, []);
+  }, [searchParams]);
   const supportingStatsDataFingerprint = useMemo(
     () => worldCupSupportingDataFingerprint(worldCupData),
     [worldCupData]
@@ -9687,6 +9829,7 @@ export function WorldCupPageContent() {
   const urlPlayerFetchInFlightRef = useRef(false);
   const lastWcAutoLineContextRef = useRef<string | null>(null);
   const ignoreNextWcTransientLineRef = useRef(false);
+  const preferredWcBookAppliedRef = useRef(false);
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({
     sidebarOpen,
   });
@@ -9988,19 +10131,32 @@ export function WorldCupPageContent() {
     const primary = available[0] ?? getPrimaryOddsLineForStat(chartContext.statId, [book]);
     return primary ?? 0.5;
   }, [propsMode, wcCurrentLineValue, wcPlayerOddsBooks, selectedWcBookIndex, chartContext.statId]);
+  const wcOddsResolvedLineValue = useMemo(() => {
+    if (propsMode !== 'player' || !WC_PLAYER_ODDS_STATS.has(chartContext.statId)) return null;
+    if (wcCurrentLineValue == null || !Number.isFinite(wcCurrentLineValue)) return null;
+    const available = getAvailableWorldCupOddsLines(chartContext.statId, wcPlayerOddsBooks);
+    return resolveWorldCupOddsLineForTarget(chartContext.statId, available, wcCurrentLineValue);
+  }, [propsMode, chartContext.statId, wcCurrentLineValue, wcPlayerOddsBooks]);
   const dashboardImpliedOdds = useMemo(() => {
     if (propsMode !== 'player' || !wcPlayerOddsBooks.length) return null;
-    const line =
-      wcCurrentLineValue != null && Number.isFinite(wcCurrentLineValue)
-        ? wcCurrentLineValue
-        : wcExternalLineValue ?? 0.5;
+    if (wcCurrentLineValue == null || !Number.isFinite(wcCurrentLineValue)) return null;
+    if (!hasWorldCupOddsForTargetLine(chartContext.statId, wcPlayerOddsBooks, wcCurrentLineValue)) {
+      return null;
+    }
+    const line = wcOddsResolvedLineValue ?? wcCurrentLineValue;
     return calculateWorldCupImpliedOdds(
       chartContext.statId,
       line,
       wcPlayerOddsBooks,
       calculateImpliedProbabilities
     );
-  }, [propsMode, wcPlayerOddsBooks, chartContext.statId, wcExternalLineValue, wcCurrentLineValue]);
+  }, [
+    propsMode,
+    wcPlayerOddsBooks,
+    chartContext.statId,
+    wcCurrentLineValue,
+    wcOddsResolvedLineValue,
+  ]);
   const fixtureLogoStyle = isDark
     ? { filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 2px rgba(0,0,0,0.65))' }
     : { filter: 'drop-shadow(0 0 1px rgba(15,23,42,0.45)) drop-shadow(0 1px 1px rgba(0,0,0,0.2))' };
@@ -10011,11 +10167,18 @@ export function WorldCupPageContent() {
   const hasMatchup = hasSelection && !showInsightsSkeleton && Boolean(opponentTeam && activeTeam);
 
   useEffect(() => {
-    const homeName = urlTeamQuery || activeTeam?.name || '';
-    const awayName = urlOpponentQuery || opponentTeam?.name || '';
-    const matchDate =
-      urlMatchDateQuery ||
-      (worldCupData?.featureMatch?.datetime ? String(worldCupData.featureMatch.datetime) : '');
+    const { homeName, awayName, matchDate } = resolveWorldCupPlayerOddsMatchup({
+      urlTeamQuery,
+      urlOpponentQuery,
+      urlMatchDateQuery,
+      activeTeam,
+      opponentTeam,
+      selectedPlayer,
+      fixtureOpponentName,
+      featureMatchDatetime: worldCupData?.featureMatch?.datetime
+        ? String(worldCupData.featureMatch.datetime)
+        : null,
+    });
 
     if (propsMode !== 'player' || !selectedPlayer?.name || !homeName || !awayName) {
       setWcPlayerOddsBooks([]);
@@ -10065,17 +10228,20 @@ export function WorldCupPageContent() {
     propsMode,
     selectedPlayer?.id,
     selectedPlayer?.name,
+    selectedPlayer?.teamName,
     urlTeamQuery,
     urlOpponentQuery,
     urlMatchDateQuery,
     activeTeam?.name,
     opponentTeam?.name,
+    fixtureOpponentName,
     worldCupData?.featureMatch?.datetime,
   ]);
 
   useEffect(() => {
     if (!wcPlayerOddsBooks.length) {
       setSelectedWcBookIndex(0);
+      preferredWcBookAppliedRef.current = false;
       if (!hasIncomingWcBookOrLineRef.current) {
         setWcCurrentLineValue(null);
       }
@@ -10086,12 +10252,26 @@ export function WorldCupPageContent() {
   useEffect(() => {
     const preferred = preferredWcBookmakerRef.current;
     if (!preferred || !wcPlayerOddsBooks.length) return;
-    const idx = wcPlayerOddsBooks.findIndex((book) => {
+    if (preferredWcBookAppliedRef.current) return;
+
+    const statId = chartContext.statId;
+    const line = wcCurrentLineValue;
+    const preferredLower = preferred.trim().toLowerCase();
+
+    const preferredWithLineIdx = wcPlayerOddsBooks.findIndex((book) => {
       const label = String(book.name || '').trim().toLowerCase();
-      return label && label === preferred.trim().toLowerCase();
+      return label === preferredLower && worldCupBookOffersOddsLine(statId, book, line);
     });
-    if (idx >= 0 && idx !== selectedWcBookIndex) setSelectedWcBookIndex(idx);
-  }, [wcPlayerOddsBooks, selectedWcBookIndex]);
+    const preferredIdx =
+      preferredWithLineIdx >= 0
+        ? preferredWithLineIdx
+        : wcPlayerOddsBooks.findIndex((book) => String(book.name || '').trim().toLowerCase() === preferredLower);
+
+    if (preferredIdx >= 0) {
+      preferredWcBookAppliedRef.current = true;
+      setSelectedWcBookIndex(preferredIdx);
+    }
+  }, [wcPlayerOddsBooks, chartContext.statId, wcCurrentLineValue]);
 
   // When stat changes: pick a book with data and set line from that book. On refetch,
   // preserve a manual line that differs from the book line (AFL dashboard behavior).
@@ -10157,7 +10337,8 @@ export function WorldCupPageContent() {
     const value = wcCurrentLineValue;
     for (let idx = 0; idx < wcPlayerOddsBooks.length; idx++) {
       const lines = getAvailableWorldCupOddsLines(chartContext.statId, [wcPlayerOddsBooks[idx]]);
-      if (lines.some((line) => Math.abs(line - value) < tol)) {
+      const resolved = resolveWorldCupOddsLineForTarget(chartContext.statId, lines, value);
+      if (resolved != null && lines.some((line) => worldCupOddsLinesMatch(line, resolved))) {
         if (idx !== selectedWcBookIndex) setSelectedWcBookIndex(idx);
         return;
       }
@@ -10204,6 +10385,7 @@ export function WorldCupPageContent() {
     }
     if (lastAppliedDeepLinkKeyRef.current === urlDeepLinkKey) return;
     lastAppliedDeepLinkKeyRef.current = urlDeepLinkKey;
+    preferredWcBookAppliedRef.current = false;
     if (urlOpponentQuery) setFixtureOpponentName(urlOpponentQuery);
     if (urlStatQuery) {
       setChartContext((prev) => chartContextFromStatParam(urlStatQuery, prev.timeframe));
