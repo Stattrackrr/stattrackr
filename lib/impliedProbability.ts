@@ -135,6 +135,96 @@ export function getAvailableWorldCupOddsLines(statId: string, books: WorldCupPla
   return [...lines].sort((a, b) => a - b);
 }
 
+const WC_ODDS_LINE_TOL = 0.01;
+
+export function worldCupOddsLinesMatch(a: number | null | undefined, b: number | null | undefined): boolean {
+  return a != null && b != null && Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < WC_ODDS_LINE_TOL;
+}
+
+/** Pick the closest available O/U line to a target (never jumps to an unrelated minimum). */
+export function pickNearestWorldCupOddsLine(
+  lines: number[],
+  targetLine: number | null | undefined
+): number | null {
+  if (!lines.length) return null;
+  if (targetLine == null || !Number.isFinite(targetLine)) return lines[0] ?? null;
+  const exact = lines.find((line) => worldCupOddsLinesMatch(line, targetLine));
+  if (exact != null) return exact;
+  let best = lines[0]!;
+  let bestDist = Math.abs(best - targetLine);
+  for (const line of lines) {
+    const dist = Math.abs(line - targetLine);
+    if (dist < bestDist) {
+      best = line;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
+/**
+ * Map a chart/props line to the book line that carries odds.
+ * Whole numbers (2, 3, …) map to O/U equivalents (1.5, 2.5, …) when no exact line exists.
+ */
+export function resolveWorldCupOddsLineForTarget(
+  statId: string,
+  availableLines: number[],
+  targetLine: number | null | undefined
+): number | null {
+  if (!availableLines.length) return null;
+  if (targetLine == null || !Number.isFinite(targetLine)) {
+    return availableLines[0] ?? null;
+  }
+
+  const exact = availableLines.find((line) => worldCupOddsLinesMatch(line, targetLine));
+  if (exact != null) return exact;
+
+  const isYesNo = statId === 'goals' || statId === 'yellow_cards';
+  if (isYesNo) {
+    if (worldCupOddsLinesMatch(targetLine, 0.5)) {
+      return availableLines.find((line) => worldCupOddsLinesMatch(line, 0.5)) ?? null;
+    }
+    return null;
+  }
+
+  if (targetLine <= 0) return null;
+
+  // Integer targets like 2 or 3 (no .5) → O/U line N-0.5 (2→1.5, 3→2.5).
+  if (Number.isInteger(targetLine) && targetLine >= 1) {
+    const ouEquivalent = targetLine - 0.5;
+    const ouMatch = availableLines.find((line) => worldCupOddsLinesMatch(line, ouEquivalent));
+    if (ouMatch != null) return ouMatch;
+  }
+
+  return null;
+}
+
+function worldCupOddsMarketIsDisplayable(
+  market: WorldCupPlayerOddsMarket | { yes?: string; no?: string } | null
+): boolean {
+  if (!market) return false;
+  if ('yes' in market) return Boolean(market.yes && market.yes !== 'N/A');
+  return Boolean(market.over && market.over !== 'N/A');
+}
+
+/** True when at least one book has displayable odds for the target line (exact or integer O/U map). */
+export function hasWorldCupOddsForTargetLine(
+  statId: string,
+  books: WorldCupPlayerOddsBook[],
+  targetLine: number | null | undefined
+): boolean {
+  if (!books.length) return false;
+  if (targetLine == null || !Number.isFinite(targetLine)) return false;
+
+  const available = getAvailableWorldCupOddsLines(statId, books);
+  const resolved = resolveWorldCupOddsLineForTarget(statId, available, targetLine);
+  if (resolved == null) return false;
+
+  return books.some((book) =>
+    worldCupOddsMarketIsDisplayable(getOddsMarketForStat(statId, book, targetLine))
+  );
+}
+
 export function parseWorldCupOddsLine(value: string | undefined): number | null {
   const n = Number.parseFloat(String(value ?? '').replace(/[^0-9.-]/g, ''));
   return Number.isFinite(n) ? n : null;
@@ -153,6 +243,10 @@ export function getOddsMarketForStat(
   lineValue?: number | null
 ): WorldCupPlayerOddsMarket | { yes?: string; no?: string } | null {
   const lines = getWorldCupOddsLinesForStat(statId, book);
+  const lineNumbers = lines
+    .map((market) => parseWorldCupOddsLine(market.line))
+    .filter((line): line is number => line != null);
+
   if (!lines.length) {
     if (statId === 'goals' && book.AnytimeGoalScorer?.yes && book.AnytimeGoalScorer.yes !== 'N/A') {
       return book.AnytimeGoalScorer;
@@ -163,16 +257,21 @@ export function getOddsMarketForStat(
     return null;
   }
 
-  if (lineValue != null && Number.isFinite(lineValue)) {
+  const resolvedLine =
+    lineValue != null && Number.isFinite(lineValue)
+      ? resolveWorldCupOddsLineForTarget(statId, lineNumbers, lineValue)
+      : null;
+
+  if (resolvedLine != null) {
     const matched = lines.find((market) => {
       const line = parseWorldCupOddsLine(market.line);
-      return line != null && Math.abs(line - lineValue) < 0.01;
+      return line != null && worldCupOddsLinesMatch(line, resolvedLine);
     });
     if (matched) {
-      if (statId === 'goals' && Math.abs(lineValue - 0.5) < 0.01 && book.AnytimeGoalScorer?.yes) {
+      if (statId === 'goals' && worldCupOddsLinesMatch(resolvedLine, 0.5) && book.AnytimeGoalScorer?.yes) {
         return book.AnytimeGoalScorer;
       }
-      if (statId === 'yellow_cards' && Math.abs(lineValue - 0.5) < 0.01 && book.ToBeBooked?.yes) {
+      if (statId === 'yellow_cards' && worldCupOddsLinesMatch(resolvedLine, 0.5) && book.ToBeBooked?.yes) {
         return book.ToBeBooked;
       }
       return matched;
@@ -180,11 +279,20 @@ export function getOddsMarketForStat(
   }
 
   if (statId === 'goals' && book.AnytimeGoalScorer?.yes && book.AnytimeGoalScorer.yes !== 'N/A') {
-    return book.AnytimeGoalScorer;
+    if (lineValue == null || !Number.isFinite(lineValue) || worldCupOddsLinesMatch(lineValue, 0.5)) {
+      return book.AnytimeGoalScorer;
+    }
   }
   if (statId === 'yellow_cards' && book.ToBeBooked?.yes && book.ToBeBooked.yes !== 'N/A') {
-    return book.ToBeBooked;
+    if (lineValue == null || !Number.isFinite(lineValue) || worldCupOddsLinesMatch(lineValue, 0.5)) {
+      return book.ToBeBooked;
+    }
   }
+
+  if (lineValue != null && Number.isFinite(lineValue)) {
+    return null;
+  }
+
   return lines[0] ?? null;
 }
 
@@ -199,13 +307,19 @@ export function calculateWorldCupImpliedOdds(
 ): { overImpliedProb: number; underImpliedProb: number } | null {
   if (!books.length) return null;
 
-  const isSameLine = (a: number | null, b: number | null, tol = 0.01) =>
+  const isSameLine = (a: number | null, b: number | null, tol = WC_ODDS_LINE_TOL) =>
     a != null && b != null && Math.abs(a - b) < tol;
 
   const impliedRows: Array<{ over: number; under: number }> = [];
+  const resolvedLine = resolveWorldCupOddsLineForTarget(
+    statId,
+    getAvailableWorldCupOddsLines(statId, books),
+    lineValue
+  );
+  if (resolvedLine == null) return null;
 
   for (const book of books) {
-    const market = getOddsMarketForStat(statId, book, lineValue);
+    const market = getOddsMarketForStat(statId, book, resolvedLine ?? lineValue);
     if (!market) continue;
 
     if ('yes' in market && market.yes) {
@@ -216,7 +330,8 @@ export function calculateWorldCupImpliedOdds(
 
     const ou = market as WorldCupPlayerOddsMarket;
     const marketLine = parseWorldCupOddsLine(ou.line);
-    if (marketLine != null && !isSameLine(marketLine, lineValue)) continue;
+    const compareLine = resolvedLine ?? lineValue;
+    if (marketLine != null && compareLine != null && !isSameLine(marketLine, compareLine)) continue;
     const implied = calculateImplied(ou.over ?? null, ou.under ?? null);
     if (implied) impliedRows.push({ over: implied.overImpliedProb, under: implied.underImpliedProb });
   }

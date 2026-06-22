@@ -1,3 +1,5 @@
+import { worldCupTeamsMatch } from './worldCupFlags';
+
 /**
  * Curated cross-source name aliases for the World Cup dashboard's stat merge.
  *
@@ -544,6 +546,32 @@ export type WorldCupPlayerOddsPrefetch = {
   fetchedAt?: number;
 };
 
+function wcOddsPrefetchNameMatches(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = String(a || '').trim();
+  const right = String(b || '').trim();
+  if (!left || !right) return true;
+  if (left.toLowerCase() === right.toLowerCase()) return true;
+  // Lazy import avoided — duplicate minimal normalize for player names.
+  const normalizePlayer = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  return normalizePlayer(left) === normalizePlayer(right);
+}
+
+function wcOddsPrefetchMatchDateKey(value: string | null | undefined): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  const isoPrefix = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return isoPrefix ? isoPrefix[1] : raw.toLowerCase();
+}
+
 export function readWorldCupPlayerOddsPrefetch(input: {
   playerName: string;
   team?: string | null;
@@ -557,17 +585,25 @@ export function readWorldCupPlayerOddsPrefetch(input: {
     const parsed = JSON.parse(raw) as WorldCupPlayerOddsPrefetch;
     const ageMs = Date.now() - Number(parsed.fetchedAt ?? 0);
     if (ageMs > WC_PLAYER_ODDS_PREFETCH_TTL_MS) return null;
-    const normalize = (value: string | null | undefined) =>
-      String(value || '')
-        .trim()
-        .toLowerCase();
-    if (normalize(parsed.playerName) !== normalize(input.playerName)) return null;
-    if (input.team && parsed.team && normalize(parsed.team) !== normalize(input.team)) return null;
-    if (input.opponent && parsed.opponent && normalize(parsed.opponent) !== normalize(input.opponent)) return null;
+    if (!wcOddsPrefetchNameMatches(parsed.playerName, input.playerName)) return null;
+    if (
+      input.team &&
+      parsed.team &&
+      !wcOddsPrefetchTeamMatches(parsed.team, input.team)
+    ) {
+      return null;
+    }
+    if (
+      input.opponent &&
+      parsed.opponent &&
+      !wcOddsPrefetchTeamMatches(parsed.opponent, input.opponent)
+    ) {
+      return null;
+    }
     if (
       input.matchDate &&
       parsed.matchDate &&
-      normalize(parsed.matchDate) !== normalize(input.matchDate)
+      wcOddsPrefetchMatchDateKey(parsed.matchDate) !== wcOddsPrefetchMatchDateKey(input.matchDate)
     ) {
       return null;
     }
@@ -575,6 +611,14 @@ export function readWorldCupPlayerOddsPrefetch(input: {
   } catch {
     return null;
   }
+}
+
+function wcOddsPrefetchTeamMatches(a: string, b: string): boolean {
+  const left = String(a || '').trim();
+  const right = String(b || '').trim();
+  if (!left || !right) return true;
+  if (left.toLowerCase() === right.toLowerCase()) return true;
+  return worldCupTeamsMatch(left, right);
 }
 
 export function writeWorldCupPlayerOddsPrefetch(payload: WorldCupPlayerOddsPrefetch): void {
