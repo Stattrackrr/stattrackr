@@ -203,8 +203,9 @@ function worldCupOddsMarketIsDisplayable(
   market: WorldCupPlayerOddsMarket | { yes?: string; no?: string } | null
 ): boolean {
   if (!market) return false;
+  if ('over' in market) return Boolean(market.over && market.over !== 'N/A');
   if ('yes' in market) return Boolean(market.yes && market.yes !== 'N/A');
-  return Boolean(market.over && market.over !== 'N/A');
+  return false;
 }
 
 /** True when at least one book has displayable odds for the target line (exact or integer O/U map). */
