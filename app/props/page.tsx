@@ -10051,6 +10051,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                         </div>
                                       ) : null;
                                     })()}
+                                    {rowSport === 'world-cup' && prop.wcPosition && (
+                                      <div
+                                        className={`text-xs font-semibold mt-0.5 ${mounted && isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                                      >
+                                        {prop.wcPosition}
+                                      </div>
+                                    )}
                                     {/* Stat Type and Line */}
                                     <div className={`text-sm font-semibold mt-0.5 ${mounted && isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                                       {getStatLabel(prop.statType)} {prop.line > 0 ? 'Over' : 'Under'} {Math.abs(prop.line)}

@@ -1250,6 +1250,52 @@ function hasFullPlayerPropsData(data: WorldCupDashboardData, playerId: string): 
   return hasIntl || hasClub || rows.length >= 8;
 }
 
+function hasFullPlayerDashboardPanelData(data: WorldCupDashboardData | null | undefined): boolean {
+  if (!data || data.playerChartOnly) return false;
+  return Boolean(
+    (data.rosters?.length ?? 0) > 0 ||
+    (data.squadPlayerMatchStats?.length ?? 0) > 0 ||
+    (data.playerVsPool?.players?.length ?? 0) > 0 ||
+    data.wc2026OpponentBreakdown
+  );
+}
+
+function normalizeWorldCupPlayerNameForMatch(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function resolvePlayerScopedStatRows(
+  rows: Array<Record<string, any>>,
+  playerId: string | null,
+  playerName: string | null
+): Array<Record<string, any>> {
+  const withAppearance = rows.filter((row) => hasWorldCupPlayerAppearance(row));
+  if (!playerId && !playerName) return withAppearance;
+
+  if (playerId) {
+    const byId = withAppearance.filter(
+      (row) => String(row.player_id ?? row.player?.id ?? '') === playerId
+    );
+    if (byId.length) return byId;
+  }
+
+  const normTarget = playerName ? normalizeWorldCupPlayerNameForMatch(playerName) : null;
+  if (normTarget) {
+    const byName = withAppearance.filter((row) => {
+      const rowName = String(row.player_name ?? row.player?.name ?? row.player?.short_name ?? '');
+      return Boolean(rowName && normalizeWorldCupPlayerNameForMatch(rowName) === normTarget);
+    });
+    if (byName.length) return byName;
+  }
+
+  // Player dashboard responses are already scoped to one player.
+  return withAppearance;
+}
+
 function buildWorldCupDashboardKey(
   mode: PropsMode,
   teamId: string | null,
@@ -1285,7 +1331,8 @@ function canReuseWorldCupDashboard(
   }
 
   if (!playerId || !/^\d+$/.test(playerId)) return false;
-  return hasFullPlayerPropsData(data, playerId);
+  if (data.playerChartOnly) return false;
+  return hasFullPlayerPropsData(data, playerId) && hasFullPlayerDashboardPanelData(data);
 }
 
 const WORLD_CUP_STORAGE_KEYS = {
@@ -2389,14 +2436,7 @@ function getWorldCupPlayerStatRows(
   rows: Array<Record<string, any>>,
   selectedPlayerId: string | null
 ): Array<Record<string, any>> {
-  const withAppearance = rows.filter((row) => hasWorldCupPlayerAppearance(row));
-  if (!selectedPlayerId) return withAppearance;
-  const idMatched = withAppearance.filter(
-    (row) => String(row.player_id ?? row.player?.id ?? '') === selectedPlayerId
-  );
-  // Props/deep links may carry a supplement id while BDL rows use a different
-  // player_id — the dashboard response is already player-scoped, so keep all rows.
-  return idMatched.length > 0 ? idMatched : withAppearance;
+  return resolvePlayerScopedStatRows(rows, selectedPlayerId, null);
 }
 
 function WorldCupXAxisTick({ x, y, payload, data, isDark, hideTickDetails }: any) {
@@ -5455,9 +5495,12 @@ function isCompletedWorldCupMatchStatus(status: unknown): boolean {
   return normalized === 'completed' || normalized === 'finished' || normalized === 'ft';
 }
 
-function buildWc2026MatchIdSet(matches: Array<Record<string, any>>): Set<string> {
+function buildWc2026MatchIdSet(
+  matches: Array<Record<string, any>>,
+  playerMatches: Array<Record<string, any>> = []
+): Set<string> {
   const ids = new Set<string>();
-  for (const match of matches) {
+  for (const match of [...matches, ...playerMatches]) {
     const id = String(match.id ?? '');
     if (!id) continue;
     const season = toNumber(match.season);
@@ -5508,20 +5551,7 @@ function filterPlayerVsTeamRows(
       ? isWorldCup2026CompletedPlayerRow(row, match)
       : isWorldCupFinalsCompletedPlayerRow(row, match);
   };
-  const norm = (name: string) =>
-    name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-  const normTarget = playerName ? norm(playerName) : null;
-
-  return rows.filter((row) => {
-    if (!hasWorldCupPlayerAppearance(row)) return false;
-    const rowId = String(row.player_id ?? row.player?.id ?? '');
-    const idMatch = Boolean(playerId && rowId === playerId);
-    let nameMatch = false;
-    if (!idMatch && normTarget) {
-      const rowName = String(row.player_name ?? row.player?.name ?? row.player?.short_name ?? '');
-      nameMatch = Boolean(rowName && norm(rowName) === normTarget);
-    }
-    if (!idMatch && !nameMatch) return false;
+  return resolvePlayerScopedStatRows(rows, playerId, playerName).filter((row) => {
     return rowMatchesEdition(row, matchLookup.get(String(row.match_id ?? '')));
   });
 }
@@ -5738,7 +5768,10 @@ function WorldCupPlayerTeamSharePanel({
   const teamName = selectedTeam?.name ?? selectedPlayer?.teamName ?? 'Team';
   const hasBundledSquad = (squadPlayerMatchStats?.length ?? 0) > 0;
 
-  const wc2026MatchIds = useMemo(() => buildWc2026MatchIdSet(matches), [matches]);
+  const wc2026MatchIds = useMemo(
+    () => buildWc2026MatchIdSet(matches, playerMatches),
+    [matches, playerMatches]
+  );
 
   const matchLookup = useMemo(() => {
     const allMatches = [...matches, ...playerMatches];
@@ -5946,6 +5979,7 @@ function WorldCupPlayerVsTeamPanel({
   playerVsPool,
   wc2026OpponentBreakdown,
   embedded = false,
+  deferPanelFallbacks = false,
 }: {
   isDark: boolean;
   selectedPlayer: WorldCupPlayerOption | null;
@@ -5958,6 +5992,7 @@ function WorldCupPlayerVsTeamPanel({
   playerVsPool?: WorldCupDashboardData['playerVsPool'];
   wc2026OpponentBreakdown?: WorldCupOppBreakdownResponse;
   embedded?: boolean;
+  deferPanelFallbacks?: boolean;
 }) {
   const [rankScope, setRankScope] = useState<WorldCupPlayerVsRankScope>('team');
   const [fallbackPlayerPool, setFallbackPlayerPool] = useState<WorldCupPlayerPoolEntry[]>([]);
@@ -5981,7 +6016,10 @@ function WorldCupPlayerVsTeamPanel({
   );
   const loading = poolLoading || (!breakdown && oppBreakdownLoading);
 
-  const wc2026MatchIds = useMemo(() => buildWc2026MatchIdSet(matches), [matches]);
+  const wc2026MatchIds = useMemo(
+    () => buildWc2026MatchIdSet(matches, playerMatches),
+    [matches, playerMatches]
+  );
 
   const matchLookup = useMemo(() => {
     const allMatches = [...matches, ...playerMatches];
@@ -6009,6 +6047,10 @@ function WorldCupPlayerVsTeamPanel({
   }, [opponentTeam?.id, bundledBreakdown]);
 
   useEffect(() => {
+    if (deferPanelFallbacks) {
+      setOppBreakdownLoading(Boolean(bundledBreakdown));
+      return;
+    }
     if (
       bundledBreakdown &&
       (!opponentTeam || opponentHasBreakdownStats(bundledBreakdown, opponentTeam))
@@ -6046,9 +6088,10 @@ function WorldCupPlayerVsTeamPanel({
     return () => {
       cancelled = true;
     };
-  }, [bundledBreakdown, opponentTeam?.id, opponentTeam?.name, opponentTeam?.countryCode]);
+  }, [bundledBreakdown, opponentTeam?.id, opponentTeam?.name, opponentTeam?.countryCode, deferPanelFallbacks]);
 
   useEffect(() => {
+    if (deferPanelFallbacks) return;
     if (!opponentTeam?.id || !/^\d+$/.test(opponentTeam.id)) return;
     if (opponentHasBreakdownStats(breakdown, opponentTeam)) return;
 
@@ -6087,9 +6130,14 @@ function WorldCupPlayerVsTeamPanel({
     return () => {
       cancelled = true;
     };
-  }, [breakdown, opponentTeam]);
+  }, [breakdown, opponentTeam, deferPanelFallbacks]);
 
   useEffect(() => {
+    if (deferPanelFallbacks) {
+      setFallbackPlayerPool([]);
+      setPoolLoading(false);
+      return;
+    }
     if (hasBundledPool) {
       setFallbackPlayerPool([]);
       setPoolLoading(false);
@@ -6136,7 +6184,7 @@ function WorldCupPlayerVsTeamPanel({
     return () => {
       cancelled = true;
     };
-  }, [hasBundledPool, selectedPlayerId, teamSlug, opponentSlug, opponentTeam?.id, opponentTeam?.name, opponentTeam?.countryCode, playerMatchStats.length]);
+  }, [hasBundledPool, selectedPlayerId, teamSlug, opponentSlug, opponentTeam?.id, opponentTeam?.name, opponentTeam?.countryCode, playerMatchStats.length, deferPanelFallbacks]);
 
   const totalOpponents = Math.max(
     breakdown?.rankingTotal ?? 0,
@@ -9667,6 +9715,7 @@ function WorldCupPlayerComparisonPanel({
   playerVsPool,
   squadPlayerMatchStats,
   wc2026OpponentBreakdown,
+  deferPanelFallbacks = false,
 }: {
   isDark: boolean;
   selectedPlayer: WorldCupPlayerOption | null;
@@ -9680,6 +9729,7 @@ function WorldCupPlayerComparisonPanel({
   playerVsPool?: WorldCupDashboardData['playerVsPool'];
   squadPlayerMatchStats?: Array<Record<string, any>>;
   wc2026OpponentBreakdown?: WorldCupOppBreakdownResponse;
+  deferPanelFallbacks?: boolean;
 }) {
   const [tab, setTab] = useState<PlayerComparisonTab>('team');
   const tabs: Array<{ id: PlayerComparisonTab; label: string }> = [
@@ -9720,6 +9770,7 @@ function WorldCupPlayerComparisonPanel({
           playerMatches={playerMatches}
           playerVsPool={playerVsPool}
           wc2026OpponentBreakdown={wc2026OpponentBreakdown}
+          deferPanelFallbacks={deferPanelFallbacks}
         />
       ) : (
         <WorldCupPlayerVsPlayerPanel
@@ -9825,6 +9876,20 @@ function WorldCupInsightsPanel({
   );
 }
 
+function useIsLgDesktop(): boolean {
+  const [isLgDesktop, setIsLgDesktop] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsLgDesktop(mq.matches);
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  return isLgDesktop;
+}
+
 export function WorldCupPageContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -9919,6 +9984,8 @@ export function WorldCupPageContent() {
   const { containerStyle, innerContainerStyle, innerContainerClassName, mainContentClassName, mainContentStyle } = useDashboardStyles({
     sidebarOpen,
   });
+  const isLgDesktop = useIsLgDesktop();
+  const deferPanelFallbacks = Boolean(worldCupData?.playerChartOnly);
 
   const navigateBackToPlayerProps = useCallback(() => {
     let returnSport: PropsSportMode = 'world-cup';
@@ -9985,6 +10052,34 @@ export function WorldCupPageContent() {
   const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
   const activeTeamNeedsHydration = !resolvedActiveTeamId;
   const hasChartStats = Boolean(worldCupData?.playerMatchStats?.length);
+  const chartContextTeam = useMemo((): WorldCupTeamOption | null => {
+    if (activeTeam?.id && /^\d+$/.test(activeTeam.id)) return activeTeam;
+    if (!resolvedActiveTeamId) return activeTeam;
+    const fromOptions = teamOptions.find((team) => team.id === resolvedActiveTeamId);
+    if (fromOptions) return fromOptions;
+    if (
+      worldCupData?.selectedTeam?.id != null &&
+      String(worldCupData.selectedTeam.id) === resolvedActiveTeamId
+    ) {
+      return worldCupTeamOptionFromBdl(worldCupData.selectedTeam);
+    }
+    const fallbackName = urlTeamQuery || selectedPlayer?.teamName || 'Team';
+    return {
+      id: resolvedActiveTeamId,
+      name: fallbackName,
+      abbreviation: fallbackName.slice(0, 3).toUpperCase(),
+      countryCode: null,
+      group: 'World Cup',
+      confederation: 'FIFA',
+    };
+  }, [
+    activeTeam,
+    resolvedActiveTeamId,
+    teamOptions,
+    urlTeamQuery,
+    selectedPlayer?.teamName,
+    worldCupData?.selectedTeam,
+  ]);
 
   const dashboardRequestKey = useMemo(() => {
     if (!hydratedFromStorage || !hasSelection) return null;
@@ -11277,7 +11372,8 @@ export function WorldCupPageContent() {
         typeof playerIdForRequest === 'string' &&
         /^\d+$/.test(playerIdForRequest) &&
         (worldCupData.playerChartOnly ||
-          !hasFullPlayerPropsData(worldCupData, playerIdForRequest));
+          !hasFullPlayerPropsData(worldCupData, playerIdForRequest) ||
+          !hasFullPlayerDashboardPanelData(worldCupData));
       if (!playerPayloadIncomplete) {
         setWorldCupLoading(false);
         setWorldCupError(null);
@@ -11433,7 +11529,12 @@ export function WorldCupPageContent() {
             }
           }
           if (cancelled) return;
-          if (loadedDashboardKeyRef.current === expectedLoadedKey && hasFullPlayerPropsData(chartPayload, playerIdForRequest ?? '')) {
+          if (
+            loadedDashboardKeyRef.current === expectedLoadedKey &&
+            playerIdForRequest &&
+            hasFullPlayerPropsData(chartPayload, playerIdForRequest) &&
+            hasFullPlayerDashboardPanelData(chartPayload)
+          ) {
             setWorldCupLoading(false);
             return;
           }
@@ -11903,7 +12004,7 @@ export function WorldCupPageContent() {
                           isDark={isDark}
                           mode={propsMode}
                           data={worldCupData}
-                          selectedTeam={activeTeam}
+                          selectedTeam={chartContextTeam}
                           selectedPlayer={selectedPlayer}
                           opponentTeam={opponentTeam}
                           loading={chartAreaLoading}
@@ -11943,7 +12044,7 @@ export function WorldCupPageContent() {
                       selectedPlayerRole={selectedPlayer?.role}
                       selectedPlayerId={selectedPlayerId}
                       selectedTeamId={resolvedActiveTeamId}
-                      selectedTeamName={selectedTeam?.name ?? selectedPlayer?.teamName ?? urlTeamQuery ?? null}
+                      selectedTeamName={chartContextTeam?.name ?? selectedPlayer?.teamName ?? urlTeamQuery ?? null}
                       opponentTeam={opponentTeam}
                       chartContext={chartContext}
                       isDark={isDark}
@@ -11954,7 +12055,8 @@ export function WorldCupPageContent() {
                   )}
                 </div>
 
-                <div className={`hidden lg:flex w-full min-w-0 flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}>
+                {isLgDesktop ? (
+                <div className={`w-full min-w-0 flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4 flex`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="px-3 sm:px-4 py-1" />
                   ) : (
@@ -11969,7 +12071,7 @@ export function WorldCupPageContent() {
                   />
                   <WorldCupLineupsPanel
                     isDark={isDark}
-                    selectedTeam={activeTeam}
+                    selectedTeam={chartContextTeam}
                     opponentTeam={opponentTeam}
                     lineups={worldCupData?.lineups ?? []}
                     lineupMeta={worldCupData?.lineupMeta}
@@ -11981,8 +12083,11 @@ export function WorldCupPageContent() {
                     </>
                   )}
                 </div>
+                ) : null}
 
-                <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0 overflow-hidden`}>
+                {!isLgDesktop ? (
+                <>
+                <div className={`w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0 overflow-hidden`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} />
                   ) : (
@@ -11992,7 +12097,7 @@ export function WorldCupPageContent() {
                     isDark={isDark}
                     mode={propsMode}
                     selectedPlayer={selectedPlayer}
-                    selectedTeam={activeTeam}
+                    selectedTeam={chartContextTeam}
                     opponentTeam={opponentTeam}
                     teamOptions={teamOptions}
                     competition={competition}
@@ -12004,7 +12109,7 @@ export function WorldCupPageContent() {
                 </div>
 
                 {propsMode === 'player' ? (
-                  <div className={`lg:hidden w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 pb-6`}>
+                  <div className={`w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 pb-6`}>
                     {showInsightsSkeleton ? (
                       <WorldCupCardSkeleton isDark={isDark} rows={5} className="p-3" />
                     ) : (
@@ -12012,7 +12117,7 @@ export function WorldCupPageContent() {
                         isDark={isDark}
                         selectedPlayer={selectedPlayer}
                         selectedPlayerId={selectedPlayerId}
-                        selectedTeam={selectedTeam}
+                        selectedTeam={chartContextTeam}
                         opponentTeam={opponentTeam}
                         playerMatchStats={worldCupData?.playerMatchStats ?? []}
                         matches={worldCupData?.matches ?? []}
@@ -12021,13 +12126,14 @@ export function WorldCupPageContent() {
                         playerVsPool={worldCupData?.playerVsPool}
                         squadPlayerMatchStats={worldCupData?.squadPlayerMatchStats}
                         wc2026OpponentBreakdown={worldCupData?.wc2026OpponentBreakdown}
+                        deferPanelFallbacks={deferPanelFallbacks}
                       />
                     )}
                   </div>
                 ) : null}
 
                 {propsMode === 'player' ? (
-                  <div className={`lg:hidden w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} p-2 sm:p-2.5`}>
+                  <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} p-2 sm:p-2.5`}>
                     {showInsightsSkeleton ? (
                       <WorldCupCardSkeleton isDark={isDark} rows={4} className="p-3" />
                     ) : (
@@ -12035,19 +12141,20 @@ export function WorldCupPageContent() {
                         isDark={isDark}
                         selectedPlayer={selectedPlayer}
                         selectedPlayerId={selectedPlayerId}
-                        selectedTeam={selectedTeam}
+                        selectedTeam={chartContextTeam}
                         playerMatchStats={worldCupData?.playerMatchStats ?? []}
                         teamMatchStats={worldCupData?.teamMatchStats ?? []}
                         teamWcMatchStats={worldCupData?.teamWcMatchStats}
                         squadPlayerMatchStats={worldCupData?.squadPlayerMatchStats}
                         matches={worldCupData?.matches ?? []}
                         playerMatches={worldCupData?.playerMatches ?? []}
+                        deferSquadFallback={deferPanelFallbacks}
                       />
                     )}
                   </div>
                 ) : null}
 
-                <div className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0`}>
+                <div className={`w-full min-w-0 flex flex-col rounded-lg ${DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="px-3 sm:px-4 py-1" />
                   ) : (
@@ -12062,7 +12169,7 @@ export function WorldCupPageContent() {
                   />
                   <WorldCupLineupsPanel
                     isDark={isDark}
-                    selectedTeam={activeTeam}
+                    selectedTeam={chartContextTeam}
                     opponentTeam={opponentTeam}
                     lineups={worldCupData?.lineups ?? []}
                     lineupMeta={worldCupData?.lineupMeta}
@@ -12075,7 +12182,7 @@ export function WorldCupPageContent() {
                   )}
                 </div>
 
-                <div className={`lg:hidden w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={4} />
                   ) : (
@@ -12084,14 +12191,14 @@ export function WorldCupPageContent() {
                       <WorldCupGroupStandingsPanel
                         isDark={isDark}
                         standings={worldCupData?.standings ?? []}
-                        selectedTeam={activeTeam}
+                        selectedTeam={chartContextTeam}
                         opponentTeam={opponentTeam}
                       />
                     </>
                   )}
                 </div>
 
-                <div className={`lg:hidden w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
@@ -12099,7 +12206,7 @@ export function WorldCupPageContent() {
                       <SectionHeader title="Availability" subtitle="Tournament squads for both teams in the matchup." />
                       <WorldCupRosterPanel
                         isDark={isDark}
-                        selectedTeam={activeTeam}
+                        selectedTeam={chartContextTeam}
                         opponentTeam={opponentTeam}
                         rosters={worldCupData?.rosters ?? []}
                       />
@@ -12107,7 +12214,7 @@ export function WorldCupPageContent() {
                   )}
                 </div>
 
-                <div className={`lg:hidden w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
@@ -12121,21 +12228,24 @@ export function WorldCupPageContent() {
                     </>
                   )}
                 </div>
+                </>
+                ) : null}
               </div>
 
+              {isLgDesktop ? (
               <div
                 className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 fade-scrollbar custom-scrollbar min-w-0 ${
                   sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
                 }`}
               >
-                <div className={`hidden lg:block w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
+                <div className={`w-full min-w-0 rounded-lg ${DASH_CARD_GLOW} p-3 sm:p-4 md:p-4`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Filter By</h3>
                   </div>
                   {filterControls}
                 </div>
 
-                <div className={`hidden lg:block h-[480px] w-full min-w-0 shrink-0 rounded-lg xl:h-[520px] ${DASH_CARD_GLOW} overflow-hidden`}>
+                <div className={`h-[480px] w-full min-w-0 shrink-0 rounded-lg xl:h-[520px] ${DASH_CARD_GLOW} overflow-hidden`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} fill className="p-3 sm:p-4" />
                   ) : (
@@ -12144,7 +12254,7 @@ export function WorldCupPageContent() {
                     isDark={isDark}
                     mode={propsMode}
                     selectedPlayer={selectedPlayer}
-                    selectedTeam={activeTeam}
+                    selectedTeam={chartContextTeam}
                     opponentTeam={opponentTeam}
                     teamOptions={teamOptions}
                     competition={competition}
@@ -12154,7 +12264,7 @@ export function WorldCupPageContent() {
                   )}
                 </div>
 
-                <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={5} className="p-1" />
                   ) : propsMode === 'player' ? (
@@ -12162,7 +12272,7 @@ export function WorldCupPageContent() {
                       isDark={isDark}
                       selectedPlayer={selectedPlayer}
                       selectedPlayerId={selectedPlayerId}
-                      selectedTeam={selectedTeam}
+                      selectedTeam={chartContextTeam}
                       opponentTeam={opponentTeam}
                       playerMatchStats={worldCupData?.playerMatchStats ?? []}
                       matches={worldCupData?.matches ?? []}
@@ -12171,11 +12281,12 @@ export function WorldCupPageContent() {
                       playerVsPool={worldCupData?.playerVsPool}
                       squadPlayerMatchStats={worldCupData?.squadPlayerMatchStats}
                       wc2026OpponentBreakdown={worldCupData?.wc2026OpponentBreakdown}
+                      deferPanelFallbacks={deferPanelFallbacks}
                     />
                   ) : (
                     <WorldCupTeamFormHomeAwayPanel
                       isDark={isDark}
-                      selectedTeam={activeTeam}
+                      selectedTeam={chartContextTeam}
                       opponentTeam={opponentTeam}
                       competition={competition}
                       dashboardData={worldCupData}
@@ -12184,7 +12295,7 @@ export function WorldCupPageContent() {
                 </div>
 
                 {propsMode === 'player' ? (
-                  <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-2 sm:p-2.5`}>
+                  <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-2 sm:p-2.5`}>
                     {showInsightsSkeleton ? (
                       <WorldCupCardSkeleton isDark={isDark} rows={4} className="p-1" />
                     ) : (
@@ -12192,19 +12303,20 @@ export function WorldCupPageContent() {
                         isDark={isDark}
                         selectedPlayer={selectedPlayer}
                         selectedPlayerId={selectedPlayerId}
-                        selectedTeam={selectedTeam}
+                        selectedTeam={chartContextTeam}
                         playerMatchStats={worldCupData?.playerMatchStats ?? []}
                         teamMatchStats={worldCupData?.teamMatchStats ?? []}
                         teamWcMatchStats={worldCupData?.teamWcMatchStats}
                         squadPlayerMatchStats={worldCupData?.squadPlayerMatchStats}
                         matches={worldCupData?.matches ?? []}
                         playerMatches={worldCupData?.playerMatches ?? []}
+                        deferSquadFallback={deferPanelFallbacks}
                       />
                     )}
                   </div>
                 ) : null}
 
-                <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
@@ -12212,7 +12324,7 @@ export function WorldCupPageContent() {
                       <SectionHeader title="Availability" subtitle="Tournament squads for both teams in the matchup." />
                       <WorldCupRosterPanel
                         isDark={isDark}
-                        selectedTeam={activeTeam}
+                        selectedTeam={chartContextTeam}
                         opponentTeam={opponentTeam}
                         rosters={worldCupData?.rosters ?? []}
                       />
@@ -12220,7 +12332,7 @@ export function WorldCupPageContent() {
                   )}
                 </div>
 
-                <div className={`hidden lg:block w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
+                <div className={`w-full min-w-0 shrink-0 rounded-lg ${DASH_CARD_GLOW} overflow-hidden p-3 sm:p-4`}>
                   {showInsightsSkeleton ? (
                     <WorldCupCardSkeleton isDark={isDark} rows={3} />
                   ) : (
@@ -12234,6 +12346,7 @@ export function WorldCupPageContent() {
                   )}
                 </div>
               </div>
+              ) : null}
             </div>
           </div>
         </div>
