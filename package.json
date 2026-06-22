@@ -57,6 +57,7 @@
     "debug:afl:depth-role-vs-team": "node scripts/debug-afl-depth-role-vs-team.js",
     "debug:wc:player-history": "npx tsx scripts/audit-world-cup-player-matches.ts --player-history",
     "debug:wc:opp-breakdown": "npx tsx scripts/build-world-cup-opponent-breakdown.ts --debug-opp-breakdown",
+    "debug:wc:dvp-shots": "npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --debug-dvp-shots",
     "rebuild:wc:bdl-supplement": "npx tsx scripts/audit-world-cup-player-matches.ts --rebuild-supplement",
     "show:afl:dvp-by-team": "node scripts/show-afl-dvp-by-team.js",
     "fetch:afl:dfs-usage": "node scripts/fetch-afl-dfs-usage.js",
