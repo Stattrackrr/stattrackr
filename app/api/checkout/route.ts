@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       subscription_data: subscriptionData,
       success_url: `${request.headers.get('origin')}/props?success=true&billing=${billingCycle}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${request.headers.get('origin')}/home`,
+      cancel_url: `${request.headers.get('origin')}/props`,
       metadata: {
         user_id: user.id,
         billing_cycle: billingCycle,
