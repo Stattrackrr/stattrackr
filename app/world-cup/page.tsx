@@ -268,6 +268,8 @@ type WorldCupPlayerOption = {
   // Canonical GK/DEF/MID/FWD bucket, resolved from `role` (BDL roster position)
   // at build time so every searchable player carries a position.
   positionGroup?: WorldCupPositionGroup;
+  /** Props-list position label (GK/DEF/MID/FWD) when opened from player props. */
+  propsPositionLabel?: string | null;
 };
 
 type WorldCupDashboardData = {
@@ -838,6 +840,50 @@ function formatWorldCupPlayerRole(player: WorldCupPlayerOption | null | undefine
   return formatWorldCupRole(player.positionGroup ?? getWorldCupPlayerGroup(player));
 }
 
+function formatWorldCupPropsPositionLabel(player: WorldCupPlayerOption | null | undefined): string {
+  const fromProps = String(player?.propsPositionLabel || '').trim().toUpperCase();
+  if (fromProps && classifyWorldCupPositionGroup(fromProps)) return fromProps;
+  if (!player) return '';
+  const role = String(player.role || '').trim().toUpperCase();
+  if (classifyWorldCupPositionGroup(role) && ['GK', 'DEF', 'MID', 'FWD'].includes(role)) return role;
+  return player.positionGroup ?? getWorldCupPlayerGroup(player);
+}
+
+function worldCupPlayerOptionFromPositionLabel(position: string | null | undefined): {
+  role: string;
+  positionGroup: WorldCupPositionGroup;
+  propsPositionLabel: string | null;
+} {
+  const label = String(position || '').trim();
+  if (!label) {
+    return { role: 'MID', positionGroup: 'MID', propsPositionLabel: 'MID' };
+  }
+  const positionGroup = resolveWorldCupPlayerGroup(label);
+  const bucket = classifyWorldCupPositionGroup(label);
+  const propsPositionLabel = bucket ? label.toUpperCase() : positionGroup;
+  const role = bucket
+    ? ['GK', 'DEF', 'MID', 'FWD'].includes(label.toUpperCase())
+      ? label.toUpperCase()
+      : label
+    : positionGroup;
+  return { role, positionGroup, propsPositionLabel };
+}
+
+function applyWorldCupPropsPositionLabel(
+  player: WorldCupPlayerOption,
+  positionLabel: string | null | undefined
+): WorldCupPlayerOption {
+  const label = String(positionLabel || '').trim();
+  if (!label) return player;
+  const applied = worldCupPlayerOptionFromPositionLabel(label);
+  return {
+    ...player,
+    role: applied.role,
+    positionGroup: applied.positionGroup,
+    propsPositionLabel: applied.propsPositionLabel,
+  };
+}
+
 function resolveWorldCupTeamForPlayer(
   player: WorldCupPlayerOption | null,
   teamOptions: WorldCupTeamOption[]
@@ -1019,9 +1065,14 @@ function mapWorldCupApiPlayerRow(
   };
 }
 
-function worldCupPlayerPlaceholderFromHint(hint: string, id?: string | null): WorldCupPlayerOption {
+function worldCupPlayerPlaceholderFromHint(
+  hint: string,
+  id?: string | null,
+  positionLabel?: string | null
+): WorldCupPlayerOption {
   const name = formatWorldCupPlayerDisplayName(hint.trim());
   const parts = name.split(/\s+/).filter(Boolean);
+  const position = worldCupPlayerOptionFromPositionLabel(positionLabel);
   return {
     id: id || worldCupPlayerNameToSlug(name) || 'url-player',
     name,
@@ -1030,8 +1081,9 @@ function worldCupPlayerPlaceholderFromHint(hint: string, id?: string | null): Wo
     teamId: null,
     countryCode: null,
     number: '',
-    role: 'MID',
-    positionGroup: 'MID',
+    role: position.role,
+    positionGroup: position.positionGroup,
+    propsPositionLabel: position.propsPositionLabel,
     club: null,
   };
 }
@@ -1095,9 +1147,9 @@ function buildWorldCupPlayerFromHandoff(parsed: WorldCupPropsHandoff): WorldCupP
   const parsedPlayerId = String(parsed.playerId || '').trim();
   const parsedTeamId = String(parsed.teamId || '').trim();
   const handoffPosition = String(parsed.position || '').trim();
-  const positionGroup = resolveWorldCupPlayerGroup(handoffPosition);
+  const position = worldCupPlayerOptionFromPositionLabel(handoffPosition);
   if (!/^\d+$/.test(parsedPlayerId)) {
-    return worldCupPlayerPlaceholderFromHint(name);
+    return worldCupPlayerPlaceholderFromHint(name, null, handoffPosition);
   }
   return {
     id: parsedPlayerId,
@@ -1114,8 +1166,9 @@ function buildWorldCupPlayerFromHandoff(parsed: WorldCupPropsHandoff): WorldCupP
     teamId: /^\d+$/.test(parsedTeamId) ? parsedTeamId : null,
     countryCode: parsed.team ? resolveWorldCupFlagCode(parsed.team) || null : null,
     number: '',
-    role: classifyWorldCupPositionGroup(handoffPosition) ? handoffPosition : positionGroup,
-    positionGroup,
+    role: position.role,
+    positionGroup: position.positionGroup,
+    propsPositionLabel: position.propsPositionLabel,
     club: null,
   };
 }
@@ -10959,7 +11012,8 @@ export function WorldCupPageContent() {
         : urlPlayerNameFromPage || urlPlayerIdFromPage || '';
       if (!hint) return;
       setPropsMode('player');
-      setSelectedPlayer(worldCupPlayerPlaceholderFromHint(hint, urlPlayerIdFromPage));
+      const urlPositionFromPage = pageUrl.searchParams.get('position')?.trim() || null;
+      setSelectedPlayer(worldCupPlayerPlaceholderFromHint(hint, urlPlayerIdFromPage, urlPositionFromPage));
       const urlTeamFromPage = pageUrl.searchParams.get('team')?.trim() || null;
       const urlTeamIdFromPage = pageUrl.searchParams.get('teamId')?.trim() || null;
       if (urlTeamFromPage && urlTeamIdFromPage && /^\d+$/.test(urlTeamIdFromPage)) {
@@ -11149,18 +11203,32 @@ export function WorldCupPageContent() {
   useEffect(() => {
     const position = propsHandoffPositionRef.current || urlPositionQuery;
     if (!position || !selectedPlayer?.id) return;
-    const positionGroup = resolveWorldCupPlayerGroup(position);
-    if (selectedPlayer.role === position && selectedPlayer.positionGroup === positionGroup) return;
+    const applied = worldCupPlayerOptionFromPositionLabel(position);
+    if (
+      selectedPlayer.role === applied.role &&
+      selectedPlayer.positionGroup === applied.positionGroup &&
+      selectedPlayer.propsPositionLabel === applied.propsPositionLabel
+    ) {
+      return;
+    }
     setSelectedPlayer((prev) => {
       if (!prev) return prev;
-      if (prev.role === position && prev.positionGroup === positionGroup) return prev;
-      return {
-        ...prev,
-        role: classifyWorldCupPositionGroup(position) ? position : positionGroup,
-        positionGroup,
-      };
+      if (
+        prev.role === applied.role &&
+        prev.positionGroup === applied.positionGroup &&
+        prev.propsPositionLabel === applied.propsPositionLabel
+      ) {
+        return prev;
+      }
+      return applyWorldCupPropsPositionLabel(prev, position);
     });
-  }, [selectedPlayer?.id, selectedPlayer?.role, selectedPlayer?.positionGroup, urlPositionQuery]);
+  }, [
+    selectedPlayer?.id,
+    selectedPlayer?.role,
+    selectedPlayer?.positionGroup,
+    selectedPlayer?.propsPositionLabel,
+    urlPositionQuery,
+  ]);
 
   // Resolve a player from /world-cup/player/[slug] or ?player= / ?playerId= query params.
   useEffect(() => {
@@ -11173,6 +11241,10 @@ export function WorldCupPageContent() {
       selectedPlayer.id === urlPlayerId
     ) {
       urlPlayerResolvedRef.current = true;
+      const handoffPosition = propsHandoffPositionRef.current || urlPositionQuery;
+      if (handoffPosition) {
+        setSelectedPlayer((prev) => (prev ? applyWorldCupPropsPositionLabel(prev, handoffPosition) : prev));
+      }
       if (urlTeamQuery || urlTeamIdQuery) {
         const teamFromUrl = resolveWorldCupTeamFromUrl(teamOptions, urlTeamIdQuery, urlTeamQuery);
         if (teamFromUrl && teamFromUrl.id !== selectedTeam?.id) {
@@ -11190,6 +11262,10 @@ export function WorldCupPageContent() {
       })
     ) {
       urlPlayerResolvedRef.current = true;
+      const handoffPosition = propsHandoffPositionRef.current || urlPositionQuery;
+      if (handoffPosition) {
+        setSelectedPlayer((prev) => (prev ? applyWorldCupPropsPositionLabel(prev, handoffPosition) : prev));
+      }
       return;
     }
     if (urlPlayerResolvedRef.current || urlPlayerFetchInFlightRef.current) return;
@@ -11200,7 +11276,8 @@ export function WorldCupPageContent() {
     if (!searchHint) return;
 
     setPropsMode('player');
-    setSelectedPlayer(worldCupPlayerPlaceholderFromHint(searchHint, urlPlayerId));
+    const handoffPosition = propsHandoffPositionRef.current || urlPositionQuery;
+    setSelectedPlayer(worldCupPlayerPlaceholderFromHint(searchHint, urlPlayerId, handoffPosition));
 
     urlPlayerFetchInFlightRef.current = true;
     let cancelled = false;
@@ -11236,14 +11313,9 @@ export function WorldCupPageContent() {
         if (!match) return;
         if (navigatingToPropsRef.current) return;
 
-        const handoffPosition = propsHandoffPositionRef.current;
+        const handoffPosition = propsHandoffPositionRef.current || urlPositionQuery;
         if (handoffPosition) {
-          const positionGroup = resolveWorldCupPlayerGroup(handoffPosition);
-          match = {
-            ...match,
-            role: classifyWorldCupPositionGroup(handoffPosition) ? handoffPosition : positionGroup,
-            positionGroup,
-          };
+          match = applyWorldCupPropsPositionLabel(match, handoffPosition);
         }
 
         urlPlayerResolvedRef.current = true;
@@ -12011,9 +12083,9 @@ export function WorldCupPageContent() {
                               <div className="text-xs text-gray-600 dark:text-gray-400">
                                 {selectedPlayer.teamName || '—'}
                               </div>
-                              {formatWorldCupPlayerRole(selectedPlayer) ? (
+                              {formatWorldCupPropsPositionLabel(selectedPlayer) ? (
                                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  Position: {formatWorldCupPlayerRole(selectedPlayer)}
+                                  Position: {formatWorldCupPropsPositionLabel(selectedPlayer)}
                                 </div>
                               ) : null}
                             </>
@@ -12163,9 +12235,9 @@ export function WorldCupPageContent() {
                                 <div className="text-xs text-gray-600 dark:text-gray-400">
                                   {selectedPlayer.teamName || '—'}
                                 </div>
-                                {formatWorldCupPlayerRole(selectedPlayer) ? (
+                                {formatWorldCupPropsPositionLabel(selectedPlayer) ? (
                                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                                    {formatWorldCupPlayerRole(selectedPlayer)}
+                                    {formatWorldCupPropsPositionLabel(selectedPlayer)}
                                   </div>
                                 ) : null}
                               </div>
