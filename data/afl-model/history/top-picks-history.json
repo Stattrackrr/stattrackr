@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-20T08:22:38.985Z",
-  "count": 10,
+  "generatedAt": "2026-06-21T13:10:00.000Z",
+  "count": 12,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -349,6 +349,78 @@
           "recommendedProb": 0.5737,
           "rank": 2,
           "actualDisposals": 23
+        }
+      ]
+    },
+    {
+      "gameKey": "richmondtigers|northmelbournekangaroos|2026-06-21",
+      "finalizedAt": "2026-06-21T01:00:00.000Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-20T18:12:08Z",
+      "modelVersion": "afl-disp-20260620-180917",
+      "homeTeam": "Richmond Tigers",
+      "awayTeam": "North Melbourne Kangaroos",
+      "commenceTime": "2026-06-21T03:10:24Z",
+      "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
+      "picks": [
+        {
+          "playerName": "Nick Vlastuin",
+          "bookmaker": "SportsBet",
+          "line": 15.5,
+          "expectedDisposals": 18.04,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0863,
+          "recommendedProb": 0.5983,
+          "rank": 1,
+          "actualDisposals": 11
+        }
+      ]
+    },
+    {
+      "gameKey": "stkildasaints|westernbulldogs|2026-06-21",
+      "finalizedAt": "2026-06-21T03:00:00.000Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-20T18:12:08Z",
+      "modelVersion": "afl-disp-20260620-180917",
+      "homeTeam": "St Kilda Saints",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-06-21T05:15:59Z",
+      "weekKey": "2026-W25",
+      "roundKey": "2026-R15",
+      "picks": [
+        {
+          "playerName": "Matthew Kennedy",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 11.64,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2895,
+          "recommendedProb": 0.7755,
+          "rank": 1,
+          "actualDisposals": 28
+        },
+        {
+          "playerName": "Marcus Bontempelli",
+          "bookmaker": "SportsBet",
+          "line": 24.5,
+          "expectedDisposals": 28.26,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0863,
+          "recommendedProb": 0.5983,
+          "rank": 2,
+          "actualDisposals": 34
+        },
+        {
+          "playerName": "Connor Budarick",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 22.79,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0928,
+          "recommendedProb": 0.5968,
+          "rank": 3,
+          "actualDisposals": 19
         }
       ]
     }
