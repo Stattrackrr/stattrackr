@@ -418,6 +418,103 @@ function aflTopPicksModalParseRoundKey(roundKey: string | null | undefined): { s
   return { season, round };
 }
 
+function aflTopPicksModalSortRoundKeys(roundKeys: string[]): string[] {
+  return [...roundKeys].sort((a, b) => {
+    const ar = aflTopPicksModalParseRoundKey(a);
+    const br = aflTopPicksModalParseRoundKey(b);
+    if (!ar && !br) return a.localeCompare(b);
+    if (!ar) return 1;
+    if (!br) return -1;
+    if (ar.season !== br.season) return ar.season - br.season;
+    return ar.round - br.round;
+  });
+}
+
+function aflTopPicksModalWeekKeyFromCommenceTime(commenceTime: string | null | undefined): string | null {
+  if (!commenceTime) return null;
+  const parsed = new Date(commenceTime);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const d = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+function aflTopPicksModalInferRoundKey(
+  commenceTime: string | null | undefined,
+  records: AflTopPicksHistoryRecord[]
+): string | null {
+  if (!commenceTime) return null;
+  const date = commenceTime.slice(0, 10);
+  const weekKey = aflTopPicksModalWeekKeyFromCommenceTime(commenceTime);
+  const withRound = records.filter((record) => record.roundKey && record.commenceTime);
+  if (weekKey) {
+    const sameWeekRoundKeys = aflTopPicksModalSortRoundKeys(
+      Array.from(
+        new Set(
+          withRound.filter((record) => record.weekKey === weekKey).map((record) => record.roundKey as string)
+        )
+      )
+    );
+    if (sameWeekRoundKeys.length > 0) {
+      return sameWeekRoundKeys[sameWeekRoundKeys.length - 1] ?? null;
+    }
+  }
+  const roundBounds = new Map<string, { min: string; max: string }>();
+  for (const record of withRound) {
+    const gameDate = String(record.commenceTime).slice(0, 10);
+    const roundKey = record.roundKey!;
+    const bounds = roundBounds.get(roundKey) ?? { min: gameDate, max: gameDate };
+    if (gameDate < bounds.min) bounds.min = gameDate;
+    if (gameDate > bounds.max) bounds.max = gameDate;
+    roundBounds.set(roundKey, bounds);
+  }
+  for (const [roundKey, bounds] of roundBounds) {
+    if (date >= bounds.min && date <= bounds.max) return roundKey;
+  }
+  return null;
+}
+
+function aflTopPicksModalMaxRoundCommenceDate(
+  records: AflTopPicksHistoryRecord[],
+  roundKey: string | null
+): string | null {
+  const dates = records
+    .filter((record) => record.roundKey === roundKey)
+    .map((record) => String(record.commenceTime ?? '').slice(0, 10))
+    .filter(Boolean);
+  return dates.length > 0 ? dates.sort().pop() ?? null : null;
+}
+
+function aflTopPicksModalResolveCurrentRoundKey(
+  liveRecords: AflTopPicksHistoryRecord[],
+  historyRecords: AflTopPicksHistoryRecord[],
+  latestRoundKey: string | null
+): string | null {
+  const upcomingLive = liveRecords
+    .filter((record) => aflTopPicksModalIsUpcomingGame(record.commenceTime))
+    .sort((a, b) => String(a.commenceTime ?? '').localeCompare(String(b.commenceTime ?? '')));
+  const anchorCommence = upcomingLive[0]?.commenceTime ?? liveRecords[0]?.commenceTime ?? null;
+  if (!anchorCommence) return latestRoundKey;
+
+  const inferred = aflTopPicksModalInferRoundKey(anchorCommence, historyRecords);
+  if (inferred) return inferred;
+
+  if (!latestRoundKey) return null;
+  const maxHistoryDate = aflTopPicksModalMaxRoundCommenceDate(historyRecords, latestRoundKey);
+  const minLiveDate = upcomingLive
+    .map((record) => String(record.commenceTime ?? '').slice(0, 10))
+    .filter(Boolean)
+    .sort()[0];
+  if (maxHistoryDate && minLiveDate && minLiveDate > maxHistoryDate) {
+    const parsed = aflTopPicksModalParseRoundKey(latestRoundKey);
+    if (parsed) return `${parsed.season}-R${parsed.round + 1}`;
+  }
+  return latestRoundKey;
+}
+
 function aflTopPicksModalRoundLabel(roundKey: string): string {
   if (roundKey === AFL_TOP_PICKS_CURRENT) return 'Current';
   if (roundKey.includes('|')) {
@@ -792,25 +889,26 @@ function AflTopPicksModal({
           : [];
         const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
         const latestRoundKey = rounds.length > 0 ? rounds[rounds.length - 1] : null;
-        const latestRoundRecords = latestRoundKey
-          ? aflTopPicksModalFilterHistoryRecordsByRound(historyRecords, [latestRoundKey])
+        const currentRoundKey = aflTopPicksModalResolveCurrentRoundKey(liveRecords, historyRecords, latestRoundKey);
+        const currentRoundRecords = currentRoundKey
+          ? historyRecords.filter((record) => record.roundKey === currentRoundKey)
           : [];
 
         setCurrentGroups(aflTopPicksModalGroupsFromRecords(liveRecords, gameLogsCacheRef.current));
-        setLatestRoundHistoryGroups(aflTopPicksModalGroupsFromRecords(latestRoundRecords, gameLogsCacheRef.current));
+        setLatestRoundHistoryGroups(aflTopPicksModalGroupsFromRecords(currentRoundRecords, gameLogsCacheRef.current));
         setRoundKeys(rounds);
         setRoundIndex(aflTopPicksModalBuildRoundNav(rounds).length - 1);
 
         const needsHydration =
-          aflTopPicksModalNeedsGameLogHydration(liveRecords) || aflTopPicksModalNeedsGameLogHydration(latestRoundRecords);
+          aflTopPicksModalNeedsGameLogHydration(liveRecords) || aflTopPicksModalNeedsGameLogHydration(currentRoundRecords);
         if (needsHydration && !cancelled) {
-          const [resolvedLive, resolvedLatest] = await Promise.all([
+          const [resolvedLive, resolvedCurrentRound] = await Promise.all([
             resolveHistoryResults(liveRecords),
-            resolveHistoryResults(latestRoundRecords),
+            resolveHistoryResults(currentRoundRecords),
           ]);
           if (!cancelled) {
             setCurrentGroups(resolvedLive);
-            setLatestRoundHistoryGroups(resolvedLatest);
+            setLatestRoundHistoryGroups(resolvedCurrentRound);
           }
         }
       } finally {
