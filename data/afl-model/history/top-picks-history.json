@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-21T13:10:00.000Z",
+  "generatedAt": "2026-06-23T23:39:21.710Z",
   "count": 12,
   "records": [
     {
@@ -21,7 +21,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.094,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 24
         }
       ]
     },
@@ -44,7 +45,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.11800000000000001,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 14
         }
       ]
     },
@@ -67,7 +69,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 15
         },
         {
           "playerName": "Jai Serong",
@@ -77,7 +80,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.043,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 19
         },
         {
           "playerName": "Brodie Grundy",
@@ -87,7 +91,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.037000000000000005,
           "recommendedProb": null,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 26
         }
       ]
     },
@@ -110,7 +115,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 27
         },
         {
           "playerName": "Sam Banks",
@@ -120,7 +126,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 22
         },
         {
           "playerName": "Jacob Hopper",
@@ -130,7 +137,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 17
         }
       ]
     },
@@ -153,7 +161,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 28
         },
         {
           "playerName": "Harrison Himmelberg",
@@ -163,7 +172,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 13
         },
         {
           "playerName": "Callum Wilkie",
@@ -173,7 +183,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 21
         }
       ]
     },
@@ -197,7 +208,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.091,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 19
         },
         {
           "playerName": "Matt Johnson",
@@ -231,7 +243,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 26
         },
         {
           "playerName": "Cam Mackenzie",
@@ -241,7 +254,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.07,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 16
         },
         {
           "playerName": "Jarman Impey",
@@ -251,7 +265,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.04,
           "recommendedProb": null,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 6
         }
       ]
     },
