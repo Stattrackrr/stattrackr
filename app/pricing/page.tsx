@@ -142,7 +142,7 @@ export default function PricingPage() {
     {
       name: 'Pro',
       description: 'Complete NBA research and analytics platform',
-      price: { monthly: 9.99, semiannual: 49.99, annual: 89.99 },
+      price: { monthly: 20.00, semiannual: 100.00, annual: 180.00 },
       features: [
         'Advanced statistics',
         '10+ bookmakers',
@@ -170,14 +170,14 @@ export default function PricingPage() {
       }
       
       const priceIds = {
-        monthly: 'price_1SPPbkF0aO6V0EHjOXoydTwT',
-        semiannual: 'price_1SPPdVF0aO6V0EHj3DM4hFqS',
-        annual: 'price_1SPPdvF0aO6V0EHjJAj8l0nO',
+        monthly: 'price_1TlWpPF0aO6V0EHjEZcvzlEE',
+        semiannual: 'price_1TlWpoF0aO6V0EHjO81pOBgV',
+        annual: 'price_1TlWq3F0aO6V0EHji75auKmP',
       };
       const valueByBilling = {
-        monthly: 9.99,
-        semiannual: 49.99,
-        annual: 89.99,
+        monthly: 20.00,
+        semiannual: 100.00,
+        annual: 180.00,
       };
       
       const priceId = priceIds[billingCycle];
@@ -952,7 +952,7 @@ export default function PricingPage() {
                 Monthly
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">$9.99</span>
+                <span className="text-3xl font-bold text-white">$20.00 AUD</span>
                 <span className="text-gray-300">/month</span>
               </div>
               <div className="text-sm text-gray-400 mt-1 opacity-0">Placeholder</div>
@@ -1011,7 +1011,7 @@ export default function PricingPage() {
                 6 Months
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">$49.99</span>
+                <span className="text-3xl font-bold text-white">$100.00 AUD</span>
               </div>
               <div className="text-sm text-gray-400 mt-1">$8.33/month</div>
               <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 17% • 7-day free trial</span>
@@ -1074,7 +1074,7 @@ export default function PricingPage() {
                 Yearly
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-white">$89.99</span>
+                <span className="text-3xl font-bold text-white">$180.00 AUD</span>
               </div>
               <div className="text-sm text-gray-400 mt-1">$7.50/month</div>
               <span className="inline-block mt-2 text-xs font-semibold text-emerald-400">Save 25% • 7-day free trial</span>

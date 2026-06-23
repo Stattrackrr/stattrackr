@@ -8,7 +8,7 @@ import TikTokPixel from "../components/TikTokPixel";
 export const metadata: Metadata = {
   metadataBase: new URL("https://stattrackr.co"),
   title: "StatTrackr - Advanced Sports Statistic Dashboard",
-  description: "Advanced sports statistic dashboard for NBA and AFL. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
+  description: "Advanced multi-sport statistics dashboard covering NBA, AFL, soccer and more. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   keywords: [
     "sports analytics",
     "multi-sport research",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "StatTrackr - Advanced Sports Statistic Dashboard",
-    description: "Analyze NBA and AFL player stats, team trends, and game props with an advanced, fast sports statistic dashboard.",
+    description: "Analyze multi-sport player stats, team trends, and game props with an advanced, fast sports statistic dashboard.",
     type: "website",
     siteName: "StatTrackr",
     images: [

@@ -34,9 +34,9 @@ export const stripe = new Proxy({} as Stripe, {
 // These can be imported on client side
 export const PRICE_IDS = {
   pro: {
-    monthly: 'price_1SPPbkF0aO6V0EHjOXoydTwT',        // $9.99/month
-    semiannual: 'price_1SPPdVF0aO6V0EHj3DM4hFqS',  // $49.99 (6 months)
-    annual: 'price_1SPPdvF0aO6V0EHjJAj8l0nO',          // $89.99/year
+    monthly: 'price_1TlWpPF0aO6V0EHjEZcvzlEE',        // $20.00 AUD/month
+    semiannual: 'price_1TlWpoF0aO6V0EHjO81pOBgV',  // $100.00 AUD (6 months)
+    annual: 'price_1TlWq3F0aO6V0EHji75auKmP',          // $180.00 AUD/year
   },
 } as const;
 

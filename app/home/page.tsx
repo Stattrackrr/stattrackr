@@ -17,10 +17,9 @@ import {
   Shield, 
   CheckCircle2,
   Smartphone,
-  Monitor,
   ArrowRight,
   Lightbulb,
-  Quote,
+  Quote, 
   Star,
   User as UserIcon,
   DollarSign
@@ -70,13 +69,7 @@ export default function HomePage() {
   const [hasPremium, setHasPremium] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileSlide, setMobileSlide] = useState(0);
-  const [desktopSlide, setDesktopSlide] = useState(0);
-  const [mobileImageErrors, setMobileImageErrors] = useState<Record<number, boolean>>({});
-  const [desktopImageErrors, setDesktopImageErrors] = useState<Record<number, boolean>>({});
-  const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [loadingBrandReady, setLoadingBrandReady] = useState(false);
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
@@ -89,71 +82,19 @@ export default function HomePage() {
     return () => clearTimeout(t);
   }, [loadingBrandReady]);
 
-  // On mobile viewport: hide Desktop/Mobile toggle and always show mobile mock (lg = 1024)
-  const effectiveView = isMobileViewport ? 'mobile' : deviceView;
-  // Desktop + phone mock: text on the side, static (all slides); else text above, cycling
-  const isDesktopPhoneView = !isMobileViewport && effectiveView === 'mobile';
-
-  // Screenshot paths - desktop screenshots (in order: Analytics Dashboard, Player Props, Journal)
-  const desktopSlides = [
-    { 
-      name: 'Analytics Dashboard', 
-      description: 'Every stat in one dashboard.',
-      paragraph: 'Charts, trends, DvP, matchup data. Filter by stat, timeframe, bookmaker, game.',
-      image: '/screenshots/desktop/player-detail.png',
-      objectPosition: 'center center'
-    },
-    { 
-      name: 'Player Props Research', 
-      description: 'Lines from 10+ books, ranked.',
-      paragraph: 'Filter by stat, DvP, bookmaker, game. Best lines surface first.',
-      image: '/screenshots/desktop/props.png',
-      objectPosition: 'center center'
-    },
-    { 
-      name: 'Journal', 
-      description: 'P&L, ROI, calendar, insights.',
-      paragraph: 'Track stakes, wins, losses, bankroll. Filter by sport, bookmaker, date.',
-      image: '/screenshots/desktop/dashboard.png',
-      objectPosition: 'center center'
-    },
-  ];
-
-  // Screenshot paths - mobile screenshots (4 slides; add mobile-1.png … mobile-4.png to public/screenshots/mobile/)
-  const mobileSlides = [
-    { name: 'Player Props', description: 'Lines from 10+ books, ranked.', paragraph: 'Filter by stat, DvP, bookmaker, game. Best lines surface first.', image: '/screenshots/mobile/mobile-1.png', objectPosition: 'top center' },
-    { name: 'Analytics Dashboard', description: 'Every stat in one dashboard.', paragraph: 'Charts, trends, DvP, matchup data. Filter by stat, timeframe, bookmaker, game.', image: '/screenshots/mobile/mobile-2.png', objectPosition: 'top center' },
-    { name: 'Performance Journal', description: 'P&L, ROI, calendar, insights.', paragraph: 'Track stakes, wins, losses, bankroll. Filter by sport, bookmaker, date.', image: '/screenshots/mobile/mobile-3.png', objectPosition: 'top center' },
-    { name: 'Analytics & Insights', description: 'Insights and trends.', paragraph: 'Automated takeaways and pattern highlights.', image: '/screenshots/mobile/mobile-4.png', objectPosition: 'top center' },
-  ];
-
   // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
-    { quote: "I was skeptical about the price. Figured it'd be bare bones. NBA and AFL with stats way more advanced than I expected. I've been winning more since I switched.", name: 'marct_22', tag: 'Pro user' },
-    { quote: "For how cheap it is I wasn't sure it'd be any good. The dashboard is legit, NBA and AFL. Deeper than the free stuff I was using. Results don't lie.", name: 'jreed9', tag: 'Pro user' },
-    { quote: "The journal makes it easy to see where I'm going wrong and what I need to fix. I was just guessing before. Now I actually know which spots are killing me.", name: 'jake_m82', tag: 'Pro user' },
-    { quote: "This is the first one I've actually kept using. Most apps I sign up, use twice, and forget. I'm in here every day before the games.", name: 'alexk9', tag: 'Pro user' },
-    { quote: "I was using like three different things before. Spreadsheets, a free site, notes on my phone. Now it's all in one place and I don't waste time switching.", name: 'samr91', tag: 'Pro user' },
-    { quote: "It doesn't overwhelm you. A lot of these tools throw everything at you. This one gives you what matters without the noise. Fits how I actually work.", name: 'cjlew', tag: 'Pro user' },
-    { quote: "I use it on my phone during the day and on my laptop at night. Same stuff, no weird sync. That alone was worth it for me.", name: 'drew_07', tag: 'Pro user' },
-    { quote: "Tried a couple others and they were either too complicated or too basic. This one hit the middle. Does what I need without a learning curve.", name: 'tayw23', tag: 'Pro user' },
-    { quote: "I've been looking for something like this for a while. Most stuff is either junk or way too expensive. This actually does the job without the extras I don't need.", name: 'mok7', tag: 'Pro user' },
-    { quote: "Saves me a bunch of time. I used to dig through a bunch of tabs and apps. Now I just open this and it's right there. Simple as that.", name: 'riley_n24', tag: 'Pro user' },
+    { quote: "I expected something fairly basic at this price point, but the depth of the statistics across every sport genuinely surprised me. It's become a core part of my routine.", name: 'marct_22', tag: 'Pro user' },
+    { quote: "The dashboard is comprehensive across every sport, and noticeably deeper than the free tools I was using before. Excellent value for the cost.", name: 'jreed9', tag: 'Pro user' },
+    { quote: "The journal makes it easy to identify exactly where my approach is falling short. I used to rely on guesswork; now I have the data to back my decisions.", name: 'jake_m82', tag: 'Pro user' },
+    { quote: "This is the first platform of its kind I've stuck with. Most tools I sign up for and abandon within a week. I'm in this one every day.", name: 'alexk9', tag: 'Pro user' },
+    { quote: "I previously juggled spreadsheets, a free site, and notes on my phone. Having everything consolidated in one place has saved me a significant amount of time.", name: 'samr91', tag: 'Pro user' },
+    { quote: "It strikes the right balance. A lot of these tools overwhelm you with information; this one surfaces what actually matters without the clutter.", name: 'cjlew', tag: 'Pro user' },
+    { quote: "I use it on my phone during the day and my laptop in the evening. The experience is identical across both, with no sync issues. That alone made it worthwhile.", name: 'drew_07', tag: 'Pro user' },
+    { quote: "I'd tried a few alternatives that were either overly complicated or too limited. This one sits right in the middle and does exactly what I need.", name: 'tayw23', tag: 'Pro user' },
+    { quote: "I'd been searching for something like this for a while. Most options are either low quality or overpriced. This delivers exactly what I need, without the extras.", name: 'mok7', tag: 'Pro user' },
+    { quote: "It saves me a considerable amount of time. Instead of digging through multiple tabs and apps, everything I need is in one place.", name: 'riley_n24', tag: 'Pro user' },
   ];
-
-  useEffect(() => {
-    const interval = 7000; // 7 seconds for both
-    const mobileInterval = setInterval(() => {
-      setMobileSlide((prev) => (prev + 1) % mobileSlides.length);
-    }, interval);
-    const desktopInterval = setInterval(() => {
-      setDesktopSlide((prev) => (prev + 1) % desktopSlides.length);
-    }, interval);
-    return () => {
-      clearInterval(mobileInterval);
-      clearInterval(desktopInterval);
-    };
-  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -212,14 +153,6 @@ export default function HomePage() {
       router.replace(qs ? `/props?${qs}` : '/props');
     }
   }, [isCheckingSubscription, user, hasPremium, router]);
-
-  useEffect(() => {
-    const lg = 1024;
-    const update = () => setIsMobileViewport(typeof window !== 'undefined' && window.innerWidth < lg);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
 
   // Close profile menu on click outside
   useEffect(() => {
@@ -317,9 +250,9 @@ export default function HomePage() {
       }
       
       const priceIds = {
-        monthly: 'price_1SPPbkF0aO6V0EHjOXoydTwT',
-        semiannual: 'price_1SPPdVF0aO6V0EHj3DM4hFqS',
-        annual: 'price_1SPPdvF0aO6V0EHjJAj8l0nO',
+        monthly: 'price_1TlWpPF0aO6V0EHjEZcvzlEE',
+        semiannual: 'price_1TlWpoF0aO6V0EHjO81pOBgV',
+        annual: 'price_1TlWq3F0aO6V0EHji75auKmP',
       };
       
       const priceId = priceIds[billingCycle];
@@ -359,14 +292,15 @@ export default function HomePage() {
     {
       name: 'Pro',
       description: '',
-      price: { monthly: 9.99, semiannual: 49.99, annual: 89.99 },
+      price: { monthly: 20.00, semiannual: 100.00, annual: 180.00 },
       features: [
-        'All statistics for NBA',
-        'All statistics for AFL',
-        '10+ bookmakers',
+        'All statistics - NBA',
+        'All statistics - AFL',
+        'All statistics - 10+ Football Competitions',
+        'AFL premium prediction model',
+        'Admin picks',
         'Advanced journaling',
-        'Automatic insights',
-        'Mobile/desktop compatibility',
+        'All device compatibility',
         'Priority support',
       ],
       limitations: [],
@@ -546,389 +480,248 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-blue-400 to-purple-600 bg-clip-text text-transparent">
-              NBA &amp; AFL Research Platform
-            </h1>
-            <p className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto mb-4">
-              Professional sports analytics and data research for NBA and AFL
-            </p>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
-              Research and analytics for NBA and AFL. <span className="font-semibold text-white">Not a betting platform.</span>
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                Get Started
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg text-lg font-semibold transition-colors"
-              >
-                Need help?
-              </button>
+      <section ref={heroRef} className="relative pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Decorative background glow */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/20 blur-[120px]" />
+          <div className="absolute top-0 -right-40 w-[38rem] h-[38rem] rounded-full bg-blue-600/20 blur-[120px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-4 lg:mb-8">
+            {/* Left: copy */}
+            <div className="text-center lg:text-left">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-sm font-medium mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                Multi-Sport Research Platform
+              </span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-[1.1] tracking-tight">
+                {"Australia's most advanced"}
+                <span className="block bg-gradient-to-r from-purple-400 via-blue-400 to-purple-600 bg-clip-text text-transparent">
+                  sports research platform.
+                </span>
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-300 max-w-xl mx-auto lg:mx-0 mb-4">
+                The most in-depth sports statistics platform in Australia, built for serious researchers who want every edge the data can give them.
+              </p>
+              <p className="text-base text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8">
+                <span className="font-semibold text-white">Not a betting platform.</span> Simply the data and tools for serious, informed analysis.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <button
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-all hover:scale-[1.02] shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2"
+                >
+                  Get Started
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-lg font-semibold transition-colors"
+                >
+                  Learn More
+                </button>
+              </div>
+              <div className="mt-8 flex items-center gap-3 justify-center lg:justify-start text-sm text-gray-400">
+                <span className="flex gap-0.5" aria-label="5 out of 5 stars">
+                  {[1, 2, 3, 4, 5].map((j) => <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />)}
+                </span>
+                <span>Trusted by data-driven researchers</span>
+              </div>
+            </div>
+
+            {/* Right: hero photo */}
+            <div className="relative pb-10">
+              <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+                <div aria-hidden className="absolute -inset-4 bg-gradient-to-tr from-purple-600/30 via-fuchsia-500/20 to-blue-600/30 rounded-[2rem] blur-2xl" />
+                <div className="relative rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-purple-900/50">
+                  <Image
+                    src="/images/hero-app-in-use.png"
+                    alt="A StatTrackr user checking live player stats on their phone"
+                    width={900}
+                    height={900}
+                    priority
+                    className="w-full h-auto object-cover"
+                  />
+                  <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#050d1a]/50 via-transparent to-transparent" />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Mock Device Preview */}
-          <div className="relative mt-20 flex flex-col items-center">
-            {/* Desktop / Mobile toggle — icons only; hidden on mobile, show only mobile mock there */}
-            <div className="hidden lg:inline-flex rounded-lg bg-gray-800/90 p-1 border border-gray-700 mb-8">
-              <button
-                onClick={() => setDeviceView('desktop')}
-                className={`flex items-center justify-center p-2 rounded-md transition-all ${
-                  deviceView === 'desktop' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
-                }`}
-                title="Desktop"
-              >
-                <Monitor className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setDeviceView('mobile')}
-                className={`flex items-center justify-center p-2 rounded-md transition-all ${
-                  deviceView === 'mobile' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
-                }`}
-                title="Mobile"
-              >
-                <Smartphone className="w-4 h-4" />
-              </button>
-            </div>
+          {/* Product showcase — 3-device render */}
+          <div className="mt-32 sm:mt-40 lg:mt-52 pt-8 border-t border-white/5">
+            <div className="grid lg:grid-cols-[auto_1fr_1fr] gap-10 lg:gap-12 items-center">
+              {/* Image — left */}
+              <div className="relative flex justify-center lg:justify-start">
+                <div aria-hidden className="absolute inset-0 bg-gradient-to-tr from-purple-600/15 via-fuchsia-500/10 to-blue-600/15 blur-3xl rounded-full pointer-events-none" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/hero-devices.png"
+                  alt="StatTrackr running across laptop, tablet, and phone"
+                  className="relative w-full max-w-[320px] lg:max-w-[380px] h-auto drop-shadow-2xl"
+                  style={{
+                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%)',
+                  }}
+                />
+              </div>
 
-            {/* Desktop+phone: text on the side (all static). Else: text above, cycling with slide. */}
-            {isDesktopPhoneView ? (
-              <div className="flex flex-row items-start justify-center gap-8 lg:gap-12 w-full px-4">
-                <div className="relative w-full sm:w-auto flex justify-center flex-shrink-0">
-                  {/* iPhone frame: bezel, volume, power; photos flick through */}
-                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] rounded-[3.5rem] border-[6px] sm:border-[7px] border-gray-800 box-border bg-gray-800 shadow-2xl relative overflow-visible">
-                    {/* Left: volume — protruding outward from the left edge */}
-                    <div className="absolute -left-3 top-[22%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
-                    <div className="absolute -left-3 top-[31%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
-                    {/* Right: power — protruding outward from the right edge */}
-                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1.5 h-14 sm:h-16 rounded-full bg-gray-700 z-30" aria-hidden />
-                    <div className="w-full h-full bg-[#050d1a] rounded-[3rem] overflow-hidden relative">
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                        <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
-                          <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
-                        </div>
+              {/* Copy — middle */}
+              <div className="text-center lg:text-left">
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Available on every device</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
+                  Compatible on all devices,<br />anytime, anywhere.
+                </h2>
+                <p className="text-gray-400 leading-relaxed text-base">
+                  Whether you are at home on your desktop, on the go with your phone, or sitting back with a tablet, StatTrackr moves with you. Every feature, every data point, and every tool is fully accessible no matter what screen you are on. Your research never stops just because your device changes.
+                </p>
+              </div>
+
+              {/* Bookmakers — right */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Bookmakers covered</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { domain: 'sportsbet.com.au', name: 'Sportsbet',  color: '#0b61ff' },
+                    { domain: 'pointsbet.com.au', name: 'PointsBet',  color: '#EE3124' },
+                    { domain: 'bet365.com',       name: 'Bet365',     color: '#1C6E38' },
+                    { domain: 'ladbrokes.com.au', name: 'Ladbrokes',  color: '#006B3F' },
+                    { domain: 'tab.com.au',       name: 'TAB',        color: '#00843D' },
+                    { domain: 'neds.com.au',      name: 'Neds',       color: '#E31837' },
+                    { domain: 'betr.com.au',      name: 'Betr',       color: '#9333ea' },
+                    { domain: 'betfair.com.au',   name: 'Betfair',    color: '#FFB81C' },
+                    { domain: 'unibet.com.au',    name: 'Unibet',     color: '#43B649' },
+                    { domain: 'draftkings.com',   name: 'DraftKings', color: '#53D337' },
+                    { domain: 'fanduel.com',      name: 'FanDuel',    color: '#0070EB' },
+                    { domain: 'betmgm.com',       name: 'BetMGM',     color: '#C5A572' },
+                    { domain: 'fanatics.com',     name: 'Fanatics',   color: '#011E41' },
+                    { domain: 'caesars.com',      name: 'Caesars',    color: '#002855' },
+                    { domain: 'dabble.com.au',    name: 'Dabble',     color: '#7C3AED' },
+                  ].map((bk) => (
+                    <div
+                      key={bk.name}
+                      className="flex flex-col items-center gap-2 rounded-2xl p-3 border border-white/[0.07] bg-gradient-to-b from-white/[0.05] to-transparent hover:border-purple-500/40 hover:from-white/[0.08] transition-all"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                        style={{ background: `linear-gradient(135deg, ${bk.color}40, ${bk.color}15)` }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${bk.domain}&sz=32`}
+                          alt={bk.name}
+                          className="w-6 h-6"
+                        />
                       </div>
-                      <div className="pt-4 h-full overflow-hidden relative">
-                        <div className="h-full transition-all duration-500 ease-in-out">
-                          {mobileSlides.map((slide, idx) => (
-                            <div
-                              key={idx}
-                              className={`absolute inset-0 transition-opacity duration-500 ${
-                                idx === mobileSlide ? 'opacity-100' : 'opacity-0'
-                              }`}
-                            >
-                              <div className="w-full h-full relative p-1">
-                                {!mobileImageErrors[idx] ? (
-                                  <Image
-                                    src={slide.image}
-                                    alt={slide.name}
-                                    fill
-                                    className="object-cover rounded-lg"
-                                    style={{ objectPosition: slide.objectPosition || 'center center' }}
-                                    onError={() => setMobileImageErrors(prev => ({ ...prev, [idx]: true }))}
-                                    unoptimized
-                                  />
-                                ) : (
-                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
-                                    idx === 0 ? 'from-purple-900/20 to-blue-900/20' :
-                                    idx === 1 ? 'from-blue-900/20 to-purple-900/20' :
-                                    idx === 2 ? 'from-emerald-900/20 to-blue-900/20' :
-                                    'from-indigo-900/20 to-purple-900/20'
-                                  }`}>
-                                    <div className="text-center p-4">
-                                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                                        idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
-                                      }`}>
-                                        {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
-                                        {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
-                                        {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
-                                        {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
-                                      </div>
-                                      <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
-                                      <p className="text-xs text-gray-500">{slide.description}</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-                          {mobileSlides.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className={`h-1.5 rounded-full transition-all ${
-                                idx === mobileSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                    Mobile Optimized
-                  </div>
-                </div>
-                {/* Static block: all 4 mobile slides’ text, no cycling */}
-                <div className="w-full lg:w-96 lg:max-w-md flex-shrink-0 text-center lg:text-left space-y-6 overflow-y-auto lg:max-h-[min(800px,85vh)] pr-2">
-                  {mobileSlides.map((s, idx) => (
-                    <div key={idx}>
-                      <h3 className="text-lg font-bold text-white mb-1">{s.name}</h3>
-                      <p className="text-gray-400 text-sm mb-2">{s.description}</p>
-                      {s.paragraph && <p className="text-gray-500 text-sm leading-relaxed">{s.paragraph}</p>}
+                      <span className="text-[10px] font-semibold text-gray-300 text-center leading-tight">{bk.name}</span>
                     </div>
                   ))}
                 </div>
+                <p className="text-xs text-gray-600 mt-3">Lines ranked by value across every major book.</p>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-8 lg:gap-10 w-full px-4">
-                {/* Copy above: matches current slide, updates with the photo */}
-                <div className="w-full max-w-2xl mx-auto text-center">
-                  <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 transition-opacity duration-300">
-                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).name}
-                  </h3>
-                  <p className="text-gray-400 text-sm lg:text-base mb-3">
-                    {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).description}
-                  </p>
-                  {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph && (
-                    <p className="text-gray-500 text-sm leading-relaxed">
-                      {(effectiveView === 'mobile' ? mobileSlides[mobileSlide] : desktopSlides[desktopSlide]).paragraph}
-                    </p>
-                  )}
-                </div>
-
-                {effectiveView === 'mobile' && (
-                  <div className="relative w-full sm:w-auto flex justify-center flex-shrink-0">
-                  {/* iPhone frame: bezel, volume, power; photos flick through */}
-                  <div className="w-[340px] sm:w-[360px] h-[740px] sm:h-[800px] rounded-[3.5rem] border-[6px] sm:border-[7px] border-gray-800 box-border bg-gray-800 shadow-2xl relative overflow-visible">
-                    {/* Left: volume — protruding outward from the left edge */}
-                    <div className="absolute -left-3 top-[22%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
-                    <div className="absolute -left-3 top-[31%] w-1.5 h-11 sm:h-12 rounded-full bg-gray-700 z-30" aria-hidden />
-                    {/* Right: power — protruding outward from the right edge */}
-                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-1.5 h-14 sm:h-16 rounded-full bg-gray-700 z-30" aria-hidden />
-                    <div className="w-full h-full bg-[#050d1a] rounded-[3rem] overflow-hidden relative">
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
-                        <div className="w-32 h-8 bg-black rounded-full flex items-center justify-center">
-                          <div className="w-24 h-6 bg-gray-900 rounded-full"></div>
-                        </div>
-                      </div>
-                      <div className="pt-4 h-full overflow-hidden relative">
-                        <div className="h-full transition-all duration-500 ease-in-out">
-                          {mobileSlides.map((slide, idx) => (
-                            <div
-                              key={idx}
-                              className={`absolute inset-0 transition-opacity duration-500 ${
-                                idx === mobileSlide ? 'opacity-100' : 'opacity-0'
-                              }`}
-                            >
-                              <div className="w-full h-full relative p-1">
-                                {!mobileImageErrors[idx] ? (
-                                  <Image
-                                    src={slide.image}
-                                    alt={slide.name}
-                                    fill
-                                    className="object-cover rounded-lg"
-                                    style={{ objectPosition: slide.objectPosition || 'center center' }}
-                                    onError={() => setMobileImageErrors(prev => ({ ...prev, [idx]: true }))}
-                                    unoptimized
-                                  />
-                                ) : (
-                                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-b ${
-                                    idx === 0 ? 'from-purple-900/20 to-blue-900/20' : 
-                                    idx === 1 ? 'from-blue-900/20 to-purple-900/20' : 
-                                    idx === 2 ? 'from-emerald-900/20 to-blue-900/20' : 
-                                    'from-indigo-900/20 to-purple-900/20'
-                                  }`}>
-                                    <div className="text-center p-4">
-                                      <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                                        idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : idx === 2 ? 'bg-emerald-600/20' : 'bg-indigo-600/20'
-                                      }`}>
-                                        {idx === 0 && <Search className="w-8 h-8 text-purple-400" />}
-                                        {idx === 1 && <BarChart3 className="w-8 h-8 text-blue-400" />}
-                                        {idx === 2 && <BookOpen className="w-8 h-8 text-emerald-400" />}
-                                        {idx === 3 && <TrendingUp className="w-8 h-8 text-indigo-400" />}
-                                      </div>
-                                      <p className="text-sm font-semibold text-gray-300 mb-1">{slide.name}</p>
-                                      <p className="text-xs text-gray-500">{slide.description}</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-                          {mobileSlides.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className={`h-1.5 rounded-full transition-all ${
-                                idx === mobileSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-purple-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                    Mobile Optimized
-                  </div>
-                </div>
-              )}
-
-              {effectiveView === 'desktop' && (
-                <div className="relative flex-shrink-0">
-                  <div className="w-[min(1110px,95vw)] h-[670px] bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-700 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-8 bg-gray-900 rounded-t-lg flex items-center gap-2 px-4 z-20">
-                      <div className="flex gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      </div>
-                      <div className="flex-1 flex justify-center">
-                        <div className="w-32 h-1 bg-gray-700 rounded-full"></div>
-                      </div>
-                    </div>
-                    <div className="pt-8 h-full bg-[#050d1a] overflow-hidden relative">
-                      <div className="h-full transition-all duration-500 ease-in-out">
-                        {desktopSlides.map((slide, idx) => (
-                          <div
-                            key={idx}
-                            className={`absolute inset-0 transition-opacity duration-500 ${
-                              idx === desktopSlide ? 'opacity-100' : 'opacity-0'
-                            }`}
-                          >
-                            <div className="w-full h-full relative p-0 overflow-hidden">
-                              {!desktopImageErrors[idx] ? (
-                                <Image
-                                  src={slide.image}
-                                  alt={slide.name}
-                                  fill
-                                  className="object-cover rounded-lg"
-                                  style={{ 
-                                    objectPosition: slide.objectPosition || 'center center',
-                                    transform: 'scale(1)',
-                                    transformOrigin: 'center center'
-                                  }}
-                                  onError={() => setDesktopImageErrors(prev => ({ ...prev, [idx]: true }))}
-                                  unoptimized
-                                />
-                              ) : (
-                                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${
-                                  idx === 0 ? 'from-purple-900/30 to-blue-900/30' : 
-                                  idx === 1 ? 'from-blue-900/30 to-purple-900/30' : 
-                                  'from-emerald-900/30 to-blue-900/30'
-                                }`}>
-                                  <div className="text-center p-8">
-                                    <div className={`w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
-                                      idx === 0 ? 'bg-purple-600/20' : idx === 1 ? 'bg-blue-600/20' : 'bg-emerald-600/20'
-                                    }`}>
-                                      {idx === 0 && <Search className="w-12 h-12 text-purple-400" />}
-                                      {idx === 1 && <BarChart3 className="w-12 h-12 text-blue-400" />}
-                                      {idx === 2 && <BookOpen className="w-12 h-12 text-emerald-400" />}
-                                    </div>
-                                    <p className="text-xl font-bold text-gray-200 mb-2">{slide.name}</p>
-                                    <p className="text-sm text-gray-400">{slide.description}</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-                        {desktopSlides.map((_, idx) => (
-                          <div
-                            key={idx}
-                            className={`h-2 rounded-full transition-all ${
-                              idx === desktopSlide ? 'bg-blue-400 w-8' : 'bg-gray-600 w-2'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                    Desktop Experience
-                  </div>
-                </div>
-              )}
-              </div>
-            )}
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* Prediction analytics spotlight */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#0a1929]">
+        <div className="max-w-7xl mx-auto">
+
+          {/* Header */}
+          <div className="mb-12 lg:mb-16 max-w-2xl">
+            <h2 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight">
+              Advanced prediction model,
+              <span className="block bg-gradient-to-r from-purple-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">
+                built to perform.
+              </span>
+            </h2>
+          </div>
+
+          {/* Image + floating stats */}
+          <div className="relative">
+            <div aria-hidden className="absolute -inset-10 bg-gradient-to-tr from-purple-600/20 via-fuchsia-500/10 to-blue-600/20 blur-3xl pointer-events-none" />
+
+            {/* Laptop image — full width */}
+            <div className="relative rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-purple-900/40">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/hero-picks.png"
+                alt="StatTrackr Top Picks model"
+                className="w-full h-auto"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+                }}
+              />
+            </div>
+
+            {/* Floating info card — bottom right */}
+            <div className="hidden sm:block absolute bottom-6 right-4 sm:bottom-10 sm:right-10 bg-[#050d1a]/90 backdrop-blur-lg border border-gray-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl max-w-[260px] sm:max-w-xs">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">AFL Season 2026</p>
+              </div>
+              <p className="text-white font-bold text-lg leading-snug mb-4">
+                Profitable every round this AFL season.
+              </p>
+              <button
+                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2"
+              >
+                Get Access <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Description beneath image */}
+          <p className="text-gray-400 mt-8 max-w-2xl text-base leading-relaxed">
+            StatTrackr&apos;s Top Picks model analyses player history, matchup trends, and line movement — surfacing the highest-confidence plays each round, ranked and ready.
+          </p>
+
         </div>
       </section>
 
       {/* Key Features Grid */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Why StatTrackr?</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Everything you need, nothing you don&apos;t</h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              We built StatTrackr to give you the stats and tools you need without the fluff. Here&apos;s what you get.
+              StatTrackr delivers the statistics and tools that matter — without the clutter. Here&apos;s what&apos;s included.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <BarChart3 className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Advanced NBA &amp; AFL stats</h3>
-              <p className="text-gray-400">
-                StatTrackr provides a very advanced NBA dashboard and the most advanced AFL dashboard out there, built to help you find edges and make winners.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <DollarSign className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Rate locked in</h3>
-              <p className="text-gray-400">
-                Subscribe at today&apos;s rate and keep it. If we add more sports or change pricing for new members later, your rate stays the same.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <BookOpen className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Journal</h3>
-              <p className="text-gray-400">
-                Log your props and track how you go. P&L, ROI, calendar, profit by book and market, all in one place.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Lightbulb className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Auto insights</h3>
-              <p className="text-gray-400">
-                We surface patterns and takeaways from your journal data so you can see where you&apos;re strong and where to improve.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Zap className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Simple</h3>
-              <p className="text-gray-400">
-                Clear layout and workflows so you can focus on research instead of fighting the tool.
-              </p>
-            </div>
-            <div className="bg-[#0a1929] p-6 rounded-lg border border-gray-800">
-              <Smartphone className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Desktop and mobile</h3>
-              <p className="text-gray-400">
-                Same tools and data on phone, tablet, and desktop. Research wherever you are.
-              </p>
-            </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: BarChart3, title: 'Multi-sport coverage', desc: 'Full statistics and research tools across NBA, AFL, soccer and more. One platform, every sport you follow.' },
+              { icon: TrendingUp, title: "Australia's best AFL prediction model", desc: 'Our AFL model crunches player history, matchup trends, and line movement across thousands of data points to surface the highest-confidence plays each round.' },
+              { icon: Zap, title: 'Admin free picks', desc: 'Hand-selected picks published directly by our team. No noise, no filler. Just clear calls with the reasoning behind them.' },
+              { icon: Lightbulb, title: 'Built for everyone', desc: 'Whether you are brand new to sports research or a seasoned analyst, StatTrackr is designed to be intuitive from the moment you sign in.' },
+              { icon: Smartphone, title: 'Cross-device access', desc: 'The same tools and data on phone, tablet, and desktop, so you can research wherever you are.' },
+              { icon: DollarSign, title: 'Locked-in pricing', desc: "Subscribe at today's rate and keep it forever. If we add more sports or adjust pricing for new members, your rate never changes." },
+            ].map((f, i) => (
+              <div
+                key={i}
+                className="group relative bg-white/[0.03] hover:bg-white/[0.05] p-6 rounded-2xl border border-gray-800 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/30 to-blue-600/20 border border-purple-500/20 flex items-center justify-center mb-5">
+                  <f.icon className="w-6 h-6 text-purple-300" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">{f.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+
       {/* Reviews / Testimonials — infinite scroll to the right */}
-      <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+      <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">What users say</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">What our users say</h2>
           </div>
         </div>
         <div className="overflow-x-hidden w-full mt-8">
@@ -961,10 +754,28 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a1929]">
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Pricing</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Competitive pricing</h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">Pick the billing cycle that suits you. Every plan includes a 7-day free trial.</p>
+          </div>
+
+          {/* Mobile toggle */}
+          <div className="flex md:hidden justify-center mb-8">
+            <div className="flex bg-white/[0.05] border border-gray-800 rounded-xl p-1 gap-1">
+              {(['monthly', 'semiannual', 'annual'] as const).map((cycle) => (
+                <button
+                  key={cycle}
+                  onClick={() => setBillingCycle(cycle)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    billingCycle === cycle ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {cycle === 'monthly' ? 'Monthly' : cycle === 'semiannual' ? '6 Months' : 'Annual'}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -973,19 +784,14 @@ export default function HomePage() {
                 {/* Monthly */}
                 <div
                   key={`${plan.name}-monthly`}
-                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${
-                    billingCycle === 'monthly'
-                      ? 'border-purple-600 shadow-2xl shadow-purple-600/20'
-                      : 'border-gray-800'
-                  }`}
+                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'monthly' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'monthly' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold">
-                        ${plan.price.monthly.toFixed(2)}
-                      </span>
+                      <span className="text-4xl font-bold">${plan.price.monthly.toFixed(2)}</span>
+                      <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/month</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">7-day free trial</p>
@@ -1000,11 +806,7 @@ export default function HomePage() {
                   </ul>
                   <button
                     onClick={() => handleSelectPlan(plan.name, 'monthly')}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      billingCycle === 'monthly'
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                    }`}
+                    className="w-full py-3 rounded-lg font-semibold transition-all bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     {plan.cta}
                   </button>
@@ -1013,19 +815,14 @@ export default function HomePage() {
                 {/* 6 Months */}
                 <div
                   key={`${plan.name}-semiannual`}
-                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${
-                    billingCycle === 'semiannual'
-                      ? 'border-purple-600 shadow-2xl shadow-purple-600/20'
-                      : 'border-gray-800'
-                  }`}
+                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'semiannual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'semiannual' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold">
-                        ${plan.price.semiannual.toFixed(2)}
-                      </span>
+                      <span className="text-4xl font-bold">${plan.price.semiannual.toFixed(2)}</span>
+                      <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/6 months</span>
                     </div>
                     <p className="text-xs text-emerald-400 mt-2">Save 17% • 7-day free trial</p>
@@ -1040,11 +837,7 @@ export default function HomePage() {
                   </ul>
                   <button
                     onClick={() => handleSelectPlan(plan.name, 'semiannual')}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      billingCycle === 'semiannual'
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                    }`}
+                    className="w-full py-3 rounded-lg font-semibold transition-all bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     {plan.cta}
                   </button>
@@ -1053,19 +846,14 @@ export default function HomePage() {
                 {/* Annual */}
                 <div
                   key={`${plan.name}-annual`}
-                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${
-                    billingCycle === 'annual'
-                      ? 'border-purple-600 shadow-2xl shadow-purple-600/20'
-                      : 'border-gray-800'
-                  }`}
+                  className={`bg-[#050d1a] rounded-xl border-2 p-8 ${billingCycle === 'annual' ? 'border-purple-600 shadow-2xl shadow-purple-600/20' : 'border-gray-800'} ${billingCycle !== 'annual' ? 'hidden md:block' : ''}`}
                 >
                   <div className="mb-6">
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                     {plan.description ? <p className="text-gray-400 mb-4 text-sm">{plan.description}</p> : null}
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold">
-                        ${plan.price.annual.toFixed(2)}
-                      </span>
+                      <span className="text-4xl font-bold">${plan.price.annual.toFixed(2)}</span>
+                      <span className="text-sm font-medium text-gray-400">AUD</span>
                       <span className="text-gray-400">/year</span>
                     </div>
                     <p className="text-xs text-emerald-400 mt-2">Save 25% • 7-day free trial</p>
@@ -1098,23 +886,25 @@ export default function HomePage() {
       {/* FAQ Section */}
       <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-white mb-10">
-            FAQ
-          </h2>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">Questions, answered</h2>
+          </div>
           <div className="space-y-3">
             {[
-              { q: 'Is there a free trial?', a: 'Yes. All plans include a 7-day free trial. We need a card to start, but you won\'t be charged until the trial ends. If you cancel before the trial is over, you won\'t be charged at all.' },
-              { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and we don\'t make you jump through hoops.' },
-              { q: 'Is mobile supported?', a: 'Yes. StatTrackr works on phone, tablet, and desktop. You get the same features and data on mobile so you can research on the go.' },
+              { q: 'How has the AFL prediction model performed?', a: 'Profitable every week of the AFL season. The model has consistently identified value across rounds, giving subscribers an edge week after week.' },
+              { q: 'How have the admin picks performed?', a: '40+ units made across the season. Our team\'s hand-selected picks have delivered strong, consistent returns for subscribers.' },
+              { q: 'Is there a free trial?', a: 'Yes. All plans include a 7-day free trial. A payment method is required to begin, but you won\'t be charged until the trial ends. If you cancel before it concludes, you won\'t be charged at all.' },
+              { q: 'Can I cancel anytime?', a: 'Yes. You can cancel your subscription at any time. There are no cancellation fees and no unnecessary hurdles.' },
+              { q: 'Is mobile supported?', a: 'Yes. StatTrackr works across phone, tablet, and desktop. The full feature set and data are available on mobile, so you can research on the go.' },
               { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
-              { q: 'Does the journal use real money?', a: 'No. The journal is for tracking only. You enter your own data; we don\'t handle real money or connect to any sportsbooks. It\'s just a tool to log your research and see how you\'re going over time.' },
-              { q: 'What sports are available?', a: 'Right now we have NBA and AFL with full stats, props, and research tools. We will add more sports and will announce them when they\'re ready.' },
-              { q: 'Are the top-ranked props the best picks?', a: 'No. The order is based on line value and odds we pull from books, not our recommendations. We give you the data and tools; you decide what to do with it. Use the filters and dashboard to build your own edges.' },
+              { q: 'Does the journal use real money?', a: 'No. The journal is for tracking purposes only. You enter your own data; we don\'t handle real money or connect to any sportsbooks. It is simply a tool for logging your research and reviewing your performance over time.' },
+              { q: 'What sports are available?', a: 'We cover multiple sports — NBA, AFL, and soccer (including the World Cup) — with full stats, props, and research tools. We\'re always adding more and will announce new sports when they\'re ready.' },
+              { q: 'Are the top-ranked props the best picks?', a: 'No. The ranking is based on line value and odds sourced from bookmakers, not our recommendations. We provide the data and tools; how you interpret them is entirely up to you. Use the filters and dashboard to draw your own conclusions.' },
             ].map((faq, i) => (
               <div
                 key={i}
                 onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-                className="bg-[#0a1929] rounded-xl p-4 border border-gray-800 cursor-pointer hover:border-purple-500/50 transition-colors"
+                className="bg-white/[0.03] rounded-xl p-4 border border-gray-800 cursor-pointer hover:border-purple-500/50 transition-colors"
               >
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-semibold text-white">{faq.q}</h3>
@@ -1137,9 +927,13 @@ export default function HomePage() {
           </div>
           <div className="mt-12 text-center">
             <p className="text-gray-400 font-medium mb-6 text-lg">Sports coverage</p>
-            <div className="flex items-center justify-center gap-16">
-              <Image src="/images/nba-logo.png" alt="NBA" width={200} height={200} className="object-contain opacity-90 w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52" />
-              <Image src="/images/afl-logo.png" alt="AFL" width={200} height={200} className="object-contain opacity-90 w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52" />
+            <div className="grid grid-cols-3 items-center justify-items-center gap-4">
+              <Image src="/images/nba-logo.png" alt="NBA" width={200} height={200} className="object-contain opacity-90 w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52" />
+              <Image src="/images/afl-logo.png" alt="AFL" width={200} height={200} className="object-contain opacity-90 w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52" />
+              <div className="flex flex-col items-center justify-center w-20 h-20 sm:w-44 sm:h-44 md:w-52 md:h-52">
+                <span className="text-2xl sm:text-5xl md:text-6xl font-black text-white">10+</span>
+                <span className="text-gray-300 text-xs sm:text-lg font-semibold mt-1 text-center leading-tight">Football Leagues</span>
+              </div>
             </div>
           </div>
           <p className="text-center text-gray-400 mt-10">
@@ -1149,16 +943,21 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-blue-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-8">Ready to start?</h2>
+      <section className="relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 py-20 px-4 sm:px-6 lg:px-8 text-center">
+        <div aria-hidden className="absolute -top-20 -right-16 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+        <div aria-hidden className="absolute -bottom-24 -left-16 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+        <div className="relative max-w-5xl mx-auto">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-4">Ready to get started?</h2>
+          <p className="text-lg text-white/80 max-w-xl mx-auto mb-8">
+            Start your 7-day free trial. Cancel anytime, you won&apos;t be charged until the trial ends.
+          </p>
           <button
             onClick={() => {
               if (user && hasPremium) goToProps();
               else if (user) router.push('/home#pricing');
               else router.push('/login');
             }}
-            className="px-8 py-4 bg-white text-purple-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
+            className="px-8 py-4 bg-white text-purple-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:scale-[1.02] shadow-lg"
           >
             Start Free Trial
           </button>
@@ -1181,7 +980,7 @@ export default function HomePage() {
                 <span className="text-xl font-bold">StatTrackr</span>
               </div>
               <p className="text-gray-400 text-sm">
-                NBA and AFL research and analytics platform for serious analysts and researchers.
+                Multi-sport research and analytics platform for serious analysts and researchers.
               </p>
             </div>
             <div>
