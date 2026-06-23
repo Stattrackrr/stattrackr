@@ -454,7 +454,9 @@ function aflTopPicksModalInferRoundKey(
     const sameWeekRoundKeys = aflTopPicksModalSortRoundKeys(
       Array.from(
         new Set(
-          withRound.filter((record) => record.weekKey === weekKey).map((record) => record.roundKey as string)
+          withRound
+            .filter((record) => aflTopPicksModalWeekKeyFromCommenceTime(record.commenceTime) === weekKey)
+            .map((record) => record.roundKey as string)
         )
       )
     );
