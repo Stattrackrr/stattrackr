@@ -51,6 +51,11 @@ function parseArgs(argv) {
     dryRun: argv.includes('--dry-run'),
     force: argv.includes('--force'),
     snapshot: argv.includes('--snapshot'),
+    enrich: argv.includes('--enrich'),
+    baseUrl:
+      argv.find((arg) => arg.startsWith('--base-url='))?.slice('--base-url='.length) ??
+      process.env.PROD_URL ??
+      'http://localhost:3000',
     windowHours: readNumberArg('--window-hours', 2),
     limitPerGame: Math.max(0, Math.min(10, Math.floor(readNumberArg('--limit-per-game', 3)))),
     now,
@@ -465,9 +470,102 @@ function runBackfill(args) {
   }
 }
 
+function normalizePlayerName(name) {
+  return String(name ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u0027\u2018\u2019\u201B\u2032\u0060]/g, "'")
+    .replace(/[\u002D\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
+    .replace(/\s+/g, ' ');
+}
+
+function gameLogPlayerName(name) {
+  const trimmed = String(name ?? '').trim();
+  if (trimmed === 'Cam Mackenzie') return 'Cameron Mackenzie';
+  return trimmed;
+}
+
+function localIsoDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function matchGame(gameDate, games) {
+  for (const game of games) {
+    const rawDate = String(game?.date ?? game?.gameDate ?? game?.game_date ?? '').slice(0, 10);
+    if (rawDate === gameDate) return game;
+  }
+  return null;
+}
+
+async function fetchPlayerGames(baseUrl, season, playerName) {
+  const params = new URLSearchParams({
+    season: String(season),
+    player_name: playerName,
+    include_both: '1',
+  });
+  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/afl/player-game-logs?${params.toString()}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data?.games) ? data.games : [];
+}
+
+async function runEnrich(args) {
+  if (!fs.existsSync(HISTORY_PATH)) {
+    console.log('[afl-top-picks-enrich] no history file');
+    return;
+  }
+
+  const payload = readJsonFileAnyEncoding(HISTORY_PATH);
+  const records = Array.isArray(payload?.records) ? payload.records : [];
+  const todayIso = localIsoDate(new Date());
+  const logsCache = new Map();
+  let updatedPicks = 0;
+
+  for (const record of records) {
+    const gameDate = String(record?.commenceTime ?? '').slice(0, 10);
+    if (!gameDate || gameDate > todayIso) continue;
+    const season = Number.parseInt(gameDate.slice(0, 4), 10);
+    for (const pick of record.picks ?? []) {
+      if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) continue;
+      const lookupName = gameLogPlayerName(pick.playerName);
+      const cacheKey = `${season}|${normalizePlayerName(lookupName)}`;
+      let games = logsCache.get(cacheKey);
+      if (!games) {
+        games = await fetchPlayerGames(args.baseUrl, season, lookupName);
+        logsCache.set(cacheKey, games);
+      }
+      const match = matchGame(gameDate, games);
+      if (!match) continue;
+      const actual =
+        typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
+      if (!Number.isFinite(actual)) continue;
+      pick.actualDisposals = actual;
+      updatedPicks += 1;
+    }
+  }
+
+  console.log(`[afl-top-picks-enrich] updatedPicks=${updatedPicks} dryRun=${args.dryRun}`);
+  if (updatedPicks > 0 && !args.dryRun) {
+    writeUtf8(
+      HISTORY_PATH,
+      `${JSON.stringify({ generatedAt: new Date().toISOString(), count: records.length, records }, null, 2)}\n`
+    );
+  }
+}
+
 const args = parseArgs(process.argv.slice(2));
 if (args.snapshot) {
   runSnapshot(args);
+} else if (args.enrich) {
+  runEnrich(args).catch((error) => {
+    console.error('[afl-top-picks-enrich] failed', error);
+    process.exit(1);
+  });
 } else {
   runBackfill(args);
 }
