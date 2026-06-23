@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       console.warn('Portal - Trial user without STRIPE_PORTAL_CONFIG_TRIAL, falling back to default portal config');
     }
 
-    const returnUrl = buildTrustedAppUrl('/subscription', {
+    const returnUrl = buildTrustedAppUrl('/props', {
       requestedOrigin: request.headers.get('origin'),
       fallbackOrigin: request.nextUrl.origin,
     });
