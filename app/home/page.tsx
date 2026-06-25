@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
+import { readViewerProfileCache, resolveViewerProfile } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
@@ -53,6 +54,7 @@ export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
     router.prefetch('/props?sport=all');
+    void fetch('/api/props/combined', { cache: 'force-cache' }).catch(() => {});
     if (NBA_PUBLIC_ENABLED) {
       void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
     }
@@ -144,6 +146,7 @@ export default function HomePage() {
   // Logged-in Pro users: redirect to props page, don't show home (preserve query e.g. test_event_code for Meta)
   useEffect(() => {
     if (!isCheckingSubscription && user && hasPremium) {
+      prefetchPropsResources();
       const search = typeof window !== "undefined" ? window.location.search : "";
       const params = new URLSearchParams(search);
       if (!params.has('sport')) {
@@ -167,42 +170,28 @@ export default function HomePage() {
   }, [showProfileMenu]);
 
   const checkPremiumStatus = async (userId: string) => {
+    const cached = readViewerProfileCache(userId);
+    if (cached) {
+      setHasPremium(cached.isPro);
+      setIsCheckingSubscription(false);
+    }
+
     try {
-      // Check Pro access - try profiles table first, fallback to subscriptions table
-      const { data: profile } = await (supabase
-        .from('profiles') as any)
-        .select('subscription_status, subscription_tier')
-        .eq('id', userId)
-        .single();
-      
-      let isActive = false;
-      let isProTier = false;
-      
-      if (profile) {
-        // Use profiles table if available
-        const profileData = profile as any;
-        isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-        isProTier = profileData.subscription_tier === 'pro';
-      } else {
-        // Fallback to subscriptions table
-        const { data: subscription } = await (supabase
-          .from('subscriptions') as any)
-          .select('status')
-          .eq('user_id', userId)
-          .single();
-        
-        if (subscription) {
-          const subscriptionData = subscription as any;
-          isActive = subscriptionData.status === 'active' || subscriptionData.status === 'trialing';
-          isProTier = true; // Assume pro if in subscriptions table
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setHasPremium(false);
+        return;
       }
-      
-      const premiumStatus = isActive && isProTier;
-      setHasPremium(premiumStatus);
+
+      const profile = await resolveViewerProfile(supabase, session.user, {
+        forceRefresh: !cached,
+      });
+      setHasPremium(profile.isPro);
     } catch (error) {
       console.error('Error checking subscription:', error);
-      setHasPremium(false);
+      if (!cached) {
+        setHasPremium(false);
+      }
     } finally {
       setIsCheckingSubscription(false);
     }

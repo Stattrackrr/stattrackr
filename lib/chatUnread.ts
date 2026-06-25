@@ -44,16 +44,14 @@ export function useChatUnread(enabled = true) {
   useEffect(() => {
     let isMounted = true;
 
-    const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!isMounted) return;
-      setUserId(user?.id ?? null);
+    const loadUser = () => {
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!isMounted) return;
+        setUserId(session?.user?.id ?? null);
+      });
     };
 
-    void loadUser();
+    loadUser();
 
     const {
       data: { subscription },

@@ -3,6 +3,12 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import {
+  displayNameFromProfile,
+  avatarFromProfile,
+  resolveViewerProfile,
+  readViewerProfileCache,
+} from '@/lib/profileSubscriptionGate';
 
 export interface UseSubscriptionCheckParams {
   setUserEmail: (email: string | null) => void;
@@ -25,12 +31,10 @@ export function useSubscriptionCheck({
     let lastSubscriptionStatus: { isActive: boolean; isPro: boolean } | null = null;
     
     const checkSubscription = async (skipCache = false) => {
-      // Get session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
         if (isMounted) {
-          // No session - redirect to login with return path (non-blocking)
           setTimeout(() => {
             router.push('/login?redirect=/nba/research/dashboard');
           }, 0);
@@ -40,53 +44,38 @@ export function useSubscriptionCheck({
 
       if (!isMounted) return;
 
-      // Don't set email/username/avatar until we have profile — set all together below to avoid flash of email before name
+      const user = session.user;
+
+      if (!skipCache) {
+        const cached = readViewerProfileCache(user.id);
+        if (cached) {
+          setUserEmail(cached.userEmail);
+          setUsername(cached.username);
+          setAvatarUrl(cached.avatarUrl);
+          setIsPro(cached.isPro);
+          if (!cached.isPro) {
+            router.replace('/home#pricing');
+          }
+        }
+      }
 
       try {
-        // Load profile first: name and avatar are single source of truth
-        const { data: profile } = await (supabase
-          .from('profiles') as any)
-          .select('subscription_status, subscription_tier, avatar_url, full_name, username')
-          .eq('id', session.user.id)
-          .single();
-
+        const profile = await resolveViewerProfile(supabase, user, { forceRefresh: skipCache });
         if (!isMounted) return;
-        const profileData = profile as { subscription_status?: string; subscription_tier?: string; avatar_url?: string | null; full_name?: string | null; username?: string | null } | null;
-        const displayName = profileData?.full_name || profileData?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || null;
-        const avatarFromProfile = profileData?.avatar_url ?? session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null;
-        setUserEmail(session.user.email || null);
-        setUsername(displayName);
-        setAvatarUrl(avatarFromProfile);
+
+        setUserEmail(profile.userEmail);
+        setUsername(profile.username);
+        setAvatarUrl(profile.avatarUrl);
+
+        const proStatus = profile.isPro;
         
-        let isActive = false;
-        let isProTier = false;
-        
-        if (profileData) {
-          // Use profiles table if available
-          isActive = profileData.subscription_status === 'active' || profileData.subscription_status === 'trialing';
-          isProTier = profileData.subscription_tier === 'pro';
+        if (proStatus) {
+          lastSubscriptionStatus = { isActive: true, isPro: true };
         } else {
-          // Fallback to user_metadata for dev testing
-          const metadata = session.user.user_metadata || {};
-          isActive = metadata.subscription_status === 'active';
-          isProTier = metadata.subscription_plan === 'pro';
-        }
-        
-        const proStatus = isActive && isProTier;
-        
-        // Cache active subscription status (to prevent logouts on errors)
-        // But always update if subscription expires (isActive becomes false)
-        if (isActive) {
-          lastSubscriptionStatus = { isActive: true, isPro: proStatus };
-        } else {
-          // Subscription expired - clear cache and update immediately
           lastSubscriptionStatus = null;
         }
         
-        // Always update if status changed, subscription expired, or if this is the first check
-        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || !isActive || skipCache) {
-          // Debug logging removed('🔐 Dashboard Pro Status Check:', { isActive, isProTier, proStatus, profile, metadata: session.user.user_metadata });
-          
+        if (!lastSubscriptionStatus || lastSubscriptionStatus.isPro !== proStatus || skipCache) {
           if (isMounted) {
             setIsPro(proStatus);
             if (!proStatus) {
@@ -95,16 +84,26 @@ export function useSubscriptionCheck({
             }
           }
           
-          if (isActive) {
-            lastSubscriptionStatus = { isActive, isPro: proStatus };
+          if (proStatus) {
+            lastSubscriptionStatus = { isActive: true, isPro: true };
           }
         }
       } catch (error) {
         console.error('Error checking subscription:', error);
-        // If we have a cached active subscription, keep it (never log out active subscribers)
         if (lastSubscriptionStatus?.isActive && isMounted) {
-          // Debug logging removed('🔐 Using cached active subscription status due to error');
           setIsPro(lastSubscriptionStatus.isPro);
+        } else if (isMounted) {
+          const cached = readViewerProfileCache(user.id);
+          if (cached) {
+            setUserEmail(cached.userEmail);
+            setUsername(cached.username);
+            setAvatarUrl(cached.avatarUrl);
+            setIsPro(cached.isPro);
+          } else {
+            setUserEmail(user.email || null);
+            setUsername(displayNameFromProfile(null, user));
+            setAvatarUrl(avatarFromProfile(null, user));
+          }
         }
       }
     };

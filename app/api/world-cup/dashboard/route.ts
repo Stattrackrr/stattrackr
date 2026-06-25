@@ -71,6 +71,10 @@ import {
   loadLineupPlayerPhotos,
   normalizeWorldCupPlayerName,
 } from '@/lib/worldCupPlayerIndex';
+import {
+  persistBdlMatches2026IfNewer,
+  persistBdlPlayerMatchStatsRows,
+} from '@/lib/worldCupOpponentBreakdown';
 import { getPrimaryOddsLineForStat } from '@/lib/impliedProbability';
 import { authorizeCronRequest, isCronRequestAuthorized } from '@/lib/cronAuth';
 
@@ -106,6 +110,23 @@ async function readWcCache<T>(key: string): Promise<T | null> {
   const value = await getWorldCupCache<T>(key);
   recordWcSource(key, value != null ? 'supabase-cache' : 'cache-miss');
   return value;
+}
+
+function writebackLivePlayerMatchStats(rows: Array<Record<string, unknown>>): void {
+  if (!rows.length) return;
+  void persistBdlPlayerMatchStatsRows(rows)
+    .then(({ matchesUpdated, playersUpdated }) => {
+      if (matchesUpdated > 0 || playersUpdated > 0) {
+        wcCacheLog('[wc-cache] writeback persisted player_match_stats', {
+          matchesUpdated,
+          playersUpdated,
+          rowCount: rows.length,
+        });
+      }
+    })
+    .catch((err) => {
+      console.warn('[wc-cache] player_match_stats writeback failed:', err);
+    });
 }
 
 // Persist the assembled World Cup dashboard payload in Supabase so a player's
@@ -1465,6 +1486,9 @@ async function loadLineupLookupMatches(
       if (live2026.length) {
         matches2026 = mergeBdlMatches(matches2026, live2026);
         recordWcSource('lineupMatches2026', 'bdl-live');
+        void persistBdlMatches2026IfNewer(matches2026 as Array<Record<string, unknown>>).catch((err) => {
+          console.warn('[wc-cache] matches2026 writeback failed:', err);
+        });
       }
     } catch {
       // cache-only fallback
@@ -1788,6 +1812,7 @@ async function loadPlayerStatsFromTeamCompletedMatches(opts: {
 
   const missing = completedIds.filter((matchId) => !coveredMatchIds.has(matchId));
   if (missing.length && opts.apiKey) {
+    const liveWritebackRows: Array<Record<string, unknown>> = [];
     for (let offset = 0; offset < missing.length; offset += 50) {
       const chunk = missing.slice(offset, offset + 50);
       const params = new URLSearchParams();
@@ -1799,6 +1824,7 @@ async function loadPlayerStatsFromTeamCompletedMatches(opts: {
           opts.apiKey,
           { cursor: true, maxPages: 4 }
         );
+        liveWritebackRows.push(...live);
         for (const row of live) {
           if (opts.playerId) {
             const rowPlayerId = String(
@@ -1812,6 +1838,7 @@ async function loadPlayerStatsFromTeamCompletedMatches(opts: {
         // best effort
       }
     }
+    writebackLivePlayerMatchStats(liveWritebackRows);
   }
 
   return stats;
@@ -1848,6 +1875,7 @@ async function loadPlayerStatsFrom2026MatchDetails(opts: {
 
   const missing = completedIds.filter((matchId) => !coveredMatchIds.has(matchId));
   if (missing.length && opts.apiKey) {
+    const liveWritebackRows: Array<Record<string, unknown>> = [];
     for (let offset = 0; offset < missing.length; offset += 50) {
       const chunk = missing.slice(offset, offset + 50);
       const params = new URLSearchParams();
@@ -1859,6 +1887,7 @@ async function loadPlayerStatsFrom2026MatchDetails(opts: {
           opts.apiKey,
           { cursor: true, maxPages: 4 }
         );
+        liveWritebackRows.push(...live);
         for (const row of live) {
           const rowPlayerId = String(
             row.player_id ?? (row.player as Record<string, unknown> | undefined)?.id ?? ''
@@ -1870,6 +1899,7 @@ async function loadPlayerStatsFrom2026MatchDetails(opts: {
         // best effort
       }
     }
+    writebackLivePlayerMatchStats(liveWritebackRows);
   }
 
   return stats;
@@ -1949,6 +1979,7 @@ async function fetchLivePlayerStatsById(
       apiKey,
       { cursor: true, maxPages: 6 }
     );
+    writebackLivePlayerMatchStats(rows);
     return rows as Array<Record<string, any>>;
   } catch {
     return [];

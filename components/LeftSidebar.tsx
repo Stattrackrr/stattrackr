@@ -9,6 +9,7 @@ import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH, W
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
+import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -143,7 +144,8 @@ export default function LeftSidebar({
   
   const loadUnitSize = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       
       const { data: profile } = await supabase
@@ -845,6 +847,7 @@ export default function LeftSidebar({
                         full_name: profileName.trim() || null,
                         ...(displayAvatarUrl ? { avatar_url: displayAvatarUrl } : {}),
                       });
+                      invalidateViewerProfileCache();
                       // Brief delay so user sees the new avatar in the modal before it closes
                       await new Promise((r) => setTimeout(r, 350));
                       setShowProfileModal(false);

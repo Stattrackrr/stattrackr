@@ -6,7 +6,7 @@ name: World Cup Dashboard Warm
 
 "on":
   schedule:
-    - cron: "30 */12 * * *" # Heavy dashboard work every 12 hours
+    - cron: "30 */4 * * *" # Incremental BDL ingest + dashboard warm every 4 hours during tournament
   workflow_dispatch:
     inputs:
       full_rebuild:
