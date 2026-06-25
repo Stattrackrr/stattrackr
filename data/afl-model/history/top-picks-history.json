@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-23T23:39:21.710Z",
-  "count": 12,
+  "generatedAt": "2026-06-25T07:42:32.979Z",
+  "count": 13,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -12,6 +12,7 @@
       "awayTeam": "Melbourne",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
+      "roundKey": null,
       "picks": [
         {
           "playerName": "Mason Redman",
@@ -36,6 +37,7 @@
       "awayTeam": "West Coast",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
+      "roundKey": null,
       "picks": [
         {
           "playerName": "Cooper Harvey",
@@ -60,6 +62,7 @@
       "awayTeam": "Sydney",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
+      "roundKey": null,
       "picks": [
         {
           "playerName": "Logan Evans",
@@ -106,6 +109,7 @@
       "awayTeam": "Brisbane",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
+      "roundKey": null,
       "picks": [
         {
           "playerName": "Dion Prestia",
@@ -152,6 +156,7 @@
       "awayTeam": "GWS",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
+      "roundKey": null,
       "picks": [
         {
           "playerName": "Finn Callaghan",
@@ -219,7 +224,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.142,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": null
         }
       ]
     },
@@ -438,6 +444,19 @@
           "actualDisposals": 19
         }
       ]
+    },
+    {
+      "gameKey": "brisbanelions|sydneyswans|2026-06-25",
+      "finalizedAt": "2026-06-25T07:42:32.979Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-24T13:22:27Z",
+      "modelVersion": "afl-disp-20260622-200959",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Sydney Swans",
+      "commenceTime": "2026-06-25T09:30:00Z",
+      "weekKey": "2026-W26",
+      "roundKey": null,
+      "picks": []
     }
   ]
 }
