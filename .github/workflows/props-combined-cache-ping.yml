@@ -1,0 +1,32 @@
+# Keep /api/props/combined Redis snapshot warm between heavier WC ingest runs.
+name: Props Combined Cache Ping
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: props-combined-cache-ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping combined props snapshot
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROD_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "Missing PROD_URL or CRON_SECRET"
+            exit 1
+          fi
+          curl -fsS "${PROD_URL}/api/props/combined" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "Accept: application/json" \
+            -o /dev/null
+          echo "Combined props cache ping OK"

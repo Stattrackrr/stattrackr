@@ -10,6 +10,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
 import { invalidateViewerProfileCache } from '@/lib/profileSubscriptionGate';
+import { kickCombinedPropsEarlyFetch } from '@/lib/propsCombinedEarlyFetch';
 
 type OddsFormat = 'american' | 'decimal';
 interface LeftSidebarProps {
@@ -421,6 +422,9 @@ export default function LeftSidebar({
                       ) : (
                         <Link
                           href={sport.href}
+                          onMouseEnter={() => {
+                            if (sport.href.startsWith('/props')) kickCombinedPropsEarlyFetch();
+                          }}
                           onClick={() => setShowSportsDropdown(false)}
                           className="block px-3 py-2 text-sm font-medium rounded transition-colors text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-between gap-2"
                         >

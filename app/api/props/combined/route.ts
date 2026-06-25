@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const COMBINED_CACHE_CONTROL = 'private, no-store';
+const COMBINED_CACHE_CONTROL_HIT = 'public, s-maxage=120, stale-while-revalidate=600';
 
 export async function GET(request: NextRequest) {
   const refresh = request.nextUrl.searchParams.get('refresh') === '1';
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
           {
             status: cachedSnapshot.success ? 200 : 502,
             headers: {
-              'Cache-Control': COMBINED_CACHE_CONTROL,
+              'Cache-Control': COMBINED_CACHE_CONTROL_HIT,
             },
           }
         );

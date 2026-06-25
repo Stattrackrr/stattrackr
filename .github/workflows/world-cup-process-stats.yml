@@ -83,6 +83,15 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=8192'
 
+      - name: Keep combined props API cache hot
+        run: |
+          set -euo pipefail
+          curl -fsS "${PROD_URL}/api/props/combined" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "Accept: application/json" \
+            -o /dev/null
+          echo "Combined props snapshot ping OK"
+
       - name: Diagnose props DvP and hit-rate coverage
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
