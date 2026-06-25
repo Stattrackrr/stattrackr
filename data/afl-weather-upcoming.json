@@ -1,39 +1,28 @@
 {
-  "generatedAt": "2026-06-24T13:19:05.457Z",
+  "generatedAt": "2026-06-25T13:14:32.562Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "84b8b61335b754609b9177283fc017b8",
-      "homeTeam": "Brisbane Lions",
-      "awayTeam": "Sydney Swans",
-      "commenceTime": "2026-06-25T09:30:00Z",
-      "weather": {
-        "temperatureC": 15.8,
-        "precipitationMm": 0,
-        "windKmh": 10.7
-      }
-    },
     {
       "gameId": "8cca2e34a09af93d3ac9741d1ddeb066",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-06-26T09:40:00Z",
       "weather": {
-        "temperatureC": 9.7,
+        "temperatureC": 9.6,
         "precipitationMm": 0,
-        "windKmh": 3.4
+        "windKmh": 4.5
       }
     },
     {
       "gameId": "6a19a4eaa67cd8d22308b45725204824",
       "homeTeam": "Carlton Blues",
       "awayTeam": "West Coast Eagles",
-      "commenceTime": "2026-06-27T03:15:00Z",
+      "commenceTime": "2026-06-27T03:15:05Z",
       "weather": {
-        "temperatureC": 11.1,
+        "temperatureC": 10.1,
         "precipitationMm": 0,
-        "windKmh": 1.8
+        "windKmh": 0.3
       }
     },
     {
@@ -42,9 +31,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-06-27T06:15:33Z",
       "weather": {
-        "temperatureC": 10.2,
+        "temperatureC": 9.8,
         "precipitationMm": 0,
-        "windKmh": 5.2
+        "windKmh": 5.6
       }
     },
     {
@@ -53,9 +42,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-06-27T09:35:00Z",
       "weather": {
-        "temperatureC": 11.8,
+        "temperatureC": 12.2,
         "precipitationMm": 0,
-        "windKmh": 8
+        "windKmh": 12.1
       }
     },
     {
@@ -64,9 +53,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-06-28T05:15:42Z",
       "weather": {
-        "temperatureC": 13.5,
+        "temperatureC": 15.1,
         "precipitationMm": 0,
-        "windKmh": 5.1
+        "windKmh": 3
       }
     },
     {
@@ -75,11 +64,11 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-06-28T07:10:00Z",
       "weather": {
-        "temperatureC": 16,
-        "precipitationMm": 0.3,
-        "windKmh": 15.6
+        "temperatureC": 17.1,
+        "precipitationMm": 0.4,
+        "windKmh": 17.2
       }
     }
   ],
-  "count": 7
+  "count": 6
 }
