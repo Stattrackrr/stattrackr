@@ -1,4 +1,4 @@
-import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshot';
+import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 
 let earlyPayload: CombinedPropsSnapshot | null = null;
 let earlyPromise: Promise<CombinedPropsSnapshot | null> | null = null;

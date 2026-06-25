@@ -4,7 +4,7 @@ import LeftSidebar from "@/components/LeftSidebar";
 import { MobileBottomNavigation } from "@/app/nba/research/dashboard/components/header";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, startTransition } from 'react';
 import { createPortal, preload as reactPreload } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
@@ -19,6 +19,8 @@ import {
   peekCombinedPropsEarlyPayload,
   takeCombinedPropsEarlyPayload,
 } from '@/lib/propsCombinedEarlyFetch';
+import { slimCombinedPropsSnapshotForClient } from '@/lib/combinedPropsSnapshotPaint';
+import type { CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { getFullTeamName, TEAM_FULL_TO_ABBR } from '@/lib/teamMapping';
 import { getPlayerHeadshotUrl } from '@/lib/nbaLogos';
@@ -2028,21 +2030,22 @@ export default function NBALandingPage() {
     const persist = () => {
       try {
         const now = Date.now();
-        const nbaProps = Array.isArray(snapshot?.nba?.props) ? snapshot.nba.props : [];
-        const aflPropsForCache = Array.isArray(snapshot?.afl?.props) ? snapshot.afl.props : [];
-        const aflGamesForCache = Array.isArray(snapshot?.afl?.games) ? snapshot.afl.games : [];
+        const paintSnapshot = slimCombinedPropsSnapshotForClient(snapshot as CombinedPropsSnapshot);
+        const nbaProps = Array.isArray(paintSnapshot?.nba?.props) ? paintSnapshot.nba.props : [];
+        const aflPropsForCache = Array.isArray(paintSnapshot?.afl?.props) ? paintSnapshot.afl.props : [];
+        const aflGamesForCache = Array.isArray(paintSnapshot?.afl?.games) ? paintSnapshot.afl.games : [];
         const selectedGameIds = getSelectedAflGameIdsForCache(aflGamesForCache.map((game) => game.gameId));
 
         sessionStorage.setItem(
           COMBINED_PROPS_CACHE_KEY,
           JSON.stringify({
-            ...snapshot,
+            ...paintSnapshot,
             selectedGameIds,
             timestamp: now,
           })
         );
         try {
-          const combinedJson = JSON.stringify({ ...snapshot, selectedGameIds });
+          const combinedJson = JSON.stringify({ ...paintSnapshot, selectedGameIds });
           localStorage.setItem(COMBINED_PROPS_LS_KEY, combinedJson);
           localStorage.setItem(COMBINED_PROPS_LS_TS_KEY, now.toString());
         } catch {
@@ -2068,9 +2071,9 @@ export default function NBALandingPage() {
           );
         }
 
-        const wcPropsForCache = Array.isArray(snapshot?.worldCup?.props) ? snapshot.worldCup.props : [];
-        const wcGamesForCache = Array.isArray(snapshot?.worldCup?.games) ? snapshot.worldCup.games : [];
-        if (snapshot?.worldCup?.noWorldCupOdds) {
+        const wcPropsForCache = Array.isArray(paintSnapshot?.worldCup?.props) ? paintSnapshot.worldCup.props : [];
+        const wcGamesForCache = Array.isArray(paintSnapshot?.worldCup?.games) ? paintSnapshot.worldCup.games : [];
+        if (paintSnapshot?.worldCup?.noWorldCupOdds) {
           sessionStorage.removeItem(WC_PROPS_CACHE_KEY);
         } else if (wcPropsForCache.length > 0 || wcGamesForCache.length > 0) {
           let writeWcCache = true;
@@ -2154,11 +2157,23 @@ export default function NBALandingPage() {
     const noAflOdds = oddsFlagsNext.noAflOdds;
     const mergedNba = mergeNbaPropsWithStoredCalculatedStats(nbaRows);
 
-    setPlayerProps(mergedNba.props);
     propsLoadedRef.current = mergedNba.props.length > 0;
     initialFetchCompletedRef.current = true;
-    setPropsWithCalculatedStats(mergedNba.calculatedMap);
     mergedNba.calculatedKeys.forEach((key) => calculatedKeysRef.current.add(key));
+
+    const combinedVisible = combinedModeHasVisibleRows(mergedNba.props, aflPropsNext, worldCupPropsNext);
+    const { missingAfl, missingWc } = combinedModeMissingSecondarySlice(
+      aflPropsNext,
+      worldCupPropsNext,
+      combinedOddsFlagsRef.current
+    );
+    const combinedComplete = combinedVisible && !missingAfl && !missingWc;
+    const paintUnlocked =
+      isCombinedSecondaryPaintReady(aflPropsNext, worldCupPropsNext, oddsFlagsNext) || combinedVisible;
+
+    startTransition(() => {
+    setPlayerProps(mergedNba.props);
+    setPropsWithCalculatedStats(mergedNba.calculatedMap);
     setPropsLoading(false);
     setPropsProcessing(false);
 
@@ -2208,18 +2223,10 @@ export default function NBALandingPage() {
 
     setSecondaryPropsFetchComplete(true);
     setAflPropsLoading(false);
-    const combinedVisible = combinedModeHasVisibleRows(mergedNba.props, aflPropsNext, worldCupPropsNext);
-    const { missingAfl, missingWc } = combinedModeMissingSecondarySlice(
-      aflPropsNext,
-      worldCupPropsNext,
-      combinedOddsFlagsRef.current
-    );
-    const combinedComplete = combinedVisible && !missingAfl && !missingWc;
     setCombinedFetchComplete(combinedComplete);
     setCombinedPropsLoading(!combinedVisible || missingAfl || missingWc);
-    setCombinedPaintUnlocked(
-      isCombinedSecondaryPaintReady(aflPropsNext, worldCupPropsNext, oddsFlagsNext) || combinedVisible
-    );
+    setCombinedPaintUnlocked(paintUnlocked);
+    });
 
     if (options?.persistCaches !== false) {
       persistCombinedSnapshotCaches(combinedSnapshot);
