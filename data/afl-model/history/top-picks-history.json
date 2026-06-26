@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-26T13:12:21.108Z",
+  "generatedAt": "2026-06-26T22:45:45.907Z",
   "count": 14,
   "records": [
     {
@@ -465,7 +465,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.0647,
           "recommendedProb": 0.5647,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 18
         },
         {
           "playerName": "Angus Sheldrick",
@@ -475,7 +476,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.0483,
           "recommendedProb": 0.528,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 28
         },
         {
           "playerName": "Josh Dunkley",
@@ -485,7 +487,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.0225,
           "recommendedProb": 0.5135,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 26
         }
       ]
     },
