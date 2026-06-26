@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-25T07:42:32.979Z",
-  "count": 13,
+  "generatedAt": "2026-06-26T07:53:47.055Z",
+  "count": 14,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -457,6 +457,53 @@
       "weekKey": "2026-W26",
       "roundKey": null,
       "picks": []
+    },
+    {
+      "gameKey": "hawthornhawks|gwsgiants|2026-06-26",
+      "finalizedAt": "2026-06-26T07:53:47.055Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-25T18:45:54Z",
+      "modelVersion": "afl-disp-20260625-184422",
+      "homeTeam": "Hawthorn Hawks",
+      "awayTeam": "GWS Giants",
+      "commenceTime": "2026-06-26T09:40:00Z",
+      "weekKey": "2026-W26",
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Joseph Fonti",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 20.18,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1147,
+          "recommendedProb": 0.6237,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Finn Callaghan",
+          "bookmaker": "SportsBet",
+          "line": 27.5,
+          "expectedDisposals": 31.36,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1097,
+          "recommendedProb": 0.6248,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Finn Callaghan",
+          "bookmaker": "PointsBet (AU)",
+          "line": 28.5,
+          "expectedDisposals": 31.6,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1055,
+          "recommendedProb": 0.6258,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
     }
   ]
 }
