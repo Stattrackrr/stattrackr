@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-26T07:53:47.055Z",
+  "generatedAt": "2026-06-26T13:12:21.108Z",
   "count": 14,
   "records": [
     {
@@ -479,7 +479,7 @@
           "recommendedEdge": 0.1147,
           "recommendedProb": 0.6237,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Finn Callaghan",
@@ -490,7 +490,7 @@
           "recommendedEdge": 0.1097,
           "recommendedProb": 0.6248,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 34
         },
         {
           "playerName": "Finn Callaghan",
@@ -501,7 +501,7 @@
           "recommendedEdge": 0.1055,
           "recommendedProb": 0.6258,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 34
         }
       ]
     }
