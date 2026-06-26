@@ -807,23 +807,76 @@ def select_lowest_line_rows(out_rows: List[dict]) -> List[dict]:
     return list(by_player_week.values())
 
 
-def upsert_line_history(existing_rows: List[dict], lowest_rows: List[dict]) -> List[dict]:
+def line_history_row_key(player: str, game_date_str: str) -> str:
+    nm = normalize_name(player)
+    gd = str(game_date_str or "").strip()[:10]
+    if not nm or not gd:
+        return ""
+    return f"{nm}|{gd}"
+
+
+def line_history_week_key(player: str, week_key: str) -> str:
+    nm = normalize_name(player)
+    wk = str(week_key or "").strip()
+    if not nm or not wk:
+        return ""
+    return f"{nm}|{wk}"
+
+
+def _index_line_history_rows(existing_rows: List[dict]) -> Dict[str, dict]:
     by_key: Dict[str, dict] = {}
     for row in existing_rows:
-        snap_key = str(row.get("snapshotKey") or "").strip()
-        if snap_key:
-            by_key[snap_key] = row
+        if not isinstance(row, dict):
+            continue
+        player = str(row.get("playerName") or "").strip()
+        game_date = str(row.get("gameDate") or "")[:10]
+        key = line_history_row_key(player, game_date)
+        if not key:
+            key = str(row.get("snapshotKey") or "").strip()
+        if not key:
+            continue
+        row["snapshotKey"] = key
+        by_key[key] = row
+    return by_key
+
+
+def upsert_line_history(existing_rows: List[dict], lowest_rows: List[dict]) -> List[dict]:
+    by_key = _index_line_history_rows(existing_rows)
 
     for row in lowest_rows:
         player = str(row.get("playerName") or "").strip()
         game_date = parse_date(str(row.get("commenceTime") or "")[:10])
+        game_date_str = str(row.get("commenceTime") or "")[:10]
         wk = week_key_from_date(game_date)
         line = float(to_float(row.get("line")) or 0.0)
-        if not player or not wk:
+        if not player or not wk or not game_date_str:
             continue
-        snap_key = f"{normalize_name(player)}|{wk}"
+
+        snap_key = line_history_row_key(player, game_date_str)
+        week_key = line_history_week_key(player, wk)
+
+        # Migrate legacy week-only keys without dropping settled games from earlier in the same ISO week.
+        legacy = by_key.get(week_key)
+        if legacy is not None and snap_key not in by_key:
+            legacy_date = str(legacy.get("gameDate") or "")[:10]
+            if legacy_date == game_date_str or not legacy_date:
+                by_key[snap_key] = legacy
+                if week_key in by_key:
+                    del by_key[week_key]
+            elif legacy.get("actualDisposals") is not None and legacy_date:
+                rekeyed = line_history_row_key(player, legacy_date)
+                legacy["snapshotKey"] = rekeyed
+                by_key[rekeyed] = legacy
+                if week_key in by_key and by_key.get(week_key) is legacy:
+                    del by_key[week_key]
+
         current = by_key.get(snap_key, {})
         current_line = to_float(current.get("line"))
+        settled_actual = current.get("actualDisposals") is not None
+        current_game_date = str(current.get("gameDate") or "")[:10]
+        if settled_actual and current_game_date and current_game_date != game_date_str:
+            continue
+
         should_replace_core = current_line is None or line <= current_line
         if should_replace_core:
             current.update(
@@ -831,7 +884,7 @@ def upsert_line_history(existing_rows: List[dict], lowest_rows: List[dict]) -> L
                     "snapshotKey": snap_key,
                     "capturedAt": now_iso(),
                     "weekKey": wk,
-                    "gameDate": str(row.get("commenceTime") or "")[:10],
+                    "gameDate": game_date_str,
                     "commenceTime": row.get("commenceTime"),
                     "playerName": player,
                     "homeTeam": row.get("homeTeam"),

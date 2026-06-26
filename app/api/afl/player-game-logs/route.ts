@@ -12,6 +12,7 @@ import {
   AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
   type AflPlayerLogsCachePayload,
 } from '@/lib/cache/aflPlayerLogsCache';
+import { aflGamesIncludeSeason } from '@/lib/aflGameDedupe';
 
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 const LEAGUE_PLAYER_STATS_FILES: Record<number, string> = {
@@ -1480,7 +1481,9 @@ export async function GET(request: NextRequest) {
         return false;
       }
       const entrySeason = entry.cachedBase?.season ?? entryGames[0]?.season;
-      if (season === 2026 && entrySeason === 2025) return false;
+      if (season === 2026 && (entrySeason === 2025 || !aflGamesIncludeSeason(entryGames as Record<string, unknown>[], 2026))) {
+        return false;
+      }
       return true;
     };
     const usableCachedEntry = cachedEntries.find(cacheEntryHasUsableGames);
@@ -1664,7 +1667,11 @@ export async function GET(request: NextRequest) {
     (nameHasSymbol(effectivePlayerName) || slugOverridesSingle.length > 0);
   const skipCacheForSymbolSingle = nameHasSymbol(effectivePlayerName);
   const cachedSeasonSingle = cachedResponse?.season ?? (cachedGamesTyped?.[0] as { season?: number } | undefined)?.season;
-  const skipCacheStale2025Single = season === 2026 && cachedSeasonSingle === 2025;
+  const skipCacheStale2025Single =
+    season === 2026 &&
+    Array.isArray(cachedGames) &&
+    cachedGames.length > 0 &&
+    (cachedSeasonSingle === 2025 || !aflGamesIncludeSeason(cachedGames as Record<string, unknown>[], 2026));
   // 2025: prefer cache, but allow live fetch on cache miss so moved-team players are not empty.
   if (season === 2025 && !forceFetch) {
     if (cachedResponse && Array.isArray(cachedGames) && cachedGames.length > 0 && !skipCacheWrongDataSingle && !skipCacheForSymbolSingle) {

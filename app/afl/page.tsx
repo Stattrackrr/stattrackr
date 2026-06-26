@@ -42,7 +42,7 @@ import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdo
 import { Search, Loader2 } from 'lucide-react';
 import { dfsRoleGroupToShortLabel as dfsRoleGroupToHeaderLabel } from '@/lib/aflDfsRoleLabels';
 import { buildAflJournalQuickPreset } from '@/lib/buildAflJournalQuickPreset';
-import { buildAflGameDedupeKey, dedupeAflGames } from '@/lib/aflGameDedupe';
+import { buildAflGameDedupeKey, dedupeAflGames, aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import { playerHasFootywireSlugOverride } from '@/lib/aflFootywireSlugOverrides';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 
@@ -151,7 +151,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v7';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v8';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v4';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -398,6 +398,7 @@ type AflTopPicksHistoryRecord = {
   homeTeam: string;
   awayTeam: string;
   commenceTime: string | null;
+  weekKey?: string | null;
   roundKey?: string | null;
   picks: AflTopPicksModalPick[];
 };
@@ -442,6 +443,131 @@ function aflTopPicksModalWeekKeyFromCommenceTime(commenceTime: string | null | u
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
+type AflTopPicksRoundWindow = { min: string; max: string };
+
+const AFL_TOP_PICKS_BRISBANE_TZ = 'Australia/Brisbane';
+
+function aflTopPicksModalBrisbaneYmd(value: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: AFL_TOP_PICKS_BRISBANE_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value);
+}
+
+function aflTopPicksModalAddDaysYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map((part) => Number.parseInt(part, 10));
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+function aflTopPicksModalDayOfWeekYmd(ymd: string): number {
+  const [y, m, d] = ymd.split('-').map((part) => Number.parseInt(part, 10));
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+function aflTopPicksModalGameDateBrisbane(commenceTime: string | null | undefined): string | null {
+  if (!commenceTime) return null;
+  const parsed = new Date(commenceTime);
+  if (!Number.isNaN(parsed.getTime())) {
+    return aflTopPicksModalBrisbaneYmd(parsed);
+  }
+  const slice = commenceTime.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(slice) ? slice : null;
+}
+
+function aflTopPicksModalThursdayBlockForDate(gameDate: string): AflTopPicksRoundWindow {
+  const dow = aflTopPicksModalDayOfWeekYmd(gameDate);
+  const offsetByDow: Record<number, number> = {
+    0: -3,
+    1: -4,
+    2: -5,
+    3: -6,
+    4: 0,
+    5: -1,
+    6: -2,
+  };
+  const thursday = aflTopPicksModalAddDaysYmd(gameDate, offsetByDow[dow] ?? 0);
+  return { min: thursday, max: aflTopPicksModalAddDaysYmd(thursday, 4) };
+}
+
+function aflTopPicksModalCalendarWindowFromToday(reference = new Date()): AflTopPicksRoundWindow {
+  const today = aflTopPicksModalBrisbaneYmd(reference);
+  const dow = aflTopPicksModalDayOfWeekYmd(today);
+
+  if (dow === 2 || dow === 3) {
+    const thursday = aflTopPicksModalAddDaysYmd(today, 4 - dow);
+    return { min: thursday, max: aflTopPicksModalAddDaysYmd(thursday, 4) };
+  }
+
+  if (dow === 1) {
+    const yesterday = aflTopPicksModalAddDaysYmd(today, -1);
+    if (aflTopPicksModalDayOfWeekYmd(yesterday) === 0) {
+      const thursday = aflTopPicksModalAddDaysYmd(today, 2);
+      return { min: thursday, max: aflTopPicksModalAddDaysYmd(thursday, 4) };
+    }
+    const thursday = aflTopPicksModalAddDaysYmd(today, -4);
+    return { min: thursday, max: today };
+  }
+
+  return aflTopPicksModalThursdayBlockForDate(today);
+}
+
+function aflTopPicksModalResolveCurrentRoundWindow(
+  reference: Date,
+  liveRecords: AflTopPicksHistoryRecord[],
+  historyRecords: AflTopPicksHistoryRecord[]
+): AflTopPicksRoundWindow {
+  const upcomingDates = [...liveRecords, ...historyRecords]
+    .filter((record) => aflTopPicksModalIsUpcomingGame(record.commenceTime))
+    .map((record) => aflTopPicksModalGameDateBrisbane(record.commenceTime))
+    .filter((date): date is string => Boolean(date))
+    .sort();
+
+  if (upcomingDates.length > 0) {
+    return aflTopPicksModalThursdayBlockForDate(upcomingDates[0]!);
+  }
+
+  return aflTopPicksModalCalendarWindowFromToday(reference);
+}
+
+function aflTopPicksModalDateInRoundWindow(date: string | null | undefined, window: AflTopPicksRoundWindow | null): boolean {
+  if (!date || !window) return false;
+  return date >= window.min && date <= window.max;
+}
+
+function aflTopPicksModalFilterRecordsByRoundWindow(
+  records: AflTopPicksHistoryRecord[],
+  window: AflTopPicksRoundWindow | null
+): AflTopPicksHistoryRecord[] {
+  if (!window) return records;
+  return records.filter((record) =>
+    aflTopPicksModalDateInRoundWindow(aflTopPicksModalGameDateBrisbane(record.commenceTime), window)
+  );
+}
+
+function aflTopPicksModalGroupInRoundWindow(group: AflTopPicksModalGroup, window: AflTopPicksRoundWindow | null): boolean {
+  return aflTopPicksModalDateInRoundWindow(aflTopPicksModalGameDateBrisbane(group.commenceTime), window);
+}
+
+function aflTopPicksModalIsDateInRoundWindow(
+  date: string,
+  bounds: { min: string; max: string }
+): boolean {
+  if (date >= bounds.min && date <= bounds.max) return true;
+  if (date < bounds.min) return false;
+  const maxMs = Date.parse(bounds.max);
+  const dateMs = Date.parse(date);
+  const minMs = Date.parse(bounds.min);
+  if (!Number.isFinite(maxMs) || !Number.isFinite(dateMs) || !Number.isFinite(minMs)) return false;
+  const daysAfterMax = (dateMs - maxMs) / 86_400_000;
+  const roundSpanDays = (maxMs - minMs) / 86_400_000;
+  // AFL rounds span Thu–Sun; allow upcoming fixtures a few days after the last snapshotted game.
+  return daysAfterMax >= 0 && daysAfterMax <= 4 && roundSpanDays <= 7;
+}
+
 function aflTopPicksModalInferRoundKey(
   commenceTime: string | null | undefined,
   records: AflTopPicksHistoryRecord[]
@@ -474,47 +600,9 @@ function aflTopPicksModalInferRoundKey(
     roundBounds.set(roundKey, bounds);
   }
   for (const [roundKey, bounds] of roundBounds) {
-    if (date >= bounds.min && date <= bounds.max) return roundKey;
+    if (aflTopPicksModalIsDateInRoundWindow(date, bounds)) return roundKey;
   }
   return null;
-}
-
-function aflTopPicksModalMaxRoundCommenceDate(
-  records: AflTopPicksHistoryRecord[],
-  roundKey: string | null
-): string | null {
-  const dates = records
-    .filter((record) => record.roundKey === roundKey)
-    .map((record) => String(record.commenceTime ?? '').slice(0, 10))
-    .filter(Boolean);
-  return dates.length > 0 ? dates.sort().pop() ?? null : null;
-}
-
-function aflTopPicksModalResolveCurrentRoundKey(
-  liveRecords: AflTopPicksHistoryRecord[],
-  historyRecords: AflTopPicksHistoryRecord[],
-  latestRoundKey: string | null
-): string | null {
-  const upcomingLive = liveRecords
-    .filter((record) => aflTopPicksModalIsUpcomingGame(record.commenceTime))
-    .sort((a, b) => String(a.commenceTime ?? '').localeCompare(String(b.commenceTime ?? '')));
-  const anchorCommence = upcomingLive[0]?.commenceTime ?? liveRecords[0]?.commenceTime ?? null;
-  if (!anchorCommence) return latestRoundKey;
-
-  const inferred = aflTopPicksModalInferRoundKey(anchorCommence, historyRecords);
-  if (inferred) return inferred;
-
-  if (!latestRoundKey) return null;
-  const maxHistoryDate = aflTopPicksModalMaxRoundCommenceDate(historyRecords, latestRoundKey);
-  const minLiveDate = upcomingLive
-    .map((record) => String(record.commenceTime ?? '').slice(0, 10))
-    .filter(Boolean)
-    .sort()[0];
-  if (maxHistoryDate && minLiveDate && minLiveDate > maxHistoryDate) {
-    const parsed = aflTopPicksModalParseRoundKey(latestRoundKey);
-    if (parsed) return `${parsed.season}-R${parsed.round + 1}`;
-  }
-  return latestRoundKey;
 }
 
 function aflTopPicksModalRoundLabel(roundKey: string): string {
@@ -645,10 +733,17 @@ function aflTopPicksModalMergeCurrentGroups(
     }
   }
   for (const group of liveGroups) {
+    const existing = byKey.get(group.gameKey);
+    if (existing?.picks.length && !group.picks.length) continue;
     byKey.set(group.gameKey, group);
   }
   for (const group of latestRoundHistoryGroups) {
-    if (!byKey.has(group.gameKey)) {
+    const existing = byKey.get(group.gameKey);
+    if (!existing) {
+      byKey.set(group.gameKey, group);
+      continue;
+    }
+    if (!existing.picks.length && group.picks.length) {
       byKey.set(group.gameKey, group);
     }
   }
@@ -763,6 +858,7 @@ function AflTopPicksModal({
   const [roundIndex, setRoundIndex] = useState(0);
   const [currentGroups, setCurrentGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [latestRoundHistoryGroups, setLatestRoundHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
+  const [currentRoundWindow, setCurrentRoundWindow] = useState<AflTopPicksRoundWindow | null>(null);
   const [historyGroups, setHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const gameLogsCacheRef = useRef(new Map<string, Record<string, unknown>[]>());
 
@@ -772,8 +868,10 @@ function AflTopPicksModal({
   const isCurrentRound = activeRound?.isCurrent ?? true;
   const displayGroups = useMemo(() => {
     if (!isCurrentRound) return historyGroups;
-    return aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups);
-  }, [isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups]);
+    const merged = aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups);
+    if (!currentRoundWindow) return merged;
+    return merged.filter((group) => aflTopPicksModalGroupInRoundWindow(group, currentRoundWindow));
+  }, [isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups, currentRoundWindow]);
   const displayRoundSections = useMemo(() => {
     if (isCurrentRound || (activeRound?.roundKeys.length ?? 0) <= 1) return [];
     return aflTopPicksModalGroupHistoryByRound(historyGroups, activeRound?.roundKeys ?? []);
@@ -870,6 +968,7 @@ function AflTopPicksModal({
       setBootLoading(true);
       setHistoryGroups([]);
       setLatestRoundHistoryGroups([]);
+      setCurrentRoundWindow(null);
       try {
         const [currentRes, historyRes] = await Promise.all([
           fetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' }),
@@ -884,29 +983,36 @@ function AflTopPicksModal({
           homeTeam: group.homeTeam,
           awayTeam: group.awayTeam,
           commenceTime: group.commenceTime,
+          roundKey: group.roundKey ?? null,
           picks: group.picks,
         })) as AflTopPicksHistoryRecord[];
         const historyRecords = Array.isArray(historyPayload?.records)
           ? (historyPayload.records as AflTopPicksHistoryRecord[])
           : [];
         const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
-        const latestRoundKey = rounds.length > 0 ? rounds[rounds.length - 1] : null;
-        const currentRoundKey = aflTopPicksModalResolveCurrentRoundKey(liveRecords, historyRecords, latestRoundKey);
-        const currentRoundRecords = currentRoundKey
-          ? historyRecords.filter((record) => record.roundKey === currentRoundKey)
-          : [];
+        const resolvedRoundWindow = aflTopPicksModalResolveCurrentRoundWindow(
+          new Date(),
+          liveRecords,
+          historyRecords
+        );
+        const scopedLiveRecords = aflTopPicksModalFilterRecordsByRoundWindow(liveRecords, resolvedRoundWindow);
+        const scopedHistoryRecords = aflTopPicksModalFilterRecordsByRoundWindow(historyRecords, resolvedRoundWindow);
 
-        setCurrentGroups(aflTopPicksModalGroupsFromRecords(liveRecords, gameLogsCacheRef.current));
-        setLatestRoundHistoryGroups(aflTopPicksModalGroupsFromRecords(currentRoundRecords, gameLogsCacheRef.current));
+        setCurrentRoundWindow(resolvedRoundWindow);
+        setCurrentGroups(aflTopPicksModalGroupsFromRecords(scopedLiveRecords, gameLogsCacheRef.current));
+        setLatestRoundHistoryGroups(
+          aflTopPicksModalGroupsFromRecords(scopedHistoryRecords, gameLogsCacheRef.current)
+        );
         setRoundKeys(rounds);
         setRoundIndex(aflTopPicksModalBuildRoundNav(rounds).length - 1);
 
         const needsHydration =
-          aflTopPicksModalNeedsGameLogHydration(liveRecords) || aflTopPicksModalNeedsGameLogHydration(currentRoundRecords);
+          aflTopPicksModalNeedsGameLogHydration(scopedLiveRecords) ||
+          aflTopPicksModalNeedsGameLogHydration(scopedHistoryRecords);
         if (needsHydration && !cancelled) {
           const [resolvedLive, resolvedCurrentRound] = await Promise.all([
-            resolveHistoryResults(liveRecords),
-            resolveHistoryResults(currentRoundRecords),
+            resolveHistoryResults(scopedLiveRecords),
+            resolveHistoryResults(scopedHistoryRecords),
           ]);
           if (!cancelled) {
             setCurrentGroups(resolvedLive);
@@ -2678,19 +2784,29 @@ export default function AFLPage() {
     const prevYear = currentYear - 1;
     const olderYear = currentYear - 2;
     const fetchOpts = { cache: 'no-store' as RequestCache };
+    const fetchSeasonLogs = (year: number, extra = '') =>
+      fetch(`${baseUrl}&season=${year}${extra}`, fetchOpts).then((r) => r.json());
     Promise.all([
-      fetch(`${baseUrl}&season=${currentYear}`, fetchOpts).then((r) => r.json()),
-      fetch(`${baseUrl}&season=${prevYear}`, fetchOpts).then((r) => r.json()),
-      fetch(`${baseUrl}&season=${olderYear}`, fetchOpts).then((r) => r.json()),
+      fetchSeasonLogs(currentYear),
+      fetchSeasonLogs(prevYear),
+      fetchSeasonLogs(olderYear),
     ])
-      .then(([dataCurrent, dataPrev, dataOlder]) => {
+      .then(async ([dataCurrent, dataPrev, dataOlder]) => {
         let gamesCurrent = Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
-        const gamesPrev = Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
-        const gamesOlder = Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
+        if (currentYear === 2026 && !aflGamesIncludeSeason(gamesCurrent, 2026)) {
+          const strictCurrent = await fetchSeasonLogs(currentYear, '&strict_season=1');
+          const strictGames = Array.isArray(strictCurrent?.games) ? (strictCurrent.games as Record<string, unknown>[]) : [];
+          if (aflGamesIncludeSeason(strictGames, 2026)) {
+            dataCurrent = strictCurrent;
+            gamesCurrent = strictGames;
+          }
+        }
         const payloadSeasonCurrent = dataCurrent?.season;
-        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const has2026InCurrent = gamesCurrent.length > 0 && aflGamesIncludeSeason(gamesCurrent, 2026);
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
         if (is2026ResponseActually2025) gamesCurrent = [];
+        const gamesPrev = Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
+        const gamesOlder = Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
         let qCurrent = Array.isArray(dataCurrent?.gamesWithQuarters) ? (dataCurrent.gamesWithQuarters as Record<string, unknown>[]) : gamesCurrent;
         if (is2026ResponseActually2025) qCurrent = [];
         const qPrev = Array.isArray(dataPrev?.gamesWithQuarters) ? (dataPrev.gamesWithQuarters as Record<string, unknown>[]) : gamesPrev;
@@ -2780,10 +2896,10 @@ export default function AFLPage() {
     // stale payloads that do not contain both 2026 and 2025 rows. Bypassing it
     // caused transient FootyWire/API misses to wipe known-good current-season logs.
     const shouldBypassClientLogsCache = false;
-    const has2026InGames = (g: { season?: unknown }[]) =>
-      Array.isArray(g) && g.some((x) => (x?.season as number) === 2026);
+    const has2026InGames = (g: { season?: unknown; date?: string; game_date?: string }[]) =>
+      aflGamesIncludeSeason(g as Record<string, unknown>[], 2026);
     const has2025InGames = (g: { season?: unknown; date?: string; game_date?: string }[]) =>
-      Array.isArray(g) && g.some((x) => (x?.season as number) === 2025 || (typeof (x?.date ?? x?.game_date) === 'string' && String(x?.date ?? x?.game_date).slice(0, 4) === '2025'));
+      aflGamesIncludeSeason(g as Record<string, unknown>[], 2025);
     // For 2026 we need both seasons so players who changed teams (e.g. Bailey Smith) get 2025 + 2026. Don't use cache/prefetch that only has 2026.
     const cacheOkFor2026 = (games: { season?: unknown; date?: string; game_date?: string }[]) =>
       season !== 2026 || (has2026InGames(games) && has2025InGames(games));
@@ -2886,10 +3002,7 @@ export default function AFLPage() {
         const games = result.ok && Array.isArray(result.data?.games)
           ? (result.data.games as Record<string, unknown>[])
           : [];
-        if (games.some((g) => (g?.season as number) === targetSeason || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === String(targetSeason)))) {
-          return true;
-        }
-        return result.data?.season === targetSeason && games.length > 0;
+        return aflGamesIncludeSeason(games, targetSeason);
       };
 
       const applyMergedSeasonResults = (
@@ -2905,7 +3018,7 @@ export default function AFLPage() {
         const gamesPrev = resultPrev.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
         const gamesOlder = resultOlder.ok && Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
-        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const has2026InCurrent = gamesCurrent.length > 0 && aflGamesIncludeSeason(gamesCurrent, 2026);
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
         if (is2026ResponseActually2025) {
           gamesCurrent = [];
@@ -2978,8 +3091,8 @@ export default function AFLPage() {
 
         playerStatsCacheRef.current.set(cacheKey, toMerge);
         setSelectedPlayer((prev) => (prev ? { ...prev, ...toMerge } : prev));
-        const mergedHas2025 = games.some((g: Record<string, unknown>) => (g?.season as number) === 2025 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2025'));
-        const mergedHas2026 = currentYear !== 2026 || games.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g?.date ?? g?.game_date ?? '').slice(0, 4) === '2026'));
+        const mergedHas2025 = aflGamesIncludeSeason(games as Record<string, unknown>[], 2025);
+        const mergedHas2026 = currentYear !== 2026 || aflGamesIncludeSeason(games as Record<string, unknown>[], 2026);
         const persistOk = currentYear !== 2026 || (mergedHas2025 && mergedHas2026);
         if (!isSymbolPlayer && persistOk) {
           try {
@@ -3004,7 +3117,7 @@ export default function AFLPage() {
         const gamesPrev = rp.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
         const gamesOlder = ro.ok && Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
         const payloadSeasonCurrent = dataCurrent?.season;
-        const has2026InCurrent = gamesCurrent.length > 0 && gamesCurrent.some((g: Record<string, unknown>) => (g?.season as number) === 2026 || (typeof (g?.date ?? g?.game_date) === 'string' && String(g.date ?? g.game_date).slice(0, 4) === '2026'));
+        const has2026InCurrent = gamesCurrent.length > 0 && aflGamesIncludeSeason(gamesCurrent, 2026);
         const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
         if (is2026ResponseActually2025) gamesCurrent = [];
         return dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]).length;
@@ -3616,14 +3729,8 @@ export default function AFLPage() {
     if (!selectedPlayerGameLogs.length) return null;
     const effectiveSeason = Math.min(season, 2026);
     const gamesThisSeason = selectedPlayerGameLogs.filter((g) => {
-      const s = Number((g as Record<string, unknown>)?.season);
-      if (Number.isFinite(s)) return s === effectiveSeason;
-      const date = (g as Record<string, unknown>)?.date ?? (g as Record<string, unknown>)?.game_date;
-      if (typeof date === 'string' && date.length >= 4) {
-        const year = Number(date.slice(0, 4));
-        return Number.isFinite(year) && year === effectiveSeason;
-      }
-      return false;
+      const gameSeason = resolveAflGameSeason(g as Record<string, unknown>);
+      return gameSeason === effectiveSeason;
     });
     if (!gamesThisSeason.length) return null;
     const values = gamesThisSeason

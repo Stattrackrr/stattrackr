@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
-import { listAflPlayerPropsFromCache, listAflPlayerPropsFromCacheWithGames, refreshAflPlayerPropsCache, type AflListPropRow } from '@/lib/aflPlayerPropsCache';
+import {
+  aflEnrichedPayloadHasUsableStats,
+  aflEnrichedPayloadIsDegraded,
+  getAflStaleEnrichedPayload,
+  listAflPlayerPropsFromCache,
+  listAflPlayerPropsFromCacheWithGames,
+  markAflEnrichedPayloadStale,
+  persistAflStaleEnrichedPayload,
+  refreshAflPlayerPropsCache,
+  type AflListPropRow,
+} from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
@@ -17,7 +27,6 @@ import {
   normalizeFantasyPositionToDvp,
   resolveDfsRoleDisplayLabel,
 } from '@/lib/aflDfsRoleMap';
-
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /** List is always dynamic/no-store; user path is strict cache-read for low latency. */
@@ -172,6 +181,35 @@ function hasUnder(u: string) {
   return u != null && String(u).trim() !== '' && String(u) !== 'N/A';
 }
 
+async function pickBestEnrichedPayload(
+  primary: Record<string, unknown> | null | undefined
+): Promise<Record<string, unknown> | null> {
+  if (primary && !aflEnrichedPayloadIsDegraded(primary)) return primary;
+  const stale = await getAflStaleEnrichedPayload();
+  if (stale && aflEnrichedPayloadHasUsableStats(stale)) {
+    return markAflEnrichedPayloadStale(
+      stale,
+      primary ? 'live_stats_degraded' : 'enriched_cache_miss'
+    );
+  }
+  return primary ?? null;
+}
+
+function jsonEnrichedPayload(
+  payload: Record<string, unknown>,
+  memoryTtlSeconds = AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
+) {
+  aflEnrichedPayloadMemoryCache = {
+    payload,
+    expiresAt: Date.now() + memoryTtlSeconds * 1000,
+  };
+  return NextResponse.json(payload, {
+    headers: {
+      'Cache-Control': AFL_LIST_CACHE_CONTROL,
+    },
+  });
+}
+
 /**
  * GET /api/afl/player-props/list
  * Reads from AFL props cache and attaches stats from stats cache. On cache miss, computes stats
@@ -199,40 +237,24 @@ export async function GET(request: Request) {
     if (!hasCronAuth && enrich && !debugStats && !forceRefresh) {
       const now = Date.now();
       if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
-        return NextResponse.json(aflEnrichedPayloadMemoryCache.payload, {
-          headers: {
-            'Cache-Control': AFL_LIST_CACHE_CONTROL,
-          },
-        });
+        const memoryPayload = await pickBestEnrichedPayload(aflEnrichedPayloadMemoryCache.payload);
+        if (memoryPayload) return jsonEnrichedPayload(memoryPayload);
       }
       const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
         restTimeoutMs: 4000,
         jsTimeoutMs: 4000,
         quiet: true,
       });
-      if (supabasePayload && typeof supabasePayload === 'object') {
-        aflEnrichedPayloadMemoryCache = {
-          payload: supabasePayload,
-          expiresAt: now + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
-        };
-        return NextResponse.json(supabasePayload, {
-          headers: {
-            'Cache-Control': AFL_LIST_CACHE_CONTROL,
-          },
-        });
-      }
+      const bestSupabase = await pickBestEnrichedPayload(
+        supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null
+      );
+      if (bestSupabase) return jsonEnrichedPayload(bestSupabase);
+
       const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
-      if (cachedPayload && typeof cachedPayload === 'object') {
-        aflEnrichedPayloadMemoryCache = {
-          payload: cachedPayload,
-          expiresAt: now + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
-        };
-        return NextResponse.json(cachedPayload, {
-          headers: {
-            'Cache-Control': AFL_LIST_CACHE_CONTROL,
-          },
-        });
-      }
+      const bestRedis = await pickBestEnrichedPayload(
+        cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null
+      );
+      if (bestRedis) return jsonEnrichedPayload(bestRedis);
     }
 
     // Single source of truth for cron/debug: get games from the Odds API.
@@ -256,7 +278,10 @@ export async function GET(request: Request) {
         canonicalError = undefined;
         const apiGames = canonical.games ?? [];
         if (!apiGames.length) {
-          result = { props: [], games: [] };
+          const fromCache = await listAflPlayerPropsFromCache();
+          result = fromCache?.games?.length
+            ? await listAflPlayerPropsFromCacheWithGames(filterAflPropsEligibleGames(fromCache.games))
+            : { props: [], games: [] };
         } else {
           const eligibleGames = filterAflPropsEligibleGames(apiGames);
           result = await listAflPlayerPropsFromCacheWithGames(eligibleGames);
@@ -295,6 +320,14 @@ export async function GET(request: Request) {
             console.warn('[AFL list] background refresh failed:', e instanceof Error ? e.message : e);
           }
         })();
+      }
+      if (!hasCronAuth && enrich && !debugStats) {
+        const stalePayload = await getAflStaleEnrichedPayload();
+        if (stalePayload) {
+          return jsonEnrichedPayload(
+            markAflEnrichedPayloadStale(stalePayload, 'no_live_games_or_props')
+          );
+        }
       }
       const emptyCache = await getAflOddsCache();
       const noAflOdds = usedCanonicalGames === true;
@@ -859,6 +892,22 @@ export async function GET(request: Request) {
     }
 
     if (enrich && !debugStats) {
+      if (aflEnrichedPayloadIsDegraded(payload)) {
+        const stalePayload = await getAflStaleEnrichedPayload();
+        if (stalePayload && aflEnrichedPayloadHasUsableStats(stalePayload)) {
+          const staleMarked = markAflEnrichedPayloadStale(stalePayload, 'live_assembly_degraded');
+          aflEnrichedPayloadMemoryCache = {
+            payload: staleMarked,
+            expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+          };
+          return NextResponse.json(staleMarked, {
+            headers: {
+              'Cache-Control': AFL_LIST_CACHE_CONTROL,
+            },
+          });
+        }
+      }
+
       aflEnrichedPayloadMemoryCache = {
         payload,
         expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
@@ -877,6 +926,9 @@ export async function GET(request: Request) {
           true
         ),
       ]);
+      if (aflEnrichedPayloadHasUsableStats(payload)) {
+        await persistAflStaleEnrichedPayload(payload);
+      }
     }
 
     return NextResponse.json(payload, {

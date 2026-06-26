@@ -455,8 +455,39 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-06-25T09:30:00Z",
       "weekKey": "2026-W26",
-      "roundKey": null,
-      "picks": []
+      "roundKey": "2026-R16",
+      "picks": [
+        {
+          "playerName": "Errol Gulden",
+          "bookmaker": "PointsBet (AU)",
+          "line": 23.5,
+          "expectedDisposals": 25.95,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0647,
+          "recommendedProb": 0.5647,
+          "rank": 1
+        },
+        {
+          "playerName": "Angus Sheldrick",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 18.32,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0483,
+          "recommendedProb": 0.528,
+          "rank": 2
+        },
+        {
+          "playerName": "Josh Dunkley",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 18.46,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0225,
+          "recommendedProb": 0.5135,
+          "rank": 3
+        }
+      ]
     },
     {
       "gameKey": "hawthornhawks|gwsgiants|2026-06-26",

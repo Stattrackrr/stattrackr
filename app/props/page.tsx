@@ -8896,7 +8896,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                 `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
                               ];
                               prefetchUrls.forEach((url) => {
-                                fetch(url, { cache: 'default' }).catch(() => {
+                                fetch(url, { cache: 'no-store' }).catch(() => {
                                   // Ignore prefetch errors - navigation should still continue.
                                 });
                               });
@@ -10437,7 +10437,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                     `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
                                   ];
                                   prefetchUrls.forEach((url) => {
-                                    fetch(url, { cache: 'default' }).catch(() => {
+                                    fetch(url, { cache: 'no-store' }).catch(() => {
                                       // Ignore prefetch errors - navigation should still continue.
                                     });
                                   });
@@ -11431,7 +11431,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               `/api/afl/fantasy-positions?season=${new Date().getFullYear()}&player=${encodeURIComponent(player.name)}`,
                               `/api/afl/players?query=${encodeURIComponent(player.name)}&limit=30`,
                             ].forEach((url) => {
-                              fetch(url, { cache: 'default' }).catch(() => {
+                              fetch(url, { cache: 'no-store' }).catch(() => {
                                 // Ignore prefetch errors - navigation should still continue.
                               });
                             });

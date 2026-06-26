@@ -6,11 +6,12 @@
 
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
+import { aflGamesIncludeSeason } from '@/lib/aflGameDedupe';
 import sharedCache from '@/lib/sharedCache';
 
 // Bump schema version when stats computation inputs change (e.g. adding 2024 season)
 // so stale entries from older logic are not reused.
-const CACHE_PREFIX = 'afl_prop_stats_v3';
+const CACHE_PREFIX = 'afl_prop_stats_v4';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
@@ -129,9 +130,10 @@ async function fetchGameLogs(
   playerName: string,
   team: string,
   season: number,
-  cronSecret?: string
+  cronSecret?: string,
+  extraQuery = ''
 ): Promise<Record<string, unknown>[]> {
-  const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}&include_both=1`;
+  const url = `${baseUrl}/api/afl/player-game-logs?season=${season}&player_name=${encodeURIComponent(playerName)}&team=${encodeURIComponent(team)}&include_both=1${extraQuery}`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cronSecret) {
     headers['Authorization'] = `Bearer ${cronSecret}`;
@@ -139,8 +141,33 @@ async function fetchGameLogs(
   }
   const r = await fetch(url, { cache: 'no-store', headers });
   if (!r.ok) return [];
-  const data = (await r.json()) as { games?: unknown[] };
-  return Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+  const data = (await r.json()) as { games?: unknown[]; season?: number };
+  let games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+  const currentYear = new Date().getFullYear();
+  const looksLikeStale2025Fallback =
+    season === currentYear &&
+    !aflGamesIncludeSeason(games, season) &&
+    games.length > 0 &&
+    (data.season === season - 1 || aflGamesIncludeSeason(games, season - 1));
+  if (looksLikeStale2025Fallback) games = [];
+  return games;
+}
+
+async function fetchGameLogsForSeason(
+  baseUrl: string,
+  playerName: string,
+  team: string,
+  season: number,
+  cronSecret?: string
+): Promise<Record<string, unknown>[]> {
+  const currentYear = new Date().getFullYear();
+  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
+  if (season === currentYear && !aflGamesIncludeSeason(games, season)) {
+    const forceQuery = cronSecret ? '&strict_season=1&force_fetch=1' : '&strict_season=1';
+    const retry = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, forceQuery);
+    if (aflGamesIncludeSeason(retry, season)) games = retry;
+  }
+  return games;
 }
 
 export type AflPropStatsDebug = { fromCache: boolean; gamesCount: number };
@@ -199,10 +226,10 @@ export async function getAflPropStats(
   const fetchForSeason = async (season: number): Promise<Record<string, unknown>[]> => {
     let list: Record<string, unknown>[] = [];
     if (resolvedPlayerTeam?.trim()) {
-      list = await fetchGameLogs(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
+      list = await fetchGameLogsForSeason(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
     }
-    if (list.length === 0) list = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
-    if (list.length === 0) list = await fetchGameLogs(baseUrl, playerName, opponent, season, cronSecret);
+    if (list.length === 0) list = await fetchGameLogsForSeason(baseUrl, playerName, team, season, cronSecret);
+    if (list.length === 0) list = await fetchGameLogsForSeason(baseUrl, playerName, opponent, season, cronSecret);
     return list;
   };
   const [gamesCurrent, gamesPrev, gamesOlder] = await Promise.all([
@@ -222,8 +249,11 @@ export async function getAflPropStats(
     dvpRating: dvpLookup?.rank ?? null,
     dvpStatValue: dvpLookup?.value ?? null,
   };
-  // Don't cache empty stats (0 games) so we don't pollute Redis and next request can retry
-  if (games.length > 0) {
+  // Don't cache empty stats (0 games) so we don't pollute Redis and next request can retry.
+  // For the current season, require at least one row tagged as that year so stale 2025-only
+  // payloads are not persisted as 2026 season averages.
+  const hasCurrentSeasonGames = aflGamesIncludeSeason(games, currentSeason);
+  if (games.length > 0 && hasCurrentSeasonGames) {
     await sharedCache.setJSON(key, payload, CACHE_TTL_SECONDS);
     // Store under reverse key (playerName, opponent, team) so list API finds stats whether row has (home, away) or (away, home)
     const keyReverse = cacheKey(playerName, opponent, team, statType, line);

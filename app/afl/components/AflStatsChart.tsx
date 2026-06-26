@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
-import { dedupeAflGames } from '@/lib/aflGameDedupe';
+import { dedupeAflGames, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 type AflAdvancedFilterKey =
@@ -661,16 +661,7 @@ export function AflStatsChart({
     [onTimeframeChange, controlledTimeframe]
   );
 
-  const resolveGameSeason = useCallback((g: Record<string, unknown>): number | null => {
-    const s = Number(g.season);
-    if (Number.isFinite(s)) return s;
-    const dateRaw = String(g.date ?? g.game_date ?? '').trim();
-    if (dateRaw.length >= 4) {
-      const y = Number(dateRaw.slice(0, 4));
-      if (Number.isFinite(y)) return y;
-    }
-    return null;
-  }, []);
+  const resolveGameSeason = useCallback((g: Record<string, unknown>): number | null => resolveAflGameSeason(g), []);
 
   const dedupedGameLogs = useMemo(
     () => dedupeAflGames(gameLogs as Record<string, unknown>[]) as typeof gameLogs,
@@ -957,21 +948,7 @@ export function AflStatsChart({
     return dedupeAflGames(filtered as Record<string, unknown>[]) as typeof filteredGameLogs;
   }, [filteredGameLogs, splitResultFilter, splitVenueFilter]);
 
-  const effectiveSeason = useCallback((g: Record<string, unknown>) => {
-    const s = (g as { season?: number }).season;
-    if (typeof s === 'number' && Number.isFinite(s)) return s;
-    const dateStr = String(g.date ?? g.game_date ?? '').trim();
-    if (dateStr.length >= 4) {
-      const isoYear = parseInt(dateStr.slice(0, 4), 10);
-      if (isoYear >= 2020 && isoYear <= 2030) return isoYear;
-      const parsed = new Date(dateStr);
-      if (Number.isFinite(parsed.getTime())) {
-        const y = parsed.getFullYear();
-        if (y >= 2020 && y <= 2030) return y;
-      }
-    }
-    return 0;
-  }, []);
+  const effectiveSeason = useCallback((g: Record<string, unknown>) => resolveAflGameSeason(g) ?? 0, []);
 
   const gameToChartRow = useCallback((g: Record<string, unknown>, idx: number) => {
     const gameNum = typeof g.game_number === 'number' ? g.game_number : idx + 1;

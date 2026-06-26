@@ -225,6 +225,18 @@ function buildRoundLookup(records) {
   return lookup;
 }
 
+function isDateInAflRoundWindow(date, bounds) {
+  if (date >= bounds.min && date <= bounds.max) return true;
+  if (date < bounds.min) return false;
+  const maxMs = Date.parse(bounds.max);
+  const dateMs = Date.parse(date);
+  const minMs = Date.parse(bounds.min);
+  if (!Number.isFinite(maxMs) || !Number.isFinite(dateMs) || !Number.isFinite(minMs)) return false;
+  const daysAfterMax = (dateMs - maxMs) / 86_400_000;
+  const roundSpanDays = (maxMs - minMs) / 86_400_000;
+  return daysAfterMax >= 0 && daysAfterMax <= 4 && roundSpanDays <= 7;
+}
+
 function inferRoundKey(commenceTime, records) {
   if (!commenceTime) return null;
   const date = commenceTime.slice(0, 10);
@@ -248,12 +260,15 @@ function inferRoundKey(commenceTime, records) {
     roundBounds.set(roundKey, bounds);
   }
   for (const [roundKey, bounds] of roundBounds) {
-    if (date >= bounds.min && date <= bounds.max) return roundKey;
+    if (isDateInAflRoundWindow(date, bounds)) return roundKey;
   }
   return null;
 }
 
 function mergePicks(primaryPicks, secondaryPicks) {
+  if (!Array.isArray(primaryPicks) || primaryPicks.length === 0) {
+    return Array.isArray(secondaryPicks) ? secondaryPicks : [];
+  }
   const secondaryByPlayer = new Map(secondaryPicks.map((pick) => [pick.playerName.toLowerCase(), pick]));
   return primaryPicks.map((pick, idx) => {
     const secondary = secondaryByPlayer.get(pick.playerName.toLowerCase()) ?? secondaryPicks[idx];
@@ -306,11 +321,73 @@ function loadProjectionGames(payload) {
   return out;
 }
 
+function rankedFallbackRows(rows) {
+  return [...rows]
+    .filter((row) => parseNumber(row.expectedDisposals) != null && parseNumber(row.line) != null)
+    .sort((a, b) => {
+      const edgeA =
+        parseNumber(a.edgeVsMarket) != null
+          ? Math.abs(parseNumber(a.edgeVsMarket))
+          : Math.abs(parseNumber(a.expectedDisposals) - parseNumber(a.line));
+      const edgeB =
+        parseNumber(b.edgeVsMarket) != null
+          ? Math.abs(parseNumber(b.edgeVsMarket))
+          : Math.abs(parseNumber(b.expectedDisposals) - parseNumber(b.line));
+      if (edgeA !== edgeB) return edgeB - edgeA;
+      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
+    });
+}
+
+function selectFallbackTopRows(gameRows, limitPerGame = 3) {
+  const cap = Math.max(1, Math.min(10, limitPerGame));
+  const maxSame = 2;
+  const seen = new Set();
+  let overCount = 0;
+  let underCount = 0;
+  const selected = [];
+  for (const row of rankedFallbackRows(gameRows)) {
+    if (selected.length >= cap) break;
+    const playerKey = String(row.playerName ?? '').trim().toLowerCase();
+    if (!playerKey || seen.has(playerKey)) continue;
+    const side =
+      normalizeSide(row.recommendedSide) ??
+      (parseNumber(row.expectedDisposals) - parseNumber(row.line) >= 0 ? 'OVER' : 'UNDER');
+    if (side !== 'OVER' && side !== 'UNDER') continue;
+    if (side === 'OVER' && overCount >= maxSame) continue;
+    if (side === 'UNDER' && underCount >= maxSame) continue;
+    seen.add(playerKey);
+    if (side === 'OVER') overCount += 1;
+    else underCount += 1;
+    selected.push({ ...row, recommendedSide: side });
+  }
+  return selected;
+}
+
+function mapTopPickRows(selected) {
+  if (selected.length === 0) return null;
+  const first = selected[0];
+  return {
+    gameKey: String(first.gameKey ?? '').trim(),
+    homeTeam: String(first.homeTeam ?? ''),
+    awayTeam: String(first.awayTeam ?? ''),
+    commenceTime: first.commenceTime != null ? String(first.commenceTime) : null,
+    picks: selected.map((row, idx) => ({
+      playerName: String(row.playerName ?? ''),
+      bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
+      line: parseNumber(row.line),
+      expectedDisposals: parseNumber(row.expectedDisposals),
+      recommendedSide: normalizeSide(row.recommendedSide),
+      recommendedEdge: parseRate(row.recommendedEdge),
+      recommendedProb: parseRate(row.recommendedProb),
+      rank: parseNumber(row.recommendedPlayerRankInGame) ?? idx + 1,
+    })),
+  };
+}
+
 function getTopPicksByGame(payload, limitPerGame = 3) {
   const rows = payload?.rows ?? [];
   const byGame = new Map();
   for (const row of rows) {
-    if (!row.isTop3PickInGame) continue;
     const gameKey = String(row.gameKey ?? '').trim();
     if (!gameKey) continue;
     const list = byGame.get(gameKey);
@@ -319,29 +396,16 @@ function getTopPicksByGame(payload, limitPerGame = 3) {
   }
   const out = new Map();
   for (const [gameKey, gameRows] of byGame.entries()) {
-    gameRows.sort(
-      (a, b) =>
-        (parseNumber(a.recommendedPlayerRankInGame) ?? 999) - (parseNumber(b.recommendedPlayerRankInGame) ?? 999)
-    );
-    const selected = gameRows.slice(0, limitPerGame);
-    if (selected.length === 0) continue;
-    const first = selected[0];
-    out.set(gameKey, {
-      gameKey,
-      homeTeam: String(first.homeTeam ?? ''),
-      awayTeam: String(first.awayTeam ?? ''),
-      commenceTime: first.commenceTime != null ? String(first.commenceTime) : null,
-      picks: selected.map((row, idx) => ({
-        playerName: String(row.playerName ?? ''),
-        bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
-        line: parseNumber(row.line),
-        expectedDisposals: parseNumber(row.expectedDisposals),
-        recommendedSide: normalizeSide(row.recommendedSide),
-        recommendedEdge: parseRate(row.recommendedEdge),
-        recommendedProb: parseRate(row.recommendedProb),
-        rank: parseNumber(row.recommendedPlayerRankInGame) ?? idx + 1,
-      })),
-    });
+    const flagged = gameRows
+      .filter((row) => row.isTop3PickInGame)
+      .sort(
+        (a, b) =>
+          (parseNumber(a.recommendedPlayerRankInGame) ?? 999) - (parseNumber(b.recommendedPlayerRankInGame) ?? 999)
+      )
+      .slice(0, limitPerGame);
+    const selected = flagged.length > 0 ? flagged : selectFallbackTopRows(gameRows, limitPerGame);
+    const mapped = mapTopPickRows(selected);
+    if (mapped) out.set(gameKey, mapped);
   }
   return out;
 }

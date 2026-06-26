@@ -15,6 +15,7 @@ const AFL_SPORT_KEY = 'aussierules_afl';
 
 /** Cache key. TTL: never expire; only replaced when cron runs successfully (same as NBA – cache does not expire, only replaced). */
 export const AFL_ODDS_CACHE_KEY = 'afl_game_odds_v2';
+export const AFL_ODDS_STALE_CACHE_KEY = 'afl_game_odds_v2_stale';
 export const AFL_ODDS_CACHE_TTL_SECONDS = 365 * 24 * 60 * 60 * 10; // 10 years – effectively never expire, only replace on cron
 
 // Same bookmaker shape the NBA dashboard expects (game odds only)
@@ -256,17 +257,33 @@ export async function refreshAflOddsData(options?: { skipWrite?: boolean }): Pro
   }
 }
 
-/** Write odds cache (cron: after props refresh so we do not show new matchups without a matching props snapshot). Empty `games` is valid when the API has no upcoming events. */
+/** Write odds cache (cron: after props refresh so we do not show new matchups without a matching props snapshot). */
 export async function setAflOddsCache(payload: AflOddsCache): Promise<void> {
   if (!payload || !Array.isArray(payload.games)) return;
+
+  const existing = await getAflOddsCache();
+  if (payload.games.length === 0) {
+    // Odds API returned no upcoming events — keep the week's stored games/lines.
+    if (existing?.games?.length) return;
+  } else if (existing?.games?.length) {
+    await sharedCache.setJSON(AFL_ODDS_STALE_CACHE_KEY, existing, AFL_ODDS_CACHE_TTL_SECONDS);
+  }
+
   await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, payload, AFL_ODDS_CACHE_TTL_SECONDS);
 }
 
-/** Read game odds from 90-min cache (populated by cron every 90 min). */
+/** Read game odds cache; falls back to last archived snapshot when the live key is empty. */
 export async function getAflOddsCache(): Promise<AflOddsCache | null> {
   const raw = await sharedCache.getJSON<AflOddsCache>(AFL_ODDS_CACHE_KEY);
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.games)) return null;
-  return raw;
+  if (raw && typeof raw === 'object' && Array.isArray(raw.games) && raw.games.length > 0) return raw;
+
+  const stale = await sharedCache.getJSON<AflOddsCache>(AFL_ODDS_STALE_CACHE_KEY);
+  if (stale && typeof stale === 'object' && Array.isArray(stale.games) && stale.games.length > 0) {
+    return stale;
+  }
+
+  if (raw && typeof raw === 'object' && Array.isArray(raw.games)) return raw;
+  return null;
 }
 
 /** Find event ID for a matchup from games list (for player-props event-level fetch). Normalises team/opponent to official names so we never match wrong (e.g. Melbourne vs North Melbourne). */

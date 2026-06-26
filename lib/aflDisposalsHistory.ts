@@ -433,6 +433,7 @@ function mergeAflTopPickPicks(
   primaryPicks: AflTopGamePick[],
   secondaryPicks: AflTopGamePick[]
 ): AflTopGamePick[] {
+  if (primaryPicks.length === 0) return secondaryPicks;
   const secondaryByPlayer = new Map(secondaryPicks.map((pick) => [pick.playerName.toLowerCase(), pick]));
   return primaryPicks.map((pick, idx) => {
     const secondary = secondaryByPlayer.get(pick.playerName.toLowerCase()) ?? secondaryPicks[idx];
@@ -451,6 +452,18 @@ export function buildAflTopPicksRoundLookup(records: AflTopPickSnapshotRecord[])
     lookup.set(record.gameKey, record.roundKey);
   }
   return lookup;
+}
+
+function isDateInAflRoundWindow(date: string, bounds: { min: string; max: string }): boolean {
+  if (date >= bounds.min && date <= bounds.max) return true;
+  if (date < bounds.min) return false;
+  const maxMs = Date.parse(bounds.max);
+  const dateMs = Date.parse(date);
+  const minMs = Date.parse(bounds.min);
+  if (!Number.isFinite(maxMs) || !Number.isFinite(dateMs) || !Number.isFinite(minMs)) return false;
+  const daysAfterMax = (dateMs - maxMs) / 86_400_000;
+  const roundSpanDays = (maxMs - minMs) / 86_400_000;
+  return daysAfterMax >= 0 && daysAfterMax <= 4 && roundSpanDays <= 7;
 }
 
 export function inferAflTopPicksRoundKey(
@@ -483,7 +496,7 @@ export function inferAflTopPicksRoundKey(
     roundBounds.set(roundKey, bounds);
   }
   for (const [roundKey, bounds] of roundBounds) {
-    if (date >= bounds.min && date <= bounds.max) return roundKey;
+    if (isDateInAflRoundWindow(date, bounds)) return roundKey;
   }
   return null;
 }

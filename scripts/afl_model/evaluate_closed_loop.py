@@ -182,13 +182,21 @@ def load_settled_samples(max_projection_files: int) -> List[dict]:
             continue
         if not math.isfinite(actual) or not math.isfinite(line):
             continue
-        actual_by_key[key] = {
+        sample = {
             "actualDisposals": actual,
             "line": line,
             "gameDate": row.get("gameDate"),
             "bookmaker": row.get("bookmaker"),
             "playerName": row.get("playerName"),
         }
+        actual_by_key[key] = sample
+        player_nm = normalize_name(str(row.get("playerName") or ""))
+        game_date = str(row.get("gameDate") or "")[:10]
+        if player_nm and game_date:
+            actual_by_key[f"{player_nm}|{game_date}"] = sample
+        wk = week_key_from_date_str(game_date)
+        if player_nm and wk:
+            actual_by_key[f"{player_nm}|{wk}"] = sample
     if not actual_by_key:
         return []
 

@@ -4,6 +4,7 @@
  */
 
 import { getAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
+import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import sharedCache from '@/lib/sharedCache';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
@@ -267,7 +268,7 @@ export async function refreshAflPlayerPropsCache(
 
   let games = gamesFromCaller ?? (await getAflOddsCache())?.games ?? [];
   if (!games.length) {
-    const cleared = await sharedCache.clearKeysByPrefix(`${AFL_PP_CACHE_KEY_PREFIX}:`);
+    // No upcoming games from API — keep existing per-event props for the current week.
     return {
       success: true,
       eventsRefreshed: 0,
@@ -276,7 +277,7 @@ export async function refreshAflPlayerPropsCache(
       playersWithProps: 0,
       playerNames: [],
       failedGameIds: [],
-      keysCleared: cleared,
+      keysCleared: 0,
     };
   }
 
@@ -376,7 +377,27 @@ export async function refreshAflPlayerPropsCache(
           'No AFL player props were refreshed from Odds API (one or more event requests failed HTTP or threw — check key, quota, or API status)',
       };
     }
-    // Game odds exist but no AU player markets returned yet (common between rounds / before books post lines).
+    // HTTP succeeded but no AU player markets — keep prior week's props when we already have them.
+    let existingEventsWithProps = 0;
+    for (const game of games) {
+      const cached = await sharedCache.getJSON<EventPlayerPropsCache>(`${AFL_PP_CACHE_KEY_PREFIX}:${game.gameId}`);
+      if (cached && Object.keys(cached).length > 0) existingEventsWithProps += 1;
+    }
+    if (existingEventsWithProps > 0) {
+      console.warn(
+        `[AFL PP] Odds API returned no player markets for ${eventsAttempted} events; keeping ${existingEventsWithProps} cached event props`
+      );
+      return {
+        success: true,
+        eventsRefreshed: 0,
+        eventsAttempted,
+        eventsFailed: eventsAttempted,
+        playersWithProps: 0,
+        playerNames: [],
+        failedGameIds,
+        keysCleared: 0,
+      };
+    }
     const cleared = await sharedCache.clearKeysByPrefix(`${AFL_PP_CACHE_KEY_PREFIX}:`);
     return {
       success: true,
@@ -571,4 +592,93 @@ export async function listAflPlayerPropsFromCache(): Promise<{
   const games = cache?.games ?? [];
   if (!games.length) return null;
   return listAflPlayerPropsFromCacheWithGames(games);
+}
+
+/** Full enriched AFL props list (odds lines + precomputed stats) kept across cron failures. */
+export const AFL_LIST_ENRICHED_STALE_CACHE_KEY = 'afl_list_enriched_response_v3_stale';
+export const AFL_LIST_ENRICHED_STALE_SUPABASE_KEY = 'afl_props_list_enriched_v3_stale';
+export const AFL_LIST_ENRICHED_STALE_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+type AflEnrichedListPayload = Record<string, unknown>;
+
+function aflEnrichedListRows(payload: AflEnrichedListPayload | null | undefined): unknown[] {
+  return Array.isArray(payload?.data) ? (payload.data as unknown[]) : [];
+}
+
+function aflEnrichedRowsWithStatsCount(payload: AflEnrichedListPayload | null | undefined): number {
+  const meta = payload?._meta;
+  if (meta && typeof meta === 'object' && typeof (meta as { rowsWithStats?: unknown }).rowsWithStats === 'number') {
+    return (meta as { rowsWithStats: number }).rowsWithStats;
+  }
+  return aflEnrichedListRows(payload).filter((row) => {
+    if (!row || typeof row !== 'object') return false;
+    const r = row as { last5Avg?: unknown; seasonAvg?: unknown };
+    return r.last5Avg != null || r.seasonAvg != null;
+  }).length;
+}
+
+/** True when the payload has props with enough stats to show on the props page. */
+export function aflEnrichedPayloadHasUsableStats(payload: AflEnrichedListPayload | null | undefined): boolean {
+  const rows = aflEnrichedListRows(payload);
+  if (rows.length === 0) return false;
+  const withStats = aflEnrichedRowsWithStatsCount(payload);
+  if (withStats >= 10) return true;
+  return withStats / rows.length >= 0.3;
+}
+
+/** Live assembly mostly N/A — prefer last good weekly snapshot. */
+export function aflEnrichedPayloadIsDegraded(payload: AflEnrichedListPayload | null | undefined): boolean {
+  const rows = aflEnrichedListRows(payload);
+  if (rows.length === 0) return true;
+  const withStats = aflEnrichedRowsWithStatsCount(payload);
+  if (withStats === 0) return true;
+  return withStats / rows.length < 0.2;
+}
+
+export function markAflEnrichedPayloadStale(
+  payload: AflEnrichedListPayload,
+  reason: string
+): AflEnrichedListPayload {
+  const meta =
+    payload._meta && typeof payload._meta === 'object'
+      ? { ...(payload._meta as Record<string, unknown>) }
+      : {};
+  return {
+    ...payload,
+    _meta: {
+      ...meta,
+      stale: true,
+      staleReason: reason,
+      staleServedAt: new Date().toISOString(),
+    },
+  };
+}
+
+export async function getAflStaleEnrichedPayload(): Promise<AflEnrichedListPayload | null> {
+  const fromRedis = await sharedCache.getJSON<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_CACHE_KEY);
+  if (fromRedis && aflEnrichedPayloadHasUsableStats(fromRedis)) return fromRedis;
+
+  const fromSupabase = await getNBACache<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_SUPABASE_KEY, {
+    restTimeoutMs: 4000,
+    jsTimeoutMs: 4000,
+    quiet: true,
+  });
+  if (fromSupabase && aflEnrichedPayloadHasUsableStats(fromSupabase)) return fromSupabase;
+
+  return null;
+}
+
+export async function persistAflStaleEnrichedPayload(payload: AflEnrichedListPayload): Promise<void> {
+  if (!aflEnrichedPayloadHasUsableStats(payload)) return;
+  const staleMinutes = Math.max(1, Math.ceil(AFL_LIST_ENRICHED_STALE_TTL_SECONDS / 60));
+  await Promise.allSettled([
+    sharedCache.setJSON(AFL_LIST_ENRICHED_STALE_CACHE_KEY, payload, AFL_LIST_ENRICHED_STALE_TTL_SECONDS),
+    setNBACache(
+      AFL_LIST_ENRICHED_STALE_SUPABASE_KEY,
+      'afl-player-props-list-enriched-stale',
+      payload,
+      staleMinutes,
+      true
+    ),
+  ]);
 }

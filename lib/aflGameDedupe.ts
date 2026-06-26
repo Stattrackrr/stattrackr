@@ -21,15 +21,39 @@ function normalizeOpponentForDedupe(opponent: unknown): string {
   return (official ?? raw).toLowerCase();
 }
 
-function inferSeasonForDedupe(game: Record<string, unknown>): string {
+/** Resolve AFL season from game row (season field, ISO date prefix, or parsed date). */
+export function resolveAflGameSeason(game: Record<string, unknown>): number | null {
   const season = Number(game.season);
-  if (Number.isFinite(season)) return String(season);
+  if (Number.isFinite(season) && season >= 2020 && season <= 2030) return season;
   const date = String(game.date ?? game.game_date ?? '').trim();
+  if (!date) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(date)) {
+    const isoYear = parseInt(date.slice(0, 4), 10);
+    if (isoYear >= 2020 && isoYear <= 2030) return isoYear;
+  }
   const y4 = date.match(/\b(20\d{2})\b/);
-  if (y4?.[1]) return y4[1];
+  if (y4?.[1]) {
+    const y = parseInt(y4[1], 10);
+    if (y >= 2020 && y <= 2030) return y;
+  }
   const y2 = date.match(/\b(\d{2})\b$/);
-  if (y2?.[1]) return String(2000 + parseInt(y2[1], 10));
-  return '';
+  if (y2?.[1]) return 2000 + parseInt(y2[1], 10);
+  const parsed = new Date(date);
+  if (Number.isFinite(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    if (y >= 2020 && y <= 2030) return y;
+  }
+  return null;
+}
+
+export function aflGamesIncludeSeason(games: Record<string, unknown>[], targetSeason: number): boolean {
+  if (!Array.isArray(games) || games.length === 0) return false;
+  return games.some((g) => resolveAflGameSeason(g) === targetSeason);
+}
+
+function inferSeasonForDedupe(game: Record<string, unknown>): string {
+  const season = resolveAflGameSeason(game);
+  return season != null ? String(season) : '';
 }
 
 /** Stable identity for matching venue enrichment across base vs quarter-enriched rows. */
