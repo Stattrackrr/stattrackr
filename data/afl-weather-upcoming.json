@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-27T12:07:30.888Z",
+  "generatedAt": "2026-06-27T17:35:58.052Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -11,7 +11,7 @@
       "weather": {
         "temperatureC": 14.8,
         "precipitationMm": 0,
-        "windKmh": 3.6
+        "windKmh": 3.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-06-28T07:10:00Z",
       "weather": {
-        "temperatureC": 17.1,
-        "precipitationMm": 0.3,
-        "windKmh": 18.1
+        "temperatureC": 17.3,
+        "precipitationMm": 0.1,
+        "windKmh": 17.1
       }
     }
   ],
