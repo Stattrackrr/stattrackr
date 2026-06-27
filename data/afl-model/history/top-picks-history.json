@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-27T10:09:40.831Z",
+  "generatedAt": "2026-06-27T22:36:41.694Z",
   "count": 16,
   "records": [
     {
@@ -596,7 +596,7 @@
           "recommendedEdge": 0.0394,
           "recommendedProb": 0.5314,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 29
         },
         {
           "playerName": "Brayden Cook",
@@ -607,7 +607,7 @@
           "recommendedEdge": 0.0328,
           "recommendedProb": 0.5328,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 8
         },
         {
           "playerName": "Rory Laird",
@@ -618,7 +618,7 @@
           "recommendedEdge": 0.022,
           "recommendedProb": 0.518,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 19
         }
       ]
     }
