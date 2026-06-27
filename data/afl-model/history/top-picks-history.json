@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-26T22:45:45.907Z",
-  "count": 14,
+  "generatedAt": "2026-06-27T04:35:28.944Z",
+  "count": 15,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -536,6 +536,42 @@
           "recommendedProb": 0.6258,
           "rank": 2,
           "actualDisposals": 34
+        }
+      ]
+    },
+    {
+      "gameKey": "collingwoodmagpies|richmondtigers|2026-06-27",
+      "finalizedAt": "2026-06-27T04:35:28.944Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-26T18:30:16Z",
+      "modelVersion": "afl-disp-20260626-182600",
+      "homeTeam": "Collingwood Magpies",
+      "awayTeam": "Richmond Tigers",
+      "commenceTime": "2026-06-27T06:15:33Z",
+      "weekKey": "2026-W26",
+      "roundKey": "2026-R16",
+      "picks": [
+        {
+          "playerName": "Jordan De Goey",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 18.99,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2318,
+          "recommendedProb": 0.7178,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jordan De Goey",
+          "bookmaker": "PointsBet (AU)",
+          "line": 25.5,
+          "expectedDisposals": 18.94,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2203,
+          "recommendedProb": 0.7203,
+          "rank": 1,
+          "actualDisposals": null
         }
       ]
     }
