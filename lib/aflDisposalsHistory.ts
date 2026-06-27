@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { AflTopGamePick } from './aflDisposalsModel';
+import aflTopPicksBackfillBundled from '@/data/afl-model/history/backfill-week-2026-06-13.json';
 
 type AflDisposalsHistoryRow = {
   snapshotKey?: string;
@@ -305,12 +306,8 @@ function parseTopPicksSide(value: unknown): 'OVER' | 'UNDER' | null {
   return null;
 }
 
-function readBackfillTopPicksRecords(): AflTopPickSnapshotRecord[] {
-  if (!fs.existsSync(AFL_TOP_PICKS_BACKFILL_PATH)) return [];
-  try {
-    const parsed = readJsonFileAnyEncoding(AFL_TOP_PICKS_BACKFILL_PATH);
-    const rows = Array.isArray(parsed) ? (parsed as AflTopPicksBackfillRecord[]) : [];
-    return rows.map((record) => {
+function parseBackfillTopPicksRows(rows: AflTopPicksBackfillRecord[]): AflTopPickSnapshotRecord[] {
+  return rows.map((record) => {
       const homeTeam = String(record.homeTeam ?? '').trim();
       const awayTeam = String(record.awayTeam ?? '').trim();
       const commenceTime = record.commenceTime != null ? String(record.commenceTime) : record.gameDate ?? null;
@@ -340,9 +337,22 @@ function readBackfillTopPicksRecords(): AflTopPickSnapshotRecord[] {
         picks,
       });
     });
-  } catch {
-    return [];
+}
+
+function readBackfillTopPicksRecords(): AflTopPickSnapshotRecord[] {
+  if (fs.existsSync(AFL_TOP_PICKS_BACKFILL_PATH)) {
+    try {
+      const parsed = readJsonFileAnyEncoding(AFL_TOP_PICKS_BACKFILL_PATH);
+      const rows = Array.isArray(parsed) ? (parsed as AflTopPicksBackfillRecord[]) : [];
+      if (rows.length > 0) return parseBackfillTopPicksRows(rows);
+    } catch {
+      // fall through to bundled backfill
+    }
   }
+  const bundledRows = Array.isArray(aflTopPicksBackfillBundled)
+    ? (aflTopPicksBackfillBundled as AflTopPicksBackfillRecord[])
+    : [];
+  return bundledRows.length > 0 ? parseBackfillTopPicksRows(bundledRows) : [];
 }
 
 function loadTopPicksHistoryRecords(): AflTopPickSnapshotRecord[] {
@@ -367,7 +377,11 @@ function loadTopPicksHistoryRecords(): AflTopPickSnapshotRecord[] {
   const backfillRecords = readBackfillTopPicksRecords();
   if (backfillRecords.length > 0) {
     const sorted = sortAflTopPickSnapshotRecords(backfillRecords);
-    writeAflTopPicksHistory(sorted);
+    try {
+      writeAflTopPicksHistory(sorted);
+    } catch {
+      // Serverless filesystem is read-only; still serve bundled backfill in memory.
+    }
     return sorted;
   }
 

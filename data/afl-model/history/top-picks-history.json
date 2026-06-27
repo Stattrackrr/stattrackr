@@ -16,7 +16,7 @@
       "awayTeam": "Melbourne",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": null,
+      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Mason Redman",
@@ -41,7 +41,7 @@
       "awayTeam": "West Coast",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": null,
+      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Cooper Harvey",
@@ -66,7 +66,7 @@
       "awayTeam": "Sydney",
       "commenceTime": "2026-06-13",
       "weekKey": "2026-W24",
-      "roundKey": null,
+      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Logan Evans",
@@ -113,7 +113,7 @@
       "awayTeam": "Brisbane",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
-      "roundKey": null,
+      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Dion Prestia",
@@ -160,7 +160,7 @@
       "awayTeam": "GWS",
       "commenceTime": "2026-06-14",
       "weekKey": "2026-W24",
-      "roundKey": null,
+      "roundKey": "2026-R14",
       "picks": [
         {
           "playerName": "Finn Callaghan",
@@ -506,7 +506,7 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-06-26T09:40:00Z",
       "weekKey": "2026-W26",
-      "roundKey": null,
+      "roundKey": "2026-R16",
       "picks": [
         {
           "playerName": "Joseph Fonti",
