@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-27T07:50:02.353Z",
+  "generatedAt": "2026-06-27T10:09:04.513Z",
   "count": 16,
   "records": [
     {
@@ -560,7 +560,7 @@
           "recommendedEdge": 0.2318,
           "recommendedProb": 0.7178,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 27
         },
         {
           "playerName": "Jordan De Goey",
@@ -571,7 +571,7 @@
           "recommendedEdge": 0.2203,
           "recommendedProb": 0.7203,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 27
         }
       ]
     },
