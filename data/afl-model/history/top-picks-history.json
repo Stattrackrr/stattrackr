@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-27T04:35:28.944Z",
-  "count": 15,
+  "generatedAt": "2026-06-27T07:50:02.353Z",
+  "count": 16,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -571,6 +571,53 @@
           "recommendedEdge": 0.2203,
           "recommendedProb": 0.7203,
           "rank": 1,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "portadelaidepower|adelaidecrows|2026-06-27",
+      "finalizedAt": "2026-06-27T07:50:02.353Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-26T18:30:16Z",
+      "modelVersion": "afl-disp-20260626-182600",
+      "homeTeam": "Port Adelaide Power",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-06-27T09:35:00Z",
+      "weekKey": "2026-W26",
+      "roundKey": "2026-R16",
+      "picks": [
+        {
+          "playerName": "Jason Horne Francis",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 24.1,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0394,
+          "recommendedProb": 0.5314,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Brayden Cook",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 18.09,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0328,
+          "recommendedProb": 0.5328,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Rory Laird",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 22.72,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.022,
+          "recommendedProb": 0.518,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
