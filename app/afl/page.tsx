@@ -639,6 +639,23 @@ function aflTopPicksModalBuildRoundNav(roundKeys: string[]): AflTopPicksRoundNav
   return options;
 }
 
+function aflTopPicksModalResolveRoundKeys(
+  historyRounds: unknown,
+  currentRounds: unknown,
+  historyRecords: AflTopPicksHistoryRecord[]
+): string[] {
+  const fromApi = [historyRounds, currentRounds]
+    .filter((value): value is string[] => Array.isArray(value))
+    .flat()
+    .filter((roundKey): roundKey is string => typeof roundKey === 'string' && roundKey.trim().length > 0);
+  if (fromApi.length > 0) return aflTopPicksModalSortRoundKeys([...new Set(fromApi)]);
+
+  const fromRecords = historyRecords
+    .map((record) => record.roundKey)
+    .filter((roundKey): roundKey is string => Boolean(roundKey));
+  return aflTopPicksModalSortRoundKeys([...new Set(fromRecords)]);
+}
+
 function aflTopPicksModalGroupHistoryByRound(
   groups: AflTopPicksModalGroup[],
   roundOrder: string[]
@@ -970,12 +987,16 @@ function AflTopPicksModal({
       setLatestRoundHistoryGroups([]);
       setCurrentRoundWindow(null);
       try {
-        const [currentRes, historyRes] = await Promise.all([
+        const [currentSettled, historySettled] = await Promise.allSettled([
           fetch('/api/afl/model/disposals/top-picks?limitPerGame=3', { cache: 'no-store' }),
           fetch('/api/afl/model/disposals/top-picks?history=1&limit=500', { cache: 'no-store' }),
         ]);
-        const currentPayload = currentRes.ok ? await currentRes.json() : null;
-        const historyPayload = historyRes.ok ? await historyRes.json() : null;
+        const currentRes = currentSettled.status === 'fulfilled' ? currentSettled.value : null;
+        const historyRes = historySettled.status === 'fulfilled' ? historySettled.value : null;
+        const currentPayload =
+          currentRes?.ok ? ((await currentRes.json().catch(() => null)) as Record<string, unknown> | null) : null;
+        const historyPayload =
+          historyRes?.ok ? ((await historyRes.json().catch(() => null)) as Record<string, unknown> | null) : null;
         if (cancelled) return;
         const groups = Array.isArray(currentPayload?.groups) ? (currentPayload.groups as AflTopPicksModalGroup[]) : [];
         const liveRecords = groups.map((group) => ({
@@ -989,7 +1010,11 @@ function AflTopPicksModal({
         const historyRecords = Array.isArray(historyPayload?.records)
           ? (historyPayload.records as AflTopPicksHistoryRecord[])
           : [];
-        const rounds = Array.isArray(historyPayload?.rounds) ? (historyPayload.rounds as string[]) : [];
+        const rounds = aflTopPicksModalResolveRoundKeys(
+          historyPayload?.rounds,
+          currentPayload?.rounds,
+          historyRecords
+        );
         const resolvedRoundWindow = aflTopPicksModalResolveCurrentRoundWindow(
           new Date(),
           liveRecords,

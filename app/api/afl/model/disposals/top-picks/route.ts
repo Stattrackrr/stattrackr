@@ -44,10 +44,13 @@ export async function GET(request: NextRequest) {
   const limit = Number.parseInt(limitRaw, 10);
   const groups = getAflDisposalsTopPicksByGame(Number.isFinite(limit) ? limit : 3);
   const meta = getAflDisposalsProjectionPayloadMeta();
+  const history = readAflTopPicksHistory();
+  const rounds = listAflTopPicksRoundKeys(history.records);
   return NextResponse.json({
     success: true,
     groups,
     count: groups.length,
+    rounds,
     modelVersion: meta.modelVersion,
     generatedAt: meta.generatedAt,
   });

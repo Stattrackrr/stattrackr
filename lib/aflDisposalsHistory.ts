@@ -281,6 +281,10 @@ function readJsonFileAnyEncoding(filePath: string): unknown {
   } else {
     text = raw.toString('utf8').replace(/^\uFEFF/, '');
   }
+  text = text
+    .replace(/^<<<<<<<[^\n]*\n/gm, '')
+    .replace(/^=======\n/gm, '')
+    .replace(/^>>>>>>>[^\n]*\n/gm, '');
   return JSON.parse(text);
 }
 
