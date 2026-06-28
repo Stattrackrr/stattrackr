@@ -409,6 +409,7 @@ type AflTopPicksRoundSection = {
 };
 
 const AFL_TOP_PICKS_CURRENT = 'current';
+const AFL_TOP_PICKS_ALL = 'all';
 
 function aflTopPicksModalParseRoundKey(roundKey: string | null | undefined): { season: number; round: number } | null {
   const match = String(roundKey ?? '').trim().match(/^(\d{4})-R(\d{1,2})$/i);
@@ -607,6 +608,7 @@ function aflTopPicksModalInferRoundKey(
 
 function aflTopPicksModalRoundLabel(roundKey: string): string {
   if (roundKey === AFL_TOP_PICKS_CURRENT) return 'Current';
+  if (roundKey === AFL_TOP_PICKS_ALL) return 'All';
   if (roundKey.includes('|')) {
     const parsed = roundKey
       .split('|')
@@ -626,17 +628,25 @@ function aflTopPicksModalRoundLabel(roundKey: string): string {
 type AflTopPicksRoundNavOption = {
   id: string;
   roundKeys: string[];
-  isCurrent: boolean;
+  isCurrent?: boolean;
+  isAll?: boolean;
 };
 
 function aflTopPicksModalBuildRoundNav(roundKeys: string[]): AflTopPicksRoundNavOption[] {
   const options: AflTopPicksRoundNavOption[] = roundKeys.map((roundKey) => ({
     id: roundKey,
     roundKeys: [roundKey],
-    isCurrent: false,
   }));
   options.push({ id: AFL_TOP_PICKS_CURRENT, roundKeys: [], isCurrent: true });
+  if (roundKeys.length > 0) {
+    options.push({ id: AFL_TOP_PICKS_ALL, roundKeys: [...roundKeys], isAll: true });
+  }
   return options;
+}
+
+function aflTopPicksModalDefaultRoundIndex(options: AflTopPicksRoundNavOption[]): number {
+  const currentIdx = options.findIndex((option) => option.isCurrent);
+  return currentIdx >= 0 ? currentIdx : Math.max(0, options.length - 1);
 }
 
 function aflTopPicksModalResolveRoundKeys(
@@ -878,22 +888,35 @@ function AflTopPicksModal({
   const [currentRoundWindow, setCurrentRoundWindow] = useState<AflTopPicksRoundWindow | null>(null);
   const [historyGroups, setHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const gameLogsCacheRef = useRef(new Map<string, Record<string, unknown>[]>());
+  const roundSliderRef = useRef<HTMLDivElement | null>(null);
 
   const roundOptions = useMemo(() => aflTopPicksModalBuildRoundNav(roundKeys), [roundKeys]);
+  const sliderRoundOptions = useMemo(
+    () => roundOptions.filter((option) => !option.isAll),
+    [roundOptions]
+  );
+  const allRoundOption = useMemo(
+    () => roundOptions.find((option) => option.isAll) ?? null,
+    [roundOptions]
+  );
 
   const activeRound = roundOptions[roundIndex] ?? roundOptions[roundOptions.length - 1];
-  const isCurrentRound = activeRound?.isCurrent ?? true;
+  const isAllRound = activeRound?.isAll ?? false;
+  const isCurrentRound = activeRound?.isCurrent ?? false;
   const displayGroups = useMemo(() => {
-    if (!isCurrentRound) return historyGroups;
+    if (isAllRound || !isCurrentRound) return historyGroups;
     const merged = aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups);
     if (!currentRoundWindow) return merged;
     return merged.filter((group) => aflTopPicksModalGroupInRoundWindow(group, currentRoundWindow));
-  }, [isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups, currentRoundWindow]);
+  }, [isAllRound, isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups, currentRoundWindow]);
   const displayRoundSections = useMemo(() => {
+    if (isAllRound) {
+      return aflTopPicksModalGroupHistoryByRound(historyGroups, roundKeys);
+    }
     if (isCurrentRound || (activeRound?.roundKeys.length ?? 0) <= 1) return [];
     return aflTopPicksModalGroupHistoryByRound(historyGroups, activeRound?.roundKeys ?? []);
-  }, [isCurrentRound, historyGroups, activeRound?.roundKeys]);
-  const showHistoryGroups = isCurrentRound || displayRoundSections.length === 0;
+  }, [isAllRound, isCurrentRound, historyGroups, roundKeys, activeRound?.roundKeys]);
+  const showHistoryGroups = isCurrentRound || (!isAllRound && displayRoundSections.length === 0);
   const loading = bootLoading || historyLoading;
 
   const summary = useMemo(() => {
@@ -1029,7 +1052,7 @@ function AflTopPicksModal({
           aflTopPicksModalGroupsFromRecords(scopedHistoryRecords, gameLogsCacheRef.current)
         );
         setRoundKeys(rounds);
-        setRoundIndex(aflTopPicksModalBuildRoundNav(rounds).length - 1);
+        setRoundIndex(aflTopPicksModalDefaultRoundIndex(aflTopPicksModalBuildRoundNav(rounds)));
 
         const needsHydration =
           aflTopPicksModalNeedsGameLogHydration(scopedLiveRecords) ||
@@ -1071,6 +1094,14 @@ function AflTopPicksModal({
     };
   }, [isOpen, bootLoading, roundIndex, roundOptions, loadHistoryRound]);
 
+  useEffect(() => {
+    if (!isOpen || roundOptions.length <= 1) return;
+    const container = roundSliderRef.current;
+    if (!container) return;
+    const activeButton = container.querySelector('[data-round-active="true"]') as HTMLElement | null;
+    activeButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [isOpen, roundIndex, roundOptions.length]);
+
   if (!isOpen) return null;
 
   const canGoPrev = roundIndex > 0;
@@ -1090,51 +1121,78 @@ function AflTopPicksModal({
             Close
           </button>
         </div>
-        <div className="mb-3 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            disabled={!canGoPrev || loading}
-            onClick={() => setRoundIndex((idx) => Math.max(0, idx - 1))}
-            className="rounded-md border px-2 py-1 text-sm font-semibold disabled:opacity-30 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
-            aria-label="Previous round"
-          >
-            ←
-          </button>
-          <span className="min-w-[7rem] text-center text-sm font-semibold text-gray-900 dark:text-white">
-            {aflTopPicksModalRoundLabel(activeRound?.id ?? AFL_TOP_PICKS_CURRENT)}
-          </span>
-          <button
-            type="button"
-            disabled={!canGoNext || loading}
-            onClick={() => setRoundIndex((idx) => Math.min(roundOptions.length - 1, idx + 1))}
-            className="rounded-md border px-2 py-1 text-sm font-semibold disabled:opacity-30 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
-            aria-label="Next round"
-          >
-            →
-          </button>
-        </div>
-        {roundOptions.length > 1 ? (
-          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-            {roundOptions.map((round, idx) => {
-              const active = idx === roundIndex;
-              return (
+        <div className="mb-3 flex items-center gap-2">
+          {roundOptions.length > 1 ? (
+            <>
+              <button
+                type="button"
+                disabled={!canGoPrev || loading}
+                onClick={() => setRoundIndex((idx) => Math.max(0, idx - 1))}
+                className="shrink-0 rounded-md border px-2 py-1 text-sm font-semibold disabled:opacity-30 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                aria-label="Previous round"
+              >
+                ←
+              </button>
+              <div
+                ref={roundSliderRef}
+                className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain scroll-smooth snap-x snap-mandatory px-0.5 custom-scrollbar fade-scrollbar"
+                aria-label="Select round"
+              >
+                {sliderRoundOptions.map((round) => {
+                  const idx = roundOptions.findIndex((option) => option.id === round.id);
+                  const active = idx === roundIndex;
+                  return (
+                    <button
+                      key={round.id}
+                      type="button"
+                      data-round-active={active ? 'true' : 'false'}
+                      disabled={loading}
+                      onClick={() => setRoundIndex(idx)}
+                      className={`shrink-0 snap-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${
+                        active
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'
+                      }`}
+                    >
+                      {aflTopPicksModalRoundLabel(round.id)}
+                    </button>
+                  );
+                })}
+              </div>
+              {allRoundOption ? (
                 <button
-                  key={round.id}
                   type="button"
+                  data-round-active={activeRound?.id === allRoundOption.id ? 'true' : 'false'}
                   disabled={loading}
-                  onClick={() => setRoundIndex(idx)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    active
+                  onClick={() => {
+                    const allIdx = roundOptions.findIndex((option) => option.id === allRoundOption.id);
+                    if (allIdx >= 0) setRoundIndex(allIdx);
+                  }}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${
+                    activeRound?.id === allRoundOption.id
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'
                   }`}
                 >
-                  {aflTopPicksModalRoundLabel(round.id)}
+                  All
                 </button>
-              );
-            })}
-          </div>
-        ) : null}
+              ) : null}
+              <button
+                type="button"
+                disabled={!canGoNext || loading}
+                onClick={() => setRoundIndex((idx) => Math.min(roundOptions.length - 1, idx + 1))}
+                className="shrink-0 rounded-md border px-2 py-1 text-sm font-semibold disabled:opacity-30 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                aria-label="Next round"
+              >
+                →
+              </button>
+            </>
+          ) : (
+            <span className="w-full text-center text-sm font-semibold text-gray-900 dark:text-white">
+              {aflTopPicksModalRoundLabel(activeRound?.id ?? AFL_TOP_PICKS_CURRENT)}
+            </span>
+          )}
+        </div>
         {isCurrentRound ? <AflPredictionModelNotice className="mb-3 text-center" /> : null}
         {!isCurrentRound && summary ? (
           <div className="mb-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
