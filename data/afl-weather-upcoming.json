@@ -1,30 +1,74 @@
 {
-  "generatedAt": "2026-06-27T17:35:58.052Z",
+  "generatedAt": "2026-06-28T12:15:26.243Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
     {
-      "gameId": "bd0559e0105eacbd04f5510adce5c8ee",
-      "homeTeam": "North Melbourne Kangaroos",
-      "awayTeam": "Essendon Bombers",
-      "commenceTime": "2026-06-28T05:15:42Z",
+      "gameId": "af9c3f27c64760c002beb5b8caf1f8ea",
+      "homeTeam": "Geelong Cats",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-07-02T09:30:00Z",
       "weather": {
-        "temperatureC": 14.8,
+        "temperatureC": 10.4,
         "precipitationMm": 0,
-        "windKmh": 3.9
+        "windKmh": 25.2
       }
     },
     {
-      "gameId": "73605e4a954d37bb4ff356c833ef5e34",
-      "homeTeam": "Fremantle Dockers",
-      "awayTeam": "Gold Coast Suns",
-      "commenceTime": "2026-06-28T07:10:00Z",
+      "gameId": "5adae04c2e0f1f075371cc0f9ff22f82",
+      "homeTeam": "Sydney Swans",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-07-03T09:40:00Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 11.2,
+        "precipitationMm": 0,
+        "windKmh": 11.7
+      }
+    },
+    {
+      "gameId": "c61053bcd0f8e5843abd08582cf19b13",
+      "homeTeam": "West Coast Eagles",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-07-03T10:10:00Z",
+      "weather": {
+        "temperatureC": 14,
+        "precipitationMm": 0,
+        "windKmh": 8.1
+      }
+    },
+    {
+      "gameId": "df5df263c4cc4b5e963d6406c72c32b1",
+      "homeTeam": "Hawthorn Hawks",
+      "awayTeam": "Melbourne Demons",
+      "commenceTime": "2026-07-04T03:15:00Z",
+      "weather": {
+        "temperatureC": 11.4,
         "precipitationMm": 0.1,
-        "windKmh": 17.1
+        "windKmh": 9.8
+      }
+    },
+    {
+      "gameId": "864b4f916e73c0a7fc13a402ff0cb75b",
+      "homeTeam": "Richmond Tigers",
+      "awayTeam": "Carlton Blues",
+      "commenceTime": "2026-07-04T09:35:00Z",
+      "weather": {
+        "temperatureC": 10.9,
+        "precipitationMm": 0.1,
+        "windKmh": 13.4
+      }
+    },
+    {
+      "gameId": "8df2efae2b9f15d52654e77a3c743e63",
+      "homeTeam": "Port Adelaide Power",
+      "awayTeam": "North Melbourne Kangaroos",
+      "commenceTime": "2026-07-05T06:40:00Z",
+      "weather": {
+        "temperatureC": 13.4,
+        "precipitationMm": 0,
+        "windKmh": 9.1
       }
     }
   ],
-  "count": 2
+  "count": 6
 }
