@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T05:02:10.096Z",
+  "generatedAt": "2026-06-28T07:55:05.824Z",
   "count": 17,
   "records": [
     {
@@ -643,7 +643,7 @@
           "recommendedEdge": 0.1731,
           "recommendedProb": 0.6741,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 43
         },
         {
           "playerName": "Harry Sheezel",
@@ -654,7 +654,7 @@
           "recommendedEdge": 0.1674,
           "recommendedProb": 0.6764,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 43
         },
         {
           "playerName": "Andrew Mcgrath",
@@ -665,7 +665,7 @@
           "recommendedEdge": 0.1672,
           "recommendedProb": 0.6672,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 26
         }
       ]
     }
