@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T12:15:26.243Z",
+  "generatedAt": "2026-06-28T17:41:28.471Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -48,6 +48,28 @@
       }
     },
     {
+      "gameId": "696c5717fc4baf53f9fd9b5d276dd192",
+      "homeTeam": "GWS Giants",
+      "awayTeam": "Fremantle Dockers",
+      "commenceTime": "2026-07-04T03:35:45Z",
+      "weather": {
+        "temperatureC": 12.8,
+        "precipitationMm": 0,
+        "windKmh": 6.6
+      }
+    },
+    {
+      "gameId": "529f6d56578a404e9c7b2459a3a187b7",
+      "homeTeam": "Gold Coast Suns",
+      "awayTeam": "Collingwood Magpies",
+      "commenceTime": "2026-07-04T06:15:12Z",
+      "weather": {
+        "temperatureC": 18.7,
+        "precipitationMm": 0,
+        "windKmh": 10.5
+      }
+    },
+    {
       "gameId": "864b4f916e73c0a7fc13a402ff0cb75b",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Carlton Blues",
@@ -56,6 +78,17 @@
         "temperatureC": 10.9,
         "precipitationMm": 0.1,
         "windKmh": 13.4
+      }
+    },
+    {
+      "gameId": "6f6df1e315469c3243856944d66873d6",
+      "homeTeam": "Essendon Bombers",
+      "awayTeam": "St Kilda Saints",
+      "commenceTime": "2026-07-05T05:15:20Z",
+      "weather": {
+        "temperatureC": 12.6,
+        "precipitationMm": 0,
+        "windKmh": 9.8
       }
     },
     {
@@ -70,5 +103,5 @@
       }
     }
   ],
-  "count": 6
+  "count": 9
 }
