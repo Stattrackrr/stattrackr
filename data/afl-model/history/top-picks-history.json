@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-27T22:36:41.694Z",
-  "count": 16,
+  "generatedAt": "2026-06-28T05:02:10.096Z",
+  "count": 17,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -619,6 +619,53 @@
           "recommendedProb": 0.518,
           "rank": 3,
           "actualDisposals": 19
+        }
+      ]
+    },
+    {
+      "gameKey": "northmelbournekangaroos|essendonbombers|2026-06-28",
+      "finalizedAt": "2026-06-28T05:02:10.096Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-06-27T17:57:39Z",
+      "modelVersion": "afl-disp-20260627-175256",
+      "homeTeam": "North Melbourne Kangaroos",
+      "awayTeam": "Essendon Bombers",
+      "commenceTime": "2026-06-28T05:15:42Z",
+      "weekKey": "2026-W26",
+      "roundKey": "2026-R16",
+      "picks": [
+        {
+          "playerName": "Harry Sheezel",
+          "bookmaker": "SportsBet",
+          "line": 31.5,
+          "expectedDisposals": 27.62,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1731,
+          "recommendedProb": 0.6741,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Harry Sheezel",
+          "bookmaker": "PointsBet (AU)",
+          "line": 31.5,
+          "expectedDisposals": 27.59,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1674,
+          "recommendedProb": 0.6764,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Andrew Mcgrath",
+          "bookmaker": "PointsBet (AU)",
+          "line": 19.5,
+          "expectedDisposals": 21.82,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1672,
+          "recommendedProb": 0.6672,
+          "rank": 2,
+          "actualDisposals": null
         }
       ]
     }
