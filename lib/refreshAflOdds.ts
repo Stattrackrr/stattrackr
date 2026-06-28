@@ -7,6 +7,11 @@
  * so the props workflow and UI can clear stale props when there are no upcoming lines. Failed requests still do not overwrite.
  */
 
+import {
+  AFL_PROPS_LIVE_GRACE_MS,
+  filterAflPropsEligibleGames as filterAflPropsEligibleGamesByCommence,
+  isAflCommenceTimePropsEligible,
+} from '@/lib/combinedPropsSnapshotTypes';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import sharedCache from '@/lib/sharedCache';
 
@@ -40,7 +45,8 @@ export interface AflOddsCache {
   nextUpdate: string;
 }
 
-const AFL_PROPS_GAME_CUTOFF_GRACE_MS = 15 * 60 * 1000; // hide games shortly after scheduled start
+/** @deprecated Use AFL_PROPS_LIVE_GRACE_MS from combinedPropsSnapshotTypes */
+export const AFL_PROPS_GAME_CUTOFF_GRACE_MS = AFL_PROPS_LIVE_GRACE_MS;
 
 // The Odds API v4 response types
 interface OddsApiOutcome {
@@ -336,13 +342,11 @@ export function getNextAflGameFromGames(
   };
 }
 
-/** Props are considered eligible only for upcoming games (plus a short start-time grace period). */
+/** Props are eligible until one hour after scheduled kickoff (LIVE window). */
 export function isAflGamePropsEligible(game: AflGameOdds, nowMs = Date.now()): boolean {
-  const t = Date.parse(game.commenceTime);
-  if (!Number.isFinite(t)) return true;
-  return t >= nowMs - AFL_PROPS_GAME_CUTOFF_GRACE_MS;
+  return isAflCommenceTimePropsEligible(game.commenceTime, nowMs);
 }
 
 export function filterAflPropsEligibleGames(games: AflGameOdds[], nowMs = Date.now()): AflGameOdds[] {
-  return (games ?? []).filter((g) => isAflGamePropsEligible(g, nowMs));
+  return filterAflPropsEligibleGamesByCommence(games ?? [], nowMs);
 }

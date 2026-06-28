@@ -10,6 +10,7 @@ import {
   refreshAflPlayerPropsCache,
   type AflListPropRow,
 } from '@/lib/aflPlayerPropsCache';
+import { filterAflEnrichedListPayload, AFL_USER_NO_ODDS } from '@/lib/combinedPropsSnapshotTypes';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
@@ -46,9 +47,6 @@ const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES = Math.max(
   1,
   Math.ceil(AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS / 60)
 );
-
-/** Shown on the props page when there are no player lines (including games on the board but no markets yet). */
-const AFL_USER_NO_ODDS = 'No odds available. Come back later.';
 
 type AflEnrichContext = {
   playerTeamMap: Map<string, string>;
@@ -197,13 +195,15 @@ async function pickBestEnrichedPayload(
 
 function jsonEnrichedPayload(
   payload: Record<string, unknown>,
-  memoryTtlSeconds = AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
+  memoryTtlSeconds = AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS,
+  applyLiveCutoff = true
 ) {
+  const outgoing = applyLiveCutoff ? filterAflEnrichedListPayload(payload) ?? payload : payload;
   aflEnrichedPayloadMemoryCache = {
     payload,
     expiresAt: Date.now() + memoryTtlSeconds * 1000,
   };
-  return NextResponse.json(payload, {
+  return NextResponse.json(outgoing, {
     headers: {
       'Cache-Control': AFL_LIST_CACHE_CONTROL,
     },
@@ -803,6 +803,7 @@ export async function GET(request: Request) {
       naSummary,
       ingestMessage:
         propsCount === 0 ? AFL_USER_NO_ODDS : `Fetched ${propsCount} stats for ${season} season, ${gamesCount} games`,
+      ...(propsCount === 0 ? { noAflOdds: true, message: AFL_USER_NO_ODDS } : {}),
       _meta: {
         canonicalUsed: usedCanonicalGames,
         canonicalError: canonicalError ?? undefined,
@@ -900,7 +901,8 @@ export async function GET(request: Request) {
             payload: staleMarked,
             expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
           };
-          return NextResponse.json(staleMarked, {
+          const filteredStale = filterAflEnrichedListPayload(staleMarked) ?? staleMarked;
+          return NextResponse.json(filteredStale, {
             headers: {
               'Cache-Control': AFL_LIST_CACHE_CONTROL,
             },
@@ -931,7 +933,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json(payload, {
+    return NextResponse.json(filterAflEnrichedListPayload(payload) ?? payload, {
       headers: {
         'Cache-Control': AFL_LIST_CACHE_CONTROL,
       },

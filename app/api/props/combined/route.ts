@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   buildCombinedPropsSnapshot,
+  filterCombinedSnapshotAflEligibility,
   getCombinedPropsPaintSnapshot,
   getCombinedPropsSnapshot,
   isCombinedPropsSnapshotStale,
@@ -54,7 +55,10 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        const clientSnapshot = await resolveClientCombinedSnapshot(cachedSnapshot, wantsFull);
+        const clientSnapshot = await resolveClientCombinedSnapshot(
+          filterCombinedSnapshotAflEligibility(cachedSnapshot),
+          wantsFull
+        );
         return NextResponse.json(
           {
             ...clientSnapshot,
@@ -80,7 +84,9 @@ export async function GET(request: NextRequest) {
       writeCache: !debugStats,
     });
 
-    const clientSnapshot = wantsFull ? snapshot : slimCombinedPropsSnapshotForClient(snapshot);
+    const clientSnapshot = wantsFull
+      ? filterCombinedSnapshotAflEligibility(snapshot)
+      : slimCombinedPropsSnapshotForClient(filterCombinedSnapshotAflEligibility(snapshot));
 
     return NextResponse.json(
       {

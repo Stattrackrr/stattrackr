@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharedCache from '@/lib/sharedCache';
+import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import {
+  AFL_USER_NO_ODDS,
+  filterAflPropRowsByCommenceTime,
+  filterAflPropsEligibleGames,
+} from '@/lib/combinedPropsSnapshotTypes';
 import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
 import { GET as getWorldCupPlayerPropsList } from '@/app/api/world-cup/dashboard/route';
-import {
-  filterWorldCupListPropsByMinOdds,
-} from '@/lib/worldCupCache';
-import type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
+import { filterWorldCupListPropsByMinOdds } from '@/lib/worldCupCache';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
   slimCombinedPropsSnapshotForClient,
@@ -170,10 +173,12 @@ function aggregateAflProps(listData: any): {
   return {
     games,
     props,
-    ingestMessage: normalizeString(listData?.ingestMessage),
+    ingestMessage:
+      normalizeString(listData?.ingestMessage) ??
+      (props.length === 0 ? AFL_USER_NO_ODDS : null),
     lastUpdated: normalizeString(listData?.lastUpdated),
     nextUpdate: normalizeString(listData?.nextUpdate),
-    noAflOdds: normalizeBool(listData?.noAflOdds),
+    noAflOdds: normalizeBool(listData?.noAflOdds) || props.length === 0,
     debugMeta: listData?._meta as Record<string, unknown> | null | undefined,
   };
 }
@@ -350,6 +355,34 @@ async function writeCombinedPropsSnapshotCaches(snapshot: CombinedPropsSnapshot)
 export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): boolean {
   const staleAt = Date.parse(snapshot?.staleAt ?? '');
   return !Number.isFinite(staleAt) || staleAt <= Date.now();
+}
+
+/** Drop AFL props/games whose kickoff was more than one hour ago (even from cached snapshots). */
+export function filterCombinedSnapshotAflEligibility(
+  snapshot: CombinedPropsSnapshot,
+  nowMs = Date.now()
+): CombinedPropsSnapshot {
+  const eligibleGames = filterAflPropsEligibleGames(snapshot.afl.games ?? [], nowMs);
+  const eligibleGameIds = new Set(eligibleGames.map((g) => g.gameId));
+  const filteredProps = filterAflPropRowsByCommenceTime(snapshot.afl.props ?? [], eligibleGameIds, nowMs);
+
+  if (
+    filteredProps.length === (snapshot.afl.props?.length ?? 0) &&
+    eligibleGames.length === (snapshot.afl.games?.length ?? 0)
+  ) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    afl: {
+      ...snapshot.afl,
+      games: eligibleGames,
+      props: filteredProps,
+      noAflOdds: filteredProps.length === 0,
+      ingestMessage: filteredProps.length === 0 ? AFL_USER_NO_ODDS : snapshot.afl.ingestMessage,
+    },
+  };
 }
 
 export async function buildCombinedPropsSnapshot(
