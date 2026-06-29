@@ -2260,8 +2260,35 @@ const WC_DASHBOARD_STAT_RICHNESS_KEYS = [
   'big_chances_created',
 ] as const;
 
+function wcDashboardPlayerShotsTotal(row: Record<string, unknown>): number | null {
+  const direct = wcDashboardStatNum(row.shots_total) ?? wcDashboardStatNum(row.shots);
+  const derived = wcDashboardStatNum(row.derived_shots_total) ?? wcDashboardStatNum(row.total_shots);
+  if (direct != null && derived != null) return Math.max(direct, derived);
+  return direct ?? derived;
+}
+
+function wcDashboardMergePlayerStatRowFields(
+  primary: Record<string, unknown>,
+  secondary: Record<string, unknown>
+): Record<string, unknown> {
+  if (!secondary || primary === secondary) return primary;
+  const merged = { ...primary };
+  const primaryShots = wcDashboardPlayerShotsTotal(primary);
+  const secondaryShots = wcDashboardPlayerShotsTotal(secondary);
+  if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
+    for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
+      if (secondary[key] != null) merged[key] = secondary[key];
+    }
+  }
+  for (const key of WC_DASHBOARD_STAT_RICHNESS_KEYS) {
+    if (merged[key] == null && secondary[key] != null) merged[key] = secondary[key];
+  }
+  return merged;
+}
+
 function wcDashboardPlayerStatMergeKey(row: Record<string, unknown>): string {
-  return `${row.match_id ?? ''}|${row.team_id ?? ''}`;
+  const source = String(row.source ?? '').trim().toLowerCase() || 'unknown';
+  return `${source}|${row.match_id ?? ''}|${row.team_id ?? ''}`;
 }
 
 function wcDashboardPlayerStatRichness(row: Record<string, unknown>): number {
@@ -2279,8 +2306,12 @@ function wcDashboardMergePlayerStatRowsPreferRich(
   for (const row of rows) {
     const key = wcDashboardPlayerStatMergeKey(row);
     const existing = byKey.get(key);
-    if (!existing || wcDashboardPlayerStatRichness(row) > wcDashboardPlayerStatRichness(existing)) {
+    if (!existing) {
       byKey.set(key, row);
+    } else if (wcDashboardPlayerStatRichness(row) > wcDashboardPlayerStatRichness(existing)) {
+      byKey.set(key, wcDashboardMergePlayerStatRowFields(row, existing));
+    } else {
+      byKey.set(key, wcDashboardMergePlayerStatRowFields(existing, row));
     }
   }
   return [...byKey.values()];

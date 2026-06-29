@@ -8,6 +8,7 @@ import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts
 import { DashboardStyles } from '@/app/nba/research/dashboard/components/DashboardStyles';
 import { DashboardLeftSidebarWrapper } from '@/app/nba/research/dashboard/components/DashboardLeftSidebarWrapper';
 import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/header';
+import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
@@ -654,6 +655,8 @@ const WORLD_CUP_STAT_PERSPECTIVES: Array<{ id: WorldCupStatPerspective; label: s
 // so "Fouls Committed (All)" and "Fouls Suffered (All)" both equal total match
 // fouls — identical. For these we disable "All" and pin to the selected team.
 const WORLD_CUP_NO_ALL_PERSPECTIVE_STAT_KEYS = new Set<string>(['fouls', 'was_fouled']);
+const WORLD_CUP_MINUTES_FILTER_MIN = 0;
+const WORLD_CUP_MINUTES_FILTER_MAX = 120;
 type WorldCupChartContext = {
   statId: WorldCupChartStatId;
   statKey: string | null;
@@ -662,6 +665,8 @@ type WorldCupChartContext = {
   competitionFilter?: WorldCupChartCompetitionGroup | 'all';
   tournamentFilter?: string | 'all';
   perspective?: WorldCupStatPerspective;
+  minutesMin?: number | null;
+  minutesMax?: number | null;
 };
 
 const WC_BAR_ANIMATION_MS = 180;
@@ -674,7 +679,9 @@ function worldCupChartContextEqual(a: WorldCupChartContext, b: WorldCupChartCont
     a.timeframe === b.timeframe &&
     (a.competitionFilter ?? 'all') === (b.competitionFilter ?? 'all') &&
     (a.tournamentFilter ?? 'all') === (b.tournamentFilter ?? 'all') &&
-    (a.perspective ?? 'all') === (b.perspective ?? 'all')
+    (a.perspective ?? 'all') === (b.perspective ?? 'all') &&
+    (a.minutesMin ?? null) === (b.minutesMin ?? null) &&
+    (a.minutesMax ?? null) === (b.minutesMax ?? null)
   );
 }
 
@@ -983,6 +990,8 @@ function chartContextFromStatParam(
     competitionFilter: prev?.competitionFilter ?? 'all',
     tournamentFilter: prev?.tournamentFilter ?? 'all',
     perspective: prev?.perspective ?? 'all',
+    minutesMin: prev?.minutesMin ?? null,
+    minutesMax: prev?.minutesMax ?? null,
   };
 }
 
@@ -1476,7 +1485,48 @@ function worldCupStatRowMergeKey(row: Record<string, any>): string {
   const matchId = String(row.match_id ?? row.source_match_id ?? '').trim();
   if (!matchId) return '';
   const playerId = String(row.player_id ?? row.player?.id ?? '').trim();
-  return playerId ? `${playerId}|${matchId}` : matchId;
+  const source = String(row.source ?? '').trim().toLowerCase() || 'unknown';
+  return [playerId, source, matchId].filter(Boolean).join('|');
+}
+
+function resolveWorldCupPlayerShotsTotal(row: Record<string, any>): number | null {
+  const direct = toNumber(row.shots_total) ?? toNumber(row.shots);
+  const derived = toNumber(row.derived_shots_total) ?? toNumber(row.total_shots);
+  if (direct != null && derived != null) return Math.max(direct, derived);
+  return direct ?? derived;
+}
+
+function mergeWorldCupPlayerStatRowFields(
+  primary: Record<string, any>,
+  secondary: Record<string, any>
+): Record<string, any> {
+  if (!secondary || primary === secondary) return primary;
+  const merged = { ...primary };
+  const primaryShots = resolveWorldCupPlayerShotsTotal(primary);
+  const secondaryShots = resolveWorldCupPlayerShotsTotal(secondary);
+  if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
+    for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
+      if (secondary[key] != null) merged[key] = secondary[key];
+    }
+  }
+  for (const key of [
+    'minutes_played',
+    'goals',
+    'assists',
+    'shots_on_target',
+    'passes_accurate',
+    'passes_total',
+    'passes',
+    'tackles',
+    'fouls_committed',
+    'fouls',
+    'was_fouled',
+    'yellow_cards',
+    'red_cards',
+  ]) {
+    if (merged[key] == null && secondary[key] != null) merged[key] = secondary[key];
+  }
+  return merged;
 }
 
 function worldCupStatRowRichness(row: Record<string, any>): number {
@@ -1496,8 +1546,12 @@ function mergeWorldCupPlayerStatRows(
       const key = worldCupStatRowMergeKey(row);
       if (!key) continue;
       const existing = byKey.get(key);
-      if (!existing || worldCupStatRowRichness(row) >= worldCupStatRowRichness(existing)) {
+      if (!existing) {
         byKey.set(key, row);
+      } else if (worldCupStatRowRichness(row) >= worldCupStatRowRichness(existing)) {
+        byKey.set(key, mergeWorldCupPlayerStatRowFields(row, existing));
+      } else {
+        byKey.set(key, mergeWorldCupPlayerStatRowFields(existing, row));
       }
     }
   }
@@ -1539,6 +1593,8 @@ function scoreWorldCupStatRowForDedupe(
   if (source === 'bdl') score += 200;
   else if (source === 'api-football' || source === 'statsbomb') score += 100;
   if (match && worldCupStatRowTeamInMatch(row, match, selectedTeamId, selectedTeamName)) score += 150;
+  const shots = resolveWorldCupPlayerShotsTotal(row);
+  if (shots != null && shots > 0) score += 30 + Math.min(shots, 10);
   if (getWorldCupStatNumber(row, 'goals') != null) score += 20;
   if (getWorldCupStatNumber(row, 'minutes_played') != null) score += 10;
   return score;
@@ -1579,8 +1635,12 @@ function dedupeWorldCupPlayerStatRowsByGame(
     );
     if (!identityKey) continue;
     const existing = byGame.get(identityKey);
-    if (!existing || scoreForRow(row) >= scoreForRow(existing)) {
+    if (!existing) {
       byGame.set(identityKey, row);
+    } else if (scoreForRow(row) >= scoreForRow(existing)) {
+      byGame.set(identityKey, mergeWorldCupPlayerStatRowFields(row, existing));
+    } else {
+      byGame.set(identityKey, mergeWorldCupPlayerStatRowFields(existing, row));
     }
   }
   return byGame.size ? Array.from(byGame.values()) : rows;
@@ -1601,7 +1661,7 @@ function mergeWorldCupMatchRows(...groups: Array<Array<Record<string, any>>>): A
   for (const group of groups) {
     for (const match of group) add(match);
   }
-  return Array.from(byId.values());
+  return dedupeWorldCupMatchesByFixture(Array.from(byId.values()));
 }
 
 function mergeWorldCupDashboardPayload(
@@ -1711,6 +1771,11 @@ function averageMetric(rows: Array<Record<string, any>>, key: string): string {
 }
 
 function getWorldCupStatNumber(row: Record<string, any>, key: string): number | null {
+  if (key === 'derived_shots_total' || key === 'shots_total' || key === 'total_shots') {
+    const shots = resolveWorldCupPlayerShotsTotal(row);
+    if (shots != null) return shots;
+    return ZERO_DEFAULT_STAT_KEYS.has(key) ? 0 : null;
+  }
   const parsed = toNumber(row[key]);
   if (parsed != null) return parsed;
   if (key === 'fouls_committed') {
@@ -2058,6 +2123,43 @@ function worldCupMatchRichness(match: Record<string, any>): number {
   if (match.homeLabel || match.homeTeam?.name || match.home_team?.name) score += 2;
   if (match.datetime) score += 1;
   return score;
+}
+
+function worldCupFixtureIdentityKey(match: Record<string, any>): string {
+  const home = String(
+    match.homeLabel || match.homeTeam?.name || match.home_team?.name || match.home_team_name || ''
+  )
+    .trim()
+    .toLowerCase();
+  const away = String(
+    match.awayLabel || match.awayTeam?.name || match.away_team?.name || match.away_team_name || ''
+  )
+    .trim()
+    .toLowerCase();
+  const dtMs = Date.parse(String(match.datetime ?? match.match_date ?? ''));
+  const dtKey = Number.isFinite(dtMs) ? new Date(dtMs).toISOString().slice(0, 16) : '';
+  if (dtKey && home && away) {
+    const [sideA, sideB] = [home, away].sort();
+    return `${dtKey}|${sideA}|${sideB}`;
+  }
+  const canonicalId = String(match.id ?? match.source_match_id ?? match.match_id ?? '').trim();
+  return canonicalId ? `id:${canonicalId}` : '';
+}
+
+function dedupeWorldCupMatchesByFixture(
+  matches: Array<Record<string, any>>
+): Array<Record<string, any>> {
+  if (!matches.length) return matches;
+  const byFixture = new Map<string, Record<string, any>>();
+  for (const match of matches) {
+    const key = worldCupFixtureIdentityKey(match);
+    if (!key) continue;
+    const existing = byFixture.get(key);
+    if (!existing || worldCupMatchRichness(match) >= worldCupMatchRichness(existing)) {
+      byFixture.set(key, match);
+    }
+  }
+  return byFixture.size ? Array.from(byFixture.values()) : matches;
 }
 
 function worldCupMatchSideIds(match: Record<string, any>): { homeId: string; awayId: string } {
@@ -3807,6 +3909,26 @@ function WorldCupGameByGameChart({
   const tournamentFilter = externalChartContext?.tournamentFilter ?? 'all';
   const [isTournamentDropdownOpen, setIsTournamentDropdownOpen] = useState(false);
   const tournamentDropdownRef = useRef<HTMLDivElement>(null);
+  const minutesMin = externalChartContext?.minutesMin ?? null;
+  const minutesMax = externalChartContext?.minutesMax ?? null;
+  const hasActiveMinutesFilter = minutesMin != null || minutesMax != null;
+  const [isMinutesFilterOpen, setIsMinutesFilterOpen] = useState(false);
+  const minutesSliderMin = WORLD_CUP_MINUTES_FILTER_MIN;
+  const minutesSliderMax = WORLD_CUP_MINUTES_FILTER_MAX;
+  const minutesSliderValueMin =
+    minutesMin != null
+      ? Math.max(minutesSliderMin, Math.min(minutesSliderMax, minutesMin))
+      : minutesSliderMin;
+  const minutesSliderValueMax =
+    minutesMax != null
+      ? Math.max(minutesSliderMin, Math.min(minutesSliderMax, minutesMax))
+      : minutesSliderMax;
+  useEffect(() => {
+    if (mode !== 'player') setIsMinutesFilterOpen(false);
+  }, [mode]);
+  useEffect(() => {
+    if (hasActiveMinutesFilter) setIsMinutesFilterOpen(true);
+  }, [hasActiveMinutesFilter]);
   const baseAvailableStats = useMemo(
     () => getAvailableWorldCupStats(mode, selectedPlayer, competition),
     [mode, selectedPlayer, competition]
@@ -3939,7 +4061,10 @@ function WorldCupGameByGameChart({
           opponentLabel,
           opponentCountryCode,
         });
-        const rowKey = worldCupStatRowMergeKey(row) || `chart-row-${index}`;
+        const rowKey =
+          worldCupChartGameIdentityKey(row, match, selectedTeamName, opponentLabel, competitionTag) ||
+          worldCupStatRowMergeKey(row) ||
+          `chart-row-${index}`;
         return {
           key: rowKey,
           xKey: rowKey,
@@ -3974,7 +4099,11 @@ function WorldCupGameByGameChart({
       })
       .sort((a, b) => a.gameTimestamp - b.gameTimestamp);
 
-    return rows;
+    const byXKey = new Map<string, (typeof rows)[number]>();
+    for (const row of rows) {
+      if (!byXKey.has(row.xKey)) byXKey.set(row.xKey, row);
+    }
+    return Array.from(byXKey.values());
   }, [data, mode, selectedPlayerId, selectedTeamId, selectedTeamName, statKey, perspective, isMoneyline]);
 
   // Club vs international groups for the competition filter (All / Club / International).
@@ -4022,6 +4151,9 @@ function WorldCupGameByGameChart({
     if (tournamentFilter !== 'all') {
       rows = rows.filter((row) => row.competitionDetailKey === tournamentFilter);
     }
+    if (mode === 'player') {
+      rows = filterWorldCupChartRowsByMinutes(rows, minutesMin, minutesMax);
+    }
 
     if (timeframe === 'h2h') {
       const opponentName = opponentTeam?.name?.trim().toLowerCase();
@@ -4040,7 +4172,7 @@ function WorldCupGameByGameChart({
 
     const frame = WORLD_CUP_TIMEFRAMES.find((option) => option.id === timeframe) ?? WORLD_CUP_TIMEFRAMES[1];
     return rows.slice(-frame.count);
-  }, [competitionFilteredRows, tournamentFilter, timeframe, opponentTeam]);
+  }, [competitionFilteredRows, tournamentFilter, timeframe, opponentTeam, mode, minutesMin, minutesMax]);
 
   const values = useMemo(
     () => chartRows.map((row) => row.value).filter((value): value is number => value != null),
@@ -4159,7 +4291,7 @@ function WorldCupGameByGameChart({
   const chartAnimationKey = useMemo(() => {
     const first = chartRows[0]?.xKey ?? '';
     const last = chartRows[chartRows.length - 1]?.xKey ?? '';
-    return `${mode}|${statConfig.id}|${timeframe}|${perspective}|${competitionFilter}|${tournamentFilter}|${chartRows.length}|${first}|${last}`;
+    return `${mode}|${statConfig.id}|${timeframe}|${perspective}|${competitionFilter}|${tournamentFilter}|${minutesMin ?? ''}|${minutesMax ?? ''}|${chartRows.length}|${first}|${last}`;
   }, [
     mode,
     statConfig.id,
@@ -4167,6 +4299,8 @@ function WorldCupGameByGameChart({
     perspective,
     competitionFilter,
     tournamentFilter,
+    minutesMin,
+    minutesMax,
     chartRows,
   ]);
 
@@ -4343,8 +4477,11 @@ function WorldCupGameByGameChart({
               })}
             </div>
           ) : null}
-          {showGroupCompetitionPicker ? (
-            <div className="relative ml-auto" ref={competitionDropdownRef}>
+          {(mode === 'player' || showGroupCompetitionPicker || showTournamentCompetitionPicker) ? (
+            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+              <div className="order-1 flex items-center justify-end gap-2 sm:order-2">
+                {showGroupCompetitionPicker ? (
+                  <div className="relative" ref={competitionDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsCompetitionDropdownOpen((prev) => !prev)}
@@ -4396,13 +4533,10 @@ function WorldCupGameByGameChart({
                   </button>
                 </div>
               ) : null}
-            </div>
-          ) : null}
-          {showTournamentCompetitionPicker ? (
-            <div
-              className={`relative ${showGroupCompetitionPicker ? '' : 'ml-auto'}`}
-              ref={tournamentDropdownRef}
-            >
+                  </div>
+                ) : null}
+                {showTournamentCompetitionPicker ? (
+                  <div className="relative" ref={tournamentDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsTournamentDropdownOpen((prev) => !prev)}
@@ -4454,6 +4588,50 @@ function WorldCupGameByGameChart({
                   >
                     All
                   </button>
+                </div>
+              ) : null}
+                  </div>
+                ) : null}
+              </div>
+              {mode === 'player' ? (
+                <div className="order-2 flex w-full flex-col gap-2 sm:order-1 sm:w-auto sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsMinutesFilterOpen((prev) => !prev)}
+                    className={`h-[32px] px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors flex items-center justify-center gap-1.5 ${
+                      hasActiveMinutesFilter
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                    aria-expanded={isMinutesFilterOpen}
+                    aria-label="Filter by minutes played"
+                  >
+                    <span>Minutes</span>
+                    {hasActiveMinutesFilter ? (
+                      <span className="text-[10px] opacity-90">
+                        {minutesMin ?? minutesSliderMin}–{minutesMax ?? minutesSliderMax}
+                      </span>
+                    ) : null}
+                  </button>
+                  {isMinutesFilterOpen ? (
+                    <div className="w-full sm:w-[200px]">
+                      <RangeSlider
+                        min={minutesSliderMin}
+                        max={minutesSliderMax}
+                        valueMin={minutesSliderValueMin}
+                        valueMax={minutesSliderValueMax}
+                        onChange={(min, max) => {
+                          const isFullRange = min <= minutesSliderMin && max >= minutesSliderMax;
+                          emitChartContext({
+                            minutesMin: isFullRange ? null : min,
+                            minutesMax: isFullRange ? null : max,
+                          });
+                        }}
+                        step={1}
+                        formatValue={(value) => `${Math.round(value)}`}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -4508,11 +4686,13 @@ function WorldCupGameByGameChart({
         ) : (
           <EmptyState
             text={
-              timeframe === 'h2h'
-                ? 'No head-to-head'
-                : mode === 'player'
-                  ? 'No game-by-game player stats are available for this selected player yet.'
-                  : 'No game-by-game team stats are available for this selected team yet.'
+              mode === 'player' && (minutesMin != null || minutesMax != null)
+                ? 'No stats match selected filters'
+                : timeframe === 'h2h'
+                  ? 'No head-to-head'
+                  : mode === 'player'
+                    ? 'No game-by-game player stats are available for this selected player yet.'
+                    : 'No game-by-game team stats are available for this selected team yet.'
             }
             className="h-full"
           />
@@ -4544,6 +4724,44 @@ function getWorldCupRowsForMode(
     return getWorldCupPlayerStatRows(data.playerMatchStats ?? [], selectedPlayerId);
   }
   return (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId);
+}
+
+function worldCupRowMinutesPlayed(row: Record<string, any>): number | null {
+  return getWorldCupStatNumber(row, 'minutes_played');
+}
+
+function filterWorldCupRowsByMinutes(
+  rows: Array<Record<string, any>>,
+  minutesMin: number | null | undefined,
+  minutesMax: number | null | undefined
+): Array<Record<string, any>> {
+  const hasMin = minutesMin != null;
+  const hasMax = minutesMax != null;
+  if (!hasMin && !hasMax) return rows;
+  return rows.filter((row) => {
+    const minutes = worldCupRowMinutesPlayed(row);
+    if (minutes == null) return false;
+    if (hasMin && minutes < minutesMin!) return false;
+    if (hasMax && minutes > minutesMax!) return false;
+    return true;
+  });
+}
+
+function filterWorldCupChartRowsByMinutes<T extends { minutes?: number | null }>(
+  rows: T[],
+  minutesMin: number | null | undefined,
+  minutesMax: number | null | undefined
+): T[] {
+  const hasMin = minutesMin != null;
+  const hasMax = minutesMax != null;
+  if (!hasMin && !hasMax) return rows;
+  return rows.filter((row) => {
+    const minutes = row.minutes;
+    if (minutes == null || !Number.isFinite(minutes)) return false;
+    if (hasMin && minutes < minutesMin!) return false;
+    if (hasMax && minutes > minutesMax!) return false;
+    return true;
+  });
 }
 
 function filterWorldCupRowsByTimeframe(
@@ -4623,24 +4841,31 @@ function buildWorldCupFilteredStatRows(opts: {
   competitionFilter: WorldCupChartCompetitionGroup | 'all';
   tournamentFilter: string | 'all';
   opponentTeam: WorldCupTeamOption | null;
+  minutesMin?: number | null;
+  minutesMax?: number | null;
 }): Array<Record<string, any>> {
-  return filterWorldCupRowsByTimeframe(
-    filterWorldCupRowsByCompetitionContext(
-      dedupeWorldCupPlayerStatRowsByGame(
-        mergeWorldCupPlayerStatRows(
-          getWorldCupRowsForMode(opts.data, opts.mode, opts.selectedPlayerId, opts.selectedTeamId)
-        ),
-        opts.data?.matches ?? [],
-        opts.data?.playerMatches ?? [],
-        opts.selectedTeamId,
-        opts.selectedTeamName
+  const competitionScoped = filterWorldCupRowsByCompetitionContext(
+    dedupeWorldCupPlayerStatRowsByGame(
+      mergeWorldCupPlayerStatRows(
+        getWorldCupRowsForMode(opts.data, opts.mode, opts.selectedPlayerId, opts.selectedTeamId)
       ),
-      opts.data,
-      opts.competitionFilter,
-      opts.tournamentFilter,
+      opts.data?.matches ?? [],
+      opts.data?.playerMatches ?? [],
       opts.selectedTeamId,
       opts.selectedTeamName
     ),
+    opts.data,
+    opts.competitionFilter,
+    opts.tournamentFilter,
+    opts.selectedTeamId,
+    opts.selectedTeamName
+  );
+  const minutesScoped =
+    opts.mode === 'player'
+      ? filterWorldCupRowsByMinutes(competitionScoped, opts.minutesMin, opts.minutesMax)
+      : competitionScoped;
+  return filterWorldCupRowsByTimeframe(
+    minutesScoped,
     opts.data,
     opts.timeframe,
     opts.opponentTeam
@@ -4695,6 +4920,8 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
   const competitionFilter = chartContext.competitionFilter ?? 'all';
   const tournamentFilter = chartContext.tournamentFilter ?? 'all';
   const perspective = chartContext.perspective ?? 'team';
+  const minutesMin = chartContext.minutesMin ?? null;
+  const minutesMax = chartContext.minutesMax ?? null;
   const rows = useMemo(
     () =>
       buildWorldCupFilteredStatRows({
@@ -4707,11 +4934,15 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
         competitionFilter,
         tournamentFilter,
         opponentTeam,
+        minutesMin,
+        minutesMax,
       }),
     [
       chartContext.timeframe,
       competitionFilter,
       tournamentFilter,
+      minutesMin,
+      minutesMax,
       data,
       mode,
       selectedPlayerId,
@@ -4841,7 +5072,10 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
         opponentLabel,
         opponentCountryCode,
       });
-      const rowKey = worldCupStatRowMergeKey(row) || `supporting-row-${index}`;
+      const rowKey =
+        worldCupChartGameIdentityKey(row, match, effectiveTeamName, opponentLabel, competitionTag) ||
+        worldCupStatRowMergeKey(row) ||
+        `supporting-row-${index}`;
       if (effectiveTeamName && worldCupTeamsMatch(effectiveTeamName, opponentLabel)) {
         return null;
       }
@@ -4863,7 +5097,7 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
 
   const supportingAnimationTrigger = useMemo(
     () =>
-      `${mode}|${chartContext.statKey}|${selectedSupportingStat}|${chartContext.timeframe}|${competitionFilter}|${tournamentFilter}|${perspective}`,
+      `${mode}|${chartContext.statKey}|${selectedSupportingStat}|${chartContext.timeframe}|${competitionFilter}|${tournamentFilter}|${perspective}|${minutesMin ?? ''}|${minutesMax ?? ''}`,
     [
       mode,
       chartContext.statKey,
@@ -4872,6 +5106,8 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
       competitionFilter,
       tournamentFilter,
       perspective,
+      minutesMin,
+      minutesMax,
     ]
   );
   const lastSupportingAnimationTriggerRef = useRef(supportingAnimationTrigger);
@@ -5819,10 +6055,7 @@ function readPlayerVsTeamStatValue(row: Record<string, any>, playerKey: string):
     return getWorldCupStatNumber(row, 'was_fouled') ?? getWorldCupStatNumber(row, 'fouls_suffered');
   }
   if (playerKey === 'shots_total' || playerKey === 'derived_shots_total') {
-    const direct = toNumber(row.shots_total);
-    const derived = toNumber(row.derived_shots_total) ?? toNumber(row.total_shots);
-    if (direct != null && derived != null) return Math.max(direct, derived);
-    return direct ?? derived;
+    return resolveWorldCupPlayerShotsTotal(row);
   }
   if (playerKey === 'saves') {
     return getWorldCupStatNumber(row, 'saves') ?? getWorldCupStatNumber(row, 'goalkeeper_saves');
@@ -9472,9 +9705,11 @@ function WorldCupSchedulePanel({
 }) {
   const rows = useMemo(() => {
     if (!matches?.length) return [];
-    const sorted = matches
-      .slice()
-      .sort((a, b) => (Date.parse(a.datetime || '') || 0) - (Date.parse(b.datetime || '') || 0));
+    const sorted = dedupeWorldCupMatchesByFixture(
+      matches
+        .slice()
+        .sort((a, b) => (Date.parse(a.datetime || '') || 0) - (Date.parse(b.datetime || '') || 0))
+    );
 
     const now = Date.now();
     const liveBuffer = 3 * 60 * 60 * 1000; // keep in-progress games visible
@@ -9497,7 +9732,7 @@ function WorldCupSchedulePanel({
 
   return (
     <div className={`${maxHeightClass} space-y-2 overflow-y-auto px-3 pb-1 sm:px-4 custom-scrollbar fade-scrollbar`}>
-      {rows.map((m) => {
+      {rows.map((m, index) => {
         const homeLabel = m.homeLabel || m.homeTeam?.name || 'TBD';
         const awayLabel = m.awayLabel || m.awayTeam?.name || 'TBD';
         const completed = m.status === 'completed';
@@ -9510,9 +9745,10 @@ function WorldCupSchedulePanel({
             ? groupName
             : `Group ${groupName}`
           : stageName || '';
+        const rowKey = worldCupFixtureIdentityKey(m) || `schedule-${index}`;
         return (
           <div
-            key={m.id}
+            key={rowKey}
             className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
               isDark ? 'border-gray-700 bg-[#07131f]' : 'border-gray-200 bg-gray-50'
             }`}
@@ -10440,6 +10676,8 @@ export function WorldCupPageContent() {
     competitionFilter: 'all',
     tournamentFilter: 'all',
     perspective: 'all',
+    minutesMin: null,
+    minutesMax: null,
   });
   const handleChartContextChange = useCallback((patch: Partial<WorldCupChartContext>) => {
     setChartContext((prev) => {
@@ -10451,6 +10689,8 @@ export function WorldCupPageContent() {
         competitionFilter: patch.competitionFilter ?? prev.competitionFilter ?? 'all',
         tournamentFilter: patch.tournamentFilter ?? prev.tournamentFilter ?? 'all',
         perspective: patch.perspective ?? prev.perspective ?? 'all',
+        minutesMin: patch.minutesMin !== undefined ? patch.minutesMin : prev.minutesMin ?? null,
+        minutesMax: patch.minutesMax !== undefined ? patch.minutesMax : prev.minutesMax ?? null,
       };
       if (worldCupChartContextEqual(prev, next)) return prev;
       if (prev.statId !== next.statId) {
@@ -11400,6 +11640,8 @@ export function WorldCupPageContent() {
             competitionFilter: parsed.competitionFilter ?? 'all',
             tournamentFilter: parsed.tournamentFilter ?? 'all',
             perspective: parsed.perspective ?? 'all',
+            minutesMin: parsed.minutesMin ?? null,
+            minutesMax: parsed.minutesMax ?? null,
           };
           if (restoredMode === 'team') {
             setChartContext({
@@ -11854,6 +12096,7 @@ export function WorldCupPageContent() {
     const prev = prevSelectedPlayerIdRef.current;
     if (prev && current !== prev) {
       setGamePropsTeam(null);
+      setChartContext((ctx) => ({ ...ctx, minutesMin: null, minutesMax: null }));
     }
     prevSelectedPlayerIdRef.current = current;
   }, [selectedPlayer?.id]);
@@ -11877,6 +12120,8 @@ export function WorldCupPageContent() {
         competitionFilter: 'all',
         tournamentFilter: 'all',
         perspective: 'all',
+        minutesMin: null,
+        minutesMax: null,
       });
     } else {
       setChartContext((ctx) => ({
@@ -11885,6 +12130,8 @@ export function WorldCupPageContent() {
         competitionFilter: 'all',
         tournamentFilter: 'all',
         perspective: 'all',
+        minutesMin: null,
+        minutesMax: null,
       }));
     }
 
@@ -12303,6 +12550,15 @@ export function WorldCupPageContent() {
           Game Props
         </button>
       </div>
+      {propsMode === 'player' ? (
+        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+          Analyze player stats, odds, and game-by-game performance
+        </p>
+      ) : (
+        <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+          Analyze game totals, spreads, and game-based props
+        </p>
+      )}
     </>
   );
 

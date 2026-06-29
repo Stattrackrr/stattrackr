@@ -1527,8 +1527,50 @@ function playerStatRowRichness(row: Record<string, any>): number {
   return score;
 }
 
+function dashboardPlayerShotsTotal(row: Record<string, any>): number | null {
+  const direct = bdlStatNum(row.shots_total) ?? bdlStatNum(row.shots);
+  const derived = bdlStatNum(row.derived_shots_total) ?? bdlStatNum(row.total_shots);
+  if (direct != null && derived != null) return Math.max(direct, derived);
+  return direct ?? derived;
+}
+
+function mergeDashboardPlayerStatRowFields(
+  primary: Record<string, any>,
+  secondary: Record<string, any>
+): Record<string, any> {
+  if (!secondary || primary === secondary) return primary;
+  const merged = { ...primary };
+  const primaryShots = dashboardPlayerShotsTotal(primary);
+  const secondaryShots = dashboardPlayerShotsTotal(secondary);
+  if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
+    for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
+      if (secondary[key] != null) merged[key] = secondary[key];
+    }
+  }
+  for (const key of [
+    'minutes_played',
+    'goals',
+    'assists',
+    'shots_on_target',
+    'passes_accurate',
+    'passes_total',
+    'passes',
+    'tackles',
+    'fouls',
+    'fouls_committed',
+    'was_fouled',
+    'yellow_cards',
+    'red_cards',
+    'saves',
+  ]) {
+    if (merged[key] == null && secondary[key] != null) merged[key] = secondary[key];
+  }
+  return merged;
+}
+
 function playerStatRowMergeKey(row: Record<string, any>): string {
-  return `${row.match_id ?? ''}|${row.team_id ?? ''}`;
+  const source = String(row.source ?? '').trim().toLowerCase() || 'unknown';
+  return `${source}|${row.match_id ?? ''}|${row.team_id ?? ''}`;
 }
 
 function mergePlayerStatRowsPreferRich(
@@ -1540,11 +1582,157 @@ function mergePlayerStatRowsPreferRich(
   for (const row of incoming) {
     const key = playerStatRowMergeKey(row);
     const prev = byKey.get(key);
-    if (!prev || playerStatRowRichness(row) > playerStatRowRichness(prev)) {
+    if (!prev) {
       byKey.set(key, row);
+    } else if (playerStatRowRichness(row) > playerStatRowRichness(prev)) {
+      byKey.set(key, mergeDashboardPlayerStatRowFields(row, prev));
+    } else {
+      byKey.set(key, mergeDashboardPlayerStatRowFields(prev, row));
     }
   }
   return [...byKey.values()];
+}
+
+function bdlPlayerStatRowsLackShotCoverage(rows: Array<Record<string, any>>): boolean {
+  const wcRows = rows.filter((row) => {
+    const src = String(row.source ?? 'bdl').toLowerCase();
+    const slug = String(row.tournament_slug ?? '').toLowerCase();
+    return src === 'bdl' || slug === 'worldcup' || slug === 'world-cup' || slug === 'fifa-world-cup';
+  });
+  if (!wcRows.length) return false;
+  let withShots = 0;
+  let withMinutes = 0;
+  for (const row of wcRows) {
+    const minutes = bdlStatNum(row.minutes_played);
+    if (minutes != null && minutes > 0) withMinutes += 1;
+    const shots = dashboardPlayerShotsTotal(row);
+    if (shots != null && shots > 0) withShots += 1;
+  }
+  if (!withMinutes) return false;
+  return withShots / withMinutes < 0.2;
+}
+
+async function fetchBdlPlayerShotsByMatch(
+  playerId: string,
+  matchIds: number[],
+  apiKey: string
+): Promise<Map<number, number>> {
+  const shotsByMatch = new Map<number, number>();
+  const playerNum = Number(playerId);
+  if (!Number.isFinite(playerNum) || !matchIds.length) return shotsByMatch;
+
+  for (let offset = 0; offset < matchIds.length; offset += 50) {
+    const chunk = matchIds.slice(offset, offset + 50);
+    const params = new URLSearchParams();
+    chunk.forEach((id) => params.append('match_ids[]', String(id)));
+    try {
+      const shots = await bdlFetchAll<Record<string, unknown>>('/match_shots', params, apiKey, {
+        cursor: true,
+        maxPages: 6,
+      });
+      for (const shot of shots) {
+        const mid = Number(shot.match_id);
+        const pid = Number(shot.player_id);
+        if (!Number.isFinite(mid) || pid !== playerNum) continue;
+        shotsByMatch.set(mid, (shotsByMatch.get(mid) ?? 0) + 1);
+      }
+    } catch {
+      /* best effort */
+    }
+  }
+  return shotsByMatch;
+}
+
+async function resolveDashboardPlayerShots(opts: {
+  playerId: string;
+  matchIds: number[];
+  apiKey?: string;
+  skipCache?: boolean;
+}): Promise<Array<Record<string, unknown>>> {
+  if (!opts.skipCache) {
+    const cached = await readWcCache<Array<Record<string, unknown>>>(WC2026.playerShots(opts.playerId));
+    if (cached?.length) return cached;
+  }
+  if (!opts.apiKey || !opts.matchIds.length) return [];
+
+  recordWcSource('playerShots', 'bdl-live', opts.playerId);
+  const shotsByMatch = await fetchBdlPlayerShotsByMatch(opts.playerId, opts.matchIds, opts.apiKey);
+  const shots: Array<Record<string, unknown>> = [];
+  for (const [matchId, count] of shotsByMatch) {
+    for (let index = 0; index < count; index += 1) {
+      shots.push({ match_id: matchId, player_id: Number(opts.playerId) });
+    }
+  }
+  if (shots.length) {
+    void setWorldCupCache(WC2026.playerShots(opts.playerId), shots);
+  }
+  return shots;
+}
+
+function enrichPlayerStatRowsWithShotEvents(
+  rows: Array<Record<string, any>>,
+  playerShots: Array<Record<string, unknown>>
+): Array<Record<string, any>> {
+  if (!rows.length) return rows;
+
+  const shotsByMatch = new Map<number, number>();
+  const playerId = String(rows[0]?.player_id ?? '');
+  for (const shot of playerShots) {
+    const mid = Number(shot.match_id);
+    const pid = String(shot.player_id ?? '');
+    if (!Number.isFinite(mid)) continue;
+    if (playerId && pid && pid !== playerId) continue;
+    shotsByMatch.set(mid, (shotsByMatch.get(mid) ?? 0) + 1);
+  }
+
+  return rows.map((row) => {
+    const matchId = Number(row.match_id);
+    const fromEvents = shotsByMatch.get(matchId);
+    const merged = { ...row };
+    if (fromEvents != null && fromEvents > 0) {
+      const rowShots = dashboardPlayerShotsTotal(merged);
+      const best = rowShots != null && rowShots > fromEvents ? rowShots : fromEvents;
+      merged.derived_shots_total = best;
+      const direct = bdlStatNum(merged.shots_total);
+      if (direct == null || direct < best) merged.shots_total = best;
+    }
+    const bestShots = dashboardPlayerShotsTotal(merged);
+    if (bestShots != null) {
+      merged.derived_shots_total = bestShots;
+      if (bdlStatNum(merged.shots_total) == null) merged.shots_total = bestShots;
+    }
+    return merged;
+  });
+}
+
+async function enrichDashboardPlayerStatsWithShots(opts: {
+  playerId: string;
+  playerMatchStats: Array<Record<string, any>>;
+  apiKey?: string;
+}): Promise<Array<Record<string, any>>> {
+  if (!opts.playerMatchStats.length) return opts.playerMatchStats;
+
+  const matchIds = [
+    ...new Set(
+      opts.playerMatchStats.map((row) => Number(row.match_id)).filter((id): id is number => Number.isFinite(id))
+    ),
+  ];
+  const cachedShots = (await readWcCache<Array<Record<string, unknown>>>(WC2026.playerShots(opts.playerId))) ?? [];
+  const lacksCoverage = bdlPlayerStatRowsLackShotCoverage(opts.playerMatchStats);
+  const needsLive =
+    !cachedShots.length || (lacksCoverage && Boolean(opts.apiKey));
+
+  let playerShots = cachedShots;
+  if (needsLive && opts.apiKey) {
+    playerShots = await resolveDashboardPlayerShots({
+      playerId: opts.playerId,
+      matchIds,
+      apiKey: opts.apiKey,
+      skipCache: lacksCoverage,
+    });
+  }
+
+  return enrichPlayerStatRowsWithShotEvents(opts.playerMatchStats, playerShots);
 }
 
 function mergePlayerStatRows(
@@ -1959,6 +2147,17 @@ async function loadCachedPlayerStatsWithFallback(opts: {
     if (live.length) {
       recordWcSource('playerStats', 'bdl-live', opts.playerId);
       playerMatchStats = live;
+    }
+  }
+
+  if (playerMatchStats.length && opts.apiKey && bdlPlayerStatRowsLackShotCoverage(playerMatchStats)) {
+    const live = await fetchLivePlayerStatsById(opts.playerId, opts.apiKey);
+    if (live.length) {
+      recordWcSource('playerStats', 'bdl-live-shot-repair', opts.playerId);
+      playerMatchStats = mergePlayerStatRowsPreferRich(
+        playerMatchStats.map((row) => preserveDashboardPlayerStatRow(row)),
+        live.map((row) => preserveDashboardPlayerStatRow(row))
+      );
     }
   }
 
@@ -3570,6 +3769,8 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
     return NextResponse.json({ error: 'playerName is required' }, { status: 400 });
   }
 
+  const apiKey = getBdlApiKey();
+
   try {
     const bundle = await loadWorldCupPlayerHistoryBundle(playerName, {
       teamId: requestedTeamId,
@@ -3590,6 +3791,17 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
 
     let playerMatchStats = bundle.mergedStatRows.map((row) => preserveDashboardPlayerStatRow(row));
     if (requestedPlayerId && /^\d+$/.test(requestedPlayerId)) {
+      const matches2026Completed = matches2026.filter((match) => match.status === 'completed');
+      const liveStats = await loadCachedPlayerStatsWithFallback({
+        playerId: requestedPlayerId,
+        teamId: selectedTeam?.id ?? null,
+        matches2026: matches2026Completed,
+        apiKey,
+      });
+      playerMatchStats = mergePlayerStatRowsPreferRich(
+        playerMatchStats,
+        liveStats.map((row) => preserveDashboardPlayerStatRow(row))
+      );
       playerMatchStats = playerMatchStats.map((row) => ({
         ...row,
         player_id: requestedPlayerId,
@@ -3597,12 +3809,30 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
           ? { ...(row.player as Record<string, unknown>), id: requestedPlayerId }
           : { id: requestedPlayerId },
       }));
+      playerMatchStats = await enrichDashboardPlayerStatsWithShots({
+        playerId: requestedPlayerId,
+        playerMatchStats,
+        apiKey,
+      });
     }
 
-    const chartMatches = normalizeDashboardChartMatches(bundle.matches as Array<Record<string, any>>);
+    const chartMatches = normalizeDashboardChartMatches(
+      bundle.matches as Array<Record<string, any>>
+    );
+    const liveMatchIds = new Set(
+      playerMatchStats.map((row) => String(row.match_id ?? row.source_match_id ?? '')).filter(Boolean)
+    );
+    const supplementalMatches = matches2026
+      .filter((match) => liveMatchIds.has(String(match.id)))
+      .map((match) => summarizeMatches([match])[0])
+      .filter(Boolean);
+    const chartMatchesWithLive = normalizeDashboardChartMatches([
+      ...chartMatches,
+      ...supplementalMatches,
+    ] as Array<Record<string, any>>);
     const playerMatchStatsWithContext = attachStatRowMatchContext(
       playerMatchStats,
-      chartMatches
+      chartMatchesWithLive
     );
 
     return NextResponse.json(
@@ -3610,8 +3840,8 @@ async function handleWorldCupPlayerChartOnlyGet(request: NextRequest) {
         playerChartOnly: true,
         season: parseSeason(params.get('season')),
         teams,
-        matches: chartMatches,
-        playerMatches: chartMatches,
+        matches: chartMatchesWithLive,
+        playerMatches: chartMatchesWithLive,
         playerMatchStats: playerMatchStatsWithContext,
         selectedTeam,
         featureMatch: featureMatch
@@ -4023,7 +4253,8 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
           const shouldRefreshPlayerStats =
             request.nextUrl.searchParams.get('refreshPlayerStats') === '1' ||
             existingStats.length === 0 ||
-            !playerHasWc2026Appearance(existingStats, completed2026Ids);
+            !playerHasWc2026Appearance(existingStats, completed2026Ids) ||
+            bdlPlayerStatRowsLackShotCoverage(existingStats);
           const freshPlayer = shouldRefreshPlayerStats
             ? await refreshDashboardPlayerStats({
                 requestedPlayerId,
@@ -4076,6 +4307,12 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
               playerId: requestedPlayerId,
             });
           }
+
+          mergedPlayerMatchStats = await enrichDashboardPlayerStatsWithShots({
+            playerId: requestedPlayerId,
+            playerMatchStats: mergedPlayerMatchStats,
+            apiKey,
+          });
 
           const repairedPlayerMatches = await repairPlayerMatchesFromIntl(
             mergedPlayerMatchStats,
@@ -4276,8 +4513,7 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
         playerId: requestedPlayerId,
         teamId: selectedTeamId,
         matches2026: matches,
-        apiKey:
-          request.nextUrl.searchParams.get('refreshPlayerStats') === '1' ? apiKey : undefined,
+        apiKey,
       });
       playerStatsFromCache = playerMatchStats.length > 0;
     } else if (statMatchIds.length) {
@@ -4328,27 +4564,30 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
       allowLiveLineupRefresh ? apiKey : undefined
     );
 
-    // ── Player shots (for numeric playerId mode) — cache-first ───────────────
+    // ── Player shots (for numeric playerId mode) — cache-first, BDL live fallback ─
     let playerMatches: BdlMatch[] = [];
     let playerShots: any[] = [];
     if (requestedPlayerId && Array.isArray(playerMatchStats) && playerMatchStats.length) {
-      // Try to read player shots from the per-player cache first.
-      const cachedPlayerShots = await readWcCache<any[]>(WC2026.playerShots(requestedPlayerId));
-      if (cachedPlayerShots) {
-        recordWcSource('playerShots', 'supabase-cache', requestedPlayerId);
-        playerShots = cachedPlayerShots;
+      const neededIds = [
+        ...new Set(
+          playerMatchStats
+            .map((row: any) => Number(row?.match_id))
+            .filter((id): id is number => Number.isFinite(id))
+        ),
+      ];
+      if (neededIds.length) {
+        const mergedLookupMatches = mergeBdlMatches(dashboardAllSeasonMatches, matches);
+        playerMatches = mergedLookupMatches.filter((match) => neededIds.includes(Number(match.id)));
+      }
+      playerShots = await resolveDashboardPlayerShots({
+        playerId: requestedPlayerId,
+        matchIds: neededIds,
+        apiKey,
+      });
+      if (playerShots.length) {
+        recordWcSource('playerShots', 'resolved', requestedPlayerId);
       } else {
         recordWcSource('playerShots', 'cache-miss', requestedPlayerId);
-      }
-
-      const neededIds = new Set(
-        playerMatchStats
-          .map((row: any) => Number(row?.match_id))
-          .filter((id) => Number.isFinite(id))
-      );
-      if (neededIds.size) {
-        const mergedLookupMatches = mergeBdlMatches(dashboardAllSeasonMatches, matches);
-        playerMatches = mergedLookupMatches.filter((match) => neededIds.has(Number(match.id)));
       }
     }
     const derivedShotsByMatch = new Map<number, Record<string, number>>();
@@ -4385,10 +4624,16 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
     // we gate on the already-season-filtered `matches` set to avoid historical
     // WC games appearing as "WC GAMES" in the PvT panel.
     const wc2026MatchIds = new Set(matches.map((m) => Number(m.id)));
-    const playerRowsWithDerivedShots = (playerMatchStats as Array<Record<string, any>>).map((row) => ({
-      ...row,
-      ...(derivedShotsByMatch.get(Number(row.match_id)) ?? {}),
-    }));
+    const playerRowsWithDerivedShots = (playerMatchStats as Array<Record<string, any>>).map((row) => {
+      const derived = derivedShotsByMatch.get(Number(row.match_id)) ?? {};
+      const merged = { ...row, ...derived };
+      const bestShots = dashboardPlayerShotsTotal(merged);
+      if (bestShots != null) {
+        merged.derived_shots_total = bestShots;
+        if (bdlStatNum(merged.shots_total) == null) merged.shots_total = bestShots;
+      }
+      return merged;
+    });
     const wc2026PlayerMatchStats = playerRowsWithDerivedShots.filter((row) =>
       wc2026MatchIds.has(Number(row.match_id))
     );
@@ -4432,6 +4677,13 @@ async function handleWorldCupDashboardGet(request: NextRequest) {
         player_id: requestedPlayerId,
         player: row.player ? { ...row.player, id: requestedPlayerId } : { id: requestedPlayerId },
       }));
+      if (/^\d+$/.test(requestedPlayerId)) {
+        mergedPlayerMatchStats = await enrichDashboardPlayerStatsWithShots({
+          playerId: requestedPlayerId,
+          playerMatchStats: mergedPlayerMatchStats,
+          apiKey,
+        });
+      }
     }
 
     let resolvedSelectedTeam = selectedTeam;
