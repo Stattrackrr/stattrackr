@@ -194,12 +194,15 @@ export type WcDataSource =
   | 'supabase-cache'
   | 'cache-miss'
   | 'bdl-live'
+  | 'bdl-live-stale-repair'
+  | 'bdl-live-shot-repair'
   | 'bdl-memory'
   | 'supabase-intl'
   | 'computed'
   | 'merged'
   | 'match-detail-fallback'
-  | 'match-detail-scan';
+  | 'match-detail-scan'
+  | 'resolved';
 
 export type WcCacheDebugSummary = {
   bdlLiveCount: number;
