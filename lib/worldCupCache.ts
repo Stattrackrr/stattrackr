@@ -17,7 +17,11 @@ import sharedCache from '@/lib/sharedCache';
 import { FIFA_NAME_TO_CODE } from '@/lib/worldCupFlags';
 import type { WorldCupPlayerOddsBook } from '@/lib/impliedProbability';
 import { formatWorldCupPlayerDisplayName, getWorldCupNameAliases, resolveWorldCupAliasName } from '@/lib/worldCupPlayerAliases';
-import { resolveWorldCupPlayerShotsTotalFromRow, readWorldCupPlayerShotCountFromFields } from '@/lib/worldCupPlayerShots';
+import {
+  applyWorldCupPlayerShotsToStatRows,
+  readWorldCupPlayerShotCountFromFields,
+  resolveWorldCupPlayerShotsTotalFromRow,
+} from '@/lib/worldCupPlayerShots';
 
 /**
  * Permanent (no-expiry) Supabase-backed cache for World Cup BDL data.
@@ -2274,14 +2278,19 @@ function wcDashboardMergePlayerStatRowFields(
 ): Record<string, unknown> {
   if (!secondary || primary === secondary) return primary;
   const merged = { ...primary };
+  const primarySource = String(primary.source ?? '').trim().toLowerCase();
+  const secondarySource = String(secondary.source ?? '').trim().toLowerCase();
+  const protectBdlShots = primarySource === 'bdl' && secondarySource !== 'bdl';
+
   const primaryShots = readWorldCupPlayerShotCountFromFields(primary);
   const secondaryShots = readWorldCupPlayerShotCountFromFields(secondary);
-  if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
+  if (!protectBdlShots && (secondaryShots ?? -1) > (primaryShots ?? -1)) {
     for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
       if (secondary[key] != null) merged[key] = secondary[key];
     }
   }
   for (const key of WC_DASHBOARD_STAT_RICHNESS_KEYS) {
+    if (protectBdlShots && key === 'shots_on_target') continue;
     if (merged[key] == null && secondary[key] != null) merged[key] = secondary[key];
   }
   return merged;
@@ -2421,17 +2430,17 @@ async function wcPropStatsLoadBdlCachedPlayerHistoryById(
     getWorldCupCache<Array<Record<string, unknown>>>(WC2026_CACHE_KEYS.playerShots(playerId)),
   ]);
   if (!cachedStats?.length) return { playerMatchStats: [], matches: [] };
-  const shotsByMatch = new Map<number, number>();
-  for (const shot of cachedShots ?? []) {
-    const mid = Number(shot.match_id);
-    if (Number.isFinite(mid)) shotsByMatch.set(mid, (shotsByMatch.get(mid) ?? 0) + 1);
-  }
-  const stats: Record<string, unknown>[] = cachedStats.map((row) => ({
-    ...row,
-    source: 'bdl',
-    tournament_slug: 'worldcup',
-    derived_shots_total: shotsByMatch.get(Number(row.match_id)) ?? row.derived_shots_total ?? null,
-  }));
+  const stats = applyWorldCupPlayerShotsToStatRows(
+    cachedStats.map(
+      (row): Record<string, unknown> => ({
+        ...row,
+        source: 'bdl',
+        tournament_slug: 'worldcup',
+      })
+    ),
+    cachedShots ?? [],
+    String(playerId)
+  );
   const matchIdsInStats = new Set(stats.map((s) => String(s.match_id ?? '')));
   const matches = matchPool.filter((m) => {
     const id = String((m as { id?: number }).id ?? '');
@@ -2603,7 +2612,7 @@ export async function loadWorldCupPlayerHistoryBundle(
 }> {
   const normalized = normalizeWorldCupPlayerName(playerName);
   const memKey = `${normalized}|team:${opts?.teamId ?? ''}|nation:${opts?.nationHint ?? ''}`;
-  const supabaseKey = `wc:player-history-bundle:v1:${normalized}:team:${opts?.teamId ?? ''}:nation:${opts?.nationHint ?? ''}`;
+  const supabaseKey = `wc:player-history-bundle:v2:${normalized}:team:${opts?.teamId ?? ''}:nation:${opts?.nationHint ?? ''}`;
   const existing = wcPlayerGameLogsMem.get(memKey);
   if (existing) {
     const cached = await existing;
@@ -2611,25 +2620,31 @@ export async function loadWorldCupPlayerHistoryBundle(
   }
 
   const pending = (async () => {
-    const persisted = await getWorldCupCache<{
-      games: Record<string, unknown>[];
-      matches: Record<string, unknown>[];
-      mergedStatRows: Record<string, unknown>[];
-    }>(supabaseKey);
-    if (persisted?.mergedStatRows?.length) {
-      return persisted;
-    }
-
     const [intl, bdlAllIds, bdlSupplement] = await Promise.all([
       loadInternationalStatsByPlayerName(playerName, { bdlPlayerId: opts?.playerId ?? null }),
       wcPropStatsLoadBdlCachedPlayerHistoryForAllIds(playerName, opts),
       wcPropStatsLoadBdlSupplementPlayerHistory(playerName, opts),
     ]);
-    const mergedStatRows = wcDashboardMergePlayerStatRowsPreferRich([
+    const freshMerged = wcDashboardMergePlayerStatRowsPreferRich([
       ...(intl.playerMatchStats as Record<string, unknown>[]),
       ...bdlSupplement.playerMatchStats,
       ...bdlAllIds.playerMatchStats,
     ]);
+
+    const persisted = await getWorldCupCache<{
+      games: Record<string, unknown>[];
+      matches: Record<string, unknown>[];
+      mergedStatRows: Record<string, unknown>[];
+    }>(supabaseKey);
+    const mergedStatRows =
+      persisted?.mergedStatRows?.length && /^\d+$/.test(String(opts?.playerId ?? ''))
+        ? wcDashboardMergePlayerStatRowsPreferRich([
+            ...persisted.mergedStatRows,
+            ...freshMerged,
+          ])
+        : persisted?.mergedStatRows?.length
+          ? persisted.mergedStatRows
+          : freshMerged;
     const matchById = new Map<string, Record<string, unknown>>();
     for (const m of [...intl.matches, ...bdlSupplement.matches, ...bdlAllIds.matches]) {
       const id = String(m.id ?? m.match_id ?? '');

@@ -157,24 +157,51 @@ export function worldCupMatchIdsNeedingPlayerShotEvents(
   return [...ids];
 }
 
+export function playerShotEventsAreComplete(
+  shots: Array<Record<string, unknown>> | undefined | null
+): boolean {
+  if (!shots?.length) return false;
+  return shots.some((shot) => shot.shot_type != null || shot.on_target != null);
+}
+
+function isWorldCupPlayerStatRow(row: Record<string, unknown>): boolean {
+  const slug = String(row.tournament_slug ?? '').toLowerCase();
+  return (
+    slug === 'worldcup' ||
+    slug === 'world-cup' ||
+    slug === 'fifa-world-cup' ||
+    String(row.source ?? '').toLowerCase() === 'bdl'
+  );
+}
+
 export function playerDashboardNeedsShotEventRefresh(
   data: { playerMatchStats?: Array<Record<string, unknown>>; playerShots?: Array<Record<string, unknown>> } | null | undefined,
   playerId: string | null
 ): boolean {
   if (!playerId || !/^\d+$/.test(playerId)) return false;
-  if ((data?.playerShots?.length ?? 0) > 0) return false;
+
+  const playerShots = data?.playerShots ?? [];
+  if (playerShots.length > 0 && !playerShotEventsAreComplete(playerShots)) return true;
+
   const rows = (data?.playerMatchStats ?? []).filter(
     (row) => String(row.player_id ?? '') === playerId || !row.player_id
   );
-  return rows.some((row) => {
+  const wcRows = rows.filter((row) => {
     const minutes = parsePositiveStat(row.minutes_played);
-    if (minutes == null) return false;
-    const slug = String(row.tournament_slug ?? '').toLowerCase();
-    const isWc =
-      slug === 'worldcup' ||
-      slug === 'world-cup' ||
-      slug === 'fifa-world-cup' ||
-      String(row.source ?? '').toLowerCase() === 'bdl';
-    return isWc;
+    return minutes != null && isWorldCupPlayerStatRow(row);
   });
+
+  if (!wcRows.length) return false;
+  if (!playerShots.length) return true;
+
+  const { totals } = buildWorldCupPlayerShotStatsByMatch(playerShots, playerId);
+  for (const row of wcRows) {
+    const matchIds = statRowMatchIds(row);
+    const eventTotal = Math.max(...matchIds.map((id) => totals.get(id) ?? 0), 0);
+    const rowTotal = readWorldCupPlayerShotCountFromFields(row);
+    if (eventTotal > 0 && rowTotal !== eventTotal) return true;
+    if (eventTotal > 0 && rowTotal == null) return true;
+  }
+
+  return false;
 }

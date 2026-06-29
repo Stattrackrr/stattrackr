@@ -34,6 +34,7 @@ import {
   applyWorldCupPlayerShotsToStatRows,
   buildWorldCupPlayerShotStatsByMatch,
   playerDashboardNeedsShotEventRefresh,
+  playerShotEventsAreComplete,
   readWorldCupPlayerShotCountFromFields,
   resolveWorldCupPlayerShotsTotalFromRow,
 } from '@/lib/worldCupPlayerShots';
@@ -349,7 +350,7 @@ function normalizeWorldCupDashboardData(
   const playerId =
     playerIdHint ??
     (rawPlayerStats.length > 0 ? String(rawPlayerStats[0]?.player_id ?? '') || null : null);
-  const playerMatchStats = data.playerShots?.length
+  const playerMatchStats = playerShotEventsAreComplete(data.playerShots)
     ? applyWorldCupPlayerShotsToStatRows(rawPlayerStats, data.playerShots, playerId)
     : rawPlayerStats;
 
@@ -1704,18 +1705,26 @@ function mergeWorldCupDashboardPayload(
   );
 
   const panelDataReady = hasFullPlayerDashboardPanelData(normalizedNext);
+  const mergedPlayerShots =
+    (normalizedNext.playerShots?.length ?? 0) > 0 ? normalizedNext.playerShots : prev.playerShots;
+  const playerId =
+    normalizedNext.playerMatchStats?.[0]?.player_id != null
+      ? String(normalizedNext.playerMatchStats[0].player_id)
+      : mergedPlayerStats[0]?.player_id != null
+        ? String(mergedPlayerStats[0].player_id)
+        : null;
+  const mergedPlayerStatsWithShots = playerShotEventsAreComplete(mergedPlayerShots)
+    ? applyWorldCupPlayerShotsToStatRows(mergedPlayerStats, mergedPlayerShots ?? [], playerId)
+    : mergedPlayerStats;
 
   return normalizeWorldCupDashboardData({
     ...prev,
     ...normalizedNext,
     playerChartOnly: panelDataReady ? undefined : normalizedNext.playerChartOnly ?? prev.playerChartOnly,
-    playerMatchStats: mergedPlayerStats,
+    playerMatchStats: mergedPlayerStatsWithShots,
     matches: mergedMatches,
     playerMatches: mergedPlayerMatches,
-    playerShots:
-      (normalizedNext.playerShots?.length ?? 0) > 0
-        ? normalizedNext.playerShots
-        : prev.playerShots,
+    playerShots: mergedPlayerShots,
     teamMatchStats:
       (normalizedNext.teamMatchStats?.length ?? 0) > 0
         ? normalizedNext.teamMatchStats
@@ -11795,8 +11804,12 @@ export function WorldCupPageContent() {
             : fullCached?.playerMatchStats?.length
               ? fullCached
               : null;
-      if (earlyPayload) {
-        const params = new URLSearchParams(dashboardCacheKey);
+      const params = new URLSearchParams(dashboardCacheKey);
+      const earlyPlayerId = params.get('playerId');
+      const earlyPayloadFresh =
+        earlyPayload &&
+        !playerDashboardNeedsShotEventRefresh(earlyPayload, earlyPlayerId);
+      if (earlyPayloadFresh) {
         if (!earlyPayload.playerChartOnly) {
           loadedDashboardKeyRef.current = buildWorldCupDashboardKey(
             'player',
@@ -12406,13 +12419,26 @@ export function WorldCupPageContent() {
           return mergeWorldCupDashboardPayload(prev, payload);
         }
         if (!prev) return next;
+        const mergedPlayerShots =
+          (payload.playerShots?.length ?? 0) > 0 ? payload.playerShots : prev.playerShots;
+        const mergedPlayerStats = mergeWorldCupPlayerStatRows(
+          prev.playerMatchStats ?? [],
+          next.playerMatchStats ?? []
+        );
+        const chartPlayerId = playerIdForRequest ?? String(mergedPlayerStats[0]?.player_id ?? '');
+        const mergedPlayerStatsWithShots = playerShotEventsAreComplete(mergedPlayerShots)
+          ? applyWorldCupPlayerShotsToStatRows(
+              mergedPlayerStats,
+              mergedPlayerShots ?? [],
+              chartPlayerId || null
+            )
+          : mergedPlayerStats;
         return normalizeWorldCupDashboardData({
           ...prev,
           ...payload,
           playerChartOnly: true,
-          playerShots:
-            (payload.playerShots?.length ?? 0) > 0 ? payload.playerShots : prev.playerShots,
-          playerMatchStats: mergeWorldCupPlayerStatRows(prev.playerMatchStats ?? [], next.playerMatchStats ?? []),
+          playerShots: mergedPlayerShots,
+          playerMatchStats: mergedPlayerStatsWithShots,
           matches: mergeWorldCupMatchRows(prev.matches ?? [], next.matches ?? []),
           playerMatches: mergeWorldCupMatchRows(prev.playerMatches ?? [], next.playerMatches ?? []),
           teamMatchStats: prev.teamMatchStats,
