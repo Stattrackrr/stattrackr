@@ -659,6 +659,9 @@ type WorldCupChartContext = {
   statKey: string | null;
   statLabel: string;
   timeframe: WorldCupChartTimeframe;
+  competitionFilter?: WorldCupChartCompetitionGroup | 'all';
+  tournamentFilter?: string | 'all';
+  perspective?: WorldCupStatPerspective;
 };
 
 const WC_BAR_ANIMATION_MS = 180;
@@ -668,7 +671,10 @@ function worldCupChartContextEqual(a: WorldCupChartContext, b: WorldCupChartCont
     a.statId === b.statId &&
     a.statKey === b.statKey &&
     a.statLabel === b.statLabel &&
-    a.timeframe === b.timeframe
+    a.timeframe === b.timeframe &&
+    (a.competitionFilter ?? 'all') === (b.competitionFilter ?? 'all') &&
+    (a.tournamentFilter ?? 'all') === (b.tournamentFilter ?? 'all') &&
+    (a.perspective ?? 'all') === (b.perspective ?? 'all')
   );
 }
 
@@ -962,7 +968,11 @@ function normalizeWorldCupStatFromUrl(stat: string): (typeof WORLD_CUP_STAT_OPTI
   return direct?.id ?? 'goals';
 }
 
-function chartContextFromStatParam(stat: string, timeframe: WorldCupChartTimeframe = 'last10'): WorldCupChartContext {
+function chartContextFromStatParam(
+  stat: string,
+  timeframe: WorldCupChartTimeframe = 'last10',
+  prev?: Partial<WorldCupChartContext>
+): WorldCupChartContext {
   const statId = normalizeWorldCupStatFromUrl(stat);
   const config = getChartStatConfig('player', statId);
   return {
@@ -970,6 +980,9 @@ function chartContextFromStatParam(stat: string, timeframe: WorldCupChartTimefra
     statKey: config.playerKey ?? config.teamKey ?? String(statId),
     statLabel: config.label,
     timeframe,
+    competitionFilter: prev?.competitionFilter ?? 'all',
+    tournamentFilter: prev?.tournamentFilter ?? 'all',
+    perspective: prev?.perspective ?? 'all',
   };
 }
 
@@ -1227,7 +1240,7 @@ function applyWorldCupPropsHandoffState(
 ): boolean {
   if (parsed.opponent) setters.setFixtureOpponentName(parsed.opponent);
   if (parsed.stat) {
-    setters.setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe));
+    setters.setChartContext((prev) => chartContextFromStatParam(parsed.stat!, prev.timeframe, prev));
   }
   if (parsed.line != null && Number.isFinite(Number(parsed.line))) {
     refs.hasIncomingWcBookOrLineRef.current = true;
@@ -1302,6 +1315,45 @@ function resolveStoredWorldCupTeam(
     teamOptions.find((team) => team.id.trim().toLowerCase() === codeKey) ||
     null
   );
+}
+
+/** Stable Game Props team identity for dashboard resets (slug id → BDL id is not a team switch). */
+function worldCupGamePropsTeamContextKey(
+  team: WorldCupTeamOption | null,
+  teamOptions: WorldCupTeamOption[]
+): string {
+  if (!team) return '';
+  const resolved = resolveStoredWorldCupTeam(team, teamOptions);
+  const id = resolved?.id ?? team.id;
+  if (/^\d+$/.test(id)) return `id:${id}`;
+  const name = (resolved?.name ?? team.name).trim().toLowerCase();
+  return name ? `name:${name}` : '';
+}
+
+function worldCupGamePropsTeamContextKeysEquivalent(
+  a: string,
+  b: string,
+  teamOptions: WorldCupTeamOption[]
+): boolean {
+  if (!a || !b) return a === b;
+  if (a === b) return true;
+  const parse = (key: string) => {
+    if (key.startsWith('id:')) return { kind: 'id' as const, value: key.slice(3) };
+    if (key.startsWith('name:')) return { kind: 'name' as const, value: key.slice(5) };
+    return { kind: 'raw' as const, value: key };
+  };
+  const pa = parse(a);
+  const pb = parse(b);
+  if (pa.kind === 'id' && pb.kind === 'id') return pa.value === pb.value;
+  if (pa.kind === 'id' && pb.kind === 'name') {
+    const match = teamOptions.find((team) => team.id === pa.value);
+    return match?.name.trim().toLowerCase() === pb.value;
+  }
+  if (pa.kind === 'name' && pb.kind === 'id') {
+    const match = teamOptions.find((team) => team.id === pb.value);
+    return match?.name.trim().toLowerCase() === pa.value;
+  }
+  return false;
 }
 
 /** Game Props needs the full cross-competition team history, not a single WC row. */
@@ -3145,6 +3197,19 @@ function getChartStatConfig(
   return preferred;
 }
 
+function worldCupChartContextStatPatch(
+  mode: PropsMode,
+  statId: WorldCupChartStatId,
+  option?: (typeof WORLD_CUP_STAT_OPTIONS)[number]
+): Pick<WorldCupChartContext, 'statId' | 'statKey' | 'statLabel'> {
+  const config = option ?? getChartStatConfig(mode, statId);
+  return {
+    statId: config.id,
+    statKey: mode === 'player' ? config.playerKey ?? config.id : config.teamKey ?? config.id,
+    statLabel: config.label,
+  };
+}
+
 function getWorldCupTimeframeLabel(value: WorldCupChartTimeframe): string {
   return WORLD_CUP_TIMEFRAMES.find((option) => option.id === value)?.label ?? value.toUpperCase();
 }
@@ -3688,7 +3753,7 @@ function WorldCupGameByGameChart({
   error: string | null;
   competition: Competition;
   chartContext?: WorldCupChartContext;
-  onChartContextChange?: (context: WorldCupChartContext) => void;
+  onChartContextChange?: (patch: Partial<WorldCupChartContext>) => void;
   playerOddsBooks?: WorldCupPlayerOddsBook[];
   playerOddsLoading?: boolean;
   oddsFormat?: OddsFormat;
@@ -3699,22 +3764,16 @@ function WorldCupGameByGameChart({
   onExternalLineChange?: (value: number) => void;
   onSelectOddsLine?: (value: number) => void;
 }) {
-  const [selectedStat, setSelectedStat] = useState<WorldCupChartStatId>(() => {
-    if (externalChartContext?.statId) return externalChartContext.statId;
-    return mode === 'player' ? 'passes' : 'moneyline';
-  });
-  const [timeframe, setTimeframe] = useState<WorldCupChartTimeframe>(
-    externalChartContext?.timeframe ?? 'last10'
-  );
-  const applyingExternalChartContextRef = useRef(false);
-  const lastExternalChartContextRef = useRef(externalChartContext);
-  const [perspective, setPerspective] = useState<WorldCupStatPerspective>('all');
+  const selectedStat =
+    externalChartContext?.statId ?? (mode === 'player' ? ('passes' as WorldCupChartStatId) : 'moneyline');
+  const timeframe = externalChartContext?.timeframe ?? 'last10';
+  const perspective = externalChartContext?.perspective ?? 'all';
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
-  const [competitionFilter, setCompetitionFilter] = useState<WorldCupChartCompetitionGroup | 'all'>('all');
+  const competitionFilter = externalChartContext?.competitionFilter ?? 'all';
   const [isCompetitionDropdownOpen, setIsCompetitionDropdownOpen] = useState(false);
   const competitionDropdownRef = useRef<HTMLDivElement>(null);
-  const [tournamentFilter, setTournamentFilter] = useState<string | 'all'>('all');
+  const tournamentFilter = externalChartContext?.tournamentFilter ?? 'all';
   const [isTournamentDropdownOpen, setIsTournamentDropdownOpen] = useState(false);
   const tournamentDropdownRef = useRef<HTMLDivElement>(null);
   const baseAvailableStats = useMemo(
@@ -3753,6 +3812,16 @@ function WorldCupGameByGameChart({
     selectedTeam?.name ??
     selectedPlayer?.teamName ??
     (data?.selectedTeam?.name ? String(data.selectedTeam.name) : null);
+
+  const emitChartContext = useCallback(
+    (patch: Partial<WorldCupChartContext> = {}) => {
+      onChartContextChange?.(patch);
+    },
+    [onChartContextChange]
+  );
+  const prevCompetitionFilterRef = useRef(competitionFilter);
+  const emitChartContextRef = useRef(emitChartContext);
+  emitChartContextRef.current = emitChartContext;
 
   const baseChartRows = useMemo(() => {
     if (!data || !statKey) return [];
@@ -3977,54 +4046,18 @@ function WorldCupGameByGameChart({
   useEffect(() => {
     if (!availableStats.length) return;
     if (availableStats.some((option) => option.id === selectedStat)) return;
-    setSelectedStat(availableStats[0].id);
-  }, [availableStats, selectedStat]);
-
-  useEffect(() => {
-    if (mode !== 'player') return;
-    if (!availableStats.length) return;
-    if (availableStats.some((option) => option.id === selectedStat)) return;
-    const isGoalkeeper = isWorldCupGoalkeeperRole(selectedPlayer?.role);
-    const preferredId: WorldCupChartStatId = isGoalkeeper ? 'goalkeeper_saves' : 'passes';
-    const preferredAvailable = availableStats.some((option) => option.id === preferredId);
-    setSelectedStat(preferredAvailable ? preferredId : availableStats[0].id);
-  }, [mode, selectedPlayer?.id, selectedPlayer?.role, availableStats, selectedStat]);
-
-  useEffect(() => {
-    if (mode !== 'team') return;
-    if (!availableStats.length) return;
-    const preferredId: WorldCupChartStatId = 'moneyline';
-    const preferredAvailable = availableStats.some((option) => option.id === preferredId);
-    setSelectedStat(preferredAvailable ? preferredId : availableStats[0].id);
-  }, [mode, selectedTeam?.id, availableStats]);
-
-  useEffect(() => {
-    if (!externalChartContext) return;
-    if (worldCupChartContextEqual(lastExternalChartContextRef.current ?? externalChartContext, externalChartContext)) {
-      return;
-    }
-    lastExternalChartContextRef.current = externalChartContext;
-
-    const nextStat = externalChartContext.statId;
-    const nextTimeframe = externalChartContext.timeframe;
-    const statValid = availableStats.some((option) => option.id === nextStat);
-    applyingExternalChartContextRef.current = true;
-    if (statValid) setSelectedStat(nextStat);
-    setTimeframe(nextTimeframe);
-  }, [externalChartContext, availableStats]);
-
-  useEffect(() => {
-    if (applyingExternalChartContextRef.current) {
-      applyingExternalChartContextRef.current = false;
-      return;
-    }
-    onChartContextChange?.({
-      statId: statConfig.id,
-      statKey,
-      statLabel: statConfig.label,
-      timeframe,
-    });
-  }, [onChartContextChange, statConfig.id, statConfig.label, statKey, timeframe]);
+    const preferred =
+      mode === 'player'
+        ? (() => {
+            const isGoalkeeper = isWorldCupGoalkeeperRole(selectedPlayer?.role);
+            const preferredId: WorldCupChartStatId = isGoalkeeper ? 'goalkeeper_saves' : 'passes';
+            return availableStats.find((option) => option.id === preferredId) ?? availableStats[0];
+          })()
+        : mode === 'team'
+          ? availableStats.find((option) => option.id === 'moneyline') ?? availableStats[0]
+          : availableStats[0];
+    emitChartContextRef.current(worldCupChartContextStatPatch(mode, preferred.id, preferred));
+  }, [availableStats, selectedStat, mode, selectedPlayer?.role]);
 
   useEffect(() => {
     const onDocMouseDown = (event: MouseEvent) => {
@@ -4041,37 +4074,46 @@ function WorldCupGameByGameChart({
   }, []);
 
   // Reset the competition filter when the chosen competition is no longer in
-  // the current selection (e.g. after switching team/player).
+  // the current selection (e.g. after switching team/player). Only evaluate once
+  // chart rows exist — Game Props team payloads load async and an empty row set
+  // must not wipe a filter the user just picked.
   useEffect(() => {
     if (competitionFilter === 'all') return;
+    if (!baseChartRows.length || !chartCompetitions.length) return;
     if (!chartCompetitions.some((entry) => entry.group === competitionFilter)) {
-      setCompetitionFilter('all');
+      emitChartContext({ competitionFilter: 'all', tournamentFilter: 'all' });
     }
-  }, [chartCompetitions, competitionFilter]);
+  }, [baseChartRows.length, chartCompetitions, competitionFilter, emitChartContext]);
 
-  // Reset tournament when switching back to all games (club + international).
+  // Clear the tournament sub-filter only when the user switches Club/Intl back to All.
+  // Do not clear when competitionFilter stays "all" and the user picks a tournament
+  // (single-group teams only show the granular competition picker).
   useEffect(() => {
-    if (competitionFilter === 'all') {
-      setTournamentFilter('all');
+    const prevGroup = prevCompetitionFilterRef.current;
+    if (prevGroup !== 'all' && competitionFilter === 'all' && tournamentFilter !== 'all') {
+      emitChartContext({ tournamentFilter: 'all' });
     }
-  }, [competitionFilter]);
+    prevCompetitionFilterRef.current = competitionFilter;
+  }, [competitionFilter, tournamentFilter, emitChartContext]);
 
   // Reset the tournament filter when the chosen tournament is no longer available.
   useEffect(() => {
     if (tournamentFilter === 'all') return;
+    if (!competitionFilteredRows.length || !chartTournaments.length) return;
     if (!chartTournaments.some((entry) => entry.key === tournamentFilter)) {
-      setTournamentFilter('all');
+      emitChartContext({ tournamentFilter: 'all' });
     }
-  }, [chartTournaments, tournamentFilter]);
+  }, [competitionFilteredRows.length, chartTournaments, tournamentFilter, emitChartContext]);
 
   // Fouls committed/suffered have no meaningful "All" view (the two sides are
   // mirror values, so the total is identical). Pin to the selected team instead.
   const noAllPerspective = Boolean(statKey && WORLD_CUP_NO_ALL_PERSPECTIVE_STAT_KEYS.has(statKey));
   useEffect(() => {
+    if (mode !== 'team') return;
     if (noAllPerspective && perspective === 'all') {
-      setPerspective('team');
+      emitChartContext({ perspective: 'team' });
     }
-  }, [noAllPerspective, perspective]);
+  }, [mode, noAllPerspective, perspective, emitChartContext]);
 
   const customTooltip = useCallback(
     (props: any) => <WorldCupChartTooltip {...props} isDark={isDark} statLabel={statConfig.label} isMoneyline={isMoneyline} />,
@@ -4131,7 +4173,11 @@ function WorldCupGameByGameChart({
               label={option.label}
               value={option.id}
               isSelected={statConfig.id === option.id}
-              onSelect={(value) => setSelectedStat(value as WorldCupChartStatId)}
+              onSelect={(value) => {
+                const statId = value as WorldCupChartStatId;
+                const option = availableStats.find((entry) => entry.id === statId);
+                emitChartContext(worldCupChartContextStatPatch(mode, statId, option));
+              }}
               isDark={isDark}
               darker
             />
@@ -4223,7 +4269,7 @@ function WorldCupGameByGameChart({
                     key={option.id}
                     type="button"
                     onClick={() => {
-                      setTimeframe(option.id);
+                      emitChartContext({ timeframe: option.id });
                       setIsTimeframeDropdownOpen(false);
                     }}
                     className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
@@ -4251,7 +4297,7 @@ function WorldCupGameByGameChart({
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => setPerspective(option.id)}
+                    onClick={() => emitChartContext({ perspective: option.id })}
                     className={`px-2 sm:px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
                       perspective === option.id
                         ? 'bg-purple-600 text-white'
@@ -4290,7 +4336,7 @@ function WorldCupGameByGameChart({
                       key={entry.group}
                       type="button"
                       onClick={() => {
-                        setCompetitionFilter(entry.group);
+                        emitChartContext({ competitionFilter: entry.group, tournamentFilter: 'all' });
                         setIsCompetitionDropdownOpen(false);
                       }}
                       className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
@@ -4306,7 +4352,7 @@ function WorldCupGameByGameChart({
                   <button
                     type="button"
                     onClick={() => {
-                      setCompetitionFilter('all');
+                      emitChartContext({ competitionFilter: 'all', tournamentFilter: 'all' });
                       setIsCompetitionDropdownOpen(false);
                     }}
                     className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
@@ -4350,7 +4396,7 @@ function WorldCupGameByGameChart({
                       key={entry.key}
                       type="button"
                       onClick={() => {
-                        setTournamentFilter(entry.key);
+                        emitChartContext({ tournamentFilter: entry.key });
                         setIsTournamentDropdownOpen(false);
                       }}
                       className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
@@ -4366,7 +4412,7 @@ function WorldCupGameByGameChart({
                   <button
                     type="button"
                     onClick={() => {
-                      setTournamentFilter('all');
+                      emitChartContext({ tournamentFilter: 'all' });
                       setIsTournamentDropdownOpen(false);
                     }}
                     className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
@@ -4510,6 +4556,66 @@ function filterWorldCupRowsByTimeframe(
   return sorted.slice(0, frame.count).reverse();
 }
 
+function filterWorldCupRowsByCompetitionContext(
+  rows: Array<Record<string, any>>,
+  data: WorldCupDashboardData | null,
+  competitionFilter: WorldCupChartCompetitionGroup | 'all',
+  tournamentFilter: string | 'all',
+  selectedTeamId: string | null,
+  selectedTeamName: string | null
+) {
+  if (competitionFilter === 'all' && tournamentFilter === 'all') return rows;
+  return rows.filter((row) => {
+    const match = resolveWorldCupMatchForStatRow(
+      row,
+      data?.matches ?? [],
+      data?.playerMatches ?? [],
+      selectedTeamId,
+      selectedTeamName
+    );
+    const competitionTag = deriveWorldCupCompetitionTag(row, match);
+    const competitionGroup = worldCupCompetitionChartGroup(competitionTag);
+    const competitionDetailKey = deriveWorldCupCompetitionDetailKey(row, match);
+    if (competitionFilter !== 'all' && competitionGroup !== competitionFilter) return false;
+    if (tournamentFilter !== 'all' && competitionDetailKey !== tournamentFilter) return false;
+    return true;
+  });
+}
+
+function buildWorldCupFilteredStatRows(opts: {
+  data: WorldCupDashboardData | null;
+  mode: PropsMode;
+  selectedPlayerId: string | null;
+  selectedTeamId: string | null;
+  selectedTeamName: string | null;
+  timeframe: WorldCupChartTimeframe;
+  competitionFilter: WorldCupChartCompetitionGroup | 'all';
+  tournamentFilter: string | 'all';
+  opponentTeam: WorldCupTeamOption | null;
+}): Array<Record<string, any>> {
+  return filterWorldCupRowsByTimeframe(
+    filterWorldCupRowsByCompetitionContext(
+      dedupeWorldCupPlayerStatRowsByGame(
+        mergeWorldCupPlayerStatRows(
+          getWorldCupRowsForMode(opts.data, opts.mode, opts.selectedPlayerId, opts.selectedTeamId)
+        ),
+        opts.data?.matches ?? [],
+        opts.data?.playerMatches ?? [],
+        opts.selectedTeamId,
+        opts.selectedTeamName
+      ),
+      opts.data,
+      opts.competitionFilter,
+      opts.tournamentFilter,
+      opts.selectedTeamId,
+      opts.selectedTeamName
+    ),
+    opts.data,
+    opts.timeframe,
+    opts.opponentTeam
+  );
+}
+
 type WorldCupSupportingStatsProps = {
   data: WorldCupDashboardData | null;
   mode: PropsMode;
@@ -4555,28 +4661,50 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
 }: WorldCupSupportingStatsProps) {
   const [selectedSupportingStat, setSelectedSupportingStat] = useState('');
   const effectiveTeamName = selectedTeamName ?? data?.selectedTeam?.name ?? null;
+  const competitionFilter = chartContext.competitionFilter ?? 'all';
+  const tournamentFilter = chartContext.tournamentFilter ?? 'all';
+  const perspective = chartContext.perspective ?? 'team';
   const rows = useMemo(
     () =>
-      filterWorldCupRowsByTimeframe(
-        dedupeWorldCupPlayerStatRowsByGame(
-          getWorldCupRowsForMode(data, mode, selectedPlayerId, selectedTeamId),
-          data?.matches ?? [],
-          data?.playerMatches ?? [],
-          selectedTeamId,
-          effectiveTeamName
-        ),
+      buildWorldCupFilteredStatRows({
         data,
-        chartContext.timeframe,
-        opponentTeam
-      ),
-    [chartContext.timeframe, data, mode, selectedPlayerId, selectedTeamId, effectiveTeamName, opponentTeam]
+        mode,
+        selectedPlayerId,
+        selectedTeamId,
+        selectedTeamName: effectiveTeamName,
+        timeframe: chartContext.timeframe,
+        competitionFilter,
+        tournamentFilter,
+        opponentTeam,
+      }),
+    [
+      chartContext.timeframe,
+      competitionFilter,
+      tournamentFilter,
+      data,
+      mode,
+      selectedPlayerId,
+      selectedTeamId,
+      effectiveTeamName,
+      opponentTeam,
+    ]
   );
-  // Full team rows (not timeframe-limited) used to detect which supporting
-  // stats are symmetric across every competition the team played.
+  // Team-mode symmetry uses competition-scoped rows so supporting pills match
+  // the active Club / International / tournament filters in Game Props.
   const teamSymmetryRows = useMemo(() => {
     if (mode !== 'team' || !data) return [] as Array<Record<string, any>>;
-    return (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId);
-  }, [mode, data, selectedTeamId]);
+    const base = (data.teamMatchStats ?? []).filter(
+      (row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId
+    );
+    return filterWorldCupRowsByCompetitionContext(
+      base,
+      data,
+      competitionFilter,
+      tournamentFilter,
+      selectedTeamId,
+      effectiveTeamName
+    );
+  }, [mode, data, selectedTeamId, competitionFilter, tournamentFilter, effectiveTeamName]);
 
   const supportingOptions = useMemo(() => {
     const candidates = buildWorldCupSupportingKeys(chartContext.statKey, mode);
@@ -4636,11 +4764,11 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
           selectedTeamId,
           effectiveTeamName
         );
-        return resolveWorldCupTeamStatValue(row, match, statKey, 'team');
+        return resolveWorldCupTeamStatValue(row, match, statKey, mode === 'team' ? perspective : 'team');
       }
       return getWorldCupStatNumber(row, statKey);
     },
-    [mode, data?.matches, data?.playerMatches, selectedTeamId, effectiveTeamName]
+    [mode, data?.matches, data?.playerMatches, selectedTeamId, effectiveTeamName, perspective]
   );
 
   const averagesByStat = useMemo(() => {
@@ -4703,8 +4831,17 @@ const WorldCupSupportingStats = memo(function WorldCupSupportingStats({
   }, [data?.teams, rows, selectedSupportingStat, selectedTeamId, effectiveTeamName, resolveSupportingStatValue]);
 
   const supportingAnimationTrigger = useMemo(
-    () => `${mode}|${chartContext.statKey}|${selectedSupportingStat}|${chartContext.timeframe}`,
-    [mode, chartContext.statKey, selectedSupportingStat, chartContext.timeframe]
+    () =>
+      `${mode}|${chartContext.statKey}|${selectedSupportingStat}|${chartContext.timeframe}|${competitionFilter}|${tournamentFilter}|${perspective}`,
+    [
+      mode,
+      chartContext.statKey,
+      selectedSupportingStat,
+      chartContext.timeframe,
+      competitionFilter,
+      tournamentFilter,
+      perspective,
+    ]
   );
   const lastSupportingAnimationTriggerRef = useRef(supportingAnimationTrigger);
   const shouldAnimateSupportingBars = lastSupportingAnimationTriggerRef.current !== supportingAnimationTrigger;
@@ -10205,9 +10342,21 @@ export function WorldCupPageContent() {
     statKey: 'goals',
     statLabel: 'Goals',
     timeframe: 'last10',
+    competitionFilter: 'all',
+    tournamentFilter: 'all',
+    perspective: 'all',
   });
-  const handleChartContextChange = useCallback((next: WorldCupChartContext) => {
+  const handleChartContextChange = useCallback((patch: Partial<WorldCupChartContext>) => {
     setChartContext((prev) => {
+      const next: WorldCupChartContext = {
+        statId: patch.statId ?? prev.statId,
+        statKey: patch.statKey !== undefined ? patch.statKey : prev.statKey,
+        statLabel: patch.statLabel ?? prev.statLabel,
+        timeframe: patch.timeframe ?? prev.timeframe,
+        competitionFilter: patch.competitionFilter ?? prev.competitionFilter ?? 'all',
+        tournamentFilter: patch.tournamentFilter ?? prev.tournamentFilter ?? 'all',
+        perspective: patch.perspective ?? prev.perspective ?? 'all',
+      };
       if (worldCupChartContextEqual(prev, next)) return prev;
       if (prev.statId !== next.statId) {
         const urlStat = searchParams.get('stat')?.trim();
@@ -10326,7 +10475,9 @@ export function WorldCupPageContent() {
   const selectedPlayerId = selectedPlayer?.id && /^\d+$/.test(selectedPlayer.id) ? selectedPlayer.id : null;
   const selectedTeamNeedsHydration = !selectedTeamId || !/^\d+$/.test(selectedTeamId);
   const activeTeamNeedsHydration = !resolvedActiveTeamId;
-  const hasChartStats = Boolean(worldCupData?.playerMatchStats?.length);
+  const hasChartStats = Boolean(
+    worldCupData?.playerMatchStats?.length || worldCupData?.teamMatchStats?.length
+  );
   const chartContextTeam = useMemo((): WorldCupTeamOption | null => {
     if (activeTeam?.id && /^\d+$/.test(activeTeam.id)) return activeTeam;
     if (!resolvedActiveTeamId) return activeTeam;
@@ -10502,14 +10653,14 @@ export function WorldCupPageContent() {
     if (chartRevealKey === chartRevealKeyRef.current) return;
     chartRevealKeyRef.current = chartRevealKey;
     // Skip the skeleton flash when chart rows are already on screen (cache / prefetch).
-    if (worldCupData?.playerMatchStats?.length) {
+    if (worldCupData?.playerMatchStats?.length || worldCupData?.teamMatchStats?.length) {
       setChartRevealHold(false);
       return;
     }
     setChartRevealHold(true);
     const timer = window.setTimeout(() => setChartRevealHold(false), WC_CHART_REVEAL_HOLD_MS);
     return () => window.clearTimeout(timer);
-  }, [chartRevealKey, worldCupData?.playerMatchStats?.length]);
+  }, [chartRevealKey, worldCupData?.playerMatchStats?.length, worldCupData?.teamMatchStats?.length]);
   const chartAreaLoading =
     !hasChartStats &&
     (chartRevealHold ||
@@ -10599,8 +10750,12 @@ export function WorldCupPageContent() {
   const [selectedWcBookIndex, setSelectedWcBookIndex] = useState(0);
   const [wcCurrentLineValue, setWcCurrentLineValue] = useState<number | null>(null);
   const wcExternalLineValue = useMemo(() => {
-    if (propsMode !== 'player') return undefined;
-    if (wcCurrentLineValue != null && Number.isFinite(wcCurrentLineValue)) return wcCurrentLineValue;
+    if (wcCurrentLineValue != null && Number.isFinite(wcCurrentLineValue)) {
+      return wcCurrentLineValue;
+    }
+    if (propsMode !== 'player') {
+      return chartContext.statId === 'moneyline' ? 0.5 : 0.5;
+    }
     if (!wcPlayerOddsBooks.length || !WC_PLAYER_ODDS_STATS.has(chartContext.statId)) return 0.5;
     const book = wcPlayerOddsBooks[selectedWcBookIndex];
     if (!book) return 0.5;
@@ -10724,9 +10879,6 @@ export function WorldCupPageContent() {
     if (!wcPlayerOddsBooks.length) {
       setSelectedWcBookIndex(0);
       preferredWcBookAppliedRef.current = false;
-      if (!hasIncomingWcBookOrLineRef.current) {
-        setWcCurrentLineValue(null);
-      }
       return;
     }
   }, [wcPlayerOddsBooks]);
@@ -10801,9 +10953,28 @@ export function WorldCupPageContent() {
     ) {
       return;
     }
+    if (
+      !contextChanged &&
+      ignoreNextWcTransientLineRef.current &&
+      wcCurrentLineValue != null &&
+      Number.isFinite(wcCurrentLineValue)
+    ) {
+      ignoreNextWcTransientLineRef.current = false;
+      return;
+    }
     ignoreNextWcTransientLineRef.current = true;
     setWcCurrentLineValue(n);
   }, [propsMode, chartContext.statId, wcPlayerOddsBooks, selectedWcBookIndex, wcCurrentLineValue]);
+
+  // Game Props: default the reference line when the active team stat changes.
+  useEffect(() => {
+    if (propsMode !== 'team') return;
+    const currentContext = chartContext.statId;
+    if (lastWcAutoLineContextRef.current === currentContext) return;
+    lastWcAutoLineContextRef.current = currentContext;
+    ignoreNextWcTransientLineRef.current = true;
+    setWcCurrentLineValue(currentContext === 'moneyline' ? 0.5 : 0.5);
+  }, [propsMode, chartContext.statId]);
 
   // When the user edits the line input, switch to a book that offers that line when possible.
   useEffect(() => {
@@ -10829,8 +11000,18 @@ export function WorldCupPageContent() {
 
   const handleSelectWcOddsLine = useCallback((lineValue: number) => {
     ignoreNextWcTransientLineRef.current = true;
+    lastWcAutoLineContextRef.current = chartContext.statId;
     setWcCurrentLineValue(lineValue);
-  }, []);
+  }, [chartContext.statId]);
+  const handleWcLineChange = useCallback(
+    (value: number) => {
+      if (!Number.isFinite(value)) return;
+      ignoreNextWcTransientLineRef.current = true;
+      lastWcAutoLineContextRef.current = chartContext.statId;
+      setWcCurrentLineValue(value);
+    },
+    [chartContext.statId]
+  );
   const skeletonBar = isDark ? 'bg-gray-800' : 'bg-gray-200';
 
   const urlPlayerResolveKey = [
@@ -10870,7 +11051,7 @@ export function WorldCupPageContent() {
     preferredWcBookAppliedRef.current = false;
     if (urlOpponentQuery) setFixtureOpponentName(urlOpponentQuery);
     if (urlStatQuery) {
-      setChartContext((prev) => chartContextFromStatParam(urlStatQuery, prev.timeframe));
+      setChartContext((prev) => chartContextFromStatParam(urlStatQuery, prev.timeframe, prev));
     }
     if (urlLineQuery) {
       const line = Number.parseFloat(urlLineQuery);
@@ -11031,7 +11212,7 @@ export function WorldCupPageContent() {
       if (urlOpponentFromPage) setFixtureOpponentName(urlOpponentFromPage);
       const urlStatFromPage = pageUrl.searchParams.get('stat')?.trim() || null;
       if (urlStatFromPage) {
-        setChartContext((prev) => chartContextFromStatParam(urlStatFromPage, prev.timeframe));
+        setChartContext((prev) => chartContextFromStatParam(urlStatFromPage, prev.timeframe, prev));
       }
     };
 
@@ -11120,12 +11301,18 @@ export function WorldCupPageContent() {
       if (storedChartRaw) {
         const parsed = JSON.parse(storedChartRaw) as Partial<WorldCupChartContext> | null;
         if (parsed?.timeframe) {
+          const restoredFilters = {
+            competitionFilter: parsed.competitionFilter ?? 'all',
+            tournamentFilter: parsed.tournamentFilter ?? 'all',
+            perspective: parsed.perspective ?? 'all',
+          };
           if (restoredMode === 'team') {
             setChartContext({
               statId: parsed.statId ?? 'moneyline',
               statKey: parsed.statKey ?? 'moneyline',
               statLabel: parsed.statLabel ?? 'Money Line',
               timeframe: parsed.timeframe,
+              ...restoredFilters,
             });
           } else if (parsed.statId) {
             setChartContext({
@@ -11133,6 +11320,7 @@ export function WorldCupPageContent() {
               statKey: parsed.statKey ?? parsed.statId,
               statLabel: parsed.statLabel ?? String(parsed.statId),
               timeframe: parsed.timeframe,
+              ...restoredFilters,
             });
           }
         }
@@ -11591,9 +11779,18 @@ export function WorldCupPageContent() {
         statKey: 'moneyline',
         statLabel: 'Money Line',
         timeframe: 'last10',
+        competitionFilter: 'all',
+        tournamentFilter: 'all',
+        perspective: 'all',
       });
     } else {
-      setChartContext((ctx) => ({ ...ctx, timeframe: 'last10' }));
+      setChartContext((ctx) => ({
+        ...ctx,
+        timeframe: 'last10',
+        competitionFilter: 'all',
+        tournamentFilter: 'all',
+        perspective: 'all',
+      }));
     }
 
     prevPropsModeRef.current = propsMode;
@@ -11605,15 +11802,24 @@ export function WorldCupPageContent() {
       prevTeamContextIdRef.current = '';
       return;
     }
-    const current = activeTeamId ?? '';
+    const current = worldCupGamePropsTeamContextKey(activeTeam, teamOptions);
     const prev = prevTeamContextIdRef.current;
-    if (prev && prev !== current) {
+    if (
+      prev &&
+      prev !== current &&
+      !worldCupGamePropsTeamContextKeysEquivalent(prev, current, teamOptions)
+    ) {
       loadedDashboardKeyRef.current = null;
       setWorldCupData(null);
       setWorldCupError(null);
+      setChartContext((ctx) => ({
+        ...ctx,
+        competitionFilter: 'all',
+        tournamentFilter: 'all',
+      }));
     }
     prevTeamContextIdRef.current = current;
-  }, [propsMode, activeTeamId]);
+  }, [propsMode, activeTeam, teamOptions]);
 
   // Keep selected team in sync with the active player once API teams are loaded.
   // Skip while teamOptions are still placeholders — resolving against WORLD_CUP_TEAMS
@@ -12381,7 +12587,7 @@ export function WorldCupPageContent() {
                           onSelectBookIndex={setSelectedWcBookIndex}
                           externalLineValue={wcExternalLineValue}
                           currentLineValue={wcCurrentLineValue}
-                          onExternalLineChange={setWcCurrentLineValue}
+                          onExternalLineChange={handleWcLineChange}
                           onSelectOddsLine={handleSelectWcOddsLine}
                         />
                       )}
