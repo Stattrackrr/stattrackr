@@ -1356,6 +1356,37 @@ function worldCupGamePropsTeamContextKeysEquivalent(
   return false;
 }
 
+/** Resolve a BDL numeric team id for team-form API calls (Compare / Team Form panels). */
+function resolveWorldCupNumericTeamId(
+  team: WorldCupTeamOption | null,
+  teamOptions: WorldCupTeamOption[],
+  featureMatch?: Record<string, any> | null
+): string | null {
+  if (!team) return null;
+  if (/^\d+$/.test(team.id)) return team.id;
+  const fromOptions =
+    resolveStoredWorldCupTeam(team, teamOptions) ?? resolveWorldCupTeamByName(team.name, teamOptions);
+  if (fromOptions?.id && /^\d+$/.test(fromOptions.id)) return fromOptions.id;
+  if (featureMatch) {
+    const homeId = featureMatch.homeTeam?.id != null ? String(featureMatch.homeTeam.id) : null;
+    const awayId = featureMatch.awayTeam?.id != null ? String(featureMatch.awayTeam.id) : null;
+    const homeName = String(featureMatch.homeTeam?.name || featureMatch.homeLabel || '');
+    const awayName = String(featureMatch.awayTeam?.name || featureMatch.awayLabel || '');
+    if (homeId && /^\d+$/.test(homeId) && worldCupTeamsMatch(team.name, homeName)) return homeId;
+    if (awayId && /^\d+$/.test(awayId) && worldCupTeamsMatch(team.name, awayName)) return awayId;
+  }
+  return null;
+}
+
+function filterWorldCupTeamStatRowsByTeamId(
+  rows: Array<Record<string, any>> | undefined,
+  teamId: string | number | null | undefined
+): Array<Record<string, any>> {
+  if (!rows?.length || teamId == null) return [];
+  const key = String(teamId);
+  return rows.filter((row) => String(row.team_id ?? '') === key);
+}
+
 /** Game Props needs the full cross-competition team history, not a single WC row. */
 function countTeamGamePropsRows(data: WorldCupDashboardData, teamId: string): number {
   return (data.teamMatchStats ?? []).filter((row) => String(row.team_id ?? '') === teamId).length;
@@ -6810,16 +6841,21 @@ function formatWorldCupFormValue(value: number | null): string {
   return value.toFixed(2);
 }
 
-function useWorldCupTeamForm(teamId: string | null, opponentId: string | null, competition: Competition) {
+function useWorldCupTeamForm(
+  teamId: string | null,
+  opponentId: string | null,
+  /** Cross-source team form always uses `all`; page competition filters use source-specific ids. */
+  teamFormCompetition: Competition = 'all'
+) {
   const [data, setData] = useState<WorldCupTeamFormResponse | null>(null);
   const [opponentData, setOpponentData] = useState<WorldCupTeamFormResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [opponentLoading, setOpponentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!teamId || !/^\d+$/.test(teamId)) {
       setData(null);
-      setOpponentData(null);
       setLoading(false);
       setError(null);
       return;
@@ -6830,7 +6866,7 @@ function useWorldCupTeamForm(teamId: string | null, opponentId: string | null, c
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ teamForm: '1', teamId, competition });
+    const params = new URLSearchParams({ teamForm: '1', teamId, competition: teamFormCompetition });
     if (opponentId && /^\d+$/.test(opponentId)) params.set('opponentId', opponentId);
 
     fetchWorldCupDashboardJson<WorldCupTeamFormResponse>(`/api/world-cup/dashboard?${params.toString()}`, {
@@ -6854,21 +6890,24 @@ function useWorldCupTeamForm(teamId: string | null, opponentId: string | null, c
       cancelled = true;
       controller.abort();
     };
-  }, [teamId, opponentId, competition]);
+  }, [teamId, opponentId, teamFormCompetition]);
 
   useEffect(() => {
     if (!opponentId || !/^\d+$/.test(opponentId)) {
       setOpponentData(null);
+      setOpponentLoading(false);
       return;
     }
     if ((data?.opponentAll?.length ?? 0) > 0 || (data?.opponentRecent?.length ?? 0) > 0) {
       setOpponentData(null);
+      setOpponentLoading(false);
       return;
     }
 
     let cancelled = false;
     const controller = new AbortController();
-    const params = new URLSearchParams({ teamForm: '1', teamId: opponentId, competition });
+    setOpponentLoading(true);
+    const params = new URLSearchParams({ teamForm: '1', teamId: opponentId, competition: teamFormCompetition });
 
     fetchWorldCupDashboardJson<WorldCupTeamFormResponse>(`/api/world-cup/dashboard?${params.toString()}`, {
       signal: controller.signal,
@@ -6879,15 +6918,18 @@ function useWorldCupTeamForm(teamId: string | null, opponentId: string | null, c
       })
       .catch(() => {
         if (!cancelled) setOpponentData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setOpponentLoading(false);
       });
 
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [competition, data?.opponentAll, data?.opponentRecent, opponentId]);
+  }, [teamFormCompetition, data?.opponentAll, data?.opponentRecent, opponentId]);
 
-  return { data, opponentData, loading, error };
+  return { data, opponentData, loading: loading || opponentLoading, error };
 }
 
 // Map the active competition view to a short tag for the client-side fallback
@@ -8045,6 +8087,8 @@ function WorldCupTeamComparisonCard({
   isDark,
   selectedTeam,
   opponentTeam,
+  selectedTeamNumericId,
+  opponentTeamNumericId,
   data,
   opponentData,
   dashboardData,
@@ -8055,6 +8099,8 @@ function WorldCupTeamComparisonCard({
   isDark: boolean;
   selectedTeam: WorldCupTeamOption | null;
   opponentTeam: WorldCupTeamOption | null;
+  selectedTeamNumericId: string | null;
+  opponentTeamNumericId: string | null;
   data: WorldCupTeamFormResponse | null;
   opponentData?: WorldCupTeamFormResponse | null;
   dashboardData?: WorldCupDashboardData | null;
@@ -8064,35 +8110,63 @@ function WorldCupTeamComparisonCard({
 }) {
   const statsByPair = useMemo(() => buildWorldCupStatsByPair(data?.teamMatchStats ?? []), [data?.teamMatchStats]);
   const opponentStatsByPair = useMemo(
-    () => buildWorldCupStatsByPair(opponentData?.teamMatchStats ?? data?.teamMatchStats ?? []),
-    [data?.teamMatchStats, opponentData?.teamMatchStats]
+    () =>
+      buildWorldCupStatsByPair(
+        opponentData?.teamMatchStats ??
+          filterWorldCupTeamStatRowsByTeamId(data?.teamMatchStats, opponentTeamNumericId)
+      ),
+    [data?.teamMatchStats, opponentData?.teamMatchStats, opponentTeamNumericId]
   );
   const dashboardMatches = useMemo(
     () => [...(dashboardData?.matches ?? []), ...(dashboardData?.playerMatches ?? [])],
     [dashboardData?.matches, dashboardData?.playerMatches]
+  );
+  const opponentDashboardMatches = useMemo(() => {
+    if (opponentData?.teamMatches?.length) return opponentData.teamMatches;
+    if (data?.opponentMatches?.length) return data.opponentMatches;
+    return dashboardMatches;
+  }, [data?.opponentMatches, dashboardMatches, opponentData?.teamMatches]);
+  const selectedDashboardStatRows = useMemo(
+    () =>
+      filterWorldCupTeamStatRowsByTeamId(
+        dashboardData?.teamMatchStats,
+        selectedTeamNumericId ?? data?.teamId ?? null
+      ),
+    [dashboardData?.teamMatchStats, selectedTeamNumericId, data?.teamId]
+  );
+  const opponentDashboardStatRows = useMemo(
+    () =>
+      opponentData?.teamMatchStats?.length
+        ? opponentData.teamMatchStats
+        : filterWorldCupTeamStatRowsByTeamId(data?.teamMatchStats, opponentTeamNumericId),
+    [data?.teamMatchStats, opponentData?.teamMatchStats, opponentTeamNumericId]
   );
 
   // Compare uses the full all-time history (every ingested competition), not the last 5.
   const selectedGames = useMemo<WorldCupRecentFormGame[]>(
     () =>
       resolveWorldCupCompareGames({
-        teamId: selectedTeam?.id ?? data?.teamId ?? null,
+        teamId: selectedTeamNumericId ?? selectedTeam?.id ?? data?.teamId ?? null,
         apiAll: data?.teamAll,
         apiRecent: data?.teamRecent,
         apiMatches: data?.teamMatches,
-        apiNumericTeamId: data?.teamId ?? null,
+        apiNumericTeamId: selectedTeamNumericId ? Number(selectedTeamNumericId) : data?.teamId ?? null,
         apiStatsByPair: statsByPair,
-        dashboardStatRows: dashboardData?.teamMatchStats,
+        dashboardStatRows: selectedDashboardStatRows.length
+          ? selectedDashboardStatRows
+          : dashboardData?.teamMatchStats,
         dashboardMatches,
         competition,
       }),
     [
+      selectedTeamNumericId,
       selectedTeam?.id,
       data?.teamAll,
       data?.teamRecent,
       data?.teamMatches,
       data?.teamId,
       statsByPair,
+      selectedDashboardStatRows,
       dashboardData?.teamMatchStats,
       dashboardMatches,
       competition,
@@ -8101,18 +8175,24 @@ function WorldCupTeamComparisonCard({
 
   const opponentGames = useMemo<WorldCupRecentFormGame[]>(() => {
     if (!opponentTeam) return [];
-    const opponentNumericId = opponentData?.teamId ?? data?.opponentId ?? null;
+    const opponentNumericId =
+      opponentTeamNumericId ??
+      (opponentData?.teamId != null ? String(opponentData.teamId) : null) ??
+      (data?.opponentId != null ? String(data.opponentId) : null);
     return resolveWorldCupCompareGames({
-      teamId: opponentTeam.id,
+      teamId: opponentNumericId ?? opponentTeam.id,
       apiAll: data?.opponentAll?.length ? data.opponentAll : opponentData?.teamAll,
       apiRecent: data?.opponentRecent?.length ? data.opponentRecent : opponentData?.teamRecent,
       apiMatches: data?.opponentMatches?.length ? data.opponentMatches : opponentData?.teamMatches,
-      apiNumericTeamId: opponentNumericId,
+      apiNumericTeamId: opponentNumericId ? Number(opponentNumericId) : null,
       apiStatsByPair: opponentStatsByPair,
+      dashboardStatRows: opponentDashboardStatRows,
+      dashboardMatches: opponentDashboardMatches,
       competition,
     });
   }, [
     opponentTeam,
+    opponentTeamNumericId,
     data?.opponentAll,
     data?.opponentRecent,
     data?.opponentMatches,
@@ -8122,6 +8202,8 @@ function WorldCupTeamComparisonCard({
     opponentData?.teamMatches,
     opponentData?.teamId,
     opponentStatsByPair,
+    opponentDashboardStatRows,
+    opponentDashboardMatches,
     competition,
   ]);
 
@@ -9468,20 +9550,31 @@ function WorldCupTeamFormHomeAwayPanel({
   isDark,
   selectedTeam,
   opponentTeam,
+  teamOptions,
   competition,
   dashboardData,
 }: {
   isDark: boolean;
   selectedTeam: WorldCupTeamOption | null;
   opponentTeam: WorldCupTeamOption | null;
+  teamOptions: WorldCupTeamOption[];
   competition: Competition;
   dashboardData?: WorldCupDashboardData | null;
 }) {
   const [tab, setTab] = useState<WorldCupTeamFormTab>('compare');
-  const teamIdParam = selectedTeam?.id && /^\d+$/.test(selectedTeam.id) ? selectedTeam.id : null;
-  const opponentIdParam = opponentTeam?.id && /^\d+$/.test(opponentTeam.id) ? opponentTeam.id : null;
+  const featureMatch = dashboardData?.featureMatch ?? null;
+  const teamIdParam = useMemo(
+    () => resolveWorldCupNumericTeamId(selectedTeam, teamOptions, featureMatch),
+    [selectedTeam, teamOptions, featureMatch]
+  );
+  const opponentIdParam = useMemo(
+    () => resolveWorldCupNumericTeamId(opponentTeam, teamOptions, featureMatch),
+    [opponentTeam, teamOptions, featureMatch]
+  );
 
-  const { data, opponentData, loading, error } = useWorldCupTeamForm(teamIdParam, opponentIdParam, competition);
+  // Compare + Team Form need cross-source history; the page competition filter
+  // uses source-specific ids (Euros / Nations League) and breaks BDL team ids.
+  const { data, opponentData, loading, error } = useWorldCupTeamForm(teamIdParam, opponentIdParam, 'all');
 
   const inactiveTab =
     'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700';
@@ -9524,6 +9617,8 @@ function WorldCupTeamFormHomeAwayPanel({
             isDark={isDark}
             selectedTeam={selectedTeam}
             opponentTeam={opponentTeam}
+            selectedTeamNumericId={teamIdParam}
+            opponentTeamNumericId={opponentIdParam}
             data={data}
             opponentData={opponentData}
             dashboardData={dashboardData}
@@ -12856,6 +12951,7 @@ export function WorldCupPageContent() {
                       isDark={isDark}
                       selectedTeam={chartContextTeam}
                       opponentTeam={opponentTeam}
+                      teamOptions={teamOptions}
                       competition={competition}
                       dashboardData={worldCupData}
                     />
