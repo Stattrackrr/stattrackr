@@ -30,6 +30,13 @@ import {
   worldCupDashboardRequestKey,
 } from '@/lib/worldCupPlayerAliases';
 import { getWorldCupFlagUrl, resolveWorldCupFlagCode, resolveBestWorldCupFlagUrl, FIFA_NAME_TO_CODE, worldCupTeamsMatch } from '@/lib/worldCupFlags';
+import {
+  applyWorldCupPlayerShotsToStatRows,
+  buildWorldCupPlayerShotStatsByMatch,
+  playerDashboardNeedsShotEventRefresh,
+  readWorldCupPlayerShotCountFromFields,
+  resolveWorldCupPlayerShotsTotalFromRow,
+} from '@/lib/worldCupPlayerShots';
 import { americanToDecimal, DEFAULT_ODDS_FORMAT } from '@/lib/currencyUtils';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import {
@@ -334,7 +341,18 @@ type WorldCupDashboardData = {
   dvpBundles?: Record<string, WorldCupDvpResponse>;
 };
 
-function normalizeWorldCupDashboardData(data: Partial<WorldCupDashboardData>): WorldCupDashboardData {
+function normalizeWorldCupDashboardData(
+  data: Partial<WorldCupDashboardData>,
+  playerIdHint?: string | null
+): WorldCupDashboardData {
+  const rawPlayerStats = data.playerMatchStats ?? [];
+  const playerId =
+    playerIdHint ??
+    (rawPlayerStats.length > 0 ? String(rawPlayerStats[0]?.player_id ?? '') || null : null);
+  const playerMatchStats = data.playerShots?.length
+    ? applyWorldCupPlayerShotsToStatRows(rawPlayerStats, data.playerShots, playerId)
+    : rawPlayerStats;
+
   return {
     playerChartOnly: data.playerChartOnly,
     season: data.season ?? 2026,
@@ -347,7 +365,7 @@ function normalizeWorldCupDashboardData(data: Partial<WorldCupDashboardData>): W
     selectedTeamMatches: data.selectedTeamMatches ?? [],
     rosters: data.rosters ?? [],
     teamMatchStats: data.teamMatchStats ?? [],
-    playerMatchStats: data.playerMatchStats ?? [],
+    playerMatchStats,
     lineups: data.lineups ?? [],
     lineupMeta: data.lineupMeta,
     lineupPlayerPhotos: data.lineupPlayerPhotos,
@@ -1490,10 +1508,7 @@ function worldCupStatRowMergeKey(row: Record<string, any>): string {
 }
 
 function resolveWorldCupPlayerShotsTotal(row: Record<string, any>): number | null {
-  const direct = toNumber(row.shots_total) ?? toNumber(row.shots);
-  const derived = toNumber(row.derived_shots_total) ?? toNumber(row.total_shots);
-  if (direct != null && derived != null) return Math.max(direct, derived);
-  return direct ?? derived;
+  return resolveWorldCupPlayerShotsTotalFromRow(row);
 }
 
 function mergeWorldCupPlayerStatRowFields(
@@ -1502,9 +1517,13 @@ function mergeWorldCupPlayerStatRowFields(
 ): Record<string, any> {
   if (!secondary || primary === secondary) return primary;
   const merged = { ...primary };
-  const primaryShots = resolveWorldCupPlayerShotsTotal(primary);
-  const secondaryShots = resolveWorldCupPlayerShotsTotal(secondary);
-  if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
+  const primarySource = String(primary.source ?? '').trim().toLowerCase();
+  const secondarySource = String(secondary.source ?? '').trim().toLowerCase();
+  const protectBdlShots = primarySource === 'bdl' && secondarySource !== 'bdl';
+
+  const primaryShots = readWorldCupPlayerShotCountFromFields(primary);
+  const secondaryShots = readWorldCupPlayerShotCountFromFields(secondary);
+  if (!protectBdlShots && (secondaryShots ?? -1) > (primaryShots ?? -1)) {
     for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
       if (secondary[key] != null) merged[key] = secondary[key];
     }
@@ -1524,6 +1543,7 @@ function mergeWorldCupPlayerStatRowFields(
     'yellow_cards',
     'red_cards',
   ]) {
+    if (protectBdlShots && key === 'shots_on_target') continue;
     if (merged[key] == null && secondary[key] != null) merged[key] = secondary[key];
   }
   return merged;
@@ -1593,8 +1613,9 @@ function scoreWorldCupStatRowForDedupe(
   if (source === 'bdl') score += 200;
   else if (source === 'api-football' || source === 'statsbomb') score += 100;
   if (match && worldCupStatRowTeamInMatch(row, match, selectedTeamId, selectedTeamName)) score += 150;
-  const shots = resolveWorldCupPlayerShotsTotal(row);
-  if (shots != null && shots > 0) score += 30 + Math.min(shots, 10);
+  const shots = readWorldCupPlayerShotCountFromFields(row);
+  const sot = getWorldCupStatNumber(row, 'shots_on_target');
+  if (shots != null && shots > 0 && (sot == null || shots !== sot)) score += 30 + Math.min(shots, 10);
   if (getWorldCupStatNumber(row, 'goals') != null) score += 20;
   if (getWorldCupStatNumber(row, 'minutes_played') != null) score += 10;
   return score;
@@ -1691,6 +1712,10 @@ function mergeWorldCupDashboardPayload(
     playerMatchStats: mergedPlayerStats,
     matches: mergedMatches,
     playerMatches: mergedPlayerMatches,
+    playerShots:
+      (normalizedNext.playerShots?.length ?? 0) > 0
+        ? normalizedNext.playerShots
+        : prev.playerShots,
     teamMatchStats:
       (normalizedNext.teamMatchStats?.length ?? 0) > 0
         ? normalizedNext.teamMatchStats
@@ -3979,16 +4004,26 @@ function WorldCupGameByGameChart({
   const baseChartRows = useMemo(() => {
     if (!data || !statKey) return [];
     const countryLookup = buildWorldCupTeamCountryLookup(data.teams ?? []);
-    const sourceRows = dedupeWorldCupPlayerStatRowsByGame(
-      mergeWorldCupPlayerStatRows(
-        mode === 'player'
-          ? getWorldCupPlayerStatRows(data.playerMatchStats ?? [], selectedPlayerId)
-          : (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId)
+    const shotsByMatch = buildWorldCupPlayerShotStatsByMatch(data.playerShots, selectedPlayerId);
+    const playerStatsWithShots = applyWorldCupPlayerShotsToStatRows(
+      data.playerMatchStats ?? [],
+      shotsByMatch.totals,
+      shotsByMatch.onTarget
+    );
+    const sourceRows = applyWorldCupPlayerShotsToStatRows(
+      dedupeWorldCupPlayerStatRowsByGame(
+        mergeWorldCupPlayerStatRows(
+          mode === 'player'
+            ? getWorldCupPlayerStatRows(playerStatsWithShots, selectedPlayerId)
+            : (data.teamMatchStats ?? []).filter((row) => !selectedTeamId || String(row.team_id ?? '') === selectedTeamId)
+        ),
+        data.matches ?? [],
+        data.playerMatches ?? [],
+        selectedTeamId,
+        selectedTeamName
       ),
-      data.matches ?? [],
-      data.playerMatches ?? [],
-      selectedTeamId,
-      selectedTeamName
+      shotsByMatch.totals,
+      shotsByMatch.onTarget
     );
 
     const rows = sourceRows
@@ -4081,8 +4116,14 @@ function WorldCupGameByGameChart({
           value,
           outcome,
           penaltyShootout,
-          gameDate: typeof match?.datetime === 'string' ? match.datetime : '',
-          gameTimestamp: Date.parse(String(match?.datetime || '')) || 0,
+          gameDate:
+            typeof match?.datetime === 'string'
+              ? match.datetime
+              : String(row.match_date ?? row.date ?? row.game_date ?? ''),
+          gameTimestamp:
+            Date.parse(
+              String(match?.datetime ?? row.match_date ?? row.date ?? row.game_date ?? '')
+            ) || 0,
           matchLabel: match
             ? `${match.homeLabel || 'TBD'} vs ${match.awayLabel || 'TBD'}`
             : `Match ${String(row.match_id ?? row.source_match_id ?? '') || '—'}`,
@@ -4097,7 +4138,14 @@ function WorldCupGameByGameChart({
         if (!selectedTeamName) return true;
         return !worldCupTeamsMatch(selectedTeamName, row.opponent);
       })
-      .sort((a, b) => a.gameTimestamp - b.gameTimestamp);
+      .sort((a, b) => {
+        const aTs = a.gameTimestamp || 0;
+        const bTs = b.gameTimestamp || 0;
+        if (aTs === 0 && bTs === 0) return 0;
+        if (aTs === 0) return 1;
+        if (bTs === 0) return -1;
+        return aTs - bTs;
+      });
 
     const byXKey = new Map<string, (typeof rows)[number]>();
     for (const row of rows) {
@@ -6165,8 +6213,38 @@ function renderWorldCupOpponentRankBadge(rank: number | null, totalOpponents: nu
 }
 
 function isCompletedWorldCupMatchStatus(status: unknown): boolean {
-  const normalized = String(status ?? 'completed').toLowerCase();
+  const normalized = String(status ?? '').trim().toLowerCase();
+  if (!normalized) return false;
   return normalized === 'completed' || normalized === 'finished' || normalized === 'ft';
+}
+
+function isWorldCupFinalsCompletedPlayerRow(
+  row: Record<string, any>,
+  match: Record<string, any> | undefined
+): boolean {
+  const status = match?.status ?? row.match_status ?? row.status;
+  if (status != null && String(status).trim() !== '') {
+    if (!isCompletedWorldCupMatchStatus(status)) return false;
+  } else {
+    const datetime =
+      match?.datetime ?? match?.match_date ?? row.match_date ?? row.date ?? row.datetime;
+    if (!datetime) return false;
+    const ms = Date.parse(String(datetime));
+    if (!Number.isFinite(ms) || ms > Date.now()) return false;
+  }
+  return deriveWorldCupCompetitionTag(row, match) === 'WC';
+}
+
+function isWorldCup2026CompletedPlayerRow(
+  row: Record<string, any>,
+  match: Record<string, any> | undefined
+): boolean {
+  if (!isWorldCupFinalsCompletedPlayerRow(row, match)) return false;
+  const season = toNumber(row.season ?? match?.season);
+  if (season != null) return season >= 2026;
+  const datetime = match?.datetime ?? match?.match_date ?? row.match_date ?? row.datetime;
+  if (!datetime) return false;
+  return new Date(String(datetime)).getUTCFullYear() >= 2026;
 }
 
 function buildWc2026MatchIdSet(
@@ -6188,36 +6266,25 @@ function buildWc2026MatchIdSet(
   return ids;
 }
 
-function isWorldCupFinalsCompletedPlayerRow(
-  row: Record<string, any>,
-  match: Record<string, any> | undefined
-): boolean {
-  if (match?.status && !isCompletedWorldCupMatchStatus(match.status)) return false;
-  return deriveWorldCupCompetitionTag(row, match) === 'WC';
-}
-
-function isWorldCup2026CompletedPlayerRow(
-  row: Record<string, any>,
-  match: Record<string, any> | undefined
-): boolean {
-  if (!isWorldCupFinalsCompletedPlayerRow(row, match)) return false;
-  const season = toNumber(row.season ?? match?.season);
-  if (season != null) return season >= 2026;
-  const datetime = match?.datetime ?? match?.match_date ?? row.match_date ?? row.datetime;
-  if (!datetime) return false;
-  return new Date(String(datetime)).getUTCFullYear() >= 2026;
-}
-
 function filterPlayerVsTeamRows(
   rows: Array<Record<string, any>>,
   playerId: string | null,
   playerName: string | null,
-  matchLookup: Map<string, Record<string, any>>,
+  matches: Array<Record<string, any>>,
+  playerMatches: Array<Record<string, any>>,
+  selectedTeamId: string | null,
+  selectedTeamName: string | null,
   opts?: { editionYear?: number; matchIds?: Set<string> }
 ): Array<Record<string, any>> {
+  const matchLookup = buildWorldCupMatchLookup(matches, playerMatches);
+  const resolveRowMatch = (row: Record<string, any>) =>
+    matchLookup.get(String(row.match_id ?? '')) ??
+    matchLookup.get(String(row.source_match_id ?? '')) ??
+    resolveWorldCupMatchForStatRow(row, matches, playerMatches, selectedTeamId, selectedTeamName);
+
   const rowMatchesEdition = (row: Record<string, any>, match: Record<string, any> | undefined) => {
     if (opts?.matchIds?.size) {
-      const matchId = String(row.match_id ?? '');
+      const matchId = String(row.match_id ?? row.source_match_id ?? '');
       if (!matchId || !opts.matchIds.has(matchId)) return false;
       return isWorldCupFinalsCompletedPlayerRow(row, match);
     }
@@ -6225,8 +6292,29 @@ function filterPlayerVsTeamRows(
       ? isWorldCup2026CompletedPlayerRow(row, match)
       : isWorldCupFinalsCompletedPlayerRow(row, match);
   };
-  return resolvePlayerScopedStatRows(rows, playerId, playerName).filter((row) => {
-    return rowMatchesEdition(row, matchLookup.get(String(row.match_id ?? '')));
+
+  const filtered = resolvePlayerScopedStatRows(rows, playerId, playerName).filter((row) =>
+    rowMatchesEdition(row, resolveRowMatch(row))
+  );
+
+  const countryLookup = buildWorldCupTeamCountryLookup([]);
+  return dedupeWorldCupPlayerStatRowsByGame(
+    filtered,
+    matches,
+    playerMatches,
+    selectedTeamId,
+    selectedTeamName
+  ).filter((row) => {
+    if (!selectedTeamName) return true;
+    const match = resolveRowMatch(row);
+    const { opponentLabel } = resolveWorldCupPlayerChartContext(
+      row,
+      match,
+      selectedTeamId,
+      countryLookup,
+      selectedTeamName
+    );
+    return !worldCupTeamsMatch(selectedTeamName, opponentLabel);
   });
 }
 
@@ -6484,10 +6572,13 @@ function WorldCupPlayerTeamSharePanel({
         playerMatchStats,
         selectedPlayerId,
         selectedPlayer?.name ?? null,
-        matchLookup,
+        matches,
+        playerMatches,
+        teamId,
+        teamName,
         { editionYear: 2026, matchIds: wc2026MatchIds }
       ),
-    [playerMatchStats, selectedPlayerId, selectedPlayer?.name, matchLookup, wc2026MatchIds]
+    [playerMatchStats, selectedPlayerId, selectedPlayer?.name, matches, playerMatches, teamId, teamName, wc2026MatchIds]
   );
 
   const teamRows = useMemo(() => {
@@ -6695,21 +6786,28 @@ function WorldCupPlayerVsTeamPanel({
     [matches, playerMatches]
   );
 
-  const matchLookup = useMemo(() => {
-    const allMatches = [...matches, ...playerMatches];
-    return new Map(allMatches.map((match) => [String(match.id), match]));
-  }, [matches, playerMatches]);
-
   const playerRows = useMemo(
     () =>
       filterPlayerVsTeamRows(
         playerMatchStats,
         selectedPlayerId,
         selectedPlayer?.name ?? null,
-        matchLookup,
+        matches,
+        playerMatches,
+        selectedTeam?.id ?? null,
+        selectedTeam?.name ?? null,
         { editionYear: 2026, matchIds: wc2026MatchIds }
       ),
-    [playerMatchStats, selectedPlayerId, selectedPlayer?.name, matchLookup, wc2026MatchIds]
+    [
+      playerMatchStats,
+      selectedPlayerId,
+      selectedPlayer?.name,
+      matches,
+      playerMatches,
+      selectedTeam?.id,
+      selectedTeam?.name,
+      wc2026MatchIds,
+    ]
   );
 
   const teamSlug = useMemo(() => resolveWorldCupTeamSlug(selectedTeam), [selectedTeam]);
@@ -12267,6 +12365,7 @@ export function WorldCupPageContent() {
         typeof playerIdForRequest === 'string' &&
         /^\d+$/.test(playerIdForRequest) &&
         (worldCupData.playerChartOnly ||
+          playerDashboardNeedsShotEventRefresh(worldCupData, playerIdForRequest) ||
           !hasFullPlayerPropsData(worldCupData, playerIdForRequest, selectedPlayer?.name) ||
           !hasFullPlayerDashboardPanelData(worldCupData));
       if (!playerPayloadIncomplete) {
@@ -12311,6 +12410,8 @@ export function WorldCupPageContent() {
           ...prev,
           ...payload,
           playerChartOnly: true,
+          playerShots:
+            (payload.playerShots?.length ?? 0) > 0 ? payload.playerShots : prev.playerShots,
           playerMatchStats: mergeWorldCupPlayerStatRows(prev.playerMatchStats ?? [], next.playerMatchStats ?? []),
           matches: mergeWorldCupMatchRows(prev.matches ?? [], next.matches ?? []),
           playerMatches: mergeWorldCupMatchRows(prev.playerMatches ?? [], next.playerMatches ?? []),
@@ -12354,7 +12455,11 @@ export function WorldCupPageContent() {
     };
 
     const fullCached = readCachedDashboardPayload(dashboardRequestKey);
-    if (fullCached && !fullCached.playerChartOnly) {
+    if (
+      fullCached &&
+      !fullCached.playerChartOnly &&
+      !playerDashboardNeedsShotEventRefresh(fullCached, playerIdForRequest)
+    ) {
       applyDashboardPayload(fullCached, true);
       return;
     }

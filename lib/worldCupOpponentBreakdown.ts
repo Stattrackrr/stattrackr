@@ -1449,7 +1449,7 @@ export const WC2026_CACHE_KEYS = {
   playersForTeam: (teamId: number | string) => `wc:raw:players:${teamId}:v1`,
   matchDetail: (matchId: number | string) => `wc:match:${matchId}:v1`,
   playerStats: (playerId: number | string) => `wc:player:stats:${playerId}:v1`,
-  playerShots: (playerId: number | string) => `wc:player:shots:${playerId}:v1`,
+  playerShots: (playerId: number | string) => `wc:player:shots:${playerId}:v2`,
   playerIdByName: 'wc:player-id-by-name:v1',
   dvpWc2026ForPosition: (pos: string) => `wc:dvp-wc2026:v8:${pos}`,
   dvpWc2026Raw: 'wc:dvp-wc2026:raw:v8',

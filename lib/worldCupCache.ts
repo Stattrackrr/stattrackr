@@ -17,6 +17,7 @@ import sharedCache from '@/lib/sharedCache';
 import { FIFA_NAME_TO_CODE } from '@/lib/worldCupFlags';
 import type { WorldCupPlayerOddsBook } from '@/lib/impliedProbability';
 import { formatWorldCupPlayerDisplayName, getWorldCupNameAliases, resolveWorldCupAliasName } from '@/lib/worldCupPlayerAliases';
+import { resolveWorldCupPlayerShotsTotalFromRow, readWorldCupPlayerShotCountFromFields } from '@/lib/worldCupPlayerShots';
 
 /**
  * Permanent (no-expiry) Supabase-backed cache for World Cup BDL data.
@@ -2261,10 +2262,7 @@ const WC_DASHBOARD_STAT_RICHNESS_KEYS = [
 ] as const;
 
 function wcDashboardPlayerShotsTotal(row: Record<string, unknown>): number | null {
-  const direct = wcDashboardStatNum(row.shots_total) ?? wcDashboardStatNum(row.shots);
-  const derived = wcDashboardStatNum(row.derived_shots_total) ?? wcDashboardStatNum(row.total_shots);
-  if (direct != null && derived != null) return Math.max(direct, derived);
-  return direct ?? derived;
+  return resolveWorldCupPlayerShotsTotalFromRow(row);
 }
 
 function wcDashboardMergePlayerStatRowFields(
@@ -2273,8 +2271,8 @@ function wcDashboardMergePlayerStatRowFields(
 ): Record<string, unknown> {
   if (!secondary || primary === secondary) return primary;
   const merged = { ...primary };
-  const primaryShots = wcDashboardPlayerShotsTotal(primary);
-  const secondaryShots = wcDashboardPlayerShotsTotal(secondary);
+  const primaryShots = readWorldCupPlayerShotCountFromFields(primary);
+  const secondaryShots = readWorldCupPlayerShotCountFromFields(secondary);
   if ((secondaryShots ?? -1) > (primaryShots ?? -1)) {
     for (const key of ['derived_shots_total', 'shots_total', 'total_shots', 'shots']) {
       if (secondary[key] != null) merged[key] = secondary[key];

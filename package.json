@@ -110,6 +110,8 @@
     "build:world-cup:squad-photos": "npx tsx scripts/build-world-cup-player-index.ts --squad-photos",
     "build:world-cup:flag-map": "npx tsx scripts/build-world-cup-flag-map.ts",
     "audit:world-cup:player-matches": "npx tsx scripts/audit-world-cup-player-matches.ts",
+    "fix:world-cup:player-shots": "npx tsx scripts/fix-world-cup-player-shots.ts",
+    "fix:world-cup:player-shots:dry-run": "npx tsx scripts/fix-world-cup-player-shots.ts --dry-run",
     "build:world-cup:opponent-breakdown": "npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts",
     "build:world-cup:dvp": "npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --dvp-only",
     "build:world-cup:dvp:diagnose": "npx --node-options=--max-old-space-size=8192 tsx scripts/build-world-cup-opponent-breakdown.ts --dvp-diagnose",

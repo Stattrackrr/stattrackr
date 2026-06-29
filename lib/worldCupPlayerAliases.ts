@@ -1,4 +1,5 @@
 import { worldCupTeamsMatch } from './worldCupFlags';
+import { playerDashboardNeedsShotEventRefresh } from './worldCupPlayerShots';
 
 /**
  * Curated cross-source name aliases for the World Cup dashboard's stat merge.
@@ -200,7 +201,7 @@ type WorldCupClientCacheEntry<T> = { data: T; timestamp: number };
 const WORLD_CUP_CLIENT_CACHE_TTL_MS = 10 * 60 * 1000;
 const WORLD_CUP_DASHBOARD_PREFETCH_TTL_MS = 120 * 1000;
 const WORLD_CUP_DASHBOARD_PREFETCH_KEY = 'wc_dashboard_prefetch';
-export const WC_PLAYER_DASHBOARD_LOCAL_CACHE_PREFIX = 'wcPlayerDashboardCache:v1';
+export const WC_PLAYER_DASHBOARD_LOCAL_CACHE_PREFIX = 'wcPlayerDashboardCache:v3';
 export const WC_PLAYER_DASHBOARD_LOCAL_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours — mirrors AFL logs cache
 export const WC_PLAYER_ODDS_PREFETCH_KEY = 'wc_player_odds_prefetch';
 export const WC_PLAYER_ODDS_PREFETCH_TTL_MS = 120 * 1000;
@@ -350,6 +351,12 @@ export function readWorldCupDashboardLocalCache<T>(requestKey: string): T | null
     const parsed = JSON.parse(raw) as { data?: T; createdAt?: number };
     if (!parsed?.data || !Number.isFinite(parsed.createdAt)) return null;
     if (Date.now() - Number(parsed.createdAt) > WC_PLAYER_DASHBOARD_LOCAL_CACHE_TTL_MS) {
+      localStorage.removeItem(getWorldCupDashboardLocalCacheStorageKey(requestKey));
+      return null;
+    }
+    const params = new URLSearchParams(requestKey);
+    const playerId = params.get('playerId');
+    if (playerDashboardNeedsShotEventRefresh(parsed.data as Record<string, unknown>, playerId)) {
       localStorage.removeItem(getWorldCupDashboardLocalCacheStorageKey(requestKey));
       return null;
     }
