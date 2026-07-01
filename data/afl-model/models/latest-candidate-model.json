@@ -1,7 +1,7 @@
 {
-  "version": "afl-disp-20260630-130940",
-  "createdAt": "2026-06-30T13:09:41Z",
-  "datasetPath": "/home/runner/work/stattrackr/stattrackr/data/afl-model/datasets/afl-disposals-train-20260630-130934.csv",
+  "version": "afl-disp-20260701-133333",
+  "createdAt": "2026-07-01T13:33:34Z",
+  "datasetPath": "/home/runner/work/stattrackr/stattrackr/data/afl-model/datasets/afl-disposals-train-20260701-133326.csv",
   "featureColumns": [
     "roll3_mean",
     "roll5_mean",
@@ -66,27 +66,27 @@
     "dfs_role_unclassified"
   ],
   "modelType": "ridge",
-  "modelPicklePath": "models/afl-disp-20260630-130940.pkl",
-  "residualStd": 4.939498077828231,
+  "modelPicklePath": "models/afl-disp-20260701-133333.pkl",
+  "residualStd": 4.94474662591532,
   "metrics": {
     "baseline": {
-      "mae": 4.207801655837834,
-      "rmse": 5.34251269771852
+      "mae": 4.208788019057784,
+      "rmse": 5.3467818261307345
     },
     "ridge": {
-      "mae": 3.8556657603197806,
-      "rmse": 4.939498077828231,
-      "cv_mae": 3.9273631058401133,
-      "cv_rmse": 5.021786004174013,
+      "mae": 3.859357206681069,
+      "rmse": 4.94474662591532,
+      "cv_mae": 3.9306563756103414,
+      "cv_rmse": 5.0256458038954435,
       "bestParams": {
         "alpha": 4.0
       }
     },
     "hgb": {
-      "mae": 3.8607165479889005,
-      "rmse": 4.949148291710461,
-      "cv_mae": 3.9454555121257218,
-      "cv_rmse": 5.023833584801798,
+      "mae": 3.875860664562253,
+      "rmse": 4.964716131780794,
+      "cv_mae": 3.9515194818416863,
+      "cv_rmse": 5.031439777227941,
       "bestParams": {
         "max_depth": 4,
         "learning_rate": 0.05,
@@ -98,315 +98,315 @@
   "featureImportance": [
     {
       "feature": "roll10_mean",
-      "maeLift": 0.56773,
-      "permutedMae": 4.434263
+      "maeLift": 0.569357,
+      "permutedMae": 4.377602
     },
     {
       "feature": "roll3_mean",
-      "maeLift": 0.518399,
-      "permutedMae": 4.384932
-    },
-    {
-      "feature": "opp_role_disp_index",
-      "maeLift": 0.050176,
-      "permutedMae": 3.916709
-    },
-    {
-      "feature": "dfs_kickins",
-      "maeLift": 0.045415,
-      "permutedMae": 3.911948
+      "maeLift": 0.550553,
+      "permutedMae": 4.358798
     },
     {
       "feature": "cl_roll5_mean",
-      "maeLift": 0.043988,
-      "permutedMae": 3.91052
+      "maeLift": 0.055481,
+      "permutedMae": 3.863727
     },
     {
-      "feature": "delta_up_3v10",
-      "maeLift": 0.035136,
-      "permutedMae": 3.901669
+      "feature": "opp_role_disp_index",
+      "maeLift": 0.04834,
+      "permutedMae": 3.856585
     },
     {
-      "feature": "roll10_std",
-      "maeLift": 0.025933,
-      "permutedMae": 3.892465
-    },
-    {
-      "feature": "lag1",
-      "maeLift": 0.023917,
-      "permutedMae": 3.89045
-    },
-    {
-      "feature": "cp_roll5_mean",
-      "maeLift": 0.01187,
-      "permutedMae": 3.878403
-    },
-    {
-      "feature": "delta_tog_3v10",
-      "maeLift": 0.010043,
-      "permutedMae": 3.876575
-    },
-    {
-      "feature": "delta_disp_3v10",
-      "maeLift": 0.008265,
-      "permutedMae": 3.874797
-    },
-    {
-      "feature": "selection_tog_std_last5",
-      "maeLift": 0.008086,
-      "permutedMae": 3.874618
-    },
-    {
-      "feature": "opp_allow_kicks",
-      "maeLift": 0.006646,
-      "permutedMae": 3.873178
-    },
-    {
-      "feature": "post_bye_team",
-      "maeLift": 0.004475,
-      "permutedMae": 3.871008
+      "feature": "dfs_cba_pct",
+      "maeLift": 0.02663,
+      "permutedMae": 3.834875
     },
     {
       "feature": "role_is_ruc",
-      "maeLift": 0.004455,
-      "permutedMae": 3.870987
+      "maeLift": 0.023904,
+      "permutedMae": 3.832149
+    },
+    {
+      "feature": "dfs_kickins",
+      "maeLift": 0.023087,
+      "permutedMae": 3.831333
+    },
+    {
+      "feature": "delta_up_3v10",
+      "maeLift": 0.021448,
+      "permutedMae": 3.829694
+    },
+    {
+      "feature": "delta_cp_3v10",
+      "maeLift": 0.01566,
+      "permutedMae": 3.823905
     },
     {
       "feature": "rest_days",
-      "maeLift": 0.004401,
-      "permutedMae": 3.870933
+      "maeLift": 0.015452,
+      "permutedMae": 3.823697
     },
     {
-      "feature": "is_shared_home_away_venue",
-      "maeLift": 0.003248,
-      "permutedMae": 3.86978
+      "feature": "delta_disp_3v10",
+      "maeLift": 0.011425,
+      "permutedMae": 3.81967
     },
     {
-      "feature": "tog_roll5_mean",
-      "maeLift": 0.002714,
-      "permutedMae": 3.869246
-    },
-    {
-      "feature": "is_interstate_travel",
-      "maeLift": 0.00271,
-      "permutedMae": 3.869243
-    },
-    {
-      "feature": "role_is_fwd",
-      "maeLift": 0.002708,
-      "permutedMae": 3.86924
-    },
-    {
-      "feature": "is_true_home",
-      "maeLift": 0.002699,
-      "permutedMae": 3.869231
-    },
-    {
-      "feature": "rest_short_le5",
-      "maeLift": 0.002678,
-      "permutedMae": 3.869211
+      "feature": "cp_roll5_mean",
+      "maeLift": 0.008986,
+      "permutedMae": 3.817231
     },
     {
       "feature": "opp_ta_disposals",
-      "maeLift": 0.002584,
-      "permutedMae": 3.869116
+      "maeLift": 0.007918,
+      "permutedMae": 3.816163
     },
     {
-      "feature": "games_history",
-      "maeLift": 0.00254,
-      "permutedMae": 3.869073
-    },
-    {
-      "feature": "team_ta_disposals",
-      "maeLift": 0.002386,
-      "permutedMae": 3.868918
-    },
-    {
-      "feature": "opp_allow_mg",
-      "maeLift": 0.002385,
-      "permutedMae": 3.868917
-    },
-    {
-      "feature": "delta_cl_3v10",
-      "maeLift": 0.002111,
-      "permutedMae": 3.868643
-    },
-    {
-      "feature": "venue_player_tog_last5",
-      "maeLift": 0.001784,
-      "permutedMae": 3.868317
+      "feature": "up_roll5_mean",
+      "maeLift": 0.006974,
+      "permutedMae": 3.815219
     },
     {
       "feature": "role_is_def",
-      "maeLift": 0.001576,
-      "permutedMae": 3.868108
+      "maeLift": 0.006868,
+      "permutedMae": 3.815114
     },
     {
-      "feature": "i50_roll5_mean",
-      "maeLift": 0.001346,
-      "permutedMae": 3.867879
+      "feature": "roll10_std",
+      "maeLift": 0.005944,
+      "permutedMae": 3.814189
     },
     {
-      "feature": "opp_role_disp_ppg",
-      "maeLift": 0.001126,
-      "permutedMae": 3.867658
+      "feature": "rest_short_le5",
+      "maeLift": 0.005744,
+      "permutedMae": 3.813989
     },
     {
-      "feature": "roll5_mean",
-      "maeLift": 0.000975,
-      "permutedMae": 3.867508
+      "feature": "mg_roll5_mean",
+      "maeLift": 0.003771,
+      "permutedMae": 3.812016
+    },
+    {
+      "feature": "post_bye_team",
+      "maeLift": 0.003678,
+      "permutedMae": 3.811923
+    },
+    {
+      "feature": "is_shared_home_away_venue",
+      "maeLift": 0.003486,
+      "permutedMae": 3.811731
+    },
+    {
+      "feature": "lag1",
+      "maeLift": 0.003407,
+      "permutedMae": 3.811652
+    },
+    {
+      "feature": "role_is_fwd",
+      "maeLift": 0.003224,
+      "permutedMae": 3.81147
     },
     {
       "feature": "opp_allow_cp",
-      "maeLift": 0.000839,
-      "permutedMae": 3.867371
+      "maeLift": 0.002806,
+      "permutedMae": 3.811051
     },
     {
-      "feature": "rest_long_ge9",
-      "maeLift": 0.000808,
-      "permutedMae": 3.86734
+      "feature": "role_is_mid",
+      "maeLift": 0.00226,
+      "permutedMae": 3.810506
     },
     {
-      "feature": "opp_allow_disposals",
-      "maeLift": 0.000628,
-      "permutedMae": 3.86716
+      "feature": "opp_allow_handballs",
+      "maeLift": 0.002014,
+      "permutedMae": 3.81026
     },
     {
-      "feature": "rest_normal_6_8",
-      "maeLift": 0.000513,
-      "permutedMae": 3.867045
+      "feature": "opp_allow_up",
+      "maeLift": 0.00103,
+      "permutedMae": 3.809275
     },
     {
-      "feature": "cba_momentum_proxy",
-      "maeLift": 0.000438,
-      "permutedMae": 3.86697
+      "feature": "team_ta_disposals",
+      "maeLift": 0.000957,
+      "permutedMae": 3.809203
     },
     {
-      "feature": "game_pace_disposals_avg",
-      "maeLift": 0.000284,
-      "permutedMae": 3.866816
+      "feature": "selection_low_tog_rate_last5",
+      "maeLift": 0.000881,
+      "permutedMae": 3.809126
+    },
+    {
+      "feature": "games_history",
+      "maeLift": 0.000741,
+      "permutedMae": 3.808986
     },
     {
       "feature": "selection_games_since_low_tog",
-      "maeLift": 0.000202,
-      "permutedMae": 3.866734
+      "maeLift": 0.000653,
+      "permutedMae": 3.808899
     },
     {
-      "feature": "opp_allow_clearances",
-      "maeLift": 0.000135,
-      "permutedMae": 3.866667
+      "feature": "game_pace_disposals_avg",
+      "maeLift": 0.000635,
+      "permutedMae": 3.80888
+    },
+    {
+      "feature": "roll5_mean",
+      "maeLift": 0.000497,
+      "permutedMae": 3.808742
+    },
+    {
+      "feature": "cba_momentum_proxy",
+      "maeLift": 0.000473,
+      "permutedMae": 3.808718
+    },
+    {
+      "feature": "roll5_std",
+      "maeLift": 3.9e-05,
+      "permutedMae": 3.808285
     },
     {
       "feature": "lineup_role_available",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "lineup_role_confidence",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_key_fwd",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_gen_fwd",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_ins_mid",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_ruck",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_wng_def",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_gen_def",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_des_kck",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
       "feature": "dfs_role_unclassified",
       "maeLift": 0.0,
-      "permutedMae": 3.866532
+      "permutedMae": 3.808245
     },
     {
-      "feature": "selection_low_tog_rate_last5",
-      "maeLift": -9.5e-05,
-      "permutedMae": 3.866438
+      "feature": "rest_normal_6_8",
+      "maeLift": -2.1e-05,
+      "permutedMae": 3.808225
     },
     {
-      "feature": "role_is_mid",
-      "maeLift": -0.000123,
-      "permutedMae": 3.866409
+      "feature": "opp_allow_kicks",
+      "maeLift": -0.000461,
+      "permutedMae": 3.807784
     },
     {
-      "feature": "delta_cp_3v10",
-      "maeLift": -0.000575,
-      "permutedMae": 3.865958
+      "feature": "opp_allow_disposals",
+      "maeLift": -0.000741,
+      "permutedMae": 3.807504
     },
     {
-      "feature": "roll5_std",
-      "maeLift": -0.000611,
-      "permutedMae": 3.865921
+      "feature": "rest_long_ge9",
+      "maeLift": -0.000742,
+      "permutedMae": 3.807503
+    },
+    {
+      "feature": "venue_player_tog_last5",
+      "maeLift": -0.000909,
+      "permutedMae": 3.807337
+    },
+    {
+      "feature": "delta_tog_3v10",
+      "maeLift": -0.000984,
+      "permutedMae": 3.807262
+    },
+    {
+      "feature": "opp_allow_mg",
+      "maeLift": -0.001177,
+      "permutedMae": 3.807068
     },
     {
       "feature": "venue_player_disp_last5",
-      "maeLift": -0.000725,
-      "permutedMae": 3.865808
-    },
-    {
-      "feature": "mg_roll5_mean",
-      "maeLift": -0.000984,
-      "permutedMae": 3.865549
-    },
-    {
-      "feature": "opp_allow_up",
-      "maeLift": -0.001049,
-      "permutedMae": 3.865483
-    },
-    {
-      "feature": "opp_allow_handballs",
-      "maeLift": -0.001892,
-      "permutedMae": 3.86464
+      "maeLift": -0.001258,
+      "permutedMae": 3.806987
     },
     {
       "feature": "opp_allow_i50",
-      "maeLift": -0.005075,
-      "permutedMae": 3.861458
+      "maeLift": -0.001394,
+      "permutedMae": 3.806851
     },
     {
-      "feature": "up_roll5_mean",
-      "maeLift": -0.005852,
-      "permutedMae": 3.86068
+      "feature": "opp_role_disp_ppg",
+      "maeLift": -0.001799,
+      "permutedMae": 3.806447
     },
     {
-      "feature": "dfs_cba_pct",
-      "maeLift": -0.009724,
-      "permutedMae": 3.856808
+      "feature": "selection_tog_std_last5",
+      "maeLift": -0.002757,
+      "permutedMae": 3.805488
+    },
+    {
+      "feature": "i50_roll5_mean",
+      "maeLift": -0.00298,
+      "permutedMae": 3.805265
+    },
+    {
+      "feature": "tog_roll5_mean",
+      "maeLift": -0.003388,
+      "permutedMae": 3.804857
+    },
+    {
+      "feature": "is_true_home",
+      "maeLift": -0.003918,
+      "permutedMae": 3.804327
+    },
+    {
+      "feature": "is_interstate_travel",
+      "maeLift": -0.004745,
+      "permutedMae": 3.8035
+    },
+    {
+      "feature": "opp_allow_clearances",
+      "maeLift": -0.005032,
+      "permutedMae": 3.803213
+    },
+    {
+      "feature": "delta_cl_3v10",
+      "maeLift": -0.009962,
+      "permutedMae": 3.798284
     }
   ],
   "dropCandidates": [],
-  "validationRows": 2586,
-  "trainRows": 10340,
+  "validationRows": 2583,
+  "trainRows": 10328,
   "importanceRowsUsed": 1200,
-  "calibrationPath": "models/afl-disp-20260630-130940.calibration.json",
+  "calibrationPath": "models/afl-disp-20260701-133333.calibration.json",
   "calibrationMethod": "identity",
   "calibrationSampleCount": 0
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-30T13:12:43Z",
-  "sampleCount": 1576,
+  "generatedAt": "2026-07-01T13:36:46Z",
+  "sampleCount": 1503,
   "candidateArtifactPath": "data/afl-model/models/latest-candidate-model.json",
   "candidateFallbackToCurrent": false,
   "guardrails": {
@@ -23,15 +23,15 @@
     "overRateDeltaModelMinusActual": -0.1342
   },
   "deltas": {
-    "brierImprovement": -0.031196,
-    "logLossChange": 0.038345,
-    "hitRateDelta": -0.006345
+    "brierImprovement": -0.028795,
+    "logLossChange": 0.036838,
+    "hitRateDelta": -0.003992
   },
   "decision": {
     "pass": false,
     "promoted": false,
     "freezeActive": false,
-    "freezeFailStreak": 0,
+    "freezeFailStreak": 1,
     "freezeWouldBlockLegacy": false,
     "metricGuardrailsSkipped": false,
     "promotionInfo": {
@@ -40,131 +40,131 @@
   },
   "candidate": {
     "name": "candidate",
-    "sampleCount": 1576,
-    "hitRate": 0.519036,
-    "brierScore": 0.272345,
-    "logLoss": 0.766251,
-    "mae": 4.619236,
-    "avgClvLite": -0.001637,
-    "positiveClvRate": 0.226523,
-    "clvSampleCount": 1576,
+    "sampleCount": 1503,
+    "hitRate": 0.520958,
+    "brierScore": 0.271817,
+    "logLoss": 0.766136,
+    "mae": 4.608208,
+    "avgClvLite": -0.001569,
+    "positiveClvRate": 0.22821,
+    "clvSampleCount": 1503,
     "calibrationBins": [
       {
         "bin": 0,
-        "count": 56,
-        "avgPred": 0.0608,
-        "avgActual": 0.5
+        "count": 55,
+        "avgPred": 0.0609,
+        "avgActual": 0.4909
       },
       {
         "bin": 1,
-        "count": 86,
-        "avgPred": 0.1569,
-        "avgActual": 0.3953
+        "count": 80,
+        "avgPred": 0.1572,
+        "avgActual": 0.4125
       },
       {
         "bin": 2,
-        "count": 193,
-        "avgPred": 0.2531,
-        "avgActual": 0.4974
+        "count": 183,
+        "avgPred": 0.2521,
+        "avgActual": 0.4809
       },
       {
         "bin": 3,
-        "count": 347,
-        "avgPred": 0.3536,
-        "avgActual": 0.4582
+        "count": 331,
+        "avgPred": 0.3541,
+        "avgActual": 0.4653
       },
       {
         "bin": 4,
-        "count": 401,
-        "avgPred": 0.451,
-        "avgActual": 0.4763
+        "count": 380,
+        "avgPred": 0.4515,
+        "avgActual": 0.4658
       },
       {
         "bin": 5,
-        "count": 305,
-        "avgPred": 0.5448,
-        "avgActual": 0.4689
+        "count": 297,
+        "avgPred": 0.5447,
+        "avgActual": 0.4646
       },
       {
         "bin": 6,
-        "count": 135,
-        "avgPred": 0.6398,
-        "avgActual": 0.5481
+        "count": 128,
+        "avgPred": 0.6396,
+        "avgActual": 0.5547
       },
       {
         "bin": 7,
-        "count": 49,
-        "avgPred": 0.7287,
-        "avgActual": 0.4898
+        "count": 46,
+        "avgPred": 0.728,
+        "avgActual": 0.5
       },
       {
         "bin": 8,
-        "count": 4,
-        "avgPred": 0.8173,
-        "avgActual": 0.5
+        "count": 3,
+        "avgPred": 0.8197,
+        "avgActual": 0.3333
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260630-130940"
+    "modelVersion": "afl-disp-20260701-133333"
   },
   "current": {
     "name": "current",
-    "sampleCount": 1576,
-    "hitRate": 0.525381,
-    "brierScore": 0.264106,
-    "logLoss": 0.737954,
-    "mae": 4.485979,
-    "avgClvLite": -0.002052,
-    "positiveClvRate": 0.211294,
-    "clvSampleCount": 1576,
+    "sampleCount": 1503,
+    "hitRate": 0.52495,
+    "brierScore": 0.264209,
+    "logLoss": 0.738916,
+    "mae": 4.477937,
+    "avgClvLite": -0.00198,
+    "positiveClvRate": 0.212242,
+    "clvSampleCount": 1503,
     "calibrationBins": [
       {
         "bin": 0,
-        "count": 19,
-        "avgPred": 0.0457,
-        "avgActual": 0.3684
+        "count": 18,
+        "avgPred": 0.0453,
+        "avgActual": 0.3889
       },
       {
         "bin": 1,
-        "count": 69,
-        "avgPred": 0.1644,
-        "avgActual": 0.4203
+        "count": 64,
+        "avgPred": 0.164,
+        "avgActual": 0.4219
       },
       {
         "bin": 2,
-        "count": 173,
-        "avgPred": 0.2581,
-        "avgActual": 0.4335
+        "count": 167,
+        "avgPred": 0.2582,
+        "avgActual": 0.4311
       },
       {
         "bin": 3,
-        "count": 361,
-        "avgPred": 0.3545,
-        "avgActual": 0.4958
+        "count": 337,
+        "avgPred": 0.3542,
+        "avgActual": 0.4926
       },
       {
         "bin": 4,
-        "count": 447,
-        "avgPred": 0.4474,
-        "avgActual": 0.4609
+        "count": 423,
+        "avgPred": 0.4473,
+        "avgActual": 0.4586
       },
       {
         "bin": 5,
-        "count": 321,
-        "avgPred": 0.5445,
-        "avgActual": 0.486
+        "count": 315,
+        "avgPred": 0.5447,
+        "avgActual": 0.4825
       },
       {
         "bin": 6,
-        "count": 148,
-        "avgPred": 0.6432,
-        "avgActual": 0.5203
+        "count": 143,
+        "avgPred": 0.6427,
+        "avgActual": 0.5105
       },
       {
         "bin": 7,
-        "count": 31,
-        "avgPred": 0.7426,
-        "avgActual": 0.5806
+        "count": 29,
+        "avgPred": 0.7429,
+        "avgActual": 0.5862
       },
       {
         "bin": 8,
@@ -186,26 +186,26 @@
     "lossTypeCounts": [
       {
         "type": "Under->Over",
-        "count": 508
+        "count": 479
       },
       {
         "type": "Over->Under",
-        "count": 250
+        "count": 241
       }
     ],
     "winFeatureAverages": {
-      "delta_disp_3v10": 0.7221,
-      "delta_tog_3v10": 0.272,
+      "delta_disp_3v10": 0.701,
+      "delta_tog_3v10": 0.2487,
       "opp_role_disp_index": 0.9966,
-      "opp_allow_disposals": 367.5579,
-      "rest_days": 22.8252
+      "opp_allow_disposals": 367.7319,
+      "rest_days": 23.3423
     },
     "lossFeatureAverages": {
-      "delta_disp_3v10": 0.6246,
-      "delta_tog_3v10": 0.1141,
-      "opp_role_disp_index": 1.0007,
-      "opp_allow_disposals": 370.2846,
-      "rest_days": 24.0963
+      "delta_disp_3v10": 0.6456,
+      "delta_tog_3v10": 0.1457,
+      "opp_role_disp_index": 1.0003,
+      "opp_allow_disposals": 370.4561,
+      "rest_days": 24.6542
     },
     "topWins": [
       {
@@ -214,7 +214,7 @@
         "gameDate": "2026-06-05",
         "line": 23.5,
         "actualDisposals": 22.0,
-        "expectedDisposals": 6.03,
+        "expectedDisposals": 5.99,
         "pOver": 0.0,
         "pOverRaw": 0.0,
         "modelSide": "Under",
@@ -294,7 +294,7 @@
         "gameDate": "2026-05-24",
         "line": 23.5,
         "actualDisposals": 23.0,
-        "expectedDisposals": 8.33,
+        "expectedDisposals": 8.28,
         "pOver": 0.0002,
         "pOverRaw": 0.0002,
         "modelSide": "Under",
@@ -454,9 +454,9 @@
         "gameDate": "2026-04-26",
         "line": 20.5,
         "actualDisposals": 12.0,
-        "expectedDisposals": 10.77,
-        "pOver": 0.019,
-        "pOverRaw": 0.019,
+        "expectedDisposals": 10.74,
+        "pOver": 0.0187,
+        "pOverRaw": 0.0187,
         "modelSide": "Under",
         "actualSide": "Under",
         "result": "Win",
@@ -524,9 +524,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.4594,
-        "marketPOverOpen": 0.5,
+        "marketPOverOpen": 0.4797,
         "marketPOverLatest": 0.4594,
-        "clvLite": 0.0406
+        "clvLite": 0.0203
       },
       {
         "snapshotKey": "ryley sanders|2026-W24",
@@ -614,9 +614,9 @@
         "gameDate": "2026-06-12",
         "line": 33.5,
         "actualDisposals": 27.0,
-        "expectedDisposals": 24.44,
-        "pOver": 0.0366,
-        "pOverRaw": 0.0366,
+        "expectedDisposals": 24.35,
+        "pOver": 0.0353,
+        "pOverRaw": 0.0353,
         "modelSide": "Under",
         "actualSide": "Under",
         "result": "Win",
@@ -694,9 +694,9 @@
         "gameDate": "2026-06-08",
         "line": 24.5,
         "actualDisposals": 21.0,
-        "expectedDisposals": 15.6,
-        "pOver": 0.0446,
-        "pOverRaw": 0.0446,
+        "expectedDisposals": 15.62,
+        "pOver": 0.0451,
+        "pOverRaw": 0.0451,
         "modelSide": "Under",
         "actualSide": "Under",
         "result": "Win",
@@ -769,32 +769,32 @@
         "clvLite": 0.0
       },
       {
-        "snapshotKey": "bailey smith|2026-W17",
-        "playerName": "Bailey Smith",
-        "gameDate": "2026-04-25",
-        "line": 32.5,
-        "actualDisposals": 30.0,
-        "expectedDisposals": 23.86,
-        "pOver": 0.0435,
-        "pOverRaw": 0.0435,
+        "snapshotKey": "john noble|2026-W26",
+        "playerName": "John Noble",
+        "gameDate": "2026-06-28",
+        "line": 25.5,
+        "actualDisposals": 16.0,
+        "expectedDisposals": 17.24,
+        "pOver": 0.0596,
+        "pOverRaw": 0.0596,
         "modelSide": "Under",
         "actualSide": "Under",
         "result": "Win",
         "featureSnapshot": {
-          "roll3_mean": 34.6667,
-          "roll5_mean": 31.2,
-          "roll10_mean": 30.9,
-          "roll5_std": 6.1806,
-          "roll10_std": 5.4661,
-          "lag1": 33.0,
-          "games_history": 27.0,
-          "tog_roll5_mean": 84.0,
-          "cp_roll5_mean": 8.6,
+          "roll3_mean": 23.6667,
+          "roll5_mean": 25.0,
+          "roll10_mean": 23.8,
+          "roll5_std": 3.0,
+          "roll10_std": 3.4254,
+          "lag1": 26.0,
+          "games_history": 28.0,
+          "tog_roll5_mean": 79.0,
+          "cp_roll5_mean": 2.4,
           "up_roll5_mean": 15.2,
-          "cl_roll5_mean": 3.8,
-          "i50_roll5_mean": 6.4,
-          "mg_roll5_mean": 559.6,
-          "rest_days": 20.0,
+          "cl_roll5_mean": 0.0,
+          "i50_roll5_mean": 2.0,
+          "mg_roll5_mean": 386.2,
+          "rest_days": 84.0,
           "rest_short_le5": 0.0,
           "rest_normal_6_8": 0.0,
           "rest_long_ge9": 1.0,
@@ -802,34 +802,34 @@
           "is_true_home": 0.0,
           "is_shared_home_away_venue": 0.0,
           "is_interstate_travel": 1.0,
-          "venue_player_disp_last5": 31.2,
-          "venue_player_tog_last5": 84.0,
+          "venue_player_disp_last5": 25.0,
+          "venue_player_tog_last5": 79.0,
           "selection_low_tog_rate_last5": 0.0,
-          "selection_tog_std_last5": 1.4142,
-          "selection_games_since_low_tog": 10.0,
-          "opp_role_disp_index": 0.924,
-          "opp_role_disp_ppg": 18.23,
-          "team_ta_disposals": 378.5,
-          "opp_ta_disposals": 343.8,
-          "game_pace_disposals_avg": 361.15,
-          "opp_allow_disposals": 338.2,
-          "opp_allow_kicks": 204.8,
-          "opp_allow_handballs": 133.3,
-          "opp_allow_cp": 124.7,
-          "opp_allow_up": 209.5,
-          "opp_allow_clearances": 34.0,
-          "opp_allow_i50": 46.2,
-          "opp_allow_mg": 5610.2,
-          "delta_disp_3v10": 3.7667,
-          "delta_tog_3v10": 0.3333,
-          "delta_cp_3v10": 8.3667,
-          "delta_up_3v10": 12.4,
-          "delta_cl_3v10": 0.0,
-          "cba_momentum_proxy": 0.0,
-          "dfs_cba_pct": 75.1,
-          "dfs_kickins": 0.0,
-          "role_is_def": 0.0,
-          "role_is_mid": 1.0,
+          "selection_tog_std_last5": 0.9574,
+          "selection_games_since_low_tog": 4.0,
+          "opp_role_disp_index": 0.904,
+          "opp_role_disp_ppg": 14.98,
+          "team_ta_disposals": 373.1,
+          "opp_ta_disposals": 373.8,
+          "game_pace_disposals_avg": 373.45,
+          "opp_allow_disposals": 339.4,
+          "opp_allow_kicks": 201.5,
+          "opp_allow_handballs": 137.9,
+          "opp_allow_cp": 123.8,
+          "opp_allow_up": 205.1,
+          "opp_allow_clearances": 32.1,
+          "opp_allow_i50": 48.9,
+          "opp_allow_mg": 5617.3,
+          "delta_disp_3v10": -0.1333,
+          "delta_tog_3v10": 2.9333,
+          "delta_cp_3v10": 0.9333,
+          "delta_up_3v10": 7.5667,
+          "delta_cl_3v10": -0.1,
+          "cba_momentum_proxy": -0.0,
+          "dfs_cba_pct": 0.0,
+          "dfs_kickins": 37.0,
+          "role_is_def": 1.0,
+          "role_is_mid": 0.0,
           "role_is_fwd": 0.0,
           "role_is_ruc": 0.0,
           "lineup_role_available": 0.0,
@@ -845,8 +845,8 @@
         },
         "marketPOver": 0.5,
         "marketPOverOpen": 0.5,
-        "marketPOverLatest": 0.5,
-        "clvLite": 0.0
+        "marketPOverLatest": 0.504,
+        "clvLite": -0.004
       }
     ],
     "topLosses": [
@@ -856,7 +856,7 @@
         "gameDate": "2026-05-01",
         "line": 23.5,
         "actualDisposals": 30.0,
-        "expectedDisposals": 6.51,
+        "expectedDisposals": 6.48,
         "pOver": 0.0,
         "pOverRaw": 0.0,
         "modelSide": "Under",
@@ -936,7 +936,7 @@
         "gameDate": "2026-06-11",
         "line": 23.5,
         "actualDisposals": 29.0,
-        "expectedDisposals": 7.94,
+        "expectedDisposals": 7.91,
         "pOver": 0.0001,
         "pOverRaw": 0.0001,
         "modelSide": "Under",
@@ -1016,7 +1016,7 @@
         "gameDate": "2026-06-21",
         "line": 22.5,
         "actualDisposals": 28.0,
-        "expectedDisposals": 7.69,
+        "expectedDisposals": 7.65,
         "pOver": 0.0003,
         "pOverRaw": 0.0003,
         "modelSide": "Under",
@@ -1176,9 +1176,9 @@
         "gameDate": "2026-06-20",
         "line": 22.5,
         "actualDisposals": 28.0,
-        "expectedDisposals": 13.22,
-        "pOver": 0.032,
-        "pOverRaw": 0.032,
+        "expectedDisposals": 13.18,
+        "pOver": 0.0314,
+        "pOverRaw": 0.0314,
         "modelSide": "Under",
         "actualSide": "Over",
         "result": "Loss",
@@ -1336,9 +1336,9 @@
         "gameDate": "2026-06-27",
         "line": 25.5,
         "actualDisposals": 27.0,
-        "expectedDisposals": 16.79,
-        "pOver": 0.0483,
-        "pOverRaw": 0.0483,
+        "expectedDisposals": 16.81,
+        "pOver": 0.0487,
+        "pOverRaw": 0.0487,
         "modelSide": "Under",
         "actualSide": "Over",
         "result": "Loss",
@@ -1416,9 +1416,9 @@
         "gameDate": "2026-06-20",
         "line": 16.5,
         "actualDisposals": 22.0,
-        "expectedDisposals": 8.2,
-        "pOver": 0.0444,
-        "pOverRaw": 0.0444,
+        "expectedDisposals": 8.21,
+        "pOver": 0.0446,
+        "pOverRaw": 0.0446,
         "modelSide": "Under",
         "actualSide": "Over",
         "result": "Loss",
