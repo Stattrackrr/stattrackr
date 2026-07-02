@@ -103,24 +103,24 @@ function teamForRequest(team) {
   return NICKNAME_TO_FULL[t] || NICKNAME_TO_FULL[t.replace(/\s+/g, ' ')] || t;
 }
 
-const WARM_ZERO_GAMES_RETRIES = Math.max(0, parseInt(process.env.AFL_WARM_ZERO_GAMES_RETRIES || '2', 10));
-const WARM_RETRY_DELAY_MS = Math.max(500, parseInt(process.env.AFL_WARM_RETRY_DELAY_MS || '2500', 10));
-const WARM_INTER_REQUEST_DELAY_MS = Math.max(0, parseInt(process.env.AFL_WARM_INTER_REQUEST_DELAY_MS || '150', 10));
+const WARM_ZERO_GAMES_RETRIES = Math.max(0, parseInt(process.env.AFL_WARM_ZERO_GAMES_RETRIES || '1', 10));
+const WARM_RETRY_DELAY_MS = Math.max(200, parseInt(process.env.AFL_WARM_RETRY_DELAY_MS || '800', 10));
+const WARM_INTER_REQUEST_DELAY_MS = Math.max(0, parseInt(process.env.AFL_WARM_INTER_REQUEST_DELAY_MS || '0', 10));
 const WARM_REQUEST_TIMEOUT_MS = 45000;
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function warmOneAttempt(player, season) {
+async function warmOneAttempt(player, season, forceFetch = false) {
   const team = teamForRequest(player.team);
   const params = new URLSearchParams({
     season: String(season),
     player_name: player.name,
     team,
     include_both: '1',
-    force_fetch: '1',
   });
+  if (forceFetch) params.set('force_fetch', '1');
 
   const headers = { Accept: 'application/json' };
   if (cronSecret) {
@@ -150,10 +150,11 @@ async function warmOneAttempt(player, season) {
 }
 
 async function warmOne(player, season) {
-  let last = await warmOneAttempt(player, season);
+  // Cache-first (fast). Only hit FootyWire live when Redis is empty/stale.
+  let last = await warmOneAttempt(player, season, false);
   for (let attempt = 0; attempt < WARM_ZERO_GAMES_RETRIES && last.ok && Number(last.count || 0) === 0; attempt += 1) {
-    await sleep(WARM_RETRY_DELAY_MS * (attempt + 1));
-    last = await warmOneAttempt(player, season);
+    await sleep(WARM_RETRY_DELAY_MS);
+    last = await warmOneAttempt(player, season, true);
   }
   return last;
 }
@@ -201,7 +202,7 @@ async function main() {
     }
   }
 
-  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (include_both=1, same path as frontend)`);
+  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (cache-first, live fetch only on miss)`);
   console.log(`[AFL Warm] 👥 Players: ${selectedPlayers.length}`);
   console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
   console.log(`[AFL Warm] 📤 Requests: ${jobs.length}`);

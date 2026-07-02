@@ -1455,7 +1455,7 @@ export async function GET(request: NextRequest) {
   const xCron = request.headers.get('x-cron-secret') ?? '';
   const isWarmRequest = !!(cronSecret && (authHeader === `Bearer ${cronSecret}` || xCron === cronSecret));
   // force_fetch should bypass both Redis and in-memory FootyWire caches.
-  const skipMemoryCache = isWarmRequest || forceFetch;
+  const skipMemoryCache = forceFetch;
   const cacheOnly = cacheEnabled && !isWarmRequest && !forceFetch; // Cache-only: no FootyWire on miss. force_fetch=1 allows test scripts to hit FootyWire.
   const currentYear = new Date().getFullYear();
   const allowFetchOnMiss = SUPPORTED_SEASONS.includes(season as (typeof SUPPORTED_SEASONS)[number]); // Allow live fetch on miss for supported dashboard seasons (2026/2025/2024).
@@ -1568,10 +1568,11 @@ export async function GET(request: NextRequest) {
       };
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
     }
-    // Warm request: skip Redis so we always fetch live 2026 from FootyWire
-    if (usableCachedEntry?.cachedBase && !isWarmRequest && !forceFetch) {
+    // Serve usable Redis cache unless caller explicitly force_fetches.
+    if (usableCachedEntry?.cachedBase && !forceFetch) {
       const payload = { ...usableCachedEntry.cachedBase, gamesWithQuarters: usableCachedEntry.cachedQuarters?.games ?? usableCachedEntry.cachedBase.games, ...(teamFull ? { team: teamFull } : {}) };
-      return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } });
+      const cacheSource = isWarmRequest ? 'cache-warm-hit' : 'cache';
+      return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': cacheSource } });
     }
     // Cache-only: prod only reads cache; warm job is allowed to fetch. For current/prev season (e.g. 2025+2026), allow fetch on miss so dashboard and props get both years.
     if (cacheOnly && !skipCacheWrongData && !allowFetchOnMiss) {
@@ -1767,7 +1768,7 @@ export async function GET(request: NextRequest) {
       { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'cache' } }
     );
   }
-  // Warm: skip Redis so we fetch live 2026; dashboard uses cache when present
+  // Serve Redis cache unless caller explicitly force_fetches (warm uses cache-first).
   if (
     cachedResponse &&
     Array.isArray(cachedGames) &&
@@ -1776,7 +1777,6 @@ export async function GET(request: NextRequest) {
     !skipCacheWrongDataSingle &&
     !skipCacheForSymbolSingle &&
     !skipCacheStale2025Single &&
-    !isWarmRequest &&
     !forceFetch
   ) {
     const cachedPayload = { ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) };
