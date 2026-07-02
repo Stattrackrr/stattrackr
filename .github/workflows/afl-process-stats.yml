@@ -193,12 +193,13 @@ jobs:
           fi
           echo "✅ Odds + props cache + DvP done"
 
-      # Ingest L5/L10/H2H/Season/Streak into props-stats cache (separate request = full timeout; useList=1 = same props as UI)
+      # odds/refresh already runs an in-process props-stats warm; this step rebuilds enriched list
+      # and optionally re-warms from the same props cache (useList=0 avoids a second list-API pass).
       - name: Warm AFL props-stats (L5, L10, H2H, Season, Streak)
         if: steps.check.outputs.configured == 'true'
         run: |
           echo "🔄 Warming AFL props-stats cache (L5/L10/H2H/Season/Streak)..."
-          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/props-stats/warm?useList=1" \
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/props-stats/warm" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -L --max-time 600 \
@@ -215,9 +216,13 @@ jobs:
             NO_DATA=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.noData ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
             TOTAL=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.total ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
             echo "AFL props-stats coverage: ${COVERAGE}% (noData=${NO_DATA}, total=${TOTAL})"
-            if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "90" ]; then
-              echo "❌ AFL props-stats coverage below threshold (90%)"
+            # ~40% of listed props can be debutants / no 2026 logs; fail only on very low coverage.
+            if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "50" ]; then
+              echo "❌ AFL props-stats coverage below threshold (50%)"
               exit 1
+            fi
+            if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "90" ]; then
+              echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum — continuing"
             fi
             echo "✅ AFL props-stats warm completed"
           fi

@@ -258,12 +258,14 @@ export async function getAflPropStats(
   const olderSeason = currentSeason - 2;
   // Fetch current + previous two seasons (e.g. 2026/2025/2024) for better H2H depth.
   const fetchForSeason = async (season: number): Promise<Record<string, unknown>[]> => {
+    const tryFetch = async (teamForRequest: string) =>
+      fetchGameLogsForSeason(baseUrl, playerName, teamForRequest, season, cronSecret);
     let list: Record<string, unknown>[] = [];
-    if (resolvedPlayerTeam?.trim()) {
-      list = await fetchGameLogsForSeason(baseUrl, playerName, resolvedPlayerTeam.trim(), season, cronSecret);
-    }
-    if (list.length === 0) list = await fetchGameLogsForSeason(baseUrl, playerName, team, season, cronSecret);
-    if (list.length === 0) list = await fetchGameLogsForSeason(baseUrl, playerName, opponent, season, cronSecret);
+    if (resolvedPlayerTeam?.trim()) list = await tryFetch(resolvedPlayerTeam.trim());
+    if (list.length === 0 && team.trim()) list = await tryFetch(team);
+    if (list.length === 0 && opponent.trim()) list = await tryFetch(opponent);
+    // Last resort: omit team so API resolves from league stats (moved players / wrong matchup row).
+    if (list.length === 0) list = await tryFetch('');
     return list;
   };
   const [gamesCurrent, gamesPrev, gamesOlder] = await Promise.all([

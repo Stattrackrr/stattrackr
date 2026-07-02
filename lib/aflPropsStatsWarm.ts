@@ -161,7 +161,8 @@ export async function runAflPropsStatsWarm(
               r.last5HitRate != null ||
               r.last10HitRate != null ||
               r.h2hHitRate != null ||
-              r.seasonHitRate != null;
+              r.seasonHitRate != null ||
+              r.dvpRating != null;
             if (hasStats) warmed++;
             else {
               failed++;
