@@ -137,33 +137,14 @@ jobs:
 
       - name: Commit and push data files to master if changed
         run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "Missing required GitHub workflow token"
-            exit 1
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin master
-          git stash --include-untracked 2>/dev/null || true
-          git checkout -B master origin/master
-          git stash pop 2>/dev/null || true
-          git add data/afl-league-player-stats-2026.json data/afl-league-player-stats-2025.json 2>/dev/null || true
-          git add data/afl-player-headshots-2026.json data/afl-player-headshots.json 2>/dev/null || true
-          git add data/afl-team-rankings-2026-oa.json data/afl-team-rankings-2026-ta.json data/afl-team-rankings-2025-oa.json data/afl-team-rankings-2025-ta.json 2>/dev/null || true
-          git add data/afl-dvp-2026.json data/afl-dvp-depth-2026.json data/afl-dvp-2025.json 2>/dev/null || true
-          for f in data/afl-league-player-stats-*.json data/afl-team-rankings-*.json data/afl-player-headshots*.json data/afl-dvp*.json; do
-            [ -f "$f" ] && git add "$f"
-          done
-          if git diff --staged --quiet; then
-            echo "No changes to AFL data files"
-          else
-            git commit -m "chore(data): update AFL stats, rankings, and headshots [skip ci]"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-            git push origin HEAD:master
-          fi
+          bash scripts/ci-commit-data-files.sh "chore(data): update AFL stats, rankings, and headshots [skip ci]" \
+            "data/afl-league-player-stats-*.json" \
+            "data/afl-team-rankings-*.json" \
+            "data/afl-player-headshots*.json" \
+            "data/afl-dvp*.json"
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Check PROD_URL and CRON_SECRET
         id: check
@@ -248,23 +229,11 @@ jobs:
       - name: Commit Top Picks actuals if changed
         if: steps.check.outputs.configured == 'true'
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin master
-          git stash --include-untracked 2>/dev/null || true
-          git checkout -B master origin/master
-          git stash pop 2>/dev/null || true
-          git add data/afl-model/history/top-picks-history.json 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "No Top Picks actuals changes"
-          else
-            git commit -m "chore(data): enrich AFL top picks actual disposals [skip ci]"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-            git push origin HEAD:master
-          fi
+          bash scripts/ci-commit-data-files.sh "chore(data): enrich AFL top picks actual disposals [skip ci]" \
+            data/afl-model/history/top-picks-history.json
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
       # Guardrail: ensure list DvP ranks match DvP card source for all props rows.
       # Fails workflow on any mismatch so regressions are caught before users see split ranks.

@@ -65,19 +65,7 @@ jobs:
       - name: Commit and push Top Picks history if changed
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin master
-          git stash --include-untracked 2>/dev/null || true
-          git checkout -B master origin/master
-          git stash pop 2>/dev/null || true
-          git add data/afl-model/history/top-picks-history.json 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "No Top Picks snapshot changes"
-          else
-            git commit -m "chore(data): snapshot AFL top picks [skip ci]"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-            git push origin HEAD:master
-          fi
+          bash scripts/ci-commit-data-files.sh "chore(data): snapshot AFL top picks [skip ci]" \
+            data/afl-model/history/top-picks-history.json

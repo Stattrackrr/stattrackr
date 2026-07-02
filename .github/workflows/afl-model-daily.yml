@@ -74,30 +74,15 @@ jobs:
 
       - name: Commit and push model outputs to master if changed
         run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "Missing required GitHub workflow token"
-            exit 1
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git lfs install
-          git fetch origin master
-          git stash --include-untracked 2>/dev/null || true
-          git checkout -B master origin/master
-          git stash pop 2>/dev/null || true
-          git add data/afl-model 2>/dev/null || true
-          git reset HEAD data/afl-model/history/top-picks-history.json 2>/dev/null || true
-          git add data/afl-dfs-usage-latest.json data/afl-weather-upcoming.json 2>/dev/null || true
-          git add data/afl-dfs-usage-*.json 2>/dev/null || true
-          git add data/afl-dfs-role-map-*.json 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "No AFL model output changes"
-          else
-            git commit -m "chore(data): daily AFL model refresh [skip ci]"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-            git push origin HEAD:master
-          fi
+          bash scripts/ci-commit-data-files.sh "chore(data): daily AFL model refresh [skip ci]" \
+            data/afl-model \
+            data/afl-dfs-usage-latest.json \
+            data/afl-weather-upcoming.json \
+            "data/afl-dfs-usage-*.json" \
+            "data/afl-dfs-role-map-*.json"
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CI_COMMIT_GIT_LFS: "1"
+          CI_COMMIT_EXCLUDE_PATHS: data/afl-model/history/top-picks-history.json
 
