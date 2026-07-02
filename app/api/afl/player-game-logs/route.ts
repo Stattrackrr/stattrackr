@@ -9,6 +9,7 @@ import {
   getAflPlayerLogsCache,
   setAflPlayerLogsCache,
   isAflPlayerLogsCacheEnabled,
+  isEmptyAflPlayerLogsCachePayload,
   AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS,
   type AflPlayerLogsCachePayload,
 } from '@/lib/cache/aflPlayerLogsCache';
@@ -80,6 +81,43 @@ function getTeamsToTryForSeason(
 /** Prefer result that has advanced stats (TOG, etc.) so players who moved still get full data. */
 function hasAdvancedStats(games: GameLogRow[]): boolean {
   return games.some((g) => g.percent_played != null || g.contested_possessions != null || g.meters_gained != null);
+}
+
+function canPersistAflPlayerLogs(games: GameLogRow[] | Record<string, unknown>[]): boolean {
+  return Array.isArray(games) && games.length > 0;
+}
+
+async function persistIncludeBothPlayerLogsCache(
+  season: number,
+  playerName: string,
+  teamSlugs: string[],
+  basePayload: AflPlayerLogsCachePayload,
+  quartersGames: Record<string, unknown>[]
+): Promise<void> {
+  if (!canPersistAflPlayerLogs(basePayload.games)) return;
+  const uniqueSlugs = [...new Set(teamSlugs.filter((slug): slug is string => Boolean(slug?.trim())))];
+  const quartersCache: AflPlayerLogsCachePayload = {
+    ...basePayload,
+    games: quartersGames,
+    game_count: quartersGames.length,
+  };
+  await Promise.all(
+    uniqueSlugs.flatMap((teamSlug) => {
+      const keyBase = buildAflPlayerLogsCacheKey({
+        season,
+        playerName,
+        teamForRequest: teamSlug,
+        includeQuarters: false,
+      });
+      const keyQuarters = buildAflPlayerLogsCacheKey({
+        season,
+        playerName,
+        teamForRequest: teamSlug,
+        includeQuarters: true,
+      });
+      return [setAflPlayerLogsCache(keyBase, basePayload), setAflPlayerLogsCache(keyQuarters, quartersCache)];
+    })
+  );
 }
 
 /** Fetch from FootyWire trying each team in order; prefer result that has advanced stats (TOG, meters gained, etc.). */
@@ -1500,11 +1538,11 @@ export async function GET(request: NextRequest) {
     }
     if (
       cachedBase &&
-      Array.isArray(cachedBase.games) &&
-      cachedBase.games.length === 0 &&
+      isEmptyAflPlayerLogsCachePayload(cachedBase) &&
       season < currentYear &&
       !isWarmRequest &&
-      !forceFetch
+      !forceFetch &&
+      !allowFetchOnMiss
     ) {
       const payload = {
         ...cachedBase,
@@ -1599,14 +1637,17 @@ export async function GET(request: NextRequest) {
           ...(teamUsed ? { team: teamUsed } : {}),
         };
         // Cache 2025 fallback under 2025 keys only; never under 2026 key so 2026 can be fetched when available.
-        if (cacheEnabled && fw2025Base.games.length > 0 && hasAdvancedStats(fw2025Base.games)) {
+        if (cacheEnabled && canPersistAflPlayerLogs(fw2025Base.games)) {
           const teamFw2025 = teamUsed ? getFootyWireTeamNameForPlayerUrl(teamUsed) : null;
           if (teamFw2025) {
-            const keyBase2025 = buildAflPlayerLogsCacheKey({ season: 2025, playerName: effectivePlayerName, teamForRequest: teamFw2025, includeQuarters: false });
-            const keyQuarters2025 = buildAflPlayerLogsCacheKey({ season: 2025, playerName: effectivePlayerName, teamForRequest: teamFw2025, includeQuarters: true });
             const baseCache: AflPlayerLogsCachePayload = { season: actualSeason, source: 'footywire.com', player_name: fw2025Base.player_name, games: fw2025Base.games as unknown as Record<string, unknown>[], game_count: fw2025Base.games.length, height: fw2025Base.height ?? undefined, guernsey: fw2025Base.guernsey ?? undefined };
-            const quartersCache: AflPlayerLogsCachePayload = { season: actualSeason, source: 'footywire.com', player_name: fw2025Base.player_name, games: quartersGames as unknown as Record<string, unknown>[], game_count: quartersGames.length, height: fw2025Base.height ?? undefined, guernsey: fw2025Base.guernsey ?? undefined };
-            await Promise.all([setAflPlayerLogsCache(keyBase2025, baseCache), setAflPlayerLogsCache(keyQuarters2025, quartersCache)]);
+            await persistIncludeBothPlayerLogsCache(
+              2025,
+              effectivePlayerName,
+              [teamFw2025, ...uniqueCacheTeamSlugs],
+              baseCache,
+              quartersGames as unknown as Record<string, unknown>[]
+            );
           }
         }
         return NextResponse.json(payload, {
@@ -1619,10 +1660,15 @@ export async function GET(request: NextRequest) {
       const actualSeason = fw.games[0]?.season ?? season;
       const gamesWithQuarters = (fwQuarters?.games?.length ? fwQuarters.games : fw.games) as unknown as Record<string, unknown>[];
       const payload = { season: actualSeason, source: 'footywire.com', player_name: fw.player_name, games: fw.games, game_count: fw.games.length, gamesWithQuarters, height: fw.height ?? undefined, guernsey: fw.guernsey ?? undefined, ...(teamFull ? { team: teamFull } : {}) };
-      if (cacheEnabled && fw.games.length > 0 && hasAdvancedStats(fw.games)) {
+      if (cacheEnabled && canPersistAflPlayerLogs(fw.games)) {
         const baseCache: AflPlayerLogsCachePayload = { season: payload.season, source: payload.source, player_name: payload.player_name, games: payload.games as unknown as Record<string, unknown>[], game_count: payload.game_count, height: payload.height, guernsey: payload.guernsey };
-        const quartersCache: AflPlayerLogsCachePayload = { season: payload.season, source: payload.source, player_name: payload.player_name, games: gamesWithQuarters, game_count: gamesWithQuarters.length, height: payload.height, guernsey: payload.guernsey };
-        await Promise.all([setAflPlayerLogsCache(keyBase, baseCache), setAflPlayerLogsCache(keyQuarters, quartersCache)]);
+        await persistIncludeBothPlayerLogsCache(
+          season,
+          effectivePlayerName,
+          uniqueCacheTeamSlugs,
+          baseCache,
+          gamesWithQuarters
+        );
       }
       return NextResponse.json(payload, { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } });
     }
@@ -1680,11 +1726,11 @@ export async function GET(request: NextRequest) {
   }
   if (
     cachedResponse &&
-    Array.isArray(cachedGames) &&
-    cachedGames.length === 0 &&
+    isEmptyAflPlayerLogsCachePayload(cachedResponse) &&
     season < currentYear &&
     !isWarmRequest &&
-    !forceFetch
+    !forceFetch &&
+    !allowFetchOnMiss
   ) {
     return NextResponse.json(
       { ...cachedResponse, ...(teamFull ? { team: teamFull } : {}) },
@@ -1775,7 +1821,9 @@ export async function GET(request: NextRequest) {
         guernsey: fw.guernsey ?? undefined,
         ...(teamFull ? { team: teamFull } : {}),
       };
-      if (cacheEnabled && fw.games.length > 0 && hasAdvancedStats(fw.games)) await setAflPlayerLogsCache(responseCacheKey, payload as AflPlayerLogsCachePayload);
+      if (cacheEnabled && canPersistAflPlayerLogs(fw.games)) {
+        await setAflPlayerLogsCache(responseCacheKey, payload as AflPlayerLogsCachePayload);
+      }
       const resHeaders = { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' as string };
       if (season === 2026 && actualSeason === 2025) (resHeaders as Record<string, string>)['X-AFL-Season-Fallback'] = '2025';
       return NextResponse.json(payload, { headers: resHeaders });

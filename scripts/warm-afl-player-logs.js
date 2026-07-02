@@ -176,6 +176,7 @@ async function main() {
   const failedPlayers = [];
   const noDataPlayers = [];
   const progressInterval = Math.max(1, Math.floor(jobs.length / 20)); // ~20 progress lines
+  let healthProbe = null;
 
   await runPool(
     jobs,
@@ -187,6 +188,8 @@ async function main() {
         if (Number(result.count || 0) === 0) {
           noData += 1;
           noDataPlayers.push(`${job.player.name} (${teamForRequest(job.player.team)}) ${job.season}`);
+        } else if (!healthProbe) {
+          healthProbe = { player: job.player, season: job.season };
         }
       } else {
         failed += 1;
@@ -213,12 +216,12 @@ async function main() {
   // Cache health check: GET without cron secret (same as a user). Fail workflow if we warmed but prod returns cache-miss.
   let cacheHealthOk = false;
   let ranCacheHealthCheck = false;
-  if (selectedPlayers.length > 0 && success > 0) {
+  const probe = healthProbe ?? (selectedPlayers.length > 0 ? { player: selectedPlayers[0], season: warmSeasons.includes(2025) ? 2025 : warmSeasons[0] } : null);
+  if (probe && success > 0) {
     ranCacheHealthCheck = true;
-    const probe = selectedPlayers[0];
-    const team = teamForRequest(probe.team);
-    const verifySeason = warmSeasons.includes(2025) ? 2025 : warmSeasons[0];
-    const verifyUrl = `${prodUrl}/api/afl/player-game-logs?season=${verifySeason}&player_name=${encodeURIComponent(probe.name)}&team=${encodeURIComponent(team)}&include_both=1`;
+    const team = teamForRequest(probe.player.team);
+    const verifySeason = probe.season;
+    const verifyUrl = `${prodUrl}/api/afl/player-game-logs?season=${verifySeason}&player_name=${encodeURIComponent(probe.player.name)}&team=${encodeURIComponent(team)}&include_both=1`;
     console.log(`[AFL Warm] 🔍 Cache health check: GET (no cron secret) ${verifyUrl}`);
     try {
       const res = await fetch(verifyUrl, { headers: { Accept: 'application/json' } });
@@ -230,10 +233,10 @@ async function main() {
       const gameCount = Number(json?.game_count ?? (Array.isArray(json?.games) ? json.games.length : 0));
 
       if (source === 'cache' && gameCount > 0) {
-        console.log(`[AFL Warm] ✅ Cache health OK: ${probe.name} (${verifySeason}) → HTTP ${res.status}, cache hit, ${gameCount} games`);
+        console.log(`[AFL Warm] ✅ Cache health OK: ${probe.player.name} (${verifySeason}) → HTTP ${res.status}, cache hit, ${gameCount} games`);
         cacheHealthOk = true;
       } else {
-        console.log(`[AFL Warm] ❌ Cache health FAIL: ${probe.name} (${verifySeason}) → HTTP ${res.status}, source=${source || 'unknown'}, games=${gameCount}`);
+        console.log(`[AFL Warm] ❌ Cache health FAIL: ${probe.player.name} (${verifySeason}) → HTTP ${res.status}, source=${source || 'unknown'}, games=${gameCount}`);
         console.log(`[AFL Warm]    X-AFL-Cache-Enabled: ${cacheEnabled || '(missing)'}`);
         if (keyBase) console.log(`[AFL Warm]    X-AFL-Cache-Key-Base: ${keyBase}`);
         if (key2025) console.log(`[AFL Warm]    X-AFL-Cache-Key-2025-Fallback: ${key2025}`);

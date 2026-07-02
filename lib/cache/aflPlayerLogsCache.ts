@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
-const AFL_CACHE_SCHEMA = 'v1';
+// Bump when cache key semantics change (e.g. stop serving empty negative entries as hits).
+const AFL_CACHE_SCHEMA = 'v2';
 const AFL_CACHE_PREFIX = `afl:player-logs:${AFL_CACHE_SCHEMA}`;
 
 const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || '';
@@ -87,6 +88,15 @@ export async function getAflPlayerLogsCache(
 }
 
 /** Only write when we have a successful payload with at least one game; never overwrite with empty. */
+export function isEmptyAflPlayerLogsCachePayload(
+  payload: AflPlayerLogsCachePayload | null | undefined
+): boolean {
+  if (!payload || typeof payload !== 'object') return false;
+  const games = payload.games;
+  const count = payload.game_count ?? (Array.isArray(games) ? games.length : 0);
+  return !Array.isArray(games) || games.length === 0 || count <= 0;
+}
+
 export async function setAflPlayerLogsCache(
   key: string,
   payload: AflPlayerLogsCachePayload,
