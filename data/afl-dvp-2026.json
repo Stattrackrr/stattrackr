@@ -1,31 +1,18 @@
 {
-<<<<<<< Updated upstream
-  "generatedAt": "2026-07-02T02:48:21.218Z",
-=======
-  "generatedAt": "2026-07-02T02:58:57.866Z",
->>>>>>> Stashed changes
-  "season": 2026,
+  "generatedAt": "2026-07-02T02:48:21.218Z",  "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
   "summary": {
     "playerCount": 778,
-<<<<<<< Updated upstream
     "withLogs": 604,
     "missingLogs": 174,
-    "coveragePct": 77.63,
-=======
-    "withLogs": 602,
-    "missingLogs": 176,
-    "coveragePct": 77.38,
->>>>>>> Stashed changes
-    "eligiblePlayers": 585,
+    "coveragePct": 77.63,    "eligiblePlayers": 585,
     "withLogsEligible": 580,
     "missingEligible": 5,
     "coveragePctEligible": 99.15
   },
   "leagueBaselineByPosition": {
     "DEF": {
-<<<<<<< Updated upstream
       "sampleSize": 2069,
       "perPlayerGame": {
         "disposals": 16.62,
@@ -49,34 +36,7 @@
         "goal_assists": 0.2,
         "meters_gained": 288.94,
         "percent_played": 81.84,
-        "free_kicks_for": 0.67,
-=======
-      "sampleSize": 2057,
-      "perPlayerGame": {
-        "disposals": 16.55,
-        "kicks": 10.53,
-        "handballs": 6.02,
-        "marks": 5.12,
-        "goals": 0.13,
-        "behinds": 0.13,
-        "tackles": 1.78,
-        "hitouts": 0.27,
-        "inside_50s": 1.59,
-        "clearances": 0.56,
-        "intercepts": 4.35,
-        "tackles_inside_50": 0.1,
-        "score_involvements": 2.86,
-        "contested_possessions": 4.13,
-        "uncontested_possessions": 10.08,
-        "contested_marks": 0.41,
-        "marks_inside_50": 0.11,
-        "one_percenters": 3.01,
-        "goal_assists": 0.2,
-        "meters_gained": 264.35,
-        "percent_played": 77.39,
-        "free_kicks_for": 0.66,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.75
+        "free_kicks_for": 0.67,        "free_kicks_against": 0.75
       }
     },
     "MID": {
@@ -92,7 +52,6 @@
         "hitouts": 0.01,
         "inside_50s": 3.29,
         "clearances": 2.93,
-<<<<<<< Updated upstream
         "intercepts": 2.56,
         "tackles_inside_50": 0.5,
         "score_involvements": 5.09,
@@ -103,21 +62,7 @@
         "one_percenters": 1.03,
         "goal_assists": 0.52,
         "meters_gained": 311.71,
-        "percent_played": 76.69,
-=======
-        "intercepts": 2.23,
-        "tackles_inside_50": 0.44,
-        "score_involvements": 4.36,
-        "contested_possessions": 6.14,
-        "uncontested_possessions": 10.65,
-        "contested_marks": 0.16,
-        "marks_inside_50": 0.31,
-        "one_percenters": 0.9,
-        "goal_assists": 0.52,
-        "meters_gained": 266.92,
-        "percent_played": 66.61,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.91,
+        "percent_played": 76.69,        "free_kicks_for": 0.91,
         "free_kicks_against": 0.87
       }
     },
@@ -162,7 +107,6 @@
         "hitouts": 0.4,
         "inside_50s": 2.22,
         "clearances": 0.82,
-<<<<<<< Updated upstream
         "intercepts": 1.39,
         "tackles_inside_50": 0.8,
         "score_involvements": 4.85,
@@ -173,21 +117,7 @@
         "one_percenters": 1.13,
         "goal_assists": 0.55,
         "meters_gained": 210.62,
-        "percent_played": 76.88,
-=======
-        "intercepts": 1.34,
-        "tackles_inside_50": 0.78,
-        "score_involvements": 4.71,
-        "contested_possessions": 4.52,
-        "uncontested_possessions": 7.22,
-        "contested_marks": 0.52,
-        "marks_inside_50": 1.2,
-        "one_percenters": 1.1,
-        "goal_assists": 0.55,
-        "meters_gained": 202.61,
-        "percent_played": 74.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.79,
+        "percent_played": 76.88,        "free_kicks_for": 0.79,
         "free_kicks_against": 0.75
       }
     }
@@ -196,7 +126,6 @@
     {
       "opponent": "Adelaide",
       "position": "DEF",
-<<<<<<< Updated upstream
       "sampleSize": 107,
       "teamGames": 15,
       "totals": {
@@ -297,111 +226,7 @@
         "meters_gained": 0.979,
         "percent_played": 1.019,
         "free_kicks_for": 1.119,
-        "free_kicks_against": 0.907
-=======
-      "sampleSize": 105,
-      "teamGames": 15,
-      "totals": {
-        "disposals": 1624,
-        "kicks": 1062,
-        "handballs": 562,
-        "marks": 490,
-        "goals": 19,
-        "behinds": 13,
-        "tackles": 209,
-        "hitouts": 29,
-        "inside_50s": 170,
-        "clearances": 76,
-        "intercepts": 474,
-        "tackles_inside_50": 14,
-        "score_involvements": 263,
-        "contested_possessions": 463,
-        "uncontested_possessions": 959,
-        "contested_marks": 52,
-        "marks_inside_50": 10,
-        "one_percenters": 383,
-        "goal_assists": 22,
-        "meters_gained": 27987,
-        "percent_played": 8424,
-        "free_kicks_for": 78,
-        "free_kicks_against": 70
-      },
-      "perPlayerGame": {
-        "disposals": 15.47,
-        "kicks": 10.11,
-        "handballs": 5.35,
-        "marks": 4.67,
-        "goals": 0.18,
-        "behinds": 0.12,
-        "tackles": 1.99,
-        "hitouts": 0.28,
-        "inside_50s": 1.62,
-        "clearances": 0.72,
-        "intercepts": 4.51,
-        "tackles_inside_50": 0.13,
-        "score_involvements": 2.5,
-        "contested_possessions": 4.41,
-        "uncontested_possessions": 9.13,
-        "contested_marks": 0.5,
-        "marks_inside_50": 0.1,
-        "one_percenters": 3.65,
-        "goal_assists": 0.21,
-        "meters_gained": 266.54,
-        "percent_played": 80.23,
-        "free_kicks_for": 0.74,
-        "free_kicks_against": 0.67
-      },
-      "perTeamGame": {
-        "disposals": 108.27,
-        "kicks": 70.8,
-        "handballs": 37.47,
-        "marks": 32.67,
-        "goals": 1.27,
-        "behinds": 0.87,
-        "tackles": 13.93,
-        "hitouts": 1.93,
-        "inside_50s": 11.33,
-        "clearances": 5.07,
-        "intercepts": 31.6,
-        "tackles_inside_50": 0.93,
-        "score_involvements": 17.53,
-        "contested_possessions": 30.87,
-        "uncontested_possessions": 63.93,
-        "contested_marks": 3.47,
-        "marks_inside_50": 0.67,
-        "one_percenters": 25.53,
-        "goal_assists": 1.47,
-        "meters_gained": 1865.8,
-        "percent_played": 561.6,
-        "free_kicks_for": 5.2,
-        "free_kicks_against": 4.67
-      },
-      "indexVsLeague": {
-        "disposals": 0.935,
-        "kicks": 0.96,
-        "handballs": 0.889,
-        "marks": 0.912,
-        "goals": 1.385,
-        "behinds": 0.923,
-        "tackles": 1.118,
-        "hitouts": 1.037,
-        "inside_50s": 1.019,
-        "clearances": 1.286,
-        "intercepts": 1.037,
-        "tackles_inside_50": 1.3,
-        "score_involvements": 0.874,
-        "contested_possessions": 1.068,
-        "uncontested_possessions": 0.906,
-        "contested_marks": 1.22,
-        "marks_inside_50": 0.909,
-        "one_percenters": 1.213,
-        "goal_assists": 1.05,
-        "meters_gained": 1.008,
-        "percent_played": 1.037,
-        "free_kicks_for": 1.121,
-        "free_kicks_against": 0.893
->>>>>>> Stashed changes
-      }
+        "free_kicks_against": 0.907      }
     },
     {
       "opponent": "Adelaide",
@@ -419,7 +244,6 @@
         "hitouts": 63,
         "inside_50s": 234,
         "clearances": 97,
-<<<<<<< Updated upstream
         "intercepts": 168,
         "tackles_inside_50": 102,
         "score_involvements": 458,
@@ -430,21 +254,7 @@
         "one_percenters": 132,
         "goal_assists": 47,
         "meters_gained": 22555,
-        "percent_played": 7929,
-=======
-        "intercepts": 167,
-        "tackles_inside_50": 101,
-        "score_involvements": 453,
-        "contested_possessions": 529,
-        "uncontested_possessions": 706,
-        "contested_marks": 50,
-        "marks_inside_50": 86,
-        "one_percenters": 130,
-        "goal_assists": 47,
-        "meters_gained": 22255,
-        "percent_played": 7848,
->>>>>>> Stashed changes
-        "free_kicks_for": 83,
+        "percent_played": 7929,        "free_kicks_for": 83,
         "free_kicks_against": 86
       },
       "perPlayerGame": {
@@ -458,7 +268,6 @@
         "hitouts": 0.62,
         "inside_50s": 2.29,
         "clearances": 0.95,
-<<<<<<< Updated upstream
         "intercepts": 1.65,
         "tackles_inside_50": 1,
         "score_involvements": 4.49,
@@ -469,21 +278,7 @@
         "one_percenters": 1.29,
         "goal_assists": 0.46,
         "meters_gained": 221.13,
-        "percent_played": 77.74,
-=======
-        "intercepts": 1.64,
-        "tackles_inside_50": 0.99,
-        "score_involvements": 4.44,
-        "contested_possessions": 5.19,
-        "uncontested_possessions": 6.92,
-        "contested_marks": 0.49,
-        "marks_inside_50": 0.84,
-        "one_percenters": 1.27,
-        "goal_assists": 0.46,
-        "meters_gained": 218.19,
-        "percent_played": 76.94,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.81,
+        "percent_played": 77.74,        "free_kicks_for": 0.81,
         "free_kicks_against": 0.84
       },
       "perTeamGame": {
@@ -497,7 +292,6 @@
         "hitouts": 4.2,
         "inside_50s": 15.6,
         "clearances": 6.47,
-<<<<<<< Updated upstream
         "intercepts": 11.2,
         "tackles_inside_50": 6.8,
         "score_involvements": 30.53,
@@ -508,21 +302,7 @@
         "one_percenters": 8.8,
         "goal_assists": 3.13,
         "meters_gained": 1503.67,
-        "percent_played": 528.6,
-=======
-        "intercepts": 11.13,
-        "tackles_inside_50": 6.73,
-        "score_involvements": 30.2,
-        "contested_possessions": 35.27,
-        "uncontested_possessions": 47.07,
-        "contested_marks": 3.33,
-        "marks_inside_50": 5.73,
-        "one_percenters": 8.67,
-        "goal_assists": 3.13,
-        "meters_gained": 1483.67,
-        "percent_played": 523.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.53,
+        "percent_played": 528.6,        "free_kicks_for": 5.53,
         "free_kicks_against": 5.73
       },
       "indexVsLeague": {
@@ -536,7 +316,6 @@
         "hitouts": 1.55,
         "inside_50s": 1.032,
         "clearances": 1.159,
-<<<<<<< Updated upstream
         "intercepts": 1.187,
         "tackles_inside_50": 1.25,
         "score_involvements": 0.926,
@@ -547,21 +326,7 @@
         "one_percenters": 1.142,
         "goal_assists": 0.836,
         "meters_gained": 1.05,
-        "percent_played": 1.011,
-=======
-        "intercepts": 1.224,
-        "tackles_inside_50": 1.269,
-        "score_involvements": 0.943,
-        "contested_possessions": 1.148,
-        "uncontested_possessions": 0.958,
-        "contested_marks": 0.942,
-        "marks_inside_50": 0.7,
-        "one_percenters": 1.155,
-        "goal_assists": 0.836,
-        "meters_gained": 1.077,
-        "percent_played": 1.029,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.025,
+        "percent_played": 1.011,        "free_kicks_for": 1.025,
         "free_kicks_against": 1.12
       }
     },
@@ -656,7 +421,6 @@
         "hitouts": 0,
         "inside_50s": 0.988,
         "clearances": 1.065,
-<<<<<<< Updated upstream
         "intercepts": 1.145,
         "tackles_inside_50": 0.98,
         "score_involvements": 0.9,
@@ -667,21 +431,7 @@
         "one_percenters": 1.058,
         "goal_assists": 0.692,
         "meters_gained": 1.012,
-        "percent_played": 1.007,
-=======
-        "intercepts": 1.166,
-        "tackles_inside_50": 0.977,
-        "score_involvements": 0.892,
-        "contested_possessions": 1.151,
-        "uncontested_possessions": 0.957,
-        "contested_marks": 1.375,
-        "marks_inside_50": 0.806,
-        "one_percenters": 1.1,
-        "goal_assists": 0.692,
-        "meters_gained": 1.032,
-        "percent_played": 1.015,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.945,
+        "percent_played": 1.007,        "free_kicks_for": 0.945,
         "free_kicks_against": 1.057
       }
     },
@@ -872,7 +622,6 @@
         "free_kicks_against": 5.53
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.958,
         "kicks": 0.89,
         "handballs": 1.08,
@@ -893,31 +642,7 @@
         "one_percenters": 0.965,
         "goal_assists": 1,
         "meters_gained": 0.966,
-        "percent_played": 1,
-=======
-        "disposals": 0.956,
-        "kicks": 0.887,
-        "handballs": 1.076,
-        "marks": 0.764,
-        "goals": 0.615,
-        "behinds": 1.154,
-        "tackles": 1.051,
-        "hitouts": 0.704,
-        "inside_50s": 0.981,
-        "clearances": 0.75,
-        "intercepts": 1.069,
-        "tackles_inside_50": 1.3,
-        "score_involvements": 1.017,
-        "contested_possessions": 1.007,
-        "uncontested_possessions": 0.902,
-        "contested_marks": 0.878,
-        "marks_inside_50": 1.091,
-        "one_percenters": 0.963,
-        "goal_assists": 1,
-        "meters_gained": 0.954,
-        "percent_played": 0.997,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.97,
+        "percent_played": 1,        "free_kicks_for": 0.97,
         "free_kicks_against": 0.933
       }
     },
@@ -937,7 +662,6 @@
         "hitouts": 43,
         "inside_50s": 223,
         "clearances": 77,
-<<<<<<< Updated upstream
         "intercepts": 135,
         "tackles_inside_50": 68,
         "score_involvements": 537,
@@ -948,21 +672,7 @@
         "one_percenters": 122,
         "goal_assists": 62,
         "meters_gained": 22368,
-        "percent_played": 7504,
-=======
-        "intercepts": 132,
-        "tackles_inside_50": 66,
-        "score_involvements": 522,
-        "contested_possessions": 471,
-        "uncontested_possessions": 724,
-        "contested_marks": 66,
-        "marks_inside_50": 143,
-        "one_percenters": 120,
-        "goal_assists": 62,
-        "meters_gained": 21821,
-        "percent_played": 7348,
->>>>>>> Stashed changes
-        "free_kicks_for": 85,
+        "percent_played": 7504,        "free_kicks_for": 85,
         "free_kicks_against": 68
       },
       "perPlayerGame": {
@@ -976,7 +686,6 @@
         "hitouts": 0.42,
         "inside_50s": 2.17,
         "clearances": 0.75,
-<<<<<<< Updated upstream
         "intercepts": 1.31,
         "tackles_inside_50": 0.66,
         "score_involvements": 5.21,
@@ -987,21 +696,7 @@
         "one_percenters": 1.18,
         "goal_assists": 0.6,
         "meters_gained": 217.17,
-        "percent_played": 72.85,
-=======
-        "intercepts": 1.28,
-        "tackles_inside_50": 0.64,
-        "score_involvements": 5.07,
-        "contested_possessions": 4.57,
-        "uncontested_possessions": 7.03,
-        "contested_marks": 0.64,
-        "marks_inside_50": 1.39,
-        "one_percenters": 1.17,
-        "goal_assists": 0.6,
-        "meters_gained": 211.85,
-        "percent_played": 71.34,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.83,
+        "percent_played": 72.85,        "free_kicks_for": 0.83,
         "free_kicks_against": 0.66
       },
       "perTeamGame": {
@@ -1015,7 +710,6 @@
         "hitouts": 2.87,
         "inside_50s": 14.87,
         "clearances": 5.13,
-<<<<<<< Updated upstream
         "intercepts": 9,
         "tackles_inside_50": 4.53,
         "score_involvements": 35.8,
@@ -1026,21 +720,7 @@
         "one_percenters": 8.13,
         "goal_assists": 4.13,
         "meters_gained": 1491.2,
-        "percent_played": 500.27,
-=======
-        "intercepts": 8.8,
-        "tackles_inside_50": 4.4,
-        "score_involvements": 34.8,
-        "contested_possessions": 31.4,
-        "uncontested_possessions": 48.27,
-        "contested_marks": 4.4,
-        "marks_inside_50": 9.53,
-        "one_percenters": 8,
-        "goal_assists": 4.13,
-        "meters_gained": 1454.73,
-        "percent_played": 489.87,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.67,
+        "percent_played": 500.27,        "free_kicks_for": 5.67,
         "free_kicks_against": 4.53
       },
       "indexVsLeague": {
@@ -1054,7 +734,6 @@
         "hitouts": 1.05,
         "inside_50s": 0.977,
         "clearances": 0.915,
-<<<<<<< Updated upstream
         "intercepts": 0.942,
         "tackles_inside_50": 0.825,
         "score_involvements": 1.074,
@@ -1065,21 +744,7 @@
         "one_percenters": 1.044,
         "goal_assists": 1.091,
         "meters_gained": 1.031,
-        "percent_played": 0.948,
-=======
-        "intercepts": 0.955,
-        "tackles_inside_50": 0.821,
-        "score_involvements": 1.076,
-        "contested_possessions": 1.011,
-        "uncontested_possessions": 0.974,
-        "contested_marks": 1.231,
-        "marks_inside_50": 1.158,
-        "one_percenters": 1.064,
-        "goal_assists": 1.091,
-        "meters_gained": 1.046,
-        "percent_played": 0.954,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.051,
+        "percent_played": 0.948,        "free_kicks_for": 1.051,
         "free_kicks_against": 0.88
       }
     },
@@ -1099,7 +764,6 @@
         "hitouts": 0,
         "inside_50s": 334,
         "clearances": 273,
-<<<<<<< Updated upstream
         "intercepts": 240,
         "tackles_inside_50": 52,
         "score_involvements": 491,
@@ -1110,21 +774,7 @@
         "one_percenters": 87,
         "goal_assists": 59,
         "meters_gained": 30093,
-        "percent_played": 7526,
-=======
-        "intercepts": 209,
-        "tackles_inside_50": 48,
-        "score_involvements": 437,
-        "contested_possessions": 598,
-        "uncontested_possessions": 1078,
-        "contested_marks": 15,
-        "marks_inside_50": 27,
-        "one_percenters": 74,
-        "goal_assists": 59,
-        "meters_gained": 26329,
-        "percent_played": 6725,
->>>>>>> Stashed changes
-        "free_kicks_for": 65,
+        "percent_played": 7526,        "free_kicks_for": 65,
         "free_kicks_against": 74
       },
       "perPlayerGame": {
@@ -1138,7 +788,6 @@
         "hitouts": 0,
         "inside_50s": 3.48,
         "clearances": 2.84,
-<<<<<<< Updated upstream
         "intercepts": 2.5,
         "tackles_inside_50": 0.54,
         "score_involvements": 5.11,
@@ -1149,21 +798,7 @@
         "one_percenters": 0.91,
         "goal_assists": 0.61,
         "meters_gained": 313.47,
-        "percent_played": 78.4,
-=======
-        "intercepts": 2.18,
-        "tackles_inside_50": 0.5,
-        "score_involvements": 4.55,
-        "contested_possessions": 6.23,
-        "uncontested_possessions": 11.23,
-        "contested_marks": 0.16,
-        "marks_inside_50": 0.28,
-        "one_percenters": 0.77,
-        "goal_assists": 0.61,
-        "meters_gained": 274.26,
-        "percent_played": 70.05,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.68,
+        "percent_played": 78.4,        "free_kicks_for": 0.68,
         "free_kicks_against": 0.77
       },
       "perTeamGame": {
@@ -1177,7 +812,6 @@
         "hitouts": 0,
         "inside_50s": 22.27,
         "clearances": 18.2,
-<<<<<<< Updated upstream
         "intercepts": 16,
         "tackles_inside_50": 3.47,
         "score_involvements": 32.73,
@@ -1188,21 +822,7 @@
         "one_percenters": 5.8,
         "goal_assists": 3.93,
         "meters_gained": 2006.2,
-        "percent_played": 501.73,
-=======
-        "intercepts": 13.93,
-        "tackles_inside_50": 3.2,
-        "score_involvements": 29.13,
-        "contested_possessions": 39.87,
-        "uncontested_possessions": 71.87,
-        "contested_marks": 1,
-        "marks_inside_50": 1.8,
-        "one_percenters": 4.93,
-        "goal_assists": 3.93,
-        "meters_gained": 1755.27,
-        "percent_played": 448.33,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.33,
+        "percent_played": 501.73,        "free_kicks_for": 4.33,
         "free_kicks_against": 4.93
       },
       "indexVsLeague": {
@@ -1216,7 +836,6 @@
         "hitouts": 0,
         "inside_50s": 1.058,
         "clearances": 0.969,
-<<<<<<< Updated upstream
         "intercepts": 0.977,
         "tackles_inside_50": 1.08,
         "score_involvements": 1.004,
@@ -1227,21 +846,7 @@
         "one_percenters": 0.883,
         "goal_assists": 1.173,
         "meters_gained": 1.006,
-        "percent_played": 1.022,
-=======
-        "intercepts": 0.978,
-        "tackles_inside_50": 1.136,
-        "score_involvements": 1.044,
-        "contested_possessions": 1.015,
-        "uncontested_possessions": 1.054,
-        "contested_marks": 1,
-        "marks_inside_50": 0.903,
-        "one_percenters": 0.856,
-        "goal_assists": 1.173,
-        "meters_gained": 1.027,
-        "percent_played": 1.052,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.747,
+        "percent_played": 1.022,        "free_kicks_for": 0.747,
         "free_kicks_against": 0.885
       }
     },
@@ -1365,7 +970,6 @@
         "behinds": 13,
         "tackles": 204,
         "hitouts": 47,
-<<<<<<< Updated upstream
         "inside_50s": 176,
         "clearances": 67,
         "intercepts": 496,
@@ -1380,25 +984,7 @@
         "meters_gained": 32455,
         "percent_played": 9501,
         "free_kicks_for": 88,
-        "free_kicks_against": 101
-=======
-        "inside_50s": 171,
-        "clearances": 62,
-        "intercepts": 467,
-        "tackles_inside_50": 12,
-        "score_involvements": 334,
-        "contested_possessions": 481,
-        "uncontested_possessions": 1140,
-        "contested_marks": 47,
-        "marks_inside_50": 14,
-        "one_percenters": 377,
-        "goal_assists": 27,
-        "meters_gained": 29911,
-        "percent_played": 9071,
-        "free_kicks_for": 85,
-        "free_kicks_against": 100
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 101      },
       "perPlayerGame": {
         "disposals": 15.82,
         "kicks": 10.19,
@@ -1408,7 +994,6 @@
         "behinds": 0.11,
         "tackles": 1.74,
         "hitouts": 0.4,
-<<<<<<< Updated upstream
         "inside_50s": 1.49,
         "clearances": 0.57,
         "intercepts": 4.2,
@@ -1423,25 +1008,7 @@
         "meters_gained": 275.04,
         "percent_played": 80.52,
         "free_kicks_for": 0.75,
-        "free_kicks_against": 0.86
-=======
-        "inside_50s": 1.46,
-        "clearances": 0.53,
-        "intercepts": 3.99,
-        "tackles_inside_50": 0.1,
-        "score_involvements": 2.85,
-        "contested_possessions": 4.11,
-        "uncontested_possessions": 9.74,
-        "contested_marks": 0.4,
-        "marks_inside_50": 0.12,
-        "one_percenters": 3.22,
-        "goal_assists": 0.23,
-        "meters_gained": 255.65,
-        "percent_played": 77.53,
-        "free_kicks_for": 0.73,
-        "free_kicks_against": 0.85
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 0.86      },
       "perTeamGame": {
         "disposals": 123.4,
         "kicks": 79.47,
@@ -1451,7 +1018,6 @@
         "behinds": 0.87,
         "tackles": 13.6,
         "hitouts": 3.13,
-<<<<<<< Updated upstream
         "inside_50s": 11.73,
         "clearances": 4.47,
         "intercepts": 33.07,
@@ -1491,50 +1057,7 @@
         "meters_gained": 0.952,
         "percent_played": 0.984,
         "free_kicks_for": 1.119,
-        "free_kicks_against": 1.147
-=======
-        "inside_50s": 11.4,
-        "clearances": 4.13,
-        "intercepts": 31.13,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 22.27,
-        "contested_possessions": 32.07,
-        "uncontested_possessions": 76,
-        "contested_marks": 3.13,
-        "marks_inside_50": 0.93,
-        "one_percenters": 25.13,
-        "goal_assists": 1.8,
-        "meters_gained": 1994.07,
-        "percent_played": 604.73,
-        "free_kicks_for": 5.67,
-        "free_kicks_against": 6.67
-      },
-      "indexVsLeague": {
-        "disposals": 0.956,
-        "kicks": 0.968,
-        "handballs": 0.935,
-        "marks": 0.949,
-        "goals": 1.231,
-        "behinds": 0.846,
-        "tackles": 0.978,
-        "hitouts": 1.481,
-        "inside_50s": 0.918,
-        "clearances": 0.946,
-        "intercepts": 0.917,
-        "tackles_inside_50": 1,
-        "score_involvements": 0.997,
-        "contested_possessions": 0.995,
-        "uncontested_possessions": 0.966,
-        "contested_marks": 0.976,
-        "marks_inside_50": 1.091,
-        "one_percenters": 1.07,
-        "goal_assists": 1.15,
-        "meters_gained": 0.967,
-        "percent_played": 1.002,
-        "free_kicks_for": 1.106,
-        "free_kicks_against": 1.133
->>>>>>> Stashed changes
-      }
+        "free_kicks_against": 1.147      }
     },
     {
       "opponent": "Carlton",
@@ -1552,7 +1075,6 @@
         "hitouts": 48,
         "inside_50s": 207,
         "clearances": 75,
-<<<<<<< Updated upstream
         "intercepts": 130,
         "tackles_inside_50": 68,
         "score_involvements": 426,
@@ -1563,21 +1085,7 @@
         "one_percenters": 115,
         "goal_assists": 49,
         "meters_gained": 19377,
-        "percent_played": 7196,
-=======
-        "intercepts": 125,
-        "tackles_inside_50": 66,
-        "score_involvements": 413,
-        "contested_possessions": 379,
-        "uncontested_possessions": 678,
-        "contested_marks": 41,
-        "marks_inside_50": 117,
-        "one_percenters": 111,
-        "goal_assists": 49,
-        "meters_gained": 18529,
-        "percent_played": 6944,
->>>>>>> Stashed changes
-        "free_kicks_for": 68,
+        "percent_played": 7196,        "free_kicks_for": 68,
         "free_kicks_against": 66
       },
       "perPlayerGame": {
@@ -1591,7 +1099,6 @@
         "hitouts": 0.52,
         "inside_50s": 2.25,
         "clearances": 0.82,
-<<<<<<< Updated upstream
         "intercepts": 1.41,
         "tackles_inside_50": 0.74,
         "score_involvements": 4.63,
@@ -1602,21 +1109,7 @@
         "one_percenters": 1.25,
         "goal_assists": 0.53,
         "meters_gained": 210.62,
-        "percent_played": 78.22,
-=======
-        "intercepts": 1.36,
-        "tackles_inside_50": 0.72,
-        "score_involvements": 4.49,
-        "contested_possessions": 4.12,
-        "uncontested_possessions": 7.37,
-        "contested_marks": 0.45,
-        "marks_inside_50": 1.27,
-        "one_percenters": 1.21,
-        "goal_assists": 0.53,
-        "meters_gained": 201.4,
-        "percent_played": 75.48,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.74,
+        "percent_played": 78.22,        "free_kicks_for": 0.74,
         "free_kicks_against": 0.72
       },
       "perTeamGame": {
@@ -1630,7 +1123,6 @@
         "hitouts": 3.2,
         "inside_50s": 13.8,
         "clearances": 5,
-<<<<<<< Updated upstream
         "intercepts": 8.67,
         "tackles_inside_50": 4.53,
         "score_involvements": 28.4,
@@ -1641,21 +1133,7 @@
         "one_percenters": 7.67,
         "goal_assists": 3.27,
         "meters_gained": 1291.8,
-        "percent_played": 479.73,
-=======
-        "intercepts": 8.33,
-        "tackles_inside_50": 4.4,
-        "score_involvements": 27.53,
-        "contested_possessions": 25.27,
-        "uncontested_possessions": 45.2,
-        "contested_marks": 2.73,
-        "marks_inside_50": 7.8,
-        "one_percenters": 7.4,
-        "goal_assists": 3.27,
-        "meters_gained": 1235.27,
-        "percent_played": 462.93,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.53,
+        "percent_played": 479.73,        "free_kicks_for": 4.53,
         "free_kicks_against": 4.4
       },
       "indexVsLeague": {
@@ -1669,7 +1147,6 @@
         "hitouts": 1.3,
         "inside_50s": 1.014,
         "clearances": 1,
-<<<<<<< Updated upstream
         "intercepts": 1.014,
         "tackles_inside_50": 0.925,
         "score_involvements": 0.955,
@@ -1680,21 +1157,7 @@
         "one_percenters": 1.106,
         "goal_assists": 0.964,
         "meters_gained": 1,
-        "percent_played": 1.017,
-=======
-        "intercepts": 1.015,
-        "tackles_inside_50": 0.923,
-        "score_involvements": 0.953,
-        "contested_possessions": 0.912,
-        "uncontested_possessions": 1.021,
-        "contested_marks": 0.865,
-        "marks_inside_50": 1.058,
-        "one_percenters": 1.1,
-        "goal_assists": 0.964,
-        "meters_gained": 0.994,
-        "percent_played": 1.009,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.937,
+        "percent_played": 1.017,        "free_kicks_for": 0.937,
         "free_kicks_against": 0.96
       }
     },
@@ -1789,7 +1252,6 @@
         "hitouts": 0,
         "inside_50s": 1.07,
         "clearances": 0.983,
-<<<<<<< Updated upstream
         "intercepts": 1.027,
         "tackles_inside_50": 0.88,
         "score_involvements": 0.972,
@@ -1800,21 +1262,7 @@
         "one_percenters": 1.117,
         "goal_assists": 1.058,
         "meters_gained": 0.989,
-        "percent_played": 1.005,
-=======
-        "intercepts": 1.009,
-        "tackles_inside_50": 0.841,
-        "score_involvements": 1.002,
-        "contested_possessions": 1.028,
-        "uncontested_possessions": 0.969,
-        "contested_marks": 0.875,
-        "marks_inside_50": 0.871,
-        "one_percenters": 1.1,
-        "goal_assists": 1.058,
-        "meters_gained": 0.982,
-        "percent_played": 1.008,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.154,
+        "percent_played": 1.005,        "free_kicks_for": 1.154,
         "free_kicks_against": 0.989
       }
     },
@@ -1938,7 +1386,6 @@
         "behinds": 14,
         "tackles": 187,
         "hitouts": 57,
-<<<<<<< Updated upstream
         "inside_50s": 191,
         "clearances": 67,
         "intercepts": 542,
@@ -1953,25 +1400,7 @@
         "meters_gained": 33529,
         "percent_played": 9557,
         "free_kicks_for": 65,
-        "free_kicks_against": 76
-=======
-        "inside_50s": 186,
-        "clearances": 65,
-        "intercepts": 511,
-        "tackles_inside_50": 12,
-        "score_involvements": 385,
-        "contested_possessions": 481,
-        "uncontested_possessions": 1243,
-        "contested_marks": 49,
-        "marks_inside_50": 13,
-        "one_percenters": 334,
-        "goal_assists": 17,
-        "meters_gained": 30900,
-        "percent_played": 8963,
-        "free_kicks_for": 64,
-        "free_kicks_against": 75
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 76      },
       "perPlayerGame": {
         "disposals": 17.56,
         "kicks": 11.17,
@@ -1981,7 +1410,6 @@
         "behinds": 0.12,
         "tackles": 1.64,
         "hitouts": 0.5,
-<<<<<<< Updated upstream
         "inside_50s": 1.66,
         "clearances": 0.58,
         "intercepts": 4.71,
@@ -1995,24 +1423,7 @@
         "goal_assists": 0.15,
         "meters_gained": 291.56,
         "percent_played": 83.1,
-        "free_kicks_for": 0.57,
-=======
-        "inside_50s": 1.63,
-        "clearances": 0.57,
-        "intercepts": 4.48,
-        "tackles_inside_50": 0.11,
-        "score_involvements": 3.38,
-        "contested_possessions": 4.22,
-        "uncontested_possessions": 10.9,
-        "contested_marks": 0.43,
-        "marks_inside_50": 0.11,
-        "one_percenters": 2.93,
-        "goal_assists": 0.15,
-        "meters_gained": 271.05,
-        "percent_played": 78.62,
-        "free_kicks_for": 0.56,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.66
+        "free_kicks_for": 0.57,        "free_kicks_against": 0.66
       },
       "perTeamGame": {
         "disposals": 133.47,
@@ -2023,7 +1434,6 @@
         "behinds": 0.93,
         "tackles": 12.47,
         "hitouts": 3.8,
-<<<<<<< Updated upstream
         "inside_50s": 12.73,
         "clearances": 4.47,
         "intercepts": 36.13,
@@ -2062,49 +1472,7 @@
         "goal_assists": 0.75,
         "meters_gained": 1.009,
         "percent_played": 1.015,
-        "free_kicks_for": 0.851,
-=======
-        "inside_50s": 12.4,
-        "clearances": 4.33,
-        "intercepts": 34.07,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 25.67,
-        "contested_possessions": 32.07,
-        "uncontested_possessions": 82.87,
-        "contested_marks": 3.27,
-        "marks_inside_50": 0.87,
-        "one_percenters": 22.27,
-        "goal_assists": 1.13,
-        "meters_gained": 2060,
-        "percent_played": 597.53,
-        "free_kicks_for": 4.27,
-        "free_kicks_against": 5
-      },
-      "indexVsLeague": {
-        "disposals": 1.061,
-        "kicks": 1.061,
-        "handballs": 1.061,
-        "marks": 1.109,
-        "goals": 0.846,
-        "behinds": 0.923,
-        "tackles": 0.921,
-        "hitouts": 1.852,
-        "inside_50s": 1.025,
-        "clearances": 1.018,
-        "intercepts": 1.03,
-        "tackles_inside_50": 1.1,
-        "score_involvements": 1.182,
-        "contested_possessions": 1.022,
-        "uncontested_possessions": 1.081,
-        "contested_marks": 1.049,
-        "marks_inside_50": 1,
-        "one_percenters": 0.973,
-        "goal_assists": 0.75,
-        "meters_gained": 1.025,
-        "percent_played": 1.016,
-        "free_kicks_for": 0.848,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.88
+        "free_kicks_for": 0.851,        "free_kicks_against": 0.88
       }
     },
     {
@@ -2123,7 +1491,6 @@
         "hitouts": 31,
         "inside_50s": 240,
         "clearances": 87,
-<<<<<<< Updated upstream
         "intercepts": 145,
         "tackles_inside_50": 64,
         "score_involvements": 505,
@@ -2134,21 +1501,7 @@
         "one_percenters": 97,
         "goal_assists": 49,
         "meters_gained": 22475,
-        "percent_played": 7895,
-=======
-        "intercepts": 140,
-        "tackles_inside_50": 61,
-        "score_involvements": 484,
-        "contested_possessions": 489,
-        "uncontested_possessions": 848,
-        "contested_marks": 49,
-        "marks_inside_50": 111,
-        "one_percenters": 95,
-        "goal_assists": 49,
-        "meters_gained": 21628,
-        "percent_played": 7653,
->>>>>>> Stashed changes
-        "free_kicks_for": 71,
+        "percent_played": 7895,        "free_kicks_for": 71,
         "free_kicks_against": 73
       },
       "perPlayerGame": {
@@ -2162,7 +1515,6 @@
         "hitouts": 0.29,
         "inside_50s": 2.26,
         "clearances": 0.82,
-<<<<<<< Updated upstream
         "intercepts": 1.37,
         "tackles_inside_50": 0.6,
         "score_involvements": 4.76,
@@ -2173,21 +1525,7 @@
         "one_percenters": 0.92,
         "goal_assists": 0.46,
         "meters_gained": 212.03,
-        "percent_played": 74.48,
-=======
-        "intercepts": 1.32,
-        "tackles_inside_50": 0.58,
-        "score_involvements": 4.57,
-        "contested_possessions": 4.61,
-        "uncontested_possessions": 8,
-        "contested_marks": 0.46,
-        "marks_inside_50": 1.05,
-        "one_percenters": 0.9,
-        "goal_assists": 0.46,
-        "meters_gained": 204.04,
-        "percent_played": 72.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.67,
+        "percent_played": 74.48,        "free_kicks_for": 0.67,
         "free_kicks_against": 0.69
       },
       "perTeamGame": {
@@ -2201,7 +1539,6 @@
         "hitouts": 2.07,
         "inside_50s": 16,
         "clearances": 5.8,
-<<<<<<< Updated upstream
         "intercepts": 9.67,
         "tackles_inside_50": 4.27,
         "score_involvements": 33.67,
@@ -2212,21 +1549,7 @@
         "one_percenters": 6.47,
         "goal_assists": 3.27,
         "meters_gained": 1498.33,
-        "percent_played": 526.33,
-=======
-        "intercepts": 9.33,
-        "tackles_inside_50": 4.07,
-        "score_involvements": 32.27,
-        "contested_possessions": 32.6,
-        "uncontested_possessions": 56.53,
-        "contested_marks": 3.27,
-        "marks_inside_50": 7.4,
-        "one_percenters": 6.33,
-        "goal_assists": 3.27,
-        "meters_gained": 1441.87,
-        "percent_played": 510.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.73,
+        "percent_played": 526.33,        "free_kicks_for": 4.73,
         "free_kicks_against": 4.87
       },
       "indexVsLeague": {
@@ -2240,7 +1563,6 @@
         "hitouts": 0.725,
         "inside_50s": 1.018,
         "clearances": 1,
-<<<<<<< Updated upstream
         "intercepts": 0.986,
         "tackles_inside_50": 0.75,
         "score_involvements": 0.981,
@@ -2251,21 +1573,7 @@
         "one_percenters": 0.814,
         "goal_assists": 0.836,
         "meters_gained": 1.007,
-        "percent_played": 0.969,
-=======
-        "intercepts": 0.985,
-        "tackles_inside_50": 0.744,
-        "score_involvements": 0.97,
-        "contested_possessions": 1.02,
-        "uncontested_possessions": 1.108,
-        "contested_marks": 0.885,
-        "marks_inside_50": 0.875,
-        "one_percenters": 0.818,
-        "goal_assists": 0.836,
-        "meters_gained": 1.007,
-        "percent_played": 0.965,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.848,
+        "percent_played": 0.969,        "free_kicks_for": 0.848,
         "free_kicks_against": 0.92
       }
     },
@@ -2360,7 +1668,6 @@
         "hitouts": 1,
         "inside_50s": 1.03,
         "clearances": 0.928,
-<<<<<<< Updated upstream
         "intercepts": 0.945,
         "tackles_inside_50": 1.1,
         "score_involvements": 0.972,
@@ -2371,21 +1678,7 @@
         "one_percenters": 1.223,
         "goal_assists": 0.827,
         "meters_gained": 1.024,
-        "percent_played": 0.995,
-=======
-        "intercepts": 0.937,
-        "tackles_inside_50": 1.045,
-        "score_involvements": 0.936,
-        "contested_possessions": 0.94,
-        "uncontested_possessions": 1.055,
-        "contested_marks": 0.75,
-        "marks_inside_50": 1.226,
-        "one_percenters": 1.2,
-        "goal_assists": 0.827,
-        "meters_gained": 1.012,
-        "percent_played": 0.989,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.934,
+        "percent_played": 0.995,        "free_kicks_for": 0.934,
         "free_kicks_against": 0.862
       }
     },
@@ -2511,7 +1804,6 @@
         "hitouts": 12,
         "inside_50s": 213,
         "clearances": 57,
-<<<<<<< Updated upstream
         "intercepts": 491,
         "tackles_inside_50": 7,
         "score_involvements": 461,
@@ -2522,21 +1814,7 @@
         "one_percenters": 331,
         "goal_assists": 37,
         "meters_gained": 34189,
-        "percent_played": 9424,
-=======
-        "intercepts": 456,
-        "tackles_inside_50": 7,
-        "score_involvements": 431,
-        "contested_possessions": 429,
-        "uncontested_possessions": 1393,
-        "contested_marks": 45,
-        "marks_inside_50": 18,
-        "one_percenters": 312,
-        "goal_assists": 37,
-        "meters_gained": 31565,
-        "percent_played": 8851,
->>>>>>> Stashed changes
-        "free_kicks_for": 73,
+        "percent_played": 9424,        "free_kicks_for": 73,
         "free_kicks_against": 80
       },
       "perPlayerGame": {
@@ -2550,7 +1828,6 @@
         "hitouts": 0.11,
         "inside_50s": 1.87,
         "clearances": 0.5,
-<<<<<<< Updated upstream
         "intercepts": 4.31,
         "tackles_inside_50": 0.06,
         "score_involvements": 4.04,
@@ -2561,21 +1838,7 @@
         "one_percenters": 2.9,
         "goal_assists": 0.32,
         "meters_gained": 299.9,
-        "percent_played": 82.67,
-=======
-        "intercepts": 4,
-        "tackles_inside_50": 0.06,
-        "score_involvements": 3.78,
-        "contested_possessions": 3.76,
-        "uncontested_possessions": 12.22,
-        "contested_marks": 0.39,
-        "marks_inside_50": 0.16,
-        "one_percenters": 2.74,
-        "goal_assists": 0.32,
-        "meters_gained": 276.89,
-        "percent_played": 77.64,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.64,
+        "percent_played": 82.67,        "free_kicks_for": 0.64,
         "free_kicks_against": 0.7
       },
       "perTeamGame": {
@@ -2589,7 +1852,6 @@
         "hitouts": 0.8,
         "inside_50s": 14.2,
         "clearances": 3.8,
-<<<<<<< Updated upstream
         "intercepts": 32.73,
         "tackles_inside_50": 0.47,
         "score_involvements": 30.73,
@@ -2600,25 +1862,10 @@
         "one_percenters": 22.07,
         "goal_assists": 2.47,
         "meters_gained": 2279.27,
-        "percent_played": 628.27,
-=======
-        "intercepts": 30.4,
-        "tackles_inside_50": 0.47,
-        "score_involvements": 28.73,
-        "contested_possessions": 28.6,
-        "uncontested_possessions": 92.87,
-        "contested_marks": 3,
-        "marks_inside_50": 1.2,
-        "one_percenters": 20.8,
-        "goal_assists": 2.47,
-        "meters_gained": 2104.33,
-        "percent_played": 590.07,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.87,
+        "percent_played": 628.27,        "free_kicks_for": 4.87,
         "free_kicks_against": 5.33
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 1.1,
         "kicks": 1.121,
         "handballs": 1.065,
@@ -2640,32 +1887,7 @@
         "goal_assists": 1.6,
         "meters_gained": 1.038,
         "percent_played": 1.01,
-        "free_kicks_for": 0.955,
-=======
-        "disposals": 1.105,
-        "kicks": 1.126,
-        "handballs": 1.066,
-        "marks": 1.254,
-        "goals": 1.077,
-        "behinds": 1.077,
-        "tackles": 0.916,
-        "hitouts": 0.407,
-        "inside_50s": 1.176,
-        "clearances": 0.893,
-        "intercepts": 0.92,
-        "tackles_inside_50": 0.6,
-        "score_involvements": 1.322,
-        "contested_possessions": 0.91,
-        "uncontested_possessions": 1.212,
-        "contested_marks": 0.951,
-        "marks_inside_50": 1.455,
-        "one_percenters": 0.91,
-        "goal_assists": 1.6,
-        "meters_gained": 1.047,
-        "percent_played": 1.003,
-        "free_kicks_for": 0.97,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.933
+        "free_kicks_for": 0.955,        "free_kicks_against": 0.933
       }
     },
     {
@@ -2684,7 +1906,6 @@
         "hitouts": 45,
         "inside_50s": 217,
         "clearances": 76,
-<<<<<<< Updated upstream
         "intercepts": 152,
         "tackles_inside_50": 72,
         "score_involvements": 576,
@@ -2695,21 +1916,7 @@
         "one_percenters": 128,
         "goal_assists": 69,
         "meters_gained": 21390,
-        "percent_played": 7892,
-=======
-        "intercepts": 145,
-        "tackles_inside_50": 70,
-        "score_involvements": 559,
-        "contested_possessions": 437,
-        "uncontested_possessions": 818,
-        "contested_marks": 52,
-        "marks_inside_50": 143,
-        "one_percenters": 123,
-        "goal_assists": 69,
-        "meters_gained": 20456,
-        "percent_played": 7648,
->>>>>>> Stashed changes
-        "free_kicks_for": 68,
+        "percent_played": 7892,        "free_kicks_for": 68,
         "free_kicks_against": 81
       },
       "perPlayerGame": {
@@ -2723,7 +1930,6 @@
         "hitouts": 0.43,
         "inside_50s": 2.09,
         "clearances": 0.73,
-<<<<<<< Updated upstream
         "intercepts": 1.46,
         "tackles_inside_50": 0.69,
         "score_involvements": 5.54,
@@ -2734,21 +1940,7 @@
         "one_percenters": 1.23,
         "goal_assists": 0.66,
         "meters_gained": 205.67,
-        "percent_played": 75.88,
-=======
-        "intercepts": 1.39,
-        "tackles_inside_50": 0.67,
-        "score_involvements": 5.38,
-        "contested_possessions": 4.2,
-        "uncontested_possessions": 7.87,
-        "contested_marks": 0.5,
-        "marks_inside_50": 1.38,
-        "one_percenters": 1.18,
-        "goal_assists": 0.66,
-        "meters_gained": 196.69,
-        "percent_played": 73.54,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.65,
+        "percent_played": 75.88,        "free_kicks_for": 0.65,
         "free_kicks_against": 0.78
       },
       "perTeamGame": {
@@ -2762,7 +1954,6 @@
         "hitouts": 3,
         "inside_50s": 14.47,
         "clearances": 5.07,
-<<<<<<< Updated upstream
         "intercepts": 10.13,
         "tackles_inside_50": 4.8,
         "score_involvements": 38.4,
@@ -2773,21 +1964,7 @@
         "one_percenters": 8.53,
         "goal_assists": 4.6,
         "meters_gained": 1426,
-        "percent_played": 526.13,
-=======
-        "intercepts": 9.67,
-        "tackles_inside_50": 4.67,
-        "score_involvements": 37.27,
-        "contested_possessions": 29.13,
-        "uncontested_possessions": 54.53,
-        "contested_marks": 3.47,
-        "marks_inside_50": 9.53,
-        "one_percenters": 8.2,
-        "goal_assists": 4.6,
-        "meters_gained": 1363.73,
-        "percent_played": 509.87,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.53,
+        "percent_played": 526.13,        "free_kicks_for": 4.53,
         "free_kicks_against": 5.4
       },
       "indexVsLeague": {
@@ -2801,7 +1978,6 @@
         "hitouts": 1.075,
         "inside_50s": 0.941,
         "clearances": 0.89,
-<<<<<<< Updated upstream
         "intercepts": 1.05,
         "tackles_inside_50": 0.862,
         "score_involvements": 1.142,
@@ -2812,21 +1988,7 @@
         "one_percenters": 1.088,
         "goal_assists": 1.2,
         "meters_gained": 0.976,
-        "percent_played": 0.987,
-=======
-        "intercepts": 1.037,
-        "tackles_inside_50": 0.859,
-        "score_involvements": 1.142,
-        "contested_possessions": 0.929,
-        "uncontested_possessions": 1.09,
-        "contested_marks": 0.962,
-        "marks_inside_50": 1.15,
-        "one_percenters": 1.073,
-        "goal_assists": 1.2,
-        "meters_gained": 0.971,
-        "percent_played": 0.983,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.823,
+        "percent_played": 0.987,        "free_kicks_for": 0.823,
         "free_kicks_against": 1.04
       }
     },
@@ -2846,7 +2008,6 @@
         "hitouts": 1,
         "inside_50s": 328,
         "clearances": 268,
-<<<<<<< Updated upstream
         "intercepts": 226,
         "tackles_inside_50": 46,
         "score_involvements": 618,
@@ -2857,21 +2018,7 @@
         "one_percenters": 98,
         "goal_assists": 51,
         "meters_gained": 29747,
-        "percent_played": 7137,
-=======
-        "intercepts": 198,
-        "tackles_inside_50": 39,
-        "score_involvements": 527,
-        "contested_possessions": 553,
-        "uncontested_possessions": 1139,
-        "contested_marks": 9,
-        "marks_inside_50": 49,
-        "one_percenters": 85,
-        "goal_assists": 51,
-        "meters_gained": 24986,
-        "percent_played": 6014,
->>>>>>> Stashed changes
-        "free_kicks_for": 83,
+        "percent_played": 7137,        "free_kicks_for": 83,
         "free_kicks_against": 86
       },
       "perPlayerGame": {
@@ -2885,7 +2032,6 @@
         "hitouts": 0.01,
         "inside_50s": 3.57,
         "clearances": 2.91,
-<<<<<<< Updated upstream
         "intercepts": 2.46,
         "tackles_inside_50": 0.5,
         "score_involvements": 6.72,
@@ -2896,21 +2042,7 @@
         "one_percenters": 1.07,
         "goal_assists": 0.55,
         "meters_gained": 323.34,
-        "percent_played": 77.58,
-=======
-        "intercepts": 2.15,
-        "tackles_inside_50": 0.42,
-        "score_involvements": 5.73,
-        "contested_possessions": 6.01,
-        "uncontested_possessions": 12.38,
-        "contested_marks": 0.1,
-        "marks_inside_50": 0.53,
-        "one_percenters": 0.92,
-        "goal_assists": 0.55,
-        "meters_gained": 271.59,
-        "percent_played": 65.37,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.9,
+        "percent_played": 77.58,        "free_kicks_for": 0.9,
         "free_kicks_against": 0.93
       },
       "perTeamGame": {
@@ -2924,7 +2056,6 @@
         "hitouts": 0.07,
         "inside_50s": 21.87,
         "clearances": 17.87,
-<<<<<<< Updated upstream
         "intercepts": 15.07,
         "tackles_inside_50": 3.07,
         "score_involvements": 41.2,
@@ -2935,21 +2066,7 @@
         "one_percenters": 6.53,
         "goal_assists": 3.4,
         "meters_gained": 1983.13,
-        "percent_played": 475.8,
-=======
-        "intercepts": 13.2,
-        "tackles_inside_50": 2.6,
-        "score_involvements": 35.13,
-        "contested_possessions": 36.87,
-        "uncontested_possessions": 75.93,
-        "contested_marks": 0.6,
-        "marks_inside_50": 3.27,
-        "one_percenters": 5.67,
-        "goal_assists": 3.4,
-        "meters_gained": 1665.73,
-        "percent_played": 400.93,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.53,
+        "percent_played": 475.8,        "free_kicks_for": 5.53,
         "free_kicks_against": 5.73
       },
       "indexVsLeague": {
@@ -2963,7 +2080,6 @@
         "hitouts": 1,
         "inside_50s": 1.085,
         "clearances": 0.993,
-<<<<<<< Updated upstream
         "intercepts": 0.961,
         "tackles_inside_50": 1,
         "score_involvements": 1.32,
@@ -2974,21 +2090,7 @@
         "one_percenters": 1.039,
         "goal_assists": 1.058,
         "meters_gained": 1.037,
-        "percent_played": 1.012,
-=======
-        "intercepts": 0.964,
-        "tackles_inside_50": 0.955,
-        "score_involvements": 1.314,
-        "contested_possessions": 0.979,
-        "uncontested_possessions": 1.162,
-        "contested_marks": 0.625,
-        "marks_inside_50": 1.71,
-        "one_percenters": 1.022,
-        "goal_assists": 1.058,
-        "meters_gained": 1.017,
-        "percent_played": 0.981,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.989,
+        "percent_played": 1.012,        "free_kicks_for": 0.989,
         "free_kicks_against": 1.069
       }
     },
@@ -3116,28 +2218,14 @@
         "clearances": 53,
         "intercepts": 459,
         "tackles_inside_50": 11,
-<<<<<<< Updated upstream
         "score_involvements": 285,
         "contested_possessions": 462,
         "uncontested_possessions": 1136,
-        "contested_marks": 52,
-=======
-        "score_involvements": 271,
-        "contested_possessions": 440,
-        "uncontested_possessions": 1075,
-        "contested_marks": 51,
->>>>>>> Stashed changes
-        "marks_inside_50": 10,
+        "contested_marks": 52,        "marks_inside_50": 10,
         "one_percenters": 352,
         "goal_assists": 19,
-<<<<<<< Updated upstream
         "meters_gained": 31422,
-        "percent_played": 9336,
-=======
-        "meters_gained": 29755,
-        "percent_played": 8986,
->>>>>>> Stashed changes
-        "free_kicks_for": 59,
+        "percent_played": 9336,        "free_kicks_for": 59,
         "free_kicks_against": 99
       },
       "perPlayerGame": {
@@ -3151,7 +2239,6 @@
         "hitouts": 0.1,
         "inside_50s": 1.4,
         "clearances": 0.46,
-<<<<<<< Updated upstream
         "intercepts": 4.23,
         "tackles_inside_50": 0.1,
         "score_involvements": 2.48,
@@ -3162,21 +2249,7 @@
         "one_percenters": 3.19,
         "goal_assists": 0.17,
         "meters_gained": 273.23,
-        "percent_played": 81.18,
-=======
-        "intercepts": 3.99,
-        "tackles_inside_50": 0.1,
-        "score_involvements": 2.36,
-        "contested_possessions": 3.83,
-        "uncontested_possessions": 9.35,
-        "contested_marks": 0.44,
-        "marks_inside_50": 0.09,
-        "one_percenters": 3.06,
-        "goal_assists": 0.17,
-        "meters_gained": 258.74,
-        "percent_played": 78.14,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.51,
+        "percent_played": 81.18,        "free_kicks_for": 0.51,
         "free_kicks_against": 0.86
       },
       "perTeamGame": {
@@ -3192,32 +2265,17 @@
         "clearances": 3.53,
         "intercepts": 30.6,
         "tackles_inside_50": 0.73,
-<<<<<<< Updated upstream
         "score_involvements": 19,
         "contested_possessions": 30.8,
         "uncontested_possessions": 75.73,
-        "contested_marks": 3.47,
-=======
-        "score_involvements": 18.07,
-        "contested_possessions": 29.33,
-        "uncontested_possessions": 71.67,
-        "contested_marks": 3.4,
->>>>>>> Stashed changes
-        "marks_inside_50": 0.67,
+        "contested_marks": 3.47,        "marks_inside_50": 0.67,
         "one_percenters": 23.47,
         "goal_assists": 1.27,
-<<<<<<< Updated upstream
         "meters_gained": 2094.8,
-        "percent_played": 622.4,
-=======
-        "meters_gained": 1983.67,
-        "percent_played": 599.07,
->>>>>>> Stashed changes
-        "free_kicks_for": 3.93,
+        "percent_played": 622.4,        "free_kicks_for": 3.93,
         "free_kicks_against": 6.6
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.911,
         "kicks": 0.978,
         "handballs": 0.794,
@@ -3239,32 +2297,7 @@
         "goal_assists": 0.85,
         "meters_gained": 0.946,
         "percent_played": 0.992,
-        "free_kicks_for": 0.761,
-=======
-        "disposals": 0.915,
-        "kicks": 0.983,
-        "handballs": 0.796,
-        "marks": 1.023,
-        "goals": 0.769,
-        "behinds": 0.692,
-        "tackles": 0.815,
-        "hitouts": 0.37,
-        "inside_50s": 0.881,
-        "clearances": 0.821,
-        "intercepts": 0.917,
-        "tackles_inside_50": 1,
-        "score_involvements": 0.825,
-        "contested_possessions": 0.927,
-        "uncontested_possessions": 0.928,
-        "contested_marks": 1.073,
-        "marks_inside_50": 0.818,
-        "one_percenters": 1.017,
-        "goal_assists": 0.85,
-        "meters_gained": 0.979,
-        "percent_played": 1.01,
-        "free_kicks_for": 0.773,
->>>>>>> Stashed changes
-        "free_kicks_against": 1.147
+        "free_kicks_for": 0.761,        "free_kicks_against": 1.147
       }
     },
     {
@@ -3283,7 +2316,6 @@
         "hitouts": 20,
         "inside_50s": 198,
         "clearances": 73,
-<<<<<<< Updated upstream
         "intercepts": 136,
         "tackles_inside_50": 90,
         "score_involvements": 375,
@@ -3294,21 +2326,7 @@
         "one_percenters": 106,
         "goal_assists": 36,
         "meters_gained": 18584,
-        "percent_played": 7434,
-=======
-        "intercepts": 135,
-        "tackles_inside_50": 90,
-        "score_involvements": 371,
-        "contested_possessions": 424,
-        "uncontested_possessions": 622,
-        "contested_marks": 49,
-        "marks_inside_50": 108,
-        "one_percenters": 104,
-        "goal_assists": 36,
-        "meters_gained": 18430,
-        "percent_played": 7353,
->>>>>>> Stashed changes
-        "free_kicks_for": 67,
+        "percent_played": 7434,        "free_kicks_for": 67,
         "free_kicks_against": 58
       },
       "perPlayerGame": {
@@ -3322,7 +2340,6 @@
         "hitouts": 0.21,
         "inside_50s": 2.11,
         "clearances": 0.78,
-<<<<<<< Updated upstream
         "intercepts": 1.45,
         "tackles_inside_50": 0.96,
         "score_involvements": 3.99,
@@ -3333,21 +2350,7 @@
         "one_percenters": 1.13,
         "goal_assists": 0.38,
         "meters_gained": 197.7,
-        "percent_played": 79.09,
-=======
-        "intercepts": 1.44,
-        "tackles_inside_50": 0.96,
-        "score_involvements": 3.95,
-        "contested_possessions": 4.51,
-        "uncontested_possessions": 6.62,
-        "contested_marks": 0.52,
-        "marks_inside_50": 1.15,
-        "one_percenters": 1.11,
-        "goal_assists": 0.38,
-        "meters_gained": 196.06,
-        "percent_played": 78.22,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.71,
+        "percent_played": 79.09,        "free_kicks_for": 0.71,
         "free_kicks_against": 0.62
       },
       "perTeamGame": {
@@ -3361,7 +2364,6 @@
         "hitouts": 1.33,
         "inside_50s": 13.2,
         "clearances": 4.87,
-<<<<<<< Updated upstream
         "intercepts": 9.07,
         "tackles_inside_50": 6,
         "score_involvements": 25,
@@ -3372,21 +2374,7 @@
         "one_percenters": 7.07,
         "goal_assists": 2.4,
         "meters_gained": 1238.93,
-        "percent_played": 495.6,
-=======
-        "intercepts": 9,
-        "tackles_inside_50": 6,
-        "score_involvements": 24.73,
-        "contested_possessions": 28.27,
-        "uncontested_possessions": 41.47,
-        "contested_marks": 3.27,
-        "marks_inside_50": 7.2,
-        "one_percenters": 6.93,
-        "goal_assists": 2.4,
-        "meters_gained": 1228.67,
-        "percent_played": 490.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.47,
+        "percent_played": 495.6,        "free_kicks_for": 4.47,
         "free_kicks_against": 3.87
       },
       "indexVsLeague": {
@@ -3400,7 +2388,6 @@
         "hitouts": 0.525,
         "inside_50s": 0.95,
         "clearances": 0.951,
-<<<<<<< Updated upstream
         "intercepts": 1.043,
         "tackles_inside_50": 1.2,
         "score_involvements": 0.823,
@@ -3411,21 +2398,7 @@
         "one_percenters": 1,
         "goal_assists": 0.691,
         "meters_gained": 0.939,
-        "percent_played": 1.029,
-=======
-        "intercepts": 1.075,
-        "tackles_inside_50": 1.231,
-        "score_involvements": 0.839,
-        "contested_possessions": 0.998,
-        "uncontested_possessions": 0.917,
-        "contested_marks": 1,
-        "marks_inside_50": 0.958,
-        "one_percenters": 1.009,
-        "goal_assists": 0.691,
-        "meters_gained": 0.968,
-        "percent_played": 1.046,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.899,
+        "percent_played": 1.029,        "free_kicks_for": 0.899,
         "free_kicks_against": 0.827
       }
     },
@@ -3445,7 +2418,6 @@
         "hitouts": 0,
         "inside_50s": 323,
         "clearances": 295,
-<<<<<<< Updated upstream
         "intercepts": 253,
         "tackles_inside_50": 57,
         "score_involvements": 413,
@@ -3456,21 +2428,7 @@
         "one_percenters": 111,
         "goal_assists": 47,
         "meters_gained": 29931,
-        "percent_played": 8069,
-=======
-        "intercepts": 221,
-        "tackles_inside_50": 51,
-        "score_involvements": 359,
-        "contested_possessions": 672,
-        "uncontested_possessions": 986,
-        "contested_marks": 20,
-        "marks_inside_50": 24,
-        "one_percenters": 101,
-        "goal_assists": 47,
-        "meters_gained": 25798,
-        "percent_played": 7121,
->>>>>>> Stashed changes
-        "free_kicks_for": 102,
+        "percent_played": 8069,        "free_kicks_for": 102,
         "free_kicks_against": 75
       },
       "perPlayerGame": {
@@ -3484,7 +2442,6 @@
         "hitouts": 0,
         "inside_50s": 3.08,
         "clearances": 2.81,
-<<<<<<< Updated upstream
         "intercepts": 2.41,
         "tackles_inside_50": 0.54,
         "score_involvements": 3.93,
@@ -3495,21 +2452,7 @@
         "one_percenters": 1.06,
         "goal_assists": 0.45,
         "meters_gained": 285.06,
-        "percent_played": 76.85,
-=======
-        "intercepts": 2.1,
-        "tackles_inside_50": 0.49,
-        "score_involvements": 3.42,
-        "contested_possessions": 6.4,
-        "uncontested_possessions": 9.39,
-        "contested_marks": 0.19,
-        "marks_inside_50": 0.23,
-        "one_percenters": 0.96,
-        "goal_assists": 0.45,
-        "meters_gained": 245.7,
-        "percent_played": 67.82,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.97,
+        "percent_played": 76.85,        "free_kicks_for": 0.97,
         "free_kicks_against": 0.71
       },
       "perTeamGame": {
@@ -3523,7 +2466,6 @@
         "hitouts": 0,
         "inside_50s": 21.53,
         "clearances": 19.67,
-<<<<<<< Updated upstream
         "intercepts": 16.87,
         "tackles_inside_50": 3.8,
         "score_involvements": 27.53,
@@ -3534,21 +2476,7 @@
         "one_percenters": 7.4,
         "goal_assists": 3.13,
         "meters_gained": 1995.4,
-        "percent_played": 537.93,
-=======
-        "intercepts": 14.73,
-        "tackles_inside_50": 3.4,
-        "score_involvements": 23.93,
-        "contested_possessions": 44.8,
-        "uncontested_possessions": 65.73,
-        "contested_marks": 1.33,
-        "marks_inside_50": 1.6,
-        "one_percenters": 6.73,
-        "goal_assists": 3.13,
-        "meters_gained": 1719.87,
-        "percent_played": 474.73,
->>>>>>> Stashed changes
-        "free_kicks_for": 6.8,
+        "percent_played": 537.93,        "free_kicks_for": 6.8,
         "free_kicks_against": 5
       },
       "indexVsLeague": {
@@ -3562,7 +2490,6 @@
         "hitouts": 0,
         "inside_50s": 0.936,
         "clearances": 0.959,
-<<<<<<< Updated upstream
         "intercepts": 0.941,
         "tackles_inside_50": 1.08,
         "score_involvements": 0.772,
@@ -3573,21 +2500,7 @@
         "one_percenters": 1.029,
         "goal_assists": 0.865,
         "meters_gained": 0.915,
-        "percent_played": 1.002,
-=======
-        "intercepts": 0.942,
-        "tackles_inside_50": 1.114,
-        "score_involvements": 0.784,
-        "contested_possessions": 1.042,
-        "uncontested_possessions": 0.882,
-        "contested_marks": 1.188,
-        "marks_inside_50": 0.742,
-        "one_percenters": 1.067,
-        "goal_assists": 0.865,
-        "meters_gained": 0.921,
-        "percent_played": 1.018,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.066,
+        "percent_played": 1.002,        "free_kicks_for": 1.066,
         "free_kicks_against": 0.816
       }
     },
@@ -3778,7 +2691,6 @@
         "free_kicks_against": 6.33
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 1.021,
         "kicks": 0.971,
         "handballs": 1.113,
@@ -3800,32 +2712,7 @@
         "goal_assists": 1,
         "meters_gained": 1.066,
         "percent_played": 1.021,
-        "free_kicks_for": 0.925,
-=======
-        "disposals": 1.025,
-        "kicks": 0.975,
-        "handballs": 1.115,
-        "marks": 0.83,
-        "goals": 1.154,
-        "behinds": 0.769,
-        "tackles": 1.197,
-        "hitouts": 0.556,
-        "inside_50s": 0.994,
-        "clearances": 1.411,
-        "intercepts": 1.025,
-        "tackles_inside_50": 0.7,
-        "score_involvements": 0.86,
-        "contested_possessions": 1.019,
-        "uncontested_possessions": 0.996,
-        "contested_marks": 0.707,
-        "marks_inside_50": 1.091,
-        "one_percenters": 0.983,
-        "goal_assists": 1,
-        "meters_gained": 1.053,
-        "percent_played": 1.013,
-        "free_kicks_for": 0.939,
->>>>>>> Stashed changes
-        "free_kicks_against": 1.133
+        "free_kicks_for": 0.925,        "free_kicks_against": 1.133
       }
     },
     {
@@ -3844,31 +2731,16 @@
         "hitouts": 48,
         "inside_50s": 186,
         "clearances": 69,
-<<<<<<< Updated upstream
         "intercepts": 111,
         "tackles_inside_50": 89,
         "score_involvements": 458,
         "contested_possessions": 411,
-        "uncontested_possessions": 690,
-=======
-        "intercepts": 107,
-        "tackles_inside_50": 88,
-        "score_involvements": 452,
-        "contested_possessions": 402,
-        "uncontested_possessions": 681,
->>>>>>> Stashed changes
-        "contested_marks": 44,
+        "uncontested_possessions": 690,        "contested_marks": 44,
         "marks_inside_50": 130,
         "one_percenters": 95,
         "goal_assists": 53,
-<<<<<<< Updated upstream
         "meters_gained": 17972,
-        "percent_played": 7061,
-=======
-        "meters_gained": 17517,
-        "percent_played": 6988,
->>>>>>> Stashed changes
-        "free_kicks_for": 60,
+        "percent_played": 7061,        "free_kicks_for": 60,
         "free_kicks_against": 82
       },
       "perPlayerGame": {
@@ -3882,7 +2754,6 @@
         "hitouts": 0.52,
         "inside_50s": 2,
         "clearances": 0.74,
-<<<<<<< Updated upstream
         "intercepts": 1.19,
         "tackles_inside_50": 0.96,
         "score_involvements": 4.92,
@@ -3893,21 +2764,7 @@
         "one_percenters": 1.03,
         "goal_assists": 0.57,
         "meters_gained": 193.25,
-        "percent_played": 75.92,
-=======
-        "intercepts": 1.15,
-        "tackles_inside_50": 0.95,
-        "score_involvements": 4.86,
-        "contested_possessions": 4.32,
-        "uncontested_possessions": 7.32,
-        "contested_marks": 0.47,
-        "marks_inside_50": 1.4,
-        "one_percenters": 1.02,
-        "goal_assists": 0.57,
-        "meters_gained": 188.35,
-        "percent_played": 75.14,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.65,
+        "percent_played": 75.92,        "free_kicks_for": 0.65,
         "free_kicks_against": 0.88
       },
       "perTeamGame": {
@@ -3921,31 +2778,16 @@
         "hitouts": 3.2,
         "inside_50s": 12.4,
         "clearances": 4.6,
-<<<<<<< Updated upstream
         "intercepts": 7.4,
         "tackles_inside_50": 5.93,
         "score_involvements": 30.53,
         "contested_possessions": 27.4,
-        "uncontested_possessions": 46,
-=======
-        "intercepts": 7.13,
-        "tackles_inside_50": 5.87,
-        "score_involvements": 30.13,
-        "contested_possessions": 26.8,
-        "uncontested_possessions": 45.4,
->>>>>>> Stashed changes
-        "contested_marks": 2.93,
+        "uncontested_possessions": 46,        "contested_marks": 2.93,
         "marks_inside_50": 8.67,
         "one_percenters": 6.33,
         "goal_assists": 3.53,
-<<<<<<< Updated upstream
         "meters_gained": 1198.13,
-        "percent_played": 470.73,
-=======
-        "meters_gained": 1167.8,
-        "percent_played": 465.87,
->>>>>>> Stashed changes
-        "free_kicks_for": 4,
+        "percent_played": 470.73,        "free_kicks_for": 4,
         "free_kicks_against": 5.47
       },
       "indexVsLeague": {
@@ -3959,7 +2801,6 @@
         "hitouts": 1.3,
         "inside_50s": 0.901,
         "clearances": 0.902,
-<<<<<<< Updated upstream
         "intercepts": 0.856,
         "tackles_inside_50": 1.2,
         "score_involvements": 1.014,
@@ -3970,21 +2811,7 @@
         "one_percenters": 0.912,
         "goal_assists": 1.036,
         "meters_gained": 0.918,
-        "percent_played": 0.988,
-=======
-        "intercepts": 0.858,
-        "tackles_inside_50": 1.218,
-        "score_involvements": 1.032,
-        "contested_possessions": 0.956,
-        "uncontested_possessions": 1.014,
-        "contested_marks": 0.904,
-        "marks_inside_50": 1.167,
-        "one_percenters": 0.927,
-        "goal_assists": 1.036,
-        "meters_gained": 0.93,
-        "percent_played": 1.005,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.823,
+        "percent_played": 0.988,        "free_kicks_for": 0.823,
         "free_kicks_against": 1.173
       }
     },
@@ -4004,7 +2831,6 @@
         "hitouts": 1,
         "inside_50s": 329,
         "clearances": 319,
-<<<<<<< Updated upstream
         "intercepts": 304,
         "tackles_inside_50": 53,
         "score_involvements": 495,
@@ -4015,21 +2841,7 @@
         "one_percenters": 143,
         "goal_assists": 43,
         "meters_gained": 34715,
-        "percent_played": 8380,
-=======
-        "intercepts": 266,
-        "tackles_inside_50": 44,
-        "score_involvements": 422,
-        "contested_possessions": 669,
-        "uncontested_possessions": 1107,
-        "contested_marks": 12,
-        "marks_inside_50": 29,
-        "one_percenters": 129,
-        "goal_assists": 43,
-        "meters_gained": 29882,
-        "percent_played": 7216,
->>>>>>> Stashed changes
-        "free_kicks_for": 102,
+        "percent_played": 8380,        "free_kicks_for": 102,
         "free_kicks_against": 114
       },
       "perPlayerGame": {
@@ -4043,7 +2855,6 @@
         "hitouts": 0.01,
         "inside_50s": 2.99,
         "clearances": 2.9,
-<<<<<<< Updated upstream
         "intercepts": 2.76,
         "tackles_inside_50": 0.48,
         "score_involvements": 4.5,
@@ -4054,21 +2865,7 @@
         "one_percenters": 1.3,
         "goal_assists": 0.39,
         "meters_gained": 315.59,
-        "percent_played": 76.18,
-=======
-        "intercepts": 2.42,
-        "tackles_inside_50": 0.4,
-        "score_involvements": 3.84,
-        "contested_possessions": 6.08,
-        "uncontested_possessions": 10.06,
-        "contested_marks": 0.11,
-        "marks_inside_50": 0.26,
-        "one_percenters": 1.17,
-        "goal_assists": 0.39,
-        "meters_gained": 271.65,
-        "percent_played": 65.6,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.93,
+        "percent_played": 76.18,        "free_kicks_for": 0.93,
         "free_kicks_against": 1.04
       },
       "perTeamGame": {
@@ -4082,7 +2879,6 @@
         "hitouts": 0.07,
         "inside_50s": 21.93,
         "clearances": 21.27,
-<<<<<<< Updated upstream
         "intercepts": 20.27,
         "tackles_inside_50": 3.53,
         "score_involvements": 33,
@@ -4093,21 +2889,7 @@
         "one_percenters": 9.53,
         "goal_assists": 2.87,
         "meters_gained": 2314.33,
-        "percent_played": 558.67,
-=======
-        "intercepts": 17.73,
-        "tackles_inside_50": 2.93,
-        "score_involvements": 28.13,
-        "contested_possessions": 44.6,
-        "uncontested_possessions": 73.8,
-        "contested_marks": 0.8,
-        "marks_inside_50": 1.93,
-        "one_percenters": 8.6,
-        "goal_assists": 2.87,
-        "meters_gained": 1992.13,
-        "percent_played": 481.07,
->>>>>>> Stashed changes
-        "free_kicks_for": 6.8,
+        "percent_played": 558.67,        "free_kicks_for": 6.8,
         "free_kicks_against": 7.6
       },
       "indexVsLeague": {
@@ -4121,7 +2903,6 @@
         "hitouts": 1,
         "inside_50s": 0.909,
         "clearances": 0.99,
-<<<<<<< Updated upstream
         "intercepts": 1.078,
         "tackles_inside_50": 0.96,
         "score_involvements": 0.884,
@@ -4132,21 +2913,7 @@
         "one_percenters": 1.262,
         "goal_assists": 0.75,
         "meters_gained": 1.012,
-        "percent_played": 0.993,
-=======
-        "intercepts": 1.085,
-        "tackles_inside_50": 0.909,
-        "score_involvements": 0.881,
-        "contested_possessions": 0.99,
-        "uncontested_possessions": 0.945,
-        "contested_marks": 0.688,
-        "marks_inside_50": 0.839,
-        "one_percenters": 1.3,
-        "goal_assists": 0.75,
-        "meters_gained": 1.018,
-        "percent_played": 0.985,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.022,
+        "percent_played": 0.993,        "free_kicks_for": 1.022,
         "free_kicks_against": 1.195
       }
     },
@@ -4272,7 +3039,6 @@
         "hitouts": 24,
         "inside_50s": 178,
         "clearances": 72,
-<<<<<<< Updated upstream
         "intercepts": 527,
         "tackles_inside_50": 8,
         "score_involvements": 345,
@@ -4283,21 +3049,7 @@
         "one_percenters": 352,
         "goal_assists": 27,
         "meters_gained": 32816,
-        "percent_played": 9388,
-=======
-        "intercepts": 493,
-        "tackles_inside_50": 8,
-        "score_involvements": 320,
-        "contested_possessions": 455,
-        "uncontested_possessions": 1055,
-        "contested_marks": 32,
-        "marks_inside_50": 9,
-        "one_percenters": 331,
-        "goal_assists": 27,
-        "meters_gained": 30339,
-        "percent_played": 8871,
->>>>>>> Stashed changes
-        "free_kicks_for": 83,
+        "percent_played": 9388,        "free_kicks_for": 83,
         "free_kicks_against": 86
       },
       "perPlayerGame": {
@@ -4311,7 +3063,6 @@
         "hitouts": 0.21,
         "inside_50s": 1.53,
         "clearances": 0.62,
-<<<<<<< Updated upstream
         "intercepts": 4.54,
         "tackles_inside_50": 0.07,
         "score_involvements": 2.97,
@@ -4322,21 +3073,7 @@
         "one_percenters": 3.03,
         "goal_assists": 0.23,
         "meters_gained": 282.9,
-        "percent_played": 80.93,
-=======
-        "intercepts": 4.25,
-        "tackles_inside_50": 0.07,
-        "score_involvements": 2.76,
-        "contested_possessions": 3.92,
-        "uncontested_possessions": 9.09,
-        "contested_marks": 0.28,
-        "marks_inside_50": 0.08,
-        "one_percenters": 2.85,
-        "goal_assists": 0.23,
-        "meters_gained": 261.54,
-        "percent_played": 76.47,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.72,
+        "percent_played": 80.93,        "free_kicks_for": 0.72,
         "free_kicks_against": 0.74
       },
       "perTeamGame": {
@@ -4350,7 +3087,6 @@
         "hitouts": 1.6,
         "inside_50s": 11.87,
         "clearances": 4.8,
-<<<<<<< Updated upstream
         "intercepts": 35.13,
         "tackles_inside_50": 0.53,
         "score_involvements": 23,
@@ -4361,25 +3097,10 @@
         "one_percenters": 23.47,
         "goal_assists": 1.8,
         "meters_gained": 2187.73,
-        "percent_played": 625.87,
-=======
-        "intercepts": 32.87,
-        "tackles_inside_50": 0.53,
-        "score_involvements": 21.33,
-        "contested_possessions": 30.33,
-        "uncontested_possessions": 70.33,
-        "contested_marks": 2.13,
-        "marks_inside_50": 0.6,
-        "one_percenters": 22.07,
-        "goal_assists": 1.8,
-        "meters_gained": 2022.6,
-        "percent_played": 591.4,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.53,
+        "percent_played": 625.87,        "free_kicks_for": 5.53,
         "free_kicks_against": 5.73
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.93,
         "kicks": 0.902,
         "handballs": 0.98,
@@ -4401,32 +3122,7 @@
         "goal_assists": 1.15,
         "meters_gained": 0.979,
         "percent_played": 0.989,
-        "free_kicks_for": 1.075,
-=======
-        "disposals": 0.934,
-        "kicks": 0.906,
-        "handballs": 0.982,
-        "marks": 0.811,
-        "goals": 0.692,
-        "behinds": 0.923,
-        "tackles": 1.129,
-        "hitouts": 0.778,
-        "inside_50s": 0.962,
-        "clearances": 1.107,
-        "intercepts": 0.977,
-        "tackles_inside_50": 0.7,
-        "score_involvements": 0.965,
-        "contested_possessions": 0.949,
-        "uncontested_possessions": 0.902,
-        "contested_marks": 0.683,
-        "marks_inside_50": 0.727,
-        "one_percenters": 0.947,
-        "goal_assists": 1.15,
-        "meters_gained": 0.989,
-        "percent_played": 0.988,
-        "free_kicks_for": 1.091,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.987
+        "free_kicks_for": 1.075,        "free_kicks_against": 0.987
       }
     },
     {
@@ -4445,7 +3141,6 @@
         "hitouts": 33,
         "inside_50s": 243,
         "clearances": 99,
-<<<<<<< Updated upstream
         "intercepts": 136,
         "tackles_inside_50": 77,
         "score_involvements": 521,
@@ -4456,21 +3151,7 @@
         "one_percenters": 117,
         "goal_assists": 50,
         "meters_gained": 23207,
-        "percent_played": 7862,
-=======
-        "intercepts": 132,
-        "tackles_inside_50": 77,
-        "score_involvements": 505,
-        "contested_possessions": 464,
-        "uncontested_possessions": 766,
-        "contested_marks": 56,
-        "marks_inside_50": 117,
-        "one_percenters": 115,
-        "goal_assists": 50,
-        "meters_gained": 22433,
-        "percent_played": 7618,
->>>>>>> Stashed changes
-        "free_kicks_for": 88,
+        "percent_played": 7862,        "free_kicks_for": 88,
         "free_kicks_against": 71
       },
       "perPlayerGame": {
@@ -4484,7 +3165,6 @@
         "hitouts": 0.33,
         "inside_50s": 2.45,
         "clearances": 1,
-<<<<<<< Updated upstream
         "intercepts": 1.37,
         "tackles_inside_50": 0.78,
         "score_involvements": 5.26,
@@ -4495,21 +3175,7 @@
         "one_percenters": 1.18,
         "goal_assists": 0.51,
         "meters_gained": 234.41,
-        "percent_played": 79.41,
-=======
-        "intercepts": 1.33,
-        "tackles_inside_50": 0.78,
-        "score_involvements": 5.1,
-        "contested_possessions": 4.69,
-        "uncontested_possessions": 7.74,
-        "contested_marks": 0.57,
-        "marks_inside_50": 1.18,
-        "one_percenters": 1.16,
-        "goal_assists": 0.51,
-        "meters_gained": 226.6,
-        "percent_played": 76.95,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.89,
+        "percent_played": 79.41,        "free_kicks_for": 0.89,
         "free_kicks_against": 0.72
       },
       "perTeamGame": {
@@ -4523,7 +3189,6 @@
         "hitouts": 2.2,
         "inside_50s": 16.2,
         "clearances": 6.6,
-<<<<<<< Updated upstream
         "intercepts": 9.07,
         "tackles_inside_50": 5.13,
         "score_involvements": 34.73,
@@ -4534,21 +3199,7 @@
         "one_percenters": 7.8,
         "goal_assists": 3.33,
         "meters_gained": 1547.13,
-        "percent_played": 524.13,
-=======
-        "intercepts": 8.8,
-        "tackles_inside_50": 5.13,
-        "score_involvements": 33.67,
-        "contested_possessions": 30.93,
-        "uncontested_possessions": 51.07,
-        "contested_marks": 3.73,
-        "marks_inside_50": 7.8,
-        "one_percenters": 7.67,
-        "goal_assists": 3.33,
-        "meters_gained": 1495.53,
-        "percent_played": 507.87,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.87,
+        "percent_played": 524.13,        "free_kicks_for": 5.87,
         "free_kicks_against": 4.73
       },
       "indexVsLeague": {
@@ -4562,7 +3213,6 @@
         "hitouts": 0.825,
         "inside_50s": 1.104,
         "clearances": 1.22,
-<<<<<<< Updated upstream
         "intercepts": 0.986,
         "tackles_inside_50": 0.975,
         "score_involvements": 1.085,
@@ -4573,21 +3223,7 @@
         "one_percenters": 1.044,
         "goal_assists": 0.927,
         "meters_gained": 1.113,
-        "percent_played": 1.033,
-=======
-        "intercepts": 0.993,
-        "tackles_inside_50": 1,
-        "score_involvements": 1.083,
-        "contested_possessions": 1.038,
-        "uncontested_possessions": 1.072,
-        "contested_marks": 1.096,
-        "marks_inside_50": 0.983,
-        "one_percenters": 1.055,
-        "goal_assists": 0.927,
-        "meters_gained": 1.118,
-        "percent_played": 1.029,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.127,
+        "percent_played": 1.033,        "free_kicks_for": 1.127,
         "free_kicks_against": 0.96
       }
     },
@@ -4682,7 +3318,6 @@
         "hitouts": 0,
         "inside_50s": 0.991,
         "clearances": 1.068,
-<<<<<<< Updated upstream
         "intercepts": 0.961,
         "tackles_inside_50": 0.96,
         "score_involvements": 1.047,
@@ -4693,21 +3328,7 @@
         "one_percenters": 0.922,
         "goal_assists": 1.077,
         "meters_gained": 1.068,
-        "percent_played": 1.002,
-=======
-        "intercepts": 0.973,
-        "tackles_inside_50": 0.955,
-        "score_involvements": 1.032,
-        "contested_possessions": 1.018,
-        "uncontested_possessions": 0.955,
-        "contested_marks": 1,
-        "marks_inside_50": 0.968,
-        "one_percenters": 0.889,
-        "goal_assists": 1.077,
-        "meters_gained": 1.064,
-        "percent_played": 1.003,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.165,
+        "percent_played": 1.002,        "free_kicks_for": 1.165,
         "free_kicks_against": 1.011
       }
     },
@@ -4898,7 +3519,6 @@
         "free_kicks_against": 5.13
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 1.006,
         "kicks": 1.017,
         "handballs": 0.988,
@@ -4920,32 +3540,7 @@
         "goal_assists": 1.3,
         "meters_gained": 1.043,
         "percent_played": 0.979,
-        "free_kicks_for": 1.06,
-=======
-        "disposals": 0.997,
-        "kicks": 1.003,
-        "handballs": 0.987,
-        "marks": 1.014,
-        "goals": 1,
-        "behinds": 1.154,
-        "tackles": 0.944,
-        "hitouts": 0.259,
-        "inside_50s": 1.082,
-        "clearances": 1.054,
-        "intercepts": 0.956,
-        "tackles_inside_50": 0.9,
-        "score_involvements": 0.86,
-        "contested_possessions": 1.019,
-        "uncontested_possessions": 1.005,
-        "contested_marks": 1.171,
-        "marks_inside_50": 1,
-        "one_percenters": 0.967,
-        "goal_assists": 1.1,
-        "meters_gained": 1.037,
-        "percent_played": 0.979,
-        "free_kicks_for": 1.061,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.88
+        "free_kicks_for": 1.06,        "free_kicks_against": 0.88
       }
     },
     {
@@ -4964,7 +3559,6 @@
         "hitouts": 36,
         "inside_50s": 206,
         "clearances": 94,
-<<<<<<< Updated upstream
         "intercepts": 151,
         "tackles_inside_50": 82,
         "score_involvements": 427,
@@ -4975,21 +3569,7 @@
         "one_percenters": 105,
         "goal_assists": 46,
         "meters_gained": 19281,
-        "percent_played": 7275,
-=======
-        "intercepts": 149,
-        "tackles_inside_50": 81,
-        "score_involvements": 420,
-        "contested_possessions": 468,
-        "uncontested_possessions": 635,
-        "contested_marks": 50,
-        "marks_inside_50": 100,
-        "one_percenters": 105,
-        "goal_assists": 46,
-        "meters_gained": 18912,
-        "percent_played": 7195,
->>>>>>> Stashed changes
-        "free_kicks_for": 86,
+        "percent_played": 7275,        "free_kicks_for": 86,
         "free_kicks_against": 68
       },
       "perPlayerGame": {
@@ -5003,7 +3583,6 @@
         "hitouts": 0.39,
         "inside_50s": 2.22,
         "clearances": 1.01,
-<<<<<<< Updated upstream
         "intercepts": 1.62,
         "tackles_inside_50": 0.88,
         "score_involvements": 4.59,
@@ -5014,21 +3593,7 @@
         "one_percenters": 1.13,
         "goal_assists": 0.49,
         "meters_gained": 207.32,
-        "percent_played": 78.23,
-=======
-        "intercepts": 1.6,
-        "tackles_inside_50": 0.87,
-        "score_involvements": 4.52,
-        "contested_possessions": 5.03,
-        "uncontested_possessions": 6.83,
-        "contested_marks": 0.54,
-        "marks_inside_50": 1.08,
-        "one_percenters": 1.13,
-        "goal_assists": 0.49,
-        "meters_gained": 203.35,
-        "percent_played": 77.37,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.92,
+        "percent_played": 78.23,        "free_kicks_for": 0.92,
         "free_kicks_against": 0.73
       },
       "perTeamGame": {
@@ -5042,7 +3607,6 @@
         "hitouts": 2.4,
         "inside_50s": 13.73,
         "clearances": 6.27,
-<<<<<<< Updated upstream
         "intercepts": 10.07,
         "tackles_inside_50": 5.47,
         "score_involvements": 28.47,
@@ -5053,21 +3617,7 @@
         "one_percenters": 7,
         "goal_assists": 3.07,
         "meters_gained": 1285.4,
-        "percent_played": 485,
-=======
-        "intercepts": 9.93,
-        "tackles_inside_50": 5.4,
-        "score_involvements": 28,
-        "contested_possessions": 31.2,
-        "uncontested_possessions": 42.33,
-        "contested_marks": 3.33,
-        "marks_inside_50": 6.67,
-        "one_percenters": 7,
-        "goal_assists": 3.07,
-        "meters_gained": 1260.8,
-        "percent_played": 479.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.73,
+        "percent_played": 485,        "free_kicks_for": 5.73,
         "free_kicks_against": 4.53
       },
       "indexVsLeague": {
@@ -5081,7 +3631,6 @@
         "hitouts": 0.975,
         "inside_50s": 1,
         "clearances": 1.232,
-<<<<<<< Updated upstream
         "intercepts": 1.165,
         "tackles_inside_50": 1.1,
         "score_involvements": 0.946,
@@ -5092,21 +3641,7 @@
         "one_percenters": 1,
         "goal_assists": 0.891,
         "meters_gained": 0.984,
-        "percent_played": 1.018,
-=======
-        "intercepts": 1.194,
-        "tackles_inside_50": 1.115,
-        "score_involvements": 0.96,
-        "contested_possessions": 1.113,
-        "uncontested_possessions": 0.946,
-        "contested_marks": 1.038,
-        "marks_inside_50": 0.9,
-        "one_percenters": 1.027,
-        "goal_assists": 0.891,
-        "meters_gained": 1.004,
-        "percent_played": 1.034,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.165,
+        "percent_played": 1.018,        "free_kicks_for": 1.165,
         "free_kicks_against": 0.973
       }
     },
@@ -5126,7 +3661,6 @@
         "hitouts": 1,
         "inside_50s": 377,
         "clearances": 316,
-<<<<<<< Updated upstream
         "intercepts": 279,
         "tackles_inside_50": 78,
         "score_involvements": 521,
@@ -5137,21 +3671,7 @@
         "one_percenters": 111,
         "goal_assists": 56,
         "meters_gained": 33185,
-        "percent_played": 7967,
-=======
-        "intercepts": 246,
-        "tackles_inside_50": 71,
-        "score_involvements": 460,
-        "contested_possessions": 644,
-        "uncontested_possessions": 1148,
-        "contested_marks": 19,
-        "marks_inside_50": 26,
-        "one_percenters": 97,
-        "goal_assists": 56,
-        "meters_gained": 29648,
-        "percent_played": 7094,
->>>>>>> Stashed changes
-        "free_kicks_for": 101,
+        "percent_played": 7967,        "free_kicks_for": 101,
         "free_kicks_against": 78
       },
       "perPlayerGame": {
@@ -5165,7 +3685,6 @@
         "hitouts": 0.01,
         "inside_50s": 3.66,
         "clearances": 3.07,
-<<<<<<< Updated upstream
         "intercepts": 2.71,
         "tackles_inside_50": 0.76,
         "score_involvements": 5.06,
@@ -5176,21 +3695,7 @@
         "one_percenters": 1.08,
         "goal_assists": 0.54,
         "meters_gained": 322.18,
-        "percent_played": 77.35,
-=======
-        "intercepts": 2.39,
-        "tackles_inside_50": 0.69,
-        "score_involvements": 4.47,
-        "contested_possessions": 6.25,
-        "uncontested_possessions": 11.15,
-        "contested_marks": 0.18,
-        "marks_inside_50": 0.25,
-        "one_percenters": 0.94,
-        "goal_assists": 0.54,
-        "meters_gained": 287.84,
-        "percent_played": 68.87,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.98,
+        "percent_played": 77.35,        "free_kicks_for": 0.98,
         "free_kicks_against": 0.76
       },
       "perTeamGame": {
@@ -5204,7 +3709,6 @@
         "hitouts": 0.07,
         "inside_50s": 25.13,
         "clearances": 21.07,
-<<<<<<< Updated upstream
         "intercepts": 18.6,
         "tackles_inside_50": 5.2,
         "score_involvements": 34.73,
@@ -5215,21 +3719,7 @@
         "one_percenters": 7.4,
         "goal_assists": 3.73,
         "meters_gained": 2212.33,
-        "percent_played": 531.13,
-=======
-        "intercepts": 16.4,
-        "tackles_inside_50": 4.73,
-        "score_involvements": 30.67,
-        "contested_possessions": 42.93,
-        "uncontested_possessions": 76.53,
-        "contested_marks": 1.27,
-        "marks_inside_50": 1.73,
-        "one_percenters": 6.47,
-        "goal_assists": 3.73,
-        "meters_gained": 1976.53,
-        "percent_played": 472.93,
->>>>>>> Stashed changes
-        "free_kicks_for": 6.73,
+        "percent_played": 531.13,        "free_kicks_for": 6.73,
         "free_kicks_against": 5.2
       },
       "indexVsLeague": {
@@ -5243,7 +3733,6 @@
         "hitouts": 1,
         "inside_50s": 1.112,
         "clearances": 1.048,
-<<<<<<< Updated upstream
         "intercepts": 1.059,
         "tackles_inside_50": 1.52,
         "score_involvements": 0.994,
@@ -5254,21 +3743,7 @@
         "one_percenters": 1.049,
         "goal_assists": 1.038,
         "meters_gained": 1.034,
-        "percent_played": 1.009,
-=======
-        "intercepts": 1.072,
-        "tackles_inside_50": 1.568,
-        "score_involvements": 1.025,
-        "contested_possessions": 1.018,
-        "uncontested_possessions": 1.047,
-        "contested_marks": 1.125,
-        "marks_inside_50": 0.806,
-        "one_percenters": 1.044,
-        "goal_assists": 1.038,
-        "meters_gained": 1.078,
-        "percent_played": 1.034,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.077,
+        "percent_played": 1.009,        "free_kicks_for": 1.077,
         "free_kicks_against": 0.874
       }
     },
@@ -5394,7 +3869,6 @@
         "hitouts": 45,
         "inside_50s": 161,
         "clearances": 52,
-<<<<<<< Updated upstream
         "intercepts": 555,
         "tackles_inside_50": 12,
         "score_involvements": 295,
@@ -5405,21 +3879,7 @@
         "one_percenters": 392,
         "goal_assists": 17,
         "meters_gained": 34411,
-        "percent_played": 9485,
-=======
-        "intercepts": 498,
-        "tackles_inside_50": 12,
-        "score_involvements": 256,
-        "contested_possessions": 461,
-        "uncontested_possessions": 1077,
-        "contested_marks": 36,
-        "marks_inside_50": 11,
-        "one_percenters": 366,
-        "goal_assists": 17,
-        "meters_gained": 30148,
-        "percent_played": 8667,
->>>>>>> Stashed changes
-        "free_kicks_for": 83,
+        "percent_played": 9485,        "free_kicks_for": 83,
         "free_kicks_against": 73
       },
       "perPlayerGame": {
@@ -5433,7 +3893,6 @@
         "hitouts": 0.39,
         "inside_50s": 1.4,
         "clearances": 0.45,
-<<<<<<< Updated upstream
         "intercepts": 4.83,
         "tackles_inside_50": 0.1,
         "score_involvements": 2.57,
@@ -5444,21 +3903,7 @@
         "one_percenters": 3.41,
         "goal_assists": 0.15,
         "meters_gained": 299.23,
-        "percent_played": 82.48,
-=======
-        "intercepts": 4.33,
-        "tackles_inside_50": 0.1,
-        "score_involvements": 2.23,
-        "contested_possessions": 4.01,
-        "uncontested_possessions": 9.37,
-        "contested_marks": 0.31,
-        "marks_inside_50": 0.1,
-        "one_percenters": 3.18,
-        "goal_assists": 0.15,
-        "meters_gained": 262.16,
-        "percent_played": 75.37,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.72,
+        "percent_played": 82.48,        "free_kicks_for": 0.72,
         "free_kicks_against": 0.63
       },
       "perTeamGame": {
@@ -5472,7 +3917,6 @@
         "hitouts": 3,
         "inside_50s": 10.73,
         "clearances": 3.47,
-<<<<<<< Updated upstream
         "intercepts": 37,
         "tackles_inside_50": 0.8,
         "score_involvements": 19.67,
@@ -5483,25 +3927,10 @@
         "one_percenters": 26.13,
         "goal_assists": 1.13,
         "meters_gained": 2294.07,
-        "percent_played": 632.33,
-=======
-        "intercepts": 33.2,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 17.07,
-        "contested_possessions": 30.73,
-        "uncontested_possessions": 71.8,
-        "contested_marks": 2.4,
-        "marks_inside_50": 0.73,
-        "one_percenters": 24.4,
-        "goal_assists": 1.13,
-        "meters_gained": 2009.87,
-        "percent_played": 577.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.53,
+        "percent_played": 632.33,        "free_kicks_for": 5.53,
         "free_kicks_against": 4.87
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.999,
         "kicks": 0.971,
         "handballs": 1.05,
@@ -5523,32 +3952,7 @@
         "goal_assists": 0.75,
         "meters_gained": 1.036,
         "percent_played": 1.008,
-        "free_kicks_for": 1.075,
-=======
-        "disposals": 1.003,
-        "kicks": 0.975,
-        "handballs": 1.051,
-        "marks": 0.939,
-        "goals": 0.692,
-        "behinds": 0.769,
-        "tackles": 1.028,
-        "hitouts": 1.444,
-        "inside_50s": 0.881,
-        "clearances": 0.804,
-        "intercepts": 0.995,
-        "tackles_inside_50": 1,
-        "score_involvements": 0.78,
-        "contested_possessions": 0.971,
-        "uncontested_possessions": 0.93,
-        "contested_marks": 0.756,
-        "marks_inside_50": 0.909,
-        "one_percenters": 1.056,
-        "goal_assists": 0.75,
-        "meters_gained": 0.992,
-        "percent_played": 0.974,
-        "free_kicks_for": 1.091,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.84
+        "free_kicks_for": 1.075,        "free_kicks_against": 0.84
       }
     },
     {
@@ -5567,7 +3971,6 @@
         "hitouts": 15,
         "inside_50s": 216,
         "clearances": 78,
-<<<<<<< Updated upstream
         "intercepts": 138,
         "tackles_inside_50": 69,
         "score_involvements": 425,
@@ -5578,21 +3981,7 @@
         "one_percenters": 123,
         "goal_assists": 63,
         "meters_gained": 20055,
-        "percent_played": 7632,
-=======
-        "intercepts": 126,
-        "tackles_inside_50": 69,
-        "score_involvements": 403,
-        "contested_possessions": 448,
-        "uncontested_possessions": 639,
-        "contested_marks": 44,
-        "marks_inside_50": 95,
-        "one_percenters": 112,
-        "goal_assists": 63,
-        "meters_gained": 18660,
-        "percent_played": 7310,
->>>>>>> Stashed changes
-        "free_kicks_for": 82,
+        "percent_played": 7632,        "free_kicks_for": 82,
         "free_kicks_against": 76
       },
       "perPlayerGame": {
@@ -5606,7 +3995,6 @@
         "hitouts": 0.15,
         "inside_50s": 2.14,
         "clearances": 0.77,
-<<<<<<< Updated upstream
         "intercepts": 1.37,
         "tackles_inside_50": 0.68,
         "score_involvements": 4.21,
@@ -5617,21 +4005,7 @@
         "one_percenters": 1.22,
         "goal_assists": 0.62,
         "meters_gained": 198.56,
-        "percent_played": 75.56,
-=======
-        "intercepts": 1.25,
-        "tackles_inside_50": 0.68,
-        "score_involvements": 3.99,
-        "contested_possessions": 4.44,
-        "uncontested_possessions": 6.33,
-        "contested_marks": 0.44,
-        "marks_inside_50": 0.94,
-        "one_percenters": 1.11,
-        "goal_assists": 0.62,
-        "meters_gained": 184.75,
-        "percent_played": 72.38,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.81,
+        "percent_played": 75.56,        "free_kicks_for": 0.81,
         "free_kicks_against": 0.75
       },
       "perTeamGame": {
@@ -5645,7 +4019,6 @@
         "hitouts": 1,
         "inside_50s": 14.4,
         "clearances": 5.2,
-<<<<<<< Updated upstream
         "intercepts": 9.2,
         "tackles_inside_50": 4.6,
         "score_involvements": 28.33,
@@ -5656,21 +4029,7 @@
         "one_percenters": 8.2,
         "goal_assists": 4.2,
         "meters_gained": 1337,
-        "percent_played": 508.8,
-=======
-        "intercepts": 8.4,
-        "tackles_inside_50": 4.6,
-        "score_involvements": 26.87,
-        "contested_possessions": 29.87,
-        "uncontested_possessions": 42.6,
-        "contested_marks": 2.93,
-        "marks_inside_50": 6.33,
-        "one_percenters": 7.47,
-        "goal_assists": 4.2,
-        "meters_gained": 1244,
-        "percent_played": 487.33,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.47,
+        "percent_played": 508.8,        "free_kicks_for": 5.47,
         "free_kicks_against": 5.07
       },
       "indexVsLeague": {
@@ -5684,7 +4043,6 @@
         "hitouts": 0.375,
         "inside_50s": 0.964,
         "clearances": 0.939,
-<<<<<<< Updated upstream
         "intercepts": 0.986,
         "tackles_inside_50": 0.85,
         "score_involvements": 0.868,
@@ -5695,21 +4053,7 @@
         "one_percenters": 1.08,
         "goal_assists": 1.127,
         "meters_gained": 0.943,
-        "percent_played": 0.983,
-=======
-        "intercepts": 0.933,
-        "tackles_inside_50": 0.872,
-        "score_involvements": 0.847,
-        "contested_possessions": 0.982,
-        "uncontested_possessions": 0.877,
-        "contested_marks": 0.846,
-        "marks_inside_50": 0.783,
-        "one_percenters": 1.009,
-        "goal_assists": 1.127,
-        "meters_gained": 0.912,
-        "percent_played": 0.968,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.025,
+        "percent_played": 0.983,        "free_kicks_for": 1.025,
         "free_kicks_against": 1
       }
     },
@@ -5729,7 +4073,6 @@
         "hitouts": 0,
         "inside_50s": 331,
         "clearances": 289,
-<<<<<<< Updated upstream
         "intercepts": 245,
         "tackles_inside_50": 58,
         "score_involvements": 486,
@@ -5740,21 +4083,7 @@
         "one_percenters": 105,
         "goal_assists": 54,
         "meters_gained": 31467,
-        "percent_played": 7699,
-=======
-        "intercepts": 219,
-        "tackles_inside_50": 55,
-        "score_involvements": 404,
-        "contested_possessions": 585,
-        "uncontested_possessions": 1024,
-        "contested_marks": 16,
-        "marks_inside_50": 35,
-        "one_percenters": 87,
-        "goal_assists": 54,
-        "meters_gained": 26172,
-        "percent_played": 6750,
->>>>>>> Stashed changes
-        "free_kicks_for": 78,
+        "percent_played": 7699,        "free_kicks_for": 78,
         "free_kicks_against": 95
       },
       "perPlayerGame": {
@@ -5768,7 +4097,6 @@
         "hitouts": 0,
         "inside_50s": 3.31,
         "clearances": 2.89,
-<<<<<<< Updated upstream
         "intercepts": 2.45,
         "tackles_inside_50": 0.58,
         "score_involvements": 4.86,
@@ -5779,21 +4107,7 @@
         "one_percenters": 1.05,
         "goal_assists": 0.54,
         "meters_gained": 314.67,
-        "percent_played": 76.99,
-=======
-        "intercepts": 2.19,
-        "tackles_inside_50": 0.55,
-        "score_involvements": 4.04,
-        "contested_possessions": 5.85,
-        "uncontested_possessions": 10.24,
-        "contested_marks": 0.16,
-        "marks_inside_50": 0.35,
-        "one_percenters": 0.87,
-        "goal_assists": 0.54,
-        "meters_gained": 261.72,
-        "percent_played": 67.5,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.78,
+        "percent_played": 76.99,        "free_kicks_for": 0.78,
         "free_kicks_against": 0.95
       },
       "perTeamGame": {
@@ -5807,7 +4121,6 @@
         "hitouts": 0,
         "inside_50s": 22.07,
         "clearances": 19.27,
-<<<<<<< Updated upstream
         "intercepts": 16.33,
         "tackles_inside_50": 3.87,
         "score_involvements": 32.4,
@@ -5818,21 +4131,7 @@
         "one_percenters": 7,
         "goal_assists": 3.6,
         "meters_gained": 2097.8,
-        "percent_played": 513.27,
-=======
-        "intercepts": 14.6,
-        "tackles_inside_50": 3.67,
-        "score_involvements": 26.93,
-        "contested_possessions": 39,
-        "uncontested_possessions": 68.27,
-        "contested_marks": 1.07,
-        "marks_inside_50": 2.33,
-        "one_percenters": 5.8,
-        "goal_assists": 3.6,
-        "meters_gained": 1744.8,
-        "percent_played": 450,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.2,
+        "percent_played": 513.27,        "free_kicks_for": 5.2,
         "free_kicks_against": 6.33
       },
       "indexVsLeague": {
@@ -5846,7 +4145,6 @@
         "hitouts": 0,
         "inside_50s": 1.006,
         "clearances": 0.986,
-<<<<<<< Updated upstream
         "intercepts": 0.957,
         "tackles_inside_50": 1.16,
         "score_involvements": 0.955,
@@ -5857,21 +4155,7 @@
         "one_percenters": 1.019,
         "goal_assists": 1.038,
         "meters_gained": 1.009,
-        "percent_played": 1.004,
-=======
-        "intercepts": 0.982,
-        "tackles_inside_50": 1.25,
-        "score_involvements": 0.927,
-        "contested_possessions": 0.953,
-        "uncontested_possessions": 0.962,
-        "contested_marks": 1,
-        "marks_inside_50": 1.129,
-        "one_percenters": 0.967,
-        "goal_assists": 1.038,
-        "meters_gained": 0.981,
-        "percent_played": 1.013,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.857,
+        "percent_played": 1.004,        "free_kicks_for": 0.857,
         "free_kicks_against": 1.092
       }
     },
@@ -5995,7 +4279,6 @@
         "behinds": 14,
         "tackles": 210,
         "hitouts": 66,
-<<<<<<< Updated upstream
         "inside_50s": 181,
         "clearances": 75,
         "intercepts": 565,
@@ -6010,25 +4293,7 @@
         "meters_gained": 33703,
         "percent_played": 9448,
         "free_kicks_for": 75,
-        "free_kicks_against": 74
-=======
-        "inside_50s": 180,
-        "clearances": 73,
-        "intercepts": 519,
-        "tackles_inside_50": 8,
-        "score_involvements": 336,
-        "contested_possessions": 480,
-        "uncontested_possessions": 1230,
-        "contested_marks": 41,
-        "marks_inside_50": 10,
-        "one_percenters": 365,
-        "goal_assists": 31,
-        "meters_gained": 29770,
-        "percent_played": 8701,
-        "free_kicks_for": 74,
-        "free_kicks_against": 73
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 74      },
       "perPlayerGame": {
         "disposals": 17.51,
         "kicks": 11.28,
@@ -6039,7 +4304,6 @@
         "tackles": 1.81,
         "hitouts": 0.57,
         "inside_50s": 1.55,
-<<<<<<< Updated upstream
         "clearances": 0.64,
         "intercepts": 4.83,
         "tackles_inside_50": 0.07,
@@ -6051,22 +4315,7 @@
         "one_percenters": 3.3,
         "goal_assists": 0.26,
         "meters_gained": 288.06,
-        "percent_played": 80.75,
-=======
-        "clearances": 0.63,
-        "intercepts": 4.47,
-        "tackles_inside_50": 0.07,
-        "score_involvements": 2.9,
-        "contested_possessions": 4.14,
-        "uncontested_possessions": 10.6,
-        "contested_marks": 0.35,
-        "marks_inside_50": 0.09,
-        "one_percenters": 3.15,
-        "goal_assists": 0.27,
-        "meters_gained": 256.64,
-        "percent_played": 75.01,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.64,
+        "percent_played": 80.75,        "free_kicks_for": 0.64,
         "free_kicks_against": 0.63
       },
       "perTeamGame": {
@@ -6078,7 +4327,6 @@
         "behinds": 0.93,
         "tackles": 14,
         "hitouts": 4.4,
-<<<<<<< Updated upstream
         "inside_50s": 12.07,
         "clearances": 5,
         "intercepts": 37.67,
@@ -6117,49 +4365,7 @@
         "goal_assists": 1.3,
         "meters_gained": 0.997,
         "percent_played": 0.987,
-        "free_kicks_for": 0.955,
-=======
-        "inside_50s": 12,
-        "clearances": 4.87,
-        "intercepts": 34.6,
-        "tackles_inside_50": 0.53,
-        "score_involvements": 22.4,
-        "contested_possessions": 32,
-        "uncontested_possessions": 82,
-        "contested_marks": 2.73,
-        "marks_inside_50": 0.67,
-        "one_percenters": 24.33,
-        "goal_assists": 2.07,
-        "meters_gained": 1984.67,
-        "percent_played": 580.07,
-        "free_kicks_for": 4.93,
-        "free_kicks_against": 4.87
-      },
-      "indexVsLeague": {
-        "disposals": 1.058,
-        "kicks": 1.071,
-        "handballs": 1.035,
-        "marks": 1.129,
-        "goals": 0.923,
-        "behinds": 0.923,
-        "tackles": 1.017,
-        "hitouts": 2.111,
-        "inside_50s": 0.975,
-        "clearances": 1.125,
-        "intercepts": 1.028,
-        "tackles_inside_50": 0.7,
-        "score_involvements": 1.014,
-        "contested_possessions": 1.002,
-        "uncontested_possessions": 1.052,
-        "contested_marks": 0.854,
-        "marks_inside_50": 0.818,
-        "one_percenters": 1.047,
-        "goal_assists": 1.35,
-        "meters_gained": 0.971,
-        "percent_played": 0.969,
-        "free_kicks_for": 0.97,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.84
+        "free_kicks_for": 0.955,        "free_kicks_against": 0.84
       }
     },
     {
@@ -6178,7 +4384,6 @@
         "hitouts": 36,
         "inside_50s": 225,
         "clearances": 88,
-<<<<<<< Updated upstream
         "intercepts": 128,
         "tackles_inside_50": 67,
         "score_involvements": 501,
@@ -6189,21 +4394,7 @@
         "one_percenters": 112,
         "goal_assists": 63,
         "meters_gained": 20839,
-        "percent_played": 7564,
-=======
-        "intercepts": 120,
-        "tackles_inside_50": 62,
-        "score_involvements": 480,
-        "contested_possessions": 463,
-        "uncontested_possessions": 730,
-        "contested_marks": 53,
-        "marks_inside_50": 128,
-        "one_percenters": 109,
-        "goal_assists": 63,
-        "meters_gained": 19884,
-        "percent_played": 7312,
->>>>>>> Stashed changes
-        "free_kicks_for": 82,
+        "percent_played": 7564,        "free_kicks_for": 82,
         "free_kicks_against": 66
       },
       "perPlayerGame": {
@@ -6217,7 +4408,6 @@
         "hitouts": 0.37,
         "inside_50s": 2.3,
         "clearances": 0.9,
-<<<<<<< Updated upstream
         "intercepts": 1.31,
         "tackles_inside_50": 0.68,
         "score_involvements": 5.11,
@@ -6228,21 +4418,7 @@
         "one_percenters": 1.14,
         "goal_assists": 0.64,
         "meters_gained": 212.64,
-        "percent_played": 77.18,
-=======
-        "intercepts": 1.22,
-        "tackles_inside_50": 0.63,
-        "score_involvements": 4.9,
-        "contested_possessions": 4.72,
-        "uncontested_possessions": 7.45,
-        "contested_marks": 0.54,
-        "marks_inside_50": 1.31,
-        "one_percenters": 1.11,
-        "goal_assists": 0.64,
-        "meters_gained": 202.9,
-        "percent_played": 74.61,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.84,
+        "percent_played": 77.18,        "free_kicks_for": 0.84,
         "free_kicks_against": 0.67
       },
       "perTeamGame": {
@@ -6256,7 +4432,6 @@
         "hitouts": 2.4,
         "inside_50s": 15,
         "clearances": 5.87,
-<<<<<<< Updated upstream
         "intercepts": 8.53,
         "tackles_inside_50": 4.47,
         "score_involvements": 33.4,
@@ -6267,21 +4442,7 @@
         "one_percenters": 7.47,
         "goal_assists": 4.2,
         "meters_gained": 1389.27,
-        "percent_played": 504.27,
-=======
-        "intercepts": 8,
-        "tackles_inside_50": 4.13,
-        "score_involvements": 32,
-        "contested_possessions": 30.87,
-        "uncontested_possessions": 48.67,
-        "contested_marks": 3.53,
-        "marks_inside_50": 8.53,
-        "one_percenters": 7.27,
-        "goal_assists": 4.2,
-        "meters_gained": 1325.6,
-        "percent_played": 487.47,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.47,
+        "percent_played": 504.27,        "free_kicks_for": 5.47,
         "free_kicks_against": 4.4
       },
       "indexVsLeague": {
@@ -6295,7 +4456,6 @@
         "hitouts": 0.925,
         "inside_50s": 1.036,
         "clearances": 1.098,
-<<<<<<< Updated upstream
         "intercepts": 0.942,
         "tackles_inside_50": 0.85,
         "score_involvements": 1.054,
@@ -6306,21 +4466,7 @@
         "one_percenters": 1.009,
         "goal_assists": 1.164,
         "meters_gained": 1.01,
-        "percent_played": 1.004,
-=======
-        "intercepts": 0.91,
-        "tackles_inside_50": 0.808,
-        "score_involvements": 1.04,
-        "contested_possessions": 1.044,
-        "uncontested_possessions": 1.032,
-        "contested_marks": 1.038,
-        "marks_inside_50": 1.092,
-        "one_percenters": 1.009,
-        "goal_assists": 1.164,
-        "meters_gained": 1.001,
-        "percent_played": 0.997,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.063,
+        "percent_played": 1.004,        "free_kicks_for": 1.063,
         "free_kicks_against": 0.893
       }
     },
@@ -6340,7 +4486,6 @@
         "hitouts": 0,
         "inside_50s": 323,
         "clearances": 299,
-<<<<<<< Updated upstream
         "intercepts": 267,
         "tackles_inside_50": 36,
         "score_involvements": 567,
@@ -6351,21 +4496,7 @@
         "one_percenters": 85,
         "goal_assists": 57,
         "meters_gained": 32347,
-        "percent_played": 7963,
-=======
-        "intercepts": 236,
-        "tackles_inside_50": 30,
-        "score_involvements": 478,
-        "contested_possessions": 639,
-        "uncontested_possessions": 1132,
-        "contested_marks": 27,
-        "marks_inside_50": 33,
-        "one_percenters": 75,
-        "goal_assists": 57,
-        "meters_gained": 27011,
-        "percent_played": 6912,
->>>>>>> Stashed changes
-        "free_kicks_for": 76,
+        "percent_played": 7963,        "free_kicks_for": 76,
         "free_kicks_against": 85
       },
       "perPlayerGame": {
@@ -6379,7 +4510,6 @@
         "hitouts": 0,
         "inside_50s": 3.08,
         "clearances": 2.85,
-<<<<<<< Updated upstream
         "intercepts": 2.54,
         "tackles_inside_50": 0.34,
         "score_involvements": 5.4,
@@ -6390,21 +4520,7 @@
         "one_percenters": 0.81,
         "goal_assists": 0.54,
         "meters_gained": 308.07,
-        "percent_played": 75.84,
-=======
-        "intercepts": 2.25,
-        "tackles_inside_50": 0.29,
-        "score_involvements": 4.55,
-        "contested_possessions": 6.09,
-        "uncontested_possessions": 10.78,
-        "contested_marks": 0.26,
-        "marks_inside_50": 0.31,
-        "one_percenters": 0.71,
-        "goal_assists": 0.54,
-        "meters_gained": 257.25,
-        "percent_played": 65.83,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.72,
+        "percent_played": 75.84,        "free_kicks_for": 0.72,
         "free_kicks_against": 0.81
       },
       "perTeamGame": {
@@ -6418,7 +4534,6 @@
         "hitouts": 0,
         "inside_50s": 21.53,
         "clearances": 19.93,
-<<<<<<< Updated upstream
         "intercepts": 17.8,
         "tackles_inside_50": 2.4,
         "score_involvements": 37.8,
@@ -6429,21 +4544,7 @@
         "one_percenters": 5.67,
         "goal_assists": 3.8,
         "meters_gained": 2156.47,
-        "percent_played": 530.87,
-=======
-        "intercepts": 15.73,
-        "tackles_inside_50": 2,
-        "score_involvements": 31.87,
-        "contested_possessions": 42.6,
-        "uncontested_possessions": 75.47,
-        "contested_marks": 1.8,
-        "marks_inside_50": 2.2,
-        "one_percenters": 5,
-        "goal_assists": 3.8,
-        "meters_gained": 1800.73,
-        "percent_played": 460.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.07,
+        "percent_played": 530.87,        "free_kicks_for": 5.07,
         "free_kicks_against": 5.67
       },
       "indexVsLeague": {
@@ -6457,7 +4558,6 @@
         "hitouts": 0,
         "inside_50s": 0.936,
         "clearances": 0.973,
-<<<<<<< Updated upstream
         "intercepts": 0.992,
         "tackles_inside_50": 0.68,
         "score_involvements": 1.061,
@@ -6468,21 +4568,7 @@
         "one_percenters": 0.786,
         "goal_assists": 1.038,
         "meters_gained": 0.988,
-        "percent_played": 0.989,
-=======
-        "intercepts": 1.009,
-        "tackles_inside_50": 0.659,
-        "score_involvements": 1.044,
-        "contested_possessions": 0.992,
-        "uncontested_possessions": 1.012,
-        "contested_marks": 1.625,
-        "marks_inside_50": 1,
-        "one_percenters": 0.789,
-        "goal_assists": 1.038,
-        "meters_gained": 0.964,
-        "percent_played": 0.988,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.791,
+        "percent_played": 0.989,        "free_kicks_for": 0.791,
         "free_kicks_against": 0.931
       }
     },
@@ -6608,7 +4694,6 @@
         "hitouts": 66,
         "inside_50s": 187,
         "clearances": 61,
-<<<<<<< Updated upstream
         "intercepts": 470,
         "tackles_inside_50": 13,
         "score_involvements": 354,
@@ -6619,21 +4704,7 @@
         "one_percenters": 353,
         "goal_assists": 24,
         "meters_gained": 32084,
-        "percent_played": 9824,
-=======
-        "intercepts": 448,
-        "tackles_inside_50": 13,
-        "score_involvements": 325,
-        "contested_possessions": 467,
-        "uncontested_possessions": 1095,
-        "contested_marks": 50,
-        "marks_inside_50": 14,
-        "one_percenters": 349,
-        "goal_assists": 24,
-        "meters_gained": 30053,
-        "percent_played": 9393,
->>>>>>> Stashed changes
-        "free_kicks_for": 93,
+        "percent_played": 9824,        "free_kicks_for": 93,
         "free_kicks_against": 103
       },
       "perPlayerGame": {
@@ -6647,7 +4718,6 @@
         "hitouts": 0.55,
         "inside_50s": 1.55,
         "clearances": 0.5,
-<<<<<<< Updated upstream
         "intercepts": 3.88,
         "tackles_inside_50": 0.11,
         "score_involvements": 2.93,
@@ -6658,21 +4728,7 @@
         "one_percenters": 2.92,
         "goal_assists": 0.2,
         "meters_gained": 265.16,
-        "percent_played": 81.19,
-=======
-        "intercepts": 3.7,
-        "tackles_inside_50": 0.11,
-        "score_involvements": 2.69,
-        "contested_possessions": 3.86,
-        "uncontested_possessions": 9.05,
-        "contested_marks": 0.41,
-        "marks_inside_50": 0.12,
-        "one_percenters": 2.88,
-        "goal_assists": 0.2,
-        "meters_gained": 248.37,
-        "percent_played": 77.63,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.77,
+        "percent_played": 81.19,        "free_kicks_for": 0.77,
         "free_kicks_against": 0.85
       },
       "perTeamGame": {
@@ -6686,7 +4742,6 @@
         "hitouts": 4.4,
         "inside_50s": 12.47,
         "clearances": 4.07,
-<<<<<<< Updated upstream
         "intercepts": 31.33,
         "tackles_inside_50": 0.87,
         "score_involvements": 23.6,
@@ -6697,25 +4752,10 @@
         "one_percenters": 23.53,
         "goal_assists": 1.6,
         "meters_gained": 2138.93,
-        "percent_played": 654.93,
-=======
-        "intercepts": 29.87,
-        "tackles_inside_50": 0.87,
-        "score_involvements": 21.67,
-        "contested_possessions": 31.13,
-        "uncontested_possessions": 73,
-        "contested_marks": 3.33,
-        "marks_inside_50": 0.93,
-        "one_percenters": 23.27,
-        "goal_assists": 1.6,
-        "meters_gained": 2003.53,
-        "percent_played": 626.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 6.2,
+        "percent_played": 654.93,        "free_kicks_for": 6.2,
         "free_kicks_against": 6.87
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.896,
         "kicks": 0.878,
         "handballs": 0.929,
@@ -6737,32 +4777,7 @@
         "goal_assists": 1,
         "meters_gained": 0.918,
         "percent_played": 0.992,
-        "free_kicks_for": 1.149,
-=======
-        "disposals": 0.9,
-        "kicks": 0.882,
-        "handballs": 0.93,
-        "marks": 0.891,
-        "goals": 1.231,
-        "behinds": 0.692,
-        "tackles": 0.972,
-        "hitouts": 2.037,
-        "inside_50s": 0.975,
-        "clearances": 0.893,
-        "intercepts": 0.851,
-        "tackles_inside_50": 1.1,
-        "score_involvements": 0.941,
-        "contested_possessions": 0.935,
-        "uncontested_possessions": 0.898,
-        "contested_marks": 1,
-        "marks_inside_50": 1.091,
-        "one_percenters": 0.957,
-        "goal_assists": 1,
-        "meters_gained": 0.94,
-        "percent_played": 1.003,
-        "free_kicks_for": 1.167,
->>>>>>> Stashed changes
-        "free_kicks_against": 1.133
+        "free_kicks_for": 1.149,        "free_kicks_against": 1.133
       }
     },
     {
@@ -6781,7 +4796,6 @@
         "hitouts": 48,
         "inside_50s": 195,
         "clearances": 85,
-<<<<<<< Updated upstream
         "intercepts": 113,
         "tackles_inside_50": 69,
         "score_involvements": 436,
@@ -6792,21 +4806,7 @@
         "one_percenters": 84,
         "goal_assists": 43,
         "meters_gained": 18798,
-        "percent_played": 7062,
-=======
-        "intercepts": 103,
-        "tackles_inside_50": 66,
-        "score_involvements": 418,
-        "contested_possessions": 351,
-        "uncontested_possessions": 646,
-        "contested_marks": 33,
-        "marks_inside_50": 118,
-        "one_percenters": 77,
-        "goal_assists": 43,
-        "meters_gained": 17790,
-        "percent_played": 6818,
->>>>>>> Stashed changes
-        "free_kicks_for": 80,
+        "percent_played": 7062,        "free_kicks_for": 80,
         "free_kicks_against": 57
       },
       "perPlayerGame": {
@@ -6820,7 +4820,6 @@
         "hitouts": 0.52,
         "inside_50s": 2.12,
         "clearances": 0.92,
-<<<<<<< Updated upstream
         "intercepts": 1.23,
         "tackles_inside_50": 0.75,
         "score_involvements": 4.74,
@@ -6831,21 +4830,7 @@
         "one_percenters": 0.91,
         "goal_assists": 0.47,
         "meters_gained": 204.33,
-        "percent_played": 76.76,
-=======
-        "intercepts": 1.12,
-        "tackles_inside_50": 0.72,
-        "score_involvements": 4.54,
-        "contested_possessions": 3.82,
-        "uncontested_possessions": 7.02,
-        "contested_marks": 0.36,
-        "marks_inside_50": 1.28,
-        "one_percenters": 0.84,
-        "goal_assists": 0.47,
-        "meters_gained": 193.37,
-        "percent_played": 74.11,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.87,
+        "percent_played": 76.76,        "free_kicks_for": 0.87,
         "free_kicks_against": 0.62
       },
       "perTeamGame": {
@@ -6859,7 +4844,6 @@
         "hitouts": 3.2,
         "inside_50s": 13,
         "clearances": 5.67,
-<<<<<<< Updated upstream
         "intercepts": 7.53,
         "tackles_inside_50": 4.6,
         "score_involvements": 29.07,
@@ -6870,21 +4854,7 @@
         "one_percenters": 5.6,
         "goal_assists": 2.87,
         "meters_gained": 1253.2,
-        "percent_played": 470.8,
-=======
-        "intercepts": 6.87,
-        "tackles_inside_50": 4.4,
-        "score_involvements": 27.87,
-        "contested_possessions": 23.4,
-        "uncontested_possessions": 43.07,
-        "contested_marks": 2.2,
-        "marks_inside_50": 7.87,
-        "one_percenters": 5.13,
-        "goal_assists": 2.87,
-        "meters_gained": 1186,
-        "percent_played": 454.53,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.33,
+        "percent_played": 470.8,        "free_kicks_for": 5.33,
         "free_kicks_against": 3.8
       },
       "indexVsLeague": {
@@ -6898,7 +4868,6 @@
         "hitouts": 1.3,
         "inside_50s": 0.955,
         "clearances": 1.122,
-<<<<<<< Updated upstream
         "intercepts": 0.885,
         "tackles_inside_50": 0.938,
         "score_involvements": 0.977,
@@ -6909,21 +4878,7 @@
         "one_percenters": 0.805,
         "goal_assists": 0.855,
         "meters_gained": 0.97,
-        "percent_played": 0.998,
-=======
-        "intercepts": 0.836,
-        "tackles_inside_50": 0.923,
-        "score_involvements": 0.964,
-        "contested_possessions": 0.845,
-        "uncontested_possessions": 0.972,
-        "contested_marks": 0.692,
-        "marks_inside_50": 1.067,
-        "one_percenters": 0.764,
-        "goal_assists": 0.855,
-        "meters_gained": 0.954,
-        "percent_played": 0.991,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.101,
+        "percent_played": 0.998,        "free_kicks_for": 1.101,
         "free_kicks_against": 0.827
       }
     },
@@ -6943,7 +4898,6 @@
         "hitouts": 1,
         "inside_50s": 342,
         "clearances": 298,
-<<<<<<< Updated upstream
         "intercepts": 230,
         "tackles_inside_50": 54,
         "score_involvements": 513,
@@ -6954,21 +4908,7 @@
         "one_percenters": 93,
         "goal_assists": 54,
         "meters_gained": 28747,
-        "percent_played": 7865,
-=======
-        "intercepts": 191,
-        "tackles_inside_50": 46,
-        "score_involvements": 445,
-        "contested_possessions": 624,
-        "uncontested_possessions": 1021,
-        "contested_marks": 13,
-        "marks_inside_50": 25,
-        "one_percenters": 79,
-        "goal_assists": 54,
-        "meters_gained": 24899,
-        "percent_played": 6906,
->>>>>>> Stashed changes
-        "free_kicks_for": 111,
+        "percent_played": 7865,        "free_kicks_for": 111,
         "free_kicks_against": 108
       },
       "perPlayerGame": {
@@ -6982,7 +4922,6 @@
         "hitouts": 0.01,
         "inside_50s": 3.32,
         "clearances": 2.89,
-<<<<<<< Updated upstream
         "intercepts": 2.23,
         "tackles_inside_50": 0.52,
         "score_involvements": 4.98,
@@ -6993,21 +4932,7 @@
         "one_percenters": 0.9,
         "goal_assists": 0.52,
         "meters_gained": 279.1,
-        "percent_played": 76.36,
-=======
-        "intercepts": 1.85,
-        "tackles_inside_50": 0.45,
-        "score_involvements": 4.32,
-        "contested_possessions": 6.06,
-        "uncontested_possessions": 9.91,
-        "contested_marks": 0.13,
-        "marks_inside_50": 0.24,
-        "one_percenters": 0.77,
-        "goal_assists": 0.52,
-        "meters_gained": 241.74,
-        "percent_played": 67.05,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.08,
+        "percent_played": 76.36,        "free_kicks_for": 1.08,
         "free_kicks_against": 1.05
       },
       "perTeamGame": {
@@ -7021,7 +4946,6 @@
         "hitouts": 0.07,
         "inside_50s": 22.8,
         "clearances": 19.87,
-<<<<<<< Updated upstream
         "intercepts": 15.33,
         "tackles_inside_50": 3.6,
         "score_involvements": 34.2,
@@ -7032,21 +4956,7 @@
         "one_percenters": 6.2,
         "goal_assists": 3.6,
         "meters_gained": 1916.47,
-        "percent_played": 524.33,
-=======
-        "intercepts": 12.73,
-        "tackles_inside_50": 3.07,
-        "score_involvements": 29.67,
-        "contested_possessions": 41.6,
-        "uncontested_possessions": 68.07,
-        "contested_marks": 0.87,
-        "marks_inside_50": 1.67,
-        "one_percenters": 5.27,
-        "goal_assists": 3.6,
-        "meters_gained": 1659.93,
-        "percent_played": 460.4,
->>>>>>> Stashed changes
-        "free_kicks_for": 7.4,
+        "percent_played": 524.33,        "free_kicks_for": 7.4,
         "free_kicks_against": 7.2
       },
       "indexVsLeague": {
@@ -7060,7 +4970,6 @@
         "hitouts": 1,
         "inside_50s": 1.009,
         "clearances": 0.986,
-<<<<<<< Updated upstream
         "intercepts": 0.871,
         "tackles_inside_50": 1.04,
         "score_involvements": 0.978,
@@ -7071,21 +4980,7 @@
         "one_percenters": 0.874,
         "goal_assists": 1,
         "meters_gained": 0.895,
-        "percent_played": 0.996,
-=======
-        "intercepts": 0.83,
-        "tackles_inside_50": 1.023,
-        "score_involvements": 0.991,
-        "contested_possessions": 0.987,
-        "uncontested_possessions": 0.931,
-        "contested_marks": 0.813,
-        "marks_inside_50": 0.774,
-        "one_percenters": 0.856,
-        "goal_assists": 1,
-        "meters_gained": 0.906,
-        "percent_played": 1.007,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.187,
+        "percent_played": 0.996,        "free_kicks_for": 1.187,
         "free_kicks_against": 1.207
       }
     },
@@ -7209,7 +5104,6 @@
         "behinds": 15,
         "tackles": 215,
         "hitouts": 20,
-<<<<<<< Updated upstream
         "inside_50s": 204,
         "clearances": 75,
         "intercepts": 580,
@@ -7224,25 +5118,7 @@
         "meters_gained": 34356,
         "percent_played": 9798,
         "free_kicks_for": 89,
-        "free_kicks_against": 85
-=======
-        "inside_50s": 199,
-        "clearances": 69,
-        "intercepts": 546,
-        "tackles_inside_50": 14,
-        "score_involvements": 295,
-        "contested_possessions": 493,
-        "uncontested_possessions": 1148,
-        "contested_marks": 47,
-        "marks_inside_50": 11,
-        "one_percenters": 324,
-        "goal_assists": 21,
-        "meters_gained": 31164,
-        "percent_played": 9178,
-        "free_kicks_for": 83,
-        "free_kicks_against": 84
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 85      },
       "perPlayerGame": {
         "disposals": 15.98,
         "kicks": 10.18,
@@ -7252,7 +5128,6 @@
         "behinds": 0.13,
         "tackles": 1.81,
         "hitouts": 0.17,
-<<<<<<< Updated upstream
         "inside_50s": 1.7,
         "clearances": 0.63,
         "intercepts": 4.83,
@@ -7266,24 +5141,7 @@
         "goal_assists": 0.18,
         "meters_gained": 286.3,
         "percent_played": 81.65,
-        "free_kicks_for": 0.74,
-=======
-        "inside_50s": 1.67,
-        "clearances": 0.58,
-        "intercepts": 4.59,
-        "tackles_inside_50": 0.12,
-        "score_involvements": 2.48,
-        "contested_possessions": 4.14,
-        "uncontested_possessions": 9.65,
-        "contested_marks": 0.39,
-        "marks_inside_50": 0.09,
-        "one_percenters": 2.72,
-        "goal_assists": 0.18,
-        "meters_gained": 261.88,
-        "percent_played": 77.13,
-        "free_kicks_for": 0.7,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.71
+        "free_kicks_for": 0.74,        "free_kicks_against": 0.71
       },
       "perTeamGame": {
         "disposals": 126.8,
@@ -7294,7 +5152,6 @@
         "behinds": 1,
         "tackles": 14.33,
         "hitouts": 1.33,
-<<<<<<< Updated upstream
         "inside_50s": 13.6,
         "clearances": 5,
         "intercepts": 38.67,
@@ -7333,49 +5190,7 @@
         "goal_assists": 0.9,
         "meters_gained": 0.991,
         "percent_played": 0.998,
-        "free_kicks_for": 1.104,
-=======
-        "inside_50s": 13.27,
-        "clearances": 4.6,
-        "intercepts": 36.4,
-        "tackles_inside_50": 0.93,
-        "score_involvements": 19.67,
-        "contested_possessions": 32.87,
-        "uncontested_possessions": 76.53,
-        "contested_marks": 3.13,
-        "marks_inside_50": 0.73,
-        "one_percenters": 21.6,
-        "goal_assists": 1.4,
-        "meters_gained": 2077.6,
-        "percent_played": 611.87,
-        "free_kicks_for": 5.53,
-        "free_kicks_against": 5.6
-      },
-      "indexVsLeague": {
-        "disposals": 0.966,
-        "kicks": 0.967,
-        "handballs": 0.963,
-        "marks": 0.969,
-        "goals": 1.231,
-        "behinds": 1,
-        "tackles": 1.017,
-        "hitouts": 0.63,
-        "inside_50s": 1.05,
-        "clearances": 1.036,
-        "intercepts": 1.055,
-        "tackles_inside_50": 1.2,
-        "score_involvements": 0.867,
-        "contested_possessions": 1.002,
-        "uncontested_possessions": 0.957,
-        "contested_marks": 0.951,
-        "marks_inside_50": 0.818,
-        "one_percenters": 0.904,
-        "goal_assists": 0.9,
-        "meters_gained": 0.991,
-        "percent_played": 0.997,
-        "free_kicks_for": 1.061,
->>>>>>> Stashed changes
-        "free_kicks_against": 0.947
+        "free_kicks_for": 1.104,        "free_kicks_against": 0.947
       }
     },
     {
@@ -7469,7 +5284,6 @@
         "hitouts": 1.375,
         "inside_50s": 0.865,
         "clearances": 0.537,
-<<<<<<< Updated upstream
         "intercepts": 0.871,
         "tackles_inside_50": 1.138,
         "score_involvements": 0.932,
@@ -7480,21 +5294,7 @@
         "one_percenters": 0.92,
         "goal_assists": 0.764,
         "meters_gained": 0.942,
-        "percent_played": 1.014,
-=======
-        "intercepts": 0.903,
-        "tackles_inside_50": 1.167,
-        "score_involvements": 0.96,
-        "contested_possessions": 1.04,
-        "uncontested_possessions": 0.92,
-        "contested_marks": 1.212,
-        "marks_inside_50": 0.958,
-        "one_percenters": 0.945,
-        "goal_assists": 0.764,
-        "meters_gained": 0.979,
-        "percent_played": 1.042,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.089,
+        "percent_played": 1.014,        "free_kicks_for": 1.089,
         "free_kicks_against": 1
       }
     },
@@ -7514,7 +5314,6 @@
         "hitouts": 0,
         "inside_50s": 311,
         "clearances": 306,
-<<<<<<< Updated upstream
         "intercepts": 262,
         "tackles_inside_50": 42,
         "score_involvements": 487,
@@ -7525,21 +5324,7 @@
         "one_percenters": 89,
         "goal_assists": 58,
         "meters_gained": 31238,
-        "percent_played": 7916,
-=======
-        "intercepts": 234,
-        "tackles_inside_50": 35,
-        "score_involvements": 433,
-        "contested_possessions": 672,
-        "uncontested_possessions": 1105,
-        "contested_marks": 19,
-        "marks_inside_50": 36,
-        "one_percenters": 79,
-        "goal_assists": 58,
-        "meters_gained": 28118,
-        "percent_played": 7210,
->>>>>>> Stashed changes
-        "free_kicks_for": 90,
+        "percent_played": 7916,        "free_kicks_for": 90,
         "free_kicks_against": 96
       },
       "perPlayerGame": {
@@ -7553,7 +5338,6 @@
         "hitouts": 0,
         "inside_50s": 3.02,
         "clearances": 2.97,
-<<<<<<< Updated upstream
         "intercepts": 2.54,
         "tackles_inside_50": 0.41,
         "score_involvements": 4.73,
@@ -7564,21 +5348,7 @@
         "one_percenters": 0.86,
         "goal_assists": 0.56,
         "meters_gained": 303.28,
-        "percent_played": 76.85,
-=======
-        "intercepts": 2.27,
-        "tackles_inside_50": 0.34,
-        "score_involvements": 4.2,
-        "contested_possessions": 6.52,
-        "uncontested_possessions": 10.73,
-        "contested_marks": 0.18,
-        "marks_inside_50": 0.35,
-        "one_percenters": 0.77,
-        "goal_assists": 0.56,
-        "meters_gained": 272.99,
-        "percent_played": 70,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.87,
+        "percent_played": 76.85,        "free_kicks_for": 0.87,
         "free_kicks_against": 0.93
       },
       "perTeamGame": {
@@ -7592,7 +5362,6 @@
         "hitouts": 0,
         "inside_50s": 20.73,
         "clearances": 20.4,
-<<<<<<< Updated upstream
         "intercepts": 17.47,
         "tackles_inside_50": 2.8,
         "score_involvements": 32.47,
@@ -7603,21 +5372,7 @@
         "one_percenters": 5.93,
         "goal_assists": 3.87,
         "meters_gained": 2082.53,
-        "percent_played": 527.73,
-=======
-        "intercepts": 15.6,
-        "tackles_inside_50": 2.33,
-        "score_involvements": 28.87,
-        "contested_possessions": 44.8,
-        "uncontested_possessions": 73.67,
-        "contested_marks": 1.27,
-        "marks_inside_50": 2.4,
-        "one_percenters": 5.27,
-        "goal_assists": 3.87,
-        "meters_gained": 1874.53,
-        "percent_played": 480.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 6,
+        "percent_played": 527.73,        "free_kicks_for": 6,
         "free_kicks_against": 6.4
       },
       "indexVsLeague": {
@@ -7631,7 +5386,6 @@
         "hitouts": 0,
         "inside_50s": 0.918,
         "clearances": 1.014,
-<<<<<<< Updated upstream
         "intercepts": 0.992,
         "tackles_inside_50": 0.82,
         "score_involvements": 0.929,
@@ -7642,21 +5396,7 @@
         "one_percenters": 0.835,
         "goal_assists": 1.077,
         "meters_gained": 0.973,
-        "percent_played": 1.002,
-=======
-        "intercepts": 1.018,
-        "tackles_inside_50": 0.773,
-        "score_involvements": 0.963,
-        "contested_possessions": 1.062,
-        "uncontested_possessions": 1.008,
-        "contested_marks": 1.125,
-        "marks_inside_50": 1.129,
-        "one_percenters": 0.856,
-        "goal_assists": 1.077,
-        "meters_gained": 1.023,
-        "percent_played": 1.051,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.956,
+        "percent_played": 1.002,        "free_kicks_for": 0.956,
         "free_kicks_against": 1.069
       }
     },
@@ -7782,31 +5522,16 @@
         "hitouts": 18,
         "inside_50s": 178,
         "clearances": 56,
-<<<<<<< Updated upstream
         "intercepts": 528,
         "tackles_inside_50": 9,
         "score_involvements": 452,
         "contested_possessions": 495,
-        "uncontested_possessions": 1325,
-=======
-        "intercepts": 513,
-        "tackles_inside_50": 9,
-        "score_involvements": 432,
-        "contested_possessions": 481,
-        "uncontested_possessions": 1260,
->>>>>>> Stashed changes
-        "contested_marks": 64,
+        "uncontested_possessions": 1325,        "contested_marks": 64,
         "marks_inside_50": 12,
         "one_percenters": 330,
         "goal_assists": 24,
-<<<<<<< Updated upstream
         "meters_gained": 30288,
-        "percent_played": 9111,
-=======
-        "meters_gained": 28403,
-        "percent_played": 8759,
->>>>>>> Stashed changes
-        "free_kicks_for": 62,
+        "percent_played": 9111,        "free_kicks_for": 62,
         "free_kicks_against": 84
       },
       "perPlayerGame": {
@@ -7820,31 +5545,16 @@
         "hitouts": 0.16,
         "inside_50s": 1.62,
         "clearances": 0.51,
-<<<<<<< Updated upstream
         "intercepts": 4.8,
         "tackles_inside_50": 0.08,
         "score_involvements": 4.11,
         "contested_possessions": 4.5,
-        "uncontested_possessions": 12.05,
-=======
-        "intercepts": 4.66,
-        "tackles_inside_50": 0.08,
-        "score_involvements": 3.93,
-        "contested_possessions": 4.37,
-        "uncontested_possessions": 11.45,
->>>>>>> Stashed changes
-        "contested_marks": 0.58,
+        "uncontested_possessions": 12.05,        "contested_marks": 0.58,
         "marks_inside_50": 0.11,
         "one_percenters": 3,
         "goal_assists": 0.22,
-<<<<<<< Updated upstream
         "meters_gained": 275.35,
-        "percent_played": 82.83,
-=======
-        "meters_gained": 258.21,
-        "percent_played": 79.63,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.56,
+        "percent_played": 82.83,        "free_kicks_for": 0.56,
         "free_kicks_against": 0.76
       },
       "perTeamGame": {
@@ -7858,35 +5568,19 @@
         "hitouts": 1.2,
         "inside_50s": 11.87,
         "clearances": 3.73,
-<<<<<<< Updated upstream
         "intercepts": 35.2,
         "tackles_inside_50": 0.6,
         "score_involvements": 30.13,
         "contested_possessions": 33,
-        "uncontested_possessions": 88.33,
-=======
-        "intercepts": 34.2,
-        "tackles_inside_50": 0.6,
-        "score_involvements": 28.8,
-        "contested_possessions": 32.07,
-        "uncontested_possessions": 84,
->>>>>>> Stashed changes
-        "contested_marks": 4.27,
+        "uncontested_possessions": 88.33,        "contested_marks": 4.27,
         "marks_inside_50": 0.8,
         "one_percenters": 22,
         "goal_assists": 1.6,
-<<<<<<< Updated upstream
         "meters_gained": 2019.2,
-        "percent_played": 607.4,
-=======
-        "meters_gained": 1893.53,
-        "percent_played": 583.93,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.13,
+        "percent_played": 607.4,        "free_kicks_for": 4.13,
         "free_kicks_against": 5.6
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 1.054,
         "kicks": 1.051,
         "handballs": 1.061,
@@ -7908,32 +5602,7 @@
         "goal_assists": 1.1,
         "meters_gained": 0.953,
         "percent_played": 1.012,
-        "free_kicks_for": 0.836,
-=======
-        "disposals": 1.059,
-        "kicks": 1.056,
-        "handballs": 1.063,
-        "marks": 1.109,
-        "goals": 1.154,
-        "behinds": 1.615,
-        "tackles": 0.843,
-        "hitouts": 0.593,
-        "inside_50s": 1.019,
-        "clearances": 0.911,
-        "intercepts": 1.071,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 1.374,
-        "contested_possessions": 1.058,
-        "uncontested_possessions": 1.136,
-        "contested_marks": 1.415,
-        "marks_inside_50": 1,
-        "one_percenters": 0.997,
-        "goal_assists": 1.1,
-        "meters_gained": 0.977,
-        "percent_played": 1.029,
-        "free_kicks_for": 0.848,
->>>>>>> Stashed changes
-        "free_kicks_against": 1.013
+        "free_kicks_for": 0.836,        "free_kicks_against": 1.013
       }
     },
     {
@@ -7952,7 +5621,6 @@
         "hitouts": 58,
         "inside_50s": 240,
         "clearances": 77,
-<<<<<<< Updated upstream
         "intercepts": 152,
         "tackles_inside_50": 83,
         "score_involvements": 556,
@@ -7963,21 +5631,7 @@
         "one_percenters": 133,
         "goal_assists": 57,
         "meters_gained": 22387,
-        "percent_played": 7963,
-=======
-        "intercepts": 143,
-        "tackles_inside_50": 81,
-        "score_involvements": 536,
-        "contested_possessions": 455,
-        "uncontested_possessions": 814,
-        "contested_marks": 67,
-        "marks_inside_50": 143,
-        "one_percenters": 129,
-        "goal_assists": 57,
-        "meters_gained": 21205,
-        "percent_played": 7716,
->>>>>>> Stashed changes
-        "free_kicks_for": 94,
+        "percent_played": 7963,        "free_kicks_for": 94,
         "free_kicks_against": 63
       },
       "perPlayerGame": {
@@ -7991,7 +5645,6 @@
         "hitouts": 0.57,
         "inside_50s": 2.35,
         "clearances": 0.75,
-<<<<<<< Updated upstream
         "intercepts": 1.49,
         "tackles_inside_50": 0.81,
         "score_involvements": 5.45,
@@ -8002,21 +5655,7 @@
         "one_percenters": 1.3,
         "goal_assists": 0.56,
         "meters_gained": 219.48,
-        "percent_played": 78.07,
-=======
-        "intercepts": 1.4,
-        "tackles_inside_50": 0.79,
-        "score_involvements": 5.25,
-        "contested_possessions": 4.46,
-        "uncontested_possessions": 7.98,
-        "contested_marks": 0.66,
-        "marks_inside_50": 1.4,
-        "one_percenters": 1.26,
-        "goal_assists": 0.56,
-        "meters_gained": 207.89,
-        "percent_played": 75.65,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.92,
+        "percent_played": 78.07,        "free_kicks_for": 0.92,
         "free_kicks_against": 0.62
       },
       "perTeamGame": {
@@ -8030,7 +5669,6 @@
         "hitouts": 3.87,
         "inside_50s": 16,
         "clearances": 5.13,
-<<<<<<< Updated upstream
         "intercepts": 10.13,
         "tackles_inside_50": 5.53,
         "score_involvements": 37.07,
@@ -8041,21 +5679,7 @@
         "one_percenters": 8.87,
         "goal_assists": 3.8,
         "meters_gained": 1492.47,
-        "percent_played": 530.87,
-=======
-        "intercepts": 9.53,
-        "tackles_inside_50": 5.4,
-        "score_involvements": 35.73,
-        "contested_possessions": 30.33,
-        "uncontested_possessions": 54.27,
-        "contested_marks": 4.47,
-        "marks_inside_50": 9.53,
-        "one_percenters": 8.6,
-        "goal_assists": 3.8,
-        "meters_gained": 1413.67,
-        "percent_played": 514.4,
->>>>>>> Stashed changes
-        "free_kicks_for": 6.27,
+        "percent_played": 530.87,        "free_kicks_for": 6.27,
         "free_kicks_against": 4.2
       },
       "indexVsLeague": {
@@ -8069,7 +5693,6 @@
         "hitouts": 1.425,
         "inside_50s": 1.059,
         "clearances": 0.915,
-<<<<<<< Updated upstream
         "intercepts": 1.072,
         "tackles_inside_50": 1.013,
         "score_involvements": 1.124,
@@ -8080,21 +5703,7 @@
         "one_percenters": 1.15,
         "goal_assists": 1.018,
         "meters_gained": 1.042,
-        "percent_played": 1.015,
-=======
-        "intercepts": 1.045,
-        "tackles_inside_50": 1.013,
-        "score_involvements": 1.115,
-        "contested_possessions": 0.987,
-        "uncontested_possessions": 1.105,
-        "contested_marks": 1.269,
-        "marks_inside_50": 1.167,
-        "one_percenters": 1.145,
-        "goal_assists": 1.018,
-        "meters_gained": 1.026,
-        "percent_played": 1.011,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.165,
+        "percent_played": 1.015,        "free_kicks_for": 1.165,
         "free_kicks_against": 0.827
       }
     },
@@ -8114,7 +5723,6 @@
         "hitouts": 0,
         "inside_50s": 365,
         "clearances": 286,
-<<<<<<< Updated upstream
         "intercepts": 264,
         "tackles_inside_50": 49,
         "score_involvements": 650,
@@ -8125,21 +5733,7 @@
         "one_percenters": 97,
         "goal_assists": 80,
         "meters_gained": 34334,
-        "percent_played": 7866,
-=======
-        "intercepts": 229,
-        "tackles_inside_50": 44,
-        "score_involvements": 545,
-        "contested_possessions": 598,
-        "uncontested_possessions": 1228,
-        "contested_marks": 18,
-        "marks_inside_50": 50,
-        "one_percenters": 86,
-        "goal_assists": 80,
-        "meters_gained": 29780,
-        "percent_played": 6790,
->>>>>>> Stashed changes
-        "free_kicks_for": 85,
+        "percent_played": 7866,        "free_kicks_for": 85,
         "free_kicks_against": 103
       },
       "perPlayerGame": {
@@ -8153,7 +5747,6 @@
         "hitouts": 0,
         "inside_50s": 3.48,
         "clearances": 2.72,
-<<<<<<< Updated upstream
         "intercepts": 2.51,
         "tackles_inside_50": 0.47,
         "score_involvements": 6.19,
@@ -8164,21 +5757,7 @@
         "one_percenters": 0.92,
         "goal_assists": 0.76,
         "meters_gained": 326.99,
-        "percent_played": 74.91,
-=======
-        "intercepts": 2.18,
-        "tackles_inside_50": 0.42,
-        "score_involvements": 5.19,
-        "contested_possessions": 5.7,
-        "uncontested_possessions": 11.7,
-        "contested_marks": 0.17,
-        "marks_inside_50": 0.48,
-        "one_percenters": 0.82,
-        "goal_assists": 0.76,
-        "meters_gained": 283.62,
-        "percent_played": 64.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.81,
+        "percent_played": 74.91,        "free_kicks_for": 0.81,
         "free_kicks_against": 0.98
       },
       "perTeamGame": {
@@ -8192,7 +5771,6 @@
         "hitouts": 0,
         "inside_50s": 24.33,
         "clearances": 19.07,
-<<<<<<< Updated upstream
         "intercepts": 17.6,
         "tackles_inside_50": 3.27,
         "score_involvements": 43.33,
@@ -8203,21 +5781,7 @@
         "one_percenters": 6.47,
         "goal_assists": 5.33,
         "meters_gained": 2288.93,
-        "percent_played": 524.4,
-=======
-        "intercepts": 15.27,
-        "tackles_inside_50": 2.93,
-        "score_involvements": 36.33,
-        "contested_possessions": 39.87,
-        "uncontested_possessions": 81.87,
-        "contested_marks": 1.2,
-        "marks_inside_50": 3.33,
-        "one_percenters": 5.73,
-        "goal_assists": 5.33,
-        "meters_gained": 1985.33,
-        "percent_played": 452.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.67,
+        "percent_played": 524.4,        "free_kicks_for": 5.67,
         "free_kicks_against": 6.87
       },
       "indexVsLeague": {
@@ -8231,7 +5795,6 @@
         "hitouts": 0,
         "inside_50s": 1.058,
         "clearances": 0.928,
-<<<<<<< Updated upstream
         "intercepts": 0.98,
         "tackles_inside_50": 0.94,
         "score_involvements": 1.216,
@@ -8242,21 +5805,7 @@
         "one_percenters": 0.893,
         "goal_assists": 1.462,
         "meters_gained": 1.049,
-        "percent_played": 0.977,
-=======
-        "intercepts": 0.978,
-        "tackles_inside_50": 0.955,
-        "score_involvements": 1.19,
-        "contested_possessions": 0.928,
-        "uncontested_possessions": 1.099,
-        "contested_marks": 1.063,
-        "marks_inside_50": 1.548,
-        "one_percenters": 0.911,
-        "goal_assists": 1.462,
-        "meters_gained": 1.063,
-        "percent_played": 0.971,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.89,
+        "percent_played": 0.977,        "free_kicks_for": 0.89,
         "free_kicks_against": 1.126
       }
     },
@@ -8382,7 +5931,6 @@
         "hitouts": 18,
         "inside_50s": 191,
         "clearances": 61,
-<<<<<<< Updated upstream
         "intercepts": 585,
         "tackles_inside_50": 11,
         "score_involvements": 349,
@@ -8393,21 +5941,7 @@
         "one_percenters": 346,
         "goal_assists": 26,
         "meters_gained": 36371,
-        "percent_played": 9567,
-=======
-        "intercepts": 538,
-        "tackles_inside_50": 11,
-        "score_involvements": 322,
-        "contested_possessions": 484,
-        "uncontested_possessions": 1299,
-        "contested_marks": 44,
-        "marks_inside_50": 17,
-        "one_percenters": 333,
-        "goal_assists": 26,
-        "meters_gained": 31836,
-        "percent_played": 8892,
->>>>>>> Stashed changes
-        "free_kicks_for": 63,
+        "percent_played": 9567,        "free_kicks_for": 63,
         "free_kicks_against": 97
       },
       "perPlayerGame": {
@@ -8421,7 +5955,6 @@
         "hitouts": 0.15,
         "inside_50s": 1.63,
         "clearances": 0.52,
-<<<<<<< Updated upstream
         "intercepts": 5,
         "tackles_inside_50": 0.09,
         "score_involvements": 2.98,
@@ -8432,21 +5965,7 @@
         "one_percenters": 2.96,
         "goal_assists": 0.22,
         "meters_gained": 310.86,
-        "percent_played": 81.77,
-=======
-        "intercepts": 4.6,
-        "tackles_inside_50": 0.09,
-        "score_involvements": 2.75,
-        "contested_possessions": 4.14,
-        "uncontested_possessions": 11.1,
-        "contested_marks": 0.38,
-        "marks_inside_50": 0.15,
-        "one_percenters": 2.85,
-        "goal_assists": 0.22,
-        "meters_gained": 272.1,
-        "percent_played": 76,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.54,
+        "percent_played": 81.77,        "free_kicks_for": 0.54,
         "free_kicks_against": 0.83
       },
       "perTeamGame": {
@@ -8460,7 +5979,6 @@
         "hitouts": 1.2,
         "inside_50s": 12.73,
         "clearances": 4.07,
-<<<<<<< Updated upstream
         "intercepts": 39,
         "tackles_inside_50": 0.73,
         "score_involvements": 23.27,
@@ -8471,25 +5989,10 @@
         "one_percenters": 23.07,
         "goal_assists": 1.73,
         "meters_gained": 2424.73,
-        "percent_played": 637.8,
-=======
-        "intercepts": 35.87,
-        "tackles_inside_50": 0.73,
-        "score_involvements": 21.47,
-        "contested_possessions": 32.27,
-        "uncontested_possessions": 86.6,
-        "contested_marks": 2.93,
-        "marks_inside_50": 1.13,
-        "one_percenters": 22.2,
-        "goal_assists": 1.73,
-        "meters_gained": 2122.4,
-        "percent_played": 592.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 4.2,
+        "percent_played": 637.8,        "free_kicks_for": 4.2,
         "free_kicks_against": 6.47
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 1.1,
         "kicks": 1.104,
         "handballs": 1.096,
@@ -8511,32 +6014,7 @@
         "goal_assists": 1.1,
         "meters_gained": 1.076,
         "percent_played": 0.999,
-        "free_kicks_for": 0.806,
-=======
-        "disposals": 1.105,
-        "kicks": 1.109,
-        "handballs": 1.098,
-        "marks": 1.178,
-        "goals": 1.077,
-        "behinds": 0.846,
-        "tackles": 0.826,
-        "hitouts": 0.556,
-        "inside_50s": 1.025,
-        "clearances": 0.929,
-        "intercepts": 1.057,
-        "tackles_inside_50": 0.9,
-        "score_involvements": 0.962,
-        "contested_possessions": 1.002,
-        "uncontested_possessions": 1.101,
-        "contested_marks": 0.927,
-        "marks_inside_50": 1.364,
-        "one_percenters": 0.947,
-        "goal_assists": 1.1,
-        "meters_gained": 1.029,
-        "percent_played": 0.982,
-        "free_kicks_for": 0.818,
->>>>>>> Stashed changes
-        "free_kicks_against": 1.107
+        "free_kicks_for": 0.806,        "free_kicks_against": 1.107
       }
     },
     {
@@ -8555,7 +6033,6 @@
         "hitouts": 31,
         "inside_50s": 223,
         "clearances": 82,
-<<<<<<< Updated upstream
         "intercepts": 137,
         "tackles_inside_50": 69,
         "score_involvements": 520,
@@ -8566,21 +6043,7 @@
         "one_percenters": 125,
         "goal_assists": 56,
         "meters_gained": 21187,
-        "percent_played": 7741,
-=======
-        "intercepts": 126,
-        "tackles_inside_50": 64,
-        "score_involvements": 490,
-        "contested_possessions": 416,
-        "uncontested_possessions": 759,
-        "contested_marks": 44,
-        "marks_inside_50": 122,
-        "one_percenters": 115,
-        "goal_assists": 56,
-        "meters_gained": 19725,
-        "percent_played": 7315,
->>>>>>> Stashed changes
-        "free_kicks_for": 76,
+        "percent_played": 7741,        "free_kicks_for": 76,
         "free_kicks_against": 77
       },
       "perPlayerGame": {
@@ -8594,7 +6057,6 @@
         "hitouts": 0.31,
         "inside_50s": 2.23,
         "clearances": 0.82,
-<<<<<<< Updated upstream
         "intercepts": 1.37,
         "tackles_inside_50": 0.69,
         "score_involvements": 5.2,
@@ -8605,21 +6067,7 @@
         "one_percenters": 1.25,
         "goal_assists": 0.56,
         "meters_gained": 211.87,
-        "percent_played": 77.41,
-=======
-        "intercepts": 1.26,
-        "tackles_inside_50": 0.64,
-        "score_involvements": 4.9,
-        "contested_possessions": 4.16,
-        "uncontested_possessions": 7.59,
-        "contested_marks": 0.44,
-        "marks_inside_50": 1.22,
-        "one_percenters": 1.15,
-        "goal_assists": 0.56,
-        "meters_gained": 197.25,
-        "percent_played": 73.15,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.76,
+        "percent_played": 77.41,        "free_kicks_for": 0.76,
         "free_kicks_against": 0.77
       },
       "perTeamGame": {
@@ -8633,7 +6081,6 @@
         "hitouts": 2.07,
         "inside_50s": 14.87,
         "clearances": 5.47,
-<<<<<<< Updated upstream
         "intercepts": 9.13,
         "tackles_inside_50": 4.6,
         "score_involvements": 34.67,
@@ -8644,21 +6091,7 @@
         "one_percenters": 8.33,
         "goal_assists": 3.73,
         "meters_gained": 1412.47,
-        "percent_played": 516.07,
-=======
-        "intercepts": 8.4,
-        "tackles_inside_50": 4.27,
-        "score_involvements": 32.67,
-        "contested_possessions": 27.73,
-        "uncontested_possessions": 50.6,
-        "contested_marks": 2.93,
-        "marks_inside_50": 8.13,
-        "one_percenters": 7.67,
-        "goal_assists": 3.73,
-        "meters_gained": 1315,
-        "percent_played": 487.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.07,
+        "percent_played": 516.07,        "free_kicks_for": 5.07,
         "free_kicks_against": 5.13
       },
       "indexVsLeague": {
@@ -8672,7 +6105,6 @@
         "hitouts": 0.775,
         "inside_50s": 1.005,
         "clearances": 1,
-<<<<<<< Updated upstream
         "intercepts": 0.986,
         "tackles_inside_50": 0.862,
         "score_involvements": 1.072,
@@ -8683,21 +6115,7 @@
         "one_percenters": 1.106,
         "goal_assists": 1.018,
         "meters_gained": 1.006,
-        "percent_played": 1.007,
-=======
-        "intercepts": 0.94,
-        "tackles_inside_50": 0.821,
-        "score_involvements": 1.04,
-        "contested_possessions": 0.92,
-        "uncontested_possessions": 1.051,
-        "contested_marks": 0.846,
-        "marks_inside_50": 1.017,
-        "one_percenters": 1.045,
-        "goal_assists": 1.018,
-        "meters_gained": 0.974,
-        "percent_played": 0.978,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.962,
+        "percent_played": 1.007,        "free_kicks_for": 0.962,
         "free_kicks_against": 1.027
       }
     },
@@ -8717,7 +6135,6 @@
         "hitouts": 5,
         "inside_50s": 304,
         "clearances": 282,
-<<<<<<< Updated upstream
         "intercepts": 227,
         "tackles_inside_50": 46,
         "score_involvements": 534,
@@ -8728,21 +6145,7 @@
         "one_percenters": 116,
         "goal_assists": 60,
         "meters_gained": 29312,
-        "percent_played": 7387,
-=======
-        "intercepts": 187,
-        "tackles_inside_50": 40,
-        "score_involvements": 434,
-        "contested_possessions": 534,
-        "uncontested_possessions": 1022,
-        "contested_marks": 13,
-        "marks_inside_50": 32,
-        "one_percenters": 98,
-        "goal_assists": 60,
-        "meters_gained": 23679,
-        "percent_played": 6057,
->>>>>>> Stashed changes
-        "free_kicks_for": 76,
+        "percent_played": 7387,        "free_kicks_for": 76,
         "free_kicks_against": 76
       },
       "perPlayerGame": {
@@ -8756,7 +6159,6 @@
         "hitouts": 0.05,
         "inside_50s": 3.1,
         "clearances": 2.88,
-<<<<<<< Updated upstream
         "intercepts": 2.32,
         "tackles_inside_50": 0.47,
         "score_involvements": 5.45,
@@ -8767,21 +6169,7 @@
         "one_percenters": 1.18,
         "goal_assists": 0.61,
         "meters_gained": 299.1,
-        "percent_played": 75.38,
-=======
-        "intercepts": 1.91,
-        "tackles_inside_50": 0.41,
-        "score_involvements": 4.43,
-        "contested_possessions": 5.45,
-        "uncontested_possessions": 10.43,
-        "contested_marks": 0.13,
-        "marks_inside_50": 0.33,
-        "one_percenters": 1,
-        "goal_assists": 0.61,
-        "meters_gained": 241.62,
-        "percent_played": 61.81,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.78,
+        "percent_played": 75.38,        "free_kicks_for": 0.78,
         "free_kicks_against": 0.78
       },
       "perTeamGame": {
@@ -8795,7 +6183,6 @@
         "hitouts": 0.33,
         "inside_50s": 20.27,
         "clearances": 18.8,
-<<<<<<< Updated upstream
         "intercepts": 15.13,
         "tackles_inside_50": 3.07,
         "score_involvements": 35.6,
@@ -8806,21 +6193,7 @@
         "one_percenters": 7.73,
         "goal_assists": 4,
         "meters_gained": 1954.13,
-        "percent_played": 492.47,
-=======
-        "intercepts": 12.47,
-        "tackles_inside_50": 2.67,
-        "score_involvements": 28.93,
-        "contested_possessions": 35.6,
-        "uncontested_possessions": 68.13,
-        "contested_marks": 0.87,
-        "marks_inside_50": 2.13,
-        "one_percenters": 6.53,
-        "goal_assists": 4,
-        "meters_gained": 1578.6,
-        "percent_played": 403.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.07,
+        "percent_played": 492.47,        "free_kicks_for": 5.07,
         "free_kicks_against": 5.07
       },
       "indexVsLeague": {
@@ -8834,7 +6207,6 @@
         "hitouts": 5,
         "inside_50s": 0.942,
         "clearances": 0.983,
-<<<<<<< Updated upstream
         "intercepts": 0.906,
         "tackles_inside_50": 0.94,
         "score_involvements": 1.071,
@@ -8845,21 +6217,7 @@
         "one_percenters": 1.146,
         "goal_assists": 1.173,
         "meters_gained": 0.96,
-        "percent_played": 0.983,
-=======
-        "intercepts": 0.857,
-        "tackles_inside_50": 0.932,
-        "score_involvements": 1.016,
-        "contested_possessions": 0.888,
-        "uncontested_possessions": 0.979,
-        "contested_marks": 0.813,
-        "marks_inside_50": 1.065,
-        "one_percenters": 1.111,
-        "goal_assists": 1.173,
-        "meters_gained": 0.905,
-        "percent_played": 0.928,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.857,
+        "percent_played": 0.983,        "free_kicks_for": 0.857,
         "free_kicks_against": 0.897
       }
     },
@@ -8972,7 +6330,6 @@
     {
       "opponent": "Sydney",
       "position": "DEF",
-<<<<<<< Updated upstream
       "sampleSize": 114,
       "teamGames": 15,
       "totals": {
@@ -8991,43 +6348,14 @@
         "score_involvements": 313,
         "contested_possessions": 544,
         "uncontested_possessions": 1161,
-        "contested_marks": 37,
-=======
-      "sampleSize": 113,
-      "teamGames": 15,
-      "totals": {
-        "disposals": 1825,
-        "kicks": 1160,
-        "handballs": 665,
-        "marks": 498,
-        "goals": 14,
-        "behinds": 19,
-        "tackles": 210,
-        "hitouts": 38,
-        "inside_50s": 190,
-        "clearances": 77,
-        "intercepts": 534,
-        "tackles_inside_50": 9,
-        "score_involvements": 287,
-        "contested_possessions": 506,
-        "uncontested_possessions": 1065,
-        "contested_marks": 36,
->>>>>>> Stashed changes
-        "marks_inside_50": 10,
+        "contested_marks": 37,        "marks_inside_50": 10,
         "one_percenters": 366,
         "goal_assists": 17,
-<<<<<<< Updated upstream
         "meters_gained": 35176,
-        "percent_played": 9472,
-=======
-        "meters_gained": 31835,
-        "percent_played": 8977,
->>>>>>> Stashed changes
-        "free_kicks_for": 75,
+        "percent_played": 9472,        "free_kicks_for": 75,
         "free_kicks_against": 82
       },
       "perPlayerGame": {
-<<<<<<< Updated upstream
         "disposals": 16.29,
         "kicks": 10.37,
         "handballs": 5.92,
@@ -9068,65 +6396,14 @@
         "score_involvements": 20.87,
         "contested_possessions": 36.27,
         "uncontested_possessions": 77.4,
-        "contested_marks": 2.47,
-=======
-        "disposals": 16.15,
-        "kicks": 10.27,
-        "handballs": 5.88,
-        "marks": 4.41,
-        "goals": 0.12,
-        "behinds": 0.17,
-        "tackles": 1.86,
-        "hitouts": 0.34,
-        "inside_50s": 1.68,
-        "clearances": 0.68,
-        "intercepts": 4.73,
-        "tackles_inside_50": 0.08,
-        "score_involvements": 2.54,
-        "contested_possessions": 4.48,
-        "uncontested_possessions": 9.42,
-        "contested_marks": 0.32,
-        "marks_inside_50": 0.09,
-        "one_percenters": 3.24,
-        "goal_assists": 0.15,
-        "meters_gained": 281.73,
-        "percent_played": 79.44,
-        "free_kicks_for": 0.66,
-        "free_kicks_against": 0.73
-      },
-      "perTeamGame": {
-        "disposals": 121.67,
-        "kicks": 77.33,
-        "handballs": 44.33,
-        "marks": 33.2,
-        "goals": 0.93,
-        "behinds": 1.27,
-        "tackles": 14,
-        "hitouts": 2.53,
-        "inside_50s": 12.67,
-        "clearances": 5.13,
-        "intercepts": 35.6,
-        "tackles_inside_50": 0.6,
-        "score_involvements": 19.13,
-        "contested_possessions": 33.73,
-        "uncontested_possessions": 71,
-        "contested_marks": 2.4,
->>>>>>> Stashed changes
-        "marks_inside_50": 0.67,
+        "contested_marks": 2.47,        "marks_inside_50": 0.67,
         "one_percenters": 24.4,
         "goal_assists": 1.13,
-<<<<<<< Updated upstream
         "meters_gained": 2345.07,
-        "percent_played": 631.47,
-=======
-        "meters_gained": 2122.33,
-        "percent_played": 598.47,
->>>>>>> Stashed changes
-        "free_kicks_for": 5,
+        "percent_played": 631.47,        "free_kicks_for": 5,
         "free_kicks_against": 5.47
       },
       "indexVsLeague": {
-<<<<<<< Updated upstream
         "disposals": 0.98,
         "kicks": 0.98,
         "handballs": 0.982,
@@ -9149,33 +6426,7 @@
         "meters_gained": 1.068,
         "percent_played": 1.015,
         "free_kicks_for": 0.985,
-        "free_kicks_against": 0.96
-=======
-        "disposals": 0.976,
-        "kicks": 0.975,
-        "handballs": 0.977,
-        "marks": 0.861,
-        "goals": 0.923,
-        "behinds": 1.308,
-        "tackles": 1.045,
-        "hitouts": 1.259,
-        "inside_50s": 1.057,
-        "clearances": 1.214,
-        "intercepts": 1.087,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 0.888,
-        "contested_possessions": 1.085,
-        "uncontested_possessions": 0.935,
-        "contested_marks": 0.78,
-        "marks_inside_50": 0.818,
-        "one_percenters": 1.076,
-        "goal_assists": 0.75,
-        "meters_gained": 1.066,
-        "percent_played": 1.026,
-        "free_kicks_for": 1,
-        "free_kicks_against": 0.973
->>>>>>> Stashed changes
-      }
+        "free_kicks_against": 0.96      }
     },
     {
       "opponent": "Sydney",
@@ -9193,7 +6444,6 @@
         "hitouts": 22,
         "inside_50s": 239,
         "clearances": 83,
-<<<<<<< Updated upstream
         "intercepts": 173,
         "tackles_inside_50": 66,
         "score_involvements": 424,
@@ -9204,21 +6454,7 @@
         "one_percenters": 120,
         "goal_assists": 47,
         "meters_gained": 21853,
-        "percent_played": 7557,
-=======
-        "intercepts": 163,
-        "tackles_inside_50": 65,
-        "score_involvements": 399,
-        "contested_possessions": 470,
-        "uncontested_possessions": 674,
-        "contested_marks": 45,
-        "marks_inside_50": 86,
-        "one_percenters": 116,
-        "goal_assists": 47,
-        "meters_gained": 20233,
-        "percent_played": 7235,
->>>>>>> Stashed changes
-        "free_kicks_for": 85,
+        "percent_played": 7557,        "free_kicks_for": 85,
         "free_kicks_against": 102
       },
       "perPlayerGame": {
@@ -9232,7 +6468,6 @@
         "hitouts": 0.22,
         "inside_50s": 2.39,
         "clearances": 0.83,
-<<<<<<< Updated upstream
         "intercepts": 1.73,
         "tackles_inside_50": 0.66,
         "score_involvements": 4.24,
@@ -9243,21 +6478,7 @@
         "one_percenters": 1.2,
         "goal_assists": 0.47,
         "meters_gained": 218.53,
-        "percent_played": 75.57,
-=======
-        "intercepts": 1.63,
-        "tackles_inside_50": 0.65,
-        "score_involvements": 3.99,
-        "contested_possessions": 4.7,
-        "uncontested_possessions": 6.74,
-        "contested_marks": 0.45,
-        "marks_inside_50": 0.86,
-        "one_percenters": 1.16,
-        "goal_assists": 0.47,
-        "meters_gained": 202.33,
-        "percent_played": 72.35,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.85,
+        "percent_played": 75.57,        "free_kicks_for": 0.85,
         "free_kicks_against": 1.02
       },
       "perTeamGame": {
@@ -9271,7 +6492,6 @@
         "hitouts": 1.47,
         "inside_50s": 15.93,
         "clearances": 5.53,
-<<<<<<< Updated upstream
         "intercepts": 11.53,
         "tackles_inside_50": 4.4,
         "score_involvements": 28.27,
@@ -9282,21 +6502,7 @@
         "one_percenters": 8,
         "goal_assists": 3.13,
         "meters_gained": 1456.87,
-        "percent_played": 503.8,
-=======
-        "intercepts": 10.87,
-        "tackles_inside_50": 4.33,
-        "score_involvements": 26.6,
-        "contested_possessions": 31.33,
-        "uncontested_possessions": 44.93,
-        "contested_marks": 3,
-        "marks_inside_50": 5.73,
-        "one_percenters": 7.73,
-        "goal_assists": 3.13,
-        "meters_gained": 1348.87,
-        "percent_played": 482.33,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.67,
+        "percent_played": 503.8,        "free_kicks_for": 5.67,
         "free_kicks_against": 6.8
       },
       "indexVsLeague": {
@@ -9310,7 +6516,6 @@
         "hitouts": 0.55,
         "inside_50s": 1.077,
         "clearances": 1.012,
-<<<<<<< Updated upstream
         "intercepts": 1.245,
         "tackles_inside_50": 0.825,
         "score_involvements": 0.874,
@@ -9321,21 +6526,7 @@
         "one_percenters": 1.062,
         "goal_assists": 0.855,
         "meters_gained": 1.038,
-        "percent_played": 0.983,
-=======
-        "intercepts": 1.216,
-        "tackles_inside_50": 0.833,
-        "score_involvements": 0.847,
-        "contested_possessions": 1.04,
-        "uncontested_possessions": 0.934,
-        "contested_marks": 0.865,
-        "marks_inside_50": 0.717,
-        "one_percenters": 1.055,
-        "goal_assists": 0.855,
-        "meters_gained": 0.999,
-        "percent_played": 0.967,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.076,
+        "percent_played": 0.983,        "free_kicks_for": 1.076,
         "free_kicks_against": 1.36
       }
     },
@@ -9355,7 +6546,6 @@
         "hitouts": 0,
         "inside_50s": 320,
         "clearances": 291,
-<<<<<<< Updated upstream
         "intercepts": 285,
         "tackles_inside_50": 41,
         "score_involvements": 421,
@@ -9366,21 +6556,7 @@
         "one_percenters": 106,
         "goal_assists": 43,
         "meters_gained": 29958,
-        "percent_played": 7479,
-=======
-        "intercepts": 237,
-        "tackles_inside_50": 35,
-        "score_involvements": 337,
-        "contested_possessions": 596,
-        "uncontested_possessions": 926,
-        "contested_marks": 13,
-        "marks_inside_50": 14,
-        "one_percenters": 89,
-        "goal_assists": 43,
-        "meters_gained": 24304,
-        "percent_played": 6078,
->>>>>>> Stashed changes
-        "free_kicks_for": 87,
+        "percent_played": 7479,        "free_kicks_for": 87,
         "free_kicks_against": 92
       },
       "perPlayerGame": {
@@ -9394,7 +6570,6 @@
         "hitouts": 0,
         "inside_50s": 3.3,
         "clearances": 3,
-<<<<<<< Updated upstream
         "intercepts": 2.94,
         "tackles_inside_50": 0.42,
         "score_involvements": 4.34,
@@ -9405,21 +6580,7 @@
         "one_percenters": 1.09,
         "goal_assists": 0.44,
         "meters_gained": 308.85,
-        "percent_played": 77.1,
-=======
-        "intercepts": 2.44,
-        "tackles_inside_50": 0.36,
-        "score_involvements": 3.47,
-        "contested_possessions": 6.14,
-        "uncontested_possessions": 9.55,
-        "contested_marks": 0.13,
-        "marks_inside_50": 0.14,
-        "one_percenters": 0.92,
-        "goal_assists": 0.44,
-        "meters_gained": 250.56,
-        "percent_played": 62.66,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.9,
+        "percent_played": 77.1,        "free_kicks_for": 0.9,
         "free_kicks_against": 0.95
       },
       "perTeamGame": {
@@ -9433,7 +6594,6 @@
         "hitouts": 0,
         "inside_50s": 21.33,
         "clearances": 19.4,
-<<<<<<< Updated upstream
         "intercepts": 19,
         "tackles_inside_50": 2.73,
         "score_involvements": 28.07,
@@ -9444,21 +6604,7 @@
         "one_percenters": 7.07,
         "goal_assists": 2.87,
         "meters_gained": 1997.2,
-        "percent_played": 498.6,
-=======
-        "intercepts": 15.8,
-        "tackles_inside_50": 2.33,
-        "score_involvements": 22.47,
-        "contested_possessions": 39.73,
-        "uncontested_possessions": 61.73,
-        "contested_marks": 0.87,
-        "marks_inside_50": 0.93,
-        "one_percenters": 5.93,
-        "goal_assists": 2.87,
-        "meters_gained": 1620.27,
-        "percent_played": 405.2,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.8,
+        "percent_played": 498.6,        "free_kicks_for": 5.8,
         "free_kicks_against": 6.13
       },
       "indexVsLeague": {
@@ -9472,7 +6618,6 @@
         "hitouts": 0,
         "inside_50s": 1.003,
         "clearances": 1.024,
-<<<<<<< Updated upstream
         "intercepts": 1.148,
         "tackles_inside_50": 0.84,
         "score_involvements": 0.853,
@@ -9483,21 +6628,7 @@
         "one_percenters": 1.058,
         "goal_assists": 0.846,
         "meters_gained": 0.991,
-        "percent_played": 1.005,
-=======
-        "intercepts": 1.094,
-        "tackles_inside_50": 0.818,
-        "score_involvements": 0.796,
-        "contested_possessions": 1,
-        "uncontested_possessions": 0.897,
-        "contested_marks": 0.813,
-        "marks_inside_50": 0.452,
-        "one_percenters": 1.022,
-        "goal_assists": 0.846,
-        "meters_gained": 0.939,
-        "percent_played": 0.941,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.989,
+        "percent_played": 1.005,        "free_kicks_for": 0.989,
         "free_kicks_against": 1.092
       }
     },
@@ -9621,7 +6752,6 @@
         "behinds": 11,
         "tackles": 222,
         "hitouts": 38,
-<<<<<<< Updated upstream
         "inside_50s": 172,
         "clearances": 82,
         "intercepts": 475,
@@ -9635,24 +6765,7 @@
         "goal_assists": 21,
         "meters_gained": 30413,
         "percent_played": 8846,
-        "free_kicks_for": 84,
-=======
-        "inside_50s": 164,
-        "clearances": 79,
-        "intercepts": 449,
-        "tackles_inside_50": 15,
-        "score_involvements": 367,
-        "contested_possessions": 450,
-        "uncontested_possessions": 1056,
-        "contested_marks": 55,
-        "marks_inside_50": 17,
-        "one_percenters": 320,
-        "goal_assists": 17,
-        "meters_gained": 27725,
-        "percent_played": 8370,
-        "free_kicks_for": 82,
->>>>>>> Stashed changes
-        "free_kicks_against": 84
+        "free_kicks_for": 84,        "free_kicks_against": 84
       },
       "perPlayerGame": {
         "disposals": 16.03,
@@ -9663,7 +6776,6 @@
         "behinds": 0.1,
         "tackles": 2.06,
         "hitouts": 0.35,
-<<<<<<< Updated upstream
         "inside_50s": 1.58,
         "clearances": 0.75,
         "intercepts": 4.36,
@@ -9678,25 +6790,7 @@
         "meters_gained": 279.02,
         "percent_played": 81.16,
         "free_kicks_for": 0.77,
-        "free_kicks_against": 0.77
-=======
-        "inside_50s": 1.52,
-        "clearances": 0.73,
-        "intercepts": 4.16,
-        "tackles_inside_50": 0.14,
-        "score_involvements": 3.4,
-        "contested_possessions": 4.17,
-        "uncontested_possessions": 9.78,
-        "contested_marks": 0.51,
-        "marks_inside_50": 0.16,
-        "one_percenters": 2.96,
-        "goal_assists": 0.16,
-        "meters_gained": 256.71,
-        "percent_played": 77.5,
-        "free_kicks_for": 0.76,
-        "free_kicks_against": 0.78
->>>>>>> Stashed changes
-      },
+        "free_kicks_against": 0.77      },
       "perTeamGame": {
         "disposals": 115.4,
         "kicks": 73.87,
@@ -9706,7 +6800,6 @@
         "behinds": 0.73,
         "tackles": 14.8,
         "hitouts": 2.53,
-<<<<<<< Updated upstream
         "inside_50s": 11.47,
         "clearances": 5.47,
         "intercepts": 31.67,
@@ -9746,50 +6839,7 @@
         "meters_gained": 0.966,
         "percent_played": 0.992,
         "free_kicks_for": 1.149,
-        "free_kicks_against": 1.027
-=======
-        "inside_50s": 10.93,
-        "clearances": 5.27,
-        "intercepts": 29.93,
-        "tackles_inside_50": 1,
-        "score_involvements": 24.47,
-        "contested_possessions": 30,
-        "uncontested_possessions": 70.4,
-        "contested_marks": 3.67,
-        "marks_inside_50": 1.13,
-        "one_percenters": 21.33,
-        "goal_assists": 1.13,
-        "meters_gained": 1848.33,
-        "percent_played": 558,
-        "free_kicks_for": 5.47,
-        "free_kicks_against": 5.6
-      },
-      "indexVsLeague": {
-        "disposals": 0.969,
-        "kicks": 0.974,
-        "handballs": 0.958,
-        "marks": 0.98,
-        "goals": 1.615,
-        "behinds": 0.769,
-        "tackles": 1.157,
-        "hitouts": 1.296,
-        "inside_50s": 0.956,
-        "clearances": 1.304,
-        "intercepts": 0.956,
-        "tackles_inside_50": 1.4,
-        "score_involvements": 1.189,
-        "contested_possessions": 1.01,
-        "uncontested_possessions": 0.97,
-        "contested_marks": 1.244,
-        "marks_inside_50": 1.455,
-        "one_percenters": 0.983,
-        "goal_assists": 0.8,
-        "meters_gained": 0.971,
-        "percent_played": 1.001,
-        "free_kicks_for": 1.152,
-        "free_kicks_against": 1.04
->>>>>>> Stashed changes
-      }
+        "free_kicks_against": 1.027      }
     },
     {
       "opponent": "West Coast",
@@ -9807,7 +6857,6 @@
         "hitouts": 40,
         "inside_50s": 227,
         "clearances": 77,
-<<<<<<< Updated upstream
         "intercepts": 136,
         "tackles_inside_50": 88,
         "score_involvements": 544,
@@ -9818,21 +6867,7 @@
         "one_percenters": 100,
         "goal_assists": 87,
         "meters_gained": 21862,
-        "percent_played": 7855,
-=======
-        "intercepts": 132,
-        "tackles_inside_50": 84,
-        "score_involvements": 534,
-        "contested_possessions": 444,
-        "uncontested_possessions": 727,
-        "contested_marks": 68,
-        "marks_inside_50": 150,
-        "one_percenters": 97,
-        "goal_assists": 87,
-        "meters_gained": 21342,
-        "percent_played": 7692,
->>>>>>> Stashed changes
-        "free_kicks_for": 77,
+        "percent_played": 7855,        "free_kicks_for": 77,
         "free_kicks_against": 89
       },
       "perPlayerGame": {
@@ -9846,7 +6881,6 @@
         "hitouts": 0.39,
         "inside_50s": 2.2,
         "clearances": 0.75,
-<<<<<<< Updated upstream
         "intercepts": 1.32,
         "tackles_inside_50": 0.85,
         "score_involvements": 5.28,
@@ -9857,21 +6891,7 @@
         "one_percenters": 0.97,
         "goal_assists": 0.84,
         "meters_gained": 212.25,
-        "percent_played": 76.26,
-=======
-        "intercepts": 1.28,
-        "tackles_inside_50": 0.82,
-        "score_involvements": 5.18,
-        "contested_possessions": 4.31,
-        "uncontested_possessions": 7.06,
-        "contested_marks": 0.66,
-        "marks_inside_50": 1.46,
-        "one_percenters": 0.94,
-        "goal_assists": 0.84,
-        "meters_gained": 207.2,
-        "percent_played": 74.68,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.75,
+        "percent_played": 76.26,        "free_kicks_for": 0.75,
         "free_kicks_against": 0.86
       },
       "perTeamGame": {
@@ -9885,7 +6905,6 @@
         "hitouts": 2.67,
         "inside_50s": 15.13,
         "clearances": 5.13,
-<<<<<<< Updated upstream
         "intercepts": 9.07,
         "tackles_inside_50": 5.87,
         "score_involvements": 36.27,
@@ -9896,21 +6915,7 @@
         "one_percenters": 6.67,
         "goal_assists": 5.8,
         "meters_gained": 1457.47,
-        "percent_played": 523.67,
-=======
-        "intercepts": 8.8,
-        "tackles_inside_50": 5.6,
-        "score_involvements": 35.6,
-        "contested_possessions": 29.6,
-        "uncontested_possessions": 48.47,
-        "contested_marks": 4.53,
-        "marks_inside_50": 10,
-        "one_percenters": 6.47,
-        "goal_assists": 5.8,
-        "meters_gained": 1422.8,
-        "percent_played": 512.8,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.13,
+        "percent_played": 523.67,        "free_kicks_for": 5.13,
         "free_kicks_against": 5.93
       },
       "indexVsLeague": {
@@ -9924,7 +6929,6 @@
         "hitouts": 0.975,
         "inside_50s": 0.991,
         "clearances": 0.915,
-<<<<<<< Updated upstream
         "intercepts": 0.95,
         "tackles_inside_50": 1.063,
         "score_involvements": 1.089,
@@ -9935,21 +6939,7 @@
         "one_percenters": 0.858,
         "goal_assists": 1.527,
         "meters_gained": 1.008,
-        "percent_played": 0.992,
-=======
-        "intercepts": 0.955,
-        "tackles_inside_50": 1.051,
-        "score_involvements": 1.1,
-        "contested_possessions": 0.954,
-        "uncontested_possessions": 0.978,
-        "contested_marks": 1.269,
-        "marks_inside_50": 1.217,
-        "one_percenters": 0.855,
-        "goal_assists": 1.527,
-        "meters_gained": 1.023,
-        "percent_played": 0.998,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.949,
+        "percent_played": 0.992,        "free_kicks_for": 0.949,
         "free_kicks_against": 1.147
       }
     },
@@ -9969,7 +6959,6 @@
         "hitouts": 2,
         "inside_50s": 337,
         "clearances": 323,
-<<<<<<< Updated upstream
         "intercepts": 275,
         "tackles_inside_50": 46,
         "score_involvements": 594,
@@ -9980,21 +6969,7 @@
         "one_percenters": 94,
         "goal_assists": 51,
         "meters_gained": 33607,
-        "percent_played": 8103,
-=======
-        "intercepts": 253,
-        "tackles_inside_50": 40,
-        "score_involvements": 545,
-        "contested_possessions": 691,
-        "uncontested_possessions": 1205,
-        "contested_marks": 18,
-        "marks_inside_50": 49,
-        "one_percenters": 81,
-        "goal_assists": 51,
-        "meters_gained": 30106,
-        "percent_played": 7244,
->>>>>>> Stashed changes
-        "free_kicks_for": 121,
+        "percent_played": 8103,        "free_kicks_for": 121,
         "free_kicks_against": 86
       },
       "perPlayerGame": {
@@ -10008,7 +6983,6 @@
         "hitouts": 0.02,
         "inside_50s": 3.18,
         "clearances": 3.05,
-<<<<<<< Updated upstream
         "intercepts": 2.59,
         "tackles_inside_50": 0.43,
         "score_involvements": 5.6,
@@ -10019,21 +6993,7 @@
         "one_percenters": 0.89,
         "goal_assists": 0.48,
         "meters_gained": 317.05,
-        "percent_played": 76.44,
-=======
-        "intercepts": 2.39,
-        "tackles_inside_50": 0.38,
-        "score_involvements": 5.14,
-        "contested_possessions": 6.52,
-        "uncontested_possessions": 11.37,
-        "contested_marks": 0.17,
-        "marks_inside_50": 0.46,
-        "one_percenters": 0.76,
-        "goal_assists": 0.48,
-        "meters_gained": 284.02,
-        "percent_played": 68.34,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.14,
+        "percent_played": 76.44,        "free_kicks_for": 1.14,
         "free_kicks_against": 0.81
       },
       "perTeamGame": {
@@ -10047,7 +7007,6 @@
         "hitouts": 0.13,
         "inside_50s": 22.47,
         "clearances": 21.53,
-<<<<<<< Updated upstream
         "intercepts": 18.33,
         "tackles_inside_50": 3.07,
         "score_involvements": 39.6,
@@ -10058,21 +7017,7 @@
         "one_percenters": 6.27,
         "goal_assists": 3.4,
         "meters_gained": 2240.47,
-        "percent_played": 540.2,
-=======
-        "intercepts": 16.87,
-        "tackles_inside_50": 2.67,
-        "score_involvements": 36.33,
-        "contested_possessions": 46.07,
-        "uncontested_possessions": 80.33,
-        "contested_marks": 1.2,
-        "marks_inside_50": 3.27,
-        "one_percenters": 5.4,
-        "goal_assists": 3.4,
-        "meters_gained": 2007.07,
-        "percent_played": 482.93,
->>>>>>> Stashed changes
-        "free_kicks_for": 8.07,
+        "percent_played": 540.2,        "free_kicks_for": 8.07,
         "free_kicks_against": 5.73
       },
       "indexVsLeague": {
@@ -10086,7 +7031,6 @@
         "hitouts": 2,
         "inside_50s": 0.967,
         "clearances": 1.041,
-<<<<<<< Updated upstream
         "intercepts": 1.012,
         "tackles_inside_50": 0.86,
         "score_involvements": 1.1,
@@ -10097,21 +7041,7 @@
         "one_percenters": 0.864,
         "goal_assists": 0.923,
         "meters_gained": 1.017,
-        "percent_played": 0.997,
-=======
-        "intercepts": 1.072,
-        "tackles_inside_50": 0.864,
-        "score_involvements": 1.179,
-        "contested_possessions": 1.062,
-        "uncontested_possessions": 1.068,
-        "contested_marks": 1.063,
-        "marks_inside_50": 1.484,
-        "one_percenters": 0.844,
-        "goal_assists": 0.923,
-        "meters_gained": 1.064,
-        "percent_played": 1.026,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.253,
+        "percent_played": 0.997,        "free_kicks_for": 1.253,
         "free_kicks_against": 0.931
       }
     },
@@ -10235,7 +7165,6 @@
         "behinds": 15,
         "tackles": 211,
         "hitouts": 27,
-<<<<<<< Updated upstream
         "inside_50s": 177,
         "clearances": 42,
         "intercepts": 550,
@@ -10243,30 +7172,12 @@
         "score_involvements": 384,
         "contested_possessions": 515,
         "uncontested_possessions": 1398,
-        "contested_marks": 64,
-=======
-        "inside_50s": 172,
-        "clearances": 41,
-        "intercepts": 504,
-        "tackles_inside_50": 12,
-        "score_involvements": 351,
-        "contested_possessions": 471,
-        "uncontested_possessions": 1263,
-        "contested_marks": 57,
->>>>>>> Stashed changes
-        "marks_inside_50": 13,
+        "contested_marks": 64,        "marks_inside_50": 13,
         "one_percenters": 333,
         "goal_assists": 13,
-<<<<<<< Updated upstream
         "meters_gained": 32751,
         "percent_played": 9016,
-        "free_kicks_for": 83,
-=======
-        "meters_gained": 29386,
-        "percent_played": 8348,
-        "free_kicks_for": 82,
->>>>>>> Stashed changes
-        "free_kicks_against": 91
+        "free_kicks_for": 83,        "free_kicks_against": 91
       },
       "perPlayerGame": {
         "disposals": 18.11,
@@ -10275,7 +7186,6 @@
         "marks": 6.61,
         "goals": 0.14,
         "behinds": 0.14,
-<<<<<<< Updated upstream
         "tackles": 1.91,
         "hitouts": 0.24,
         "inside_50s": 1.59,
@@ -10285,30 +7195,11 @@
         "score_involvements": 3.46,
         "contested_possessions": 4.64,
         "uncontested_possessions": 12.59,
-        "contested_marks": 0.58,
-=======
-        "tackles": 1.92,
-        "hitouts": 0.25,
-        "inside_50s": 1.56,
-        "clearances": 0.37,
-        "intercepts": 4.58,
-        "tackles_inside_50": 0.11,
-        "score_involvements": 3.19,
-        "contested_possessions": 4.28,
-        "uncontested_possessions": 11.48,
-        "contested_marks": 0.52,
->>>>>>> Stashed changes
-        "marks_inside_50": 0.12,
+        "contested_marks": 0.58,        "marks_inside_50": 0.12,
         "one_percenters": 3.03,
         "goal_assists": 0.12,
-<<<<<<< Updated upstream
         "meters_gained": 295.05,
-        "percent_played": 81.23,
-=======
-        "meters_gained": 267.15,
-        "percent_played": 75.89,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.75,
+        "percent_played": 81.23,        "free_kicks_for": 0.75,
         "free_kicks_against": 0.83
       },
       "perTeamGame": {
@@ -10320,7 +7211,6 @@
         "behinds": 1,
         "tackles": 14.07,
         "hitouts": 1.8,
-<<<<<<< Updated upstream
         "inside_50s": 11.8,
         "clearances": 2.8,
         "intercepts": 36.67,
@@ -10328,21 +7218,9 @@
         "score_involvements": 25.6,
         "contested_possessions": 34.33,
         "uncontested_possessions": 93.2,
-        "contested_marks": 4.27,
-=======
-        "inside_50s": 11.47,
-        "clearances": 2.73,
-        "intercepts": 33.6,
-        "tackles_inside_50": 0.8,
-        "score_involvements": 23.4,
-        "contested_possessions": 31.4,
-        "uncontested_possessions": 84.2,
-        "contested_marks": 3.8,
->>>>>>> Stashed changes
-        "marks_inside_50": 0.87,
+        "contested_marks": 4.27,        "marks_inside_50": 0.87,
         "one_percenters": 22.2,
         "goal_assists": 0.87,
-<<<<<<< Updated upstream
         "meters_gained": 2183.4,
         "percent_played": 601.07,
         "free_kicks_for": 5.53,
@@ -10371,39 +7249,7 @@
         "meters_gained": 1.021,
         "percent_played": 0.993,
         "free_kicks_for": 1.119,
-        "free_kicks_against": 1.093
-=======
-        "meters_gained": 1959.07,
-        "percent_played": 556.53,
-        "free_kicks_for": 5.47,
-        "free_kicks_against": 6.07
-      },
-      "indexVsLeague": {
-        "disposals": 1.094,
-        "kicks": 1.135,
-        "handballs": 1.023,
-        "marks": 1.291,
-        "goals": 1.077,
-        "behinds": 1.077,
-        "tackles": 1.079,
-        "hitouts": 0.926,
-        "inside_50s": 0.981,
-        "clearances": 0.661,
-        "intercepts": 1.053,
-        "tackles_inside_50": 1.1,
-        "score_involvements": 1.115,
-        "contested_possessions": 1.036,
-        "uncontested_possessions": 1.139,
-        "contested_marks": 1.268,
-        "marks_inside_50": 1.091,
-        "one_percenters": 1.007,
-        "goal_assists": 0.6,
-        "meters_gained": 1.011,
-        "percent_played": 0.981,
-        "free_kicks_for": 1.136,
-        "free_kicks_against": 1.107
->>>>>>> Stashed changes
-      }
+        "free_kicks_against": 1.093      }
     },
     {
       "opponent": "Western Bulldogs",
@@ -10421,7 +7267,6 @@
         "hitouts": 45,
         "inside_50s": 240,
         "clearances": 103,
-<<<<<<< Updated upstream
         "intercepts": 124,
         "tackles_inside_50": 110,
         "score_involvements": 517,
@@ -10432,21 +7277,7 @@
         "one_percenters": 101,
         "goal_assists": 64,
         "meters_gained": 21610,
-        "percent_played": 7950,
-=======
-        "intercepts": 119,
-        "tackles_inside_50": 109,
-        "score_involvements": 504,
-        "contested_possessions": 491,
-        "uncontested_possessions": 744,
-        "contested_marks": 55,
-        "marks_inside_50": 121,
-        "one_percenters": 97,
-        "goal_assists": 64,
-        "meters_gained": 20758,
-        "percent_played": 7690,
->>>>>>> Stashed changes
-        "free_kicks_for": 80,
+        "percent_played": 7950,        "free_kicks_for": 80,
         "free_kicks_against": 82
       },
       "perPlayerGame": {
@@ -10460,7 +7291,6 @@
         "hitouts": 0.44,
         "inside_50s": 2.35,
         "clearances": 1.01,
-<<<<<<< Updated upstream
         "intercepts": 1.22,
         "tackles_inside_50": 1.08,
         "score_involvements": 5.07,
@@ -10471,21 +7301,7 @@
         "one_percenters": 0.99,
         "goal_assists": 0.63,
         "meters_gained": 211.86,
-        "percent_played": 77.94,
-=======
-        "intercepts": 1.17,
-        "tackles_inside_50": 1.07,
-        "score_involvements": 4.94,
-        "contested_possessions": 4.81,
-        "uncontested_possessions": 7.29,
-        "contested_marks": 0.54,
-        "marks_inside_50": 1.19,
-        "one_percenters": 0.95,
-        "goal_assists": 0.63,
-        "meters_gained": 203.51,
-        "percent_played": 75.39,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.78,
+        "percent_played": 77.94,        "free_kicks_for": 0.78,
         "free_kicks_against": 0.8
       },
       "perTeamGame": {
@@ -10499,7 +7315,6 @@
         "hitouts": 3,
         "inside_50s": 16,
         "clearances": 6.87,
-<<<<<<< Updated upstream
         "intercepts": 8.27,
         "tackles_inside_50": 7.33,
         "score_involvements": 34.47,
@@ -10510,21 +7325,7 @@
         "one_percenters": 6.73,
         "goal_assists": 4.27,
         "meters_gained": 1440.67,
-        "percent_played": 530,
-=======
-        "intercepts": 7.93,
-        "tackles_inside_50": 7.27,
-        "score_involvements": 33.6,
-        "contested_possessions": 32.73,
-        "uncontested_possessions": 49.6,
-        "contested_marks": 3.67,
-        "marks_inside_50": 8.07,
-        "one_percenters": 6.47,
-        "goal_assists": 4.27,
-        "meters_gained": 1383.87,
-        "percent_played": 512.67,
->>>>>>> Stashed changes
-        "free_kicks_for": 5.33,
+        "percent_played": 530,        "free_kicks_for": 5.33,
         "free_kicks_against": 5.47
       },
       "indexVsLeague": {
@@ -10538,7 +7339,6 @@
         "hitouts": 1.1,
         "inside_50s": 1.059,
         "clearances": 1.232,
-<<<<<<< Updated upstream
         "intercepts": 0.878,
         "tackles_inside_50": 1.35,
         "score_involvements": 1.045,
@@ -10549,21 +7349,7 @@
         "one_percenters": 0.876,
         "goal_assists": 1.145,
         "meters_gained": 1.006,
-        "percent_played": 1.014,
-=======
-        "intercepts": 0.873,
-        "tackles_inside_50": 1.372,
-        "score_involvements": 1.049,
-        "contested_possessions": 1.064,
-        "uncontested_possessions": 1.01,
-        "contested_marks": 1.038,
-        "marks_inside_50": 0.992,
-        "one_percenters": 0.864,
-        "goal_assists": 1.145,
-        "meters_gained": 1.004,
-        "percent_played": 1.008,
->>>>>>> Stashed changes
-        "free_kicks_for": 0.987,
+        "percent_played": 1.014,        "free_kicks_for": 0.987,
         "free_kicks_against": 1.067
       }
     },
@@ -10658,7 +7444,6 @@
         "hitouts": 0,
         "inside_50s": 1.024,
         "clearances": 1.055,
-<<<<<<< Updated upstream
         "intercepts": 1.066,
         "tackles_inside_50": 1.28,
         "score_involvements": 1.004,
@@ -10669,21 +7454,7 @@
         "one_percenters": 1.01,
         "goal_assists": 1.038,
         "meters_gained": 1.025,
-        "percent_played": 1.004,
-=======
-        "intercepts": 1.045,
-        "tackles_inside_50": 1.273,
-        "score_involvements": 0.986,
-        "contested_possessions": 0.925,
-        "uncontested_possessions": 1.035,
-        "contested_marks": 0.563,
-        "marks_inside_50": 0.774,
-        "one_percenters": 0.967,
-        "goal_assists": 1.038,
-        "meters_gained": 0.999,
-        "percent_played": 0.986,
->>>>>>> Stashed changes
-        "free_kicks_for": 1.055,
+        "percent_played": 1.004,        "free_kicks_for": 1.055,
         "free_kicks_against": 0.885
       }
     },

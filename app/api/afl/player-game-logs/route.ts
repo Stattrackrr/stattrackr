@@ -78,13 +78,23 @@ function getTeamsToTryForSeason(
   return out;
 }
 
-/** Prefer result that has advanced stats (TOG, etc.) so players who moved still get full data. */
+/** Prefer result that has advanced stats (TOG, meters gained, etc.) so players who moved still get full data. */
 function hasAdvancedStats(games: GameLogRow[]): boolean {
-  return games.some((g) => g.percent_played != null || g.contested_possessions != null || g.meters_gained != null);
+  return games.some(
+    (g) =>
+      (typeof g.percent_played === 'number' && g.percent_played > 0) ||
+      (typeof g.meters_gained === 'number' && g.meters_gained > 0) ||
+      (typeof g.contested_possessions === 'number' && g.contested_possessions > 0) ||
+      (typeof g.uncontested_possessions === 'number' && g.uncontested_possessions > 0)
+  );
+}
+
+function hasCoreGameStats(games: GameLogRow[]): boolean {
+  return games.some((g) => typeof g.disposals === 'number' && Number.isFinite(g.disposals));
 }
 
 function canPersistAflPlayerLogs(games: GameLogRow[] | Record<string, unknown>[]): boolean {
-  return Array.isArray(games) && games.length > 0;
+  return Array.isArray(games) && games.length > 0 && hasCoreGameStats(games as GameLogRow[]);
 }
 
 async function persistIncludeBothPlayerLogsCache(
@@ -1444,6 +1454,8 @@ export async function GET(request: NextRequest) {
   const cacheOnly = cacheEnabled && !isWarmRequest && !forceFetch; // Cache-only: no FootyWire on miss. force_fetch=1 allows test scripts to hit FootyWire.
   const currentYear = new Date().getFullYear();
   const allowFetchOnMiss = SUPPORTED_SEASONS.includes(season as (typeof SUPPORTED_SEASONS)[number]); // Allow live fetch on miss for supported dashboard seasons (2026/2025/2024).
+  // Dashboard fetches 2026/2025/2024 in parallel (include_both=1); never masquerade 2025 as a 2026 response.
+  const allow2025As2026Fallback = season === 2026 && !strictSeason && !includeBoth;
   const sourceHeaders = { 'X-AFL-Cache-Enabled': cacheEnabled ? 'true' : 'false' as string };
 
   const debugParse = request.nextUrl.searchParams.get('debug') === '1' || request.nextUrl.searchParams.get('debug') === 'true';
@@ -1559,12 +1571,12 @@ export async function GET(request: NextRequest) {
     // Cache-only: prod only reads cache; warm job is allowed to fetch. For current/prev season (e.g. 2025+2026), allow fetch on miss so dashboard and props get both years.
     if (cacheOnly && !skipCacheWrongData && !allowFetchOnMiss) {
       // 2025 (or other seasons): when cache miss, try 2025 fallback for 2026 requests or return empty.
-      const teamFor2025 = season === 2026 ? getPlayerTeamForSeason(2025, effectivePlayerName) : null;
+      const teamFor2025 = allow2025As2026Fallback ? getPlayerTeamForSeason(2025, effectivePlayerName) : null;
       const teamForFootyWire2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : teamForFootyWire;
-      const keyBase2025 = season === 2026 && teamForFootyWire2025
+      const keyBase2025 = allow2025As2026Fallback && teamForFootyWire2025
         ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: effectivePlayerName, teamForRequest: teamForFootyWire2025, includeQuarters: false })
         : null;
-      const keyQuarters2025 = season === 2026 && teamForFootyWire2025
+      const keyQuarters2025 = allow2025As2026Fallback && teamForFootyWire2025
         ? buildAflPlayerLogsCacheKey({ season: 2025, playerName: effectivePlayerName, teamForRequest: teamForFootyWire2025, includeQuarters: true })
         : null;
       if (keyBase2025 && keyQuarters2025) {
@@ -1596,7 +1608,7 @@ export async function GET(request: NextRequest) {
         : null,
     ]);
     // 2026 often has no games until the season starts. Serve 2025 from cache only (never fetch 2025).
-    if (season === 2026 && !strictSeason && (!fwBase || fwBase.games.length === 0)) {
+    if (allow2025As2026Fallback && (!fwBase || fwBase.games.length === 0)) {
       const teams2025 = getTeamsToTryForSeason(2025, effectivePlayerName, teamParam);
       const teamFor2025 = teams2025.length > 0 ? teams2025[0] : teamFull;
       const teamFw2025 = teamFor2025 ? getFootyWireTeamNameForPlayerUrl(teamFor2025) : null;
@@ -1757,9 +1769,9 @@ export async function GET(request: NextRequest) {
 
   // Cache-only: only read from cache. For current/prev season (e.g. 2025+2026), allow fetch on miss so dashboard and props get both years.
   if (cacheOnly && !skipCacheWrongDataSingle && !skipCacheForSymbolSingle && !allowFetchOnMiss) {
-    const teamFor2025Fallback = season === 2026 ? getPlayerTeamForSeason(2025, effectivePlayerName) : null;
+    const teamFor2025Fallback = allow2025As2026Fallback ? getPlayerTeamForSeason(2025, effectivePlayerName) : null;
     const teamFw2025Fallback = teamFor2025Fallback ? getFootyWireTeamNameForPlayerUrl(teamFor2025Fallback) : teamForFootyWire;
-    if (season === 2026 && teamFw2025Fallback) {
+    if (allow2025As2026Fallback && teamFw2025Fallback) {
       const key2025 = buildAflPlayerLogsCacheKey({
         season: 2025,
         playerName: effectivePlayerName,
@@ -1792,7 +1804,7 @@ export async function GET(request: NextRequest) {
       ? await fetchFootyWireGameLogsWithTeamFallback(teamsForSeason, effectivePlayerName, season, includeQuarterEnrichment, skipMemoryCache)
       : await (teamForFootyWire ? fetchFootyWireGameLogs(teamForFootyWire, effectivePlayerName, season, includeQuarterEnrichment, skipMemoryCache) : Promise.resolve(null));
     // 2026 empty: serve 2025 from cache only (never fetch 2025)
-    if (season === 2026 && !strictSeason && (!fw || fw.games.length === 0) && cacheEnabled) {
+    if (allow2025As2026Fallback && (!fw || fw.games.length === 0) && cacheEnabled) {
       const teamFor2025Fallback = getPlayerTeamForSeason(2025, effectivePlayerName);
       const teamFw2025 = teamFor2025Fallback ? getFootyWireTeamNameForPlayerUrl(teamFor2025Fallback) : teamForFootyWire;
       if (teamFw2025) {
@@ -1803,7 +1815,7 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    if (season === 2026 && !strictSeason && (!fw || fw.games.length === 0) && !cacheEnabled) {
+    if (allow2025As2026Fallback && (!fw || fw.games.length === 0) && !cacheEnabled) {
       const teamsFor2025 = getTeamsToTryForSeason(2025, effectivePlayerName, teamParam);
       const teamsFor2025List = teamsFor2025.length > 0 ? teamsFor2025 : (teamFull ? [teamFull] : []);
       const fw2025 = teamsFor2025List.length > 0 ? await fetchFootyWireGameLogsWithTeamFallback(teamsFor2025List, effectivePlayerName, 2025, includeQuarterEnrichment, skipMemoryCache) : null;

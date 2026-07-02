@@ -109,6 +109,14 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   git reset --hard "origin/${BRANCH}"
 
   restore_backup
+
+  for p in "${UNIQUE_PATHS[@]}"; do
+    if [ -f "$p" ] && grep -q '<<<<<<< ' "$p" 2>/dev/null; then
+      echo "[ci-commit] Resolving merge conflict markers in $p"
+      node scripts/resolve-data-merge-conflicts.js "$p"
+    fi
+  done
+
   stage_paths
 
   if git diff --staged --quiet; then

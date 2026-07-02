@@ -151,7 +151,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v8';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v9';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v4';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -3809,20 +3809,53 @@ export default function AFLPage() {
   }, [aflPropsMode, selectedPlayerGameLogsForChart, perGameFilterData, aflGameFilters]);
 
   const getCurrentSeasonAvg = (statKey: string): number | null => {
-    if (!selectedPlayerGameLogs.length) return null;
     const effectiveSeason = Math.min(season, 2026);
+    const leagueFallbackKeys = new Set([
+      'uncontested_possessions',
+      'contested_possessions',
+      'meters_gained',
+    ]);
+
+    const getLeagueSeasonAvg = (): number | null => {
+      if (!leaguePlayerStats?.length || !selectedPlayer?.name) return null;
+      const playerNameNorm = normalizePlayerNameForMatch(selectedPlayer.name);
+      const row = leaguePlayerStats.find(
+        (p) => normalizePlayerNameForMatch(String(p.name ?? '')) === playerNameNorm
+      );
+      if (!row) return null;
+      const v = Number((row as Record<string, unknown>)[statKey]);
+      return Number.isFinite(v) ? Math.round(v * 10) / 10 : null;
+    };
+
+    if (!selectedPlayerGameLogs.length) {
+      return leagueFallbackKeys.has(statKey) ? getLeagueSeasonAvg() : null;
+    }
+
     const gamesThisSeason = selectedPlayerGameLogs.filter((g) => {
       const gameSeason = resolveAflGameSeason(g as Record<string, unknown>);
       return gameSeason === effectiveSeason;
     });
-    if (!gamesThisSeason.length) return null;
+    if (!gamesThisSeason.length) {
+      return leagueFallbackKeys.has(statKey) ? getLeagueSeasonAvg() : null;
+    }
+
     const values = gamesThisSeason
       .map((g) => Number((g as Record<string, unknown>)?.[statKey]))
       .filter((v) => Number.isFinite(v));
-    if (!values.length) return null;
+    if (!values.length) {
+      return leagueFallbackKeys.has(statKey) ? getLeagueSeasonAvg() : null;
+    }
+
     const total = values.reduce((sum, v) => sum + v, 0);
     const avg = total / values.length;
-    return Math.round(avg * 10) / 10;
+    const fromLogs = Math.round(avg * 10) / 10;
+
+    if (leagueFallbackKeys.has(statKey) && fromLogs <= 0) {
+      const fromLeague = getLeagueSeasonAvg();
+      if (fromLeague != null) return fromLeague;
+    }
+
+    return fromLogs;
   };
 
   const playerVsTeamOpponentKey = (): string | null => {
@@ -4129,11 +4162,13 @@ export default function AFLPage() {
         return resolved === aflTeamFilter.trim();
       });
 
-    // If mixed-quality rows exist, keep only games that have verified supporting stats
-    // so chart bars and supporting-stats bars stay aligned.
-    const verified = baseLogs.filter((g) => hasVerifiedSupportingStats(g as Record<string, unknown>));
-    if (verified.length > 0 && verified.length < baseLogs.length) return verified;
-    return baseLogs;
+    // Keep all games with box-score stats on the chart. Do not drop 2026 rows just because
+    // TOG/advanced enrichment is missing — that was hiding current-season games and leaving 2025 only.
+    const withCoreStats = baseLogs.filter((g) => {
+      const d = Number((g as Record<string, unknown>).disposals);
+      return Number.isFinite(d);
+    });
+    return withCoreStats.length > 0 ? withCoreStats : baseLogs;
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
 
   // In Game Props mode, optionally filter team logs by selected opponent from Team dropdown.

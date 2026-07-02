@@ -1,53 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
-import fs from 'fs';
+import { readAflDataJsonFile } from '@/lib/readAflDataJson';
 
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
 /** Read cached team rankings. Run scripts/fetch-footywire-team-rankings.js to refresh. */
 function readCachedTeamRankings(season: number, type: 'ta' | 'oa' = 'ta') {
-  const readRaw = (which: 'primary' | 'legacy'): string | null => {
+  const fileFor = (which: 'primary' | 'legacy'): string | null => {
     if (which === 'primary') {
-      if (season === 2026) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2026-oa.json' : 'afl-team-rankings-2026-ta.json'), 'utf8');
-      if (season === 2025) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2025-oa.json' : 'afl-team-rankings-2025-ta.json'), 'utf8');
-      if (season === 2024) return fs.readFileSync(path.join(process.cwd(), 'data', type === 'oa' ? 'afl-team-rankings-2024-oa.json' : 'afl-team-rankings-2024-ta.json'), 'utf8');
+      if (season === 2026) return type === 'oa' ? 'afl-team-rankings-2026-oa.json' : 'afl-team-rankings-2026-ta.json';
+      if (season === 2025) return type === 'oa' ? 'afl-team-rankings-2025-oa.json' : 'afl-team-rankings-2025-ta.json';
+      if (season === 2024) return type === 'oa' ? 'afl-team-rankings-2024-oa.json' : 'afl-team-rankings-2024-ta.json';
       return null;
     }
-    if (season === 2026) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2026.json'), 'utf8');
-    if (season === 2025) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2025.json'), 'utf8');
-    if (season === 2024) return fs.readFileSync(path.join(process.cwd(), 'data', 'afl-team-rankings-2024.json'), 'utf8');
+    if (season === 2026) return 'afl-team-rankings-2026.json';
+    if (season === 2025) return 'afl-team-rankings-2025.json';
+    if (season === 2024) return 'afl-team-rankings-2024.json';
     return null;
   };
 
-  const parse = (raw: string) => {
-    const data = JSON.parse(raw) as {
+  const parseFile = (fileName: string) => {
+    const result = readAflDataJsonFile<{
       season?: number;
       teams?: Array<{ rank: number | null; team: string; stats: Record<string, number | string | null> }>;
       statColumns?: string[];
       statLabels?: Record<string, string>;
-    };
-    if (!data?.teams?.length) return null;
-    return data;
+    }>(path.join(process.cwd(), 'data', fileName));
+    if (!result.ok) return result.reason === 'corrupt' ? ('corrupt' as const) : null;
+    if (!result.data?.teams?.length) return null;
+    return result.data;
   };
 
-  try {
-    const raw = readRaw('primary');
-    if (raw) {
-      const parsed = parse(raw);
-      if (parsed) return parsed;
-    } 
-  } catch {
-    /* try legacy */
+  const primary = fileFor('primary');
+  if (primary) {
+    const parsed = parseFile(primary);
+    if (parsed === 'corrupt') return 'corrupt';
+    if (parsed) return parsed;
   }
-  try {
-    const raw = readRaw('legacy');
-    if (raw) {
-      const parsed = parse(raw);
-      if (parsed) return parsed;
-    }
-  } catch {
-    /* fall through */
+  const legacy = fileFor('legacy');
+  if (legacy) {
+    const parsed = parseFile(legacy);
+    if (parsed === 'corrupt') return 'corrupt';
+    if (parsed) return parsed;
   }
   return null;
 }
@@ -62,6 +57,12 @@ export async function GET(request: NextRequest) {
     : 2026;
 
   const cached = readCachedTeamRankings(season, type);
+  if (cached === 'corrupt') {
+    return NextResponse.json(
+      { error: `Team rankings for ${season} are corrupt (merge conflict). Re-run AFL data refresh.` },
+      { status: 503 }
+    );
+  }
   if (!cached) {
     const prev = readCachedTeamRankings(season - 1, type);
     if (prev) {
