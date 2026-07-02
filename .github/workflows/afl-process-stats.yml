@@ -65,8 +65,8 @@ jobs:
       # Opponent Breakdown: team rankings (OA/TA) — 2026 + 2025 (single workflow)
       - name: Fetch team rankings (Opponent Breakdown) 2026 + 2025
         run: |
-          npm run fetch:footywire-team-rankings -- --season=2026
-          npm run fetch:footywire-team-rankings -- --season=2025
+          npm run fetch:footywire-team-rankings -- --season=2026 --allow-stale
+          npm run fetch:footywire-team-rankings -- --season=2025 --allow-stale
 
       # Build DvP files locally from latest player logs. Only rebuild Depth when the DFS role map
       # is populated, otherwise the builder falls back to default roles and can wipe specialist

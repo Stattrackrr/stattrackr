@@ -15,6 +15,19 @@ const fs = require('fs');
 const path = require('path');
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
+const FETCH_ATTEMPTS = 5;
+const FETCH_RETRY_BASE_MS = 2500;
+const FOOTYWIRE_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  Referer: 'https://www.footywire.com/',
+};
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function getArg(name, fallback) {
   const pref = `--${name}=`;
@@ -171,46 +184,116 @@ async function fetchOne(season, type) {
   const baseType = isOpponentAverages ? 'OA' : type;
   const advParam = isAdvanced ? '&advv=Y' : '';
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=${baseType}${advParam}`;
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-    },
-  });
-  return { ok: res.ok, html: await res.text(), url };
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
+      const html = await res.text();
+      const parsed = parseTeamRankings(html);
+      const hasTable = parsed.teams.length > 0;
+      if (res.ok && hasTable) {
+        return { ok: true, html, url, status: res.status, teams: parsed.teams.length };
+      }
+      lastError = `HTTP ${res.status}, teams=${parsed.teams.length}`;
+      console.warn(
+        `  FootyWire ${baseType}${advParam ? ' (advanced)' : ''} attempt ${attempt}/${FETCH_ATTEMPTS} failed: ${lastError}`,
+      );
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `  FootyWire ${baseType}${advParam ? ' (advanced)' : ''} attempt ${attempt}/${FETCH_ATTEMPTS} error: ${lastError}`,
+      );
+    }
+    if (attempt < FETCH_ATTEMPTS) {
+      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    }
+  }
+
+  return { ok: false, html: '', url, status: null, error: lastError };
+}
+
+function rankingsOutputPaths(season) {
+  const dataDir = path.join(process.cwd(), 'data');
+  return {
+    ta: path.join(dataDir, `afl-team-rankings-${season}-ta.json`),
+    oa: path.join(dataDir, `afl-team-rankings-${season}-oa.json`),
+  };
+}
+
+function existingRankingsLookValid(season) {
+  const paths = rankingsOutputPaths(season);
+  try {
+    for (const filePath of [paths.ta, paths.oa]) {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Number(parsed?.season) !== season) return false;
+      if (!Array.isArray(parsed?.teams) || parsed.teams.length < 10) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function main() {
   const year = new Date().getFullYear();
+  const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
+  const allowStale = process.argv.includes('--allow-stale');
   let season = parseInt(getArg('season', String(year)), 10) || year;
 
   console.log(`Fetching Footywire team rankings for ${season}...`);
 
   let taRes = await fetchOne(season, 'TA');
-  if (!taRes.ok && season === year) {
+  if (!taRes.ok && !explicitSeasonArg && season === year) {
     const fallback = year - 1;
     console.log(`${season} not found. Trying ${fallback}...`);
     season = fallback;
     taRes = await fetchOne(season, 'TA');
   }
   if (!taRes.ok) {
-    console.error(`Failed to fetch Team Averages: ${taRes.url}`);
+    if (allowStale && existingRankingsLookValid(season)) {
+      const paths = rankingsOutputPaths(season);
+      console.warn(
+        `FootyWire unavailable for ${season} (${taRes.error ?? 'request failed'}). Keeping existing rankings:`,
+        paths.ta,
+        paths.oa,
+      );
+      return;
+    }
+    console.error(`Failed to fetch Team Averages: ${taRes.url}${taRes.error ? ` (${taRes.error})` : ''}`);
     process.exit(1);
   }
   console.log(`  TA: ${taRes.url}`);
+
+  await sleep(400);
 
   // Opponent Averages: fetch both basic and advanced tables and merge so we
   // have core stats (D, K, HB, G, etc.) plus advanced (CP, UP, MG, ...).
   const oaBasicRes = await fetchOne(season, 'OA');
   if (!oaBasicRes.ok) {
-    console.error(`Failed to fetch Opponent Averages (basic): ${oaBasicRes.url}`);
+    if (allowStale && existingRankingsLookValid(season)) {
+      console.warn(
+        `FootyWire OA basic unavailable for ${season} (${oaBasicRes.error ?? 'request failed'}). Keeping existing rankings.`,
+      );
+      return;
+    }
+    console.error(`Failed to fetch Opponent Averages (basic): ${oaBasicRes.url}${oaBasicRes.error ? ` (${oaBasicRes.error})` : ''}`);
     process.exit(1);
   }
   console.log(`  OA (basic): ${oaBasicRes.url}`);
 
+  await sleep(400);
+
   const oaAdvRes = await fetchOne(season, 'OA_ADV');
   if (!oaAdvRes.ok) {
-    console.error(`Failed to fetch Opponent Averages (advanced): ${oaAdvRes.url}`);
+    if (allowStale && existingRankingsLookValid(season)) {
+      console.warn(
+        `FootyWire OA advanced unavailable for ${season} (${oaAdvRes.error ?? 'request failed'}). Keeping existing rankings.`,
+      );
+      return;
+    }
+    console.error(`Failed to fetch Opponent Averages (advanced): ${oaAdvRes.url}${oaAdvRes.error ? ` (${oaAdvRes.error})` : ''}`);
     process.exit(1);
   }
   console.log(`  OA (advanced): ${oaAdvRes.url}`);
