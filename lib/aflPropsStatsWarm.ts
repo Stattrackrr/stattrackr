@@ -9,6 +9,7 @@ import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlay
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
+import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 
 const BATCH_SIZE = 50;
 const CONCURRENT_BATCHES = 2;
@@ -103,9 +104,9 @@ export async function runAflPropsStatsWarm(
     let positionMap = await getAflPlayerPositionMap(season);
     if (positionMap.size === 0) positionMap = await getAflPlayerPositionMap(season - 1);
     const teamMatches = (a: string, b: string) => {
-      const x = (a ?? '').trim().toLowerCase();
-      const y = (b ?? '').trim().toLowerCase();
-      return (x && y) && (x === y || x.includes(y) || y.includes(x));
+      const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
+      const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
+      return (officialA && officialB) && officialA === officialB;
     };
     const getDvp = (opponent: string, statType: string, position?: string | null) => {
       return getDvpLookupTeamTotal(opponent, statType, dvpMaps, position);

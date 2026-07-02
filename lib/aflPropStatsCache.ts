@@ -4,14 +4,19 @@
  * We only set entries when we have computed stats; never overwrite with empty (24h TTL).
  */
 
-import { opponentToOfficialTeamName, rosterTeamToInjuryTeam, canonicalTeamForStatsKey } from '@/lib/aflTeamMapping';
+import {
+  opponentToOfficialTeamName,
+  rosterTeamToInjuryTeam,
+  canonicalTeamForStatsKey,
+  toOfficialAflTeamDisplayName,
+} from '@/lib/aflTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
-import { aflGamesIncludeSeason } from '@/lib/aflGameDedupe';
+import { aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import sharedCache from '@/lib/sharedCache';
 
-// Bump schema version when stats computation inputs change (e.g. adding 2024 season)
+// Bump schema version when stats computation inputs change (e.g. H2H opponent resolution fix).
 // so stale entries from older logic are not reused.
-const CACHE_PREFIX = 'afl_prop_stats_v4';
+const CACHE_PREFIX = 'afl_prop_stats_v5';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
@@ -60,6 +65,32 @@ function resolveOpponentForH2H(opp: string): string {
   return opponentToOfficialTeamName(s) ?? rosterTeamToInjuryTeam(s) ?? s;
 }
 
+/**
+ * List API passes (homeTeam, awayTeam) as (team, opponent). H2H must use the player's
+ * upcoming opponent, not always awayTeam (wrong when the player is away).
+ */
+function resolveMatchupOpponentForH2H(
+  team: string,
+  opponent: string,
+  resolvedPlayerTeam?: string
+): string {
+  if (!resolvedPlayerTeam?.trim()) return opponent;
+  const player = toOfficialAflTeamDisplayName(resolvedPlayerTeam.trim());
+  const teamA = toOfficialAflTeamDisplayName((team ?? '').trim());
+  const teamB = toOfficialAflTeamDisplayName((opponent ?? '').trim());
+  if (player && teamA && player === teamA) return teamB || opponent;
+  if (player && teamB && player === teamB) return teamA || team;
+  return opponent;
+}
+
+function cachedStatsAreUsable(cached: AflPropStatsPayload): boolean {
+  const hasRolling = cached.last5Avg != null || cached.last10Avg != null;
+  if (!hasRolling && cached.seasonAvg == null) return false;
+  // Rolling form without a current-season average means a stale/partial cache entry.
+  if (hasRolling && cached.seasonAvg == null) return false;
+  return true;
+}
+
 export function computeAflPropStatsFromGames(
   games: Record<string, unknown>[],
   statType: string,
@@ -72,16 +103,7 @@ export function computeAflPropStatsFromGames(
   for (const g of games) {
     const v = getStatValue(g, statType);
     const opp = (g.opponent as string) || '';
-    const seasonRaw = g.season;
-    const seasonFromField =
-      typeof seasonRaw === 'number' && Number.isFinite(seasonRaw)
-        ? seasonRaw
-        : typeof seasonRaw === 'string' && /^\d{4}$/.test(seasonRaw)
-          ? Number(seasonRaw)
-          : null;
-    const dateRaw = String((g.date ?? g.game_date ?? '') as string).trim();
-    const seasonFromDate = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? Number(dateRaw.slice(0, 4)) : null;
-    const season = seasonFromField ?? seasonFromDate;
+    const season = resolveAflGameSeason(g);
     if (v !== null) gamesWithValue.push({ value: v, opponent: opp, season });
   }
   // API returns games most-recent first (FootyWire table order). Use first N = last N games.
@@ -194,9 +216,8 @@ export async function getAflPropStats(
   const key = cacheKey(playerName, team, opponent, statType, line);
   const cached = await sharedCache.getJSON<AflPropStatsPayload>(key);
   if (cached && typeof cached === 'object') {
-    // Don't use cached entry when it has no stats (warm may have stored 0-game result). Treat as miss and recompute.
-    const hasAnyStat = cached.last5Avg != null || cached.last10Avg != null || cached.seasonAvg != null;
-    if (hasAnyStat) {
+    // Don't use cached entry when it has no stats or only partial stats (e.g. L5/L10 without season).
+    if (cachedStatsAreUsable(cached)) {
       if (debugOut) {
         debugOut.fromCache = true;
         debugOut.gamesCount = -1; // not stored in cache
@@ -243,7 +264,8 @@ export async function getAflPropStats(
     debugOut.fromCache = false;
     debugOut.gamesCount = games.length;
   }
-  const stats = computeAflPropStatsFromGames(games, statType, opponent, line, currentSeason);
+  const matchupOpponent = resolveMatchupOpponentForH2H(team, opponent, resolvedPlayerTeam);
+  const stats = computeAflPropStatsFromGames(games, statType, matchupOpponent, line, currentSeason);
   const payload: AflPropStatsPayload = {
     ...stats,
     dvpRating: dvpLookup?.rank ?? null,

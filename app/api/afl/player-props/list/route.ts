@@ -38,8 +38,8 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v3';
-const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v3';
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v4';
+const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v4';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
@@ -461,6 +461,21 @@ export async function GET(request: Request) {
       }
       return null;
     };
+    const teamMatchesOverride = (a: string, b: string) => {
+      const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
+      const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
+      return (officialA && officialB) && officialA === officialB;
+    };
+    const resolveMatchupForProp = (playerName: string, homeTeam: string, awayTeam: string) => {
+      const playerTeam = resolvePlayerTeam(playerName, homeTeam, awayTeam);
+      const opponent =
+        playerTeam && teamMatchesOverride(playerTeam, homeTeam)
+          ? awayTeam
+          : playerTeam && teamMatchesOverride(playerTeam, awayTeam)
+            ? homeTeam
+            : awayTeam;
+      return { playerTeam, opponent };
+    };
     const positionMapForOverride = enrichContext.positionMap;
     const positionCandidatesByInitialSurname = new Map<string, Array<{ nameKey: string; position: string }>>();
     for (const [nameKey, pos] of positionMapForOverride.entries()) {
@@ -523,10 +538,38 @@ export async function GET(request: Request) {
         if (!p) return;
         const debug = debugByKey ? ({ fromCache: false, gamesCount: 0 } as AflPropStatsDebug) : undefined;
         if (debugByKey) debugByKey.set(cacheKey, debug!);
-        const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
-        let stats = await getAflPropStats(p.playerName, p.homeTeam, p.awayTeam, p.statType, p.line, baseUrl, null, cacheOnly, listCronSecret, resolvedTeam, debug);
+        const { playerTeam: resolvedTeam, opponent: matchupOpponent } = resolveMatchupForProp(
+          p.playerName,
+          p.homeTeam,
+          p.awayTeam
+        );
+        let stats = await getAflPropStats(
+          p.playerName,
+          resolvedTeam ?? p.homeTeam,
+          matchupOpponent,
+          p.statType,
+          p.line,
+          baseUrl,
+          null,
+          cacheOnly,
+          listCronSecret,
+          resolvedTeam ?? undefined,
+          debug
+        );
         if (!stats) {
-          stats = await getAflPropStats(p.playerName, p.awayTeam, p.homeTeam, p.statType, p.line, baseUrl, null, cacheOnly, listCronSecret, resolvedTeam, debug);
+          stats = await getAflPropStats(
+            p.playerName,
+            matchupOpponent,
+            resolvedTeam ?? p.homeTeam,
+            p.statType,
+            p.line,
+            baseUrl,
+            null,
+            cacheOnly,
+            listCronSecret,
+            resolvedTeam ?? undefined,
+            debug
+          );
         }
         if (stats) {
           statsByKey.set(cacheKey, stats);
@@ -560,31 +603,35 @@ export async function GET(request: Request) {
         statType: string;
         line: number;
       }) => {
-        const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
-        let stats = await getAflPropStats(
+        const { playerTeam: resolvedTeam, opponent: matchupOpponent } = resolveMatchupForProp(
           p.playerName,
           p.homeTeam,
-          p.awayTeam,
+          p.awayTeam
+        );
+        let stats = await getAflPropStats(
+          p.playerName,
+          resolvedTeam ?? p.homeTeam,
+          matchupOpponent,
           p.statType,
           p.line,
           baseUrl,
           null,
           false,
           undefined,
-          resolvedTeam
+          resolvedTeam ?? undefined
         );
         if (!stats) {
           stats = await getAflPropStats(
             p.playerName,
-            p.awayTeam,
-            p.homeTeam,
+            matchupOpponent,
+            resolvedTeam ?? p.homeTeam,
             p.statType,
             p.line,
             baseUrl,
             null,
             false,
             undefined,
-            resolvedTeam
+            resolvedTeam ?? undefined
           );
         }
         return stats;
@@ -683,20 +730,9 @@ export async function GET(request: Request) {
       }
       return null;
     };
-    const teamMatchesOverride = (a: string, b: string) => {
-      const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
-      const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
-      return (officialA && officialB) && officialA === officialB;
-    };
     const dfsPlayers = await loadDfsRolePlayers();
     const rowContexts = rows.map((r) => {
-      const playerTeam = resolvePlayerTeam(r.playerName, r.homeTeam, r.awayTeam);
-      const opponent =
-        playerTeam && teamMatchesOverride(playerTeam, r.homeTeam)
-          ? r.awayTeam
-          : playerTeam && teamMatchesOverride(playerTeam, r.awayTeam)
-            ? r.homeTeam
-            : r.awayTeam;
+      const { playerTeam, opponent } = resolveMatchupForProp(r.playerName, r.homeTeam, r.awayTeam);
       const filePos = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
       const dfsP = findDfsRolePlayer(dfsPlayers, r.playerName);
       const position =

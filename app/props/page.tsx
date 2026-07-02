@@ -1000,7 +1000,7 @@ function normalizeNbaTeam(team: string): string {
   return NBA_TEAM_ABBR_ALIASES[normalizedAbbr] || normalizedAbbr;
 }
 
-const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v3';
+const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v4';
 const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v9';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
