@@ -1,5 +1,5 @@
 # Single AFL stats workflow: Compare tab (league stats), Opponent Breakdown (team rankings),
-# player logs cache warm, odds/props refresh, DvP build, then props-stats warm (L5/L10/H2H/Season/Streak) in a separate request.
+# player logs cache warm, then odds/props refresh (in-process props-stats warm + enriched list prewarm).
 # Replaces: warm-afl-player-logs, warm-afl-props-stats, fetch-afl-league-player-stats, process-afl-player-props.
 name: AFL Process Stats
 
@@ -168,16 +168,17 @@ jobs:
           AFL_WARM_CONCURRENCY: '24'
           AFL_WARM_MAX_FAILURES: '100'
 
-      # Odds, props cache refresh, DvP build (stats warm runs in next step so it gets full timeout)
+      # Odds, props cache refresh, DvP build, and in-process props-stats warm (avoids a second
+      # serverless call that hits the 300s props-stats/warm Vercel limit).
       - name: Refresh AFL odds, props cache, and DvP build
         if: steps.check.outputs.configured == 'true'
         run: |
-          echo "🔄 Refreshing AFL odds, props cache, and DvP build..."
+          echo "🔄 Refreshing AFL odds, props cache, DvP build, and props-stats warm..."
           RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            -L --max-time 300 \
+            -L --max-time 360 \
             --write-out "\nHTTP_STATUS:%{http_code}" \
             --fail-with-body 2>&1) || EXIT_CODE=$?
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
@@ -191,41 +192,19 @@ jobs:
             echo "❌ AFL odds/refresh failed (exit $EXIT_CODE)"
             exit 1
           fi
-          echo "✅ Odds + props cache + DvP done"
-
-      # odds/refresh already runs an in-process props-stats warm; this step rebuilds enriched list
-      # and optionally re-warms from the same props cache (useList=0 avoids a second list-API pass).
-      - name: Warm AFL props-stats (L5, L10, H2H, Season, Streak)
-        if: steps.check.outputs.configured == 'true'
-        run: |
-          echo "🔄 Warming AFL props-stats cache (L5/L10/H2H/Season/Streak)..."
-          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/props-stats/warm" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
-            -L --max-time 600 \
-            --write-out "\nHTTP_STATUS:%{http_code}" \
-            --fail-with-body 2>&1) || EXIT_CODE=$?
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-          echo "Response ($HTTP_STATUS): $BODY"
-          if [ "$HTTP_STATUS" != "200" ] && [ -n "$HTTP_STATUS" ]; then
-            echo "❌ AFL props-stats warm failed with HTTP $HTTP_STATUS"
+          COVERAGE=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.statsCoveragePct ?? 100)); } catch { process.stdout.write('100'); }" "$BODY")
+          NO_DATA=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.statsNoData ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
+          TOTAL=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.statsTotal ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
+          WARMED=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.statsWarmed ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
+          echo "AFL props-stats coverage: ${COVERAGE}% (warmed=${WARMED}, noData=${NO_DATA}, total=${TOTAL})"
+          if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "50" ]; then
+            echo "❌ AFL props-stats coverage below threshold (50%)"
             exit 1
-          else
-            COVERAGE=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.coveragePct ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
-            NO_DATA=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.noData ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
-            TOTAL=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(String(j.total ?? 0)); } catch { process.stdout.write('0'); }" "$BODY")
-            echo "AFL props-stats coverage: ${COVERAGE}% (noData=${NO_DATA}, total=${TOTAL})"
-            # ~40% of listed props can be debutants / no 2026 logs; fail only on very low coverage.
-            if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "50" ]; then
-              echo "❌ AFL props-stats coverage below threshold (50%)"
-              exit 1
-            fi
-            if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "90" ]; then
-              echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum — continuing"
-            fi
-            echo "✅ AFL props-stats warm completed"
           fi
+          if [ "${TOTAL}" -gt "0" ] && [ "${COVERAGE}" -lt "90" ]; then
+            echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum — continuing"
+          fi
+          echo "✅ Odds + props cache + DvP + props-stats warm done"
 
       - name: Enrich Top Picks actual disposals
         if: steps.check.outputs.configured == 'true'

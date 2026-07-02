@@ -92,6 +92,9 @@ export async function GET(request: NextRequest) {
     let dvpBuildOk = false;
     let statsWarmed: number | undefined;
     let statsFailed: number | undefined;
+    let statsNoData: number | undefined;
+    let statsTotal: number | undefined;
+    let statsCoveragePct: number | undefined;
     let statsWarmError: string | undefined;
 
     try {
@@ -156,7 +159,18 @@ export async function GET(request: NextRequest) {
           const warm = await runAflPropsStatsWarm(warmBaseUrl, { useListApi: false, cronSecret });
           statsWarmed = warm.warmed;
           statsFailed = warm.failed;
-          console.log('[AFL cron] Props-stats warm done: warmed=', warm.warmed, 'failed (N/A)=', warm.failed, warm.success ? '' : warm.error ?? '');
+          statsNoData = warm.noData;
+          statsTotal = warm.total;
+          statsCoveragePct = warm.coveragePct;
+          console.log(
+            '[AFL cron] Props-stats warm done: warmed=',
+            warm.warmed,
+            'failed (N/A)=',
+            warm.failed,
+            'coverage=',
+            warm.coveragePct != null ? `${warm.coveragePct}%` : '?',
+            warm.success ? '' : warm.error ?? '',
+          );
           if (warm.error) statsWarmError = warm.error;
         } catch (e) {
           statsWarmError = e instanceof Error ? e.message : String(e);
@@ -218,6 +232,9 @@ export async function GET(request: NextRequest) {
       dvpBuildOk,
       statsWarmed,
       statsFailed,
+      statsNoData,
+      statsTotal,
+      statsCoveragePct,
       statsWarmError,
       naSummaryHint: statsFailed != null && statsFailed > 0
         ? 'Call GET /api/afl/player-props/list?enrich=true&debugStats=1 for naSummary and naReasons (why props show N/A).'
