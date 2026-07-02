@@ -1,0 +1,32 @@
+{
+  "version": "afl-disp-20260620-122702",
+  "createdAt": "2026-06-20T12:27:03Z",
+  "modelType": "hgb",
+  "metrics": {
+    "baseline": {
+      "mae": 4.202596872361959,
+      "rmse": 5.337107320394316
+    },
+    "ridge": {
+      "mae": 3.8512585704069746,
+      "rmse": 4.934286317096534,
+      "cv_mae": 3.92918168514897,
+      "cv_rmse": 5.0226889598283835,
+      "bestParams": {
+        "alpha": 4.0
+      }
+    },
+    "hgb": {
+      "mae": 3.839126012033833,
+      "rmse": 4.921796656695526,
+      "cv_mae": 3.946693751775293,
+      "cv_rmse": 5.029861589225135,
+      "bestParams": {
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "max_iter": 220,
+        "min_samples_leaf": 20
+      }
+    }
+  }
+}

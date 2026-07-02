@@ -1,0 +1,202 @@
+{
+  "version": "afl-disp-20260403-134658",
+  "createdAt": "2026-04-03T13:46:58Z",
+  "datasetPath": "C:\\Users\\nduar\\stattrackr\\data\\afl-model\\datasets\\afl-disposals-train-20260403-134654.csv",
+  "featureColumns": [
+    "roll3_mean",
+    "roll5_mean",
+    "roll10_mean",
+    "roll5_std",
+    "roll10_std",
+    "lag1",
+    "games_history",
+    "tog_roll5_mean",
+    "cp_roll5_mean",
+    "up_roll5_mean",
+    "cl_roll5_mean",
+    "i50_roll5_mean",
+    "mg_roll5_mean",
+    "rest_days",
+    "opp_allow_disposals",
+    "opp_allow_kicks",
+    "opp_allow_handballs",
+    "opp_allow_cp",
+    "opp_allow_up",
+    "opp_allow_clearances",
+    "opp_allow_i50",
+    "opp_allow_mg",
+    "dfs_cba_pct",
+    "dfs_kickins",
+    "delta_disp_3v10",
+    "delta_tog_3v10",
+    "delta_cp_3v10",
+    "delta_up_3v10",
+    "delta_cl_3v10"
+  ],
+  "modelType": "hgb",
+  "modelPicklePath": "models/afl-disp-20260403-134658.pkl",
+  "residualStd": 4.978224815395122,
+  "metrics": {
+    "baseline": {
+      "mae": 4.201219137742856,
+      "rmse": 5.336444111533824
+    },
+    "ridge": {
+      "mae": 3.879317456763248,
+      "rmse": 4.985688466264231
+    },
+    "hgb": {
+      "mae": 3.863447588108748,
+      "rmse": 4.978224815395122
+    }
+  },
+  "featureImportance": [
+    {
+      "feature": "roll10_mean",
+      "maeLift": 1.903139,
+      "permutedMae": 5.766586
+    },
+    {
+      "feature": "roll5_mean",
+      "maeLift": 0.059784,
+      "permutedMae": 3.923232
+    },
+    {
+      "feature": "lag1",
+      "maeLift": 0.04772,
+      "permutedMae": 3.911167
+    },
+    {
+      "feature": "cl_roll5_mean",
+      "maeLift": 0.027835,
+      "permutedMae": 3.891283
+    },
+    {
+      "feature": "rest_days",
+      "maeLift": 0.025918,
+      "permutedMae": 3.889366
+    },
+    {
+      "feature": "dfs_cba_pct",
+      "maeLift": 0.024307,
+      "permutedMae": 3.887754
+    },
+    {
+      "feature": "roll10_std",
+      "maeLift": 0.024146,
+      "permutedMae": 3.887593
+    },
+    {
+      "feature": "dfs_kickins",
+      "maeLift": 0.021437,
+      "permutedMae": 3.884885
+    },
+    {
+      "feature": "opp_allow_disposals",
+      "maeLift": 0.021062,
+      "permutedMae": 3.88451
+    },
+    {
+      "feature": "mg_roll5_mean",
+      "maeLift": 0.018066,
+      "permutedMae": 3.881514
+    },
+    {
+      "feature": "roll3_mean",
+      "maeLift": 0.015277,
+      "permutedMae": 3.878725
+    },
+    {
+      "feature": "up_roll5_mean",
+      "maeLift": 0.014613,
+      "permutedMae": 3.87806
+    },
+    {
+      "feature": "games_history",
+      "maeLift": 0.006776,
+      "permutedMae": 3.870223
+    },
+    {
+      "feature": "delta_cl_3v10",
+      "maeLift": 0.006176,
+      "permutedMae": 3.869623
+    },
+    {
+      "feature": "opp_allow_i50",
+      "maeLift": 0.004752,
+      "permutedMae": 3.8682
+    },
+    {
+      "feature": "opp_allow_clearances",
+      "maeLift": 0.004369,
+      "permutedMae": 3.867816
+    },
+    {
+      "feature": "delta_tog_3v10",
+      "maeLift": 0.004304,
+      "permutedMae": 3.867751
+    },
+    {
+      "feature": "cp_roll5_mean",
+      "maeLift": 0.003933,
+      "permutedMae": 3.86738
+    },
+    {
+      "feature": "tog_roll5_mean",
+      "maeLift": 0.003036,
+      "permutedMae": 3.866484
+    },
+    {
+      "feature": "delta_cp_3v10",
+      "maeLift": 0.002731,
+      "permutedMae": 3.866178
+    },
+    {
+      "feature": "opp_allow_up",
+      "maeLift": 0.001969,
+      "permutedMae": 3.865416
+    },
+    {
+      "feature": "delta_up_3v10",
+      "maeLift": 0.001285,
+      "permutedMae": 3.864733
+    },
+    {
+      "feature": "opp_allow_mg",
+      "maeLift": 0.000979,
+      "permutedMae": 3.864426
+    },
+    {
+      "feature": "opp_allow_handballs",
+      "maeLift": 0.000976,
+      "permutedMae": 3.864424
+    },
+    {
+      "feature": "opp_allow_cp",
+      "maeLift": 0.000475,
+      "permutedMae": 3.863923
+    },
+    {
+      "feature": "roll5_std",
+      "maeLift": 0.000343,
+      "permutedMae": 3.86379
+    },
+    {
+      "feature": "i50_roll5_mean",
+      "maeLift": -0.001665,
+      "permutedMae": 3.861782
+    },
+    {
+      "feature": "opp_allow_kicks",
+      "maeLift": -0.001993,
+      "permutedMae": 3.861455
+    },
+    {
+      "feature": "delta_disp_3v10",
+      "maeLift": -0.002107,
+      "permutedMae": 3.861341
+    }
+  ],
+  "validationRows": 2563,
+  "trainRows": 10251
+}
