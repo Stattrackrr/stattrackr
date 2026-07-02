@@ -1,7 +1,11 @@
 {
   "season": 2026,
   "type": "oa",
+<<<<<<< Updated upstream
   "generatedAt": "2026-07-02T02:46:14.618Z",
+=======
+  "generatedAt": "2026-07-02T02:57:47.875Z",
+>>>>>>> Stashed changes
   "source": "footywire.com",
   "sourcePage": "ft_team_rankings?year=2026&type=oa",
   "teamCount": 18,
