@@ -1244,6 +1244,11 @@ async function fetchFootyWireGameLogs(
     let usedNoYearFallback = false;
     let res = await fetch(url, fetchOpts);
     let advResInitial = await fetch(advUrl, fetchOpts);
+    for (let attempt = 0; attempt < 3 && (!res.ok || res.status === 429 || res.status === 503); attempt += 1) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      res = await fetch(url, fetchOpts);
+      advResInitial = await fetch(advUrl, fetchOpts);
+    }
     if (!res.ok) continue;
     let html = await res.text();
     let { headers, rows } = parseFootyWireGameLogTable(html);
@@ -1711,6 +1716,19 @@ export async function GET(request: NextRequest) {
         { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire' } }
       );
     }
+    // Current-season miss: return empty explicitly (don't fall through to stale cache paths).
+    return NextResponse.json(
+      {
+        season,
+        source: 'footywire.com',
+        player_name: effectivePlayerName,
+        games: [],
+        game_count: 0,
+        gamesWithQuarters: [] as Record<string, unknown>[],
+        ...(teamFull ? { team: teamFull } : {}),
+      },
+      { headers: { ...sourceHeaders, 'X-AFL-Player-Logs-Source': 'footywire-empty' } }
+    );
   }
 
   const cachedResponse = cacheEnabled ? await getAflPlayerLogsCache(responseCacheKey) : null;

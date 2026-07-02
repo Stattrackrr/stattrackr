@@ -64,7 +64,28 @@ function loadActiveAflPlayers() {
   return [];
 }
 
-// Same team normalization as API (footywireNicknameToOfficial) so we hit the same cache keys the frontend uses.
+// Same team normalization as API (leagueTeamToOfficial + FootyWire nicknames).
+const LEAGUE_TEAM_TO_OFFICIAL = {
+  Adelaide: 'Adelaide Crows',
+  Brisbane: 'Brisbane Lions',
+  Carlton: 'Carlton Blues',
+  Collingwood: 'Collingwood Magpies',
+  Essendon: 'Essendon Bombers',
+  Fremantle: 'Fremantle Dockers',
+  Geelong: 'Geelong Cats',
+  'Gold Coast': 'Gold Coast Suns',
+  GWS: 'GWS Giants',
+  Hawthorn: 'Hawthorn Hawks',
+  Melbourne: 'Melbourne Demons',
+  'North Melbourne': 'North Melbourne Kangaroos',
+  'Port Adelaide': 'Port Adelaide Power',
+  Richmond: 'Richmond Tigers',
+  'St Kilda': 'St Kilda Saints',
+  Sydney: 'Sydney Swans',
+  'Western Bulldogs': 'Western Bulldogs',
+  'West Coast': 'West Coast Eagles',
+};
+
 const NICKNAME_TO_FULL = {
   Crows: 'Adelaide Crows', Lions: 'Brisbane Lions', Blues: 'Carlton Blues', Magpies: 'Collingwood Magpies',
   Bombers: 'Essendon Bombers', Dockers: 'Fremantle Dockers', Cats: 'Geelong Cats', Suns: 'Gold Coast Suns',
@@ -75,12 +96,23 @@ const NICKNAME_TO_FULL = {
 
 function teamForRequest(team) {
   const t = String(team || '').trim();
+  if (LEAGUE_TEAM_TO_OFFICIAL[t]) return LEAGUE_TEAM_TO_OFFICIAL[t];
+  const lower = t.toLowerCase();
+  const leagueHit = Object.entries(LEAGUE_TEAM_TO_OFFICIAL).find(([k]) => k.toLowerCase() === lower);
+  if (leagueHit) return leagueHit[1];
   return NICKNAME_TO_FULL[t] || NICKNAME_TO_FULL[t.replace(/\s+/g, ' ')] || t;
 }
 
-const WARM_REQUEST_TIMEOUT_MS = 45000; // 45s per request so slow/hanging requests don't block the run
+const WARM_ZERO_GAMES_RETRIES = Math.max(0, parseInt(process.env.AFL_WARM_ZERO_GAMES_RETRIES || '2', 10));
+const WARM_RETRY_DELAY_MS = Math.max(500, parseInt(process.env.AFL_WARM_RETRY_DELAY_MS || '2500', 10));
+const WARM_INTER_REQUEST_DELAY_MS = Math.max(0, parseInt(process.env.AFL_WARM_INTER_REQUEST_DELAY_MS || '150', 10));
+const WARM_REQUEST_TIMEOUT_MS = 45000;
 
-async function warmOne(player, season) {
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function warmOneAttempt(player, season) {
   const team = teamForRequest(player.team);
   const params = new URLSearchParams({
     season: String(season),
@@ -115,6 +147,15 @@ async function warmOne(player, season) {
     const isAbort = err?.name === 'AbortError';
     return { ok: false, status: isAbort ? 408 : 0, body: isAbort ? 'timeout' : String(err?.message || err) };
   }
+}
+
+async function warmOne(player, season) {
+  let last = await warmOneAttempt(player, season);
+  for (let attempt = 0; attempt < WARM_ZERO_GAMES_RETRIES && last.ok && Number(last.count || 0) === 0; attempt += 1) {
+    await sleep(WARM_RETRY_DELAY_MS * (attempt + 1));
+    last = await warmOneAttempt(player, season);
+  }
+  return last;
 }
 
 async function runPool(jobs, worker, size) {
@@ -181,6 +222,7 @@ async function main() {
   await runPool(
     jobs,
     async (job) => {
+      if (WARM_INTER_REQUEST_DELAY_MS > 0) await sleep(WARM_INTER_REQUEST_DELAY_MS);
       const result = await warmOne(job.player, job.season);
       if (result.ok) {
         success += 1;
@@ -197,7 +239,10 @@ async function main() {
       }
       done += 1;
       if (done % progressInterval === 0 || done === jobs.length) {
-        console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${teamForRequest(job.player.team)}) ${job.season} — ${result.ok ? `✅ ${result.count ?? 0} games` : `❌ ${result.status}`}`);
+        const label = result.ok
+          ? (Number(result.count || 0) === 0 ? `⚠️ 0 games (FootyWire miss/rate-limit)` : `✅ ${result.count} games`)
+          : `❌ ${result.status}`;
+        console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${teamForRequest(job.player.team)}) ${job.season} — ${label}`);
       }
     },
     concurrency

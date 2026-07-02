@@ -165,7 +165,8 @@ jobs:
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025,2024' }}
-          AFL_WARM_CONCURRENCY: '24'
+          AFL_WARM_CONCURRENCY: '8'
+          AFL_WARM_INTER_REQUEST_DELAY_MS: '200'
           AFL_WARM_MAX_FAILURES: '100'
 
       # Odds, props cache refresh, DvP build (stats warm runs in next step so it gets full timeout)
