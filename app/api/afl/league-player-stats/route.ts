@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
   if (!cached) {
     const prev = readCachedLeaguePlayerStats(season - 1);
-    if (prev) {
+    if (prev && prev !== 'corrupt') {
       return NextResponse.json({
         ...prev,
         _note: `No data for ${season}; returning ${season - 1}`,
