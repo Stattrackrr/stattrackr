@@ -38,8 +38,8 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v4';
-const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v4';
+const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v5';
+const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v5';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;

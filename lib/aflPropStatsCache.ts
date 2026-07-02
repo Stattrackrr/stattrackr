@@ -14,9 +14,9 @@ import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import sharedCache from '@/lib/sharedCache';
 
-// Bump schema version when stats computation inputs change (e.g. H2H opponent resolution fix).
+// Bump schema version when stats computation inputs change (e.g. season-scoped streak/L5).
 // so stale entries from older logic are not reused.
-const CACHE_PREFIX = 'afl_prop_stats_v5';
+const CACHE_PREFIX = 'afl_prop_stats_v6';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
@@ -84,10 +84,9 @@ function resolveMatchupOpponentForH2H(
 }
 
 function cachedStatsAreUsable(cached: AflPropStatsPayload): boolean {
+  if (cached.seasonAvg == null) return false;
   const hasRolling = cached.last5Avg != null || cached.last10Avg != null;
-  if (!hasRolling && cached.seasonAvg == null) return false;
-  // Rolling form without a current-season average means a stale/partial cache entry.
-  if (hasRolling && cached.seasonAvg == null) return false;
+  if (!hasRolling && cached.h2hAvg == null && cached.streak == null) return false;
   return true;
 }
 
@@ -106,12 +105,16 @@ export function computeAflPropStatsFromGames(
     const season = resolveAflGameSeason(g);
     if (v !== null) gamesWithValue.push({ value: v, opponent: opp, season });
   }
+  // Form stats (L5/L10/Season/Streak) use the target season only so 2025 rows never bleed into 2026.
+  // H2H keeps the full history across seasons for deeper opponent matchups.
+  const formGames =
+    targetSeason != null
+      ? gamesWithValue.filter((x) => x.season === targetSeason)
+      : gamesWithValue;
   // API returns games most-recent first (FootyWire table order). Use first N = last N games.
-  const last5 = gamesWithValue.slice(0, 5).map((x) => x.value);
-  const last10 = gamesWithValue.slice(0, 10).map((x) => x.value);
-  const seasonValues = targetSeason != null
-    ? gamesWithValue.filter((x) => x.season === targetSeason).map((x) => x.value)
-    : gamesWithValue.map((x) => x.value);
+  const last5 = formGames.slice(0, 5).map((x) => x.value);
+  const last10 = formGames.slice(0, 10).map((x) => x.value);
+  const seasonValues = formGames.map((x) => x.value);
   // H2H: match by official name (same as dashboard) so "Kangaroos" / "North Melbourne" / "North Melbourne Kangaroos" all match, and we never match "Melbourne" when we want "North Melbourne"
   const h2hValues = gamesWithValue
     .filter((x) => {
@@ -126,9 +129,9 @@ export function computeAflPropStatsFromGames(
   const seasonAvg = seasonValues.length > 0 ? seasonValues.reduce((a, b) => a + b, 0) / seasonValues.length : null;
   const h2hAvg = h2hValues.length > 0 ? h2hValues.reduce((a, b) => a + b, 0) / h2hValues.length : null;
   let streak: number | null = null;
-  if (Number.isFinite(line) && gamesWithValue.length > 0) {
+  if (Number.isFinite(line) && formGames.length > 0) {
     streak = 0;
-    for (const x of gamesWithValue) {
+    for (const x of formGames) {
       if (x.value > line) streak++;
       else break;
     }
@@ -165,6 +168,14 @@ async function fetchGameLogs(
   if (!r.ok) return [];
   const data = (await r.json()) as { games?: unknown[]; season?: number };
   let games = Array.isArray(data?.games) ? (data.games as Record<string, unknown>[]) : [];
+  const responseSeason =
+    typeof data?.season === 'number' && Number.isFinite(data.season) ? data.season : season;
+  if (games.length > 0) {
+    games = games.map((g) => {
+      const resolved = resolveAflGameSeason(g);
+      return resolved != null ? g : { ...g, season: responseSeason };
+    });
+  }
   const currentYear = new Date().getFullYear();
   const looksLikeStale2025Fallback =
     season === currentYear &&
@@ -183,7 +194,9 @@ async function fetchGameLogsForSeason(
   cronSecret?: string
 ): Promise<Record<string, unknown>[]> {
   const currentYear = new Date().getFullYear();
-  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret);
+  const warmCurrentSeason = season === currentYear && !!cronSecret;
+  const initialQuery = warmCurrentSeason ? '&strict_season=1&force_fetch=1' : '';
+  let games = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, initialQuery);
   if (season === currentYear && !aflGamesIncludeSeason(games, season)) {
     const forceQuery = cronSecret ? '&strict_season=1&force_fetch=1' : '&strict_season=1';
     const retry = await fetchGameLogs(baseUrl, playerName, team, season, cronSecret, forceQuery);
