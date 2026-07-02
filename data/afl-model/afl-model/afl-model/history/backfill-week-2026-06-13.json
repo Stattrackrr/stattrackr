@@ -1,0 +1,283 @@
+[
+  {
+    "homeTeam": "Essendon",
+    "awayTeam": "Melbourne",
+    "gameDate": "2026-06-13",
+    "roundKey": "2026-R14",
+    "finalizedAt": "2026-06-13T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Mason Redman",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 19.5,
+        "edge": "9.4%",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "homeTeam": "North Melbourne",
+    "awayTeam": "West Coast",
+    "gameDate": "2026-06-13",
+    "roundKey": "2026-R14",
+    "finalizedAt": "2026-06-13T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Cooper Harvey",
+        "bookmaker": "PointsBet",
+        "side": "UNDER",
+        "line": 16.5,
+        "edge": "11.8%",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "homeTeam": "Port Adelaide",
+    "awayTeam": "Sydney",
+    "gameDate": "2026-06-13",
+    "roundKey": "2026-R14",
+    "finalizedAt": "2026-06-13T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Logan Evans",
+        "bookmaker": "PointsBet",
+        "side": "UNDER",
+        "line": 18.5,
+        "edge": "7.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Jai Serong",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 18.5,
+        "edge": "4.3%",
+        "rank": 2
+      },
+      {
+        "playerName": "Brodie Grundy",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 18.5,
+        "edge": "3.7%",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "homeTeam": "Richmond",
+    "awayTeam": "Brisbane",
+    "gameDate": "2026-06-14",
+    "roundKey": "2026-R14",
+    "finalizedAt": "2026-06-14T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Dion Prestia",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 20.5,
+        "edge": "5.2%",
+        "rank": 1
+      },
+      {
+        "playerName": "Sam Banks",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 17.5,
+        "edge": "5.2%",
+        "rank": 2
+      },
+      {
+        "playerName": "Jacob Hopper",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 21.5,
+        "edge": "4.0%",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "homeTeam": "St Kilda",
+    "awayTeam": "GWS",
+    "gameDate": "2026-06-14",
+    "roundKey": "2026-R14",
+    "finalizedAt": "2026-06-14T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Finn Callaghan",
+        "bookmaker": "Sportsbet",
+        "side": "OVER",
+        "line": 27.5,
+        "edge": "5.2%",
+        "rank": 1
+      },
+      {
+        "playerName": "Harrison Himmelberg",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 16.5,
+        "edge": "5.2%",
+        "rank": 2
+      },
+      {
+        "playerName": "Callum Wilkie",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 22.5,
+        "edge": "4.0%",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "homeTeam": "Geelong",
+    "awayTeam": "Fremantle",
+    "gameDate": "2026-06-18",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-18T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "Karl Worner",
+        "bookmaker": "PointsBet",
+        "side": "OVER",
+        "line": 16.5,
+        "edge": "9.1%",
+        "rank": 1
+      },
+      {
+        "playerName": "Matt Johnson",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 16.5,
+        "actualDisposals": 15,
+        "edge": "14.2%",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "homeTeam": "Gold Coast",
+    "awayTeam": "Hawthorn",
+    "gameDate": "2026-06-19",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-19T06:00:00.000Z",
+    "modelVersion": "manual-backfill",
+    "picks": [
+      {
+        "playerName": "John Noble",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 27.5,
+        "edge": "7.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Cam Mackenzie",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 21.5,
+        "actualDisposals": 16,
+        "edge": "7.0%",
+        "rank": 2
+      },
+      {
+        "playerName": "Jarman Impey",
+        "bookmaker": "PointsBet",
+        "side": "UNDER",
+        "line": 23.5,
+        "edge": "4.0%",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "homeTeam": "Adelaide Crows",
+    "awayTeam": "Melbourne Demons",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T01:15:00.000Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T03:15:00Z",
+    "picks": [
+      {
+        "playerName": "Ed Langdon",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 20.5,
+        "actualDisposals": 18,
+        "edge": "16.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Tom Sparrow",
+        "bookmaker": "Sportsbet",
+        "side": "UNDER",
+        "line": 22.5,
+        "actualDisposals": 28,
+        "edge": "16.7%",
+        "rank": 2
+      }
+    ]
+  },
+  {
+    "homeTeam": "GWS Giants",
+    "awayTeam": "Carlton Blues",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T04:52:28.185Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T06:15:24Z",
+    "picks": [
+      {
+        "playerName": "Patrick Cripps",
+        "bookmaker": "PointsBet (AU)",
+        "side": "OVER",
+        "line": 25.5,
+        "actualDisposals": 33,
+        "edge": "7.8%",
+        "rank": 1
+      }
+    ]
+  },
+  {
+    "homeTeam": "Collingwood Magpies",
+    "awayTeam": "Port Adelaide Power",
+    "gameDate": "2026-06-20",
+    "roundKey": "2026-R15",
+    "finalizedAt": "2026-06-20T08:22:38.985Z",
+    "projectionGeneratedAt": "2026-06-19T18:33:59Z",
+    "modelVersion": "afl-disp-20260619-183138",
+    "commenceTime": "2026-06-20T09:35:00Z",
+    "picks": [
+      {
+        "playerName": "Jack Lukosius",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 16.5,
+        "actualDisposals": 10,
+        "edge": "16.0%",
+        "rank": 1
+      },
+      {
+        "playerName": "Jase Burgoyne",
+        "bookmaker": "PointsBet (AU)",
+        "side": "UNDER",
+        "line": 22.5,
+        "actualDisposals": 23,
+        "edge": "7.4%",
+        "rank": 2
+      }
+    ]
+  }
+]

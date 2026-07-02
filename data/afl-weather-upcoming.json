@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-02T12:55:14.834Z",
+  "generatedAt": "2026-07-02T18:09:29.266Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-07-03T09:40:00Z",
       "weather": {
-        "temperatureC": 13.4,
+        "temperatureC": 13.6,
         "precipitationMm": 0,
-        "windKmh": 17
+        "windKmh": 16.4
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-07-03T10:10:00Z",
       "weather": {
-        "temperatureC": 14.2,
+        "temperatureC": 14.3,
         "precipitationMm": 0,
-        "windKmh": 6.5
+        "windKmh": 5.6
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-07-04T03:15:00Z",
       "weather": {
-        "temperatureC": 12.2,
+        "temperatureC": 12.7,
         "precipitationMm": 0,
-        "windKmh": 13.5
+        "windKmh": 13.9
       }
     },
     {
@@ -44,7 +44,7 @@
       "weather": {
         "temperatureC": 15.8,
         "precipitationMm": 0,
-        "windKmh": 6.2
+        "windKmh": 6
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-07-04T06:15:12Z",
       "weather": {
-        "temperatureC": 18.8,
+        "temperatureC": 18.9,
         "precipitationMm": 0,
-        "windKmh": 15
+        "windKmh": 14.6
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-07-04T09:35:00Z",
       "weather": {
-        "temperatureC": 10.1,
+        "temperatureC": 10.5,
         "precipitationMm": 0,
-        "windKmh": 4.8
+        "windKmh": 9.5
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-07-05T05:15:20Z",
       "weather": {
-        "temperatureC": 12.5,
+        "temperatureC": 12.6,
         "precipitationMm": 0,
-        "windKmh": 11.8
+        "windKmh": 11.2
       }
     },
     {
@@ -86,9 +86,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-07-05T06:40:00Z",
       "weather": {
-        "temperatureC": 12.4,
+        "temperatureC": 12.8,
         "precipitationMm": 0,
-        "windKmh": 6.7
+        "windKmh": 5.7
       }
     }
   ],
