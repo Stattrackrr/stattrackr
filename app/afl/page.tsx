@@ -3818,7 +3818,7 @@ export default function AFLPage() {
 
     const getLeagueSeasonAvg = (): number | null => {
       if (!leaguePlayerStats?.length || !selectedPlayer?.name) return null;
-      const playerNameNorm = normalizePlayerNameForMatch(selectedPlayer.name);
+      const playerNameNorm = normalizePlayerNameForMatch(String(selectedPlayer.name));
       const row = leaguePlayerStats.find(
         (p) => normalizePlayerNameForMatch(String(p.name ?? '')) === playerNameNorm
       );
