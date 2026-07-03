@@ -52,8 +52,8 @@ jobs:
       # Compare tab: fetch from ft_player_rankings (URL changes per stat: st=DI, KI, HB, MA, GO, ...) — 2026 primary
       - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026
         run: |
-          npm run fetch:footywire-league-player-stats -- --season=2026
-          npm run fetch:footywire-league-player-stats -- --season=2025
+          npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale
+          npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale
         env:
           NODE_OPTIONS: '--max-old-space-size=512'
 

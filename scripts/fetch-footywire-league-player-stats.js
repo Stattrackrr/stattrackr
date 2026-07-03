@@ -15,6 +15,69 @@ const fs = require('fs');
 const path = require('path');
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
+const FETCH_ATTEMPTS = 5;
+const FETCH_RETRY_BASE_MS = 2500;
+const STAT_FETCH_DELAY_MS = 350;
+const ADVANCED_STAT_KEYS = ['contested_possessions', 'uncontested_possessions', 'meters_gained', 'free_kicks_for'];
+const FOOTYWIRE_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  Referer: 'https://www.footywire.com/',
+};
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizePlayerName(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function hasAdvancedFields(players) {
+  if (!Array.isArray(players) || players.length === 0) return false;
+  return players.some((player) =>
+    ADVANCED_STAT_KEYS.some((key) => Number.isFinite(Number(player?.[key])))
+  );
+}
+
+function leagueStatsFilePath(season) {
+  return path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
+}
+
+function readExistingLeagueStats(season) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(leagueStatsFilePath(season), 'utf8'));
+    if (Number(parsed?.season) !== season) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function existingLeagueStatsLookValid(existing, season) {
+  const players = Array.isArray(existing?.players) ? existing.players : [];
+  return players.length >= 100 && hasAdvancedFields(players);
+}
+
+function mergeAdvancedFromExisting(players, existingPlayers) {
+  const byName = new Map(
+    (existingPlayers ?? []).map((player) => [normalizePlayerName(player?.name), player])
+  );
+  for (const player of players) {
+    const existing = byName.get(normalizePlayerName(player?.name));
+    if (!existing) continue;
+    for (const key of ADVANCED_STAT_KEYS) {
+      if (!Number.isFinite(Number(player[key])) && Number.isFinite(Number(existing[key]))) {
+        player[key] = existing[key];
+      }
+    }
+  }
+}
 
 function getArg(name, fallback) {
   const pref = `--${name}=`;
@@ -173,17 +236,30 @@ function mergeByPlayer(statArrays) {
 }
 
 // Compare tab uses this data. One URL per stat: year, rt=LA (League Averages), st= stat code, pt= position (blank All), mg= min games.
-async function fetchOne(season, st) {
+async function fetchOne(season, st, statKey) {
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&pt=&st=${st}&mg=1`;
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-      'Accept-Language': 'en-AU,en;q=0.9',
-      Referer: 'https://www.footywire.com/',
-    },
-  });
-  return { ok: res.ok, html: await res.text(), url };
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
+      const html = await res.text();
+      const rows = parsePlayerRankingsTable(html, statKey);
+      if (res.ok && rows.length > 0) {
+        return { ok: true, html, url, rows };
+      }
+      lastError = `HTTP ${res.status}, rows=${rows.length}`;
+      console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} failed: ${lastError}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} error: ${lastError}`);
+    }
+    if (attempt < FETCH_ATTEMPTS) {
+      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    }
+  }
+
+  return { ok: false, html: '', url, rows: [], error: lastError };
 }
 
 /**
@@ -193,14 +269,7 @@ async function fetchOne(season, st) {
  */
 async function fetchFtPlayersTeamMap() {
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_players`;
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-      'Accept-Language': 'en-AU,en;q=0.9',
-      Referer: 'https://www.footywire.com/',
-    },
-  });
+  const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
   if (!res.ok) return new Map();
   const html = await res.text();
   const map = new Map();
@@ -233,10 +302,12 @@ const DEBUG_HTML = process.argv.includes('--debug-html');
 
 async function fetchSeason(season) {
   const allStats = [];
-  for (const { key, st } of STAT_PAGES) {
-    const { ok, html, url } = await fetchOne(season, st);
+  for (let i = 0; i < STAT_PAGES.length; i++) {
+    const { key, st } = STAT_PAGES[i];
+    const { ok, html, url, rows } = await fetchOne(season, st, key);
     if (!ok) {
       console.warn(`  Skipping ${key} (st=${st}): request failed`);
+      if (i < STAT_PAGES.length - 1) await sleep(STAT_FETCH_DELAY_MS);
       continue;
     }
     if (DEBUG_HTML && key === 'disposals') {
@@ -247,25 +318,30 @@ async function fetchSeason(season) {
       fs.writeFileSync(outPath, `<!-- ${url} ppIdx=${ppIdx} -->\n${snippet}`, 'utf8');
       console.log(`  Debug: wrote ${outPath} (pp- count: ${(html.match(/pp-/g) || []).length}, tableHtml length: ${tableHtml ? tableHtml.length : 0})`);
     }
-    const rows = parsePlayerRankingsTable(html, key);
     if (rows.length === 0) {
       console.warn(`  No rows for ${key} (st=${st}). Page structure may have changed.`);
+      if (i < STAT_PAGES.length - 1) await sleep(STAT_FETCH_DELAY_MS);
       continue;
     }
     console.log(`  ${key}: ${rows.length} players`);
     allStats.push(rows);
+    if (i < STAT_PAGES.length - 1) await sleep(STAT_FETCH_DELAY_MS);
   }
   return allStats;
 }
 
 async function main() {
   const year = new Date().getFullYear();
+  const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
+  const allowStale = process.argv.includes('--allow-stale');
   let season = parseInt(getArg('season', String(year)), 10) || year;
+  const requestedSeason = season;
+  const existing = readExistingLeagueStats(requestedSeason);
 
   console.log(`Fetching FootyWire league player stats for ${season}...`);
   let allStats = await fetchSeason(season);
 
-  if (allStats.length === 0 && season === year && season > 2020) {
+  if (allStats.length === 0 && !explicitSeasonArg && season === year && season > 2020) {
     const fallback = season - 1;
     console.log(`No data for ${season}; trying previous season ${fallback}...`);
     season = fallback;
@@ -275,6 +351,24 @@ async function main() {
   let players = mergeByPlayer(allStats);
   const minGames = 1;
   let filtered = players.filter((p) => p.games >= minGames && (p.disposals > 0 || p.kicks > 0 || p.handballs > 0));
+
+  if (!hasAdvancedFields(filtered) && existingLeagueStatsLookValid(existing, requestedSeason)) {
+    console.warn(`Advanced stat pages missing for ${requestedSeason}; merging advanced fields from existing file.`);
+    mergeAdvancedFromExisting(filtered, existing.players);
+  }
+
+  if (!hasAdvancedFields(filtered)) {
+    if (allowStale && existingLeagueStatsLookValid(existing, requestedSeason)) {
+      console.warn(
+        `FootyWire advanced stats unavailable for ${requestedSeason}; keeping existing ${leagueStatsFilePath(requestedSeason)}`,
+      );
+      return;
+    }
+    console.error(
+      `League player stats for ${requestedSeason} are missing advanced fields (${ADVANCED_STAT_KEYS.join(', ')}). FootyWire may be rate-limiting CI.`,
+    );
+    process.exit(1);
+  }
 
   console.log('Fetching current teams from ft_players...');
   const ftPlayersTeamMap = await fetchFtPlayersTeamMap();
@@ -291,7 +385,7 @@ async function main() {
   if (ftPlayersTeamMap.size) console.log(`  Applied current team from ft_players for ${teamsOverridden} players (source: ${ftPlayersTeamMap.size} entries)`);
 
   const out = {
-    season,
+    season: requestedSeason,
     generatedAt: new Date().toISOString(),
     source: 'footywire.com',
     sourcePage: 'ft_player_rankings (rt=LA, multiple st=)',
@@ -301,7 +395,7 @@ async function main() {
 
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  const filePath = path.join(dataDir, `afl-league-player-stats-${season}.json`);
+  const filePath = leagueStatsFilePath(requestedSeason);
   fs.writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf8');
   console.log(`Wrote ${filePath} (${filtered.length} players)`);
 }
