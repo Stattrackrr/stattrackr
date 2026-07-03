@@ -68,6 +68,11 @@ jobs:
           npm run fetch:footywire-team-rankings -- --season=2026 --allow-stale
           npm run fetch:footywire-team-rankings -- --season=2025 --allow-stale
 
+      - name: Fetch injuries and team selections (dashboard sidebar)
+        run: |
+          npm run fetch:footywire-injuries -- --allow-stale
+          npm run fetch:footywire-team-selections -- --allow-stale
+
       # Build DvP files locally from latest player logs. Only rebuild Depth when the DFS role map
       # is populated, otherwise the builder falls back to default roles and can wipe specialist
       # roles like key_fwd / wng_def / des_kck from the tracked depth dataset.
@@ -141,7 +146,10 @@ jobs:
             "data/afl-league-player-stats-*.json" \
             "data/afl-team-rankings-*.json" \
             "data/afl-player-headshots*.json" \
-            "data/afl-dvp*.json"
+            "data/afl-dvp*.json" \
+            "data/afl-injuries.json" \
+            "data/afl-team-selections-snapshot.html" \
+            "data/afl-team-selections-snapshot.json"
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

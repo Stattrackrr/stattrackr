@@ -5679,7 +5679,11 @@ export default function AFLPage() {
                         <AflInjuriesCard
                           isDark={!!mounted && isDark}
                           season={season}
-                          playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                          playerTeam={
+                            selectedPlayer?.team
+                              ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+                              : null
+                          }
                           playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                           gameLogs={selectedPlayerGameLogs}
                           teammateFilterName={teammateFilterName}
@@ -6148,7 +6152,11 @@ export default function AFLPage() {
                       <AflInjuriesCard
                         isDark={!!mounted && isDark}
                         season={season}
-                        playerTeam={typeof selectedPlayer?.team === 'string' ? selectedPlayer.team : null}
+                        playerTeam={
+                          selectedPlayer?.team
+                            ? (rosterTeamToInjuryTeam(String(selectedPlayer.team)) || String(selectedPlayer.team))
+                            : null
+                        }
                         playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
                         gameLogs={selectedPlayerGameLogs}
                         teammateFilterName={teammateFilterName}

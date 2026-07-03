@@ -4,15 +4,23 @@ import fs from 'fs';
 
 const FOOTYWIRE_INJURY_URL = 'https://www.footywire.com/afl/footy/injury_list';
 const TTL_MS = 1000 * 60 * 30; // 30 min
+const FETCH_ATTEMPTS = 5;
+const FETCH_RETRY_BASE_MS = 2500;
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  Referer: 'https://www.footywire.com/',
 };
 
 type InjuryRow = { team: string; player: string; injury: string; returning: string };
 
 let cached: { expiresAt: number; data: { generatedAt: string; injuries: InjuryRow[] } } | null = null;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function htmlToText(v: string): string {
   return String(v || '')
@@ -42,7 +50,9 @@ function slugToTeam(href: string): string {
   const m = href.match(/pp-([a-z0-9-]+)--/i);
   if (!m) return '';
   const slug = m[1].toLowerCase();
-  return TEAM_FROM_SLUG[slug] ?? slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  if (TEAM_FROM_SLUG[slug]) return TEAM_FROM_SLUG[slug];
+  if (slug === 'kangaroos') return 'Kangaroos';
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function parseInjuryList(html: string): InjuryRow[] {
@@ -74,29 +84,49 @@ function parseInjuryList(html: string): InjuryRow[] {
   return injuries;
 }
 
+function injuriesLookValid(data: { injuries?: InjuryRow[] } | null): boolean {
+  const injuries = Array.isArray(data?.injuries) ? data.injuries : [];
+  if (injuries.length < 40) return false;
+  const teams = new Set(injuries.map((i) => i.team).filter(Boolean));
+  return teams.size >= 12;
+}
+
 function readCachedInjuries(): { generatedAt: string; injuries: InjuryRow[] } | null {
   try {
     const filePath = path.join(process.cwd(), 'data', 'afl-injuries.json');
     const raw = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw) as { generatedAt?: string; injuries?: InjuryRow[] };
-    if (!data?.injuries?.length) return null;
-    return { generatedAt: data.generatedAt ?? new Date().toISOString(), injuries: data.injuries };
+    if (!injuriesLookValid(data)) return null;
+    return { generatedAt: data.generatedAt ?? new Date().toISOString(), injuries: data.injuries! };
   } catch {
     return null;
   }
 }
 
 async function fetchLiveInjuries(): Promise<{ generatedAt: string; injuries: InjuryRow[] } | null> {
-  try {
-    const res = await fetch(FOOTYWIRE_INJURY_URL, { headers: FETCH_HEADERS });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const injuries = parseInjuryList(html);
-    if (injuries.length === 0) return null;
-    return { generatedAt: new Date().toISOString(), injuries };
-  } catch {
-    return null;
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(FOOTYWIRE_INJURY_URL, { headers: FETCH_HEADERS });
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+      } else {
+        const html = await res.text();
+        const injuries = parseInjuryList(html);
+        if (injuries.length > 0) {
+          return { generatedAt: new Date().toISOString(), injuries };
+        }
+        lastError = 'no injuries parsed';
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    if (attempt < FETCH_ATTEMPTS) {
+      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    }
   }
+  console.warn('[afl/injuries] live fetch failed:', lastError);
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -108,7 +138,7 @@ export async function GET(request: NextRequest) {
   }
 
   const live = await fetchLiveInjuries();
-  if (live) {
+  if (live && injuriesLookValid(live)) {
     cached = { expiresAt: now + TTL_MS, data: live };
     return NextResponse.json(live);
   }
@@ -117,6 +147,11 @@ export async function GET(request: NextRequest) {
   if (file) {
     if (!cached) cached = { expiresAt: now + TTL_MS, data: file };
     return NextResponse.json(file);
+  }
+
+  if (live) {
+    cached = { expiresAt: now + TTL_MS, data: live };
+    return NextResponse.json(live);
   }
 
   return NextResponse.json(

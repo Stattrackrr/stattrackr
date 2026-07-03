@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
+import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
 
 type InjuryRow = {
   team: string;
@@ -20,7 +21,14 @@ type ImpactInfo = {
   noGamesTogether?: boolean;
 };
 
-const SEASON = 2025;
+const SEASON = 2026;
+
+function injuryTeamMatches(injuryTeam: string, filterTeam: string): boolean {
+  const a = getAflCanonicalTeamKey(injuryTeam);
+  const b = getAflCanonicalTeamKey(filterTeam);
+  if (a && b) return a === b;
+  return (injuryTeam || '').toLowerCase() === (filterTeam || '').toLowerCase();
+}
 
 function gameBelongsToSeason(game: Record<string, unknown>, season: number): boolean {
   const seasonRaw = Number(game.season);
@@ -98,7 +106,7 @@ export function AflInjuriesCard({
   const teamInjuries = useMemo(() => {
     if (!data?.injuries?.length) return [];
     const list = useTeamFilter
-      ? data.injuries.filter((i) => (i.team || '').toLowerCase() === (injuryTeamName ?? '').toLowerCase())
+      ? data.injuries.filter((i) => injuryTeamMatches(i.team || '', injuryTeamName ?? ''))
       : data.injuries;
     return list;
   }, [data?.injuries, useTeamFilter, injuryTeamName]);

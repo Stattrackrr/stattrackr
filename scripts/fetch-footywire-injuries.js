@@ -6,6 +6,7 @@
  * Caches to data/afl-injuries.json
  *
  *   node scripts/fetch-footywire-injuries.js
+ *   node scripts/fetch-footywire-injuries.js --allow-stale
  */
 
 require('dotenv').config({ path: '.env.local' });
@@ -14,6 +15,21 @@ const fs = require('fs');
 const path = require('path');
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
+const FETCH_ATTEMPTS = 5;
+const FETCH_RETRY_BASE_MS = 2500;
+const FOOTYWIRE_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-AU,en;q=0.9',
+  Referer: 'https://www.footywire.com/',
+};
+
+const OUT_PATH = path.join(process.cwd(), 'data', 'afl-injuries.json');
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function htmlToText(v) {
   return String(v || '')
@@ -43,7 +59,9 @@ function slugToTeam(href) {
   const m = href.match(/pp-([a-z0-9-]+)--/i);
   if (!m) return null;
   const slug = m[1].toLowerCase();
-  return TEAM_FROM_SLUG[slug] || slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  if (TEAM_FROM_SLUG[slug]) return TEAM_FROM_SLUG[slug];
+  if (slug === 'kangaroos') return 'Kangaroos';
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function parseInjuryList(html) {
@@ -76,44 +94,79 @@ function parseInjuryList(html) {
   return injuries;
 }
 
+function injuriesLookValid(data) {
+  const injuries = Array.isArray(data?.injuries) ? data.injuries : [];
+  if (injuries.length < 40) return false;
+  const teams = new Set(injuries.map((i) => i.team).filter(Boolean));
+  return teams.size >= 12;
+}
+
+function readExisting() {
+  try {
+    return JSON.parse(fs.readFileSync(OUT_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function fetchInjuries() {
+  const url = `${FOOTYWIRE_BASE}/afl/footy/injury_list`;
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+      } else {
+        const html = await res.text();
+        const injuries = parseInjuryList(html);
+        if (injuries.length > 0) return { ok: true, injuries };
+        lastError = 'no injuries parsed';
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    if (attempt < FETCH_ATTEMPTS) {
+      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    }
+  }
+  return { ok: false, error: lastError };
+}
+
 async function main() {
+  const allowStale = process.argv.includes('--allow-stale');
   const url = `${FOOTYWIRE_BASE}/afl/footy/injury_list`;
 
   console.log('Fetching Footywire injury list...');
   console.log(`  ${url}`);
 
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-    },
-  });
-
-  if (!res.ok) {
-    console.error(`Failed to fetch: ${res.status} ${res.statusText}`);
+  const result = await fetchInjuries();
+  if (!result.ok) {
+    const existing = readExisting();
+    if (allowStale && injuriesLookValid(existing)) {
+      console.warn(`FootyWire unavailable (${result.error}). Keeping existing injuries:`, OUT_PATH);
+      return;
+    }
+    console.error(`Failed to fetch injuries: ${result.error}`);
     process.exit(1);
   }
-
-  const html = await res.text();
-  const injuries = parseInjuryList(html);
 
   const output = {
     generatedAt: new Date().toISOString(),
     source: 'footywire.com',
     sourcePage: 'injury_list',
-    injuryCount: injuries.length,
-    injuries,
+    injuryCount: result.injuries.length,
+    injuries: result.injuries,
   };
 
-  const dataDir = path.join(process.cwd(), 'data');
+  const dataDir = path.dirname(OUT_PATH);
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  const outPath = path.join(dataDir, 'afl-injuries.json');
-  fs.writeFileSync(outPath, JSON.stringify(output, null, 2), 'utf8');
+  fs.writeFileSync(OUT_PATH, JSON.stringify(output, null, 2), 'utf8');
 
-  console.log(`\nWrote ${injuries.length} injuries to ${outPath}`);
+  console.log(`\nWrote ${result.injuries.length} injuries to ${OUT_PATH}`);
 
   const byTeam = new Map();
-  for (const i of injuries) {
+  for (const i of result.injuries) {
     const t = i.team || 'Unknown';
     byTeam.set(t, (byTeam.get(t) || 0) + 1);
   }

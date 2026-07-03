@@ -15,6 +15,114 @@ const FETCH_HEADERS = {
   'Accept-Language': 'en-AU,en;q=0.9',
   Referer: 'https://www.footywire.com/',
 };
+const SNAPSHOT_HTML_PATH = path.join(process.cwd(), 'data', 'afl-team-selections-snapshot.html');
+const FETCH_ATTEMPTS = 5;
+const FETCH_RETRY_BASE_MS = 2500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readSnapshotHtml(): string | null {
+  try {
+    const html = fs.readFileSync(SNAPSHOT_HTML_PATH, 'utf8');
+    return html.length > 5000 ? html : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFootywireSelectionsHtml(): Promise<
+  { ok: true; html: string } | { ok: false; status?: number; error: string }
+> {
+  let lastStatus: number | undefined;
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(FOOTYWIRE_TEAM_SELECTIONS_URL, {
+        headers: FETCH_HEADERS,
+        next: { revalidate: 60 * 30 },
+      });
+      if (res.ok) {
+        return { ok: true, html: await res.text() };
+      }
+      lastStatus = res.status;
+      lastError = `HTTP ${res.status}`;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+    if (attempt < FETCH_ATTEMPTS) {
+      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    }
+  }
+  return { ok: false, status: lastStatus, error: lastError };
+}
+
+function responseForFoundMatch(
+  roundData: TeamSelectionsRoundResponse,
+  found: TeamSelectionsResponse,
+  source: string
+) {
+  return {
+    url: roundData.url,
+    title: roundData.title,
+    round_label: roundData.round_label,
+    matches: [found],
+    match: found.match,
+    home_team: found.home_team,
+    away_team: found.away_team,
+    positions: found.positions,
+    interchange: found.interchange,
+    ins: found.ins,
+    outs: found.outs,
+    emergencies: found.emergencies,
+    average_attributes: found.average_attributes,
+    total_players_by_games: found.total_players_by_games,
+    source,
+  };
+}
+
+function emptyTeamFilteredResponse(roundData: TeamSelectionsRoundResponse, source: string) {
+  return {
+    ...roundData,
+    matches: [],
+    match: null,
+    home_team: null,
+    away_team: null,
+    positions: [],
+    interchange: { home: [] as string[], away: [] as string[] },
+    ins: { home: [] as string[], away: [] as string[] },
+    outs: { home: [] as string[], away: [] as string[] },
+    emergencies: { home: [] as string[], away: [] as string[] },
+    average_attributes: null,
+    total_players_by_games: null,
+    source,
+  };
+}
+
+function findTeamMatch(
+  matches: TeamSelectionsResponse[],
+  teamParam: string,
+  opponentParam: string | null
+): TeamSelectionsResponse | undefined {
+  return (
+    findMatchByCanonicalTeams(matches, teamParam, opponentParam) ??
+    findMatchByCanonicalTeam(matches, teamParam)
+  );
+}
+
+function respondForTeamParam(
+  roundData: TeamSelectionsRoundResponse,
+  teamParam: string,
+  opponentParam: string | null,
+  source: string
+) {
+  const found = findTeamMatch(roundData.matches, teamParam, opponentParam);
+  if (found && !isLikelyCorruptBenchLists(found)) {
+    return NextResponse.json(responseForFoundMatch(roundData, found, source));
+  }
+  return NextResponse.json(emptyTeamFilteredResponse(roundData, source));
+}
 
 export type PlayerEntry = { name: string; number?: string };
 
@@ -1333,41 +1441,10 @@ export async function GET(request: Request) {
         if (isLikelyCorruptBenchLists(found)) {
           // Ignore stale/corrupt cache and fetch fresh page below.
         } else {
-          return NextResponse.json({
-            url: data.url,
-            title: data.title,
-            round_label: data.round_label,
-            matches: [found],
-            match: found.match,
-            home_team: found.home_team,
-            away_team: found.away_team,
-            positions: found.positions,
-            interchange: found.interchange,
-            ins: found.ins,
-            outs: found.outs,
-            emergencies: found.emergencies,
-            average_attributes: found.average_attributes,
-            total_players_by_games: found.total_players_by_games,
-            source: 'footywire.com',
-          });
+          return NextResponse.json(responseForFoundMatch(data, found, 'footywire.com'));
         }
       } else {
-        // Requested team not in cache: return empty so client does not show wrong game
-        return NextResponse.json({
-          ...data,
-          matches: [],
-          match: null,
-          home_team: null,
-          away_team: null,
-          positions: [],
-          interchange: { home: [], away: [] },
-          ins: { home: [], away: [] },
-          outs: { home: [], away: [] },
-          emergencies: { home: [], away: [] },
-          average_attributes: null,
-          total_players_by_games: null,
-          source: 'footywire.com',
-        });
+        // Requested team not in cache: fetch a fresh FootyWire page below.
       }
       // Found a team match in cache, but it's suspicious; fetch fresh below.
       }
@@ -1377,67 +1454,45 @@ export async function GET(request: Request) {
   }
 
   try {
-    const res = await fetch(FOOTYWIRE_TEAM_SELECTIONS_URL, {
-      headers: FETCH_HEADERS,
-      next: { revalidate: 60 * 30 },
-    });
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `FootyWire returned ${res.status}`, url: FOOTYWIRE_TEAM_SELECTIONS_URL },
-        { status: 502 }
-      );
+    const fetched = await fetchFootywireSelectionsHtml();
+    let html: string | null = null;
+    let parseSource = 'footywire.com';
+    if (fetched.ok) {
+      html = fetched.html;
+    } else {
+      html = readSnapshotHtml();
+      if (html) {
+        parseSource = 'footywire-snapshot';
+      } else if (cached?.data) {
+        const roundData = cached.data;
+        if (teamParam && roundData.matches.length > 0) {
+          return respondForTeamParam(roundData, teamParam, opponentParam, 'footywire-cache');
+        }
+        return NextResponse.json({ ...roundData, source: 'footywire-cache' });
+      } else {
+        return NextResponse.json(
+          {
+            error: `FootyWire unavailable (${fetched.error})`,
+            url: FOOTYWIRE_TEAM_SELECTIONS_URL,
+          },
+          { status: 502 }
+        );
+      }
     }
-    const html = await res.text();
+
     const roundData = parseFullPage(html);
     const hasAnyLineup = roundData.matches.some(
       (m) => m.positions.length > 0 || m.interchange.home.length > 0 || m.interchange.away.length > 0
     );
-    if (hasAnyLineup) {
+    if (hasAnyLineup && parseSource === 'footywire.com') {
       cached = { expiresAt: Date.now() + TTL_MS, data: roundData };
     }
 
     if (teamParam && roundData.matches.length > 0) {
-      const found =
-        findMatchByCanonicalTeams(roundData.matches, teamParam, opponentParam) ??
-        findMatchByCanonicalTeam(roundData.matches, teamParam);
-      if (found) {
-        return NextResponse.json({
-          url: roundData.url,
-          title: roundData.title,
-          round_label: roundData.round_label,
-          matches: [found],
-          match: found.match,
-          home_team: found.home_team,
-          away_team: found.away_team,
-          positions: found.positions,
-          interchange: found.interchange,
-          ins: found.ins,
-          outs: found.outs,
-          emergencies: found.emergencies,
-          average_attributes: found.average_attributes,
-          total_players_by_games: found.total_players_by_games,
-          source: 'footywire.com',
-        });
-      }
-      // Requested team not found: return empty single match so client does not show another game's lineup
-      return NextResponse.json({
-        ...roundData,
-        matches: [],
-        match: null,
-        home_team: null,
-        away_team: null,
-        positions: [],
-        interchange: { home: [], away: [] },
-        ins: { home: [], away: [] },
-        outs: { home: [], away: [] },
-        emergencies: { home: [], away: [] },
-        average_attributes: null,
-        total_players_by_games: null,
-        source: 'footywire.com',
-      });
+      return respondForTeamParam(roundData, teamParam, opponentParam, parseSource);
     }
 
-    return NextResponse.json({ ...roundData, source: 'footywire.com' });
+    return NextResponse.json({ ...roundData, source: parseSource });
   } catch (err) {
     return NextResponse.json(
       {
