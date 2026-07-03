@@ -8,8 +8,46 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/soccer/player-stats-batch': [...chromiumBinTrace],
     '/api/soccer/player-props-test': [...chromiumBinTrace],
-    '/api/afl/model/disposals/top-picks': ['./data/afl-model/history/**/*'],
-    '/api/afl/model/disposals/top-picks/route': ['./data/afl-model/history/**/*'],
+    '/api/afl/model/disposals/top-picks': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/model/disposals/top-picks/route': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/model/disposals/history': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/model/disposals/history/route': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/model/disposals/history/all': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/model/disposals/history/all/route': [
+      './data/afl-model/history/**/*',
+      './data/afl-model/latest-disposals-projections.json',
+      './data/afl-model/projections/disposals-projections-*.json',
+    ],
+    '/api/afl/footywire-team-selections': [
+      './data/afl-team-selections-snapshot.html',
+      './data/afl-team-selections-snapshot.json',
+    ],
+    '/api/afl/footywire-team-selections/route': [
+      './data/afl-team-selections-snapshot.html',
+      './data/afl-team-selections-snapshot.json',
+    ],
+    '/api/afl/injuries': ['./data/afl-injuries.json'],
+    '/api/afl/injuries/route': ['./data/afl-injuries.json'],
   },
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
@@ -33,6 +71,10 @@ const nextConfig: NextConfig = {
       './data/afl-model/cache/player-logs/**/*',
       './data/afl-model/models/**/*',
       './data/afl-model/datasets/**/*',
+      // Accidental nested duplicate player-log cache committed under data/afl-model/afl-model/
+      './data/afl-model/afl-model/**/*',
+      './data/afl-model/projections/**/*',
+      './data/afl-team-selections-snapshot.html',
       './scripts/afl_model/__pycache__/**/*',
     ],
   },
