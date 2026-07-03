@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-28T07:55:05.824Z",
-  "count": 17,
+  "generatedAt": "2026-07-03T08:36:04.999Z",
+  "count": 19,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -666,6 +666,100 @@
           "recommendedProb": 0.6672,
           "rank": 2,
           "actualDisposals": 26
+        }
+      ]
+    },
+    {
+      "gameKey": "sydneyswans|westernbulldogs|2026-07-03",
+      "finalizedAt": "2026-07-03T08:36:04.999Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-01T13:37:12Z",
+      "modelVersion": "afl-disp-20260629-184515",
+      "homeTeam": "Sydney Swans",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-07-03T09:40:00Z",
+      "weekKey": "2026-W27",
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Matthew Kennedy",
+          "bookmaker": "PointsBet (AU)",
+          "line": 23.5,
+          "expectedDisposals": 10.87,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.3681,
+          "recommendedProb": 0.8681,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Matthew Kennedy",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 10.87,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.3648,
+          "recommendedProb": 0.8688,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Bailey Dale",
+          "bookmaker": "SportsBet",
+          "line": 27.5,
+          "expectedDisposals": 23.23,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2104,
+          "recommendedProb": 0.6895,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "westcoasteagles|adelaidecrows|2026-07-03",
+      "finalizedAt": "2026-07-03T08:36:04.999Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-01T13:37:12Z",
+      "modelVersion": "afl-disp-20260629-184515",
+      "homeTeam": "West Coast Eagles",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-07-03T10:10:00Z",
+      "weekKey": "2026-W27",
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Josh Lindsay",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 18.85,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1103,
+          "recommendedProb": 0.6103,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Sam Berry",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 20.53,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1063,
+          "recommendedProb": 0.5943,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Sam Berry",
+          "bookmaker": "PointsBet (AU)",
+          "line": 22.5,
+          "expectedDisposals": 20.5,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0983,
+          "recommendedProb": 0.5983,
+          "rank": 2,
+          "actualDisposals": null
         }
       ]
     }
