@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T12:05:22.251Z",
+  "generatedAt": "2026-07-04T17:33:19.357Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -11,7 +11,7 @@
       "weather": {
         "temperatureC": 12.7,
         "precipitationMm": 0,
-        "windKmh": 12.1
+        "windKmh": 10.6
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-07-05T06:40:00Z",
       "weather": {
-        "temperatureC": 11.5,
+        "temperatureC": 11.7,
         "precipitationMm": 0,
-        "windKmh": 10.9
+        "windKmh": 10.3
       }
     }
   ],
