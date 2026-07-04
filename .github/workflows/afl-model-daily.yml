@@ -16,7 +16,7 @@ env:
 jobs:
   run_afl_model:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     permissions:
       contents: write
       pull-requests: write
@@ -64,16 +64,17 @@ jobs:
         run: |
           python scripts/afl_model/build_dataset.py --base-url "${{ secrets.PROD_URL }}"
           python scripts/afl_model/train_disposals_model.py --candidate-only
-          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-candidate-model.json" --latest-output-path "data/afl-model/latest-candidate-disposals-projections.json"
+          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-candidate-model.json" --latest-output-path "data/afl-model/latest-candidate-disposals-projections.json" --skip-line-history-enrich
 
       - name: Evaluate vs settled picks and promote candidate to live (if guardrails pass)
         run: |
           python scripts/afl_model/evaluate_closed_loop.py --promote-if-pass --freeze-fail-streak 3 --candidate-artifact "data/afl-model/models/latest-candidate-model.json" --current-artifact "data/afl-model/models/latest-model.json" --candidate-projections "data/afl-model/latest-candidate-disposals-projections.json"
           python -c "import json; p='data/afl-model/history/model-eval-latest.json'; d=json.load(open(p)); dec=d.get('decision',{}); c=d.get('candidate',{}); u=d.get('current',{}); print('=== AFL closed-loop: pass=', dec.get('pass'), 'promoted=', dec.get('promoted'), '| candidate', c.get('modelVersion'), '| live', u.get('modelVersion'))"
-          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json"
+          python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json" --skip-line-history-enrich
 
       - name: Commit and push model outputs to master if changed
         run: |
+          rm -rf data/afl-model/afl-model
           bash scripts/ci-commit-data-files.sh "chore(data): daily AFL model refresh [skip ci]" \
             data/afl-model \
             data/afl-dfs-usage-latest.json \

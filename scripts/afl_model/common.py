@@ -21,6 +21,16 @@ DATA_DIR = os.path.join(ROOT_DIR, "data")
 MODEL_DIR = os.path.join(DATA_DIR, "afl-model")
 
 
+def resolve_repo_path(path: str) -> str:
+    """Resolve repo-relative paths to absolute paths under ROOT_DIR."""
+    cleaned = str(path or "").strip()
+    if not cleaned:
+        return cleaned
+    if os.path.isabs(cleaned):
+        return os.path.normpath(cleaned)
+    return os.path.normpath(os.path.join(ROOT_DIR, cleaned.replace("/", os.sep)))
+
+
 def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 

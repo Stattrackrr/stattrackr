@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from common import (
     DATA_DIR,
     MODEL_DIR,
+    resolve_repo_path,
     get_projections_dir,
     canonical_team_key,
     canonical_venue_key,
@@ -1366,9 +1367,14 @@ def main() -> None:
     parser.add_argument("--only-player-name", default="")
     parser.add_argument("--only-home-team", default="")
     parser.add_argument("--only-away-team", default="")
+    parser.add_argument(
+        "--skip-line-history-enrich",
+        action="store_true",
+        help="Skip fetching settled actuals into disposals-line-history.json (faster CI runs).",
+    )
     args = parser.parse_args()
 
-    artifact_path = args.artifact.strip() or latest_artifact_path()
+    artifact_path = resolve_repo_path(args.artifact.strip()) if args.artifact.strip() else latest_artifact_path()
     with open(artifact_path, "r", encoding="utf-8") as f:
         artifact = json.load(f)
     model_obj = load_model_object(artifact)
@@ -1756,7 +1762,8 @@ def main() -> None:
     )
     lowest_rows = select_lowest_line_rows(out_rows)
     merged_history = upsert_line_history(existing_history, lowest_rows)
-    merged_history = enrich_line_history_actuals(merged_history, args.base_url)
+    if not args.skip_line_history_enrich:
+        merged_history = enrich_line_history_actuals(merged_history, args.base_url)
     write_line_history(merged_history)
 
     ts = slug_time()
@@ -1772,7 +1779,11 @@ def main() -> None:
         "count": len(out_rows),
     }
     versioned_path = os.path.join(projections_dir, f"disposals-projections-{ts}.json")
-    latest_path = args.latest_output_path.strip() or os.path.join(MODEL_DIR, "latest-disposals-projections.json")
+    latest_path = (
+        resolve_repo_path(args.latest_output_path.strip())
+        if args.latest_output_path.strip()
+        else os.path.join(MODEL_DIR, "latest-disposals-projections.json")
+    )
     write_json(versioned_path, out)
     if only_player_name:
         existing_rows: List[dict] = []

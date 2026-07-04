@@ -20,7 +20,7 @@ import shutil
 from typing import Dict, List, Optional, Tuple
 
 from build_dataset import FEATURE_COLUMNS
-from common import MODEL_DIR, get_projections_dir, now_iso, write_json
+from common import MODEL_DIR, get_projections_dir, now_iso, resolve_repo_path, write_json
 from train_disposals_model import baseline_predict_row
 
 
@@ -658,6 +658,10 @@ def main() -> None:
         help="If set, promotion only requires min settled samples (metrics still logged in output).",
     )
     args = parser.parse_args()
+
+    args.current_artifact = resolve_repo_path(args.current_artifact)
+    args.candidate_artifact = resolve_repo_path(args.candidate_artifact)
+    args.candidate_projections = resolve_repo_path(args.candidate_projections)
 
     current_artifact = load_model_artifact(args.current_artifact)
     candidate_artifact_payload = safe_read_json(args.candidate_artifact)
