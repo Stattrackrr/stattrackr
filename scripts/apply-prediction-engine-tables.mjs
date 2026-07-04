@@ -418,6 +418,74 @@ function isWithinFinalizeWindow(commenceTime, now, windowHours) {
   return diffMs >= 0 && diffMs <= windowHours * 60 * 60 * 1000;
 }
 
+const BRISBANE_TZ = 'Australia/Brisbane';
+
+function brisbaneYmd(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BRISBANE_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function addDaysYmd(ymd, days) {
+  const [y, m, d] = ymd.split('-').map((part) => Number.parseInt(part, 10));
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+function dayOfWeekYmd(ymd) {
+  const [y, m, d] = ymd.split('-').map((part) => Number.parseInt(part, 10));
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+function gameDateBrisbane(commenceTime) {
+  if (!commenceTime) return null;
+  const parsed = new Date(commenceTime);
+  if (!Number.isNaN(parsed.getTime())) return brisbaneYmd(parsed);
+  const slice = String(commenceTime).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(slice) ? slice : null;
+}
+
+function thursdayBlockForDate(gameDate) {
+  const dow = dayOfWeekYmd(gameDate);
+  const offsetByDow = { 0: -3, 1: -4, 2: -5, 3: -6, 4: 0, 5: -1, 6: -2 };
+  const thursday = addDaysYmd(gameDate, offsetByDow[dow] ?? 0);
+  return { min: thursday, max: addDaysYmd(thursday, 4) };
+}
+
+function isDateInRoundWindow(date, window) {
+  return date >= window.min && date <= window.max;
+}
+
+function isPastGame(game, now) {
+  const kickoffMs = game.commenceTime ? Date.parse(game.commenceTime) : Number.NaN;
+  return Number.isFinite(kickoffMs) && kickoffMs < now.getTime();
+}
+
+/** When any game enters the pre-bounce window, lock picks for all upcoming games in the same Thu–Mon round block. */
+function collectRoundLockGameKeys(games, eligibleKeys, existingByGame, now, force) {
+  const lockKeys = new Set();
+  for (const gameKey of eligibleKeys) {
+    const game = games.get(gameKey);
+    if (!game) continue;
+    const anchorDate = gameDateBrisbane(game.commenceTime);
+    if (!anchorDate) continue;
+    const block = thursdayBlockForDate(anchorDate);
+    for (const [gk, g] of games.entries()) {
+      if (isPastGame(g, now)) continue;
+      const gd = gameDateBrisbane(g.commenceTime);
+      if (!gd || !isDateInRoundWindow(gd, block)) continue;
+      const existing = existingByGame.get(gk);
+      if (existing && !force) continue;
+      lockKeys.add(gk);
+    }
+  }
+  return lockKeys;
+}
+
 function runSnapshot(args) {
   const nowIso = args.now.toISOString();
   const payload = loadProjectionPayload();
@@ -432,18 +500,26 @@ function runSnapshot(args) {
   let skippedFinalized = 0;
   let eligible = 0;
 
+  const eligibleKeys = new Set();
   for (const game of games.values()) {
-    const kickoffMs = game.commenceTime ? Date.parse(game.commenceTime) : Number.NaN;
-    const isPastGame = Number.isFinite(kickoffMs) && kickoffMs < args.now.getTime();
-    if (isPastGame) continue;
+    if (isPastGame(game, args.now)) continue;
     if (!isWithinFinalizeWindow(game.commenceTime, args.now, args.windowHours)) continue;
-    eligible += 1;
-    const existing = existingByGame.get(game.gameKey);
+    eligibleKeys.add(game.gameKey);
+  }
+  eligible = eligibleKeys.size;
+
+  const keysToSnapshot = collectRoundLockGameKeys(games, eligibleKeys, existingByGame, args.now, args.force);
+
+  for (const gameKey of keysToSnapshot) {
+    const game = games.get(gameKey);
+    if (!game) continue;
+    if (isPastGame(game, args.now)) continue;
+    const existing = existingByGame.get(gameKey);
     if (existing && !args.force) {
       skippedFinalized += 1;
       continue;
     }
-    const picks = topPicksByGame.get(game.gameKey)?.picks ?? [];
+    const picks = topPicksByGame.get(gameKey)?.picks ?? [];
     const incoming = normalizeRecord({
       gameKey: game.gameKey,
       finalizedAt: nowIso,
@@ -473,6 +549,7 @@ function runSnapshot(args) {
   console.log(
     [
       `[afl-top-picks] eligible=${eligible}`,
+      `roundLock=${keysToSnapshot.size}`,
       `added=${added}`,
       `replaced=${replaced}`,
       `skippedFinalized=${skippedFinalized}`,

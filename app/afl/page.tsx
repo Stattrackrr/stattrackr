@@ -754,26 +754,28 @@ function aflTopPicksModalMergeCurrentGroups(
   liveGroups: AflTopPicksModalGroup[]
 ): AflTopPicksModalGroup[] {
   const byKey = new Map<string, AflTopPicksModalGroup>();
+
+  // Snapshotted picks are locked for the round — never replace with nightly live projections.
   for (const group of latestRoundHistoryGroups) {
-    if (!aflTopPicksModalIsUpcomingGame(group.commenceTime)) {
+    if (group.picks.length > 0) {
       byKey.set(group.gameKey, group);
     }
   }
+
+  // Live projections only fill games that have not been snapshotted yet.
   for (const group of liveGroups) {
-    const existing = byKey.get(group.gameKey);
-    if (existing?.picks.length && !group.picks.length) continue;
-    byKey.set(group.gameKey, group);
+    if (byKey.has(group.gameKey)) continue;
+    if (group.picks.length > 0) {
+      byKey.set(group.gameKey, group);
+    }
   }
+
   for (const group of latestRoundHistoryGroups) {
-    const existing = byKey.get(group.gameKey);
-    if (!existing) {
-      byKey.set(group.gameKey, group);
-      continue;
-    }
-    if (!existing.picks.length && group.picks.length) {
+    if (!byKey.has(group.gameKey)) {
       byKey.set(group.gameKey, group);
     }
   }
+
   return [...byKey.values()].sort((a, b) => String(a.commenceTime ?? '').localeCompare(String(b.commenceTime ?? '')));
 }
 
@@ -859,7 +861,7 @@ function aflTopPicksModalNeedsGameLogHydration(records: AflTopPicksHistoryRecord
 function AflPredictionModelNotice({ className = '' }: { className?: string }) {
   return (
     <p className={`text-[11px] leading-relaxed text-gray-500 dark:text-gray-400 ${className}`}>
-      Predictions refresh every night for upcoming games. We recommend taking picks a few hours before bounce, not days out. The model uses the stats available on game day.
+      Top picks lock in for the full round (Thu–Mon) from one projection snapshot before the first game. They stay fixed even when the model refreshes nightly. Take picks a few hours before bounce.
     </p>
   );
 }
