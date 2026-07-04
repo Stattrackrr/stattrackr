@@ -1,6 +1,6 @@
 {
-  "createdAt": "2026-07-02T18:29:13Z",
-  "modelVersion": "afl-disp-20260702-182912",
+  "createdAt": "2026-06-29T18:45:16Z",
+  "modelVersion": "afl-disp-20260629-184515",
   "method": "identity",
   "sampleCount": 0,
   "metricsBefore": {},
