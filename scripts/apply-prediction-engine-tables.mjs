@@ -419,6 +419,16 @@ function isWithinFinalizeWindow(commenceTime, now, windowHours) {
 }
 
 const BRISBANE_TZ = 'Australia/Brisbane';
+/** From Collingwood vs Suns onward, snapshot batching may add live picks; earlier games stay on locked history. */
+const LIVE_UPDATES_FROM_COMMENCE = '2026-07-04T06:15:12Z';
+
+function allowsLivePickUpdates(commenceTime) {
+  if (!commenceTime) return true;
+  const kickoff = Date.parse(String(commenceTime));
+  const cutoff = Date.parse(LIVE_UPDATES_FROM_COMMENCE);
+  if (!Number.isFinite(kickoff) || !Number.isFinite(cutoff)) return true;
+  return kickoff >= cutoff;
+}
 
 function brisbaneYmd(date) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -480,6 +490,7 @@ function collectRoundLockGameKeys(games, eligibleKeys, existingByGame, now, forc
       if (!gd || !isDateInRoundWindow(gd, block)) continue;
       const existing = existingByGame.get(gk);
       if (existing && !force) continue;
+      if (!allowsLivePickUpdates(g.commenceTime) && !existing) continue;
       lockKeys.add(gk);
     }
   }

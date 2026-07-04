@@ -749,6 +749,17 @@ function aflTopPicksModalIsUpcomingGame(commenceTime: string | null | undefined)
   return gameDate >= todayIso;
 }
 
+/** From Collingwood vs Suns onward in R16, live projections may update picks; earlier games stay locked. */
+const AFL_TOP_PICKS_LIVE_UPDATES_FROM_COMMENCE = '2026-07-04T06:15:12Z';
+
+function aflTopPicksModalAllowsLivePickUpdates(commenceTime: string | null | undefined): boolean {
+  if (!commenceTime) return true;
+  const kickoff = Date.parse(commenceTime);
+  const cutoff = Date.parse(AFL_TOP_PICKS_LIVE_UPDATES_FROM_COMMENCE);
+  if (!Number.isFinite(kickoff) || !Number.isFinite(cutoff)) return true;
+  return kickoff >= cutoff;
+}
+
 function aflTopPicksModalMergeCurrentGroups(
   latestRoundHistoryGroups: AflTopPicksModalGroup[],
   liveGroups: AflTopPicksModalGroup[]
@@ -762,9 +773,10 @@ function aflTopPicksModalMergeCurrentGroups(
     }
   }
 
-  // Live projections only fill games that have not been snapshotted yet.
+  // Live projections only from Collingwood vs Suns onward for games not yet snapshotted.
   for (const group of liveGroups) {
     if (byKey.has(group.gameKey)) continue;
+    if (!aflTopPicksModalAllowsLivePickUpdates(group.commenceTime)) continue;
     if (group.picks.length > 0) {
       byKey.set(group.gameKey, group);
     }
