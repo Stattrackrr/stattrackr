@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T07:23:07.184Z",
+  "generatedAt": "2026-07-05T06:21:07.795Z",
   "count": 26,
   "records": [
     {
@@ -24,7 +24,8 @@
           "rank": 1,
           "actualDisposals": 24
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "northmelbourne|westcoast|2026-06-13",
@@ -48,7 +49,8 @@
           "rank": 1,
           "actualDisposals": 14
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "portadelaide|sydney|2026-06-13",
@@ -94,7 +96,8 @@
           "rank": 3,
           "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "richmond|brisbane|2026-06-14",
@@ -140,7 +143,8 @@
           "rank": 3,
           "actualDisposals": 17
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "stkilda|gws|2026-06-14",
@@ -186,7 +190,8 @@
           "rank": 3,
           "actualDisposals": 21
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "geelong|fremantle|2026-06-18",
@@ -218,9 +223,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.142,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 16.5
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "goldcoast|hawthorn|2026-06-19",
@@ -266,7 +273,8 @@
           "rank": 3,
           "actualDisposals": 6
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "adelaidecrows|melbournedemons|2026-06-20",
@@ -301,7 +309,8 @@
           "rank": 2,
           "actualDisposals": 28
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "gwsgiants|carltonblues|2026-06-20",
@@ -325,7 +334,8 @@
           "rank": 1,
           "actualDisposals": 33
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "collingwoodmagpies|portadelaidepower|2026-06-20",
@@ -360,7 +370,8 @@
           "rank": 2,
           "actualDisposals": 23
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "richmondtigers|northmelbournekangaroos|2026-06-21",
@@ -384,7 +395,8 @@
           "rank": 1,
           "actualDisposals": 11
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "stkildasaints|westernbulldogs|2026-06-21",
@@ -430,7 +442,8 @@
           "rank": 3,
           "actualDisposals": 19
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "brisbanelions|sydneyswans|2026-06-25",
@@ -476,7 +489,8 @@
           "rank": 3,
           "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "hawthornhawks|gwsgiants|2026-06-26",
@@ -522,7 +536,8 @@
           "rank": 2,
           "actualDisposals": 34
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "collingwoodmagpies|richmondtigers|2026-06-27",
@@ -557,7 +572,8 @@
           "rank": 1,
           "actualDisposals": 27
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "portadelaidepower|adelaidecrows|2026-06-27",
@@ -603,7 +619,8 @@
           "rank": 3,
           "actualDisposals": 19
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "northmelbournekangaroos|essendonbombers|2026-06-28",
@@ -649,7 +666,8 @@
           "rank": 2,
           "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "geelongcats|brisbanelions|2026-07-02",
@@ -695,7 +713,8 @@
           "rank": 3,
           "actualDisposals": 17
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "sydneyswans|westernbulldogs|2026-07-03",
@@ -741,7 +760,8 @@
           "rank": 2,
           "actualDisposals": 32
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "westcoasteagles|adelaidecrows|2026-07-03",
@@ -786,7 +806,8 @@
           "rank": 2,
           "actualDisposals": 20
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "hawthornhawks|melbournedemons|2026-07-04",
@@ -819,7 +840,8 @@
           "recommendedProb": 0.7119,
           "rank": 2
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "gwsgiants|fremantledockers|2026-07-04",
@@ -852,7 +874,8 @@
           "recommendedProb": 0.6615,
           "rank": 2
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "goldcoastsuns|collingwoodmagpies|2026-07-04",
@@ -895,7 +918,8 @@
           "recommendedProb": 0.6301,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "richmondtigers|carltonblues|2026-07-04",
@@ -938,7 +962,8 @@
           "recommendedProb": 0.584,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "essendonbombers|stkildasaints|2026-07-05",
@@ -981,7 +1006,8 @@
           "recommendedProb": 0.6712,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "portadelaidepower|northmelbournekangaroos|2026-07-05",
@@ -1024,7 +1050,8 @@
           "recommendedProb": 0.6284,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     }
   ]
 }
