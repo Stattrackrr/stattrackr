@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const HISTORY_PATH = path.join(ROOT, 'data', 'afl-model', 'history', 'top-picks-history.json');
+const LINE_HISTORY_PATH = path.join(ROOT, 'data', 'afl-model', 'history', 'disposals-line-history.json');
 const PROJECTIONS_PATH = path.join(ROOT, 'data', 'afl-model', 'latest-disposals-projections.json');
 
 function readJsonFileAnyEncoding(filePath) {
@@ -637,33 +638,210 @@ function gameLogPlayerName(name) {
   return trimmed;
 }
 
-function localIsoDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+function gameDateFromCommence(commenceTime) {
+  if (!commenceTime) return '';
+  const parsed = new Date(commenceTime);
+  if (Number.isNaN(parsed.getTime())) return String(commenceTime).slice(0, 10);
+  return brisbaneYmd(parsed);
+}
+
+const PLAYER_LOG_CACHE_DIRS = [
+  path.join(ROOT, 'data', 'afl-model', 'cache', 'player-logs'),
+  path.join(ROOT, 'data', 'afl-model', 'afl-model', 'cache', 'player-logs'),
+  path.join(ROOT, 'data', 'afl-model', 'afl-model', 'afl-model', 'cache', 'player-logs'),
+];
+
+function parseYmd(value) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split('-').map((part) => Number.parseInt(part, 10));
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+  return Date.UTC(y, m - 1, d);
+}
+
+function gameRowDate(game) {
+  return String(game?.date ?? game?.gameDate ?? game?.game_date ?? '').slice(0, 10);
 }
 
 function matchGame(gameDate, games) {
+  const exact = games.find((game) => gameRowDate(game) === gameDate);
+  if (exact) return exact;
+  const rowDateMs = parseYmd(gameDate);
+  if (rowDateMs == null) return null;
+  let best = null;
+  let bestDiff = Number.POSITIVE_INFINITY;
   for (const game of games) {
-    const rawDate = String(game?.date ?? game?.gameDate ?? game?.game_date ?? '').slice(0, 10);
-    if (rawDate === gameDate) return game;
+    const gameMs = parseYmd(gameRowDate(game));
+    if (gameMs == null) continue;
+    const diff = Math.abs(gameMs - rowDateMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = game;
+    }
   }
-  return null;
+  return bestDiff <= 24 * 60 * 60 * 1000 ? best : null;
 }
 
-async function fetchPlayerGames(baseUrl, season, playerName) {
+function mergeGames(...lists) {
+  const byDate = new Map();
+  for (const list of lists) {
+    for (const game of list ?? []) {
+      const date = gameRowDate(game);
+      if (!date) continue;
+      byDate.set(date, game);
+    }
+  }
+  return [...byDate.values()];
+}
+
+function loadLocalPlayerGames(season, playerName) {
+  const needle = `_${normalizePlayerName(playerName).replace(/\s+/g, '_')}_`;
+  const prefix = `${season}`;
+  const games = [];
+  for (const cacheDir of PLAYER_LOG_CACHE_DIRS) {
+    if (!fs.existsSync(cacheDir)) continue;
+    for (const fileName of fs.readdirSync(cacheDir)) {
+      if (!fileName.startsWith(prefix) || !fileName.includes(needle) || !fileName.endsWith('.json')) continue;
+      try {
+        const payload = readJsonFileAnyEncoding(path.join(cacheDir, fileName));
+        const rows = Array.isArray(payload?.games) ? payload.games : [];
+        games.push(...rows);
+      } catch {
+        // Ignore malformed cache files.
+      }
+    }
+  }
+  return mergeGames(games);
+}
+
+async function fetchPlayerGames(baseUrl, season, playerName, { forceFetch = false, team = null, cronSecret = '' } = {}) {
   const params = new URLSearchParams({
     season: String(season),
     player_name: playerName,
     include_both: '1',
   });
-  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/afl/player-game-logs?${params.toString()}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data?.games) ? data.games : [];
+  if (team) params.set('team', team);
+  if (forceFetch) params.set('force_fetch', '1');
+  const headers = { cache: 'no-store' };
+  if (cronSecret) {
+    headers.Authorization = `Bearer ${cronSecret}`;
+    headers['x-cron-secret'] = cronSecret;
+  }
+  const controller = new AbortController();
+  const timeoutMs = forceFetch ? 45000 : 15000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/afl/player-game-logs?${params.toString()}`, {
+      cache: 'no-store',
+      headers,
+      signal: controller.signal,
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.games) ? data.games : [];
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function loadLeagueTeamByPlayerName() {
+  const lookup = new Map();
+  const dataDir = path.join(ROOT, 'data');
+  if (!fs.existsSync(dataDir)) return lookup;
+  const files = fs
+    .readdirSync(dataDir)
+    .filter((name) => /^afl-league-player-stats-\d+\.json$/i.test(name))
+    .sort()
+    .reverse();
+  for (const fileName of files) {
+    try {
+      const payload = readJsonFileAnyEncoding(path.join(dataDir, fileName));
+      const players = Array.isArray(payload?.players) ? payload.players : [];
+      for (const player of players) {
+        const name = String(player?.name ?? '').trim();
+        const team = String(player?.team ?? '').trim();
+        if (!name || !team) continue;
+        const key = normalizePlayerName(name);
+        if (!lookup.has(key)) lookup.set(key, team);
+      }
+      if (lookup.size > 0) break;
+    } catch {
+      // Try next snapshot.
+    }
+  }
+  return lookup;
+}
+
+function buildLineHistoryActualLookup() {
+  const lookup = new Map();
+  if (!fs.existsSync(LINE_HISTORY_PATH)) return lookup;
+  try {
+    const payload = readJsonFileAnyEncoding(LINE_HISTORY_PATH);
+    const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+    for (const row of rows) {
+      if (typeof row.actualDisposals !== 'number' || !Number.isFinite(row.actualDisposals)) continue;
+      const player = normalizePlayerName(row.playerName);
+      const gameDate = String(row.gameDate ?? row.commenceTime ?? '').slice(0, 10);
+      if (!player || !gameDate) continue;
+      const home = normalizeTeam(row.homeTeam);
+      const away = normalizeTeam(row.awayTeam);
+      lookup.set(`${player}|${gameDate}|${home}|${away}`, row.actualDisposals);
+      lookup.set(`${player}|${gameDate}|${away}|${home}`, row.actualDisposals);
+      if (!lookup.has(`${player}|${gameDate}`)) lookup.set(`${player}|${gameDate}`, row.actualDisposals);
+    }
+  } catch {
+    // Ignore malformed line history.
+  }
+  return lookup;
+}
+
+function lookupLineHistoryActual(pick, record, lineHistoryLookup) {
+  const player = normalizePlayerName(gameLogPlayerName(pick.playerName));
+  const gameDate = gameDateFromCommence(record?.commenceTime);
+  if (!player || !gameDate) return null;
+  const home = normalizeTeam(record.homeTeam);
+  const away = normalizeTeam(record.awayTeam);
+  const exact =
+    lineHistoryLookup.get(`${player}|${gameDate}|${home}|${away}`) ??
+    lineHistoryLookup.get(`${player}|${gameDate}|${away}|${home}`);
+  if (typeof exact === 'number' && Number.isFinite(exact)) return exact;
+  const fallback = lineHistoryLookup.get(`${player}|${gameDate}`);
+  return typeof fallback === 'number' && Number.isFinite(fallback) ? fallback : null;
+}
+
+function teamCandidatesForPick(record, pick, leagueTeamByPlayer) {
+  const candidates = [];
+  const fromLeague = leagueTeamByPlayer.get(normalizePlayerName(gameLogPlayerName(pick.playerName)));
+  if (fromLeague) candidates.push(fromLeague);
+  if (record?.homeTeam) candidates.push(String(record.homeTeam));
+  if (record?.awayTeam) candidates.push(String(record.awayTeam));
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+async function resolvePlayerGames(baseUrl, season, playerName, gameDate, logsCache, teamCandidates, cronSecret) {
+  const cacheKey = `${season}|${normalizePlayerName(playerName)}`;
+  if (logsCache.has(cacheKey)) return logsCache.get(cacheKey);
+
+  const localGames = loadLocalPlayerGames(season, playerName);
+  const teams = teamCandidates.length > 0 ? teamCandidates : [null];
+  let games = [...localGames];
+  for (const team of teams) {
+    games = mergeGames(games, await fetchPlayerGames(baseUrl, season, playerName, { team, cronSecret }));
+    if (matchGame(gameDate, games)) break;
+  }
+  if (!matchGame(gameDate, games)) {
+    games = mergeGames(
+      games,
+      await fetchPlayerGames(baseUrl, season, playerName, {
+        forceFetch: true,
+        team: teams[0] ?? null,
+        cronSecret,
+      })
+    );
+  }
+  logsCache.set(cacheKey, games);
+  return games;
 }
 
 async function runEnrich(args) {
@@ -672,36 +850,66 @@ async function runEnrich(args) {
     return;
   }
 
+  const cronSecret = String(process.env.CRON_SECRET ?? '').trim();
+  const leagueTeamByPlayer = loadLeagueTeamByPlayerName();
+  const lineHistoryLookup = buildLineHistoryActualLookup();
   const payload = readJsonFileAnyEncoding(HISTORY_PATH);
   const records = Array.isArray(payload?.records) ? payload.records : [];
-  const todayIso = localIsoDate(new Date());
+  const todayIso = brisbaneYmd(new Date());
   const logsCache = new Map();
   let updatedPicks = 0;
+  let fromLineHistory = 0;
+  let fromApi = 0;
+  let missingMatch = 0;
 
   for (const record of records) {
-    const gameDate = String(record?.commenceTime ?? '').slice(0, 10);
+    if (!record.roundKey) {
+      record.roundKey =
+        inferRoundKey(record.commenceTime, records) ?? (record.weekKey === '2026-W27' ? '2026-R16' : null);
+    }
+    const gameDate = gameDateFromCommence(record?.commenceTime);
     if (!gameDate || gameDate > todayIso) continue;
     const season = Number.parseInt(gameDate.slice(0, 4), 10);
     for (const pick of record.picks ?? []) {
       if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) continue;
-      const lookupName = gameLogPlayerName(pick.playerName);
-      const cacheKey = `${season}|${normalizePlayerName(lookupName)}`;
-      let games = logsCache.get(cacheKey);
-      if (!games) {
-        games = await fetchPlayerGames(args.baseUrl, season, lookupName);
-        logsCache.set(cacheKey, games);
+      const fromHistory = lookupLineHistoryActual(pick, record, lineHistoryLookup);
+      if (fromHistory != null) {
+        pick.actualDisposals = fromHistory;
+        updatedPicks += 1;
+        fromLineHistory += 1;
+        continue;
       }
+      const lookupName = gameLogPlayerName(pick.playerName);
+      const teams = teamCandidatesForPick(record, pick, leagueTeamByPlayer);
+      const games = await resolvePlayerGames(
+        args.baseUrl,
+        season,
+        lookupName,
+        gameDate,
+        logsCache,
+        teams,
+        cronSecret
+      );
       const match = matchGame(gameDate, games);
-      if (!match) continue;
+      if (!match) {
+        missingMatch += 1;
+        continue;
+      }
       const actual =
         typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
-      if (!Number.isFinite(actual)) continue;
+      if (!Number.isFinite(actual)) {
+        missingMatch += 1;
+        continue;
+      }
       pick.actualDisposals = actual;
       updatedPicks += 1;
+      fromApi += 1;
     }
   }
 
-  console.log(`[afl-top-picks-enrich] updatedPicks=${updatedPicks} dryRun=${args.dryRun}`);
+  console.log(
+    `[afl-top-picks-enrich] updatedPicks=${updatedPicks} fromLineHistory=${fromLineHistory} fromApi=${fromApi} missingMatch=${missingMatch} dryRun=${args.dryRun}`
+  );
   if (updatedPicks > 0 && !args.dryRun) {
     writeUtf8(
       HISTORY_PATH,

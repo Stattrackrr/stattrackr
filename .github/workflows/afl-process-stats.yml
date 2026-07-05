@@ -176,10 +176,24 @@ jobs:
           AFL_WARM_CONCURRENCY: '24'
           AFL_WARM_MAX_FAILURES: '100'
 
+      - name: Enrich Top Picks actual disposals
+        if: steps.check.outputs.configured == 'true'
+        run: npm run enrich:afl:top-picks -- --base-url="${{ secrets.PROD_URL }}"
+
+      - name: Commit Top Picks actuals if changed
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          bash scripts/ci-commit-data-files.sh "chore(data): enrich AFL top picks actual disposals [skip ci]" \
+            data/afl-model/history/top-picks-history.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
       # Odds, props cache refresh, DvP build, and in-process props-stats warm (avoids a second
       # serverless call that hits the 300s props-stats/warm Vercel limit).
       - name: Refresh AFL odds, props cache, and DvP build
         if: steps.check.outputs.configured == 'true'
+        continue-on-error: true
         run: |
           echo "🔄 Refreshing AFL odds, props cache, DvP build, and props-stats warm..."
           RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/odds/refresh" \
@@ -213,19 +227,6 @@ jobs:
             echo "⚠️ AFL props-stats coverage below ideal (90%) but above minimum — continuing"
           fi
           echo "✅ Odds + props cache + DvP + props-stats warm done"
-
-      - name: Enrich Top Picks actual disposals
-        if: steps.check.outputs.configured == 'true'
-        run: npm run enrich:afl:top-picks -- --base-url="${{ secrets.PROD_URL }}"
-
-      - name: Commit Top Picks actuals if changed
-        if: steps.check.outputs.configured == 'true'
-        run: |
-          bash scripts/ci-commit-data-files.sh "chore(data): enrich AFL top picks actual disposals [skip ci]" \
-            data/afl-model/history/top-picks-history.json
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
 
       # Guardrail: ensure list DvP ranks match DvP card source for all props rows.
       # Fails workflow on any mismatch so regressions are caught before users see split ranks.

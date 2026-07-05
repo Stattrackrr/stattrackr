@@ -51,6 +51,7 @@ jobs:
           WINDOW_HOURS: ${{ github.event.inputs.window_hours || '2' }}
           FORCE_SNAPSHOT: ${{ github.event.inputs.force || 'false' }}
           PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
           ARGS="--window-hours=${WINDOW_HOURS}"

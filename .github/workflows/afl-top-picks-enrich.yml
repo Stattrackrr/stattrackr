@@ -1,0 +1,71 @@
+name: AFL Top Picks Enrich
+
+on:
+  schedule:
+    # Hourly on Thu–Mon (Brisbane) so completed games get actualDisposals without waiting on odds refresh.
+    - cron: "15 * * * 0,1,4,5,6"
+  workflow_dispatch:
+
+concurrency:
+  group: afl-top-picks-enrich
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Brisbane
+
+jobs:
+  enrich_top_picks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      PROD_URL: ${{ secrets.PROD_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
+          lfs: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check production secrets
+        id: check
+        run: |
+          if [ -z "${PROD_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Missing PROD_URL or CRON_SECRET; skipping enrich"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Warm player logs cache
+        if: steps.check.outputs.configured == 'true'
+        run: npm run warm:afl:player-logs
+        env:
+          AFL_WARM_SEASONS: "2026,2025"
+          AFL_WARM_CONCURRENCY: "12"
+          AFL_WARM_MAX_FAILURES: "200"
+
+      - name: Enrich Top Picks actual disposals
+        if: steps.check.outputs.configured == 'true'
+        run: npm run enrich:afl:top-picks -- --base-url="${PROD_URL}"
+
+      - name: Commit and push enriched Top Picks history if changed
+        if: steps.check.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          bash scripts/ci-commit-data-files.sh "chore(data): enrich AFL top picks actuals [skip ci]" \
+            data/afl-model/history/top-picks-history.json
