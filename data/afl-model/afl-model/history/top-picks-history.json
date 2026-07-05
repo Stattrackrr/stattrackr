@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T07:23:07.184Z",
+  "generatedAt": "2026-07-05T06:21:07.795Z",
   "count": 26,
   "records": [
     {
@@ -24,7 +24,8 @@
           "rank": 1,
           "actualDisposals": 24
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "northmelbourne|westcoast|2026-06-13",
@@ -48,7 +49,8 @@
           "rank": 1,
           "actualDisposals": 14
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "portadelaide|sydney|2026-06-13",
@@ -94,7 +96,8 @@
           "rank": 3,
           "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "richmond|brisbane|2026-06-14",
@@ -126,7 +129,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 22
         },
         {
           "playerName": "Jacob Hopper",
@@ -139,7 +143,8 @@
           "rank": 3,
           "actualDisposals": 17
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "stkilda|gws|2026-06-14",
@@ -160,7 +165,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 28
         },
         {
           "playerName": "Harrison Himmelberg",
@@ -184,7 +190,8 @@
           "rank": 3,
           "actualDisposals": 21
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "geelong|fremantle|2026-06-18",
@@ -216,9 +223,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.142,
           "recommendedProb": null,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 16.5
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "goldcoast|hawthorn|2026-06-19",
@@ -264,7 +273,8 @@
           "rank": 3,
           "actualDisposals": 6
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "adelaidecrows|melbournedemons|2026-06-20",
@@ -296,9 +306,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1671,
           "recommendedProb": 0.6591,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 28
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "gwsgiants|carltonblues|2026-06-20",
@@ -322,7 +334,8 @@
           "rank": 1,
           "actualDisposals": 33
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "collingwoodmagpies|portadelaidepower|2026-06-20",
@@ -357,7 +370,8 @@
           "rank": 2,
           "actualDisposals": 23
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "richmondtigers|northmelbournekangaroos|2026-06-21",
@@ -381,7 +395,8 @@
           "rank": 1,
           "actualDisposals": 11
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "stkildasaints|westernbulldogs|2026-06-21",
@@ -402,7 +417,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.2895,
           "recommendedProb": 0.7755,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 28
         },
         {
           "playerName": "Marcus Bontempelli",
@@ -426,7 +442,8 @@
           "rank": 3,
           "actualDisposals": 19
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "brisbanelions|sydneyswans|2026-06-25",
@@ -447,7 +464,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.0647,
           "recommendedProb": 0.5647,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 18
         },
         {
           "playerName": "Angus Sheldrick",
@@ -468,9 +486,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.0225,
           "recommendedProb": 0.5135,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "hawthornhawks|gwsgiants|2026-06-26",
@@ -491,7 +511,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1147,
           "recommendedProb": 0.6237,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 21
         },
         {
           "playerName": "Finn Callaghan",
@@ -501,7 +522,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1097,
           "recommendedProb": 0.6248,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 34
         },
         {
           "playerName": "Finn Callaghan",
@@ -511,9 +533,11 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1055,
           "recommendedProb": 0.6258,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 34
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "collingwoodmagpies|richmondtigers|2026-06-27",
@@ -548,7 +572,8 @@
           "rank": 1,
           "actualDisposals": 27
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "portadelaidepower|adelaidecrows|2026-06-27",
@@ -594,7 +619,8 @@
           "rank": 3,
           "actualDisposals": 19
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "northmelbournekangaroos|essendonbombers|2026-06-28",
@@ -640,7 +666,8 @@
           "rank": 2,
           "actualDisposals": 26
         }
-      ]
+      ],
+      "roundKey": null
     },
     {
       "gameKey": "geelongcats|brisbanelions|2026-07-02",
@@ -661,7 +688,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1153,
           "recommendedProb": 0.6002,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 17
         },
         {
           "playerName": "Jarrod Berry",
@@ -671,7 +699,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1135,
           "recommendedProb": 0.6135,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 16
         },
         {
           "playerName": "Patrick Dangerfield",
@@ -681,9 +710,11 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.0929,
           "recommendedProb": 0.5929,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 17
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "sydneyswans|westernbulldogs|2026-07-03",
@@ -704,7 +735,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.3681,
           "recommendedProb": 0.8681,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 22
         },
         {
           "playerName": "Matthew Kennedy",
@@ -714,7 +746,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.3648,
           "recommendedProb": 0.8688,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 22
         },
         {
           "playerName": "Bailey Dale",
@@ -724,9 +757,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.2104,
           "recommendedProb": 0.6895,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 32
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "westcoasteagles|adelaidecrows|2026-07-03",
@@ -757,7 +792,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1063,
           "recommendedProb": 0.5943,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 20
         },
         {
           "playerName": "Sam Berry",
@@ -767,9 +803,11 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.0983,
           "recommendedProb": 0.5983,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 20
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "hawthornhawks|melbournedemons|2026-07-04",
@@ -802,7 +840,8 @@
           "recommendedProb": 0.7119,
           "rank": 2
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "gwsgiants|fremantledockers|2026-07-04",
@@ -835,7 +874,8 @@
           "recommendedProb": 0.6615,
           "rank": 2
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "goldcoastsuns|collingwoodmagpies|2026-07-04",
@@ -878,7 +918,8 @@
           "recommendedProb": 0.6301,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "richmondtigers|carltonblues|2026-07-04",
@@ -921,7 +962,8 @@
           "recommendedProb": 0.584,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "essendonbombers|stkildasaints|2026-07-05",
@@ -964,7 +1006,8 @@
           "recommendedProb": 0.6712,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     },
     {
       "gameKey": "portadelaidepower|northmelbournekangaroos|2026-07-05",
@@ -1007,7 +1050,8 @@
           "recommendedProb": 0.6284,
           "rank": 3
         }
-      ]
+      ],
+      "roundKey": "2026-R16"
     }
   ]
 }
