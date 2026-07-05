@@ -20,6 +20,155 @@ export const runtime = 'nodejs';
 const AFL_DVP_BUILD_SEASON = 2026;
 const AFL_DVP_BUILD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
+type PropsRefreshResult = Awaited<ReturnType<typeof refreshAflPlayerPropsCache>>;
+
+const EMPTY_PROPS_REFRESH: PropsRefreshResult = {
+  success: false,
+  eventsRefreshed: 0,
+  eventsAttempted: 0,
+  eventsFailed: 0,
+  failedGameIds: [],
+  keysCleared: 0,
+  playersWithProps: 0,
+  playerNames: [],
+  error: 'Odds fetch skipped or failed — using cached props',
+};
+
+async function runDvpBuildAndStatsWarm(options: {
+  dvpBaseUrlOverride: string | null;
+  shouldRunDvpBuild: boolean;
+  warmEligibleGamesCount: number;
+}): Promise<{
+  dvpBuildOk: boolean;
+  statsWarmed?: number;
+  statsFailed?: number;
+  statsNoData?: number;
+  statsTotal?: number;
+  statsCoveragePct?: number;
+  statsWarmError?: string;
+}> {
+  let dvpBuildOk = false;
+  let statsWarmed: number | undefined;
+  let statsFailed: number | undefined;
+  let statsNoData: number | undefined;
+  let statsTotal: number | undefined;
+  let statsCoveragePct: number | undefined;
+  let statsWarmError: string | undefined;
+
+  try {
+    if (options.shouldRunDvpBuild) {
+      const tmpDir = os.tmpdir();
+      const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
+      try {
+        const cwd = process.cwd();
+        const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
+        const baseUrl =
+          options.dvpBaseUrlOverride ||
+          process.env.DVP_BUILD_BASE_URL?.trim() ||
+          (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        if (options.dvpBaseUrlOverride) console.log('[AFL cron] DvP build using baseUrl from query:', baseUrl);
+        const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
+        const bypassSecret = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '')
+          .replace(/\r\n|\r|\n/g, '')
+          .trim();
+        const env = { ...process.env };
+        if (bypassSecret) env.DVP_BYPASS_SECRET = bypassSecret;
+        execSync(
+          `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
+          {
+            cwd,
+            timeout: AFL_DVP_BUILD_TIMEOUT_MS,
+            stdio: 'pipe',
+            encoding: 'utf8',
+            env,
+          }
+        );
+        const raw = await fs.readFile(tmpDvpPath, 'utf8');
+        const payload = JSON.parse(raw) as Record<string, unknown>;
+        await sharedCache.setJSON(
+          getAflDvpPayloadCacheKey(AFL_DVP_BUILD_SEASON),
+          payload,
+          AFL_DVP_CACHE_TTL_SECONDS
+        );
+        await fs.unlink(tmpDvpPath).catch(() => {});
+        dvpBuildOk = true;
+        console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn('[AFL cron] DvP build failed:', msg);
+        await fs.unlink(tmpDvpPath).catch(() => {});
+      }
+    } else {
+      console.log('[AFL cron] Skipping DvP build locally (pass ?includeDvp=1 to run it)');
+    }
+
+    if (options.warmEligibleGamesCount <= 0) {
+      console.log('[AFL cron] Skipping stats/list warm — no eligible games in API result or stored odds cache');
+      return { dvpBuildOk, statsWarmed, statsFailed, statsNoData, statsTotal, statsCoveragePct, statsWarmError };
+    }
+
+    const warmBaseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000';
+    const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
+    try {
+      const warm = await runAflPropsStatsWarm(warmBaseUrl, { useListApi: false, cronSecret });
+      statsWarmed = warm.warmed;
+      statsFailed = warm.failed;
+      statsNoData = warm.noData;
+      statsTotal = warm.total;
+      statsCoveragePct = warm.coveragePct;
+      console.log(
+        '[AFL cron] Props-stats warm done: warmed=',
+        warm.warmed,
+        'failed (N/A)=',
+        warm.failed,
+        'coverage=',
+        warm.coveragePct != null ? `${warm.coveragePct}%` : '?',
+        warm.success ? '' : warm.error ?? '',
+      );
+      if (warm.error) statsWarmError = warm.error;
+    } catch (e) {
+      statsWarmError = e instanceof Error ? e.message : String(e);
+      console.warn('[AFL cron] Props-stats warm failed:', statsWarmError);
+    }
+
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (cronSecret) {
+        headers.Authorization = `Bearer ${cronSecret}`;
+        headers['X-Cron-Secret'] = cronSecret;
+      }
+      const prewarmRes = await fetch(`${warmBaseUrl}/api/afl/player-props/list?enrich=true`, {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      });
+      if (!prewarmRes.ok) {
+        console.warn('[AFL cron] Enriched list prewarm failed HTTP', prewarmRes.status);
+      } else {
+        console.log('[AFL cron] Enriched list prewarm done');
+      }
+    } catch (e) {
+      console.warn('[AFL cron] Enriched list prewarm failed:', e instanceof Error ? e.message : e);
+    }
+
+    try {
+      await warmCombinedPropsSnapshot({
+        origin: warmBaseUrl,
+        cronSecret: cronSecret || undefined,
+      });
+      console.log('[AFL cron] Combined props snapshot prewarm done');
+    } catch (e) {
+      console.warn('[AFL cron] Combined props snapshot prewarm failed:', e instanceof Error ? e.message : e);
+    }
+  } catch (e) {
+    console.warn('[AFL cron] DvP/warm error:', e instanceof Error ? e.message : String(e));
+  }
+
+  return { dvpBuildOk, statsWarmed, statsFailed, statsNoData, statsTotal, statsCoveragePct, statsWarmError };
+}
+
 /**
  * GET /api/afl/odds/refresh
  * Single cron: (1) fetches AFL game odds, (2) refreshes player props cache, (3) runs props-stats warm,
@@ -35,6 +184,8 @@ export async function GET(request: NextRequest) {
   console.log('[AFL cron] /api/afl/odds/refresh started');
   const dvpBaseUrlParam = request.nextUrl.searchParams.get('dvpBaseUrl')?.trim();
   const includeDvpParam = request.nextUrl.searchParams.get('includeDvp')?.trim();
+  const skipOdds = request.nextUrl.searchParams.get('skipOdds') === '1';
+  const skipWarm = request.nextUrl.searchParams.get('skipWarm') === '1';
   const dvpBaseUrlOverride =
     dvpBaseUrlParam && /^https?:\/\//i.test(dvpBaseUrlParam) ? dvpBaseUrlParam.replace(/\/+$/, '') : null;
   const shouldRunDvpBuild =
@@ -51,43 +202,64 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await refreshAflOddsData({ skipWrite: true });
-    if (!result.success) {
-      console.log('[AFL cron] Odds fetch failed:', result.error);
-      return NextResponse.json(
-        { success: false, error: result.error, gamesCount: 0, eventsRefreshed: 0, playersWithProps: 0 },
-        { status: result.error?.includes('ODDS_API_KEY') ? 503 : 502 }
-      );
+    let oddsOk = false;
+    let oddsError: string | undefined;
+    let result: Awaited<ReturnType<typeof refreshAflOddsData>> = {
+      success: false,
+      gamesCount: 0,
+      lastUpdated: '',
+      nextUpdate: '',
+      games: [],
+    };
+    let propsEligibleGames: ReturnType<typeof filterAflPropsEligibleGames> = [];
+    let ppResult: PropsRefreshResult = EMPTY_PROPS_REFRESH;
+
+    if (skipOdds) {
+      console.log('[AFL cron] skipOdds=1 — skipping Odds API fetch, using cached odds/props');
+      const cached = await getAflOddsCache();
+      propsEligibleGames = filterAflPropsEligibleGames(cached?.games ?? []);
+      oddsError = 'Odds fetch skipped (skipOdds=1)';
+    } else {
+      result = await refreshAflOddsData({ skipWrite: true });
+      oddsOk = result.success;
+      if (!oddsOk) {
+        oddsError = result.error;
+        console.warn('[AFL cron] Odds fetch failed — continuing with cached odds/props:', oddsError);
+        const cached = await getAflOddsCache();
+        propsEligibleGames = filterAflPropsEligibleGames(cached?.games ?? []);
+      } else {
+        console.log('[AFL cron] Odds OK, games:', result.gamesCount);
+        propsEligibleGames = filterAflPropsEligibleGames(result.games ?? []);
+        ppResult = await refreshAflPlayerPropsCache(propsEligibleGames, {
+          requireAllGames: true,
+          atomicSwap: true,
+        });
+        console.log(
+          '[AFL cron] Props refreshed – events:',
+          `${ppResult.eventsRefreshed}/${ppResult.eventsAttempted}`,
+          'failed:',
+          ppResult.eventsFailed,
+          'players:',
+          ppResult.playersWithProps,
+          'keysCleared:',
+          ppResult.keysCleared ?? 0,
+          ppResult.error ? `error: ${ppResult.error}` : 'OK',
+        );
+        if (ppResult.success && result.cachePayload) {
+          await setAflOddsCache(result.cachePayload);
+        } else if (!ppResult.success) {
+          console.warn(
+            '[AFL cron] Props refresh did not complete — keeping prior odds/props caches, attempting warm from stored data:',
+            ppResult.error ?? 'unknown'
+          );
+        }
+      }
     }
-
-    console.log('[AFL cron] Odds OK, games:', result.gamesCount);
-
-    const propsEligibleGames = filterAflPropsEligibleGames(result.games ?? []);
-    const ppResult = await refreshAflPlayerPropsCache(propsEligibleGames, {
-      requireAllGames: true,
-      atomicSwap: true,
-    });
-    console.log(
-      '[AFL cron] Props refreshed – events:',
-      `${ppResult.eventsRefreshed}/${ppResult.eventsAttempted}`,
-      'failed:',
-      ppResult.eventsFailed,
-      'players:',
-      ppResult.playersWithProps,
-      'keysCleared:',
-      ppResult.keysCleared ?? 0,
-      ppResult.error ? `error: ${ppResult.error}` : 'OK',
-    );
 
     const propsRefreshOk = ppResult.success;
-    if (!propsRefreshOk) {
-      console.warn(
-        '[AFL cron] Props refresh did not complete — keeping prior odds/props caches, attempting warm from stored data:',
-        ppResult.error ?? 'unknown'
-      );
-    } else if (result.cachePayload) {
-      await setAflOddsCache(result.cachePayload);
-    }
+    const warmEligibleGames = filterAflPropsEligibleGames(
+      propsEligibleGames.length > 0 ? propsEligibleGames : (await getAflOddsCache())?.games ?? []
+    );
 
     let dvpBuildOk = false;
     let statsWarmed: number | undefined;
@@ -97,125 +269,44 @@ export async function GET(request: NextRequest) {
     let statsCoveragePct: number | undefined;
     let statsWarmError: string | undefined;
 
-    try {
+    if (!skipWarm) {
+      const warmResult = await runDvpBuildAndStatsWarm({
+        dvpBaseUrlOverride,
+        shouldRunDvpBuild,
+        warmEligibleGamesCount: warmEligibleGames.length,
+      });
+      dvpBuildOk = warmResult.dvpBuildOk;
+      statsWarmed = warmResult.statsWarmed;
+      statsFailed = warmResult.statsFailed;
+      statsNoData = warmResult.statsNoData;
+      statsTotal = warmResult.statsTotal;
+      statsCoveragePct = warmResult.statsCoveragePct;
+      statsWarmError = warmResult.statsWarmError;
+    } else {
+      console.log('[AFL cron] skipWarm=1 — stats/list warm runs separately');
       if (shouldRunDvpBuild) {
-        const tmpDir = os.tmpdir();
-        const tmpDvpPath = path.join(tmpDir, `afl-dvp-${AFL_DVP_BUILD_SEASON}.json`);
-        try {
-            const cwd = process.cwd();
-            const scriptPath = path.join(cwd, 'scripts', 'build-afl-dvp.js');
-            const baseUrl =
-              dvpBaseUrlOverride ||
-              process.env.DVP_BUILD_BASE_URL?.trim() ||
-              (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-            if (dvpBaseUrlOverride) console.log('[AFL cron] DvP build using baseUrl from query:', baseUrl);
-            const outputDirArg = tmpDir.replace(/\\/g, '/').replace(/"/g, '');
-            const bypassSecret =
-              (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? process.env.CRON_SECRET ?? '').replace(
-                /\r\n|\r|\n/g,
-                ''
-              ).trim();
-            const env = { ...process.env };
-            if (bypassSecret) env.DVP_BYPASS_SECRET = bypassSecret;
-            execSync(
-              `node "${scriptPath}" --season=${AFL_DVP_BUILD_SEASON} --base-url=${baseUrl} --output-dir="${outputDirArg}"`,
-              {
-                cwd,
-                timeout: AFL_DVP_BUILD_TIMEOUT_MS,
-                stdio: 'pipe',
-                encoding: 'utf8',
-                env,
-              }
-            );
-            const raw = await fs.readFile(tmpDvpPath, 'utf8');
-            const payload = JSON.parse(raw) as Record<string, unknown>;
-            await sharedCache.setJSON(
-              getAflDvpPayloadCacheKey(AFL_DVP_BUILD_SEASON),
-              payload,
-              AFL_DVP_CACHE_TTL_SECONDS
-            );
-            await fs.unlink(tmpDvpPath).catch(() => {});
-            dvpBuildOk = true;
-            console.log('[AFL cron] DvP build done (season', AFL_DVP_BUILD_SEASON + ', cached)');
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn('[AFL cron] DvP build failed:', msg);
-            await fs.unlink(tmpDvpPath).catch(() => {});
-          }
-      } else {
-        console.log('[AFL cron] Skipping DvP build locally (pass ?includeDvp=1 to run it)');
+        const warmResult = await runDvpBuildAndStatsWarm({
+          dvpBaseUrlOverride,
+          shouldRunDvpBuild: true,
+          warmEligibleGamesCount: 0,
+        });
+        dvpBuildOk = warmResult.dvpBuildOk;
       }
-
-      const cachedGames = (await getAflOddsCache())?.games ?? [];
-      const warmEligibleGames = filterAflPropsEligibleGames(
-        propsEligibleGames.length > 0 ? propsEligibleGames : cachedGames
-      );
-      if (warmEligibleGames.length > 0) {
-        const warmBaseUrl = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : 'http://localhost:3000';
-        const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
-        try {
-          const warm = await runAflPropsStatsWarm(warmBaseUrl, { useListApi: false, cronSecret });
-          statsWarmed = warm.warmed;
-          statsFailed = warm.failed;
-          statsNoData = warm.noData;
-          statsTotal = warm.total;
-          statsCoveragePct = warm.coveragePct;
-          console.log(
-            '[AFL cron] Props-stats warm done: warmed=',
-            warm.warmed,
-            'failed (N/A)=',
-            warm.failed,
-            'coverage=',
-            warm.coveragePct != null ? `${warm.coveragePct}%` : '?',
-            warm.success ? '' : warm.error ?? '',
-          );
-          if (warm.error) statsWarmError = warm.error;
-        } catch (e) {
-          statsWarmError = e instanceof Error ? e.message : String(e);
-          console.warn('[AFL cron] Props-stats warm failed:', statsWarmError);
-        }
-
-        // Prime the fully enriched AFL props list cache so first user load is instant.
-        try {
-          const headers: Record<string, string> = { Accept: 'application/json' };
-          if (cronSecret) {
-            headers.Authorization = `Bearer ${cronSecret}`;
-            headers['X-Cron-Secret'] = cronSecret;
-          }
-          const prewarmRes = await fetch(`${warmBaseUrl}/api/afl/player-props/list?enrich=true`, {
-            method: 'GET',
-            headers,
-            cache: 'no-store',
-          });
-          if (!prewarmRes.ok) {
-            console.warn('[AFL cron] Enriched list prewarm failed HTTP', prewarmRes.status);
-          } else {
-            console.log('[AFL cron] Enriched list prewarm done');
-          }
-        } catch (e) {
-          console.warn('[AFL cron] Enriched list prewarm failed:', e instanceof Error ? e.message : e);
-        }
-
-        try {
-          await warmCombinedPropsSnapshot({
-            origin: warmBaseUrl,
-            cronSecret: cronSecret || undefined,
-          });
-          console.log('[AFL cron] Combined props snapshot prewarm done');
-        } catch (e) {
-          console.warn('[AFL cron] Combined props snapshot prewarm failed:', e instanceof Error ? e.message : e);
-        }
-      } else {
-        console.log('[AFL cron] Skipping stats/list warm — no eligible games in API result or stored odds cache');
-      }
-    } catch (e) {
-      console.warn('[AFL cron] DvP/warm error:', e instanceof Error ? e.message : String(e));
     }
 
+    const statsWarmOk =
+      skipWarm ||
+      statsTotal == null ||
+      statsTotal === 0 ||
+      (statsCoveragePct != null && statsCoveragePct >= 50);
+    const pipelineOk = statsWarmOk || propsRefreshOk || oddsOk;
+
     const responsePayload = {
-      success: propsRefreshOk,
+      success: pipelineOk,
+      oddsOk,
+      oddsError,
+      skipOdds,
+      skipWarm,
       gamesCount: result.gamesCount,
       lastUpdated: result.lastUpdated,
       nextUpdate: result.nextUpdate,
@@ -228,7 +319,9 @@ export async function GET(request: NextRequest) {
       playersWithProps: ppResult.playersWithProps,
       playerNames: ppResult.playerNames ?? [],
       playerPropsOk: propsRefreshOk && ppResult.eventsRefreshed > 0,
-      playerPropsError: propsRefreshOk ? ppResult.error : ppResult.error ?? 'AFL player props refresh did not complete',
+      playerPropsError: propsRefreshOk
+        ? ppResult.error
+        : ppResult.error ?? oddsError ?? 'AFL player props refresh did not complete',
       dvpBuildOk,
       statsWarmed,
       statsFailed,
@@ -236,19 +329,24 @@ export async function GET(request: NextRequest) {
       statsTotal,
       statsCoveragePct,
       statsWarmError,
-      naSummaryHint: statsFailed != null && statsFailed > 0
-        ? 'Call GET /api/afl/player-props/list?enrich=true&debugStats=1 for naSummary and naReasons (why props show N/A).'
-        : undefined,
-      message: !propsRefreshOk
-        ? 'Props refresh failed (e.g. credits/quota) — prior week odds/props kept; stats/list warm attempted from stored cache.'
-        : ppResult.eventsRefreshed > 0 && ppResult.playerNames?.length
-          ? `Odds updated. ${ppResult.playersWithProps} players, ${ppResult.eventsRefreshed} events. Stats warm: ${statsWarmed ?? '?'} warmed, ${statsFailed ?? 0} failed (N/A).`
-          : ppResult.eventsAttempted > 0 && ppResult.eventsRefreshed === 0
-            ? 'Odds updated; no new player prop markets returned — kept existing cached props where available. DvP + stats warm completed where applicable.'
-            : 'Odds cache updated. Props refresh + DvP + stats warm completed.',
+      naSummaryHint:
+        statsFailed != null && statsFailed > 0
+          ? 'Call GET /api/afl/player-props/list?enrich=true&debugStats=1 for naSummary and naReasons (why props show N/A).'
+          : undefined,
+      message: !oddsOk
+        ? skipOdds
+          ? 'Odds fetch skipped; stats/list warm attempted from stored cache where applicable.'
+          : `Odds fetch failed (${oddsError ?? 'unknown'}) — prior odds/props kept; stats/list warm attempted from stored cache.`
+        : !propsRefreshOk
+          ? 'Props refresh failed (e.g. credits/quota) — prior week odds/props kept; stats/list warm attempted from stored cache.'
+          : ppResult.eventsRefreshed > 0 && ppResult.playerNames?.length
+            ? `Odds updated. ${ppResult.playersWithProps} players, ${ppResult.eventsRefreshed} events. Stats warm: ${statsWarmed ?? '?'} warmed, ${statsFailed ?? 0} failed (N/A).`
+            : ppResult.eventsAttempted > 0 && ppResult.eventsRefreshed === 0
+              ? 'Odds updated; no new player prop markets returned — kept existing cached props where available. DvP + stats warm completed where applicable.'
+              : 'Odds cache updated. Props refresh + DvP + stats warm completed.',
     };
 
-    return NextResponse.json(responsePayload, { status: propsRefreshOk ? 200 : 502 });
+    return NextResponse.json(responsePayload, { status: pipelineOk ? 200 : 502 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.log('[AFL cron] Error:', message);
