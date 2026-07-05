@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useEffect, useRef, useState, memo } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState, memo, type ReactNode } from 'react';
 import {
   BarChart,
   Bar,
@@ -54,6 +54,8 @@ interface SimpleChartProps {
   averageOverlayHigher?: boolean;
   /** When true, sit the Avg + Hit overlay inside the chart top edge (World Cup mobile/desktop). */
   averageOverlayInsideChart?: boolean;
+  /** Optional control rendered on the same row as the avg/hit overlay (e.g. World Cup competition filter). */
+  overlayEnd?: ReactNode;
   /** Optional max value for rank-based secondary Y-axis (AFL uses 18 teams, NBA uses 30). */
   secondaryRankAxisMax?: number;
   /** Optional desktop left inset for plotted area + overlays. */
@@ -121,6 +123,7 @@ const SimpleChart = memo(function SimpleChart({
   averageOverlayLowerExtra = false,
   averageOverlayHigher = false,
   averageOverlayInsideChart = false,
+  overlayEnd,
   secondaryRankAxisMax,
   desktopChartLeftInset = 32,
   desktopChartRightInset = 14,
@@ -884,14 +887,15 @@ const SimpleChart = memo(function SimpleChart({
       )}
       
       {/* In-chart average + hit rate - center when second axis visible, else top right; mobile: can sit lower to clear Team/controls (AFL) */}
-      {averageDisplay && !hideAverageOverlay && (
-        <div
-          className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${
-            averageOverlayInsideChart
-              ? 'top-3 z-[30] sm:-top-5 sm:z-[30]'
-              : averageOverlayHigher
-              ? '-top-9 sm:-top-10'
-              : averageOverlayLowerOnMobile
+      {(() => {
+        const showAverageOverlay = averageDisplay && !hideAverageOverlay;
+        if (!showAverageOverlay && !overlayEnd) return null;
+
+        const overlayTopClass = averageOverlayInsideChart
+          ? 'top-3 z-[30] sm:-top-5 sm:z-[30]'
+          : averageOverlayHigher
+            ? '-top-9 sm:-top-10'
+            : averageOverlayLowerOnMobile
               ? (
                 hasSecondAxis || averageOverlayLower
                   ? (averageOverlayLowerExtra ? 'top-0 sm:top-0' : 'top-0 sm:top-0')
@@ -901,42 +905,89 @@ const SimpleChart = memo(function SimpleChart({
                 hasSecondAxis || averageOverlayLower
                   ? (averageOverlayLowerExtra ? '-top-1' : '-top-2')
                   : '-top-5'
-              )
-          } ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
-          style={{
-            backgroundColor: averageOverlayLowerOnMobile
-              ? (isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)')
-              : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
-            border: `1px solid ${
-              averageOverlayLowerOnMobile
-                ? (isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)')
-                : (isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)')
-            }`,
-          }}
-          aria-hidden
-        >
-          <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
-            {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
-            <span className="font-semibold">{averageDisplay.formatted}</span>
-          </span>
-          {averageDisplay.hitRate != null && (
-            <>
-              <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
-              <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
-                Hit: <span className="font-semibold">{averageDisplay.hitRate}%</span>
-              </span>
-              {averageDisplay.hitCount != null && averageDisplay.totalGames != null && (
-                <>
-                  <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
-                  <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
-                    <span className="font-semibold">{averageDisplay.hitCount}/{averageDisplay.totalGames}</span>
-                  </span>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      )}
+              );
+
+        const overlayPillStyle = {
+          backgroundColor: averageOverlayLowerOnMobile
+            ? (isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)')
+            : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)'),
+          border: `1px solid ${
+            averageOverlayLowerOnMobile
+              ? (isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)')
+              : (isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(203, 213, 225, 0.8)')
+          }`,
+        };
+
+        const averagePill = showAverageOverlay ? (
+          <div
+            className="pointer-events-none flex shrink-0 items-center justify-center gap-1.5 rounded-md px-1.5 py-0.5 leading-none shadow-none backdrop-blur-[2px] sm:gap-2 sm:rounded sm:px-2 sm:py-1 sm:shadow"
+            style={overlayPillStyle}
+            aria-hidden
+          >
+            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+              {averageDisplay.tfLabel ? `${averageDisplay.tfLabel} Avg: ` : 'Avg: '}
+              <span className="font-semibold">{averageDisplay.formatted}</span>
+            </span>
+            {averageDisplay.hitRate != null && (
+              <>
+                <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+                <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                  Hit: <span className="font-semibold">{averageDisplay.hitRate}%</span>
+                </span>
+                {averageDisplay.hitCount != null && averageDisplay.totalGames != null && (
+                  <>
+                    <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+                    <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                      <span className="font-semibold">{averageDisplay.hitCount}/{averageDisplay.totalGames}</span>
+                    </span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        ) : null;
+
+        if (overlayEnd) {
+          return (
+            <div className={`absolute left-0 right-0 flex items-center justify-between gap-1 px-2 pointer-events-none sm:gap-2 sm:px-3 ${overlayTopClass}`}>
+              <div className="w-[72px] shrink-0 sm:w-[108px]" aria-hidden />
+              {averagePill ?? <div className="shrink-0" aria-hidden />}
+              <div className="flex w-[72px] shrink-0 justify-end pointer-events-auto sm:w-[108px]">
+                {overlayEnd}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            className={`absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] ${overlayTopClass} ${(hasSecondAxis || centerAverageOverlay) ? 'left-1/2 -translate-x-1/2' : 'right-2'}`}
+            style={overlayPillStyle}
+            aria-hidden
+          >
+            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+              {averageDisplay!.tfLabel ? `${averageDisplay!.tfLabel} Avg: ` : 'Avg: '}
+              <span className="font-semibold">{averageDisplay!.formatted}</span>
+            </span>
+            {averageDisplay!.hitRate != null && (
+              <>
+                <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+                <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                  Hit: <span className="font-semibold">{averageDisplay!.hitRate}%</span>
+                </span>
+                {averageDisplay!.hitCount != null && averageDisplay!.totalGames != null && (
+                  <>
+                    <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+                    <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                      <span className="font-semibold">{averageDisplay!.hitCount}/{averageDisplay!.totalGames}</span>
+                    </span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
       {/* In-chart teammate filter - center horizontally, inline with average (same top). NBA: teammateFilterId + name; AFL: teammateFilterName only */}
       {hasTeammateOverlay && (
         <div

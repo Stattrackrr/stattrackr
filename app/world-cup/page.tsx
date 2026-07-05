@@ -4381,6 +4381,124 @@ function WorldCupGameByGameChart({
     chartTournaments.length > 1 &&
     (competitionFilter !== 'all' || !showGroupCompetitionPicker);
 
+  const worldCupCompetitionOverlay =
+    showGroupCompetitionPicker || showTournamentCompetitionPicker ? (
+      <div className="flex items-center justify-end gap-2">
+        {showGroupCompetitionPicker ? (
+          <div className="relative" ref={competitionDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsCompetitionDropdownOpen((prev) => !prev)}
+              className="h-7 min-w-0 max-w-[72px] px-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-[10px] font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-0.5 hover:bg-gray-50 dark:hover:bg-gray-600 sm:h-[32px] sm:max-w-none sm:min-w-[108px] sm:px-2.5 sm:rounded-xl sm:text-xs sm:gap-1"
+              aria-label="Filter by club or international"
+            >
+              <span className="truncate">
+                {competitionFilter === 'all'
+                  ? 'Competition'
+                  : `${worldCupChartCompetitionGroupLabel(competitionFilter)} ${chartCompetitions.find((entry) => entry.group === competitionFilter)?.count ?? ''}`}
+              </span>
+              <svg className="w-2.5 h-2.5 flex-shrink-0 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isCompetitionDropdownOpen ? (
+              <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {chartCompetitions.map((entry) => (
+                  <button
+                    key={entry.group}
+                    type="button"
+                    onClick={() => {
+                      emitChartContext({ competitionFilter: entry.group, tournamentFilter: 'all' });
+                      setIsCompetitionDropdownOpen(false);
+                    }}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                      competitionFilter === entry.group
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    <span>{entry.label}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{entry.count}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    emitChartContext({ competitionFilter: 'all', tournamentFilter: 'all' });
+                    setIsCompetitionDropdownOpen(false);
+                  }}
+                  className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
+                    competitionFilter === 'all'
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  All
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        {showTournamentCompetitionPicker ? (
+          <div className="relative" ref={tournamentDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsTournamentDropdownOpen((prev) => !prev)}
+              className="h-7 min-w-0 max-w-[72px] px-1.5 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg text-[10px] font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-0.5 hover:bg-gray-50 dark:hover:bg-gray-600 sm:h-[32px] sm:max-w-none sm:min-w-[120px] sm:px-2.5 sm:rounded-xl sm:text-xs sm:gap-1"
+              aria-label="Filter games by competition"
+            >
+              <span className="truncate">
+                {tournamentFilter === 'all'
+                  ? 'Competition'
+                  : `${chartTournaments.find((entry) => entry.key === tournamentFilter)?.short ?? 'Competition'} ${
+                      chartTournaments.find((entry) => entry.key === tournamentFilter)?.count ?? ''
+                    }`}
+              </span>
+              <svg className="w-2.5 h-2.5 flex-shrink-0 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {isTournamentDropdownOpen ? (
+              <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {chartTournaments.map((entry) => (
+                  <button
+                    key={entry.key}
+                    type="button"
+                    onClick={() => {
+                      emitChartContext({ tournamentFilter: entry.key });
+                      setIsTournamentDropdownOpen(false);
+                    }}
+                    className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
+                      tournamentFilter === entry.key
+                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    <span className="truncate">{entry.label}</span>
+                    <span className="text-gray-500 dark:text-gray-400 shrink-0">{entry.count}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    emitChartContext({ tournamentFilter: 'all' });
+                    setIsTournamentDropdownOpen(false);
+                  }}
+                  className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
+                    tournamentFilter === 'all'
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  All
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <div className="h-full w-full pt-3 pb-2 flex flex-col px-0 sm:px-1 md:px-2 overflow-hidden">
       <div className="mb-4 sm:mb-5 md:mb-4 mt-0 w-full max-w-full">
@@ -4534,161 +4652,43 @@ function WorldCupGameByGameChart({
               })}
             </div>
           ) : null}
-          {(mode === 'player' || showGroupCompetitionPicker || showTournamentCompetitionPicker) ? (
-            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-              <div className="order-1 flex items-center justify-end gap-2 sm:order-2">
-                {showGroupCompetitionPicker ? (
-                  <div className="relative" ref={competitionDropdownRef}>
+          {mode === 'player' ? (
+            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center">
               <button
                 type="button"
-                onClick={() => setIsCompetitionDropdownOpen((prev) => !prev)}
-                className="min-w-[108px] px-2.5 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-600"
-                aria-label="Filter by club or international"
+                onClick={() => setIsMinutesFilterOpen((prev) => !prev)}
+                className={`h-[32px] px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors flex items-center justify-center gap-1.5 ${
+                  hasActiveMinutesFilter
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+                aria-expanded={isMinutesFilterOpen}
+                aria-label="Filter by minutes played"
               >
-                <span className="truncate">
-                  {competitionFilter === 'all'
-                    ? 'Competition'
-                    : `${worldCupChartCompetitionGroupLabel(competitionFilter)} ${chartCompetitions.find((entry) => entry.group === competitionFilter)?.count ?? ''}`}
-                </span>
-                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isCompetitionDropdownOpen ? (
-                <div className="absolute top-full right-0 mt-1 w-36 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                  {chartCompetitions.map((entry) => (
-                    <button
-                      key={entry.group}
-                      type="button"
-                      onClick={() => {
-                        emitChartContext({ competitionFilter: entry.group, tournamentFilter: 'all' });
-                        setIsCompetitionDropdownOpen(false);
-                      }}
-                      className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
-                        competitionFilter === entry.group
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                          : 'text-gray-900 dark:text-white'
-                      }`}
-                    >
-                      <span>{entry.label}</span>
-                      <span className="text-gray-500 dark:text-gray-400">{entry.count}</span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      emitChartContext({ competitionFilter: 'all', tournamentFilter: 'all' });
-                      setIsCompetitionDropdownOpen(false);
-                    }}
-                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
-                      competitionFilter === 'all'
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    All
-                  </button>
-                </div>
-              ) : null}
-                  </div>
+                <span>Minutes</span>
+                {hasActiveMinutesFilter ? (
+                  <span className="text-[10px] opacity-90">
+                    {minutesMin ?? minutesSliderMin}–{minutesMax ?? minutesSliderMax}
+                  </span>
                 ) : null}
-                {showTournamentCompetitionPicker ? (
-                  <div className="relative" ref={tournamentDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsTournamentDropdownOpen((prev) => !prev)}
-                className="min-w-[120px] px-2.5 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center gap-1 hover:bg-gray-50 dark:hover:bg-gray-600"
-                aria-label="Filter games by competition"
-              >
-                <span className="truncate">
-                  {tournamentFilter === 'all'
-                    ? 'Competition'
-                    : `${chartTournaments.find((entry) => entry.key === tournamentFilter)?.short ?? 'Competition'} ${
-                        chartTournaments.find((entry) => entry.key === tournamentFilter)?.count ?? ''
-                      }`}
-                </span>
-                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
-              {isTournamentDropdownOpen ? (
-                <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                  {chartTournaments.map((entry) => (
-                    <button
-                      key={entry.key}
-                      type="button"
-                      onClick={() => {
-                        emitChartContext({ tournamentFilter: entry.key });
-                        setIsTournamentDropdownOpen(false);
-                      }}
-                      className={`w-full px-2 py-1.5 text-xs font-medium text-left flex items-center justify-between gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
-                        tournamentFilter === entry.key
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                          : 'text-gray-900 dark:text-white'
-                      }`}
-                    >
-                      <span className="truncate">{entry.label}</span>
-                      <span className="text-gray-500 dark:text-gray-400 shrink-0">{entry.count}</span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      emitChartContext({ tournamentFilter: 'all' });
-                      setIsTournamentDropdownOpen(false);
+              {isMinutesFilterOpen ? (
+                <div className="w-full px-3 box-border sm:w-[200px] sm:px-0">
+                  <RangeSlider
+                    min={minutesSliderMin}
+                    max={minutesSliderMax}
+                    valueMin={minutesSliderValueMin}
+                    valueMax={minutesSliderValueMax}
+                    onChange={(min, max) => {
+                      const isFullRange = min <= minutesSliderMin && max >= minutesSliderMax;
+                      emitChartContext({
+                        minutesMin: isFullRange ? null : min,
+                        minutesMax: isFullRange ? null : max,
+                      });
                     }}
-                    className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 last:rounded-b-lg ${
-                      tournamentFilter === 'all'
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    All
-                  </button>
-                </div>
-              ) : null}
-                  </div>
-                ) : null}
-              </div>
-              {mode === 'player' ? (
-                <div className="order-2 flex w-full flex-col gap-2 sm:order-1 sm:w-auto sm:flex-row sm:items-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsMinutesFilterOpen((prev) => !prev)}
-                    className={`h-[32px] px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-colors flex items-center justify-center gap-1.5 ${
-                      hasActiveMinutesFilter
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-white dark:bg-[#0a1929] text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                    }`}
-                    aria-expanded={isMinutesFilterOpen}
-                    aria-label="Filter by minutes played"
-                  >
-                    <span>Minutes</span>
-                    {hasActiveMinutesFilter ? (
-                      <span className="text-[10px] opacity-90">
-                        {minutesMin ?? minutesSliderMin}–{minutesMax ?? minutesSliderMax}
-                      </span>
-                    ) : null}
-                  </button>
-                  {isMinutesFilterOpen ? (
-                    <div className="w-full sm:w-[200px]">
-                      <RangeSlider
-                        min={minutesSliderMin}
-                        max={minutesSliderMax}
-                        valueMin={minutesSliderValueMin}
-                        valueMax={minutesSliderValueMax}
-                        onChange={(min, max) => {
-                          const isFullRange = min <= minutesSliderMin && max >= minutesSliderMax;
-                          emitChartContext({
-                            minutesMin: isFullRange ? null : min,
-                            minutesMax: isFullRange ? null : max,
-                          });
-                        }}
-                        step={1}
-                        formatValue={(value) => `${Math.round(value)}`}
-                      />
-                    </div>
-                  ) : null}
+                    step={1}
+                    formatValue={(value) => `${Math.round(value)}`}
+                  />
                 </div>
               ) : null}
             </div>
@@ -4698,21 +4698,27 @@ function WorldCupGameByGameChart({
 
       <div className="min-h-0 flex-1 relative">
         {isMoneyline && !loading && moneylineSummary ? (
-          <div
-            className="absolute pointer-events-none z-[1] flex items-center justify-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded shadow-none sm:shadow leading-none backdrop-blur-[2px] top-0 left-1/2 -translate-x-1/2"
-            style={{
-              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)',
-              border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)'}`,
-            }}
-            aria-hidden
-          >
-            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
-              Hit: <span className="font-semibold">{moneylineSummary.hitRate}%</span>
-            </span>
-            <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
-            <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
-              <span className="font-semibold">{moneylineSummary.count}/{moneylineSummary.totalGames}</span>
-            </span>
+          <div className="absolute top-0 left-0 right-0 z-[31] flex items-center justify-between gap-1 px-2 pointer-events-none sm:gap-2 sm:px-3">
+            <div className="w-[72px] shrink-0 sm:w-[108px]" aria-hidden />
+            <div
+              className="pointer-events-none flex shrink-0 items-center justify-center gap-1.5 rounded-md px-1.5 py-0.5 leading-none shadow-none backdrop-blur-[2px] sm:gap-2 sm:rounded sm:px-2 sm:py-1 sm:shadow"
+              style={{
+                backgroundColor: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.82)',
+                border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(203, 213, 225, 0.55)'}`,
+              }}
+              aria-hidden
+            >
+              <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                Hit: <span className="font-semibold">{moneylineSummary.hitRate}%</span>
+              </span>
+              <span className={`text-[9px] sm:text-[10px] ${isDark ? 'text-slate-500 sm:text-slate-400' : 'text-slate-400 sm:text-slate-500'}`}>|</span>
+              <span className={`text-[10px] sm:text-[11px] font-medium leading-none ${isDark ? 'text-slate-200 sm:text-slate-100' : 'text-slate-700 sm:text-slate-800'}`}>
+                <span className="font-semibold">{moneylineSummary.count}/{moneylineSummary.totalGames}</span>
+              </span>
+            </div>
+            <div className="flex w-[72px] shrink-0 justify-end pointer-events-auto sm:w-[108px]">
+              {worldCupCompetitionOverlay}
+            </div>
           </div>
         ) : null}
         {(loading && !data) || awaitingChartRows ? (
@@ -4732,6 +4738,7 @@ function WorldCupGameByGameChart({
             barAnimationEasing="ease-out"
             centerAverageOverlay
             averageOverlayInsideChart
+            overlayEnd={!isMoneyline ? worldCupCompetitionOverlay : undefined}
             desktopChartLeftInset={40}
             desktopChartRightInset={8}
             desktopChartRightMargin={8}
