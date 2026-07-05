@@ -166,7 +166,6 @@ export function AflTeamSelectionsCard({
   const [data, setData] = useState<TeamSelectionsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retried, setRetried] = useState(false);
 
   const fetchLineup = (refresh = false) => {
     const params = new URLSearchParams();
@@ -179,7 +178,6 @@ export function AflTeamSelectionsCard({
 
   useEffect(() => {
     let cancelled = false;
-    setRetried(false);
     setLoading(true);
     setError(null);
 
@@ -189,48 +187,6 @@ export function AflTeamSelectionsCard({
         if (json?.error && !json?.url) {
           setError(json.error);
           setData(null);
-          return;
-        }
-        const initialMatchMismatch =
-          playerTeam?.trim() &&
-          expectedOpponentTeam?.trim() &&
-          json?.home_team &&
-          json?.away_team &&
-          !matchIncludesExpectedOpponent(
-            { home_team: json.home_team, away_team: json.away_team },
-            playerTeam,
-            expectedOpponentTeam
-          );
-        if (initialMatchMismatch && !retried) {
-          setRetried(true);
-          fetchLineup(true)
-            .then((retryJson) => {
-              if (cancelled) return;
-              const retryPositions = Array.isArray(retryJson?.positions) ? retryJson.positions : [];
-              const retryInterchange = retryJson?.interchange ?? { home: [], away: [] };
-              setData({
-                url: retryJson?.url ?? TEAM_SELECTIONS_URL,
-                title: retryJson?.title ?? null,
-                round_label: retryJson?.round_label ?? null,
-                match: retryJson?.match ?? null,
-                home_team: retryJson?.home_team ?? null,
-                away_team: retryJson?.away_team ?? null,
-                positions: retryPositions,
-                interchange: retryInterchange,
-                ins: retryJson?.ins ?? { home: [], away: [] },
-                outs: retryJson?.outs ?? { home: [], away: [] },
-                emergencies: retryJson?.emergencies ?? { home: [], away: [] },
-                average_attributes: retryJson?.average_attributes ?? null,
-                total_players_by_games: retryJson?.total_players_by_games ?? null,
-              });
-              setError(retryJson?.error ?? null);
-            })
-            .catch((e) => {
-              if (!cancelled) setError(e?.message ?? 'Failed to load');
-            })
-            .finally(() => {
-              if (!cancelled) setLoading(false);
-            });
           return;
         }
         const positions = Array.isArray(json?.positions) ? json.positions : [];
@@ -277,40 +233,6 @@ export function AflTeamSelectionsCard({
           }
         }
 
-        if (!hasLineup && json?.match && json?.home_team && json?.away_team && !retried) {
-          setRetried(true);
-          fetchLineup(true).then((retryJson) => {
-            if (cancelled) return;
-            const retryPos = Array.isArray(retryJson?.positions) ? retryJson.positions : [];
-            const retryInter = retryJson?.interchange ?? { home: [], away: [] };
-            let retryHome = (retryInter.home ?? []).length + ((retryJson?.emergencies as { home?: string[] })?.home ?? []).length;
-            let retryAway = (retryInter.away ?? []).length + ((retryJson?.emergencies as { away?: string[] })?.away ?? []).length;
-            for (const row of retryPos) {
-              retryHome += (row.home_players ?? []).length;
-              retryAway += (row.away_players ?? []).length;
-            }
-            const retryHasBoth = retryHome > 0 && retryAway > 0;
-            if (retryHasBoth && retryJson?.home_team && retryJson?.away_team) {
-              setData({
-                url: retryJson?.url ?? TEAM_SELECTIONS_URL,
-                title: retryJson?.title ?? null,
-                round_label: retryJson?.round_label ?? null,
-                match: retryJson?.match ?? null,
-                home_team: retryJson?.home_team ?? null,
-                away_team: retryJson?.away_team ?? null,
-                positions: retryPos,
-                interchange: retryInter,
-                ins: retryJson?.ins ?? { home: [], away: [] },
-                outs: retryJson?.outs ?? { home: [], away: [] },
-                emergencies: retryJson?.emergencies ?? { home: [], away: [] },
-                average_attributes: retryJson?.average_attributes ?? null,
-                total_players_by_games: retryJson?.total_players_by_games ?? null,
-              });
-              setError(null);
-            }
-          }).finally(() => { if (!cancelled) setLoading(false); });
-          return;
-        }
         setData({
           url: json?.url ?? TEAM_SELECTIONS_URL,
           title: json?.title ?? null,
@@ -335,13 +257,11 @@ export function AflTeamSelectionsCard({
         }
       })
       .finally(() => {
-        if (!cancelled && !retried) setLoading(false);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  // Refetch when playerTeam changes so we show the correct match lineup
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- retried is internal, avoid extra runs
   }, [expectedOpponentTeam, playerTeam]);
 
   const borderCls = isDark ? 'border-gray-600' : 'border-gray-200';

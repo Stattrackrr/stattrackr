@@ -16,8 +16,8 @@ const FETCH_HEADERS = {
   Referer: 'https://www.footywire.com/',
 };
 const SNAPSHOT_HTML_PATH = path.join(process.cwd(), 'data', 'afl-team-selections-snapshot.html');
-const FETCH_ATTEMPTS = 5;
-const FETCH_RETRY_BASE_MS = 2500;
+const LIVE_FETCH_ATTEMPTS = 2;
+const LIVE_FETCH_RETRY_BASE_MS = 800;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,7 +37,7 @@ async function fetchFootywireSelectionsHtml(): Promise<
 > {
   let lastStatus: number | undefined;
   let lastError = 'unknown';
-  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= LIVE_FETCH_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(FOOTYWIRE_TEAM_SELECTIONS_URL, {
         headers: FETCH_HEADERS,
@@ -51,8 +51,8 @@ async function fetchFootywireSelectionsHtml(): Promise<
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
-    if (attempt < FETCH_ATTEMPTS) {
-      await sleep(FETCH_RETRY_BASE_MS * attempt);
+    if (attempt < LIVE_FETCH_ATTEMPTS) {
+      await sleep(LIVE_FETCH_RETRY_BASE_MS * attempt);
     }
   }
   return { ok: false, status: lastStatus, error: lastError };
@@ -1422,6 +1422,24 @@ function findMatchByCanonicalTeams(
   return matches.find((m) => matchIncludesExactTeams(m, teamParam, opponentParam));
 }
 
+function loadRoundDataFromSnapshot(): TeamSelectionsRoundResponse | null {
+  const html = readSnapshotHtml();
+  if (!html) return null;
+  return parseFullPage(html);
+}
+
+function respondFromRoundData(
+  roundData: TeamSelectionsRoundResponse,
+  teamParam: string | null,
+  opponentParam: string | null,
+  source: string
+) {
+  if (teamParam && roundData.matches.length > 0) {
+    return respondForTeamParam(roundData, teamParam, opponentParam, source);
+  }
+  return NextResponse.json({ ...roundData, source });
+}
+
 export async function GET(request: Request) {
   const url = request.url ? new URL(request.url) : null;
   const skipCache = url?.searchParams.get('refresh') === '1' || url?.searchParams.get('refresh') === 'true';
@@ -1429,27 +1447,15 @@ export async function GET(request: Request) {
   const opponentParam = url?.searchParams.get('opponent')?.trim() || null;
 
   if (!skipCache && cached && cached.expiresAt > Date.now()) {
-    const data = cached.data;
-    if (teamParam && data.matches?.length) {
-      const exactFound = findMatchByCanonicalTeams(data.matches, teamParam, opponentParam);
-      if (opponentParam && !exactFound) {
-        // The cached round snapshot does not include the requested opponent matchup.
-        // Fetch a fresh FootyWire page below before falling back to an older lineup.
-      } else {
-        const found = exactFound ?? findMatchByCanonicalTeam(data.matches, teamParam);
-      if (found) {
-        if (isLikelyCorruptBenchLists(found)) {
-          // Ignore stale/corrupt cache and fetch fresh page below.
-        } else {
-          return NextResponse.json(responseForFoundMatch(data, found, 'footywire.com'));
-        }
-      } else {
-        // Requested team not in cache: fetch a fresh FootyWire page below.
-      }
-      // Found a team match in cache, but it's suspicious; fetch fresh below.
-      }
-    } else {
-      return NextResponse.json({ ...data, source: 'footywire.com' });
+    return respondFromRoundData(cached.data, teamParam, opponentParam, 'footywire.com');
+  }
+
+  // Fast path: committed FootyWire snapshot (refreshed by AFL Process Stats cron every ~2h).
+  if (!skipCache) {
+    const snapshotRound = loadRoundDataFromSnapshot();
+    if (snapshotRound?.matches?.length) {
+      cached = { expiresAt: Date.now() + TTL_MS, data: snapshotRound };
+      return respondFromRoundData(snapshotRound, teamParam, opponentParam, 'footywire-snapshot');
     }
   }
 
