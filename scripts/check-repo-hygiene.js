@@ -22,9 +22,15 @@ function run(command) {
   }).trim();
 }
 
-function getTrackedFiles() {
-  const output = run('git ls-files');
-  return output ? output.split(/\r?\n/).filter(Boolean) : [];
+function getTrackedViolations() {
+  const violations = [];
+  for (const prefix of FORBIDDEN_TRACKED_PREFIXES) {
+    const output = run(`git ls-files -- "${prefix}"`);
+    if (output) {
+      violations.push(...output.split(/\r?\n/).filter(Boolean));
+    }
+  }
+  return violations;
 }
 
 function getChangedFiles() {
@@ -51,12 +57,8 @@ function getChangedFiles() {
 }
 
 function main() {
-  const trackedFiles = getTrackedFiles();
   const changedFiles = getChangedFiles();
-
-  const trackedViolations = trackedFiles.filter((file) =>
-    FORBIDDEN_TRACKED_PREFIXES.some((prefix) => file.startsWith(prefix))
-  );
+  const trackedViolations = getTrackedViolations();
 
   const changedViolations = changedFiles
     .filter((file) => !file.isDeletion)
