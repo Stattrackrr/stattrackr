@@ -68,7 +68,7 @@
       "maxDuration": 120
     },
     "app/api/afl/props-stats/warm/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 600
     },
     "app/api/world-cup/dashboard/route.ts": {
       "maxDuration": 300

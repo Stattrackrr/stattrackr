@@ -4,6 +4,7 @@ import { runAflPropsStatsWarm } from '@/lib/aflPropsStatsWarm';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 600;
 
 /**
  * GET /api/afl/props-stats/warm
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl?.origin ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   const baseUrl = origin.startsWith('http') ? origin : `https://${origin}`;
   const useListApi = request.nextUrl?.searchParams?.get('useList') === '1';
+  const skipListEnrich = request.nextUrl?.searchParams?.get('skipListEnrich') === '1';
   const cronSecret = (process.env.CRON_SECRET ?? '').replace(/\r\n|\r|\n/g, '').trim();
 
   const result = await runAflPropsStatsWarm(baseUrl, { useListApi, cronSecret });
@@ -29,19 +31,21 @@ export async function GET(request: NextRequest) {
   }
 
   // Rebuild enriched list payload after stats warm so props page doesn't keep stale H2H/L5/L10 values.
-  try {
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (cronSecret) {
-      headers.Authorization = `Bearer ${cronSecret}`;
-      headers['X-Cron-Secret'] = cronSecret;
+  if (!skipListEnrich) {
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (cronSecret) {
+        headers.Authorization = `Bearer ${cronSecret}`;
+        headers['X-Cron-Secret'] = cronSecret;
+      }
+      await fetch(`${baseUrl}/api/afl/player-props/list?enrich=true`, {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      });
+    } catch {
+      // Ignore prewarm errors; the warm result above is still valid.
     }
-    await fetch(`${baseUrl}/api/afl/player-props/list?enrich=true`, {
-      method: 'GET',
-      headers,
-      cache: 'no-store',
-    });
-  } catch {
-    // Ignore prewarm errors; the warm result above is still valid.
   }
 
   const message =
