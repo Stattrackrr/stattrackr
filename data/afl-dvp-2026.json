@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-06T02:59:44.595Z",
+  "generatedAt": "2026-07-06T08:34:23.783Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -8,10 +8,10 @@
     "withLogs": 580,
     "missingLogs": 198,
     "coveragePct": 74.55,
-    "eligiblePlayers": 585,
+    "eligiblePlayers": 592,
     "withLogsEligible": 567,
-    "missingEligible": 18,
-    "coveragePctEligible": 96.92
+    "missingEligible": 25,
+    "coveragePctEligible": 95.78
   },
   "leagueBaselineByPosition": {
     "DEF": {
@@ -7930,8 +7930,8 @@
       "position": "MID",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Blake Thredgold",
@@ -8119,8 +8119,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Eamonn Armstrong",
@@ -8308,8 +8308,8 @@
       "position": "MID",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Jack Payne",
@@ -8848,8 +8848,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Matt Whitlock",
@@ -9001,8 +9001,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Noah Roberts-Thompson",
@@ -9163,8 +9163,8 @@
       "position": "MID",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Riley Onley",
@@ -9334,8 +9334,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Toby Conway",
