@@ -49,8 +49,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Compare tab: fetch from ft_player_rankings (URL changes per stat: st=DI, KI, HB, MA, GO, ...) — 2026 primary
+      # FootyWire 503 from GitHub Actions is common — --allow-stale keeps committed data.
       - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026
+        continue-on-error: true
         run: |
           npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale
           npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale
@@ -64,11 +65,13 @@ jobs:
 
       # Opponent Breakdown: team rankings (OA/TA) — 2026 + 2025 (single workflow)
       - name: Fetch team rankings (Opponent Breakdown) 2026 + 2025
+        continue-on-error: true
         run: |
           npm run fetch:footywire-team-rankings -- --season=2026 --allow-stale
           npm run fetch:footywire-team-rankings -- --season=2025 --allow-stale
 
       - name: Fetch injuries and team selections (dashboard sidebar)
+        continue-on-error: true
         run: |
           npm run fetch:footywire-injuries -- --allow-stale
           npm run fetch:footywire-team-selections -- --allow-stale

@@ -31,6 +31,10 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isFootywireUnavailableStatus(status) {
+  return status === 429 || status === 502 || status === 503;
+}
+
 function htmlToText(v) {
   return String(v || '')
     .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -117,6 +121,7 @@ async function fetchInjuries() {
       const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
       if (!res.ok) {
         lastError = `HTTP ${res.status}`;
+        if (isFootywireUnavailableStatus(res.status)) break;
       } else {
         const html = await res.text();
         const injuries = parseInjuryList(html);

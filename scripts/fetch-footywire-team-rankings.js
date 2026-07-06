@@ -29,6 +29,20 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isFootywireUnavailableStatus(status) {
+  return status === 429 || status === 502 || status === 503;
+}
+
+async function probeFootywireTeamRankings(season) {
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_team_rankings?year=${season}&type=TA`;
+  try {
+    const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, status: 0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 function getArg(name, fallback) {
   const pref = `--${name}=`;
   const raw = process.argv.find((a) => a.startsWith(pref));
@@ -199,6 +213,7 @@ async function fetchOne(season, type) {
       console.warn(
         `  FootyWire ${baseType}${advParam ? ' (advanced)' : ''} attempt ${attempt}/${FETCH_ATTEMPTS} failed: ${lastError}`,
       );
+      if (isFootywireUnavailableStatus(res.status)) break;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
       console.warn(
@@ -241,6 +256,19 @@ async function main() {
   const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
   const allowStale = process.argv.includes('--allow-stale');
   let season = parseInt(getArg('season', String(year)), 10) || year;
+
+  if (allowStale && existingRankingsLookValid(season)) {
+    const probe = await probeFootywireTeamRankings(season);
+    if (!probe.ok && (isFootywireUnavailableStatus(probe.status) || probe.status === 0)) {
+      const paths = rankingsOutputPaths(season);
+      console.warn(
+        `FootyWire unavailable (HTTP ${probe.status || probe.error || 'error'}); keeping existing rankings:`,
+        paths.ta,
+        paths.oa,
+      );
+      return;
+    }
+  }
 
   console.log(`Fetching Footywire team rankings for ${season}...`);
 

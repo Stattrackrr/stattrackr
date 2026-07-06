@@ -31,6 +31,21 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** FootyWire rate limits / overload — retrying the same request wastes CI minutes. */
+function isFootywireUnavailableStatus(status) {
+  return status === 429 || status === 502 || status === 503;
+}
+
+async function probeFootywireRankings(season) {
+  const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&pt=&st=DI&mg=1`;
+  try {
+    const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, status: 0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 function normalizePlayerName(value) {
   return String(value ?? '')
     .trim()
@@ -250,6 +265,7 @@ async function fetchOne(season, st, statKey) {
       }
       lastError = `HTTP ${res.status}, rows=${rows.length}`;
       console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} failed: ${lastError}`);
+      if (isFootywireUnavailableStatus(res.status)) break;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
       console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} error: ${lastError}`);
@@ -304,9 +320,13 @@ async function fetchSeason(season) {
   const allStats = [];
   for (let i = 0; i < STAT_PAGES.length; i++) {
     const { key, st } = STAT_PAGES[i];
-    const { ok, html, url, rows } = await fetchOne(season, st, key);
+    const { ok, html, url, rows, error } = await fetchOne(season, st, key);
     if (!ok) {
       console.warn(`  Skipping ${key} (st=${st}): request failed`);
+      if (i === 0 && /HTTP (429|502|503)/.test(String(error ?? ''))) {
+        console.warn('  FootyWire appears unavailable; skipping remaining stat pages.');
+        break;
+      }
       if (i < STAT_PAGES.length - 1) await sleep(STAT_FETCH_DELAY_MS);
       continue;
     }
@@ -337,6 +357,16 @@ async function main() {
   let season = parseInt(getArg('season', String(year)), 10) || year;
   const requestedSeason = season;
   const existing = readExistingLeagueStats(requestedSeason);
+
+  if (allowStale && existingLeagueStatsLookValid(existing, requestedSeason)) {
+    const probe = await probeFootywireRankings(requestedSeason);
+    if (!probe.ok && (isFootywireUnavailableStatus(probe.status) || probe.status === 0)) {
+      console.warn(
+        `FootyWire unavailable (HTTP ${probe.status || probe.error || 'error'}); keeping existing ${leagueStatsFilePath(requestedSeason)}`,
+      );
+      return;
+    }
+  }
 
   console.log(`Fetching FootyWire league player stats for ${season}...`);
   let allStats = await fetchSeason(season);

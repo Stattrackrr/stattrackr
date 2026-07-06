@@ -31,6 +31,10 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isFootywireUnavailableStatus(status) {
+  return status === 429 || status === 502 || status === 503;
+}
+
 function snapshotLooksValid(html) {
   if (!html || html.length < 5000) return false;
   return /afl_team_selections|tbtitle/i.test(html) && /Interchange/i.test(html);
@@ -52,6 +56,7 @@ async function fetchHtml() {
       const res = await fetch(FOOTYWIRE_URL, { headers: FOOTYWIRE_HEADERS });
       if (!res.ok) {
         lastError = `HTTP ${res.status}`;
+        if (isFootywireUnavailableStatus(res.status)) break;
       } else {
         const html = await res.text();
         if (snapshotLooksValid(html)) return { ok: true, html };
@@ -67,8 +72,28 @@ async function fetchHtml() {
   return { ok: false, error: lastError };
 }
 
+async function probeFootywireSelections() {
+  try {
+    const res = await fetch(FOOTYWIRE_URL, { headers: FOOTYWIRE_HEADERS });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, status: 0, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 async function main() {
   const allowStale = process.argv.includes('--allow-stale');
+
+  if (allowStale && existingSnapshotLooksValid()) {
+    const probe = await probeFootywireSelections();
+    if (!probe.ok && (isFootywireUnavailableStatus(probe.status) || probe.status === 0)) {
+      console.warn(
+        `FootyWire unavailable (HTTP ${probe.status || probe.error || 'error'}). Keeping existing snapshot:`,
+        HTML_PATH,
+      );
+      return;
+    }
+  }
 
   console.log('Fetching Footywire AFL team selections...');
   console.log(`  ${FOOTYWIRE_URL}`);
