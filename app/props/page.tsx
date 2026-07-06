@@ -1076,6 +1076,98 @@ function worldCupPropHasHistoricalStats(row: {
   return row.last5Avg != null || row.last10Avg != null || row.seasonAvg != null;
 }
 
+function aflPropHasHistoricalStats(row: {
+  last5Avg?: number | null;
+  last10Avg?: number | null;
+  seasonAvg?: number | null;
+}): boolean {
+  return row.last5Avg != null || row.last10Avg != null || row.seasonAvg != null;
+}
+
+function countAflPropsWithHistoricalStats(props: PlayerProp[]): number {
+  return props.filter(isAflCombinedListProp).filter(aflPropHasHistoricalStats).length;
+}
+
+function aflPropsMissingHistoricalStats(props: PlayerProp[]): boolean {
+  const listed = props.filter(isAflCombinedListProp);
+  if (listed.length === 0) return false;
+  return countAflPropsWithHistoricalStats(listed) === 0;
+}
+
+async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerProp[] | null> {
+  const needsStats = props
+    .filter(
+      (p) =>
+        isAflCombinedListProp(p) &&
+        !aflPropHasHistoricalStats(p) &&
+        p.overOdds &&
+        p.overOdds !== 'N/A'
+    )
+    .slice(0, 60);
+  if (needsStats.length === 0) return null;
+
+  const batchProps = needsStats.map((p) => ({
+    playerName: p.playerName,
+    team: p.team,
+    opponent: p.opponent,
+    statType: p.statType,
+    line: p.line,
+  }));
+
+  try {
+    const res = await fetch('/api/afl/props-stats/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ props: batchProps }),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      stats?: Record<
+        string,
+        {
+          last5Avg?: number | null;
+          last10Avg?: number | null;
+          h2hAvg?: number | null;
+          seasonAvg?: number | null;
+          streak?: number | null;
+          last5HitRate?: { hits: number; total: number } | null;
+          last10HitRate?: { hits: number; total: number } | null;
+          h2hHitRate?: { hits: number; total: number } | null;
+          seasonHitRate?: { hits: number; total: number } | null;
+          dvpRating?: number | null;
+          dvpStatValue?: number | null;
+        }
+      >;
+    };
+    const stats = data.stats ?? {};
+    let merged = 0;
+    const updated = props.map((p) => {
+      const key = `${p.playerName}|${p.statType}|${p.team}|${p.opponent}|${p.line}`;
+      const s = stats[key];
+      if (!s) return p;
+      merged++;
+      return {
+        ...p,
+        last5Avg: s.last5Avg ?? p.last5Avg,
+        last10Avg: s.last10Avg ?? p.last10Avg,
+        h2hAvg: s.h2hAvg ?? p.h2hAvg,
+        seasonAvg: s.seasonAvg ?? p.seasonAvg,
+        streak: s.streak ?? p.streak,
+        last5HitRate: s.last5HitRate ?? p.last5HitRate,
+        last10HitRate: s.last10HitRate ?? p.last10HitRate,
+        h2hHitRate: s.h2hHitRate ?? p.h2hHitRate,
+        seasonHitRate: s.seasonHitRate ?? p.seasonHitRate,
+        dvpRating: s.dvpRating ?? p.dvpRating,
+        dvpStatValue: s.dvpStatValue ?? p.dvpStatValue,
+      };
+    });
+    return merged > 0 ? updated : null;
+  } catch {
+    return null;
+  }
+}
+
 function countWorldCupPropsWithHistoricalStats(props: PlayerProp[]): number {
   return filterWorldCupListProps(props).filter(worldCupPropHasHistoricalStats).length;
 }
@@ -1137,11 +1229,15 @@ function readSecondaryPropsSessionCache(sport: 'afl' | 'world-cup'): SecondaryPr
     const propsRaw = Array.isArray(parsed?.props) ? parsed.props : [];
     const props =
       sport === 'world-cup' ? hydrateWorldCupPropsFromCacheRows(propsRaw) : propsRaw;
+    const statsFresh =
+      sport === 'world-cup'
+        ? !worldCupPropsMissingHistoricalStats(props)
+        : !aflPropsMissingHistoricalStats(props);
     return {
       props,
       games: Array.isArray(parsed?.games) ? parsed.games : [],
       selectedGameIds: Array.isArray(parsed?.selectedGameIds) ? parsed.selectedGameIds : [],
-      isFresh,
+      isFresh: isFresh && statsFresh,
     };
   } catch {
     return empty;
@@ -1212,6 +1308,9 @@ function combinedModeNeedsDataRefresh(
   if (filterWorldCupListProps(worldCupProps).length > 0 && worldCupPropsMissingHistoricalStats(worldCupProps)) {
     // Stats may still be warming — keep showing odds rows; do not block the combined feed as "incomplete".
     return missingAfl || missingWc;
+  }
+  if (aflProps.some(isAflCombinedListProp) && aflPropsMissingHistoricalStats(aflProps)) {
+    return true;
   }
   return false;
 }
@@ -3289,6 +3388,9 @@ export default function NBALandingPage() {
       if (listSport === 'world-cup' && worldCupPropsMissingHistoricalStats(aflProps)) {
         return worldCupBackNavSkipFetchPending();
       }
+      if (listSport === 'afl' && aflPropsMissingHistoricalStats(aflProps)) {
+        return false;
+      }
       return true;
     };
 
@@ -3387,10 +3489,19 @@ export default function NBALandingPage() {
           setAflIngestMessage(result.ingestMessage ?? null);
           setAflLastUpdated(result.lastUpdated ?? null);
         }
-        if (aggregated.length > 0) hadNonEmptyFresh = true;
+        let propsToCommit = aggregated;
+        if (
+          listSport === 'afl' &&
+          aggregated.length > 0 &&
+          aflPropsMissingHistoricalStats(aggregated)
+        ) {
+          const backfilled = await backfillAflPropStatsBatch(aggregated);
+          if (backfilled) propsToCommit = backfilled;
+        }
+        if (propsToCommit.length > 0) hadNonEmptyFresh = true;
 
         // Retry once when empty and we never got props this run (transient failure or cache expiry)
-        if (aggregated.length === 0 && !hadNonEmptyFresh && !cancelled && (listSport === 'afl' || listSport === 'world-cup')) {
+        if (propsToCommit.length === 0 && !hadNonEmptyFresh && !cancelled && (listSport === 'afl' || listSport === 'world-cup')) {
           await new Promise((r) => setTimeout(r, 2000));
           if (cancelled) return;
           result = await doFetch();
@@ -3465,8 +3576,8 @@ export default function NBALandingPage() {
           return;
         }
         // Keep visible rows when WC stats filter yields empty on first response (AFL does not hit this).
-        if (canReplaceSecondaryProps(aggregated)) {
-          commitSecondaryProps(aggregated);
+        if (canReplaceSecondaryProps(propsToCommit)) {
+          commitSecondaryProps(propsToCommit);
           if (games.length > 0) {
             syncSelectedAflGames(games.map((g) => g.gameId));
           }
@@ -3475,14 +3586,16 @@ export default function NBALandingPage() {
             setAflLastUpdated(result.lastUpdated ?? null);
             try {
               const toCache = {
-                props: aggregated,
+                props: propsToCommit,
                 games,
               selectedGameIds: getSelectedAflGameIdsForCache(
                 games.length > 0 ? games.map((g) => g.gameId) : []
               ),
                 timestamp: Date.now(),
               };
-              sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
+              if (listSport !== 'afl' || !aflPropsMissingHistoricalStats(propsToCommit)) {
+                sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
+              }
             } catch {
               // Ignore cache write (quota, etc.)
             }
@@ -3930,7 +4043,12 @@ export default function NBALandingPage() {
           const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
           const aflPayload = await aflResponse.json();
           const aflResult = aggregateAflListPayload(aflPayload);
-          if (aflResult.aggregated.length > 0) {
+          let aflPropsForSnapshot = aflResult.aggregated;
+          if (aflPropsForSnapshot.length > 0 && aflPropsMissingHistoricalStats(aflPropsForSnapshot)) {
+            const backfilled = await backfillAflPropStatsBatch(aflPropsForSnapshot);
+            if (backfilled) aflPropsForSnapshot = backfilled;
+          }
+          if (aflPropsForSnapshot.length > 0) {
             applyCombinedSnapshot(
               buildProgressiveSnapshot({
                 afl: {
@@ -3941,7 +4059,7 @@ export default function NBALandingPage() {
                   ingestMessage: aflResult.ingestMessage ?? null,
                   noAflOdds: aflResult.noAflOdds === true,
                   games: aflResult.games,
-                  props: aflResult.aggregated,
+                  props: aflPropsForSnapshot,
                   debugMeta: aflResult.debugMeta ?? null,
                 },
               }),
@@ -3950,6 +4068,46 @@ export default function NBALandingPage() {
           }
         } catch {
           // ignore AFL refill errors
+        }
+        combinedPartialAflRefetchAttemptedRef.current = true;
+      }
+
+      if (
+        !missingAfl &&
+        mergedAfl.length > 0 &&
+        aflPropsMissingHistoricalStats(mergedAfl) &&
+        !combinedPartialAflRefetchAttemptedRef.current
+      ) {
+        try {
+          const aflUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
+          const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
+          const aflPayload = await aflResponse.json();
+          const aflResult = aggregateAflListPayload(aflPayload);
+          let aflPropsForSnapshot = aflResult.aggregated;
+          if (aflPropsForSnapshot.length > 0 && aflPropsMissingHistoricalStats(aflPropsForSnapshot)) {
+            const backfilled = await backfillAflPropStatsBatch(aflPropsForSnapshot);
+            if (backfilled) aflPropsForSnapshot = backfilled;
+          }
+          if (aflPropsForSnapshot.length > 0 && !aflPropsMissingHistoricalStats(aflPropsForSnapshot)) {
+            applyCombinedSnapshot(
+              buildProgressiveSnapshot({
+                afl: {
+                  ok: true,
+                  status: aflResponse.status,
+                  lastUpdated: aflResult.lastUpdated ?? null,
+                  nextUpdate: aflResult.nextUpdate ?? null,
+                  ingestMessage: aflResult.ingestMessage ?? null,
+                  noAflOdds: aflResult.noAflOdds === true,
+                  games: aflResult.games,
+                  props: aflPropsForSnapshot,
+                  debugMeta: aflResult.debugMeta ?? null,
+                },
+              }),
+              { persistCaches: false }
+            );
+          }
+        } catch {
+          // ignore AFL stats refill errors
         }
         combinedPartialAflRefetchAttemptedRef.current = true;
       }
