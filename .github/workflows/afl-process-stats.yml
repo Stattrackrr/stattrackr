@@ -245,6 +245,28 @@ jobs:
             echo "✅ Props stats warm done"
           fi
 
+      - name: Prewarm AFL enriched props list for props page
+        if: steps.check.outputs.configured == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔄 Building enriched AFL props list cache for /props page..."
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            -L --max-time 360 \
+            --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          PROPS=$(node -e "try { const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.propsCount ?? (Array.isArray(j.data)?j.data.length:0))); } catch { process.stdout.write('0'); }" "$BODY")
+          GAMES=$(node -e "try { const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.gamesCount ?? (Array.isArray(j.games)?j.games.length:0))); } catch { process.stdout.write('0'); }" "$BODY")
+          echo "Enriched list prewarm HTTP ${HTTP_STATUS:-?}: games=${GAMES} props=${PROPS}"
+          if [ "${HTTP_STATUS}" = "200" ] && [ "${PROPS}" -gt "0" ]; then
+            echo "✅ Enriched AFL props list cached"
+          else
+            echo "⚠️ Enriched list prewarm did not populate props (props page may rebuild on first load)"
+          fi
+
       # Guardrail: ensure list DvP ranks match DvP card source for all props rows.
       # Fails workflow on any mismatch so regressions are caught before users see split ranks.
       - name: Validate AFL DvP consistency across all props players

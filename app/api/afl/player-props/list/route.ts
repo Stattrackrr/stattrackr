@@ -10,7 +10,7 @@ import {
   refreshAflPlayerPropsCache,
   type AflListPropRow,
 } from '@/lib/aflPlayerPropsCache';
-import { filterAflEnrichedListPayload, AFL_USER_NO_ODDS } from '@/lib/combinedPropsSnapshotTypes';
+import { filterAflEnrichedListPayload, AFL_USER_NO_ODDS, aflEnrichedPayloadHasEligibleLiveRows } from '@/lib/combinedPropsSnapshotTypes';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
@@ -238,7 +238,9 @@ export async function GET(request: Request) {
       const now = Date.now();
       if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
         const memoryPayload = await pickBestEnrichedPayload(aflEnrichedPayloadMemoryCache.payload);
-        if (memoryPayload) return jsonEnrichedPayload(memoryPayload);
+        if (memoryPayload && aflEnrichedPayloadHasEligibleLiveRows(memoryPayload, now)) {
+          return jsonEnrichedPayload(memoryPayload);
+        }
       }
       const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
         restTimeoutMs: 4000,
@@ -248,13 +250,17 @@ export async function GET(request: Request) {
       const bestSupabase = await pickBestEnrichedPayload(
         supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null
       );
-      if (bestSupabase) return jsonEnrichedPayload(bestSupabase);
+      if (bestSupabase && aflEnrichedPayloadHasEligibleLiveRows(bestSupabase, now)) {
+        return jsonEnrichedPayload(bestSupabase);
+      }
 
       const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
       const bestRedis = await pickBestEnrichedPayload(
         cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null
       );
-      if (bestRedis) return jsonEnrichedPayload(bestRedis);
+      if (bestRedis && aflEnrichedPayloadHasEligibleLiveRows(bestRedis, now)) {
+        return jsonEnrichedPayload(bestRedis);
+      }
     }
 
     // Single source of truth for cron/debug: get games from the Odds API.
@@ -933,16 +939,18 @@ export async function GET(request: Request) {
         const stalePayload = await getAflStaleEnrichedPayload();
         if (stalePayload && aflEnrichedPayloadHasUsableStats(stalePayload)) {
           const staleMarked = markAflEnrichedPayloadStale(stalePayload, 'live_assembly_degraded');
-          aflEnrichedPayloadMemoryCache = {
-            payload: staleMarked,
-            expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
-          };
-          const filteredStale = filterAflEnrichedListPayload(staleMarked) ?? staleMarked;
-          return NextResponse.json(filteredStale, {
-            headers: {
-              'Cache-Control': AFL_LIST_CACHE_CONTROL,
-            },
-          });
+          if (aflEnrichedPayloadHasEligibleLiveRows(staleMarked)) {
+            aflEnrichedPayloadMemoryCache = {
+              payload: staleMarked,
+              expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+            };
+            const filteredStale = filterAflEnrichedListPayload(staleMarked) ?? staleMarked;
+            return NextResponse.json(filteredStale, {
+              headers: {
+                'Cache-Control': AFL_LIST_CACHE_CONTROL,
+              },
+            });
+          }
         }
       }
 

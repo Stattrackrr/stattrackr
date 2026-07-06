@@ -200,3 +200,13 @@ export function filterAflEnrichedListPayload(
 
   return result;
 }
+
+/** False when cached enriched payload only contains past games (live cutoff removes all rows). */
+export function aflEnrichedPayloadHasEligibleLiveRows(
+  payload: Record<string, unknown> | null | undefined,
+  nowMs = Date.now()
+): boolean {
+  const filtered = filterAflEnrichedListPayload(payload, nowMs);
+  const data = Array.isArray(filtered?.data) ? filtered.data : [];
+  return data.length > 0;
+}
