@@ -6,6 +6,7 @@ import {
   filterAflPropRowsByCommenceTime,
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
+import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
 import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
@@ -357,6 +358,13 @@ export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): b
   return !Number.isFinite(staleAt) || staleAt <= Date.now();
 }
 
+function combinedSnapshotAflStatsUsable(snapshot: CombinedPropsSnapshot): boolean {
+  const props = snapshot.afl?.props ?? [];
+  if (props.length === 0) return true;
+  const payload = { data: props };
+  return aflEnrichedPayloadHasUsableStats(payload);
+}
+
 /** Drop AFL props/games whose kickoff was more than one hour ago (even from cached snapshots). */
 export function filterCombinedSnapshotAflEligibility(
   snapshot: CombinedPropsSnapshot,
@@ -476,7 +484,7 @@ export async function buildCombinedPropsSnapshot(
     },
   };
 
-  if (snapshot.success && writeCache && !debugStats) {
+  if (snapshot.success && writeCache && !debugStats && combinedSnapshotAflStatsUsable(snapshot)) {
     await writeCombinedPropsSnapshotCaches(snapshot);
   }
 

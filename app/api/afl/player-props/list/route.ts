@@ -32,10 +32,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 /** List is always dynamic/no-store; user path is strict cache-read for low latency. */
 const AFL_LIST_CACHE_CONTROL = 'private, no-store';
-// User-facing list endpoint must never block on live game-log fetches.
-// Miss healing is handled by cron/debug-auth paths, not by interactive page loads.
-const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 0;
-const MISS_COMPUTE_BG_LIMIT_NO_CRON = 0;
+// User-facing list endpoint: compute a small sync subset on cache miss so props cards
+// are not stuck on N/A when enriched cache was built before stats warm finished.
+// Background compute fills the rest without blocking the response.
+const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 50;
+const MISS_COMPUTE_BG_LIMIT_NO_CRON = 250;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v5';
@@ -193,6 +194,17 @@ async function pickBestEnrichedPayload(
   return primary ?? null;
 }
 
+/** User fast-path cache must include stats, not just odds rows with live kickoffs. */
+function enrichedPayloadReadyForUsers(
+  payload: Record<string, unknown> | null | undefined,
+  nowMs = Date.now()
+): boolean {
+  return (
+    aflEnrichedPayloadHasEligibleLiveRows(payload, nowMs) &&
+    aflEnrichedPayloadHasUsableStats(payload)
+  );
+}
+
 function jsonEnrichedPayload(
   payload: Record<string, unknown>,
   memoryTtlSeconds = AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS,
@@ -238,7 +250,7 @@ export async function GET(request: Request) {
       const now = Date.now();
       if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
         const memoryPayload = await pickBestEnrichedPayload(aflEnrichedPayloadMemoryCache.payload);
-        if (memoryPayload && aflEnrichedPayloadHasEligibleLiveRows(memoryPayload, now)) {
+        if (memoryPayload && enrichedPayloadReadyForUsers(memoryPayload, now)) {
           return jsonEnrichedPayload(memoryPayload);
         }
       }
@@ -250,7 +262,7 @@ export async function GET(request: Request) {
       const bestSupabase = await pickBestEnrichedPayload(
         supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null
       );
-      if (bestSupabase && aflEnrichedPayloadHasEligibleLiveRows(bestSupabase, now)) {
+      if (bestSupabase && enrichedPayloadReadyForUsers(bestSupabase, now)) {
         return jsonEnrichedPayload(bestSupabase);
       }
 
@@ -258,7 +270,7 @@ export async function GET(request: Request) {
       const bestRedis = await pickBestEnrichedPayload(
         cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null
       );
-      if (bestRedis && aflEnrichedPayloadHasEligibleLiveRows(bestRedis, now)) {
+      if (bestRedis && enrichedPayloadReadyForUsers(bestRedis, now)) {
         return jsonEnrichedPayload(bestRedis);
       }
     }
@@ -954,25 +966,25 @@ export async function GET(request: Request) {
         }
       }
 
-      aflEnrichedPayloadMemoryCache = {
-        payload,
-        expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
-      };
-      await Promise.allSettled([
-        sharedCache.setJSON(
-          AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
-          payload,
-          AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
-        ),
-        setNBACache(
-          AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
-          'afl-player-props-list-enriched',
-          payload,
-          AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES,
-          true
-        ),
-      ]);
       if (aflEnrichedPayloadHasUsableStats(payload)) {
+        aflEnrichedPayloadMemoryCache = {
+          payload,
+          expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
+        };
+        await Promise.allSettled([
+          sharedCache.setJSON(
+            AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
+            payload,
+            AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS
+          ),
+          setNBACache(
+            AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
+            'afl-player-props-list-enriched',
+            payload,
+            AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_MINUTES,
+            true
+          ),
+        ]);
         await persistAflStaleEnrichedPayload(payload);
       }
     }
