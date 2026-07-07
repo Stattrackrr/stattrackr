@@ -8,5 +8,11 @@
  *   AFL_WARM_PLAYER=Heeney npm run warm:afl:player-logs:local
  */
 
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch {
+  // Optional locally.
+}
+
 process.env.PROD_URL = 'http://localhost:3000';
 require('./warm-afl-player-logs.js');
