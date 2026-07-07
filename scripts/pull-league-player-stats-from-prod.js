@@ -46,7 +46,11 @@ async function main() {
     console.error('[pull-league-stats] failed:', res.status, json?.error || json);
     process.exit(1);
   }
-  const { success: _success, error: _error, ...payload } = json;
+  if (json.fromBundledSnapshot) {
+    console.error('[pull-league-stats] prod FootyWire scrape failed; only bundled snapshot returned');
+    process.exit(1);
+  }
+  const { success: _success, error: _error, fromBundledSnapshot: _bundled, ...payload } = json;
   const outPath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
   fs.writeFileSync(outPath, JSON.stringify(payload, null, 2), 'utf8');
   console.log(`[pull-league-stats] Wrote ${outPath} (${json.playerCount ?? json.players?.length ?? '?'} players)`);

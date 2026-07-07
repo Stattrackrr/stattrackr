@@ -22,9 +22,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await buildLeaguePlayerStatsPayload(season, {
-      allowStale: false,
+      allowStale: true,
       skipStaleProbe: true,
+      allowPartialWithoutAdvanced: true,
+      statFetchDelayMs: 1200,
+      fetchAttempts: 8,
     });
+    if (result.stale && result.existing) {
+      return NextResponse.json({ success: true, ...result.existing, fromBundledSnapshot: true });
+    }
     if (result.stale || !result.payload) {
       return NextResponse.json(
         { success: false, error: result.reason || 'FootyWire scrape returned no payload' },
