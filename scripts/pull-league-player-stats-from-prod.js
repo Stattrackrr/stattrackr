@@ -32,7 +32,8 @@ async function main() {
     process.exit(1);
   }
   const season = parseInt(getArg('season', String(new Date().getFullYear())), 10);
-  const url = `${prodUrl}/api/afl/cron/league-player-stats?season=${season}`;
+  const mode = getArg('mode', 'minimal');
+  const url = `${prodUrl}/api/afl/cron/league-player-stats?season=${season}&mode=${encodeURIComponent(mode)}`;
   console.log(`[pull-league-stats] GET ${url}`);
   const res = await fetch(url, {
     headers: {
@@ -40,6 +41,7 @@ async function main() {
       Authorization: `Bearer ${cronSecret}`,
       'X-Cron-Secret': cronSecret,
     },
+    signal: AbortSignal.timeout(90_000),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json?.success === false) {
@@ -53,7 +55,10 @@ async function main() {
   const { success: _success, error: _error, fromBundledSnapshot: _bundled, ...payload } = json;
   const outPath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
   fs.writeFileSync(outPath, JSON.stringify(payload, null, 2), 'utf8');
-  console.log(`[pull-league-stats] Wrote ${outPath} (${json.playerCount ?? json.players?.length ?? '?'} players)`);
+  const maxGames = Math.max(...(payload.players || []).map((p) => Number(p.games) || 0), 0);
+  console.log(
+    `[pull-league-stats] Wrote ${outPath} (${json.playerCount ?? json.players?.length ?? '?'} players, maxGames ${maxGames}, mode ${payload.refreshMode || mode})`
+  );
 }
 
 main().catch((err) => {

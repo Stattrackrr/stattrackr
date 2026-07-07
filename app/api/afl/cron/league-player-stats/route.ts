@@ -4,11 +4,12 @@ import { buildLeaguePlayerStatsPayload } from '@/lib/afl/footywireLeaguePlayerSt
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /**
- * GET /api/afl/cron/league-player-stats?season=2026
+ * GET /api/afl/cron/league-player-stats?season=2026&mode=minimal
  * Scrapes FootyWire from production (Vercel) when GitHub Actions IPs are blocked.
+ * Default mode=minimal refreshes games/disposals from one rankings page (fast, avoids 504).
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
@@ -20,13 +21,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Invalid season' }, { status: 400 });
   }
 
+  const modeParam = (request.nextUrl.searchParams.get('mode') || 'minimal').trim().toLowerCase();
+  const mode = modeParam === 'full' ? 'full' : 'minimal';
+
   try {
     const result = await buildLeaguePlayerStatsPayload(season, {
+      mode,
       allowStale: true,
       skipStaleProbe: true,
       allowPartialWithoutAdvanced: true,
-      statFetchDelayMs: 1200,
-      fetchAttempts: 8,
+      statFetchDelayMs: mode === 'minimal' ? 400 : 1200,
+      fetchAttempts: mode === 'minimal' ? 4 : 8,
     });
     if (result.stale && result.existing) {
       return NextResponse.json({ success: true, ...result.existing, fromBundledSnapshot: true });
