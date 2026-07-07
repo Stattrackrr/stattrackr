@@ -7,7 +7,11 @@
  * Requires PROD_URL and CRON_SECRET in env.
  */
 
-require('dotenv').config({ path: '.env.local' });
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch {
+  // Optional locally; production injects env vars directly.
+}
 
 const fs = require('fs');
 const path = require('path');

@@ -9,7 +9,11 @@
  *   node scripts/fetch-footywire-league-player-stats.js --season=2025
  */
 
-require('dotenv').config({ path: '.env.local' });
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch {
+  // Optional locally; production injects env vars directly.
+}
 
 const fs = require('fs');
 const path = require('path');
@@ -409,11 +413,12 @@ async function main() {
   const year = new Date().getFullYear();
   const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
   const allowStale = process.argv.includes('--allow-stale');
+  const skipStaleProbe = process.argv.includes('--skip-stale-probe');
   const jsonStdout = process.argv.includes('--json-stdout');
   const season = parseInt(getArg('season', String(year)), 10) || year;
   const requestedSeason = season;
 
-  const result = await buildLeaguePlayerStatsPayload(requestedSeason, { allowStale, skipStaleProbe: jsonStdout });
+  const result = await buildLeaguePlayerStatsPayload(requestedSeason, { allowStale, skipStaleProbe: jsonStdout || skipStaleProbe });
   if (result.stale) {
     if (jsonStdout) {
       console.error(result.reason);

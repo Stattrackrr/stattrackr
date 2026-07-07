@@ -49,37 +49,41 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # FootyWire often returns 503 to GitHub Actions IPs — retry probes, then fall back to prod scrape.
-      - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026
-        continue-on-error: true
-        env:
-          FOOTYWIRE_PROBE_ATTEMPTS: '10'
-          FOOTYWIRE_PROBE_DELAY_MS: '5000'
-          FOOTYWIRE_FETCH_ATTEMPTS: '6'
-          NODE_OPTIONS: '--max-old-space-size=512'
-        run: |
-          npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale || true
-          npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale || true
-          for SEASON in 2026 2025; do
-            GAMES=$(node -e "try { const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json'); const m=Math.max(...(j.players||[]).map(p=>Number(p.games)||0),0); process.stdout.write(String(m)); } catch { process.stdout.write('0'); }" "$SEASON")
-            echo "League stats ${SEASON} max games in file: ${GAMES}"
-          done
-
-      - name: Pull league player stats from production when CI FootyWire blocked
+      # FootyWire blocks GitHub Actions (503). Pull league stats from production first when secrets exist.
+      - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026 + 2025
         continue-on-error: true
         env:
           PROD_URL: ${{ secrets.PROD_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FOOTYWIRE_PROBE_ATTEMPTS: '2'
+          FOOTYWIRE_PROBE_DELAY_MS: '3000'
+          NODE_OPTIONS: '--max-old-space-size=512'
         run: |
-          if [ -z "$PROD_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "⚠️ PROD_URL or CRON_SECRET not set; skipping prod league stats pull"
-            exit 0
+          fetch_from_prod() {
+            for SEASON in 2026 2025; do
+              BEFORE=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
+              echo "🔄 Pulling league stats ${SEASON} from production (FootyWire via Vercel)..."
+              if node scripts/pull-league-player-stats-from-prod.js --season="$SEASON"; then
+                AFTER=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
+                echo "✅ Season ${SEASON} generatedAt: ${BEFORE} -> ${AFTER}"
+              else
+                echo "⚠️ Prod pull failed for ${SEASON}; trying committed file / CI scrape fallback"
+                npm run fetch:footywire-league-player-stats -- --season="$SEASON" --allow-stale --skip-stale-probe || true
+              fi
+            done
+          }
+
+          if [ -n "$PROD_URL" ] && [ -n "$CRON_SECRET" ]; then
+            fetch_from_prod
+          else
+            echo "⚠️ PROD_URL or CRON_SECRET not set; scraping FootyWire from CI (may 503)"
+            npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale --skip-stale-probe || true
+            npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale --skip-stale-probe || true
           fi
+
           for SEASON in 2026 2025; do
-            BEFORE=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
-            node scripts/pull-league-player-stats-from-prod.js --season="$SEASON" || echo "⚠️ Prod pull failed for ${SEASON}"
-            AFTER=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
-            echo "Season ${SEASON} generatedAt: ${BEFORE} -> ${AFTER}"
+            GAMES=$(node -e "try { const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json'); const m=Math.max(...(j.players||[]).map(p=>Number(p.games)||0),0); process.stdout.write(String(m)); } catch { process.stdout.write('0'); }" "$SEASON")
+            echo "League stats ${SEASON} max games in file: ${GAMES}"
           done
 
       # Prefetch AFL player headshots for props page avatars (yearly cache file committed below).

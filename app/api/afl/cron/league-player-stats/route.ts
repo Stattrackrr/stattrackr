@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { execFile } from 'child_process';
+import { createRequire } from 'node:module';
 import path from 'path';
-import { promisify } from 'util';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-const execFileAsync = promisify(execFile);
+type LeagueStatsModule = {
+  buildLeaguePlayerStatsPayload: (
+    season: number,
+    options?: { allowStale?: boolean; skipStaleProbe?: boolean }
+  ) => Promise<{
+    stale: boolean;
+    reason?: string;
+    payload?: Record<string, unknown>;
+  }>;
+};
+
+function loadLeagueStatsBuilder(): LeagueStatsModule['buildLeaguePlayerStatsPayload'] {
+  const requireFromRoot = createRequire(path.join(process.cwd(), 'package.json'));
+  const mod = requireFromRoot('./scripts/fetch-footywire-league-player-stats.js') as LeagueStatsModule;
+  return mod.buildLeaguePlayerStatsPayload;
+}
 
 /**
  * GET /api/afl/cron/league-player-stats?season=2026
@@ -24,20 +38,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Invalid season' }, { status: 400 });
   }
 
-  const scriptPath = path.join(process.cwd(), 'scripts', 'fetch-footywire-league-player-stats.js');
   try {
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      [scriptPath, `--season=${season}`, '--json-stdout'],
-      {
-        cwd: process.cwd(),
-        maxBuffer: 20 * 1024 * 1024,
-        timeout: 110_000,
-        env: { ...process.env, FOOTYWIRE_PROBE_ATTEMPTS: '6', FOOTYWIRE_FETCH_ATTEMPTS: '5' },
-      }
-    );
-    const payload = JSON.parse(stdout) as Record<string, unknown>;
-    return NextResponse.json({ success: true, ...payload });
+    const buildLeaguePlayerStatsPayload = loadLeagueStatsBuilder();
+    const result = await buildLeaguePlayerStatsPayload(season, {
+      allowStale: false,
+      skipStaleProbe: true,
+    });
+    if (result.stale || !result.payload) {
+      return NextResponse.json(
+        { success: false, error: result.reason || 'FootyWire scrape returned no payload' },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json({ success: true, ...result.payload });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ success: false, error: message }, { status: 502 });
