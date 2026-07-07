@@ -33,12 +33,15 @@ export async function GET(request: NextRequest) {
       statFetchDelayMs: mode === 'minimal' ? 400 : 1200,
       fetchAttempts: mode === 'minimal' ? 4 : 8,
     });
-    if (result.stale && result.existing) {
-      return NextResponse.json({ success: true, ...result.existing, fromBundledSnapshot: true });
+    const bundledSnapshot =
+      result.stale && 'existing' in result && result.existing ? result.existing : null;
+    if (bundledSnapshot) {
+      return NextResponse.json({ success: true, ...bundledSnapshot, fromBundledSnapshot: true });
     }
     if (result.stale || !result.payload) {
+      const reason = 'reason' in result ? result.reason : undefined;
       return NextResponse.json(
-        { success: false, error: result.reason || 'FootyWire scrape returned no payload' },
+        { success: false, error: reason || 'FootyWire scrape returned no payload' },
         { status: 502 }
       );
     }
