@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
 
 type LadderRow = {
   pos: number;
@@ -87,8 +88,7 @@ export function AflLadderCard({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/afl/ladder?season=${selectedSeason}`)
-      .then((r) => r.json())
+    fetchJsonDeduped<{ error?: string; teams?: LadderRow[]; season?: number }>(`/api/afl/ladder?season=${selectedSeason}`)
       .then((json) => {
         if (cancelled) return;
         if (json?.error) {

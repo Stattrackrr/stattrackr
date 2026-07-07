@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
 import { rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 import { getAflCanonicalTeamKey } from '@/lib/aflTeamCanonical';
 
@@ -75,8 +76,7 @@ export function AflInjuriesCard({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch('/api/afl/injuries')
-      .then((r) => r.json())
+    fetchJsonDeduped<{ error?: string; injuries?: InjuryRow[]; generatedAt?: string }>('/api/afl/injuries')
       .then((json) => {
         if (cancelled) return;
         if (json?.error) {

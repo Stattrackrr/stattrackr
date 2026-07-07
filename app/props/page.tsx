@@ -49,6 +49,7 @@ import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
 import { parseBallDontLieTipoff } from '@/app/nba/research/dashboard/utils';
 import { americanToDecimal, DEFAULT_ODDS_FORMAT, formatOdds, readOddsFormatPreference } from '@/lib/currencyUtils';
 import { cachedFetch } from '@/lib/requestCache';
+import { prefetchAflDashboardFromProps } from '@/lib/aflPropsNavigationPrefetch';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import Image from 'next/image';
@@ -9124,23 +9125,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                               }
                               const team = prop.team || '';
                               const opponent = prop.opponent || '';
-                              const currentSeason = new Date().getFullYear();
 
-                              // Warm key AFL endpoints before navigating (game logs require ?season= per API).
-                              const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
-                              const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
-                              const prefetchUrls = [
-                                `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                `${logsBase}&season=2026`,
-                                `${logsBase}&season=2025`,
-                                `${logsBase}&season=2024`,
-                                `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
-                                `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
-                              ];
-                              prefetchUrls.forEach((url) => {
-                                fetch(url, { cache: 'no-store' }).catch(() => {
-                                  // Ignore prefetch errors - navigation should still continue.
-                                });
+                              prefetchAflDashboardFromProps({
+                                playerName: prop.playerName,
+                                team,
+                                opponent,
                               });
 
                               if (team) {
@@ -10665,23 +10654,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                                   }
                                   const team = prop.team || '';
                                   const opponent = prop.opponent || '';
-                                  const currentSeason = new Date().getFullYear();
 
-                                  // Warm key AFL endpoints before navigating so player mode can render faster.
-                                  const teamEnc = team ? `&team=${encodeURIComponent(team)}` : '';
-                                  const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(prop.playerName)}${teamEnc}&include_both=1`;
-                                  const prefetchUrls = [
-                                    `/api/afl/player-props?player=${encodeURIComponent(prop.playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-                                    `${logsBase}&season=2026`,
-                                    `${logsBase}&season=2025`,
-                                    `${logsBase}&season=2024`,
-                                    `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(prop.playerName)}`,
-                                    `/api/afl/players?query=${encodeURIComponent(prop.playerName)}&limit=30`,
-                                  ];
-                                  prefetchUrls.forEach((url) => {
-                                    fetch(url, { cache: 'no-store' }).catch(() => {
-                                      // Ignore prefetch errors - navigation should still continue.
-                                    });
+                                  prefetchAflDashboardFromProps({
+                                    playerName: prop.playerName,
+                                    team,
+                                    opponent,
                                   });
 
                                   if (team) {
@@ -11665,17 +11642,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                           setFindPlayerOpen(false);
                           if (propsSport === 'afl') {
                             const team = player.team ?? '';
-                            const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(player.name)}${team ? `&team=${encodeURIComponent(team)}` : ''}&include_both=1`;
-                            [
-                              `${logsBase}&season=2026`,
-                              `${logsBase}&season=2025`,
-                              `${logsBase}&season=2024`,
-                              `/api/afl/fantasy-positions?season=${new Date().getFullYear()}&player=${encodeURIComponent(player.name)}`,
-                              `/api/afl/players?query=${encodeURIComponent(player.name)}&limit=30`,
-                            ].forEach((url) => {
-                              fetch(url, { cache: 'no-store' }).catch(() => {
-                                // Ignore prefetch errors - navigation should still continue.
-                              });
+                            prefetchAflDashboardFromProps({
+                              playerName: player.name,
+                              team,
                             });
                             if (team) {
                               fetch(`/api/afl/next-game?team=${encodeURIComponent(team)}&season=2026`)

@@ -18,6 +18,11 @@ import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/component
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
+import { fetchJsonDedupedResult } from '@/lib/clientFetchDedupe';
+import {
+  readAflTeamLogosSessionCache,
+  writeAflTeamLogosSessionCache,
+} from '@/lib/aflTeamLogosClientCache';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { ImpliedOddsWheel } from '@/app/nba/research/dashboard/components/odds/ImpliedOddsWheel';
 
@@ -2136,6 +2141,20 @@ export default function AFLPage() {
     let cancelled = false;
     const loadTeamLogos = async () => {
       try {
+        const cached = readAflTeamLogosSessionCache();
+        if (cached && Object.keys(cached).length > 0) {
+          const nextMap: Record<string, string> = {};
+          for (const [name, rawLogo] of Object.entries(cached)) {
+            const normalizedName = normalizeTeamNameForLogo(String(name));
+            const logo = normalizeLogoUrl(String(rawLogo ?? ''));
+            if (!normalizedName || !logo) continue;
+            nextMap[normalizedName] = logo;
+          }
+          if (!cancelled && Object.keys(nextMap).length > 0) {
+            setLogoByTeam(nextMap);
+            return;
+          }
+        }
         const res = await fetch('/api/afl/team-logos');
         if (!res.ok) return;
         const json = await res.json();
@@ -2147,7 +2166,10 @@ export default function AFLPage() {
           if (!normalizedName || !logo) continue;
           nextMap[normalizedName] = logo;
         }
-        if (!cancelled && Object.keys(nextMap).length > 0) setLogoByTeam(nextMap);
+        if (!cancelled && Object.keys(nextMap).length > 0) {
+          setLogoByTeam(nextMap);
+          writeAflTeamLogosSessionCache(logos as Record<string, string>);
+        }
       } catch {
         // ignore
       }
@@ -2579,7 +2601,6 @@ export default function AFLPage() {
     aflCurrentLineValue,
     selectedAflBookIndex,
     selectedAflDisposalsColumn,
-    aflPlayerPropsBooks,
   ]);
 
   useEffect(() => {
@@ -2618,7 +2639,7 @@ export default function AFLPage() {
     return () => {
       cancelled = true;
     };
-  }, [aflPropsMode, selectedPlayer?.name, aflDisposalsModelProjection?.scoredAt]);
+  }, [aflPropsMode, selectedPlayer?.name]);
 
   const playerStatsCacheRef = useRef<Map<string, AflPlayerRecord>>(new Map());
 
@@ -2947,10 +2968,9 @@ export default function AFLPage() {
     const emptyOlderSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
     (async () => {
       const fetchSeason = (year: number, force = '') =>
-        fetch(`${baseUrl}&season=${year}${force}`, fetchOpts).then(async (res) => {
-          const d = (await res.json()) as Record<string, unknown>;
-          return { ok: res.ok, data: d } as SeasonFetchResult;
-        });
+        fetchJsonDedupedResult<Record<string, unknown>>(`${baseUrl}&season=${year}${force}`, fetchOpts).then(
+          ({ ok, data }) => ({ ok, data } as SeasonFetchResult)
+        );
       const resultHasSeason = (result: SeasonFetchResult, targetSeason: number) => {
         const games = result.ok && Array.isArray(result.data?.games)
           ? (result.data.games as Record<string, unknown>[])
@@ -3077,10 +3097,7 @@ export default function AFLPage() {
       };
 
       try {
-        const p1 = fetchSeason(currentYear, '');
-        const p2 = fetchSeason(prevYear);
-        const p3 = fetchSeason(olderYear);
-        let [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
+        let resultCurrent = await fetchSeason(currentYear, '');
         if (cancelled) return;
         if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
           const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
@@ -3090,21 +3107,35 @@ export default function AFLPage() {
           }
         }
 
-        const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
-        if (mergedCountWithoutOldest === 0) {
-          const resultOlder = await p3;
+        const emptyPrevSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
+        const currentOnlyCount = countMergedGames(resultCurrent, emptyPrevSeason, emptyOlderSeason);
+        if (currentOnlyCount > 0) {
+          applyMergedSeasonResults(resultCurrent, emptyPrevSeason, emptyOlderSeason);
+          if (!cancelled) setStatsLoadingForPlayer(false);
+        }
+
+        const p2 = fetchSeason(prevYear);
+        const p3 = fetchSeason(olderYear);
+
+        if (currentOnlyCount === 0) {
+          const [resultPrev, resultOlder] = await Promise.all([p2, p3]);
           if (cancelled) return;
           applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-        } else if (mergedCountWithoutOldest >= AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
+        } else {
+          const resultPrev = await p2;
+          if (cancelled) return;
+          const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
           applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
-          p3.then((resultOlder) => {
+          if (mergedCountWithoutOldest < AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
+            const resultOlder = await p3;
             if (cancelled) return;
             applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-          });
-        } else {
-          const resultOlder = await p3;
-          if (cancelled) return;
-          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
+          } else {
+            p3.then((resultOlder) => {
+              if (cancelled) return;
+              applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
+            });
+          }
         }
       } catch (e) {
         if (!cancelled) {

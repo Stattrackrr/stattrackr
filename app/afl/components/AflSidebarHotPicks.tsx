@@ -9,9 +9,10 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { AflPropsPlayerAvatar } from '@/components/AflPropsPlayerAvatar';
 
 /** Same keys as props page so sessionStorage is shared. */
-const AFL_TEAM_LOGOS_CACHE_KEY = 'afl_team_logos_cache_v1';
-const AFL_TEAM_LOGOS_CACHE_TS_KEY = 'afl_team_logos_cache_ts_v1';
-const AFL_TEAM_LOGOS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+import {
+  readAflTeamLogosSessionCache,
+  writeAflTeamLogosSessionCache,
+} from '@/lib/aflTeamLogosClientCache';
 
 /** Club portraits cache — keep in sync with `app/props/page.tsx`. */
 const AFL_PORTRAIT_RESOLVER_VERSION = '9';
@@ -161,35 +162,18 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
   }, [aflPortraitExtras]);
 
   useEffect(() => {
-    let hasFreshCache = false;
-    try {
-      const cachedRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_KEY);
-      const cachedTsRaw = sessionStorage.getItem(AFL_TEAM_LOGOS_CACHE_TS_KEY);
-      const cachedTs = cachedTsRaw ? parseInt(cachedTsRaw, 10) : 0;
-      const age = Number.isFinite(cachedTs) ? Date.now() - cachedTs : Infinity;
-      if (cachedRaw && age < AFL_TEAM_LOGOS_CACHE_TTL_MS) {
-        const parsed = JSON.parse(cachedRaw) as unknown;
-        if (parsed && typeof parsed === 'object' && Object.keys(parsed as object).length > 0) {
-          setAflLogoByTeam(parsed as Record<string, string>);
-          hasFreshCache = true;
-        }
-      }
-    } catch {
-      // ignore
+    const cached = readAflTeamLogosSessionCache();
+    if (cached && Object.keys(cached).length > 0) {
+      setAflLogoByTeam(cached);
+      return;
     }
-    if (hasFreshCache) return;
 
     fetch('/api/afl/team-logos', { cache: 'force-cache' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { logos?: Record<string, string> } | null) => {
         if (data?.logos && typeof data.logos === 'object' && Object.keys(data.logos).length > 0) {
           setAflLogoByTeam(data.logos);
-          try {
-            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_KEY, JSON.stringify(data.logos));
-            sessionStorage.setItem(AFL_TEAM_LOGOS_CACHE_TS_KEY, Date.now().toString());
-          } catch {
-            // ignore
-          }
+          writeAflTeamLogosSessionCache(data.logos);
         }
       })
       .catch(() => {});
