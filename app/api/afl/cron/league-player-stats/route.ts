@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
-import { createRequire } from 'node:module';
-import path from 'path';
+import { buildLeaguePlayerStatsPayload } from '@/lib/afl/footywireLeaguePlayerStats';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
-
-type LeagueStatsModule = {
-  buildLeaguePlayerStatsPayload: (
-    season: number,
-    options?: { allowStale?: boolean; skipStaleProbe?: boolean }
-  ) => Promise<{
-    stale: boolean;
-    reason?: string;
-    payload?: Record<string, unknown>;
-  }>;
-};
-
-function loadLeagueStatsBuilder(): LeagueStatsModule['buildLeaguePlayerStatsPayload'] {
-  const requireFromRoot = createRequire(path.join(process.cwd(), 'package.json'));
-  const mod = requireFromRoot('./scripts/fetch-footywire-league-player-stats.js') as LeagueStatsModule;
-  return mod.buildLeaguePlayerStatsPayload;
-}
 
 /**
  * GET /api/afl/cron/league-player-stats?season=2026
@@ -39,7 +21,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const buildLeaguePlayerStatsPayload = loadLeagueStatsBuilder();
     const result = await buildLeaguePlayerStatsPayload(season, {
       allowStale: false,
       skipStaleProbe: true,
