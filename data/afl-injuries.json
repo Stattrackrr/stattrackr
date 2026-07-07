@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-03T02:15:54.720Z",
+  "generatedAt": "2026-07-07T04:56:01.849Z",
   "source": "footywire.com",
   "sourcePage": "injury_list",
-  "injuryCount": 144,
+  "injuryCount": 145,
   "injuries": [
     {
       "team": "Adelaide Crows",
@@ -267,6 +267,12 @@
       "player": "Jacob Molier",
       "injury": "Quad",
       "returning": "Test"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Thomas Stewart",
+      "injury": "Head",
+      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",

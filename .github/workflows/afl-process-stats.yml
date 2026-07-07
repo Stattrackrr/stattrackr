@@ -49,41 +49,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # FootyWire blocks GitHub Actions (503). Pull league stats from production first when secrets exist.
-      - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026 + 2025
-        continue-on-error: true
-        env:
-          PROD_URL: ${{ secrets.PROD_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          FOOTYWIRE_PROBE_ATTEMPTS: '2'
-          FOOTYWIRE_PROBE_DELAY_MS: '3000'
-          NODE_OPTIONS: '--max-old-space-size=512'
+      # FootyWire blocks GitHub Actions / Vercel. League stats are refreshed weekly from home:
+      #   npm run refresh:afl:footywire:weekly
+      # then commit data/*.json and push. CI uses the committed files below.
+      - name: Use committed league player stats (FootyWire refreshed locally)
         run: |
-          fetch_from_prod() {
-            for SEASON in 2026 2025; do
-              BEFORE=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
-              echo "🔄 Pulling league stats ${SEASON} from production (FootyWire via Vercel)..."
-              if node scripts/pull-league-player-stats-from-prod.js --season="$SEASON"; then
-                AFTER=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
-                echo "✅ Season ${SEASON} generatedAt: ${BEFORE} -> ${AFTER}"
-              else
-                echo "⚠️ Prod pull failed for ${SEASON}; trying committed file / CI scrape fallback"
-                npm run fetch:footywire-league-player-stats -- --season="$SEASON" --allow-stale --skip-stale-probe || true
-              fi
-            done
-          }
-
-          if [ -n "$PROD_URL" ] && [ -n "$CRON_SECRET" ]; then
-            fetch_from_prod
-          else
-            echo "⚠️ PROD_URL or CRON_SECRET not set; scraping FootyWire from CI (may 503)"
-            npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale --skip-stale-probe || true
-            npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale --skip-stale-probe || true
-          fi
-
           for SEASON in 2026 2025; do
             GAMES=$(node -e "try { const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json'); const m=Math.max(...(j.players||[]).map(p=>Number(p.games)||0),0); process.stdout.write(String(m)); } catch { process.stdout.write('0'); }" "$SEASON")
-            echo "League stats ${SEASON} max games in file: ${GAMES}"
+            GEN=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'missing');}catch{process.stdout.write('missing');}" "$SEASON")
+            echo "League stats ${SEASON}: max games ${GAMES}, generatedAt ${GEN}"
           done
 
       # Prefetch AFL player headshots for props page avatars (yearly cache file committed below).
@@ -91,18 +65,17 @@ jobs:
         run: |
           npm run prefetch:afl:headshots -- --season=2026 --concurrency=10
 
-      # Opponent Breakdown: team rankings (OA/TA) — 2026 + 2025 (single workflow)
-      - name: Fetch team rankings (Opponent Breakdown) 2026 + 2025
-        continue-on-error: true
+      # Opponent Breakdown team rankings — refreshed with refresh:afl:footywire:weekly from home.
+      - name: Use committed team rankings (FootyWire refreshed locally)
         run: |
-          npm run fetch:footywire-team-rankings -- --season=2026 --allow-stale
-          npm run fetch:footywire-team-rankings -- --season=2025 --allow-stale
+          for SEASON in 2026 2025; do
+            test -f "data/afl-team-rankings-${SEASON}-oa.json" && echo "Team rankings ${SEASON}: ok" || echo "⚠️ Missing data/afl-team-rankings-${SEASON}-oa.json"
+          done
 
-      - name: Fetch injuries and team selections (dashboard sidebar)
-        continue-on-error: true
+      - name: Use committed injuries and team selections (FootyWire refreshed locally)
         run: |
-          npm run fetch:footywire-injuries -- --allow-stale
-          npm run fetch:footywire-team-selections -- --allow-stale
+          test -f data/afl-injuries.json && echo "Injuries snapshot: ok" || echo "⚠️ Missing data/afl-injuries.json"
+          test -f data/afl-team-selections-snapshot.json && echo "Team selections snapshot: ok" || echo "⚠️ Missing data/afl-team-selections-snapshot.json"
 
       # Build DvP files locally from latest player logs. Only rebuild Depth when the DFS role map
       # is populated, otherwise the builder falls back to default roles and can wipe specialist
