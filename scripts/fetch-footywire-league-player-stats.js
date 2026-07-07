@@ -13,37 +13,27 @@ require('dotenv').config({ path: '.env.local' });
 
 const fs = require('fs');
 const path = require('path');
+const {
+  DEFAULT_HEADERS: FOOTYWIRE_HEADERS,
+  isFootywireUnavailableStatus,
+  probeFootywire,
+  fetchFootywireText,
+} = require('./lib/footywire-http');
 
 const FOOTYWIRE_BASE = 'https://www.footywire.com';
 const FETCH_ATTEMPTS = 5;
 const FETCH_RETRY_BASE_MS = 2500;
 const STAT_FETCH_DELAY_MS = 350;
+
 const ADVANCED_STAT_KEYS = ['contested_possessions', 'uncontested_possessions', 'meters_gained', 'free_kicks_for'];
-const FOOTYWIRE_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en-AU,en;q=0.9',
-  Referer: 'https://www.footywire.com/',
-};
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** FootyWire rate limits / overload — retrying the same request wastes CI minutes. */
-function isFootywireUnavailableStatus(status) {
-  return status === 429 || status === 502 || status === 503;
-}
-
 async function probeFootywireRankings(season) {
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&pt=&st=DI&mg=1`;
-  try {
-    const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
-    return { ok: res.ok, status: res.status };
-  } catch (err) {
-    return { ok: false, status: 0, error: err instanceof Error ? err.message : String(err) };
-  }
+  return probeFootywire(url);
 }
 
 function normalizePlayerName(value) {
@@ -253,29 +243,15 @@ function mergeByPlayer(statArrays) {
 // Compare tab uses this data. One URL per stat: year, rt=LA (League Averages), st= stat code, pt= position (blank All), mg= min games.
 async function fetchOne(season, st, statKey) {
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_player_rankings?year=${season}&rt=LA&pt=&st=${st}&mg=1`;
-  let lastError = null;
-
-  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
-    try {
-      const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
-      const html = await res.text();
-      const rows = parsePlayerRankingsTable(html, statKey);
-      if (res.ok && rows.length > 0) {
-        return { ok: true, html, url, rows };
-      }
-      lastError = `HTTP ${res.status}, rows=${rows.length}`;
-      console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} failed: ${lastError}`);
-      if (isFootywireUnavailableStatus(res.status)) break;
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-      console.warn(`  ${statKey} (st=${st}) attempt ${attempt}/${FETCH_ATTEMPTS} error: ${lastError}`);
-    }
-    if (attempt < FETCH_ATTEMPTS) {
-      await sleep(FETCH_RETRY_BASE_MS * attempt);
-    }
+  const fetched = await fetchFootywireText(url, { headers: FOOTYWIRE_HEADERS, attempts: FETCH_ATTEMPTS, baseDelayMs: FETCH_RETRY_BASE_MS });
+  if (!fetched.ok) {
+    return { ok: false, html: '', url, rows: [], error: fetched.error || `HTTP ${fetched.status}` };
   }
-
-  return { ok: false, html: '', url, rows: [], error: lastError };
+  const rows = parsePlayerRankingsTable(fetched.text, statKey);
+  if (rows.length === 0) {
+    return { ok: false, html: fetched.text, url, rows: [], error: 'no rows parsed' };
+  }
+  return { ok: true, html: fetched.text, url, rows };
 }
 
 /**
@@ -285,9 +261,9 @@ async function fetchOne(season, st, statKey) {
  */
 async function fetchFtPlayersTeamMap() {
   const url = `${FOOTYWIRE_BASE}/afl/footy/ft_players`;
-  const res = await fetch(url, { headers: FOOTYWIRE_HEADERS });
-  if (!res.ok) return new Map();
-  const html = await res.text();
+  const fetched = await fetchFootywireText(url, { headers: FOOTYWIRE_HEADERS });
+  if (!fetched.ok) return new Map();
+  const html = fetched.text;
   const map = new Map();
   // Match full link: href="pp-{team}--{player}" ...>Link text</a> so we get team, player slug, and optional "Surname, First" text
   const linkRe = /href=["'](?:pp|pg)-([^"'\-]+(?:-[^"'\-]+)*)--([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
@@ -350,28 +326,28 @@ async function fetchSeason(season) {
   return allStats;
 }
 
-async function main() {
+async function buildLeaguePlayerStatsPayload(requestedSeason, options = {}) {
   const year = new Date().getFullYear();
-  const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
-  const allowStale = process.argv.includes('--allow-stale');
-  let season = parseInt(getArg('season', String(year)), 10) || year;
-  const requestedSeason = season;
+  const allowStale = options.allowStale === true;
+  const skipStaleProbe = options.skipStaleProbe === true;
+  let season = requestedSeason;
   const existing = readExistingLeagueStats(requestedSeason);
 
-  if (allowStale && existingLeagueStatsLookValid(existing, requestedSeason)) {
+  if (!skipStaleProbe && allowStale && existingLeagueStatsLookValid(existing, requestedSeason)) {
     const probe = await probeFootywireRankings(requestedSeason);
     if (!probe.ok && (isFootywireUnavailableStatus(probe.status) || probe.status === 0)) {
-      console.warn(
-        `FootyWire unavailable (HTTP ${probe.status || probe.error || 'error'}); keeping existing ${leagueStatsFilePath(requestedSeason)}`,
-      );
-      return;
+      return {
+        stale: true,
+        reason: `FootyWire unavailable (HTTP ${probe.status || probe.error || 'error'})`,
+        existing,
+      };
     }
   }
 
   console.log(`Fetching FootyWire league player stats for ${season}...`);
   let allStats = await fetchSeason(season);
 
-  if (allStats.length === 0 && !explicitSeasonArg && season === year && season > 2020) {
+  if (allStats.length === 0 && season === requestedSeason && season === year && season > 2020) {
     const fallback = season - 1;
     console.log(`No data for ${season}; trying previous season ${fallback}...`);
     season = fallback;
@@ -389,15 +365,15 @@ async function main() {
 
   if (!hasAdvancedFields(filtered)) {
     if (allowStale && existingLeagueStatsLookValid(existing, requestedSeason)) {
-      console.warn(
-        `FootyWire advanced stats unavailable for ${requestedSeason}; keeping existing ${leagueStatsFilePath(requestedSeason)}`,
-      );
-      return;
+      return {
+        stale: true,
+        reason: `FootyWire advanced stats unavailable for ${requestedSeason}`,
+        existing,
+      };
     }
-    console.error(
-      `League player stats for ${requestedSeason} are missing advanced fields (${ADVANCED_STAT_KEYS.join(', ')}). FootyWire may be rate-limiting CI.`,
+    throw new Error(
+      `League player stats for ${requestedSeason} are missing advanced fields (${ADVANCED_STAT_KEYS.join(', ')}). FootyWire may be rate-limiting.`
     );
-    process.exit(1);
   }
 
   console.log('Fetching current teams from ft_players...');
@@ -412,25 +388,59 @@ async function main() {
       teamsOverridden++;
     }
   }
-  if (ftPlayersTeamMap.size) console.log(`  Applied current team from ft_players for ${teamsOverridden} players (source: ${ftPlayersTeamMap.size} entries)`);
+  if (ftPlayersTeamMap.size) {
+    console.log(`  Applied current team from ft_players for ${teamsOverridden} players (source: ${ftPlayersTeamMap.size} entries)`);
+  }
 
-  const out = {
-    season: requestedSeason,
-    generatedAt: new Date().toISOString(),
-    source: 'footywire.com',
-    sourcePage: 'ft_player_rankings (rt=LA, multiple st=)',
-    playerCount: filtered.length,
-    players: filtered,
+  return {
+    stale: false,
+    payload: {
+      season: requestedSeason,
+      generatedAt: new Date().toISOString(),
+      source: 'footywire.com',
+      sourcePage: 'ft_player_rankings (rt=LA, multiple st=)',
+      playerCount: filtered.length,
+      players: filtered,
+    },
   };
+}
+
+async function main() {
+  const year = new Date().getFullYear();
+  const explicitSeasonArg = process.argv.find((a) => a.startsWith('--season='));
+  const allowStale = process.argv.includes('--allow-stale');
+  const jsonStdout = process.argv.includes('--json-stdout');
+  const season = parseInt(getArg('season', String(year)), 10) || year;
+  const requestedSeason = season;
+
+  const result = await buildLeaguePlayerStatsPayload(requestedSeason, { allowStale, skipStaleProbe: jsonStdout });
+  if (result.stale) {
+    if (jsonStdout) {
+      console.error(result.reason);
+      process.exit(1);
+    }
+    console.warn(`${result.reason}; keeping existing ${leagueStatsFilePath(requestedSeason)}`);
+    return;
+  }
+
+  const out = result.payload;
+  if (jsonStdout) {
+    process.stdout.write(JSON.stringify(out));
+    return;
+  }
 
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   const filePath = leagueStatsFilePath(requestedSeason);
   fs.writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf8');
-  console.log(`Wrote ${filePath} (${filtered.length} players)`);
+  console.log(`Wrote ${filePath} (${out.playerCount} players)`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = { buildLeaguePlayerStatsPayload, leagueStatsFilePath };

@@ -29,6 +29,16 @@ const warmLimit = Math.max(0, parseInt(process.env.AFL_WARM_LIMIT || '0', 10));
 const maxFailures = Math.max(0, parseInt(process.env.AFL_WARM_MAX_FAILURES || '100', 10));
 const warmPlayerFilter = (process.env.AFL_WARM_PLAYER || '').trim().toLowerCase();
 const cronSecret = (process.env.CRON_SECRET || '').trim();
+const forceFetchSeasons = new Set(
+  String(process.env.AFL_WARM_FORCE_FETCH_SEASONS || String(new Date().getFullYear()))
+    .split(',')
+    .map((v) => parseInt(v.trim(), 10))
+    .filter((n) => Number.isFinite(n))
+);
+const forceFetchConcurrency = Math.max(
+  1,
+  parseInt(process.env.AFL_WARM_FORCE_CONCURRENCY || '6', 10)
+);
 
 if (!prodUrl) {
   console.error('Missing PROD_URL');
@@ -94,6 +104,23 @@ const NICKNAME_TO_FULL = {
   Eagles: 'West Coast Eagles', Bulldogs: 'Western Bulldogs',
 };
 
+function normalizePlayerName(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function buildExpectedGamesByPlayer(players) {
+  const map = new Map();
+  for (const player of players) {
+    const games = Number(player?.games || 0);
+    if (!player?.name || !Number.isFinite(games) || games <= 0) continue;
+    map.set(normalizePlayerName(player.name), games);
+  }
+  return map;
+}
+
 function teamForRequest(team) {
   const t = String(team || '').trim();
   if (LEAGUE_TEAM_TO_OFFICIAL[t]) return LEAGUE_TEAM_TO_OFFICIAL[t];
@@ -149,9 +176,22 @@ async function warmOneAttempt(player, season, forceFetch = false) {
   }
 }
 
-async function warmOne(player, season) {
-  // Cache-first (fast). Only hit FootyWire live when Redis is empty/stale.
-  let last = await warmOneAttempt(player, season, false);
+async function warmOne(player, season, expectedGamesByPlayer) {
+  const forceSeason = forceFetchSeasons.has(season);
+  const expectedGames = expectedGamesByPlayer.get(normalizePlayerName(player.name));
+  let last = await warmOneAttempt(player, season, forceSeason);
+
+  const cachedBelowLeague =
+    !forceSeason &&
+    expectedGames != null &&
+    expectedGames > 0 &&
+    last.ok &&
+    Number(last.count || 0) > 0 &&
+    Number(last.count) < expectedGames;
+  if (cachedBelowLeague) {
+    last = await warmOneAttempt(player, season, true);
+  }
+
   for (let attempt = 0; attempt < WARM_ZERO_GAMES_RETRIES && last.ok && Number(last.count || 0) === 0; attempt += 1) {
     await sleep(WARM_RETRY_DELAY_MS);
     last = await warmOneAttempt(player, season, true);
@@ -194,6 +234,8 @@ async function main() {
     console.log('No active AFL players found to warm.');
     return;
   }
+  const expectedGamesByPlayer = buildExpectedGamesByPlayer(selectedPlayers);
+  const poolSize = forceFetchSeasons.size > 0 ? Math.min(concurrency, forceFetchConcurrency) : concurrency;
 
   const jobs = [];
   for (const season of warmSeasons) {
@@ -202,11 +244,11 @@ async function main() {
     }
   }
 
-  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (cache-first, live fetch only on miss)`);
+  console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (force seasons: ${[...forceFetchSeasons].join(', ') || 'none'})`);
   console.log(`[AFL Warm] 👥 Players: ${selectedPlayers.length}`);
   console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
   console.log(`[AFL Warm] 📤 Requests: ${jobs.length}`);
-  console.log(`[AFL Warm] ⚡ Concurrency: ${concurrency}`);
+  console.log(`[AFL Warm] ⚡ Concurrency: ${poolSize}`);
   const sample = selectedPlayers.slice(0, 10).map((p) => `${p.name} (${teamForRequest(p.team)})`);
   console.log(`[AFL Warm] 🎯 Sample: ${sample.join(', ')}${selectedPlayers.length > 10 ? '...' : ''}`);
 
@@ -224,7 +266,7 @@ async function main() {
     jobs,
     async (job) => {
       if (WARM_INTER_REQUEST_DELAY_MS > 0) await sleep(WARM_INTER_REQUEST_DELAY_MS);
-      const result = await warmOne(job.player, job.season);
+      const result = await warmOne(job.player, job.season, expectedGamesByPlayer);
       if (result.ok) {
         success += 1;
         warmedGames += Number(result.count || 0);
@@ -246,7 +288,7 @@ async function main() {
         console.log(`[AFL Warm] 📊 ${done}/${jobs.length} — last: ${job.player.name} (${teamForRequest(job.player.team)}) ${job.season} — ${label}`);
       }
     },
-    concurrency
+    poolSize
   );
 
   console.log(`[AFL Warm] ✅ Warm complete. success=${success} failed=${failed} noData=${noData} warmedGames=${warmedGames}`);

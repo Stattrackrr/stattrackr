@@ -49,14 +49,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # FootyWire 503 from GitHub Actions is common — --allow-stale keeps committed data.
+      # FootyWire often returns 503 to GitHub Actions IPs — retry probes, then fall back to prod scrape.
       - name: Fetch league player stats (Compare tab – ft_player_rankings) 2026
         continue-on-error: true
-        run: |
-          npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale
-          npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale
         env:
+          FOOTYWIRE_PROBE_ATTEMPTS: '10'
+          FOOTYWIRE_PROBE_DELAY_MS: '5000'
+          FOOTYWIRE_FETCH_ATTEMPTS: '6'
           NODE_OPTIONS: '--max-old-space-size=512'
+        run: |
+          npm run fetch:footywire-league-player-stats -- --season=2026 --allow-stale || true
+          npm run fetch:footywire-league-player-stats -- --season=2025 --allow-stale || true
+          for SEASON in 2026 2025; do
+            GAMES=$(node -e "try { const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json'); const m=Math.max(...(j.players||[]).map(p=>Number(p.games)||0),0); process.stdout.write(String(m)); } catch { process.stdout.write('0'); }" "$SEASON")
+            echo "League stats ${SEASON} max games in file: ${GAMES}"
+          done
+
+      - name: Pull league player stats from production when CI FootyWire blocked
+        continue-on-error: true
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$PROD_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "⚠️ PROD_URL or CRON_SECRET not set; skipping prod league stats pull"
+            exit 0
+          fi
+          for SEASON in 2026 2025; do
+            BEFORE=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
+            node scripts/pull-league-player-stats-from-prod.js --season="$SEASON" || echo "⚠️ Prod pull failed for ${SEASON}"
+            AFTER=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'');}catch{process.stdout.write('');}" "$SEASON")
+            echo "Season ${SEASON} generatedAt: ${BEFORE} -> ${AFTER}"
+          done
 
       # Prefetch AFL player headshots for props page avatars (yearly cache file committed below).
       - name: Prefetch AFL player headshots (2026)
@@ -176,7 +200,9 @@ jobs:
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025,2024' }}
-          AFL_WARM_CONCURRENCY: '24'
+          AFL_WARM_FORCE_FETCH_SEASONS: '2026'
+          AFL_WARM_FORCE_CONCURRENCY: '8'
+          AFL_WARM_CONCURRENCY: '16'
           AFL_WARM_MAX_FAILURES: '100'
 
       - name: Enrich Top Picks actual disposals
@@ -257,9 +283,10 @@ jobs:
             -L --max-time 360 \
             --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-          PROPS=$(node -e "try { const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.propsCount ?? (Array.isArray(j.data)?j.data.length:0))); } catch { process.stdout.write('0'); }" "$BODY")
-          GAMES=$(node -e "try { const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.gamesCount ?? (Array.isArray(j.games)?j.games.length:0))); } catch { process.stdout.write('0'); }" "$BODY")
+          BODY_FILE="$RUNNER_TEMP/afl-enriched-list-body.json"
+          echo "$RESPONSE" | sed '/HTTP_STATUS:/d' > "$BODY_FILE"
+          PROPS=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(j.propsCount ?? (Array.isArray(j.data)?j.data.length:0))); } catch { process.stdout.write('0'); }" "$BODY_FILE")
+          GAMES=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(j.gamesCount ?? (Array.isArray(j.games)?j.games.length:0))); } catch { process.stdout.write('0'); }" "$BODY_FILE")
           echo "Enriched list prewarm HTTP ${HTTP_STATUS:-?}: games=${GAMES} props=${PROPS}"
           if [ "${HTTP_STATUS}" = "200" ] && [ "${PROPS}" -gt "0" ]; then
             echo "✅ Enriched AFL props list cached"
