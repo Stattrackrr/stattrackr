@@ -3097,7 +3097,10 @@ export default function AFLPage() {
       };
 
       try {
-        let resultCurrent = await fetchSeason(currentYear, '');
+        const p1 = fetchSeason(currentYear, '');
+        const p2 = fetchSeason(prevYear);
+        const p3 = fetchSeason(olderYear);
+        let [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
         if (cancelled) return;
         if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
           const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
@@ -3107,35 +3110,21 @@ export default function AFLPage() {
           }
         }
 
-        const emptyPrevSeason: SeasonFetchResult = { ok: true, data: { games: [], gamesWithQuarters: [] } };
-        const currentOnlyCount = countMergedGames(resultCurrent, emptyPrevSeason, emptyOlderSeason);
-        if (currentOnlyCount > 0) {
-          applyMergedSeasonResults(resultCurrent, emptyPrevSeason, emptyOlderSeason);
-          if (!cancelled) setStatsLoadingForPlayer(false);
-        }
-
-        const p2 = fetchSeason(prevYear);
-        const p3 = fetchSeason(olderYear);
-
-        if (currentOnlyCount === 0) {
-          const [resultPrev, resultOlder] = await Promise.all([p2, p3]);
+        const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
+        if (mergedCountWithoutOldest === 0) {
+          const resultOlder = await p3;
           if (cancelled) return;
           applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-        } else {
-          const resultPrev = await p2;
-          if (cancelled) return;
-          const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
+        } else if (mergedCountWithoutOldest >= AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
           applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
-          if (mergedCountWithoutOldest < AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
-            const resultOlder = await p3;
+          p3.then((resultOlder) => {
             if (cancelled) return;
             applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-          } else {
-            p3.then((resultOlder) => {
-              if (cancelled) return;
-              applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-            });
-          }
+          });
+        } else {
+          const resultOlder = await p3;
+          if (cancelled) return;
+          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
         }
       } catch (e) {
         if (!cancelled) {

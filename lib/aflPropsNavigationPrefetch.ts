@@ -1,6 +1,6 @@
 import { fetchJsonDeduped } from '@/lib/clientFetchDedupe';
 
-/** Warm dashboard endpoints on props → AFL navigation (current-season logs only; prior seasons load in background on dashboard). */
+/** Warm dashboard endpoints on props → AFL navigation (all log seasons in parallel; deduped with dashboard fetch). */
 export function prefetchAflDashboardFromProps(options: {
   playerName: string;
   team?: string;
@@ -13,6 +13,8 @@ export function prefetchAflDashboardFromProps(options: {
   const urls = [
     `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1${team ? `&team=${encodeURIComponent(team)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
     `${logsBase}&season=${currentSeason}`,
+    `${logsBase}&season=${currentSeason - 1}`,
+    `${logsBase}&season=${currentSeason - 2}`,
     `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(playerName)}`,
     `/api/afl/players?query=${encodeURIComponent(playerName)}&limit=30`,
   ];
