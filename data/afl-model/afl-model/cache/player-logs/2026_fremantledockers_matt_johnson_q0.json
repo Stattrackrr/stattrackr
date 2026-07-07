@@ -1,12 +1,12 @@
 {
-  "savedAt": "2026-07-06T18:45:31Z",
+  "savedAt": "2026-07-07T13:21:28Z",
   "games": [
     {
       "season": 2026,
       "game_number": 1,
       "opponent": "Demons",
       "round": "R3",
-      "date": "2026-04-11",
+      "date": "2026-04-10",
       "result": "Loss 119-120",
       "guernsey": null,
       "kicks": 6,

@@ -1,12 +1,12 @@
 {
-  "savedAt": "2026-07-06T18:27:07Z",
+  "savedAt": "2026-07-07T13:20:48Z",
   "games": [
     {
       "season": 2026,
       "game_number": 1,
       "opponent": "Crows",
       "round": "R15",
-      "date": "2026-06-20",
+      "date": "2026-06-19",
       "result": "Loss 62-79",
       "guernsey": null,
       "kicks": 3,
@@ -65,7 +65,7 @@
       "game_number": 2,
       "opponent": "Bombers",
       "round": "R14",
-      "date": "2026-06-13",
+      "date": "2026-06-12",
       "result": "Win 95-50",
       "guernsey": null,
       "kicks": 4,
@@ -124,7 +124,7 @@
       "game_number": 3,
       "opponent": "Magpies",
       "round": "R13",
-      "date": "2026-06-08",
+      "date": "2026-06-07",
       "result": "Win 83-75",
       "guernsey": null,
       "kicks": 3,

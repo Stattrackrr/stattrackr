@@ -1,12 +1,12 @@
 {
-  "savedAt": "2026-07-06T18:25:10Z",
+  "savedAt": "2026-07-07T13:18:18Z",
   "games": [
     {
       "season": 2026,
       "game_number": 1,
       "opponent": "Lions",
       "round": "R7",
-      "date": "2026-04-26",
+      "date": "2026-04-25",
       "result": "Loss 75-127",
       "guernsey": null,
       "kicks": 8,
@@ -65,7 +65,7 @@
       "game_number": 2,
       "opponent": "Saints",
       "round": "R6",
-      "date": "2026-04-18",
+      "date": "2026-04-17",
       "result": "Win 103-102",
       "guernsey": null,
       "kicks": 12,

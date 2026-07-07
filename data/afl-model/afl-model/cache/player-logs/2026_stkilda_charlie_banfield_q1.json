@@ -1,12 +1,12 @@
 {
-  "savedAt": "2026-07-06T18:26:17Z",
+  "savedAt": "2026-07-07T13:19:49Z",
   "games": [
     {
       "season": 2026,
       "game_number": 1,
       "opponent": "Hawks",
       "round": "R12",
-      "date": "2026-05-28",
+      "date": "2026-05-27",
       "result": "Loss 67-119",
       "guernsey": null,
       "kicks": 4,
@@ -65,7 +65,7 @@
       "game_number": 2,
       "opponent": "Dockers",
       "round": "R11",
-      "date": "2026-05-22",
+      "date": "2026-05-21",
       "result": "Loss 74-104",
       "guernsey": null,
       "kicks": 8,
@@ -124,7 +124,7 @@
       "game_number": 3,
       "opponent": "Tigers",
       "round": "R10",
-      "date": "2026-05-17",
+      "date": "2026-05-16",
       "result": "Win 109-73",
       "guernsey": null,
       "kicks": 9,

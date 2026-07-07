@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T06:21:07.795Z",
+  "generatedAt": "2026-07-07T08:26:32.276Z",
   "count": 26,
   "records": [
     {
@@ -828,7 +828,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.2533,
           "recommendedProb": 0.7413,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 26
         },
         {
           "playerName": "Daniel Turner",
@@ -838,7 +839,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.2119,
           "recommendedProb": 0.7119,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 12
         }
       ],
       "roundKey": "2026-R16"
@@ -862,7 +864,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1662,
           "recommendedProb": 0.6662,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 30
         },
         {
           "playerName": "Joseph Fonti",
@@ -872,7 +875,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1615,
           "recommendedProb": 0.6615,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 16
         }
       ],
       "roundKey": "2026-R16"
@@ -896,7 +900,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1868,
           "recommendedProb": 0.6828,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 26
         },
         {
           "playerName": "Bodhi Uwland",
@@ -906,7 +911,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1479,
           "recommendedProb": 0.6479,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 28
         },
         {
           "playerName": "Nick Daicos",
@@ -916,7 +922,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1341,
           "recommendedProb": 0.6301,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 31
         }
       ],
       "roundKey": "2026-R16"
@@ -940,7 +947,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1688,
           "recommendedProb": 0.6688,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 26
         },
         {
           "playerName": "Tim Taranto",
@@ -950,7 +958,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1561,
           "recommendedProb": 0.6421,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 25
         },
         {
           "playerName": "Sam Banks",
@@ -960,7 +969,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.084,
           "recommendedProb": 0.584,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 16
         }
       ],
       "roundKey": "2026-R16"
@@ -984,7 +994,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.2047,
           "recommendedProb": 0.7047,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 10
         },
         {
           "playerName": "Sam Durham",
@@ -994,7 +1005,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1923,
           "recommendedProb": 0.6923,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 24
         },
         {
           "playerName": "Nasiah Wanganeen Milera",
@@ -1004,7 +1016,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1792,
           "recommendedProb": 0.6712,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 46
         }
       ],
       "roundKey": "2026-R16"
@@ -1028,7 +1041,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.2425,
           "recommendedProb": 0.7425,
-          "rank": 1
+          "rank": 1,
+          "actualDisposals": 28
         },
         {
           "playerName": "Luke Davies Uniacke",
@@ -1038,7 +1052,8 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1932,
           "recommendedProb": 0.6922,
-          "rank": 2
+          "rank": 2,
+          "actualDisposals": 31
         },
         {
           "playerName": "Harry Sheezel",
@@ -1048,7 +1063,8 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1374,
           "recommendedProb": 0.6284,
-          "rank": 3
+          "rank": 3,
+          "actualDisposals": 40
         }
       ],
       "roundKey": "2026-R16"
