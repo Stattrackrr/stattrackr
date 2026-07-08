@@ -205,12 +205,40 @@ function enrichedPayloadReadyForUsers(
   );
 }
 
+function enrichedPayloadRowCount(payload: Record<string, unknown> | null | undefined): number {
+  return Array.isArray(payload?.data) ? payload.data.length : 0;
+}
+
+/** Apply live kickoff cutoff without blanking a good cached snapshot during cron rebuilds. */
+function buildUserEnrichedListPayload(
+  payload: Record<string, unknown>,
+  applyLiveCutoff = true,
+  nowMs = Date.now()
+): Record<string, unknown> {
+  const originalRows = enrichedPayloadRowCount(payload);
+  if (!applyLiveCutoff || originalRows === 0) return payload;
+
+  const filtered = filterAflEnrichedListPayload(payload, nowMs);
+  if (!filtered) return payload;
+
+  const filteredRows = enrichedPayloadRowCount(filtered);
+  if (filteredRows === 0 && originalRows > 0 && aflEnrichedPayloadHasUsableStats(payload)) {
+    const preserved = markAflEnrichedPayloadStale(payload, 'live_cutoff_preserved');
+    return {
+      ...preserved,
+      noAflOdds: undefined,
+      message: undefined,
+    };
+  }
+  return filtered;
+}
+
 function jsonEnrichedPayload(
   payload: Record<string, unknown>,
   memoryTtlSeconds = AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS,
   applyLiveCutoff = true
 ) {
-  const outgoing = applyLiveCutoff ? filterAflEnrichedListPayload(payload) ?? payload : payload;
+  const outgoing = buildUserEnrichedListPayload(payload, applyLiveCutoff);
   aflEnrichedPayloadMemoryCache = {
     payload,
     expiresAt: Date.now() + memoryTtlSeconds * 1000,
@@ -220,6 +248,58 @@ function jsonEnrichedPayload(
       'Cache-Control': AFL_LIST_CACHE_CONTROL,
     },
   });
+}
+
+async function shouldPersistEnrichedCache(payload: Record<string, unknown>): Promise<boolean> {
+  if (!aflEnrichedPayloadHasUsableStats(payload) || aflEnrichedPayloadIsDegraded(payload)) {
+    return false;
+  }
+  const newCount = enrichedPayloadRowCount(payload);
+  if (newCount === 0) return false;
+
+  const existing = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
+  const existingCount = enrichedPayloadRowCount(existing);
+  if (existingCount > 0 && newCount < Math.max(5, Math.floor(existingCount * 0.4))) {
+    return false;
+  }
+  return true;
+}
+
+async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextResponse | null> {
+  const rawCandidates: Array<Record<string, unknown> | null | undefined> = [];
+  if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > nowMs) {
+    rawCandidates.push(aflEnrichedPayloadMemoryCache.payload);
+  }
+
+  const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
+    restTimeoutMs: 4000,
+    jsTimeoutMs: 4000,
+    quiet: true,
+  });
+  rawCandidates.push(supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null);
+
+  const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
+  rawCandidates.push(cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null);
+
+  for (const raw of rawCandidates) {
+    const best = await pickBestEnrichedPayload(raw);
+    if (!best || !aflEnrichedPayloadHasUsableStats(best) || enrichedPayloadRowCount(best) === 0) continue;
+    if (enrichedPayloadReadyForUsers(best, nowMs)) {
+      return jsonEnrichedPayload(best);
+    }
+    const staleMarked = markAflEnrichedPayloadStale(best, 'serving_cached_until_refresh');
+    const applyLiveCutoff = aflEnrichedPayloadHasEligibleLiveRows(staleMarked, nowMs);
+    return jsonEnrichedPayload(staleMarked, AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS, applyLiveCutoff);
+  }
+
+  const stale = await getAflStaleEnrichedPayload();
+  if (stale && aflEnrichedPayloadHasUsableStats(stale) && enrichedPayloadRowCount(stale) > 0) {
+    const staleMarked = markAflEnrichedPayloadStale(stale, 'stale_backup');
+    const applyLiveCutoff = aflEnrichedPayloadHasEligibleLiveRows(staleMarked, nowMs);
+    return jsonEnrichedPayload(staleMarked, AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS, applyLiveCutoff);
+  }
+
+  return null;
 }
 
 /**
@@ -247,32 +327,8 @@ export async function GET(request: Request) {
     const cacheOnly = !hasCronAuth;
 
     if (!hasCronAuth && enrich && !debugStats && !forceRefresh) {
-      const now = Date.now();
-      if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > now) {
-        const memoryPayload = await pickBestEnrichedPayload(aflEnrichedPayloadMemoryCache.payload);
-        if (memoryPayload && enrichedPayloadReadyForUsers(memoryPayload, now)) {
-          return jsonEnrichedPayload(memoryPayload);
-        }
-      }
-      const supabasePayload = await getNBACache<Record<string, unknown>>(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY, {
-        restTimeoutMs: 4000,
-        jsTimeoutMs: 4000,
-        quiet: true,
-      });
-      const bestSupabase = await pickBestEnrichedPayload(
-        supabasePayload && typeof supabasePayload === 'object' ? supabasePayload : null
-      );
-      if (bestSupabase && enrichedPayloadReadyForUsers(bestSupabase, now)) {
-        return jsonEnrichedPayload(bestSupabase);
-      }
-
-      const cachedPayload = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
-      const bestRedis = await pickBestEnrichedPayload(
-        cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null
-      );
-      if (bestRedis && enrichedPayloadReadyForUsers(bestRedis, now)) {
-        return jsonEnrichedPayload(bestRedis);
-      }
+      const cachedResponse = await tryServeCachedEnrichedForUsers();
+      if (cachedResponse) return cachedResponse;
     }
 
     // Single source of truth for cron/debug: get games from the Odds API.
@@ -342,8 +398,11 @@ export async function GET(request: Request) {
       if (!hasCronAuth && enrich && !debugStats) {
         const stalePayload = await getAflStaleEnrichedPayload();
         if (stalePayload) {
+          const staleMarked = markAflEnrichedPayloadStale(stalePayload, 'no_live_games_or_props');
           return jsonEnrichedPayload(
-            markAflEnrichedPayloadStale(stalePayload, 'no_live_games_or_props')
+            staleMarked,
+            AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS,
+            aflEnrichedPayloadHasEligibleLiveRows(staleMarked)
           );
         }
       }
@@ -951,22 +1010,15 @@ export async function GET(request: Request) {
         const stalePayload = await getAflStaleEnrichedPayload();
         if (stalePayload && aflEnrichedPayloadHasUsableStats(stalePayload)) {
           const staleMarked = markAflEnrichedPayloadStale(stalePayload, 'live_assembly_degraded');
-          if (aflEnrichedPayloadHasEligibleLiveRows(staleMarked)) {
-            aflEnrichedPayloadMemoryCache = {
-              payload: staleMarked,
-              expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
-            };
-            const filteredStale = filterAflEnrichedListPayload(staleMarked) ?? staleMarked;
-            return NextResponse.json(filteredStale, {
-              headers: {
-                'Cache-Control': AFL_LIST_CACHE_CONTROL,
-              },
-            });
-          }
+          return jsonEnrichedPayload(
+            staleMarked,
+            AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS,
+            aflEnrichedPayloadHasEligibleLiveRows(staleMarked)
+          );
         }
       }
 
-      if (aflEnrichedPayloadHasUsableStats(payload)) {
+      if (await shouldPersistEnrichedCache(payload)) {
         aflEnrichedPayloadMemoryCache = {
           payload,
           expiresAt: Date.now() + AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS * 1000,
@@ -989,7 +1041,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json(filterAflEnrichedListPayload(payload) ?? payload, {
+    return NextResponse.json(buildUserEnrichedListPayload(payload), {
       headers: {
         'Cache-Control': AFL_LIST_CACHE_CONTROL,
       },

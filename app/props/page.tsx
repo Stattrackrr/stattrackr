@@ -2092,14 +2092,23 @@ export default function NBALandingPage() {
     let noOdds = listData?.noAflOdds === true || listData?.noWorldCupOdds === true;
     let ingestMessage =
       typeof listData?.ingestMessage === 'string' ? listData.ingestMessage : undefined;
+    const staleSnapshot =
+      listData?._meta &&
+      typeof listData._meta === 'object' &&
+      (listData._meta as { stale?: unknown }).stale === true;
 
     if (sport === 'afl') {
       const live = applyLiveAflPropsCutoff(aggregated, games);
       finalGames = live.games;
       finalAggregated = live.props;
       if (live.noAflOdds) {
-        noOdds = true;
-        ingestMessage = live.ingestMessage ?? AFL_USER_NO_ODDS;
+        if (staleSnapshot && aggregated.length > 0) {
+          finalGames = games;
+          finalAggregated = aggregated;
+        } else {
+          noOdds = true;
+          ingestMessage = live.ingestMessage ?? AFL_USER_NO_ODDS;
+        }
       }
     }
 
@@ -3314,10 +3323,12 @@ export default function NBALandingPage() {
         const listData = await listRes.json();
         const { games, aggregated } = aggregateSecondaryListPayload(listData, sport);
         if (listData.noAflOdds === true || listData.noWorldCupOdds === true) {
-          try {
-            sessionStorage.removeItem(cacheKey);
-          } catch {
-            // Ignore
+          if (aggregated.length === 0 && games.length === 0) {
+            try {
+              sessionStorage.removeItem(cacheKey);
+            } catch {
+              // Ignore
+            }
           }
         } else if (aggregated.length > 0 || games.length > 0) {
           const toCache = {
@@ -3468,17 +3479,19 @@ export default function NBALandingPage() {
         if (cancelled || secondaryListSportRef.current !== listSport) return;
         if (result.noAflOdds) {
           if (!cancelled && secondaryListSportRef.current === listSport) {
-            setAflGames([]);
-            commitSecondaryProps([]);
             setAflIngestMessage(result.ingestMessage ?? null);
             setAflLastUpdated(result.lastUpdated ?? null);
-            try {
-              sessionStorage.removeItem(cacheKey);
-            } catch {
-              // Ignore
+            if (!hasVisibleSecondaryRows) {
+              setAflGames([]);
+              commitSecondaryProps([]);
+              try {
+                sessionStorage.removeItem(cacheKey);
+              } catch {
+                // Ignore
+              }
+              userModifiedAflGamesRef.current = false;
+              syncSelectedAflGames([]);
             }
-            userModifiedAflGamesRef.current = false;
-            syncSelectedAflGames([]);
             setSecondaryPropsFetchComplete(true);
             setAflPropsLoading(false);
           }
