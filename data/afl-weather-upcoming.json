@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T13:17:23.445Z",
+  "generatedAt": "2026-07-08T12:18:51.453Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-07-09T10:10:00Z",
       "weather": {
-        "temperatureC": 16,
-        "precipitationMm": 0.2,
-        "windKmh": 7.6
+        "temperatureC": 16.4,
+        "precipitationMm": 0,
+        "windKmh": 4.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-07-10T09:40:50Z",
       "weather": {
-        "temperatureC": 10.3,
+        "temperatureC": 10.8,
         "precipitationMm": 0,
-        "windKmh": 9.9
+        "windKmh": 9.7
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-07-11T03:15:49Z",
       "weather": {
-        "temperatureC": 12.6,
+        "temperatureC": 13,
         "precipitationMm": 0,
-        "windKmh": 21
+        "windKmh": 19.7
       }
     },
     {
@@ -44,7 +44,7 @@
       "weather": {
         "temperatureC": 15.9,
         "precipitationMm": 0,
-        "windKmh": 11.3
+        "windKmh": 11.4
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-07-11T09:35:00Z",
       "weather": {
-        "temperatureC": 11.6,
-        "precipitationMm": 0.3,
-        "windKmh": 22.2
+        "temperatureC": 11.4,
+        "precipitationMm": 3.8,
+        "windKmh": 24.5
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-07-11T10:10:00Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 10.6,
         "precipitationMm": 0.2,
-        "windKmh": 28.3
+        "windKmh": 24.1
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-07-12T03:10:49Z",
       "weather": {
-        "temperatureC": 13.4,
-        "precipitationMm": 0,
-        "windKmh": 14.1
+        "temperatureC": 13.2,
+        "precipitationMm": 0.1,
+        "windKmh": 13.6
       }
     },
     {
@@ -86,9 +86,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-07-12T05:15:00Z",
       "weather": {
-        "temperatureC": 13.5,
+        "temperatureC": 13.8,
         "precipitationMm": 0,
-        "windKmh": 15.5
+        "windKmh": 11.3
       }
     },
     {
@@ -97,9 +97,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-07-12T06:40:50Z",
       "weather": {
-        "temperatureC": 20.1,
+        "temperatureC": 19.1,
         "precipitationMm": 0,
-        "windKmh": 12.3
+        "windKmh": 14.3
       }
     }
   ],
