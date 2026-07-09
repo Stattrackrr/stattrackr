@@ -6803,13 +6803,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   const aflPortraitMissUntilRef = useRef<Map<string, number>>(new Map());
   /** True while current page has AFL names still awaiting /api/afl/player-portraits (avoids jersey # flash). */
   const [aflPortraitBatchLoading, setAflPortraitBatchLoading] = useState(false);
-  const AFL_PORTRAIT_RESOLVER_VERSION = '9';
+  const AFL_PORTRAIT_RESOLVER_VERSION = '10';
   const AFL_PORTRAIT_VERSION_KEY = 'st_afl_portrait_resolver_v';
-  const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v9';
+  const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v10';
   const AFL_PORTRAIT_EXTRAS_LS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX}${AFL_PORTRAIT_RESOLVER_VERSION}`;
   const AFL_PORTRAIT_EXTRAS_LS_TS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY}_ts`;
   const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
   const AFL_PORTRAIT_RETRY_DELAY_MS = 2 * 60 * 1000;
+  const aflPortraitFetchGenRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -6956,7 +6957,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
       setAflPortraitBatchLoading(false);
       return;
     }
-    let cancelled = false;
+    const fetchGen = ++aflPortraitFetchGenRef.current;
     const chunks: Array<{ name: string; team?: string; homeTeam?: string; awayTeam?: string }[]> = [];
     for (let i = 0; i < players.length; i += AFL_PORTRAIT_FETCH_BATCH_SIZE) {
       chunks.push(players.slice(i, i + AFL_PORTRAIT_FETCH_BATCH_SIZE));
@@ -6970,8 +6971,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ players: batch }),
           });
+          if (!r.ok) {
+            for (const p of batch) {
+              aflPortraitMissUntilRef.current.set(p.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
+            }
+            return;
+          }
           const data = (await r.json()) as { portraits?: Record<string, string | null> };
-          if (cancelled) return;
           const portraits = data.portraits ?? {};
           for (const p of batch) {
             const resolvedUrl = portraits[p.name];
@@ -6982,30 +6988,28 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               aflPortraitMissUntilRef.current.set(p.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
             }
           }
+          // Always merge successful URLs — do not drop them when a newer fetch starts.
           setAflPortraitExtras((prev) => {
             const next = { ...prev };
             for (const [name, url] of Object.entries(portraits)) {
               if (url) {
                 next[name] = url;
-                // Warm the browser image cache as soon as the URL is known so the row's <img> paints instantly.
                 warmImage(url);
               }
             }
             return next;
           });
         } catch {
-          if (cancelled) return;
           for (const p of batch) {
             aflPortraitMissUntilRef.current.set(p.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
           }
         }
       })
     ).finally(() => {
-      if (!cancelled) setAflPortraitBatchLoading(false);
+      if (aflPortraitFetchGenRef.current === fetchGen) {
+        setAflPortraitBatchLoading(false);
+      }
     });
-    return () => {
-      cancelled = true;
-    };
   }, [aflPortraitFetchKey, propsSport, activePaginatedProps]);
 
   // Warm the browser image cache for every logo / headshot URL that will appear in the

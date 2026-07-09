@@ -12,7 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fetchClubSitePortraitUrl } from '../lib/aflClubPlayerPortrait';
-import { getAflPlayerHeadshotUrl } from '../lib/aflPlayerHeadshots';
+import { getAflManualPlayerHeadshotUrl } from '../lib/aflPlayerHeadshots';
 import { normalizeAflPlayerNameForMatch, toCanonicalAflPlayerName } from '../lib/aflPlayerNameUtils';
 import { footywireNicknameToOfficial, leagueTeamToOfficial, rosterTeamToInjuryTeam, toOfficialAflTeamDisplayName } from '../lib/aflTeamMapping';
 import { aflSeasonHeadshotsFilePath, getAflHeadshotsSeason } from '../lib/aflSeasonHeadshots';
@@ -233,7 +233,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const manual = getAflPlayerHeadshotUrl(displayName);
+    const manual = getAflManualPlayerHeadshotUrl(displayName);
     if (manual) {
       byName.set(displayName, manual);
       if (norm) byNorm.set(norm, displayName);

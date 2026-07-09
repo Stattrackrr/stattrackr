@@ -15,9 +15,13 @@ import {
 } from '@/lib/aflTeamLogosClientCache';
 
 /** Club portraits cache — keep in sync with `app/props/page.tsx`. */
-const AFL_PORTRAIT_RESOLVER_VERSION = '9';
+const AFL_PORTRAIT_RESOLVER_VERSION = '10';
 const AFL_PORTRAIT_VERSION_KEY = 'st_afl_portrait_resolver_v';
-const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v9';
+const AFL_PORTRAIT_EXTRAS_KEY = 'st_afl_portrait_extras_v10';
+const AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX = 'st_afl_portrait_extras_ls_v';
+const AFL_PORTRAIT_EXTRAS_LS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX}${AFL_PORTRAIT_RESOLVER_VERSION}`;
+const AFL_PORTRAIT_EXTRAS_LS_TS_KEY = `${AFL_PORTRAIT_EXTRAS_LS_KEY}_ts`;
+const AFL_PORTRAIT_EXTRAS_LS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const AFL_PORTRAIT_FETCH_BATCH_SIZE = 16;
 const AFL_PORTRAIT_RETRY_DELAY_MS = 2 * 60 * 1000;
 
@@ -111,6 +115,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
   const aflPortraitExtrasRef = useRef<Record<string, string>>({});
   const aflPortraitFetchedRef = useRef<Set<string>>(new Set());
   const aflPortraitMissUntilRef = useRef<Map<string, number>>(new Map());
+  const aflPortraitFetchGenRef = useRef(0);
 
   useEffect(() => {
     aflPortraitExtrasRef.current = aflPortraitExtras;
@@ -120,21 +125,52 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
     setMounted(true);
   }, []);
 
-  // Hydrate club portraits from session (same bucket as props page).
+  // Hydrate club portraits from session/localStorage (same buckets as props page).
   useEffect(() => {
     try {
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AFL_PORTRAIT_VERSION_KEY) !== AFL_PORTRAIT_RESOLVER_VERSION) {
         sessionStorage.setItem(AFL_PORTRAIT_VERSION_KEY, AFL_PORTRAIT_RESOLVER_VERSION);
         sessionStorage.removeItem(AFL_PORTRAIT_EXTRAS_KEY);
+        try {
+          if (typeof localStorage !== 'undefined') {
+            for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+              const key = localStorage.key(i);
+              if (
+                key &&
+                key.startsWith(AFL_PORTRAIT_EXTRAS_LS_KEY_PREFIX) &&
+                key !== AFL_PORTRAIT_EXTRAS_LS_KEY &&
+                key !== AFL_PORTRAIT_EXTRAS_LS_TS_KEY
+              ) {
+                localStorage.removeItem(key);
+              }
+            }
+          }
+        } catch {
+          /* ignore */
+        }
         aflPortraitFetchedRef.current = new Set();
         aflPortraitMissUntilRef.current = new Map();
         setAflPortraitExtras({});
         return;
       }
-      const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AFL_PORTRAIT_EXTRAS_KEY) : null;
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Record<string, string>;
-      if (!parsed || typeof parsed !== 'object') return;
+
+      let parsed: Record<string, string> | null = null;
+      const sessionRaw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AFL_PORTRAIT_EXTRAS_KEY) : null;
+      if (sessionRaw) {
+        const maybe = JSON.parse(sessionRaw) as Record<string, string> | null;
+        if (maybe && typeof maybe === 'object') parsed = maybe;
+      }
+      if (!parsed && typeof localStorage !== 'undefined') {
+        const lsRaw = localStorage.getItem(AFL_PORTRAIT_EXTRAS_LS_KEY);
+        const lsTsRaw = localStorage.getItem(AFL_PORTRAIT_EXTRAS_LS_TS_KEY);
+        const lsTs = lsTsRaw ? parseInt(lsTsRaw, 10) : 0;
+        const lsAge = Number.isFinite(lsTs) ? Date.now() - lsTs : Infinity;
+        if (lsRaw && lsAge < AFL_PORTRAIT_EXTRAS_LS_TTL_MS) {
+          const maybe = JSON.parse(lsRaw) as Record<string, string> | null;
+          if (maybe && typeof maybe === 'object') parsed = maybe;
+        }
+      }
+      if (!parsed) return;
       const next: Record<string, string> = {};
       for (const [name, url] of Object.entries(parsed)) {
         if (typeof name !== 'string' || !name.trim()) continue;
@@ -153,9 +189,15 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
 
   useEffect(() => {
     try {
-      if (typeof sessionStorage === 'undefined') return;
       if (Object.keys(aflPortraitExtras).length === 0) return;
-      sessionStorage.setItem(AFL_PORTRAIT_EXTRAS_KEY, JSON.stringify(aflPortraitExtras));
+      const serialized = JSON.stringify(aflPortraitExtras);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(AFL_PORTRAIT_EXTRAS_KEY, serialized);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(AFL_PORTRAIT_EXTRAS_LS_KEY, serialized);
+        localStorage.setItem(AFL_PORTRAIT_EXTRAS_LS_TS_KEY, Date.now().toString());
+      }
     } catch {
       /* ignore */
     }
@@ -233,7 +275,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
       return;
     }
     setAflPortraitBatchLoading(true);
-    let cancelled = false;
+    const fetchGen = ++aflPortraitFetchGenRef.current;
     const chunks: Array<typeof players> = [];
     for (let i = 0; i < players.length; i += AFL_PORTRAIT_FETCH_BATCH_SIZE) {
       chunks.push(players.slice(i, i + AFL_PORTRAIT_FETCH_BATCH_SIZE));
@@ -246,8 +288,13 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ players: batch }),
           });
+          if (!r.ok) {
+            for (const pl of batch) {
+              aflPortraitMissUntilRef.current.set(pl.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
+            }
+            return;
+          }
           const data = (await r.json()) as { portraits?: Record<string, string | null> };
-          if (cancelled) return;
           const portraits = data.portraits ?? {};
           for (const pl of batch) {
             const resolvedUrl = portraits[pl.name];
@@ -258,6 +305,7 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
               aflPortraitMissUntilRef.current.set(pl.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
             }
           }
+          // Always merge successful URLs — do not drop them when a newer fetch starts.
           setAflPortraitExtras((prev) => {
             const next = { ...prev };
             for (const [name, url] of Object.entries(portraits)) {
@@ -266,18 +314,16 @@ export function AflSidebarHotPicks({ excludePlayerName, isDark, onSelectPlayer }
             return next;
           });
         } catch {
-          if (cancelled) return;
           for (const pl of batch) {
             aflPortraitMissUntilRef.current.set(pl.name, Date.now() + AFL_PORTRAIT_RETRY_DELAY_MS);
           }
         }
       })
     ).finally(() => {
-      if (!cancelled) setAflPortraitBatchLoading(false);
+      if (aflPortraitFetchGenRef.current === fetchGen) {
+        setAflPortraitBatchLoading(false);
+      }
     });
-    return () => {
-      cancelled = true;
-    };
   }, [picks]);
 
   const load = useCallback(async () => {
