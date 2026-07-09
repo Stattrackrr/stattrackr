@@ -196,6 +196,29 @@ function readBackfillPayload(filePath) {
   return records;
 }
 
+/** Official 2026 AFL premiership round windows (Thu–Mon inclusive). */
+const AFL_2026_ROUND_WINDOWS = [
+  { key: '2026-R14', start: '2026-06-11', end: '2026-06-15' },
+  { key: '2026-R15', start: '2026-06-18', end: '2026-06-22' },
+  { key: '2026-R16', start: '2026-06-25', end: '2026-06-29' },
+  { key: '2026-R17', start: '2026-07-02', end: '2026-07-06' },
+  { key: '2026-R18', start: '2026-07-09', end: '2026-07-13' },
+  { key: '2026-R19', start: '2026-07-16', end: '2026-07-20' },
+  { key: '2026-R20', start: '2026-07-23', end: '2026-07-27' },
+  { key: '2026-R21', start: '2026-07-30', end: '2026-08-03' },
+  { key: '2026-R22', start: '2026-08-06', end: '2026-08-10' },
+  { key: '2026-R23', start: '2026-08-13', end: '2026-08-17' },
+];
+
+function calendarRoundKeyFromCommenceTime(commenceTime) {
+  const date = String(commenceTime || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  for (const window of AFL_2026_ROUND_WINDOWS) {
+    if (date >= window.start && date <= window.end) return window.key;
+  }
+  return null;
+}
+
 function parseRoundKey(roundKey) {
   const match = String(roundKey ?? '').trim().match(/^(\d{4})-R(\d{1,2})$/i);
   if (!match) return null;
@@ -240,6 +263,8 @@ function isDateInAflRoundWindow(date, bounds) {
 
 function inferRoundKey(commenceTime, records) {
   if (!commenceTime) return null;
+  const calendarKey = calendarRoundKeyFromCommenceTime(commenceTime);
+  if (calendarKey) return calendarKey;
   const date = commenceTime.slice(0, 10);
   const weekKey = weekKeyFromCommenceTime(commenceTime);
   const withRound = records.filter((record) => record.roundKey && record.commenceTime);
@@ -864,8 +889,7 @@ async function runEnrich(args) {
 
   for (const record of records) {
     if (!record.roundKey) {
-      record.roundKey =
-        inferRoundKey(record.commenceTime, records) ?? (record.weekKey === '2026-W27' ? '2026-R16' : null);
+      record.roundKey = inferRoundKey(record.commenceTime, records);
     }
     const gameDate = gameDateFromCommence(record?.commenceTime);
     if (!gameDate || gameDate > todayIso) continue;

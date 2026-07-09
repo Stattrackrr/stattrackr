@@ -484,11 +484,36 @@ function isDateInAflRoundWindow(date: string, bounds: { min: string; max: string
   return daysAfterMax >= 0 && daysAfterMax <= 4 && roundSpanDays <= 7;
 }
 
+/** Official 2026 AFL premiership round windows (Thu–Mon inclusive). */
+const AFL_2026_ROUND_WINDOWS: Array<{ key: string; start: string; end: string }> = [
+  { key: '2026-R14', start: '2026-06-11', end: '2026-06-15' },
+  { key: '2026-R15', start: '2026-06-18', end: '2026-06-22' },
+  { key: '2026-R16', start: '2026-06-25', end: '2026-06-29' },
+  { key: '2026-R17', start: '2026-07-02', end: '2026-07-06' },
+  { key: '2026-R18', start: '2026-07-09', end: '2026-07-13' },
+  { key: '2026-R19', start: '2026-07-16', end: '2026-07-20' },
+  { key: '2026-R20', start: '2026-07-23', end: '2026-07-27' },
+  { key: '2026-R21', start: '2026-07-30', end: '2026-08-03' },
+  { key: '2026-R22', start: '2026-08-06', end: '2026-08-10' },
+  { key: '2026-R23', start: '2026-08-13', end: '2026-08-17' },
+];
+
+export function calendarAflTopPicksRoundKey(commenceTime: string | null | undefined): string | null {
+  const date = String(commenceTime || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  for (const window of AFL_2026_ROUND_WINDOWS) {
+    if (date >= window.start && date <= window.end) return window.key;
+  }
+  return null;
+}
+
 export function inferAflTopPicksRoundKey(
   commenceTime: string | null,
   records: AflTopPickSnapshotRecord[]
 ): string | null {
   if (!commenceTime) return null;
+  const calendarKey = calendarAflTopPicksRoundKey(commenceTime);
+  if (calendarKey) return calendarKey;
   const date = commenceTime.slice(0, 10);
   const weekKey = aflTopPicksWeekKeyFromCommenceTime(commenceTime);
   const withRound = records.filter((record) => record.roundKey && record.commenceTime);
@@ -545,8 +570,12 @@ function enrichTopPicksRecordsWithRoundKeys(records: AflTopPickSnapshotRecord[])
   if (records.length === 0) return records;
   const roundLookup = buildAflTopPicksRoundLookup(records);
   return records.map((record) => {
+    const calendarKey = calendarAflTopPicksRoundKey(record.commenceTime);
     const roundKey =
-      record.roundKey ?? roundLookup.get(record.gameKey) ?? inferAflTopPicksRoundKey(record.commenceTime, records);
+      calendarKey ??
+      record.roundKey ??
+      roundLookup.get(record.gameKey) ??
+      inferAflTopPicksRoundKey(record.commenceTime, records);
     if (!roundKey || roundKey === record.roundKey) return record;
     return normalizeAflTopPickSnapshotRecord({ ...record, roundKey });
   });

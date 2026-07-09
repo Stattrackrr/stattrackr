@@ -88,7 +88,14 @@ restore_backup() {
   for p in "${UNIQUE_PATHS[@]}"; do
     if [ -e "$BACKUP_DIR/$p" ]; then
       mkdir -p "$(dirname "$p")"
-      cp -a "$BACKUP_DIR/$p" "$p"
+      # `cp -a src dest/` nests when dest is an existing directory (e.g. data/afl-model
+      # becomes data/afl-model/afl-model). Replace directories instead of copying into them.
+      if [ -d "$BACKUP_DIR/$p" ]; then
+        rm -rf "$p"
+        cp -a "$BACKUP_DIR/$p" "$p"
+      else
+        cp -a "$BACKUP_DIR/$p" "$p"
+      fi
     fi
   done
 }

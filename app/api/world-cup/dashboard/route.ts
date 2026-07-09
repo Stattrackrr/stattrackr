@@ -5,6 +5,7 @@ import {
   WORLD_CUP_LOGO_DOWNLOADS_EXTENSIONS,
   WORLD_CUP_LOGO_DOWNLOADS_STEM,
   WORLD_CUP_LOGO_PUBLIC_FILENAME,
+  WORLD_CUP_PUBLIC_ENABLED,
 } from '@/lib/nbaConstants';
 import {
   InternationalCompetition,
@@ -3794,7 +3795,17 @@ export async function GET(request: NextRequest) {
     return handleWorldCupPropsStatsWarmGet(request);
   }
   if (request.nextUrl.searchParams.get('playerPropsList') === '1') {
+    if (!WORLD_CUP_PUBLIC_ENABLED) {
+      return NextResponse.json({ props: [], disabled: true, reason: 'world_cup_closed' });
+    }
     return handleWorldCupPlayerPropsListGet(request);
+  }
+  if (!WORLD_CUP_PUBLIC_ENABLED) {
+    // Keep logo + cron warm endpoints available; block public dashboard reads.
+    return NextResponse.json(
+      { error: 'World Cup is temporarily unavailable', disabled: true, reason: 'world_cup_closed' },
+      { status: 503 }
+    );
   }
   const debug = isWcCacheDebug(request);
   return runWithWcCacheDebug(debug, async () => {

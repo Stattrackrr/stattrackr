@@ -7789,7 +7789,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               <button
                 type="button"
                 disabled={!WORLD_CUP_PUBLIC_ENABLED}
-                onClick={() => toggleSportSelection('world-cup')}
+                onClick={() => {
+                  if (!WORLD_CUP_PUBLIC_ENABLED) return;
+                  toggleSportSelection('world-cup');
+                }}
                 className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
                   !WORLD_CUP_PUBLIC_ENABLED
                     ? mounted && isDark
@@ -7801,6 +7804,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 }`}
                 aria-label="World Cup"
                 aria-disabled={!WORLD_CUP_PUBLIC_ENABLED}
+                title={!WORLD_CUP_PUBLIC_ENABLED ? 'Coming Soon' : undefined}
               >
                 <img
                   src={WORLD_CUP_LOGO_PATH}

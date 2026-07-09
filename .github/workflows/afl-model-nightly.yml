@@ -79,6 +79,39 @@ jobs:
           # Always refresh live projections for dashboard/top picks (uses latest-model.json after any promotion).
           python scripts/afl_model/score_upcoming.py --base-url "${{ secrets.PROD_URL }}" --artifact "data/afl-model/models/latest-model.json" --latest-output-path "data/afl-model/latest-disposals-projections.json" --skip-line-history-enrich
 
+      - name: Verify live projections landed at the canonical path
+        run: |
+          set -euo pipefail
+          node -e "
+            const fs = require('fs');
+            const path = 'data/afl-model/latest-disposals-projections.json';
+            if (!fs.existsSync(path)) {
+              console.error('Missing live projections file:', path);
+              process.exit(1);
+            }
+            const payload = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const generatedAt = String(payload.generatedAt || '');
+            const rows = Array.isArray(payload.rows) ? payload.rows.length : 0;
+            const ageMs = generatedAt ? Date.now() - Date.parse(generatedAt) : Number.POSITIVE_INFINITY;
+            console.log('Live projections:', { generatedAt, rows, ageHours: Number.isFinite(ageMs) ? (ageMs / 36e5).toFixed(1) : 'n/a' });
+            if (!generatedAt || !Number.isFinite(Date.parse(generatedAt))) {
+              console.error('Live projections missing generatedAt');
+              process.exit(1);
+            }
+            if (rows < 1) {
+              console.error('Live projections have no rows');
+              process.exit(1);
+            }
+            if (ageMs > 36 * 36e5) {
+              console.error('Live projections look stale; refusing to commit nested/stale outputs');
+              process.exit(1);
+            }
+          "
+          if [ -d data/afl-model/afl-model ]; then
+            echo "Removing accidental nested data/afl-model/afl-model before commit"
+            rm -rf data/afl-model/afl-model
+          fi
+
       - name: Commit and push nightly model outputs to master if changed
         run: |
           rm -rf data/afl-model/afl-model

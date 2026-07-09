@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { readViewerProfileCache, resolveViewerProfile } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
-import { NBA_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -59,7 +59,9 @@ export default function HomePage() {
       void fetch('/api/nba/player-props', { cache: 'force-cache' }).catch(() => {});
     }
     void fetch('/api/afl/player-props/list', { cache: 'force-cache' }).catch(() => {});
-    void fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'force-cache' }).catch(() => {});
+    if (WORLD_CUP_PUBLIC_ENABLED) {
+      void fetch('/api/world-cup/dashboard?playerPropsList=1', { cache: 'force-cache' }).catch(() => {});
+    }
   };
 
   const goToProps = () => {
@@ -887,7 +889,7 @@ export default function HomePage() {
               { q: 'Is mobile supported?', a: 'Yes. StatTrackr works across phone, tablet, and desktop. The full feature set and data are available on mobile, so you can research on the go.' },
               { q: 'How do I contact support?', a: <>Email us at <a href="mailto:Support@Stattrackr.co" className="text-purple-400 hover:text-purple-300 underline">Support@Stattrackr.co</a>. We typically respond within 24 hours.</> },
               { q: 'Does the journal use real money?', a: 'No. The journal is for tracking purposes only. You enter your own data; we don\'t handle real money or connect to any sportsbooks. It is simply a tool for logging your research and reviewing your performance over time.' },
-              { q: 'What sports are available?', a: 'We cover multiple sports — NBA, AFL, and soccer (including the World Cup) — with full stats, props, and research tools. We\'re always adding more and will announce new sports when they\'re ready.' },
+              { q: 'What sports are available?', a: 'We cover multiple sports — NBA, AFL, and more — with full stats, props, and research tools. We\'re always adding more and will announce new sports when they\'re ready.' },
               { q: 'Are the top-ranked props the best picks?', a: 'No. The ranking is based on line value and odds sourced from bookmakers, not our recommendations. We provide the data and tools; how you interpret them is entirely up to you. Use the filters and dashboard to draw your own conclusions.' },
             ].map((faq, i) => (
               <div

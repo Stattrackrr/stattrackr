@@ -4,9 +4,9 @@
 # Heavy BDL/DvP/team/player dashboard warming lives in world-cup-dashboard-warm.yml.
 name: World Cup Process Stats
 
+# Scheduled props warm paused while World Cup is publicly closed (WORLD_CUP_PUBLIC_ENABLED=false).
+# Re-enable the cron when reopening; workflow_dispatch still works for manual recovery.
 on:
-  schedule:
-    - cron: '0 */2 * * *' # Every 2 hours, same cadence as AFL
   workflow_dispatch:
     inputs:
       diagnose_limit:

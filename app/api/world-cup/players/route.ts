@@ -3,6 +3,7 @@ import {
   InternationalCompetition,
   searchInternationalPlayers,
 } from '@/lib/internationalDashboard';
+import { WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import {
   getWorldCupCache,
   getWcCacheDebugSummary,
@@ -136,6 +137,12 @@ function dedupePlayers(
 }
 
 export async function GET(request: NextRequest) {
+  if (!WORLD_CUP_PUBLIC_ENABLED) {
+    return NextResponse.json(
+      { data: [], disabled: true, reason: 'world_cup_closed' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
   const debug = isWcCacheDebug(request);
   return runWithWcCacheDebug(debug, async () => {
     const response = await handleWorldCupPlayersGet(request);

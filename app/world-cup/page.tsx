@@ -45,6 +45,7 @@ import {
   WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY,
   WC_BACK_TO_PROPS_SKIP_FETCH_KEY,
   WC_PROPS_RETURN_SPORT_KEY,
+  WORLD_CUP_PUBLIC_ENABLED,
   WORLD_CUP_SELECTION_KEYS as WORLD_CUP_STORAGE_KEYS,
   clearLegacyWorldCupLocalStorage,
   clearWorldCupDashboardPersistence,
@@ -13439,10 +13440,28 @@ export function WorldCupPageContent() {
   );
 }
 
+function WorldCupPublicGate() {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || WORLD_CUP_PUBLIC_ENABLED) return;
+    router.replace('/props?sport=all');
+  }, [mounted, router]);
+
+  if (!mounted || !WORLD_CUP_PUBLIC_ENABLED) return null;
+
+  return <WorldCupPageContent />;
+}
+
 export default function WorldCupPage() {
   return (
     <Suspense fallback={null}>
-      <WorldCupPageContent />
+      <WorldCupPublicGate />
     </Suspense>
   );
 }

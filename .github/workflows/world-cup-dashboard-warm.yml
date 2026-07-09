@@ -4,9 +4,9 @@
 # 3. Refresh Bet365 odds, then cache-check/warm live-odds player dashboards only.
 name: World Cup Dashboard Warm
 
+# Scheduled warm paused while World Cup is publicly closed (WORLD_CUP_PUBLIC_ENABLED=false).
+# Re-enable the cron when reopening; workflow_dispatch still works for manual recovery.
 "on":
-  schedule:
-    - cron: "30 */4 * * *" # Incremental BDL ingest + dashboard warm every 4 hours during tournament
   workflow_dispatch:
     inputs:
       full_rebuild:

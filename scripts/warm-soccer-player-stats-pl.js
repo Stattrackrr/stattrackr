@@ -5,7 +5,6 @@
  * Runs one /api/soccer/player-stats-batch per team, with team-level concurrency.
  *
  * Requires a running app (npm run dev) or production URL.
- * GitHub Actions: .github/workflows/soccer-pl-player-stats.yml (same logs; uses PROD_URL + CRON_SECRET).
  *
  * Usage:
  *   node scripts/warm-soccer-player-stats-pl.js
