@@ -526,14 +526,20 @@ function aflTopPicksModalResolveCurrentRoundWindow(
   liveRecords: AflTopPicksHistoryRecord[],
   historyRecords: AflTopPicksHistoryRecord[]
 ): AflTopPicksRoundWindow {
-  const upcomingDates = [...liveRecords, ...historyRecords]
-    .filter((record) => aflTopPicksModalIsUpcomingGame(record.commenceTime))
+  // Prefer the round window that contains any live/history games for this slate,
+  // including already-started games, so finished Current games stay visible.
+  const allDates = [...liveRecords, ...historyRecords]
     .map((record) => aflTopPicksModalGameDateBrisbane(record.commenceTime))
     .filter((date): date is string => Boolean(date))
     .sort();
-
-  if (upcomingDates.length > 0) {
-    return aflTopPicksModalThursdayBlockForDate(upcomingDates[0]!);
+  if (allDates.length > 0) {
+    const upcomingDates = [...liveRecords, ...historyRecords]
+      .filter((record) => aflTopPicksModalIsUpcomingGame(record.commenceTime))
+      .map((record) => aflTopPicksModalGameDateBrisbane(record.commenceTime))
+      .filter((date): date is string => Boolean(date))
+      .sort();
+    const anchor = upcomingDates[0] ?? allDates[0]!;
+    return aflTopPicksModalThursdayBlockForDate(anchor);
   }
 
   return aflTopPicksModalCalendarWindowFromToday(reference);

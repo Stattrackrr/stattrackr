@@ -768,7 +768,7 @@ function sortAflTopPickSnapshotRecords(records: AflTopPickSnapshotRecord[]): Afl
 }
 
 export function readAflTopPicksHistory(): AflTopPickSnapshotPayload {
-  const records = loadTopPicksHistoryRecords();
+  const records = enrichAflTopPicksActualsFromLineHistory(loadTopPicksHistoryRecords());
   return {
     generatedAt: new Date().toISOString(),
     count: records.length,
@@ -783,6 +783,179 @@ export function writeAflTopPicksHistory(records: AflTopPickSnapshotRecord[], gen
     AFL_TOP_PICKS_HISTORY_PATH,
     `${JSON.stringify({ generatedAt, count: sorted.length, records: sorted }, null, 2)}\n`
   );
+}
+
+function buildLineHistoryActualLookup(): Map<string, number> {
+  const payload = readHistoryPayload();
+  const rows = Array.isArray(payload?.rows) ? payload!.rows! : [];
+  const lookup = new Map<string, number>();
+  for (const row of rows) {
+    const actual =
+      typeof row.actualDisposals === 'number' && Number.isFinite(row.actualDisposals) ? row.actualDisposals : null;
+    if (actual == null) continue;
+    const player = normalizeName(String(row.playerName ?? ''));
+    const gameDate = String(row.gameDate ?? '').slice(0, 10);
+    if (!player || !/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) continue;
+    const home = normalizeTopPicksTeam(String(row.homeTeam ?? ''));
+    const away = normalizeTopPicksTeam(String(row.awayTeam ?? ''));
+    lookup.set(`${player}|${gameDate}`, actual);
+    if (home && away) {
+      lookup.set(`${player}|${gameDate}|${home}|${away}`, actual);
+      lookup.set(`${player}|${gameDate}|${away}|${home}`, actual);
+    }
+  }
+  return lookup;
+}
+
+function lookupTopPickActualFromLineHistory(
+  pick: AflTopGamePick,
+  record: AflTopPickSnapshotRecord,
+  lineHistoryLookup: Map<string, number>
+): number | null {
+  const player = normalizeName(pick.playerName);
+  const gameDate = String(record.commenceTime ?? '').slice(0, 10);
+  if (!player || !/^\d{4}-\d{2}-\d{2}$/.test(gameDate)) return null;
+  const home = normalizeTopPicksTeam(record.homeTeam);
+  const away = normalizeTopPicksTeam(record.awayTeam);
+  const exact =
+    lineHistoryLookup.get(`${player}|${gameDate}|${home}|${away}`) ??
+    lineHistoryLookup.get(`${player}|${gameDate}|${away}|${home}`);
+  if (typeof exact === 'number' && Number.isFinite(exact)) return exact;
+  const fallback = lineHistoryLookup.get(`${player}|${gameDate}`);
+  return typeof fallback === 'number' && Number.isFinite(fallback) ? fallback : null;
+}
+
+/** Fill missing pick.actualDisposals from disposals-line-history for past games. */
+export function enrichAflTopPicksActualsFromLineHistory(
+  records: AflTopPickSnapshotRecord[]
+): AflTopPickSnapshotRecord[] {
+  if (records.length === 0) return records;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const lineHistoryLookup = buildLineHistoryActualLookup();
+  if (lineHistoryLookup.size === 0) return records;
+
+  return records.map((record) => {
+    const gameDate = String(record.commenceTime ?? '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(gameDate) || gameDate > todayIso) return record;
+    let changed = false;
+    const picks = record.picks.map((pick) => {
+      if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) return pick;
+      const actual = lookupTopPickActualFromLineHistory(pick, record, lineHistoryLookup);
+      if (actual == null) return pick;
+      changed = true;
+      return { ...pick, actualDisposals: actual };
+    });
+    return changed ? { ...record, picks } : record;
+  });
+}
+
+type SoftLockProjectionRow = {
+  playerName?: string;
+  homeTeam?: string;
+  awayTeam?: string;
+  commenceTime?: string | null;
+  bookmaker?: string | null;
+  line?: number | null;
+  expectedDisposals?: number | null;
+  recommendedSide?: 'OVER' | 'UNDER' | null;
+  recommendedEdge?: number | null;
+  recommendedProb?: number | null;
+  isTop3PickInGame?: boolean;
+  recommendedPlayerRankInGame?: number | null;
+  modelVersion?: string | null;
+};
+
+/**
+ * Soft-lock Top 3 rows from a projection payload into history without overwriting
+ * already-finalized games. Used so Current keeps finished games after live props drop them.
+ */
+export function softLockTopPicksFromProjectionRows(
+  rows: SoftLockProjectionRow[],
+  opts: { modelVersion?: string | null; projectionGeneratedAt?: string | null; write?: boolean } = {}
+): { added: number; skipped: number; records: AflTopPickSnapshotRecord[] } {
+  const history = readAflTopPicksHistory();
+  const byGame = new Map(history.records.map((record) => [record.gameKey, record]));
+  const topByGame = new Map<string, SoftLockProjectionRow[]>();
+  const metaByGame = new Map<string, { homeTeam: string; awayTeam: string; commenceTime: string | null }>();
+
+  for (const row of rows) {
+    if (!row.isTop3PickInGame) continue;
+    if (typeof row.recommendedPlayerRankInGame !== 'number' || !Number.isFinite(row.recommendedPlayerRankInGame)) continue;
+    const homeTeam = String(row.homeTeam ?? '').trim();
+    const awayTeam = String(row.awayTeam ?? '').trim();
+    const commenceTime = row.commenceTime != null ? String(row.commenceTime) : null;
+    const gameKey = buildAflTopPicksGameKey(homeTeam, awayTeam, commenceTime);
+    if (!gameKey.includes('|')) continue;
+    const list = topByGame.get(gameKey) ?? [];
+    list.push(row);
+    topByGame.set(gameKey, list);
+    if (!metaByGame.has(gameKey)) {
+      metaByGame.set(gameKey, { homeTeam, awayTeam, commenceTime });
+    }
+  }
+
+  let added = 0;
+  let skipped = 0;
+  for (const [gameKey, gameRows] of topByGame.entries()) {
+    if (byGame.has(gameKey)) {
+      skipped += 1;
+      continue;
+    }
+    const byPlayer = new Map<string, SoftLockProjectionRow>();
+    for (const row of gameRows) {
+      const playerKey = normalizeName(String(row.playerName ?? ''));
+      if (!playerKey) continue;
+      const existing = byPlayer.get(playerKey);
+      const rank = row.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER;
+      const existingRank = existing?.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER;
+      if (!existing || rank < existingRank) byPlayer.set(playerKey, row);
+    }
+    const selected = [...byPlayer.values()]
+      .sort(
+        (a, b) =>
+          (a.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER) -
+          (b.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER)
+      )
+      .slice(0, 3);
+    if (selected.length === 0) continue;
+    const meta = metaByGame.get(gameKey)!;
+    const incoming = normalizeAflTopPickSnapshotRecord({
+      gameKey,
+      finalizedAt: new Date().toISOString(),
+      windowHours: 2,
+      projectionGeneratedAt: opts.projectionGeneratedAt ?? null,
+      modelVersion: opts.modelVersion ?? null,
+      homeTeam: meta.homeTeam,
+      awayTeam: meta.awayTeam,
+      commenceTime: meta.commenceTime,
+      weekKey: aflTopPicksWeekKeyFromCommenceTime(meta.commenceTime),
+      roundKey: calendarAflTopPicksRoundKey(meta.commenceTime),
+      picks: selected.map((row, idx) => ({
+        playerName: String(row.playerName ?? '').trim(),
+        bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
+        line: typeof row.line === 'number' && Number.isFinite(row.line) ? row.line : null,
+        expectedDisposals:
+          typeof row.expectedDisposals === 'number' && Number.isFinite(row.expectedDisposals)
+            ? row.expectedDisposals
+            : null,
+        recommendedSide: row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER' ? row.recommendedSide : null,
+        recommendedEdge:
+          typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge) ? row.recommendedEdge : null,
+        recommendedProb:
+          typeof row.recommendedProb === 'number' && Number.isFinite(row.recommendedProb) ? row.recommendedProb : null,
+        rank: typeof row.recommendedPlayerRankInGame === 'number' ? row.recommendedPlayerRankInGame : idx + 1,
+        actualDisposals: null,
+      })),
+    });
+    byGame.set(gameKey, incoming);
+    added += 1;
+  }
+
+  const records = sortAflTopPickSnapshotRecords([...byGame.values()]);
+  if (opts.write !== false && added > 0) {
+    writeAflTopPicksHistory(records);
+  }
+  return { added, skipped, records };
 }
 
 export function upsertAflTopPicksHistoryRecords(
