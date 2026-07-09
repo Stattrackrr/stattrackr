@@ -57,6 +57,22 @@ from train_disposals_model import baseline_predict_row
 
 HISTORY_DIR = os.path.join(MODEL_DIR, "history")
 LINE_HISTORY_PATH = os.path.join(HISTORY_DIR, "disposals-line-history.json")
+TOP_PICKS_HISTORY_PATH = os.path.join(HISTORY_DIR, "top-picks-history.json")
+TOP3_RANKING_VERSION = "edge_prob_player_side_cap_prior_side_v6"
+
+# Keep in sync with lib/aflDisposalsHistory.ts AFL_2026_ROUND_WINDOWS.
+AFL_2026_ROUND_WINDOWS = [
+    {"key": "2026-R14", "start": "2026-06-11", "end": "2026-06-15"},
+    {"key": "2026-R15", "start": "2026-06-18", "end": "2026-06-22"},
+    {"key": "2026-R16", "start": "2026-06-25", "end": "2026-06-29"},
+    {"key": "2026-R17", "start": "2026-07-02", "end": "2026-07-06"},
+    {"key": "2026-R18", "start": "2026-07-09", "end": "2026-07-13"},
+    {"key": "2026-R19", "start": "2026-07-16", "end": "2026-07-20"},
+    {"key": "2026-R20", "start": "2026-07-23", "end": "2026-07-27"},
+    {"key": "2026-R21", "start": "2026-07-30", "end": "2026-08-03"},
+    {"key": "2026-R22", "start": "2026-08-06", "end": "2026-08-10"},
+    {"key": "2026-R23", "start": "2026-08-13", "end": "2026-08-17"},
+]
 
 
 def artifact_feature_columns(artifact: dict, model_obj) -> List[str]:
@@ -1088,11 +1104,139 @@ def _to_recommended_side(row: dict) -> str:
     return ""
 
 
+def parse_round_key(round_key: str | None) -> Optional[Tuple[int, int]]:
+    raw = str(round_key or "").strip()
+    if not raw:
+        return None
+    # YYYY-Rnn
+    if len(raw) < 7 or raw[4] != "-" or raw[5].upper() != "R":
+        return None
+    try:
+        season = int(raw[:4])
+        round_num = int(raw[6:])
+    except ValueError:
+        return None
+    if season <= 0 or round_num <= 0:
+        return None
+    return season, round_num
+
+
+def sort_round_keys(round_keys: List[str]) -> List[str]:
+    def sort_key(key: str) -> Tuple[int, int, str]:
+        parsed = parse_round_key(key)
+        if not parsed:
+            return (9999, 9999, key)
+        return (parsed[0], parsed[1], key)
+
+    return sorted(round_keys, key=sort_key)
+
+
+def calendar_round_key_from_commence_time(commence_time: Any) -> Optional[str]:
+    date_str = str(commence_time or "")[:10]
+    if len(date_str) != 10 or date_str[4] != "-" or date_str[7] != "-":
+        return None
+    for window in AFL_2026_ROUND_WINDOWS:
+        if window["start"] <= date_str <= window["end"]:
+            return window["key"]
+    return None
+
+
+def infer_current_round_key_from_rows(rows: List[dict]) -> Optional[str]:
+    """Most common calendar round among projection commence times; ties prefer later round."""
+    counts: Dict[str, int] = {}
+    for row in rows:
+        key = calendar_round_key_from_commence_time(row.get("commenceTime"))
+        if not key:
+            continue
+        counts[key] = counts.get(key, 0) + 1
+    if not counts:
+        return None
+    ordered = sort_round_keys(list(counts.keys()))
+    # Prefer highest count; break ties toward later round.
+    return max(ordered, key=lambda k: (counts[k], parse_round_key(k) or (0, 0)))
+
+
+def prior_round_key(current_round_key: Optional[str], history_round_keys: List[str]) -> Optional[str]:
+    current = parse_round_key(current_round_key)
+    if not current:
+        return None
+    prior_candidates = [
+        key
+        for key in sort_round_keys(history_round_keys)
+        if (parsed := parse_round_key(key)) is not None and parsed < current
+    ]
+    return prior_candidates[-1] if prior_candidates else None
+
+
+def player_side_block_key(player_name: Any, side: Any) -> Optional[str]:
+    player_key = normalize_name(str(player_name or ""))
+    side_key = str(side or "").strip().upper()
+    if not player_key or side_key not in {"OVER", "UNDER"}:
+        return None
+    return f"{player_key}|{side_key}"
+
+
+def load_prior_round_player_side_blocks(rows: List[dict]) -> Tuple[set[str], Optional[str], Optional[str]]:
+    """
+    Return (blocked player|SIDE keys, currentRoundKey, priorRoundKey) from top-picks history.
+    Blocks same player+side that appeared in Top 3 for the immediately prior AFL round.
+    """
+    current_round = infer_current_round_key_from_rows(rows)
+    if not os.path.exists(TOP_PICKS_HISTORY_PATH):
+        return set(), current_round, None
+    try:
+        payload = read_json(TOP_PICKS_HISTORY_PATH)
+    except Exception:
+        return set(), current_round, None
+    records = payload.get("records") if isinstance(payload, dict) else None
+    if not isinstance(records, list) or not records:
+        return set(), current_round, None
+
+    history_round_keys = sort_round_keys(
+        list(
+            {
+                str(rec.get("roundKey") or "").strip()
+                for rec in records
+                if isinstance(rec, dict) and str(rec.get("roundKey") or "").strip()
+            }
+        )
+    )
+    prior = prior_round_key(current_round, history_round_keys)
+    if not prior:
+        # If we cannot infer current round, fall back to latest history round as "prior"
+        # only when projections have no calendar round (rare). Prefer no-op when current is known.
+        if current_round is None and history_round_keys:
+            prior = history_round_keys[-1]
+        else:
+            return set(), current_round, None
+
+    blocked: set[str] = set()
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+        if str(rec.get("roundKey") or "").strip() != prior:
+            continue
+        picks = rec.get("picks")
+        if not isinstance(picks, list):
+            continue
+        for pick in picks:
+            if not isinstance(pick, dict):
+                continue
+            key = player_side_block_key(pick.get("playerName"), pick.get("recommendedSide") or pick.get("side"))
+            if key:
+                blocked.add(key)
+    return blocked, current_round, prior
+
+
 def _pick_unique_players_sorted(
-    candidates: List[dict], limit: int, max_same_side: int = 99
+    candidates: List[dict],
+    limit: int,
+    max_same_side: int = 99,
+    blocked_player_sides: Optional[set[str]] = None,
 ) -> List[dict]:
     """Greedy pick by candidate order: unique players, at most `max_same_side` on each OVER/UNDER side."""
     max_same = max(1, int(max_same_side))
+    blocked = blocked_player_sides or set()
     seen_players: set[str] = set()
     picked: List[dict] = []
     over_ct = 0
@@ -1113,6 +1257,9 @@ def _pick_unique_players_sorted(
             continue
         player_key = normalize_name(str(row.get("playerName") or ""))
         if not player_key or player_key in seen_players:
+            continue
+        block_key = player_side_block_key(player_key, side)
+        if block_key and block_key in blocked:
             continue
         if not can_take(side):
             continue
@@ -1295,13 +1442,18 @@ def apply_adaptive_side_balance(
 
 
 def assign_top3_game_ranks(
-    rows: List[dict], max_same_side: int = 2, opposite_edge_tolerance: float = 0.02
+    rows: List[dict],
+    max_same_side: int = 2,
+    opposite_edge_tolerance: float = 0.02,
+    blocked_player_sides: Optional[set[str]] = None,
 ) -> None:
     by_game: Dict[str, List[dict]] = {}
     for row in rows:
         game_key = _projection_game_key(row)
         row["gameKey"] = game_key
         by_game.setdefault(game_key, []).append(row)
+
+    blocked = blocked_player_sides or set()
 
     for game_key, game_rows in by_game.items():
         candidates: List[dict] = []
@@ -1328,7 +1480,13 @@ def assign_top3_game_ranks(
 
         # Deterministic ranking: highest edge/probability, unique players, capped same-side count
         # (matches TS `TOP_PICKS_MAX_SAME_SIDE` so UI cannot show 3× UNDER when model leans under).
-        selected = _pick_unique_players_sorted(candidates, limit=3, max_same_side=max_same_side)
+        # Also skip player+side pairs that were Top 3 in the immediately prior AFL round.
+        selected = _pick_unique_players_sorted(
+            candidates,
+            limit=3,
+            max_same_side=max_same_side,
+            blocked_player_sides=blocked,
+        )
         rank_by_player: Dict[str, int] = {}
         for idx, row in enumerate(selected, start=1):
             player_key = normalize_name(str(row.get("playerName") or ""))
@@ -1340,7 +1498,7 @@ def assign_top3_game_ranks(
             rank = rank_by_player.get(player_key)
             row["recommendedPlayerRankInGame"] = rank if rank is not None else None
             row["isTop3PickInGame"] = bool(rank is not None and rank <= 3)
-            row["top3RankingVersion"] = "edge_prob_player_side_cap_v5"
+            row["top3RankingVersion"] = TOP3_RANKING_VERSION
 
 
 def main() -> None:
@@ -1755,10 +1913,17 @@ def main() -> None:
         max_abs_weather_adjustment=float(args.max_abs_weather_adjustment),
     )
     out_rows.sort(key=lambda x: abs(x.get("edgeVsMarket") or 0.0), reverse=True)
+    prior_blocks, current_round_key, prior_round_key_used = load_prior_round_player_side_blocks(out_rows)
+    if prior_blocks:
+        print(
+            f"Top3 prior-round side ban: current={current_round_key or 'unknown'} "
+            f"prior={prior_round_key_used or 'unknown'} blocked={len(prior_blocks)}"
+        )
     assign_top3_game_ranks(
         out_rows,
         max_same_side=max(1, int(args.top3_max_same_side)),
         opposite_edge_tolerance=max(0.0, float(args.top3_opposite_edge_tolerance)),
+        blocked_player_sides=prior_blocks,
     )
     lowest_rows = select_lowest_line_rows(out_rows)
     merged_history = upsert_line_history(existing_history, lowest_rows)

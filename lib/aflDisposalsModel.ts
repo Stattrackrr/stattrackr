@@ -1,5 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import {
+  aflTopPicksPlayerSideKey,
+  getPriorRoundBlockedPlayerSides,
+  inferCurrentRoundKeyFromCommenceTimes,
+} from '@/lib/aflDisposalsHistory';
 
 type AflDisposalsProjectionRow = {
   projectionKey?: string;
@@ -207,7 +212,20 @@ function rankedFallbackRows(rows: AflDisposalsProjectionRow[]): AflDisposalsProj
 /** Matches `score_upcoming.py` default `--top3-max-same-side` (max picks on one side of the line per game). */
 const TOP_PICKS_MAX_SAME_SIDE = 2;
 
-function selectTopRowsWithSideAnchors(rows: AflDisposalsProjectionRow[], limit: number): AflDisposalsProjectionRow[] {
+function isBlockedPriorRoundPlayerSide(
+  row: AflDisposalsProjectionRow,
+  blockedPlayerSides: Set<string> | null | undefined
+): boolean {
+  if (!blockedPlayerSides || blockedPlayerSides.size === 0) return false;
+  const key = aflTopPicksPlayerSideKey(String(row.playerName ?? ''), row.recommendedSide);
+  return Boolean(key && blockedPlayerSides.has(key));
+}
+
+function selectTopRowsWithSideAnchors(
+  rows: AflDisposalsProjectionRow[],
+  limit: number,
+  blockedPlayerSides?: Set<string> | null
+): AflDisposalsProjectionRow[] {
   const cappedLimit = Math.max(1, Math.min(10, limit));
   const maxSame = Math.max(1, TOP_PICKS_MAX_SAME_SIDE);
   const ranked = rankedRecommendedRows(rows);
@@ -224,6 +242,7 @@ function selectTopRowsWithSideAnchors(rows: AflDisposalsProjectionRow[], limit: 
   const tryAdd = (row: AflDisposalsProjectionRow): boolean => {
     const side = row.recommendedSide;
     if (side !== 'OVER' && side !== 'UNDER') return false;
+    if (isBlockedPriorRoundPlayerSide(row, blockedPlayerSides)) return false;
     const playerKey = normalizeName(String(row.playerName ?? ''));
     if (!playerKey || selectedPlayers.has(playerKey)) return false;
     if (!canTakeSide(side)) return false;
@@ -274,7 +293,11 @@ function dedupeTopPickRowsByPlayer(rows: AflDisposalsProjectionRow[]): AflDispos
   return [...byPlayer.values()];
 }
 
-function selectTopRowsForGame(rows: AflDisposalsProjectionRow[], limit: number): AflDisposalsProjectionRow[] {
+function selectTopRowsForGame(
+  rows: AflDisposalsProjectionRow[],
+  limit: number,
+  blockedPlayerSides?: Set<string> | null
+): AflDisposalsProjectionRow[] {
   const cappedLimit = Math.max(1, Math.min(10, limit));
   const rankedTop3 = dedupeTopPickRowsByPlayer(
     rows
@@ -282,7 +305,8 @@ function selectTopRowsForGame(rows: AflDisposalsProjectionRow[], limit: number):
         (row) =>
           row.isTop3PickInGame &&
           typeof row.recommendedPlayerRankInGame === 'number' &&
-          Number.isFinite(row.recommendedPlayerRankInGame)
+          Number.isFinite(row.recommendedPlayerRankInGame) &&
+          !isBlockedPriorRoundPlayerSide(row, blockedPlayerSides)
       )
       .sort(
         (a, b) =>
@@ -291,15 +315,41 @@ function selectTopRowsForGame(rows: AflDisposalsProjectionRow[], limit: number):
       )
   );
   if (rankedTop3.length > 0) {
-    return rankedTop3
+    const selected = rankedTop3
       .sort(
         (a, b) =>
           (a.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER) -
           (b.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER)
       )
       .slice(0, cappedLimit);
+    if (selected.length >= cappedLimit) return selected;
+    // Backfill when Python ranks still include prior-round same-side repeats.
+    const selectedPlayers = new Set(selected.map((row) => normalizeName(String(row.playerName ?? ''))).filter(Boolean));
+    let overCount = selected.filter((row) => row.recommendedSide === 'OVER').length;
+    let underCount = selected.filter((row) => row.recommendedSide === 'UNDER').length;
+    const maxSame = Math.max(1, TOP_PICKS_MAX_SAME_SIDE);
+    for (const row of rankedRecommendedRows(rows)) {
+      if (selected.length >= cappedLimit) break;
+      const side = row.recommendedSide;
+      if (side !== 'OVER' && side !== 'UNDER') continue;
+      if (isBlockedPriorRoundPlayerSide(row, blockedPlayerSides)) continue;
+      const playerKey = normalizeName(String(row.playerName ?? ''));
+      if (!playerKey || selectedPlayers.has(playerKey)) continue;
+      if (side === 'OVER' && overCount >= maxSame) continue;
+      if (side === 'UNDER' && underCount >= maxSame) continue;
+      selected.push(row);
+      selectedPlayers.add(playerKey);
+      if (side === 'OVER') overCount += 1;
+      else underCount += 1;
+    }
+    return selected.slice(0, cappedLimit);
   }
-  return selectTopRowsWithSideAnchors(rows, cappedLimit);
+  return selectTopRowsWithSideAnchors(rows, cappedLimit, blockedPlayerSides);
+}
+
+function resolveBlockedPlayerSidesForRows(rows: AflDisposalsProjectionRow[]): Set<string> {
+  const currentRoundKey = inferCurrentRoundKeyFromCommenceTimes(rows.map((row) => row.commenceTime));
+  return getPriorRoundBlockedPlayerSides(currentRoundKey).blocked;
 }
 
 function toLookupResult(row: AflDisposalsProjectionRow, payload: AflDisposalsProjectionPayload | null): AflProjectionLookupResult | null {
@@ -398,7 +448,8 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
   const current = getCachedProjectionData();
   const rows = Array.isArray(current.payload?.rows) ? current.payload!.rows! : [];
   const gameRows = rows.filter((row) => resolveProjectionGameKey(row) === gameKey);
-  let picks = selectTopRowsForGame(gameRows, limit);
+  const blockedPlayerSides = resolveBlockedPlayerSidesForRows(gameRows.length > 0 ? gameRows : rows);
+  let picks = selectTopRowsForGame(gameRows, limit, blockedPlayerSides);
   if (picks.length === 0) {
     const cap = Math.max(1, Math.min(10, limit));
     const maxSame = TOP_PICKS_MAX_SAME_SIDE;
@@ -414,6 +465,7 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
         row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
           ? row.recommendedSide
           : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER');
+      if (isBlockedPriorRoundPlayerSide({ ...row, recommendedSide: side }, blockedPlayerSides)) continue;
       if (side === 'OVER' && overCt >= maxSame) continue;
       if (side === 'UNDER' && underCt >= maxSame) continue;
       seen.add(key);
@@ -440,6 +492,7 @@ export function getAflDisposalsTopPicksForGame(gameKey: string, limit = 3): AflT
 export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGameGroup[] {
   const current = getCachedProjectionData();
   const rows = Array.isArray(current.payload?.rows) ? current.payload!.rows! : [];
+  const blockedPlayerSides = resolveBlockedPlayerSidesForRows(rows);
   const byGame = new Map<string, AflDisposalsProjectionRow[]>();
 
   for (const row of rows) {
@@ -452,7 +505,7 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
 
   const out: AflTopPicksGameGroup[] = [];
   for (const [gameKey, gameRows] of byGame.entries()) {
-    let selected = selectTopRowsForGame(gameRows, limitPerGame);
+    let selected = selectTopRowsForGame(gameRows, limitPerGame, blockedPlayerSides);
     if (selected.length === 0) {
       // Keep game visible even when no row passes recommendation thresholds.
       // Fallback to strongest model rows by absolute edge for that matchup.
@@ -471,6 +524,7 @@ export function getAflDisposalsTopPicksByGame(limitPerGame = 3): AflTopPicksGame
           row.recommendedSide === 'OVER' || row.recommendedSide === 'UNDER'
             ? row.recommendedSide
             : ((row.expectedDisposals ?? 0) - (row.line ?? 0) >= 0 ? 'OVER' : 'UNDER');
+        if (isBlockedPriorRoundPlayerSide({ ...row, recommendedSide: side }, blockedPlayerSides)) continue;
         if (side === 'OVER' && overCt >= maxSame) continue;
         if (side === 'UNDER' && underCt >= maxSame) continue;
         seen.add(key);

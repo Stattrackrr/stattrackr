@@ -447,6 +447,93 @@ export function listAflTopPicksRoundKeys(records: AflTopPickSnapshotRecord[]): s
   );
 }
 
+function normalizeTopPicksPlayerName(value: string): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, ' ')
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+/** `player|OVER` / `player|UNDER` key used to ban same-side Top 3 repeats across consecutive rounds. */
+export function aflTopPicksPlayerSideKey(playerName: string, side: string | null | undefined): string | null {
+  const playerKey = normalizeTopPicksPlayerName(playerName);
+  const sideKey = String(side ?? '')
+    .trim()
+    .toUpperCase();
+  if (!playerKey || (sideKey !== 'OVER' && sideKey !== 'UNDER')) return null;
+  return `${playerKey}|${sideKey}`;
+}
+
+export function priorAflTopPicksRoundKey(
+  currentRoundKey: string | null | undefined,
+  historyRoundKeys: string[]
+): string | null {
+  const current = parseAflTopPicksRoundKey(currentRoundKey);
+  if (!current) return null;
+  const priorCandidates = sortAflTopPicksRoundKeys(historyRoundKeys).filter((key) => {
+    const parsed = parseAflTopPicksRoundKey(key);
+    if (!parsed) return false;
+    if (parsed.season !== current.season) return parsed.season < current.season;
+    return parsed.round < current.round;
+  });
+  return priorCandidates[priorCandidates.length - 1] ?? null;
+}
+
+/**
+ * Player+side pairs that were Top 3 in the immediately prior AFL round relative to `currentRoundKey`.
+ * Used to stop the same OVER/UNDER pick repeating week-to-week (opposite side is allowed).
+ */
+export function getPriorRoundBlockedPlayerSides(currentRoundKey: string | null | undefined): {
+  blocked: Set<string>;
+  priorRoundKey: string | null;
+} {
+  const history = readAflTopPicksHistory();
+  const historyRoundKeys = listAflTopPicksRoundKeys(history.records);
+  let prior = priorAflTopPicksRoundKey(currentRoundKey, historyRoundKeys);
+  if (!prior) {
+    if (!currentRoundKey && historyRoundKeys.length > 0) {
+      prior = historyRoundKeys[historyRoundKeys.length - 1] ?? null;
+    } else {
+      return { blocked: new Set(), priorRoundKey: null };
+    }
+  }
+  const blocked = new Set<string>();
+  for (const record of history.records) {
+    if (record.roundKey !== prior) continue;
+    for (const pick of record.picks ?? []) {
+      const key = aflTopPicksPlayerSideKey(pick.playerName, pick.recommendedSide);
+      if (key) blocked.add(key);
+    }
+  }
+  return { blocked, priorRoundKey: prior };
+}
+
+/** Infer the dominant calendar round for a projection slate from commence times. */
+export function inferCurrentRoundKeyFromCommenceTimes(commenceTimes: Array<string | null | undefined>): string | null {
+  const counts = new Map<string, number>();
+  for (const commenceTime of commenceTimes) {
+    const key = calendarAflTopPicksRoundKey(commenceTime);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (counts.size === 0) return null;
+  const ordered = sortAflTopPicksRoundKeys([...counts.keys()]);
+  return ordered.reduce((best, key) => {
+    const bestCount = counts.get(best) ?? 0;
+    const nextCount = counts.get(key) ?? 0;
+    if (nextCount > bestCount) return key;
+    if (nextCount < bestCount) return best;
+    const bestParsed = parseAflTopPicksRoundKey(best);
+    const nextParsed = parseAflTopPicksRoundKey(key);
+    if (!bestParsed) return key;
+    if (!nextParsed) return best;
+    if (nextParsed.season !== bestParsed.season) return nextParsed.season > bestParsed.season ? key : best;
+    return nextParsed.round > bestParsed.round ? key : best;
+  });
+}
+
 function mergeAflTopPickPicks(
   primaryPicks: AflTopGamePick[],
   secondaryPicks: AflTopGamePick[]
