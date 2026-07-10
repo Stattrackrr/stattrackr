@@ -49,14 +49,8 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Warm player logs cache
-        if: steps.check.outputs.configured == 'true'
-        run: npm run warm:afl:player-logs
-        env:
-          AFL_WARM_SEASONS: "2026,2025"
-          AFL_WARM_CONCURRENCY: "12"
-          AFL_WARM_MAX_FAILURES: "200"
-
+      # Enrich force-fetches only missing Top Pick players. A full league warm often
+      # exceeds the job timeout and cancels before actuals are written.
       - name: Enrich Top Picks actual disposals
         if: steps.check.outputs.configured == 'true'
         run: npm run enrich:afl:top-picks -- --base-url="${PROD_URL}"
