@@ -1441,6 +1441,40 @@ def apply_adaptive_side_balance(
     }
 
 
+def _top_pick_game_is_upcoming(commence_time: Any) -> bool:
+    raw = str(commence_time or "").strip()
+    if not raw:
+        return True
+    try:
+        from datetime import datetime, timezone
+
+        kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        return kickoff.timestamp() > datetime.now(timezone.utc).timestamp()
+    except Exception:
+        return True
+
+
+def _top_pick_game_has_locked_results(record: dict) -> bool:
+    picks = record.get("picks")
+    if not isinstance(picks, list):
+        return False
+    for pick in picks:
+        if not isinstance(pick, dict):
+            continue
+        actual = to_float(pick.get("actualDisposals"))
+        if actual is not None:
+            return True
+    return False
+
+
+def _can_refresh_soft_locked_game(existing: Optional[dict], commence_time: Any) -> bool:
+    if not existing:
+        return True
+    if _top_pick_game_is_upcoming(commence_time):
+        return True
+    return not _top_pick_game_has_locked_results(existing)
+
+
 def soft_lock_top_picks_into_history(
     rows: List[dict],
     *,
@@ -1448,11 +1482,11 @@ def soft_lock_top_picks_into_history(
     projection_generated_at: Optional[str] = None,
 ) -> dict:
     """
-    Persist current Top 3 picks into top-picks-history.json without overwriting
-    already-finalized games. Keeps Current-round games visible after projections drop them.
+    Persist current Top 3 picks into top-picks-history.json.
+    Re-ranks with prior-round same-side ban and refreshes upcoming games.
     """
     if not rows:
-        return {"added": 0, "skipped": 0, "total": 0}
+        return {"added": 0, "refreshed": 0, "skipped": 0, "total": 0}
 
     existing_payload: dict = {}
     if os.path.exists(TOP_PICKS_HISTORY_PATH):
@@ -1472,18 +1506,17 @@ def soft_lock_top_picks_into_history(
         if game_key:
             by_game[game_key] = rec
 
-    top_by_game: Dict[str, List[dict]] = {}
+    prior_blocks, _, _ = load_prior_round_player_side_blocks(rows)
+
+    rows_by_game: Dict[str, List[dict]] = {}
     game_meta: Dict[str, dict] = {}
     for row in rows:
-        if not bool(row.get("isTop3PickInGame")):
-            continue
-        rank = to_float(row.get("recommendedPlayerRankInGame"))
-        if rank is None:
+        if not bool(row.get("isRecommendedPick")):
             continue
         game_key = _projection_game_key(row)
         if not game_key or game_key.count("|") < 2:
             continue
-        top_by_game.setdefault(game_key, []).append(row)
+        rows_by_game.setdefault(game_key, []).append(row)
         if game_key not in game_meta:
             game_meta[game_key] = {
                 "homeTeam": str(row.get("homeTeam") or "").strip(),
@@ -1492,36 +1525,52 @@ def soft_lock_top_picks_into_history(
             }
 
     added = 0
+    refreshed = 0
     skipped = 0
-    for game_key, game_rows in top_by_game.items():
-        if game_key in by_game:
-            skipped += 1
-            continue
-        # Unique players by best rank, then take top 3.
-        by_player: Dict[str, dict] = {}
-        for row in game_rows:
-            player_key = normalize_name(str(row.get("playerName") or ""))
-            if not player_key:
-                continue
-            existing = by_player.get(player_key)
-            rank = to_float(row.get("recommendedPlayerRankInGame")) or 999.0
-            if existing is None or rank < (to_float(existing.get("recommendedPlayerRankInGame")) or 999.0):
-                by_player[player_key] = row
-        selected = sorted(
-            by_player.values(),
-            key=lambda r: (
-                to_float(r.get("recommendedPlayerRankInGame")) or 999.0,
-                normalize_name(str(r.get("playerName") or "")),
-            ),
-        )[:3]
-        if not selected:
-            continue
+    for game_key, game_rows in rows_by_game.items():
+        existing = by_game.get(game_key)
         meta = game_meta.get(game_key) or {}
         commence = meta.get("commenceTime")
+        if not _can_refresh_soft_locked_game(existing, commence):
+            skipped += 1
+            continue
+
+        candidates = [
+            row
+            for row in game_rows
+            if to_float(row.get("recommendedEdge")) is not None and to_float(row.get("recommendedProb")) is not None
+        ]
+        candidates.sort(
+            key=lambda r: (
+                -(to_float(r.get("recommendedEdge")) or -999.0),
+                -(to_float(r.get("recommendedProb")) or -999.0),
+                normalize_name(str(r.get("playerName") or "")),
+            )
+        )
+        selected = _pick_unique_players_sorted(
+            candidates,
+            limit=3,
+            max_same_side=2,
+            blocked_player_sides=prior_blocks,
+        )
+        if not selected:
+            continue
+
+        preserved_actuals: Dict[str, float] = {}
+        if isinstance(existing, dict):
+            for pick in existing.get("picks") or []:
+                if not isinstance(pick, dict):
+                    continue
+                player_key = normalize_name(str(pick.get("playerName") or ""))
+                actual = to_float(pick.get("actualDisposals"))
+                if player_key and actual is not None:
+                    preserved_actuals[player_key] = float(actual)
+
         round_key = calendar_round_key_from_commence_time(commence)
         picks = []
         for idx, row in enumerate(selected, start=1):
             side = str(row.get("recommendedSide") or "").strip().upper()
+            player_key = normalize_name(str(row.get("playerName") or ""))
             picks.append(
                 {
                     "playerName": str(row.get("playerName") or "").strip(),
@@ -1531,24 +1580,27 @@ def soft_lock_top_picks_into_history(
                     "recommendedSide": side if side in {"OVER", "UNDER"} else None,
                     "recommendedEdge": to_float(row.get("recommendedEdge")),
                     "recommendedProb": to_float(row.get("recommendedProb")),
-                    "rank": int(to_float(row.get("recommendedPlayerRankInGame")) or idx),
-                    "actualDisposals": None,
+                    "rank": idx,
+                    "actualDisposals": preserved_actuals.get(player_key),
                 }
             )
+        if existing:
+            refreshed += 1
+        else:
+            added += 1
         by_game[game_key] = {
             "gameKey": game_key,
-            "finalizedAt": now_iso(),
-            "windowHours": 2,
-            "projectionGeneratedAt": projection_generated_at or now_iso(),
-            "modelVersion": model_version,
+            "finalizedAt": str(existing.get("finalizedAt") or now_iso()) if isinstance(existing, dict) else now_iso(),
+            "windowHours": int(existing.get("windowHours") or 2) if isinstance(existing, dict) else 2,
+            "projectionGeneratedAt": projection_generated_at or (existing.get("projectionGeneratedAt") if isinstance(existing, dict) else None) or now_iso(),
+            "modelVersion": model_version if model_version is not None else (existing.get("modelVersion") if isinstance(existing, dict) else None),
             "homeTeam": meta.get("homeTeam") or "",
             "awayTeam": meta.get("awayTeam") or "",
             "commenceTime": commence,
-            "weekKey": None,
+            "weekKey": existing.get("weekKey") if isinstance(existing, dict) else None,
             "roundKey": round_key,
             "picks": picks,
         }
-        added += 1
 
     next_records = sorted(
         by_game.values(),
@@ -1562,7 +1614,7 @@ def soft_lock_top_picks_into_history(
             "records": next_records,
         },
     )
-    return {"added": added, "skipped": skipped, "total": len(next_records)}
+    return {"added": added, "refreshed": refreshed, "skipped": skipped, "total": len(next_records)}
 
 
 def assign_top3_game_ranks(
@@ -2122,6 +2174,7 @@ def main() -> None:
         )
         print(
             f"Top3 soft-lock history: added={soft_stats.get('added')} "
+            f"refreshed={soft_stats.get('refreshed')} "
             f"skipped={soft_stats.get('skipped')} total={soft_stats.get('total')}"
         )
 

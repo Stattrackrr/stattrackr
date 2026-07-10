@@ -489,8 +489,17 @@ export function getPriorRoundBlockedPlayerSides(currentRoundKey: string | null |
   blocked: Set<string>;
   priorRoundKey: string | null;
 } {
-  const history = readAflTopPicksHistory();
-  const historyRoundKeys = listAflTopPicksRoundKeys(history.records);
+  return getPriorRoundBlockedPlayerSidesFromRecords(loadTopPicksHistoryRecords(), currentRoundKey);
+}
+
+export function getPriorRoundBlockedPlayerSidesFromRecords(
+  records: AflTopPickSnapshotRecord[],
+  currentRoundKey: string | null | undefined
+): {
+  blocked: Set<string>;
+  priorRoundKey: string | null;
+} {
+  const historyRoundKeys = listAflTopPicksRoundKeys(records);
   let prior = priorAflTopPicksRoundKey(currentRoundKey, historyRoundKeys);
   if (!prior) {
     if (!currentRoundKey && historyRoundKeys.length > 0) {
@@ -500,7 +509,7 @@ export function getPriorRoundBlockedPlayerSides(currentRoundKey: string | null |
     }
   }
   const blocked = new Set<string>();
-  for (const record of history.records) {
+  for (const record of records) {
     if (record.roundKey !== prior) continue;
     for (const pick of record.picks ?? []) {
       const key = aflTopPicksPlayerSideKey(pick.playerName, pick.recommendedSide);
@@ -508,6 +517,88 @@ export function getPriorRoundBlockedPlayerSides(currentRoundKey: string | null |
     }
   }
   return { blocked, priorRoundKey: prior };
+}
+
+/** Current AFL premiership round key for a calendar date (YYYY-MM-DD). */
+export function calendarAflTopPicksRoundKeyForDate(isoDate: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  return calendarAflTopPicksRoundKey(`${isoDate}T12:00:00Z`);
+}
+
+const TOP_PICKS_MAX_SAME_SIDE = 2;
+
+function rankTopPicksForGameRows(
+  rows: SoftLockProjectionRow[],
+  limit: number,
+  blocked: Set<string>
+): SoftLockProjectionRow[] {
+  const candidates = rows
+    .filter((row) => {
+      const side = row.recommendedSide;
+      const edge = row.recommendedEdge;
+      const prob = row.recommendedProb;
+      return (
+        (side === 'OVER' || side === 'UNDER') &&
+        typeof edge === 'number' &&
+        Number.isFinite(edge) &&
+        typeof prob === 'number' &&
+        Number.isFinite(prob) &&
+        row.isRecommendedPick !== false
+      );
+    })
+    .sort((a, b) => {
+      const ea = a.recommendedEdge ?? -999;
+      const eb = b.recommendedEdge ?? -999;
+      if (ea !== eb) return eb - ea;
+      const pa = a.recommendedProb ?? -999;
+      const pb = b.recommendedProb ?? -999;
+      if (pa !== pb) return pb - pa;
+      return String(a.playerName ?? '').localeCompare(String(b.playerName ?? ''));
+    });
+
+  const cappedLimit = Math.max(1, Math.min(10, limit));
+  const maxSame = Math.max(1, TOP_PICKS_MAX_SAME_SIDE);
+  const selected: SoftLockProjectionRow[] = [];
+  const seenPlayers = new Set<string>();
+  let overCount = 0;
+  let underCount = 0;
+
+  for (const row of candidates) {
+    if (selected.length >= cappedLimit) break;
+    const side = row.recommendedSide!;
+    const playerKey = normalizeName(String(row.playerName ?? ''));
+    if (!playerKey || seenPlayers.has(playerKey)) continue;
+    const blockKey = aflTopPicksPlayerSideKey(playerKey, side);
+    if (blockKey && blocked.has(blockKey)) continue;
+    if (side === 'OVER' && overCount >= maxSame) continue;
+    if (side === 'UNDER' && underCount >= maxSame) continue;
+    selected.push(row);
+    seenPlayers.add(playerKey);
+    if (side === 'OVER') overCount += 1;
+    else underCount += 1;
+  }
+  return selected;
+}
+
+function topPickGameHasLockedResults(record: AflTopPickSnapshotRecord): boolean {
+  return record.picks.some(
+    (pick) => typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)
+  );
+}
+
+function topPickGameIsUpcoming(commenceTime: string | null | undefined): boolean {
+  if (!commenceTime) return true;
+  const kickoff = Date.parse(commenceTime);
+  return Number.isFinite(kickoff) ? kickoff > Date.now() : true;
+}
+
+function canRefreshSoftLockedGame(
+  existing: AflTopPickSnapshotRecord | undefined,
+  commenceTime: string | null | undefined
+): boolean {
+  if (!existing) return true;
+  if (topPickGameIsUpcoming(commenceTime)) return true;
+  return !topPickGameHasLockedResults(existing);
 }
 
 /** Infer the dominant calendar round for a projection slate from commence times. */
@@ -860,76 +951,75 @@ type SoftLockProjectionRow = {
   recommendedSide?: 'OVER' | 'UNDER' | null;
   recommendedEdge?: number | null;
   recommendedProb?: number | null;
+  isRecommendedPick?: boolean;
   isTop3PickInGame?: boolean;
   recommendedPlayerRankInGame?: number | null;
   modelVersion?: string | null;
 };
 
 /**
- * Soft-lock Top 3 rows from a projection payload into history without overwriting
- * already-finalized games. Used so Current keeps finished games after live props drop them.
+ * Soft-lock Top 3 rows from a projection payload into history.
+ * Re-ranks with prior-round same-side ban and refreshes upcoming games.
  */
 export function softLockTopPicksFromProjectionRows(
   rows: SoftLockProjectionRow[],
   opts: { modelVersion?: string | null; projectionGeneratedAt?: string | null; write?: boolean } = {}
-): { added: number; skipped: number; records: AflTopPickSnapshotRecord[] } {
-  const history = readAflTopPicksHistory();
-  const byGame = new Map(history.records.map((record) => [record.gameKey, record]));
-  const topByGame = new Map<string, SoftLockProjectionRow[]>();
+): { added: number; refreshed: number; skipped: number; records: AflTopPickSnapshotRecord[] } {
+  const rawRecords = loadTopPicksHistoryRecords();
+  const byGame = new Map(rawRecords.map((record) => [record.gameKey, record]));
+  const rowsByGame = new Map<string, SoftLockProjectionRow[]>();
   const metaByGame = new Map<string, { homeTeam: string; awayTeam: string; commenceTime: string | null }>();
 
   for (const row of rows) {
-    if (!row.isTop3PickInGame) continue;
-    if (typeof row.recommendedPlayerRankInGame !== 'number' || !Number.isFinite(row.recommendedPlayerRankInGame)) continue;
+    if (row.isRecommendedPick === false) continue;
     const homeTeam = String(row.homeTeam ?? '').trim();
     const awayTeam = String(row.awayTeam ?? '').trim();
     const commenceTime = row.commenceTime != null ? String(row.commenceTime) : null;
     const gameKey = buildAflTopPicksGameKey(homeTeam, awayTeam, commenceTime);
     if (!gameKey.includes('|')) continue;
-    const list = topByGame.get(gameKey) ?? [];
+    const list = rowsByGame.get(gameKey) ?? [];
     list.push(row);
-    topByGame.set(gameKey, list);
+    rowsByGame.set(gameKey, list);
     if (!metaByGame.has(gameKey)) {
       metaByGame.set(gameKey, { homeTeam, awayTeam, commenceTime });
     }
   }
 
   let added = 0;
+  let refreshed = 0;
   let skipped = 0;
-  for (const [gameKey, gameRows] of topByGame.entries()) {
-    if (byGame.has(gameKey)) {
+  for (const [gameKey, gameRows] of rowsByGame.entries()) {
+    const existing = byGame.get(gameKey);
+    const meta = metaByGame.get(gameKey)!;
+    if (!canRefreshSoftLockedGame(existing, meta.commenceTime)) {
       skipped += 1;
       continue;
     }
-    const byPlayer = new Map<string, SoftLockProjectionRow>();
-    for (const row of gameRows) {
-      const playerKey = normalizeName(String(row.playerName ?? ''));
-      if (!playerKey) continue;
-      const existing = byPlayer.get(playerKey);
-      const rank = row.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER;
-      const existingRank = existing?.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER;
-      if (!existing || rank < existingRank) byPlayer.set(playerKey, row);
-    }
-    const selected = [...byPlayer.values()]
-      .sort(
-        (a, b) =>
-          (a.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER) -
-          (b.recommendedPlayerRankInGame ?? Number.MAX_SAFE_INTEGER)
-      )
-      .slice(0, 3);
+    const roundKey = calendarAflTopPicksRoundKey(meta.commenceTime);
+    const { blocked } = getPriorRoundBlockedPlayerSidesFromRecords(rawRecords, roundKey);
+    const selected = rankTopPicksForGameRows(gameRows, 3, blocked);
     if (selected.length === 0) continue;
-    const meta = metaByGame.get(gameKey)!;
+
+    const preservedActuals = new Map<string, number | null>();
+    if (existing) {
+      for (const pick of existing.picks) {
+        if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) {
+          preservedActuals.set(normalizeName(pick.playerName), pick.actualDisposals);
+        }
+      }
+    }
+
     const incoming = normalizeAflTopPickSnapshotRecord({
       gameKey,
-      finalizedAt: new Date().toISOString(),
-      windowHours: 2,
-      projectionGeneratedAt: opts.projectionGeneratedAt ?? null,
-      modelVersion: opts.modelVersion ?? null,
+      finalizedAt: existing?.finalizedAt ?? new Date().toISOString(),
+      windowHours: existing?.windowHours ?? 2,
+      projectionGeneratedAt: opts.projectionGeneratedAt ?? existing?.projectionGeneratedAt ?? null,
+      modelVersion: opts.modelVersion ?? existing?.modelVersion ?? null,
       homeTeam: meta.homeTeam,
       awayTeam: meta.awayTeam,
       commenceTime: meta.commenceTime,
       weekKey: aflTopPicksWeekKeyFromCommenceTime(meta.commenceTime),
-      roundKey: calendarAflTopPicksRoundKey(meta.commenceTime),
+      roundKey,
       picks: selected.map((row, idx) => ({
         playerName: String(row.playerName ?? '').trim(),
         bookmaker: row.bookmaker != null ? String(row.bookmaker) : null,
@@ -943,19 +1033,20 @@ export function softLockTopPicksFromProjectionRows(
           typeof row.recommendedEdge === 'number' && Number.isFinite(row.recommendedEdge) ? row.recommendedEdge : null,
         recommendedProb:
           typeof row.recommendedProb === 'number' && Number.isFinite(row.recommendedProb) ? row.recommendedProb : null,
-        rank: typeof row.recommendedPlayerRankInGame === 'number' ? row.recommendedPlayerRankInGame : idx + 1,
-        actualDisposals: null,
+        rank: idx + 1,
+        actualDisposals: preservedActuals.get(normalizeName(String(row.playerName ?? ''))) ?? null,
       })),
     });
+    if (existing) refreshed += 1;
+    else added += 1;
     byGame.set(gameKey, incoming);
-    added += 1;
   }
 
   const records = sortAflTopPickSnapshotRecords([...byGame.values()]);
-  if (opts.write !== false && added > 0) {
+  if (opts.write !== false && (added > 0 || refreshed > 0)) {
     writeAflTopPicksHistory(records);
   }
-  return { added, skipped, records };
+  return { added, refreshed, skipped, records };
 }
 
 export function upsertAflTopPicksHistoryRecords(

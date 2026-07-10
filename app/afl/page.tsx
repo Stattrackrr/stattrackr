@@ -23,6 +23,12 @@ import {
   readAflTeamLogosSessionCache,
   writeAflTeamLogosSessionCache,
 } from '@/lib/aflTeamLogosClientCache';
+import {
+  aflTopPicksPlayerSideKey,
+  calendarAflTopPicksRoundKey,
+  calendarAflTopPicksRoundKeyForDate,
+  getPriorRoundBlockedPlayerSides,
+} from '@/lib/aflDisposalsHistory';
 import { getBookmakerInfo } from '@/lib/bookmakers';
 import { ImpliedOddsWheel } from '@/app/nba/research/dashboard/components/odds/ImpliedOddsWheel';
 
@@ -775,27 +781,46 @@ function aflTopPicksModalAllowsLivePickUpdates(commenceTime: string | null | und
 
 function aflTopPicksModalMergeCurrentGroups(
   latestRoundHistoryGroups: AflTopPicksModalGroup[],
-  liveGroups: AflTopPicksModalGroup[]
+  liveGroups: AflTopPicksModalGroup[],
+  currentRoundKey: string | null
 ): AflTopPicksModalGroup[] {
+  const { blocked } = getPriorRoundBlockedPlayerSides(currentRoundKey);
   const byKey = new Map<string, AflTopPicksModalGroup>();
+
+  const filterBlockedPicks = (group: AflTopPicksModalGroup): AflTopPicksModalGroup => {
+    const picks = group.picks.filter((pick) => {
+      const key = aflTopPicksPlayerSideKey(pick.playerName, pick.recommendedSide);
+      return !key || !blocked.has(key);
+    });
+    return picks.length === group.picks.length ? group : { ...group, picks };
+  };
+
+  const groupHasLockedResults = (group: AflTopPicksModalGroup): boolean =>
+    group.picks.some((pick) => typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals));
 
   for (const group of latestRoundHistoryGroups) {
     if (group.picks.length > 0) {
-      byKey.set(group.gameKey, group);
+      byKey.set(group.gameKey, filterBlockedPicks(group));
     }
   }
 
   for (const group of liveGroups) {
-    if (byKey.has(group.gameKey)) continue;
     if (!aflTopPicksModalAllowsLivePickUpdates(group.commenceTime)) continue;
-    if (group.picks.length > 0) {
+    if (group.picks.length === 0) continue;
+    const existing = byKey.get(group.gameKey);
+    const isUpcoming = aflTopPicksModalIsUpcomingGame(group.commenceTime);
+    if (existing && isUpcoming && !groupHasLockedResults(existing)) {
+      byKey.set(group.gameKey, group);
+      continue;
+    }
+    if (!existing) {
       byKey.set(group.gameKey, group);
     }
   }
 
   for (const group of latestRoundHistoryGroups) {
-    if (!byKey.has(group.gameKey)) {
-      byKey.set(group.gameKey, group);
+    if (!byKey.has(group.gameKey) && group.picks.length > 0) {
+      byKey.set(group.gameKey, filterBlockedPicks(group));
     }
   }
 
@@ -836,6 +861,7 @@ function AflTopPicksModal({
   const [currentGroups, setCurrentGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [latestRoundHistoryGroups, setLatestRoundHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const [currentRoundWindow, setCurrentRoundWindow] = useState<AflTopPicksRoundWindow | null>(null);
+  const [currentRoundKey, setCurrentRoundKey] = useState<string | null>(null);
   const [historyGroups, setHistoryGroups] = useState<AflTopPicksModalGroup[]>([]);
   const roundSliderRef = useRef<HTMLDivElement | null>(null);
 
@@ -854,10 +880,13 @@ function AflTopPicksModal({
   const isCurrentRound = activeRound?.isCurrent ?? false;
   const displayGroups = useMemo(() => {
     if (isAllRound || !isCurrentRound) return historyGroups;
-    const merged = aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups);
-    if (!currentRoundWindow) return merged;
-    return merged.filter((group) => aflTopPicksModalGroupInRoundWindow(group, currentRoundWindow));
-  }, [isAllRound, isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups, currentRoundWindow]);
+    const merged = aflTopPicksModalMergeCurrentGroups(latestRoundHistoryGroups, currentGroups, currentRoundKey);
+    return merged.filter((group) => {
+      if (currentRoundKey && group.roundKey && group.roundKey !== currentRoundKey) return false;
+      if (!currentRoundWindow) return true;
+      return aflTopPicksModalGroupInRoundWindow(group, currentRoundWindow);
+    });
+  }, [isAllRound, isCurrentRound, historyGroups, latestRoundHistoryGroups, currentGroups, currentRoundWindow, currentRoundKey]);
   const displayRoundSections = useMemo(() => {
     if (isAllRound) {
       return aflTopPicksModalGroupHistoryByRound(historyGroups, roundKeys);
@@ -940,10 +969,18 @@ function AflTopPicksModal({
           liveRecords,
           historyRecords
         );
-        const scopedLiveRecords = aflTopPicksModalFilterRecordsByRoundWindow(liveRecords, resolvedRoundWindow);
-        const scopedHistoryRecords = aflTopPicksModalFilterRecordsByRoundWindow(historyRecords, resolvedRoundWindow);
+        const resolvedRoundKey =
+          calendarAflTopPicksRoundKeyForDate(aflTopPicksModalBrisbaneYmd(new Date())) ??
+          calendarAflTopPicksRoundKey(liveRecords[0]?.commenceTime ?? historyRecords[0]?.commenceTime ?? null);
+        const scopedLiveRecords = aflTopPicksModalFilterRecordsByRoundWindow(liveRecords, resolvedRoundWindow).filter(
+          (record) => !resolvedRoundKey || !record.roundKey || record.roundKey === resolvedRoundKey
+        );
+        const scopedHistoryRecords = aflTopPicksModalFilterRecordsByRoundWindow(historyRecords, resolvedRoundWindow).filter(
+          (record) => !resolvedRoundKey || !record.roundKey || record.roundKey === resolvedRoundKey
+        );
 
         setCurrentRoundWindow(resolvedRoundWindow);
+        setCurrentRoundKey(resolvedRoundKey);
         setCurrentGroups(aflTopPicksModalGroupsFromRecords(scopedLiveRecords));
         setLatestRoundHistoryGroups(aflTopPicksModalGroupsFromRecords(scopedHistoryRecords));
         setRoundKeys(rounds);
