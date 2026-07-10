@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T15:15:17Z",
+  "generatedAt": "2026-07-10T15:35:50.850Z",
   "count": 34,
   "records": [
     {
@@ -1072,7 +1072,7 @@
           "recommendedEdge": 0.2041,
           "recommendedProb": 0.7041,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 12
         },
         {
           "playerName": "Jordan De Goey",
@@ -1083,7 +1083,7 @@
           "recommendedEdge": 0.1931,
           "recommendedProb": 0.6931,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 29
         },
         {
           "playerName": "Jeremy Howe",
@@ -1094,7 +1094,7 @@
           "recommendedEdge": 0.1526,
           "recommendedProb": 0.6526,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 22
         }
       ]
     },
