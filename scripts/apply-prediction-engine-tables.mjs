@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lookupTopPicksActualFromAltSources } from '../lib/afl/aflTopPicksActualsFallback.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -882,9 +883,11 @@ async function runEnrich(args) {
   const records = Array.isArray(payload?.records) ? payload.records : [];
   const todayIso = brisbaneYmd(new Date());
   const logsCache = new Map();
+  const altSourceCache = new Map();
   let updatedPicks = 0;
   let fromLineHistory = 0;
   let fromApi = 0;
+  let fromAltSource = 0;
   let missingMatch = 0;
 
   for (const record of records) {
@@ -893,6 +896,9 @@ async function runEnrich(args) {
     }
     const gameDate = gameDateFromCommence(record?.commenceTime);
     if (!gameDate || gameDate > todayIso) continue;
+    const kickoffMs = Date.parse(String(record?.commenceTime ?? ''));
+    // Don't chase actuals before bounce — Wheeloratings/ESPN won't have a box score yet.
+    if (Number.isFinite(kickoffMs) && kickoffMs > Date.now()) continue;
     const season = Number.parseInt(gameDate.slice(0, 4), 10);
     for (const pick of record.picks ?? []) {
       if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) continue;
@@ -915,24 +921,40 @@ async function runEnrich(args) {
         cronSecret
       );
       const match = matchGame(gameDate, games);
-      if (!match) {
-        missingMatch += 1;
+      if (match) {
+        const actual =
+          typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
+        if (Number.isFinite(actual)) {
+          pick.actualDisposals = actual;
+          updatedPicks += 1;
+          fromApi += 1;
+          continue;
+        }
+      }
+
+      const alt = await lookupTopPicksActualFromAltSources(
+        {
+          playerName: pick.playerName,
+          homeTeam: record.homeTeam,
+          awayTeam: record.awayTeam,
+          gameDate,
+          roundKey: record.roundKey,
+        },
+        altSourceCache
+      );
+      if (alt?.actual != null) {
+        pick.actualDisposals = alt.actual;
+        updatedPicks += 1;
+        fromAltSource += 1;
         continue;
       }
-      const actual =
-        typeof match.disposals === 'number' ? match.disposals : Number.parseFloat(String(match.disposals ?? ''));
-      if (!Number.isFinite(actual)) {
-        missingMatch += 1;
-        continue;
-      }
-      pick.actualDisposals = actual;
-      updatedPicks += 1;
-      fromApi += 1;
+
+      missingMatch += 1;
     }
   }
 
   console.log(
-    `[afl-top-picks-enrich] updatedPicks=${updatedPicks} fromLineHistory=${fromLineHistory} fromApi=${fromApi} missingMatch=${missingMatch} dryRun=${args.dryRun}`
+    `[afl-top-picks-enrich] updatedPicks=${updatedPicks} fromLineHistory=${fromLineHistory} fromApi=${fromApi} fromAltSource=${fromAltSource} missingMatch=${missingMatch} dryRun=${args.dryRun}`
   );
   if (updatedPicks > 0 && !args.dryRun) {
     writeUtf8(
