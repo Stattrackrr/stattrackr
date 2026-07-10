@@ -106,6 +106,8 @@ jobs:
             rm -rf data/afl-model/afl-model
           fi
 
+      # Include top-picks-history.json: score_upcoming soft-locks / re-ranks upcoming Top 3
+      # into that file. Excluding it left Current-round rankings stuck until a manual refresh.
       - name: Commit and push model outputs to master if changed
         run: |
           rm -rf data/afl-model/afl-model
@@ -119,5 +121,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           CI_COMMIT_GIT_LFS: "1"
-          CI_COMMIT_EXCLUDE_PATHS: data/afl-model/history/top-picks-history.json
 

@@ -112,6 +112,7 @@ jobs:
             rm -rf data/afl-model/afl-model
           fi
 
+      # Include top-picks-history.json so soft-locked Top 3 re-ranks from score_upcoming ship.
       - name: Commit and push nightly model outputs to master if changed
         run: |
           rm -rf data/afl-model/afl-model
@@ -125,7 +126,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           CI_COMMIT_GIT_LFS: "1"
-          CI_COMMIT_EXCLUDE_PATHS: data/afl-model/history/top-picks-history.json
 
 
 
