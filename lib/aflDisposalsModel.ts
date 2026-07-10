@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { getPriorRoundBlockedPlayerSides } from '@/lib/aflDisposalsHistory';
 import {
   aflTopPicksPlayerSideKey,
-  getPriorRoundBlockedPlayerSides,
   inferCurrentRoundKeyFromCommenceTimes,
-} from '@/lib/aflDisposalsHistory';
+} from '@/lib/aflTopPicksRoundUtils';
 
 type AflDisposalsProjectionRow = {
   projectionKey?: string;
