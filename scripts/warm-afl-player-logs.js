@@ -45,6 +45,27 @@ if (!prodUrl) {
   process.exit(1);
 }
 
+function loadPlayersForSeason(season) {
+  const dataDir = path.join(process.cwd(), 'data');
+  const fullPath = path.join(dataDir, `afl-league-player-stats-${season}.json`);
+  if (!fs.existsSync(fullPath)) return [];
+  try {
+    const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    const players = Array.isArray(json?.players) ? json.players : [];
+    return players
+      .map((p) => ({
+        name: String(p?.name || '').trim(),
+        team: String(p?.team || '').trim(),
+        games: Number(p?.games || 0),
+        season,
+      }))
+      .filter((p) => p.name && p.team && p.games > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Prefer per-season roster so traded players are warmed under the club they played for that year. */
 function loadActiveAflPlayers() {
   const dataDir = path.join(process.cwd(), 'data');
   const files = fs
@@ -224,33 +245,60 @@ async function runPool(jobs, worker, size) {
 }
 
 async function main() {
-  let players = loadActiveAflPlayers();
-  if (warmPlayerFilter) {
-    players = players.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
-    console.log(`[AFL Warm] 🎯 Filter: only players matching "${process.env.AFL_WARM_PLAYER}" → ${players.length} player(s)`);
+  // Build jobs from each season's own roster (correct club for that year).
+  // Fallback to newest roster × all seasons only if a season file is missing.
+  const playersBySeason = new Map();
+  let fallbackPlayers = [];
+  for (const season of warmSeasons) {
+    let seasonPlayers = loadPlayersForSeason(season);
+    if (warmPlayerFilter) {
+      seasonPlayers = seasonPlayers.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
+    }
+    if (seasonPlayers.length === 0) {
+      if (!fallbackPlayers.length) {
+        fallbackPlayers = loadActiveAflPlayers();
+        if (warmPlayerFilter) {
+          fallbackPlayers = fallbackPlayers.filter((p) => p.name.toLowerCase().includes(warmPlayerFilter));
+        }
+      }
+      seasonPlayers = fallbackPlayers.map((p) => ({ ...p, season }));
+    }
+    if (warmLimit > 0) seasonPlayers = seasonPlayers.slice(0, warmLimit);
+    playersBySeason.set(season, seasonPlayers);
   }
-  const selectedPlayers = warmLimit > 0 ? players.slice(0, warmLimit) : players;
-  if (!selectedPlayers.length) {
-    console.log('No active AFL players found to warm.');
-    return;
-  }
-  const expectedGamesByPlayer = buildExpectedGamesByPlayer(selectedPlayers);
-  const poolSize = forceFetchSeasons.size > 0 ? Math.min(concurrency, forceFetchConcurrency) : concurrency;
 
   const jobs = [];
   for (const season of warmSeasons) {
-    for (const player of selectedPlayers) {
+    const seasonPlayers = playersBySeason.get(season) || [];
+    for (const player of seasonPlayers) {
       jobs.push({ player, season });
     }
   }
 
+  if (!jobs.length) {
+    console.log('No active AFL players found to warm.');
+    return;
+  }
+
+  const expectedGamesBySeason = new Map();
+  for (const season of warmSeasons) {
+    expectedGamesBySeason.set(season, buildExpectedGamesByPlayer(playersBySeason.get(season) || []));
+  }
+  const poolSize = forceFetchSeasons.size > 0 ? Math.min(concurrency, forceFetchConcurrency) : concurrency;
+
+  const uniquePlayerCount = new Set(jobs.map((j) => normalizePlayerName(j.player.name))).size;
   console.log(`[AFL Warm] 🔥 Warming AFL player logs cache (force seasons: ${[...forceFetchSeasons].join(', ') || 'none'})`);
-  console.log(`[AFL Warm] 👥 Players: ${selectedPlayers.length}`);
+  console.log(`[AFL Warm] 👥 Unique players: ${uniquePlayerCount}`);
   console.log(`[AFL Warm] 📅 Seasons: ${warmSeasons.join(', ')}`);
+  for (const season of warmSeasons) {
+    console.log(`[AFL Warm]    ${season}: ${(playersBySeason.get(season) || []).length} players (season roster)`);
+  }
   console.log(`[AFL Warm] 📤 Requests: ${jobs.length}`);
   console.log(`[AFL Warm] ⚡ Concurrency: ${poolSize}`);
-  const sample = selectedPlayers.slice(0, 10).map((p) => `${p.name} (${teamForRequest(p.team)})`);
-  console.log(`[AFL Warm] 🎯 Sample: ${sample.join(', ')}${selectedPlayers.length > 10 ? '...' : ''}`);
+  const sampleSeason = warmSeasons[0];
+  const samplePlayers = (playersBySeason.get(sampleSeason) || []).slice(0, 10);
+  const sample = samplePlayers.map((p) => `${p.name} (${teamForRequest(p.team)})`);
+  console.log(`[AFL Warm] 🎯 Sample ${sampleSeason}: ${sample.join(', ')}${(playersBySeason.get(sampleSeason) || []).length > 10 ? '...' : ''}`);
 
   let success = 0;
   let failed = 0;
@@ -266,7 +314,11 @@ async function main() {
     jobs,
     async (job) => {
       if (WARM_INTER_REQUEST_DELAY_MS > 0) await sleep(WARM_INTER_REQUEST_DELAY_MS);
-      const result = await warmOne(job.player, job.season, expectedGamesByPlayer);
+      const result = await warmOne(
+        job.player,
+        job.season,
+        expectedGamesBySeason.get(job.season) || new Map()
+      );
       if (result.ok) {
         success += 1;
         warmedGames += Number(result.count || 0);
@@ -304,7 +356,14 @@ async function main() {
   // Cache health check: GET without cron secret (same as a user). Fail workflow if we warmed but prod returns cache-miss.
   let cacheHealthOk = false;
   let ranCacheHealthCheck = false;
-  const probe = healthProbe ?? (selectedPlayers.length > 0 ? { player: selectedPlayers[0], season: warmSeasons.includes(2025) ? 2025 : warmSeasons[0] } : null);
+  const probe =
+    healthProbe ??
+    (jobs.length > 0
+      ? {
+          player: jobs[0].player,
+          season: warmSeasons.includes(2025) ? 2025 : warmSeasons[0],
+        }
+      : null);
   if (probe && success > 0) {
     ranCacheHealthCheck = true;
     const team = teamForRequest(probe.player.team);

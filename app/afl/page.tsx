@@ -3143,7 +3143,8 @@ export default function AFLPage() {
         const p1 = fetchSeason(currentYear, '');
         const p2 = fetchSeason(prevYear);
         const p3 = fetchSeason(olderYear);
-        let [resultCurrent, resultPrev] = await Promise.all([p1, p2]);
+        // Paint current season as soon as it arrives — don't block ~10s on a cold prior-season scrape.
+        let resultCurrent = await p1;
         if (cancelled) return;
         if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
           const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
@@ -3152,6 +3153,12 @@ export default function AFLPage() {
             resultCurrent = strictCurrent;
           }
         }
+        applyMergedSeasonResults(resultCurrent, emptyOlderSeason, emptyOlderSeason);
+        setStatsLoadingForPlayer(false);
+
+        let resultPrev = await p2;
+        if (cancelled) return;
+        applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
 
         const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
         if (mergedCountWithoutOldest === 0) {
@@ -3159,7 +3166,6 @@ export default function AFLPage() {
           if (cancelled) return;
           applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
         } else if (mergedCountWithoutOldest >= AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
-          applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
           p3.then((resultOlder) => {
             if (cancelled) return;
             applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
@@ -3177,7 +3183,7 @@ export default function AFLPage() {
           } else {
             setLastStatsError(null);
           }
-          setSelectedPlayerGameLogs([]);
+          // Keep any already-painted current-season logs; only clear if we never got any.
         }
       } finally {
         if (!cancelled) setStatsLoadingForPlayer(false);
