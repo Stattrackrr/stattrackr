@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-11T16:29:29.026Z",
-  "count": 34,
+  "generatedAt": "2026-07-11T17:52:38Z",
+  "count": 35,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -1268,8 +1268,8 @@
       "gameKey": "westernbulldogs|westcoasteagles|2026-07-12",
       "finalizedAt": "2026-07-09T17:51:42.662Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-11T11:56:07Z",
-      "modelVersion": "afl-disp-20260710-182815",
+      "projectionGeneratedAt": "2026-07-11T17:52:38Z",
+      "modelVersion": "afl-disp-20260711-174828",
       "homeTeam": "Western Bulldogs",
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-07-12T03:10:49Z",
@@ -1277,36 +1277,25 @@
       "roundKey": "2026-R18",
       "picks": [
         {
-          "playerName": "Ryley Sanders",
-          "bookmaker": "SportsBet",
-          "line": 22.5,
-          "expectedDisposals": 17.83,
-          "recommendedSide": "UNDER",
-          "recommendedEdge": 0.2923,
-          "recommendedProb": 0.7564,
+          "playerName": "Marcus Bontempelli",
+          "bookmaker": "PointsBet (AU)",
+          "line": 26.5,
+          "expectedDisposals": 27.32,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.076,
+          "recommendedProb": 0.576,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Ed Richards",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 26.7,
+          "playerName": "Harley Reid",
+          "bookmaker": "PointsBet (AU)",
+          "line": 23.5,
+          "expectedDisposals": 24.21,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.067,
-          "recommendedProb": 0.581,
-          "rank": 2,
-          "actualDisposals": null
-        },
-        {
-          "playerName": "Marcus Bontempelli",
-          "bookmaker": "SportsBet",
-          "line": 26.5,
-          "expectedDisposals": 27.65,
-          "recommendedSide": "OVER",
-          "recommendedEdge": 0.0603,
+          "recommendedEdge": 0.0723,
           "recommendedProb": 0.5723,
-          "rank": 3,
+          "rank": 2,
           "actualDisposals": null
         }
       ]
@@ -1315,34 +1304,81 @@
       "gameKey": "melbournedemons|richmondtigers|2026-07-12",
       "finalizedAt": "2026-07-09T17:51:42.662Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-11T11:56:07Z",
-      "modelVersion": "afl-disp-20260710-182815",
+      "projectionGeneratedAt": "2026-07-11T17:52:38Z",
+      "modelVersion": "afl-disp-20260711-174828",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Richmond Tigers",
-      "commenceTime": "2026-07-12T05:15:00Z",
+      "commenceTime": "2026-07-12T05:15:23Z",
       "weekKey": "2026-W28",
       "roundKey": "2026-R18",
       "picks": [
         {
-          "playerName": "Kysaiah Pickett",
+          "playerName": "Kane Mcauliffe",
           "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 21.39,
+          "line": 20.5,
+          "expectedDisposals": 15.17,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.2341,
-          "recommendedProb": 0.7301,
+          "recommendedEdge": 0.2427,
+          "recommendedProb": 0.7417,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Patrick Retschko",
-          "bookmaker": "SportsBet",
-          "line": 20.5,
-          "expectedDisposals": 17.57,
+          "playerName": "Hugo Ralphsmith",
+          "bookmaker": "PointsBet (AU)",
+          "line": 18.5,
+          "expectedDisposals": 14.54,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1718,
-          "recommendedProb": 0.6679,
+          "recommendedEdge": 0.2073,
+          "recommendedProb": 0.7073,
           "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "brisbanelions|essendonbombers|2026-07-12",
+      "finalizedAt": "2026-07-11T17:50:13Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-11T17:52:38Z",
+      "modelVersion": "afl-disp-20260711-174828",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Essendon Bombers",
+      "commenceTime": "2026-07-12T06:40:50Z",
+      "weekKey": null,
+      "roundKey": "2026-R18",
+      "picks": [
+        {
+          "playerName": "Darcy Parish",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 25.41,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1957,
+          "recommendedProb": 0.6867,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jacob Farrow",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 19.38,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1458,
+          "recommendedProb": 0.6548,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Will Ashcroft",
+          "bookmaker": "SportsBet",
+          "line": 32.5,
+          "expectedDisposals": 29.65,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1235,
+          "recommendedProb": 0.6375,
+          "rank": 3,
           "actualDisposals": null
         }
       ]

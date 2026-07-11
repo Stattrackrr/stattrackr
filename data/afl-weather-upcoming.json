@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T11:50:16.000Z",
+  "generatedAt": "2026-07-11T17:28:11.612Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,20 +9,20 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-07-12T03:10:49Z",
       "weather": {
-        "temperatureC": 11.5,
+        "temperatureC": 12,
         "precipitationMm": 0,
-        "windKmh": 21
+        "windKmh": 23
       }
     },
     {
       "gameId": "8fb7f76d9cf01948d2f7da59fec30559",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Richmond Tigers",
-      "commenceTime": "2026-07-12T05:15:00Z",
+      "commenceTime": "2026-07-12T05:15:23Z",
       "weather": {
-        "temperatureC": 12.4,
-        "precipitationMm": 0.1,
-        "windKmh": 19
+        "temperatureC": 12,
+        "precipitationMm": 0.3,
+        "windKmh": 19.2
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-07-12T06:40:50Z",
       "weather": {
-        "temperatureC": 20.6,
+        "temperatureC": 20.7,
         "precipitationMm": 0,
-        "windKmh": 10.1
+        "windKmh": 11.7
       }
     }
   ],
