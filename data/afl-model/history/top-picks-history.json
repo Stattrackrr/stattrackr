@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T11:56:07Z",
+  "generatedAt": "2026-07-11T13:55:00.450Z",
   "count": 34,
   "records": [
     {
@@ -1238,7 +1238,7 @@
           "recommendedEdge": 0.2087,
           "recommendedProb": 0.6884,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 29
         },
         {
           "playerName": "Zeke Uwland",
@@ -1249,7 +1249,7 @@
           "recommendedEdge": 0.183,
           "recommendedProb": 0.683,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Josh Worrell",
@@ -1260,7 +1260,7 @@
           "recommendedEdge": 0.1223,
           "recommendedProb": 0.6223,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 21
         }
       ]
     },
