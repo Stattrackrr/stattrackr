@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { lookupTopPicksActualFromAltSources } from '../lib/afl/aflTopPicksActualsFallback.mjs';
+import { isAflGameFinalOnEspn, lookupTopPicksActualFromAltSources } from '../lib/afl/aflTopPicksActualsFallback.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -888,6 +888,7 @@ async function runEnrich(args) {
   let fromLineHistory = 0;
   let fromApi = 0;
   let fromAltSource = 0;
+  let clearedPremature = 0;
   let missingMatch = 0;
 
   for (const record of records) {
@@ -900,8 +901,55 @@ async function runEnrich(args) {
     // Don't chase actuals before bounce — Wheeloratings/ESPN won't have a box score yet.
     if (Number.isFinite(kickoffMs) && kickoffMs > Date.now()) continue;
     const season = Number.parseInt(gameDate.slice(0, 4), 10);
+    const gameFinal = await isAflGameFinalOnEspn(
+      {
+        homeTeam: record.homeTeam,
+        awayTeam: record.awayTeam,
+        gameDate,
+      },
+      altSourceCache
+    );
+
+    // Live box scores must never settle Top Picks. Clear any premature totals.
+    if (!gameFinal) {
+      for (const pick of record.picks ?? []) {
+        if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) {
+          pick.actualDisposals = null;
+          clearedPremature += 1;
+          updatedPicks += 1;
+        }
+      }
+      continue;
+    }
+
     for (const pick of record.picks ?? []) {
-      if (typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)) continue;
+      const existingActual =
+        typeof pick.actualDisposals === 'number' && Number.isFinite(pick.actualDisposals)
+          ? pick.actualDisposals
+          : null;
+
+      // Always prefer a fresh final box score so mid-game values can be corrected.
+      const alt = await lookupTopPicksActualFromAltSources(
+        {
+          playerName: pick.playerName,
+          homeTeam: record.homeTeam,
+          awayTeam: record.awayTeam,
+          gameDate,
+          roundKey: record.roundKey,
+        },
+        altSourceCache
+      );
+      if (alt?.actual != null) {
+        if (existingActual !== alt.actual) {
+          pick.actualDisposals = alt.actual;
+          updatedPicks += 1;
+          fromAltSource += 1;
+        }
+        continue;
+      }
+
+      if (existingActual != null) continue;
+
       const fromHistory = lookupLineHistoryActual(pick, record, lineHistoryLookup);
       if (fromHistory != null) {
         pick.actualDisposals = fromHistory;
@@ -932,29 +980,12 @@ async function runEnrich(args) {
         }
       }
 
-      const alt = await lookupTopPicksActualFromAltSources(
-        {
-          playerName: pick.playerName,
-          homeTeam: record.homeTeam,
-          awayTeam: record.awayTeam,
-          gameDate,
-          roundKey: record.roundKey,
-        },
-        altSourceCache
-      );
-      if (alt?.actual != null) {
-        pick.actualDisposals = alt.actual;
-        updatedPicks += 1;
-        fromAltSource += 1;
-        continue;
-      }
-
       missingMatch += 1;
     }
   }
 
   console.log(
-    `[afl-top-picks-enrich] updatedPicks=${updatedPicks} fromLineHistory=${fromLineHistory} fromApi=${fromApi} fromAltSource=${fromAltSource} missingMatch=${missingMatch} dryRun=${args.dryRun}`
+    `[afl-top-picks-enrich] updatedPicks=${updatedPicks} fromLineHistory=${fromLineHistory} fromApi=${fromApi} fromAltSource=${fromAltSource} clearedPremature=${clearedPremature} missingMatch=${missingMatch} dryRun=${args.dryRun}`
   );
   if (updatedPicks > 0 && !args.dryRun) {
     writeUtf8(

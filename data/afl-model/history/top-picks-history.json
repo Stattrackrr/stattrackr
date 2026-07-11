@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "generatedAt": "2026-07-11T06:27:36.092Z",
+=======
+  "generatedAt": "2026-07-11T08:46:41.559Z",
+>>>>>>> 017403bf (fix(afl): settle Top Picks totals only after ESPN Final.)
   "count": 34,
   "records": [
     {
@@ -1119,7 +1123,11 @@
           "recommendedEdge": 0.195,
           "recommendedProb": 0.695,
           "rank": 1,
+<<<<<<< HEAD
           "actualDisposals": 2
+=======
+          "actualDisposals": 21
+>>>>>>> 017403bf (fix(afl): settle Top Picks totals only after ESPN Final.)
         },
         {
           "playerName": "Mattaes Phillipou",
@@ -1130,7 +1138,11 @@
           "recommendedEdge": 0.151,
           "recommendedProb": 0.651,
           "rank": 2,
+<<<<<<< HEAD
           "actualDisposals": 6
+=======
+          "actualDisposals": 24
+>>>>>>> 017403bf (fix(afl): settle Top Picks totals only after ESPN Final.)
         }
       ]
     },
