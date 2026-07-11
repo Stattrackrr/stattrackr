@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T15:35:50.850Z",
+  "generatedAt": "2026-07-11T03:42:33.641Z",
   "count": 34,
   "records": [
     {
@@ -1119,7 +1119,7 @@
           "recommendedEdge": 0.195,
           "recommendedProb": 0.695,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 2
         },
         {
           "playerName": "Mattaes Phillipou",
@@ -1130,7 +1130,7 @@
           "recommendedEdge": 0.151,
           "recommendedProb": 0.651,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 6
         }
       ]
     },
