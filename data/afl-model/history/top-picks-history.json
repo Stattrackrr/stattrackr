@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T08:49:51.494Z",
+  "generatedAt": "2026-07-11T10:15:29.090Z",
   "count": 34,
   "records": [
     {
@@ -1155,7 +1155,7 @@
           "recommendedEdge": 0.2186,
           "recommendedProb": 0.7186,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 22
         },
         {
           "playerName": "Joseph Fonti",
@@ -1177,7 +1177,7 @@
           "recommendedEdge": 0.1098,
           "recommendedProb": 0.5929,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 36
         }
       ]
     },
