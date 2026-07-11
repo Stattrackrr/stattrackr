@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T10:15:29.090Z",
+  "generatedAt": "2026-07-11T11:56:07Z",
   "count": 34,
   "records": [
     {
@@ -1268,8 +1268,8 @@
       "gameKey": "westernbulldogs|westcoasteagles|2026-07-12",
       "finalizedAt": "2026-07-09T17:51:42.662Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-10T15:15:17Z",
-      "modelVersion": "afl-disp-20260710-131348",
+      "projectionGeneratedAt": "2026-07-11T11:56:07Z",
+      "modelVersion": "afl-disp-20260710-182815",
       "homeTeam": "Western Bulldogs",
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-07-12T03:10:49Z",
@@ -1277,25 +1277,36 @@
       "roundKey": "2026-R18",
       "picks": [
         {
-          "playerName": "Tim Kelly",
+          "playerName": "Ryley Sanders",
           "bookmaker": "SportsBet",
-          "line": 24.5,
-          "expectedDisposals": 20.57,
+          "line": 22.5,
+          "expectedDisposals": 17.83,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1383,
-          "recommendedProb": 0.6604,
+          "recommendedEdge": 0.2923,
+          "recommendedProb": 0.7564,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Tom Mccarthy",
+          "playerName": "Ed Richards",
           "bookmaker": "SportsBet",
-          "line": 23.5,
-          "expectedDisposals": 20.63,
-          "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1197,
-          "recommendedProb": 0.6197,
+          "line": 25.5,
+          "expectedDisposals": 26.7,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.067,
+          "recommendedProb": 0.581,
           "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Marcus Bontempelli",
+          "bookmaker": "SportsBet",
+          "line": 26.5,
+          "expectedDisposals": 27.65,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0603,
+          "recommendedProb": 0.5723,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -1304,8 +1315,8 @@
       "gameKey": "melbournedemons|richmondtigers|2026-07-12",
       "finalizedAt": "2026-07-09T17:51:42.662Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-10T15:15:17Z",
-      "modelVersion": "afl-disp-20260710-131348",
+      "projectionGeneratedAt": "2026-07-11T11:56:07Z",
+      "modelVersion": "afl-disp-20260710-182815",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-07-12T05:15:00Z",
@@ -1313,13 +1324,13 @@
       "roundKey": "2026-R18",
       "picks": [
         {
-          "playerName": "Kane Mcauliffe",
+          "playerName": "Kysaiah Pickett",
           "bookmaker": "SportsBet",
-          "line": 20.5,
-          "expectedDisposals": 15.62,
+          "line": 25.5,
+          "expectedDisposals": 21.39,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.2068,
-          "recommendedProb": 0.6978,
+          "recommendedEdge": 0.2341,
+          "recommendedProb": 0.7301,
           "rank": 1,
           "actualDisposals": null
         },
@@ -1327,10 +1338,10 @@
           "playerName": "Patrick Retschko",
           "bookmaker": "SportsBet",
           "line": 20.5,
-          "expectedDisposals": 17.88,
+          "expectedDisposals": 17.57,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.0964,
-          "recommendedProb": 0.5924,
+          "recommendedEdge": 0.1718,
+          "recommendedProb": 0.6679,
           "rank": 2,
           "actualDisposals": null
         }
