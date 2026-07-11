@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T13:55:00.450Z",
+  "generatedAt": "2026-07-11T16:29:29.026Z",
   "count": 34,
   "records": [
     {
@@ -225,7 +225,7 @@
           "recommendedEdge": 0.142,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": 16.5
+          "actualDisposals": 15
         }
       ]
     },
@@ -1166,7 +1166,7 @@
           "recommendedEdge": 0.1108,
           "recommendedProb": 0.6108,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 16
         },
         {
           "playerName": "Clayton Oliver",
@@ -1202,7 +1202,7 @@
           "recommendedEdge": 0.2505,
           "recommendedProb": 0.7505,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Massimo D Ambrosio",
@@ -1213,7 +1213,7 @@
           "recommendedEdge": 0.225,
           "recommendedProb": 0.725,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 19
         }
       ]
     },
