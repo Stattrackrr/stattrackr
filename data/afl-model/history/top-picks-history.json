@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T06:48:02.754Z",
+  "generatedAt": "2026-07-12T09:16:26.272Z",
   "count": 35,
   "records": [
     {
@@ -1321,7 +1321,7 @@
           "recommendedEdge": 0.2427,
           "recommendedProb": 0.7417,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Hugo Ralphsmith",
@@ -1332,7 +1332,7 @@
           "recommendedEdge": 0.2073,
           "recommendedProb": 0.7073,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 15
         }
       ]
     },
