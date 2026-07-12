@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12T09:16:26.272Z",
+  "generatedAt": "2026-07-12T09:29:44.794Z",
   "count": 35,
   "records": [
     {
@@ -1357,7 +1357,7 @@
           "recommendedEdge": 0.1957,
           "recommendedProb": 0.6867,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 17
         },
         {
           "playerName": "Jacob Farrow",
@@ -1368,7 +1368,7 @@
           "recommendedEdge": 0.1458,
           "recommendedProb": 0.6548,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 12
         },
         {
           "playerName": "Will Ashcroft",
@@ -1379,7 +1379,7 @@
           "recommendedEdge": 0.1235,
           "recommendedProb": 0.6375,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 33
         }
       ]
     }
