@@ -198,6 +198,11 @@ export default function PricingPage() {
       });
       
       const data = await response.json();
+
+      if (response.status === 409 && data.alreadySubscribed) {
+        window.location.href = '/props';
+        return;
+      }
       
       if (data.url) {
         window.location.href = data.url;

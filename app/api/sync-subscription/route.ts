@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import Stripe from 'stripe';
+import { getStripe } from '@/lib/stripe';
+import { reconcileUserSubscription } from '@/lib/stripeCustomer';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 if (!supabaseUrl) {
   throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
@@ -14,109 +14,65 @@ if (!supabaseUrl) {
 if (!supabaseServiceKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
 }
-if (!stripeSecretKey) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
-}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2025-10-29.clover',
-});
-
 export async function POST(req: NextRequest) {
   try {
-    // Get user from Authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const token = authHeader.substring(7);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, email')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.stripe_customer_id) {
-      return NextResponse.json({ 
-        error: 'No Stripe customer found. Complete a checkout first.' 
-      }, { status: 400 });
-    }
+    const reconciled = await reconcileUserSubscription(
+      supabase,
+      {
+        userId: user.id,
+        email: user.email || profile?.email,
+        knownCustomerId: profile?.stripe_customer_id,
+      },
+      {
+        stripe: getStripe(),
+        cancelDuplicates: true,
+        persist: true,
+      }
+    );
 
-    // Get customer's subscriptions from Stripe
-    const subscriptions = await stripe.subscriptions.list({
-      customer: profile.stripe_customer_id,
-      status: 'all',
-      limit: 1,
-    });
-
-    if (subscriptions.data.length === 0) {
-      // No active subscription
-      await supabase
-        .from('profiles')
-        .update({
-          subscription_status: null,
-          subscription_tier: 'free',
-          subscription_billing_cycle: null,
-          subscription_current_period_end: null,
-        })
-        .eq('id', user.id);
-
-      return NextResponse.json({ 
+    if (!reconciled.subscription) {
+      return NextResponse.json({
         message: 'No active subscription found',
-        subscription: null 
+        subscription: null,
+        customerId: reconciled.customerId,
       });
-    }
-
-    const subscription = subscriptions.data[0] as any;
-    
-    // Determine billing cycle from price
-    let billingCycle = 'monthly';
-    const priceId = subscription.items.data[0]?.price.id;
-    if (priceId?.includes('annual')) {
-      billingCycle = 'annual';
-    } else if (priceId?.includes('semiannual')) {
-      billingCycle = 'semiannual';
-    }
-
-    // Update profile with subscription info
-    const updates = {
-      subscription_status: subscription.status,
-      subscription_tier: 'pro',
-      subscription_billing_cycle: billingCycle,
-      subscription_current_period_end: subscription.current_period_end 
-        ? new Date((subscription.current_period_end as number) * 1000).toISOString()
-        : null,
-    };
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (updateError) {
-      throw updateError;
     }
 
     return NextResponse.json({
       message: 'Subscription synced successfully',
       subscription: {
-        status: subscription.status,
-        tier: 'pro',
-        billingCycle,
-        currentPeriodEnd: subscription.current_period_end
-          ? new Date((subscription.current_period_end as number) * 1000).toISOString()
-          : null,
+        status: reconciled.subscription.status,
+        tier: reconciled.entitling ? 'pro' : 'free',
+        billingCycle: reconciled.profileUpdates.subscription_billing_cycle,
+        currentPeriodEnd: reconciled.profileUpdates.subscription_current_period_end,
+        customerId: reconciled.customerId,
+        subscriptionId: reconciled.subscription.id,
       },
+      canceledDuplicates: reconciled.canceledDuplicateIds,
     });
   } catch (error: any) {
     console.error('Sync subscription error:', error);

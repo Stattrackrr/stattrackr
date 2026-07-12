@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { buildTrustedAppUrl } from '@/lib/appUrl';
 import { getStripe } from '@/lib/stripe';
+import { reconcileUserSubscription } from '@/lib/stripeCustomer';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { checkRateLimit, strictRateLimiter } from '@/lib/rateLimit';
 
@@ -47,21 +47,44 @@ export async function POST(request: NextRequest) {
     // Get Stripe customer ID and status from profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_customer_id, subscription_status, trial_used_at')
+      .select('stripe_customer_id, subscription_status, trial_used_at, email')
       .eq('id', user.id)
       .single();
 
     console.log('Portal Client - Profile:', { profile, profileError });
 
-    if (!profile?.stripe_customer_id) {
+    const stripe = getStripe();
+
+    // If missing/stale customer link, reconcile across email + metadata before failing.
+    let customerId = profile?.stripe_customer_id || null;
+    let subscriptionStatus = profile?.subscription_status || null;
+
+    if (!customerId) {
+      try {
+        const reconciled = await reconcileUserSubscription(
+          supabaseAdmin,
+          {
+            userId: user.id,
+            email: user.email || profile?.email,
+            knownCustomerId: null,
+          },
+          { stripe, cancelDuplicates: true, persist: true }
+        );
+        customerId = reconciled.customerId;
+        subscriptionStatus = (reconciled.profileUpdates.subscription_status as string) || null;
+      } catch (reconcileError) {
+        console.error('Portal Client - reconcile failed:', reconcileError);
+      }
+    }
+
+    if (!customerId) {
       return NextResponse.json({ 
         error: 'No Stripe customer found. Complete a checkout first.' 
       }, { status: 400 });
     }
 
     // Create Stripe Customer Portal session
-    const stripe = getStripe();
-    let isTrialing = profile.subscription_status === 'trialing';
+    let isTrialing = subscriptionStatus === 'trialing';
     let stripeTrialCreatedMs: number | null = null;
     const trialConfigId = process.env.STRIPE_PORTAL_CONFIG_TRIAL;
     const paidConfigId = process.env.STRIPE_PORTAL_CONFIG_PAID;
@@ -74,7 +97,7 @@ export async function POST(request: NextRequest) {
       // Prefer Stripe as source-of-truth to avoid stale DB status routing.
       try {
         const subscriptions = await stripe.subscriptions.list({
-          customer: profile.stripe_customer_id,
+          customer: customerId,
           status: 'all',
           limit: 10,
         });
@@ -91,7 +114,7 @@ export async function POST(request: NextRequest) {
         });
       }
       const cutoffMs = getTrialImmediateCancelCutoffMs();
-      const trialUsedAtMs = profile.trial_used_at ? Date.parse(profile.trial_used_at) : NaN;
+      const trialUsedAtMs = profile?.trial_used_at ? Date.parse(profile.trial_used_at) : NaN;
       const trialStartMs = Number.isNaN(trialUsedAtMs) ? stripeTrialCreatedMs : trialUsedAtMs;
       const isNewTrialForImmediateCancel =
         isTrialing && (cutoffMs === null || (trialStartMs !== null && trialStartMs >= cutoffMs));
@@ -104,7 +127,7 @@ export async function POST(request: NextRequest) {
       let portalSession;
       try {
         portalSession = await stripe.billingPortal.sessions.create({
-          customer: profile.stripe_customer_id,
+          customer: customerId,
           return_url: returnUrl,
           ...(selectedConfigId ? { configuration: selectedConfigId } : {}),
         });
@@ -117,7 +140,7 @@ export async function POST(request: NextRequest) {
             type: stripeError?.type,
           });
           portalSession = await stripe.billingPortal.sessions.create({
-            customer: profile.stripe_customer_id,
+            customer: customerId,
             return_url: returnUrl,
           });
         } else {
@@ -142,8 +165,29 @@ export async function POST(request: NextRequest) {
           String(stripeError.message || '').toLowerCase().includes('no such customer'));
 
       if (isMissingCustomer) {
-        console.log('Invalid Stripe customer ID, clearing from profile');
-        // Clear the invalid customer ID
+        console.log('Invalid Stripe customer ID, attempting reconcile before clearing');
+        try {
+          const reconciled = await reconcileUserSubscription(
+            supabaseAdmin,
+            {
+              userId: user.id,
+              email: user.email || profile?.email,
+              knownCustomerId: null,
+            },
+            { stripe, cancelDuplicates: true, persist: true }
+          );
+
+          if (reconciled.customerId && reconciled.customerId !== customerId) {
+            const portalSession = await stripe.billingPortal.sessions.create({
+              customer: reconciled.customerId,
+              return_url: returnUrl,
+            });
+            return NextResponse.json({ url: portalSession.url });
+          }
+        } catch (reconcileError) {
+          console.error('Portal Client - reconcile after missing customer failed:', reconcileError);
+        }
+
         await supabaseAdmin
           .from('profiles')
           .update({ stripe_customer_id: null, subscription_status: 'inactive', subscription_tier: 'free' })

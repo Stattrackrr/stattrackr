@@ -6,6 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { headers } from 'next/headers';
 import { getStripe } from '@/lib/stripe';
+import {
+  findProfileForStripeCustomer,
+  reconcileUserSubscription,
+} from '@/lib/stripeCustomer';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
@@ -247,6 +251,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log('✅ Profile updated successfully for user:', userId);
   }
 
+  // Reconcile so any older duplicate customers/subs cannot leave the profile on a worse state.
+  try {
+    const stripe = getStripe();
+    await reconcileUserSubscription(
+      supabaseAdmin,
+      {
+        userId,
+        email: checkoutEmail,
+        knownCustomerId: customerId,
+      },
+      { stripe, cancelDuplicates: true, persist: true }
+    );
+  } catch (reconcileError) {
+    console.error('⚠️ Checkout completed but reconcile failed:', reconcileError);
+  }
+
   // Fire-and-forget signup push notification (never block or fail webhook flow)
   if (isPushoverConfigured()) {
     try {
@@ -271,35 +291,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
-  const subData = subscription as any;
+  const stripe = getStripe();
 
-  // Find user by customer ID
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('id, email, has_used_trial, trial_used_at')
-    .eq('stripe_customer_id', customerId)
-    .single();
+  // Resolve profile even when stripe_customer_id on the profile points elsewhere.
+  const profile = await findProfileForStripeCustomer(supabaseAdmin, stripe, customerId);
 
   if (!profile) {
     console.error('No user found for customer:', customerId);
     return;
   }
 
-  // Determine subscription tier based on status
-  const tier = ['active', 'trialing'].includes(subscription.status) ? 'pro' : 'free';
-
-  // Check if this subscription has a trial period and mark it as used
   const hasTrial = subscription.trial_start !== null && subscription.trial_end !== null;
   const isNewTrial = hasTrial && !profile.has_used_trial && subscription.status === 'trialing';
-  
-  const updateData: any = {
-    subscription_status: subscription.status,
-    subscription_tier: tier,
-    subscription_current_period_end: subData.current_period_end 
-      ? new Date(subData.current_period_end * 1000).toISOString()
-      : null,
-    stripe_subscription_id: subscription.id,
-  };
 
   // Business rule: when a free trial is canceled, remove access immediately.
   // Paid subscriptions still keep access until period end via Stripe's normal flow.
@@ -313,63 +316,99 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     isNewTrialForImmediateCancel;
 
   if (isCanceledFreeTrial) {
-    updateData.subscription_status = 'canceled';
-    updateData.subscription_tier = 'free';
-    updateData.subscription_current_period_end = new Date().toISOString();
-  }
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        subscription_status: 'canceled',
+        subscription_tier: 'free',
+        subscription_current_period_end: new Date().toISOString(),
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: customerId,
+        ...(hasTrial && !profile.has_used_trial
+          ? { has_used_trial: true, trial_used_at: new Date().toISOString() }
+          : {}),
+      })
+      .eq('id', profile.id);
 
-  // Mark trial as used if subscription has a trial and hasn't been marked yet
-  if (hasTrial && !profile.has_used_trial) {
-    updateData.has_used_trial = true;
-    updateData.trial_used_at = new Date().toISOString();
-    console.log(`🎁 Marking trial as used for user ${profile.id}`);
-    
-    // Send trial start email if this is a new trial
-    if (isNewTrial) {
-      await sendTrialStartEmail(profile.email, subscription);
+    if (error) {
+      console.error('Error updating canceled trial:', error);
+    } else {
+      console.log(
+        `Trial canceled immediately for user ${profile.id}: subscription=${subscription.id}`
+      );
     }
+    return;
   }
 
-  // Update subscription details
-  const { error } = await supabaseAdmin
-    .from('profiles')
-    .update(updateData)
-    .eq('id', profile.id);
-
-  if (error) {
-    console.error('Error updating subscription:', error);
-  } else {
-    console.log(
-      `Subscription updated for user ${profile.id}: status=${updateData.subscription_status}, tier=${updateData.subscription_tier}, trialCanceled=${isCanceledFreeTrial}, newTrialForImmediateCancel=${isNewTrialForImmediateCancel}`
+  // Always reconcile across ALL customers for this user so a past_due duplicate
+  // cannot overwrite an active subscription on another customer.
+  try {
+    const reconciled = await reconcileUserSubscription(
+      supabaseAdmin,
+      {
+        userId: profile.id,
+        email: profile.email,
+        knownCustomerId: profile.stripe_customer_id || customerId,
+      },
+      {
+        stripe,
+        cancelDuplicates: true,
+        persist: true,
+      }
     );
+
+    if (hasTrial && !profile.has_used_trial) {
+      await supabaseAdmin
+        .from('profiles')
+        .update({
+          has_used_trial: true,
+          trial_used_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id);
+      console.log(`🎁 Marking trial as used for user ${profile.id}`);
+      if (isNewTrial) {
+        await sendTrialStartEmail(profile.email, subscription);
+      }
+    }
+
+    console.log(
+      `Subscription reconciled for user ${profile.id}: status=${reconciled.profileUpdates.subscription_status}, tier=${reconciled.profileUpdates.subscription_tier}, kept=${reconciled.subscription?.id}, canceledDuplicates=${reconciled.canceledDuplicateIds.length}`
+    );
+  } catch (error) {
+    console.error('Error reconciling subscription:', error);
   }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
+  const stripe = getStripe();
 
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('id')
-    .eq('stripe_customer_id', customerId)
-    .single();
+  const profile = await findProfileForStripeCustomer(supabaseAdmin, stripe, customerId);
 
   if (!profile) {
     console.error('No user found for customer:', customerId);
     return;
   }
 
-  // Mark subscription as canceled
-  const { error } = await supabaseAdmin
-    .from('profiles')
-    .update({
-      subscription_status: 'canceled',
-      subscription_tier: 'free',
-      stripe_subscription_id: null,
-    })
-    .eq('id', profile.id);
-
-  if (error) {
+  // Reconcile instead of blindly clearing — another customer may still be entitling.
+  try {
+    const reconciled = await reconcileUserSubscription(
+      supabaseAdmin,
+      {
+        userId: profile.id,
+        email: profile.email,
+        knownCustomerId: profile.stripe_customer_id || customerId,
+      },
+      {
+        stripe,
+        cancelDuplicates: true,
+        persist: true,
+      }
+    );
+    console.log(
+      `Subscription deleted reconciled for user ${profile.id}: entitling=${reconciled.entitling}, status=${reconciled.profileUpdates.subscription_status}`
+    );
+  } catch (error) {
     console.error('Error canceling subscription:', error);
   }
 }

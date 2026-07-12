@@ -256,17 +256,22 @@ export default function HomePage() {
         },
         body: JSON.stringify({ priceId, billingCycle }),
       });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 409 && data.alreadySubscribed) {
+        window.location.href = '/props';
+        return;
+      }
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
       
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error('Response is not JSON');
       }
-      
-      const data = await response.json();
       
       if (data.url) {
         window.location.href = data.url;
