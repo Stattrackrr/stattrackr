@@ -128,6 +128,16 @@ export const sharedCache = {
       return hit.v as T;
     });
   },
+  async deleteJSON(key: string): Promise<void> {
+    if (HAS_UPSTASH) {
+      try {
+        await upstash(['DEL', key]);
+      } catch (error) {
+        warnSharedCacheFallback('redis DEL', error);
+      }
+    }
+    memory.delete(key);
+  },
   async setJSON(key: string, value: any, ttlSeconds: number): Promise<void> {
     if (HAS_UPSTASH) {
       try {

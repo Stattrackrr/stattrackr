@@ -11,6 +11,15 @@ import {
   type AflListPropRow,
 } from '@/lib/aflPlayerPropsCache';
 import { filterAflEnrichedListPayload, AFL_USER_NO_ODDS, aflEnrichedPayloadHasEligibleLiveRows } from '@/lib/combinedPropsSnapshotTypes';
+import {
+  AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY,
+  AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
+  clearAflEnrichedListCaches,
+  enrichedPayloadMatchesCurrentOddsSlate,
+  enrichedPayloadMatchesCurrentOddsSlate,
+  enrichedPayloadSlateChanged,
+  registerAflEnrichedListMemoryInvalidate,
+} from '@/lib/aflEnrichedListCache';
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
@@ -39,8 +48,6 @@ const MISS_COMPUTE_SYNC_LIMIT_NO_CRON = 50;
 const MISS_COMPUTE_BG_LIMIT_NO_CRON = 250;
 const MISS_COMPUTE_CONCURRENCY = 3;
 const AFL_ENRICH_CONTEXT_TTL_MS = 5 * 60 * 1000;
-const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v5';
-const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v5';
 // Keep the pre-enriched list warm across cron intervals so user page loads stay instant.
 // AFL odds refresh runs about every 3 hours, so this gives overlap instead of dropping cold.
 const AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS = 4 * 60 * 60;
@@ -59,6 +66,10 @@ type AflEnrichContext = {
 let aflEnrichContextCache: { expiresAt: number; value: AflEnrichContext } | null = null;
 let aflEnrichContextInFlight: Promise<AflEnrichContext> | null = null;
 let aflEnrichedPayloadMemoryCache: { expiresAt: number; payload: Record<string, unknown> } | null = null;
+
+registerAflEnrichedListMemoryInvalidate(() => {
+  aflEnrichedPayloadMemoryCache = null;
+});
 const FANTASY_POSITIONS_API_CACHE_TTL_MS = 5 * 60 * 1000;
 let fantasyPositionsApiCache:
   | {
@@ -258,6 +269,9 @@ async function shouldPersistEnrichedCache(payload: Record<string, unknown>): Pro
   if (newCount === 0) return false;
 
   const existing = await sharedCache.getJSON<Record<string, unknown>>(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY);
+  if (enrichedPayloadSlateChanged(existing, payload)) {
+    return true;
+  }
   const existingCount = enrichedPayloadRowCount(existing);
   if (existingCount > 0 && newCount < Math.max(5, Math.floor(existingCount * 0.4))) {
     return false;
@@ -265,7 +279,19 @@ async function shouldPersistEnrichedCache(payload: Record<string, unknown>): Pro
   return true;
 }
 
+async function enrichedListCacheIsCurrent(
+  payload: Record<string, unknown> | null | undefined,
+  nowMs = Date.now()
+): Promise<boolean> {
+  if (!payload || typeof payload !== 'object') return false;
+  const odds = await getAflOddsCache();
+  return enrichedPayloadMatchesCurrentOddsSlate(payload, odds?.games ?? [], nowMs);
+}
+
 async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextResponse | null> {
+  const odds = await getAflOddsCache();
+  const oddsGames = odds?.games ?? [];
+
   const rawCandidates: Array<Record<string, unknown> | null | undefined> = [];
   if (aflEnrichedPayloadMemoryCache && aflEnrichedPayloadMemoryCache.expiresAt > nowMs) {
     rawCandidates.push(aflEnrichedPayloadMemoryCache.payload);
@@ -282,8 +308,10 @@ async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextR
   rawCandidates.push(cachedPayload && typeof cachedPayload === 'object' ? cachedPayload : null);
 
   for (const raw of rawCandidates) {
+    if (!raw || !(await enrichedListCacheIsCurrent(raw, nowMs))) continue;
     const best = await pickBestEnrichedPayload(raw);
     if (!best || !aflEnrichedPayloadHasUsableStats(best) || enrichedPayloadRowCount(best) === 0) continue;
+    if (!(await enrichedListCacheIsCurrent(best, nowMs))) continue;
     if (enrichedPayloadReadyForUsers(best, nowMs)) {
       return jsonEnrichedPayload(best);
     }
@@ -293,10 +321,19 @@ async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextR
   }
 
   const stale = await getAflStaleEnrichedPayload();
-  if (stale && aflEnrichedPayloadHasUsableStats(stale) && enrichedPayloadRowCount(stale) > 0) {
+  if (
+    stale &&
+    aflEnrichedPayloadHasUsableStats(stale) &&
+    enrichedPayloadRowCount(stale) > 0 &&
+    enrichedPayloadMatchesCurrentOddsSlate(stale, oddsGames, nowMs)
+  ) {
     const staleMarked = markAflEnrichedPayloadStale(stale, 'stale_backup');
     const applyLiveCutoff = aflEnrichedPayloadHasEligibleLiveRows(staleMarked, nowMs);
     return jsonEnrichedPayload(staleMarked, AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS, applyLiveCutoff);
+  }
+
+  if (rawCandidates.some(Boolean) || stale) {
+    void clearAflEnrichedListCaches('user request — enriched list slate mismatch');
   }
 
   return null;
@@ -1008,7 +1045,12 @@ export async function GET(request: Request) {
     if (enrich && !debugStats) {
       if (aflEnrichedPayloadIsDegraded(payload)) {
         const stalePayload = await getAflStaleEnrichedPayload();
-        if (stalePayload && aflEnrichedPayloadHasUsableStats(stalePayload)) {
+        const oddsGames = (await getAflOddsCache())?.games ?? [];
+        if (
+          stalePayload &&
+          aflEnrichedPayloadHasUsableStats(stalePayload) &&
+          enrichedPayloadMatchesCurrentOddsSlate(stalePayload, oddsGames)
+        ) {
           const staleMarked = markAflEnrichedPayloadStale(stalePayload, 'live_assembly_degraded');
           return jsonEnrichedPayload(
             staleMarked,

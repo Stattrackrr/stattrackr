@@ -4,6 +4,10 @@
  */
 
 import { getAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
+import {
+  AFL_LIST_ENRICHED_STALE_CACHE_KEY,
+  AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
+} from '@/lib/aflEnrichedListCache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import sharedCache from '@/lib/sharedCache';
 
@@ -595,8 +599,10 @@ export async function listAflPlayerPropsFromCache(): Promise<{
 }
 
 /** Full enriched AFL props list (odds lines + precomputed stats) kept across cron failures. */
-export const AFL_LIST_ENRICHED_STALE_CACHE_KEY = 'afl_list_enriched_response_v3_stale';
-export const AFL_LIST_ENRICHED_STALE_SUPABASE_KEY = 'afl_props_list_enriched_v3_stale';
+export {
+  AFL_LIST_ENRICHED_STALE_CACHE_KEY,
+  AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
+} from '@/lib/aflEnrichedListCache';
 export const AFL_LIST_ENRICHED_STALE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 type AflEnrichedListPayload = Record<string, unknown>;
@@ -658,7 +664,7 @@ export async function getAflStaleEnrichedPayload(): Promise<AflEnrichedListPaylo
   const fromRedis = await sharedCache.getJSON<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_CACHE_KEY);
   if (fromRedis && aflEnrichedPayloadHasUsableStats(fromRedis)) return fromRedis;
 
-  const fromSupabase = await getNBACache<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_SUPABASE_KEY, {
+  const fromSupabase = await getNBACache<AflEnrichedListPayload>(AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY, {
     restTimeoutMs: 4000,
     jsTimeoutMs: 4000,
     quiet: true,
@@ -674,7 +680,7 @@ export async function persistAflStaleEnrichedPayload(payload: AflEnrichedListPay
   await Promise.allSettled([
     sharedCache.setJSON(AFL_LIST_ENRICHED_STALE_CACHE_KEY, payload, AFL_LIST_ENRICHED_STALE_TTL_SECONDS),
     setNBACache(
-      AFL_LIST_ENRICHED_STALE_SUPABASE_KEY,
+      AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY,
       'afl-player-props-list-enriched-stale',
       payload,
       staleMinutes,

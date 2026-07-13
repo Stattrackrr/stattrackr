@@ -1496,13 +1496,21 @@ function getSecondaryPropsCacheKey(sport: 'afl' | 'world-cup'): string {
   return sport === 'world-cup' ? WC_PROPS_CACHE_KEY : AFL_PROPS_CACHE_KEY;
 }
 
-function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolean): string {
+function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolean, refresh = false): string {
   if (sport === 'world-cup') {
     const base = '/api/world-cup/dashboard?playerPropsList=1';
-    return debugStats ? `${base}&debugStats=1` : base;
+    const params = new URLSearchParams();
+    if (debugStats) params.set('debugStats', '1');
+    if (refresh) params.set('refresh', '1');
+    const qs = params.toString();
+    return qs ? `${base}&${qs}` : base;
   }
   const base = '/api/afl/player-props/list';
-  return debugStats ? `${base}?debugStats=1` : base;
+  const params = new URLSearchParams();
+  if (debugStats) params.set('debugStats', '1');
+  if (refresh) params.set('refresh', '1');
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 const WC_PROPS_FETCH_TIMEOUT_MS = 25_000;
@@ -3442,7 +3450,7 @@ export default function NBALandingPage() {
         return inFlight.promise;
       }
       const debugStats = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('debugStats') === '1';
-      const listUrl = getSecondaryPropsListUrl(listSport, debugStats);
+      const listUrl = getSecondaryPropsListUrl(listSport, debugStats, aflPropsRetryKey > 0);
       const requestPromise = (async () => {
         if (listSport === 'world-cup') {
           const { response: listRes, payload: listData } = await fetchWorldCupPlayerPropsListDeduped();
@@ -8624,6 +8632,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                             onClick={() => {
                               userModifiedAflGamesRef.current = false;
                               secondarySkipFetchSportRef.current = null;
+                              try {
+                                sessionStorage.removeItem(getSecondaryPropsCacheKey('afl'));
+                              } catch {
+                                // Ignore
+                              }
                               setSecondaryPropsFetchComplete(false);
                               setAflPropsLoading(true);
                               setAflPropsRetryKey((k) => k + 1);

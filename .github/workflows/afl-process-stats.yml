@@ -168,30 +168,8 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      # Keep /props AFL rows visible during the long warm — refresh enriched cache before heavy work.
-      - name: Prewarm AFL enriched props list (start of workflow)
-        if: steps.check.outputs.configured == 'true'
-        continue-on-error: true
-        run: |
-          echo "🔄 Seeding enriched AFL props list cache before player logs warm..."
-          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/afl/player-props/list?enrich=true" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
-            -H "Accept: application/json" \
-            -L --max-time 360 \
-            --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-          BODY_FILE="$RUNNER_TEMP/afl-enriched-list-start-body.json"
-          echo "$RESPONSE" | sed '/HTTP_STATUS:/d' > "$BODY_FILE"
-          PROPS=$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(String(j.propsCount ?? (Array.isArray(j.data)?j.data.length:0))); } catch { process.stdout.write('0'); }" "$BODY_FILE")
-          echo "Start enriched list prewarm HTTP ${HTTP_STATUS:-?}: props=${PROPS}"
-          if [ "${HTTP_STATUS}" = "200" ] && [ "${PROPS}" -gt "0" ]; then
-            echo "✅ Enriched AFL props list seeded for props page"
-          else
-            echo "⚠️ Start enriched prewarm did not populate props (will retry at end of workflow)"
-          fi
-
-      # Player logs cache warm (Redis)
+      # Player logs cache warm (Redis) — do not prewarm enriched list here; it would re-seed
+      # last week's slate before odds/props refresh runs later in this workflow.
       - name: Warm AFL player logs cache
         if: steps.check.outputs.configured == 'true'
         run: |

@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { authorizeCronRequest } from '@/lib/cronAuth';
+import { clearAflEnrichedListCaches } from '@/lib/aflEnrichedListCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache } from '@/lib/refreshAflOdds';
 import { refreshAflPlayerPropsCache } from '@/lib/aflPlayerPropsCache';
 import { runAflPropsStatsWarm } from '@/lib/aflPropsStatsWarm';
@@ -246,6 +247,9 @@ export async function GET(request: NextRequest) {
           ppResult.error ? `error: ${ppResult.error}` : 'OK',
         );
         if (ppResult.success && result.cachePayload) {
+          if (ppResult.eventsRefreshed > 0) {
+            await clearAflEnrichedListCaches('cron props refresh completed');
+          }
           await setAflOddsCache(result.cachePayload);
         } else if (!ppResult.success) {
           console.warn(

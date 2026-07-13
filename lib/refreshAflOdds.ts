@@ -12,6 +12,7 @@ import {
   filterAflPropsEligibleGames as filterAflPropsEligibleGamesByCommence,
   isAflCommenceTimePropsEligible,
 } from '@/lib/combinedPropsSnapshotTypes';
+import { aflOddsSlateChanged, clearAflEnrichedListCaches } from '@/lib/aflEnrichedListCache';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import sharedCache from '@/lib/sharedCache';
 
@@ -272,7 +273,12 @@ export async function setAflOddsCache(payload: AflOddsCache): Promise<void> {
     // Odds API returned no upcoming events — keep the week's stored games/lines.
     if (existing?.games?.length) return;
   } else if (existing?.games?.length) {
+    if (aflOddsSlateChanged(existing.games, payload.games)) {
+      await clearAflEnrichedListCaches('odds slate changed');
+    }
     await sharedCache.setJSON(AFL_ODDS_STALE_CACHE_KEY, existing, AFL_ODDS_CACHE_TTL_SECONDS);
+  } else if (payload.games.length > 0) {
+    await clearAflEnrichedListCaches('first odds slate write');
   }
 
   await sharedCache.setJSON(AFL_ODDS_CACHE_KEY, payload, AFL_ODDS_CACHE_TTL_SECONDS);
