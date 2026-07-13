@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-13T02:19:15.919Z",
+  "generatedAt": "2026-07-13T06:54:48.933Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -8,10 +8,10 @@
     "withLogs": 587,
     "missingLogs": 191,
     "coveragePct": 75.45,
-    "eligiblePlayers": 592,
+    "eligiblePlayers": 596,
     "withLogsEligible": 574,
-    "missingEligible": 18,
-    "coveragePctEligible": 96.96
+    "missingEligible": 22,
+    "coveragePctEligible": 96.31
   },
   "leagueBaselineByPosition": {
     "DEF": {
@@ -7777,8 +7777,8 @@
       "position": "FWD",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Aidan Schubert",
@@ -7840,8 +7840,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Archer Day-Wicks",
@@ -8821,8 +8821,8 @@
       "position": "DEF",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     },
     {
       "name": "Matthew LeRay",
@@ -9478,8 +9478,8 @@
       "position": "MID",
       "status": 200,
       "error": null,
-      "likelyPlayed": false,
-      "reason": "likely_no_games_2025"
+      "likelyPlayed": true,
+      "reason": "match_or_data_gap"
     }
   ]
 }
