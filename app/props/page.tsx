@@ -1507,10 +1507,8 @@ function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolea
   }
   const base = '/api/afl/player-props/list';
   const params = new URLSearchParams();
-  // User-facing list: enrich=false returns odds lines in ~5s from per-event cache.
-  // enrich=true rebuilds the full stats payload and can exceed the 25s client timeout
-  // when the enriched Redis snapshot was cleared (e.g. new odds slate).
-  params.set('enrich', 'false');
+  // Default enrich=true serves the pre-warmed enriched Redis snapshot (~2s).
+  // Server falls back to fast per-event odds when that snapshot is cold (userFastList).
   if (debugStats) params.set('debugStats', '1');
   if (refresh) params.set('refresh', '1');
   const qs = params.toString();
@@ -3410,7 +3408,8 @@ export default function NBALandingPage() {
         return worldCupBackNavSkipFetchPending();
       }
       if (listSport === 'afl' && aflPropsMissingHistoricalStats(aflProps)) {
-        return false;
+        // Odds rows are enough for instant paint; stats backfill can run after fetch.
+        return aflProps.some((p) => !isWorldCupSoccerPropStatType(p.statType));
       }
       return true;
     };
@@ -3513,15 +3512,11 @@ export default function NBALandingPage() {
           setAflLastUpdated(result.lastUpdated ?? null);
         }
         let propsToCommit = aggregated;
-        if (
+        if (propsToCommit.length > 0) hadNonEmptyFresh = true;
+        const needsAflStatsBackfill =
           listSport === 'afl' &&
           aggregated.length > 0 &&
-          aflPropsMissingHistoricalStats(aggregated)
-        ) {
-          const backfilled = await backfillAflPropStatsBatch(aggregated);
-          if (backfilled) propsToCommit = backfilled;
-        }
-        if (propsToCommit.length > 0) hadNonEmptyFresh = true;
+          aflPropsMissingHistoricalStats(aggregated);
 
         // Retry once when empty and we never got props this run (transient failure or cache expiry)
         if (propsToCommit.length === 0 && !hadNonEmptyFresh && !cancelled && (listSport === 'afl' || listSport === 'world-cup')) {
@@ -3616,7 +3611,7 @@ export default function NBALandingPage() {
               ),
                 timestamp: Date.now(),
               };
-              if (listSport !== 'afl' || !aflPropsMissingHistoricalStats(propsToCommit)) {
+              if (listSport !== 'afl' || propsToCommit.length > 0) {
                 sessionStorage.setItem(cacheKey, JSON.stringify(toCache));
               }
             } catch {
@@ -3626,6 +3621,24 @@ export default function NBALandingPage() {
         } else if (games.length > 0) {
           setAflGames(games);
           syncSelectedAflGames(games.map((g) => g.gameId));
+        }
+        if (needsAflStatsBackfill && !cancelled) {
+          void backfillAflPropStatsBatch(aggregated).then((backfilled) => {
+            if (cancelled || secondaryListSportRef.current !== listSport || !backfilled) return;
+            commitSecondaryProps(backfilled);
+            try {
+              sessionStorage.setItem(cacheKey, JSON.stringify({
+                props: backfilled,
+                games,
+                selectedGameIds: getSelectedAflGameIdsForCache(
+                  games.length > 0 ? games.map((g) => g.gameId) : []
+                ),
+                timestamp: Date.now(),
+              }));
+            } catch {
+              // Ignore cache write (quota, etc.)
+            }
+          });
         }
       } catch (e) {
         if (!cancelled && !hadNonEmptyFresh && !hasVisibleSecondaryRows && secondaryListSportRef.current === listSport) {
