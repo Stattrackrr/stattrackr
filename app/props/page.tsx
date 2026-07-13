@@ -1507,6 +1507,10 @@ function getSecondaryPropsListUrl(sport: 'afl' | 'world-cup', debugStats: boolea
   }
   const base = '/api/afl/player-props/list';
   const params = new URLSearchParams();
+  // User-facing list: enrich=false returns odds lines in ~5s from per-event cache.
+  // enrich=true rebuilds the full stats payload and can exceed the 25s client timeout
+  // when the enriched Redis snapshot was cleared (e.g. new odds slate).
+  params.set('enrich', 'false');
   if (debugStats) params.set('debugStats', '1');
   if (refresh) params.set('refresh', '1');
   const qs = params.toString();
@@ -4058,7 +4062,7 @@ export default function NBALandingPage() {
 
       if (missingAfl && !combinedPartialAflRefetchAttemptedRef.current) {
         try {
-          const aflUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
+          const aflUrl = getSecondaryPropsListUrl('afl', debugStats);
           const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
           const aflPayload = await aflResponse.json();
           const aflResult = aggregateAflListPayload(aflPayload);
@@ -4098,7 +4102,7 @@ export default function NBALandingPage() {
         !combinedPartialAflRefetchAttemptedRef.current
       ) {
         try {
-          const aflUrl = debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list';
+          const aflUrl = getSecondaryPropsListUrl('afl', debugStats);
           const aflResponse = await fetch(aflUrl, { cache: 'no-store' });
           const aflPayload = await aflResponse.json();
           const aflResult = aggregateAflListPayload(aflPayload);
@@ -4289,7 +4293,7 @@ export default function NBALandingPage() {
                     headers: { 'Content-Type': 'application/json' },
                   })
                 ),
-            fetch(debugStats ? '/api/afl/player-props/list?debugStats=1' : '/api/afl/player-props/list', { cache: 'no-store' }),
+            fetch(getSecondaryPropsListUrl('afl', debugStats), { cache: 'no-store' }),
             wcFetchPromise,
           ]);
           const [nbaPayload, aflPayload, wcPayload] = await Promise.all([

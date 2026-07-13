@@ -331,10 +331,6 @@ async function tryServeCachedEnrichedForUsers(nowMs = Date.now()): Promise<NextR
     return jsonEnrichedPayload(staleMarked, AFL_LIST_ENRICHED_RESPONSE_CACHE_TTL_SECONDS, applyLiveCutoff);
   }
 
-  if (rawCandidates.some(Boolean) || stale) {
-    void clearAflEnrichedListCaches('user request — enriched list slate mismatch');
-  }
-
   return null;
 }
 
@@ -366,6 +362,10 @@ export async function GET(request: Request) {
       const cachedResponse = await tryServeCachedEnrichedForUsers();
       if (cachedResponse) return cachedResponse;
     }
+
+    // User requests without a warm enriched snapshot: serve fast odds rows from per-event cache.
+    // Full enrich (stats + DvP assembly) is cron-only — it exceeds mobile/serverless timeouts.
+    const userFastList = cacheOnly && enrich && !debugStats;
 
     // Single source of truth for cron/debug: get games from the Odds API.
     // Normal user requests are fast cache reads only.
@@ -478,7 +478,7 @@ export async function GET(request: Request) {
     }));
     const rowsWithCanonical = rows;
 
-    if (!enrich) {
+    if (!enrich || userFastList) {
       const oddsCacheEnrich = await getAflOddsCache();
       const seasonEnrich = new Date().getFullYear();
       const gamesCountEnrich = gamesPayload.length;
@@ -499,6 +499,7 @@ export async function GET(request: Request) {
         _meta: {
           rowsFromList: rowsWithCanonical.length,
           enrich: false,
+          fastUserList: userFastList || undefined,
           canonicalUsed: usedCanonicalGames,
           canonicalError: canonicalError ?? undefined,
         },
