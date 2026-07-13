@@ -2092,23 +2092,18 @@ export default function NBALandingPage() {
     let noOdds = listData?.noAflOdds === true || listData?.noWorldCupOdds === true;
     let ingestMessage =
       typeof listData?.ingestMessage === 'string' ? listData.ingestMessage : undefined;
-    const staleSnapshot =
-      listData?._meta &&
-      typeof listData._meta === 'object' &&
-      (listData._meta as { stale?: unknown }).stale === true;
 
     if (sport === 'afl') {
       const live = applyLiveAflPropsCutoff(aggregated, games);
       finalGames = live.games;
       finalAggregated = live.props;
-      if (live.noAflOdds) {
-        if (staleSnapshot && aggregated.length > 0) {
-          finalGames = games;
-          finalAggregated = aggregated;
-        } else {
-          noOdds = true;
-          ingestMessage = live.ingestMessage ?? AFL_USER_NO_ODDS;
-        }
+      // Never resurrect stale rows past the live kickoff window — that leaves ingestMessage
+      // saying "Fetched N stats" while the UI filters every row out (empty list + Try again).
+      if (live.noAflOdds || live.props.length === 0) {
+        noOdds = true;
+        ingestMessage = AFL_USER_NO_ODDS;
+      } else if (typeof listData?.ingestMessage === 'string') {
+        ingestMessage = listData.ingestMessage;
       }
     }
 
@@ -2921,6 +2916,8 @@ export default function NBALandingPage() {
                   setAflGames([]);
                   selectedAflGamesRef.current = new Set();
                   setSelectedAflGames(new Set());
+                  // Stale session cache (e.g. last round's games) — refetch instead of skipping network.
+                  restoredAflCache = false;
                 } else {
                   setAflProps(liveAfl.props);
                   const matchedGames = gamesMatchingProps(liveAfl.props, liveAfl.games);
@@ -8618,7 +8615,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       liveEligibleAflPropsCount === 0 ? (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium max-w-lg">
-                            {aflIngestMessage ?? AFL_USER_NO_ODDS}
+                            {aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
+                              ? AFL_USER_NO_ODDS
+                              : (aflIngestMessage ?? AFL_USER_NO_ODDS)}
                           </p>
                           <button
                             type="button"
