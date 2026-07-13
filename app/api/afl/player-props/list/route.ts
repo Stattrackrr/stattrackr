@@ -16,7 +16,6 @@ import {
   AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY,
   clearAflEnrichedListCaches,
   enrichedPayloadMatchesCurrentOddsSlate,
-  enrichedPayloadMatchesCurrentOddsSlate,
   enrichedPayloadSlateChanged,
   registerAflEnrichedListMemoryInvalidate,
 } from '@/lib/aflEnrichedListCache';
