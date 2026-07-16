@@ -60,8 +60,12 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
     home_players: entriesFor(home, position),
     away_players: entriesFor(away, position),
   })).filter((row) => row.home_players.length || row.away_players.length);
+  // FootyInfo uses 19 for interchange and 20 for emergencies. Do not merge
+  // emergencies into the bench: the official lineup sheet presents them separately.
   const bench = (players: typeof home) =>
-    players.filter((player) => (player.positionSlot || 99) >= 19).map((player) => player.playerName);
+    players.filter((player) => player.positionSlot === 19).map((player) => player.playerName);
+  const emergencies = (players: typeof home) =>
+    players.filter((player) => player.positionSlot === 20).map((player) => player.playerName);
   const changes = (side: 'home_stats' | 'away_stats', key: 'player_ins' | 'player_outs') =>
     (score?.meta?.[side]?.[key] || []).map((player) => String(player.n || '').trim()).filter(Boolean);
   return {
@@ -75,7 +79,7 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
     interchange: { home: bench(home), away: bench(away) },
     ins: { home: changes('home_stats', 'player_ins'), away: changes('away_stats', 'player_ins') },
     outs: { home: changes('home_stats', 'player_outs'), away: changes('away_stats', 'player_outs') },
-    emergencies: { home: [], away: [] },
+    emergencies: { home: emergencies(home), away: emergencies(away) },
     average_attributes: null,
     total_players_by_games: null,
   };
