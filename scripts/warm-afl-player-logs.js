@@ -170,7 +170,7 @@ async function warmOneAttempt(player, season, forceFetch = false) {
   });
   if (forceFetch) params.set('force_fetch', '1');
 
-  const headers = { Accept: 'application/json' };
+  const headers = { Accept: 'application/json', 'X-AFL-Cache-Warm': '1' };
   if (cronSecret) {
     headers.Authorization = `Bearer ${cronSecret}`;
     headers['X-Cron-Secret'] = cronSecret;
