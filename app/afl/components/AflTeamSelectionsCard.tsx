@@ -53,15 +53,6 @@ function toPlayerEntry(p: string | PlayerEntry): PlayerEntry {
   return typeof p === 'string' ? { name: p } : { name: p.name, number: p.number };
 }
 
-/** Opposite end of ground: defending team's FB = attacking team's FF, etc. Used for 2nd line label. */
-function oppositePositionLabel(pos: string): string {
-  if (pos === 'FB') return 'FF';
-  if (pos === 'FF') return 'FB';
-  if (pos === 'HB') return 'HF';
-  if (pos === 'HF') return 'HB';
-  return pos; // C stays C
-}
-
 /** Normalize name for comparison: lowercase, collapse spaces, remove punctuation. */
 function normalizeNameForMatch(name: string): string {
   return (name || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -412,11 +403,9 @@ export function AflTeamSelectionsCard({
                   {hasFieldRows ? (
                     ovalRows.map((row, ri) => {
                       const isEndOfPositionPair = (ri + 1) % 2 === 0 && ri < ovalRows.length - 1;
-                      const isSecondLineInPair = ri % 2 === 1;
-                      const positionLabel = isSecondLineInPair ? oppositePositionLabel(row.position) : row.position;
                       return (
                       <div key={ri} className={`flex items-center justify-start sm:justify-center gap-1 sm:gap-1.5 min-[1520px]:gap-2 flex-shrink-0 w-full -ml-3 sm:ml-0 ${isEndOfPositionPair ? 'mb-3 sm:mb-4 min-[1520px]:mb-5 min-[1600px]:mb-6 py-1 sm:py-1.5 min-[1520px]:py-2' : 'py-0 sm:py-0.5'}`}>
-                        <span className="flex-shrink-0 text-sm sm:text-xs min-[1520px]:text-sm font-bold w-8 sm:w-7 min-[1520px]:w-8 text-purple-300">{positionLabel}</span>
+                        <span className="flex-shrink-0 text-sm sm:text-xs min-[1520px]:text-sm font-bold w-8 sm:w-7 min-[1520px]:w-8 text-purple-300">{row.position}</span>
                         <div className="grid grid-cols-3 gap-x-0.5 sm:gap-x-1 min-[1520px]:gap-x-1 min-[1600px]:gap-x-1 gap-y-0 min-w-0 flex-1 justify-items-center w-[min(100%,13.5rem)] sm:w-[min(100%,16.5rem)] min-[1520px]:w-[min(100%,19.5rem)] min-[1600px]:w-[min(100%,22.5rem)]" role="group" aria-label={`${row.position} ${row.isHome ? homeTeam : awayTeam}`}>
                           {row.players.slice(0, 3).map((p, i) => (
                             <PlayerChip key={i} name={p.name} number={p.number} isHome={row.isHome} teamColor={row.isHome ? homeColor : awayColor} isDark={false} uniformWidth highlight={lineupNameMatchesSelected(p.name, selectedPlayerName)} />
