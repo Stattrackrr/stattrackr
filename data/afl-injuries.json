@@ -1,33 +1,9 @@
 {
-  "generatedAt": "2026-07-16T15:40:30.618Z",
+  "generatedAt": "2026-07-16T17:22:50.416Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 340,
+  "injuryCount": 330,
   "injuries": [
-    {
-      "team": "Geelong Cats",
-      "player": "Gryan Miers",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "active",
-      "returning": "rest of the home and away season"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Shaun Mannagh",
-      "injury": "active",
-      "returning": "TBC"
-    },
     {
       "team": "Adelaide Crows",
       "player": "Taylor Walker",
@@ -360,30 +336,6 @@
     },
     {
       "team": "Geelong Cats",
-      "player": "Jack Henry",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mark O'Connor",
-      "injury": "active",
-      "returning": "Test"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Patrick Dangerfield",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Gryan Miers",
-      "injury": "active",
-      "returning": "Thursday night"
-    },
-    {
-      "team": "Geelong Cats",
       "player": "Jeremy Cameron",
       "injury": "active",
       "returning": "TBA"
@@ -403,12 +355,6 @@
     {
       "team": "GWS Giants",
       "player": "Josaia Delana",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mark O'Connor",
       "injury": "active",
       "returning": "active"
     },
@@ -567,12 +513,6 @@
       "player": "Tim English",
       "injury": "active",
       "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mitchell Edwards",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
