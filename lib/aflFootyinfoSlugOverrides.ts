@@ -5,6 +5,8 @@ const AFL_FOOTYINFO_SLUG_OVERRIDES: Record<string, string[]> = {
   'tom lynch': ['tom-lynch-richmond', 'thomas-lynch'],
   'bobby hill': ['bobby-hill', 'ian-hill'],
   'matthew kennedy': ['matthew-kennedy'],
+  // League/player-props data uses Zachary while FootyInfo publishes Zach.
+  'zachary merrett': ['zach-merrett'],
   'bailey j williams': ['bailey-williams', 'bailey-j-williams'],
   'bailey j. williams': ['bailey-williams', 'bailey-j-williams'],
 };
