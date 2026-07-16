@@ -28,7 +28,8 @@ export type TeamSelectionsRoundResponse = {
 };
 
 const TTL_MS = 1000 * 60 * 15;
-let cached: { expiresAt: number; data: TeamSelectionsRoundResponse } | null = null;
+const TEAM_SELECTIONS_CACHE_SCHEMA = 'v3';
+let cached: { schema: string; expiresAt: number; data: TeamSelectionsRoundResponse } | null = null;
 let inFlight: Promise<TeamSelectionsRoundResponse> | null = null;
 const key = (value: string | null | undefined) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -62,8 +63,13 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
   })).filter((row) => row.home_players.length || row.away_players.length);
   // FootyInfo uses 19 for interchange and 20 for emergencies. Do not merge
   // emergencies into the bench: the official lineup sheet presents them separately.
+  // Some provisional FootyInfo sheets include an extended slot-19 list; the
+  // AFL interchange is capped at five players per team.
   const bench = (players: typeof home) =>
-    players.filter((player) => player.positionSlot === 19).map((player) => player.playerName);
+    players
+      .filter((player) => player.positionSlot === 19)
+      .slice(0, 5)
+      .map((player) => player.playerName);
   const emergencies = (players: typeof home) =>
     players.filter((player) => player.positionSlot === 20).map((player) => player.playerName);
   const changes = (side: 'home_stats' | 'away_stats', key: 'player_ins' | 'player_outs') =>
@@ -91,7 +97,7 @@ export async function GET(request: Request) {
   const teamParam = url.searchParams.get('team');
   const opponentParam = url.searchParams.get('opponent');
   const season = Number(url.searchParams.get('season') || new Date().getFullYear());
-  if (!refresh && cached && cached.expiresAt > Date.now()) {
+  if (!refresh && cached?.schema === TEAM_SELECTIONS_CACHE_SCHEMA && cached.expiresAt > Date.now()) {
     return response(cached.data, teamParam, opponentParam);
   }
   if (!inFlight || refresh) {
@@ -112,7 +118,7 @@ export async function GET(request: Request) {
   } finally {
     inFlight = null;
   }
-  cached = { expiresAt: Date.now() + TTL_MS, data };
+  cached = { schema: TEAM_SELECTIONS_CACHE_SCHEMA, expiresAt: Date.now() + TTL_MS, data };
   return response(data, teamParam, opponentParam);
 }
 
