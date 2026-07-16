@@ -37,6 +37,32 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
   const away = score?.away || [];
   const homeTeam = footyinfoNameToOfficial(match.home_team_full) || footyinfoAbbrevToOfficial(match.home_team) || match.home_team_full || match.home_team;
   const awayTeam = footyinfoNameToOfficial(match.away_team_full) || footyinfoAbbrevToOfficial(match.away_team) || match.away_team_full || match.away_team;
+  const slotPosition = (slot: number) => {
+    if (slot >= 1 && slot <= 3) return 'FB';
+    if (slot <= 6) return 'HB';
+    if (slot <= 9) return 'C';
+    if (slot <= 12) return 'HF';
+    if (slot <= 15) return 'FF';
+    if (slot <= 18) return 'Fol';
+    return null;
+  };
+  const entriesFor = (players: typeof home, position: string): PlayerEntry[] =>
+    players
+      .filter((player) => slotPosition(player.positionSlot || 0) === position)
+      .sort((a, b) => (a.positionSlot || 0) - (b.positionSlot || 0))
+      .map((player) => ({
+        name: player.playerName,
+        ...(player.guernsey != null ? { number: String(player.guernsey) } : {}),
+      }));
+  const fieldPositions: PositionRow[] = ['FB', 'HB', 'C', 'HF', 'FF', 'Fol'].map((position) => ({
+    position,
+    home_players: entriesFor(home, position),
+    away_players: entriesFor(away, position),
+  })).filter((row) => row.home_players.length || row.away_players.length);
+  const bench = (players: typeof home) =>
+    players.filter((player) => (player.positionSlot || 99) >= 19).map((player) => player.playerName);
+  const changes = (side: 'home_stats' | 'away_stats', key: 'player_ins' | 'player_outs') =>
+    (score?.meta?.[side]?.[key] || []).map((player) => String(player.n || '').trim()).filter(Boolean);
   return {
     url: match.slug ? `https://www.footyinfo.com/match/${match.slug}` : `https://www.footyinfo.com/match/${match.id}`,
     title: null,
@@ -44,12 +70,10 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
     match: `${homeTeam} v ${awayTeam}`,
     home_team: homeTeam,
     away_team: awayTeam,
-    // FootyInfo's public match API supplies selected player lists but not
-    // positional slots. Do not invent a field layout from list order.
-    positions: [],
-    interchange: { home: home.map((p) => p.playerName), away: away.map((p) => p.playerName) },
-    ins: { home: [], away: [] },
-    outs: { home: [], away: [] },
+    positions: fieldPositions,
+    interchange: { home: bench(home), away: bench(away) },
+    ins: { home: changes('home_stats', 'player_ins'), away: changes('away_stats', 'player_ins') },
+    outs: { home: changes('home_stats', 'player_outs'), away: changes('away_stats', 'player_outs') },
     emergencies: { home: [], away: [] },
     average_attributes: null,
     total_players_by_games: null,

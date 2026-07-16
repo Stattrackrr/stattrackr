@@ -26,7 +26,18 @@ export type FootyinfoMatchMeta = {
   as?: number;
   sts?: string;
   st?: string;
+  home_stats?: { player_stats?: FootyinfoLineupPlayer[]; player_ins?: FootyinfoLineupChange[]; player_outs?: FootyinfoLineupChange[] };
+  away_stats?: { player_stats?: FootyinfoLineupPlayer[]; player_ins?: FootyinfoLineupChange[]; player_outs?: FootyinfoLineupChange[] };
 };
+
+export type FootyinfoLineupPlayer = {
+  n?: string;
+  no?: number;
+  pos?: number;
+  pi?: number;
+};
+
+export type FootyinfoLineupChange = { n?: string; pi?: number; new?: boolean; rea?: string | null };
 
 export async function fetchFootyinfoMatchMeta(
   matchId: number
@@ -56,6 +67,7 @@ export type FootyinfoBoxScorePlayer = {
   hitouts: number;
   percent_played: number | null;
   teamOfficial: string;
+  positionSlot: number | null;
 };
 
 type Cell = { value?: unknown; linkSlug?: string; linkId?: number };
@@ -99,9 +111,34 @@ function parseBoxSide(
         return Number.isFinite(n) ? n : null;
       })(),
       teamOfficial,
+      positionSlot: null,
     });
   }
   return out;
+}
+
+function parsePublishedLineup(
+  players: FootyinfoLineupPlayer[] | undefined,
+  teamOfficial: string
+): FootyinfoBoxScorePlayer[] {
+  return (players ?? [])
+    .map((player) => ({
+      playerName: String(player.n || '').trim(),
+      playerSlug: null,
+      guernsey: Number.isFinite(Number(player.no)) ? Number(player.no) : null,
+      disposals: 0,
+      kicks: 0,
+      handballs: 0,
+      marks: 0,
+      tackles: 0,
+      goals: 0,
+      behinds: 0,
+      hitouts: 0,
+      percent_played: null,
+      teamOfficial,
+      positionSlot: Number.isFinite(Number(player.pos)) ? Number(player.pos) : null,
+    }))
+    .filter((player) => player.playerName);
 }
 
 export async function fetchFootyinfoMatchBoxScore(matchId: number): Promise<{
@@ -127,7 +164,13 @@ export async function fetchFootyinfoMatchBoxScore(matchId: number): Promise<{
     'Away';
   return {
     meta,
-    home: parseBoxSide(stats.data.home, homeOfficial),
-    away: parseBoxSide(stats.data.away, awayOfficial),
+    home: (() => {
+      const published = parsePublishedLineup(meta?.home_stats?.player_stats, homeOfficial);
+      return published.length ? published : parseBoxSide(stats.data.home, homeOfficial);
+    })(),
+    away: (() => {
+      const published = parsePublishedLineup(meta?.away_stats?.player_stats, awayOfficial);
+      return published.length ? published : parseBoxSide(stats.data.away, awayOfficial);
+    })(),
   };
 }
