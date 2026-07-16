@@ -57,6 +57,7 @@ export type FootyinfoInjury = {
   status: string;
   detail: string;
   estimatedReturn: string | null;
+  firstReportedAt: string | null;
 };
 
 export async function fetchFootyinfoInjuries(): Promise<FootyinfoInjury[]> {
@@ -68,12 +69,15 @@ export async function fetchFootyinfoInjuries(): Promise<FootyinfoInjury[]> {
       status?: string;
       injury?: string;
       detail?: string;
+      injury_type_label?: string;
+      description?: string;
       estimated_return?: string | null;
       estimatedReturn?: string | null;
+      first_reported_at?: string | null;
     }>
   >('/injuries');
   if (!res.ok || !Array.isArray(res.data)) return [];
-  return res.data.map((row) => {
+  const injuries = res.data.map((row) => {
     const teamOfficial =
       footyinfoNameToOfficial(row.team?.name) ||
       footyinfoAbbrevToOfficial(row.team?.abbrev) ||
@@ -85,10 +89,25 @@ export async function fetchFootyinfoInjuries(): Promise<FootyinfoInjury[]> {
       playerSlug: row.player?.slug || null,
       teamOfficial,
       status: row.status || '',
-      detail: row.injury || row.detail || '',
+      detail: row.injury || row.detail || row.injury_type_label || row.description || '',
       estimatedReturn: row.estimated_return ?? row.estimatedReturn ?? null,
+      firstReportedAt: row.first_reported_at ?? null,
     };
   });
+  // FootyInfo may retain multiple active reports for one player. Publish only
+  // the newest report so consumers receive one current injury per player/team.
+  return [...injuries.reduce((latest, injury) => {
+    const key = `${injury.teamOfficial.toLowerCase()}|${injury.playerSlug || injury.playerName.toLowerCase()}`;
+    const existing = latest.get(key);
+    if (
+      !existing ||
+      Date.parse(injury.firstReportedAt || '') > Date.parse(existing.firstReportedAt || '') ||
+      (!Number.isFinite(Date.parse(existing.firstReportedAt || '')) && injury.id > existing.id)
+    ) {
+      latest.set(key, injury);
+    }
+    return latest;
+  }, new Map<string, FootyinfoInjury>()).values()];
 }
 
 export type LeaguePlayerStatsRow = {
