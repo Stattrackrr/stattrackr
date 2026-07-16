@@ -34,7 +34,9 @@ function nowMs(): number {
 }
 
 export function isAflPlayerLogsCacheEnabled(): boolean {
-  return hasRemoteCache;
+  // The process-local cache is still valuable in development and on a warm
+  // serverless instance even when Upstash is not configured.
+  return true;
 }
 
 function normalizeAflPlayerNameForMatchLocal(name: string): string {

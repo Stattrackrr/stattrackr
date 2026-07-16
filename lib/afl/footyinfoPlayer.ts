@@ -307,15 +307,38 @@ export async function fetchFootyInfoPlayerGameLogs(
   player_name: string;
   slug: string | null;
 } | null> {
-  const slug = await resolveFootyinfoPlayerSlug(playerName);
+  const candidates = [
+    ...getAflFootyinfoSlugOverridesForName(playerName),
+    footyinfoPlayerSlug(playerName),
+  ].filter(Boolean);
+  let slug = candidates[0] || await resolveFootyinfoPlayerSlug(playerName);
   if (!slug) return null;
 
-  const seasonId = await resolveFootyinfoSeasonId(season);
+  const [seasonId, initialProfile] = await Promise.all([
+    resolveFootyinfoSeasonId(season),
+    fetchFootyinfoPlayerProfile(slug),
+  ]);
   if (!seasonId) return null;
 
-  const profile = await fetchFootyinfoPlayerProfile(slug);
-  const path = `/player/${encodeURIComponent(slug)}/game_logs?columns=all&season_id=${seasonId}&competition_type_id=1`;
-  const res = await fetchFootyinfoJson<GameLogsPayload>(path);
+  const fetchLogs = (playerSlug: string) =>
+    fetchFootyinfoJson<GameLogsPayload>(
+      `/player/${encodeURIComponent(playerSlug)}/game_logs?columns=all&season_id=${seasonId}&competition_type_id=1`
+    );
+  let profile = initialProfile;
+  let res = await fetchLogs(slug);
+  // Slugs are normally deterministic. Only perform the slower validation and
+  // search fallback when FootyInfo rejects the direct player request.
+  if (!res.ok) {
+    const resolvedSlug = await resolveFootyinfoPlayerSlug(playerName);
+    if (!resolvedSlug || resolvedSlug === slug) return null;
+    slug = resolvedSlug;
+    const [resolvedProfile, resolvedLogs] = await Promise.all([
+      fetchFootyinfoPlayerProfile(slug),
+      fetchLogs(slug),
+    ]);
+    profile = resolvedProfile;
+    res = resolvedLogs;
+  }
   if (!res.ok) return null;
 
   const rows = res.data.game_logs?.rows ?? [];
@@ -338,7 +361,7 @@ export async function fetchFootyInfoPlayerGameLogs(
   ];
 
   // Parallel match meta for dates/results (shared process cache across warm).
-  const concurrency = 8;
+  const concurrency = 20;
   for (let i = 0; i < matchIds.length; i += concurrency) {
     const chunk = matchIds.slice(i, i + concurrency);
     await Promise.all(
