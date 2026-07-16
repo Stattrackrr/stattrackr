@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-07-16T19:16:37.892Z",
+  "generatedAt": "2026-07-16T21:05:39.026Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 207,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Lachie Schultz",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Darcy Moore",
+      "injury": "active",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jamie Elliott",
+      "injury": "active",
+      "returning": "Season"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Taylor Walker",
@@ -45,12 +69,6 @@
       "player": "Jack Martin",
       "injury": "Soreness",
       "returning": "1 Week"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Lachie Schultz",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -122,12 +140,6 @@
       "team": "Western Bulldogs",
       "player": "Laitham Vandermeer",
       "injury": "Hamstring",
-      "returning": "Test"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Calf",
       "returning": "Test"
     },
     {
@@ -737,12 +749,6 @@
       "returning": "Season"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Darcy Moore",
-      "injury": "Knee",
-      "returning": "Potentially miss remainder of the season"
-    },
-    {
       "team": "Gold Coast Suns",
       "player": "Lachlan Gulbin",
       "injury": "Hand",
@@ -1064,12 +1070,6 @@
       "team": "Carlton Blues",
       "player": "Matthew Carroll",
       "injury": "Knee",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jamie Elliott",
-      "injury": "ACL",
       "returning": "Season"
     },
     {

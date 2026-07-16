@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T19:17:01.064Z",
+  "generatedAt": "2026-07-16T21:06:01.730Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -6640,8 +6640,8 @@
       "name": "Archie Roberts",
       "team": "Essendon",
       "position": "DEF",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },
@@ -6892,8 +6892,8 @@
       "name": "Billy Wilson",
       "team": "Carlton",
       "position": "DEF",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },
