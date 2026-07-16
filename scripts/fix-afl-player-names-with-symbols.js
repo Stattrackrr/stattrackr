@@ -177,7 +177,7 @@ async function main() {
   console.log('Loading league player stats...');
   let leagueFiles = loadLeagueStatsFiles();
   if (leagueFiles.length === 0) {
-    console.log('No afl-league-player-stats-*.json found. Run: npm run fetch:footywire-league-player-stats');
+    console.log('No afl-league-player-stats-*.json found. Run: npm run fetch:footyinfo-league-player-stats');
     process.exit(1);
   }
   if (seasonArg) {

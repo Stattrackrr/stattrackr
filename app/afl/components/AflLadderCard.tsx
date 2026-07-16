@@ -154,7 +154,7 @@ export function AflLadderCard({
   if (!teams.length) {
     return (
       <div className="flex items-center justify-center min-h-[160px] text-sm text-gray-500 dark:text-gray-400">
-        No ladder data. Run: npm run fetch:footywire-ladder
+        No ladder data. Run: npm run fetch:footyinfo-ladder
       </div>
     );
   }

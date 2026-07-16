@@ -5,7 +5,7 @@ import { readAflDataJsonFile } from '@/lib/readAflDataJson';
 const CURRENT_SEASON = process.env.AFL_CURRENT_SEASON || String(new Date().getFullYear());
 const SUPPORTED_SEASONS = [2026, 2025, 2024] as const;
 
-/** Read cached team rankings. Run scripts/fetch-footywire-team-rankings.js to refresh. */
+/** Read the committed FootyInfo team rankings snapshot. */
 function readCachedTeamRankings(season: number, type: 'ta' | 'oa' = 'ta') {
   const fileFor = (which: 'primary' | 'legacy'): string | null => {
     if (which === 'primary') {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       });
     }
     return NextResponse.json(
-      { error: 'Team rankings not found. Run: npm run fetch:footywire-team-rankings' },
+      { error: 'Team rankings not found. Refresh the FootyInfo weekly data pipeline.' },
       { status: 404 }
     );
   }

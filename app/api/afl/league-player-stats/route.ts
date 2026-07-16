@@ -20,7 +20,7 @@ export type LeaguePlayerStatRow = {
   rebound_50s: number;
 };
 
-/** Read cached league player stats. Run scripts/fetch-footywire-league-player-stats.js to refresh. */
+/** Read the committed FootyInfo league player stats snapshot. */
 function readCachedLeaguePlayerStats(season: number): { season: number; players: LeaguePlayerStatRow[] } | null | 'corrupt' {
   const fileName =
     season === 2026
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       });
     }
     return NextResponse.json(
-      { error: 'League player stats not found. Run: npm run fetch:footywire-league-player-stats' },
+      { error: 'League player stats not found. Run: npm run fetch:footyinfo-league-player-stats' },
       { status: 404 }
     );
   }

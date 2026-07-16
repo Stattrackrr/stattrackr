@@ -22,7 +22,6 @@ try {
 
 const fs = require('fs');
 const path = require('path');
-const AFL_TABLES_BASE = 'https://afltables.com';
 const DEPTH_ROLE_FALLBACK_BY_POSITION = {
   DEF: 'gen_def',
   MID: 'ins_mid',
@@ -192,23 +191,13 @@ function toDisplayName(lastFirst) {
 }
 
 async function fetchSeasonTotalsPlayers(season) {
-  const url = `${AFL_TABLES_BASE}/afl/stats/${season}a.html`;
-  const res = await fetch(url);
-  if (!res.ok) return new Set();
-  const html = await res.text();
-  const names = new Set();
-  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  let rowMatch = rowRegex.exec(html);
-  while (rowMatch) {
-    const rowHtml = rowMatch[1];
-    const firstLink = rowHtml.match(/<a[^>]+href=['"][^'"]*players\/[A-Za-z0-9]\/[^'"]+\.html['"][^>]*>([\s\S]*?)<\/a>/i);
-    if (firstLink?.[1]) {
-      const name = toDisplayName(htmlToText(firstLink[1]));
-      if (name) names.add(normalizeText(name));
-    }
-    rowMatch = rowRegex.exec(html);
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`), 'utf8');
+    const data = JSON.parse(raw);
+    return new Set((data.players || []).map((player) => normalizeText(player?.name || '')).filter(Boolean));
+  } catch {
+    return new Set();
   }
-  return names;
 }
 
 async function fetchSeasonTeamGameCounts(season) {
@@ -244,37 +233,7 @@ async function fetchSeasonTeamGameCounts(season) {
     if (fromRankings) return fromRankings;
   }
 
-  const urls = [
-    `${AFL_TABLES_BASE}/afl/seas/${season}.html`,
-    `${AFL_TABLES_BASE}/afl/seas/${season}a.html`,
-  ];
-  let html = '';
-  for (const url of urls) {
-    const res = await fetch(url);
-    if (res.ok) {
-      html = await res.text();
-      if (html) break;
-    }
-  }
-  if (!html) return new Map();
-
-  const counts = new Map();
-  const linkRegex = /<a[^>]+href=['"]([^'"]*\/games\/\d+\/[^'"]+\.html)['"][^>]*>([\s\S]*?)<\/a>/gi;
-  let m = linkRegex.exec(html);
-  while (m) {
-    const text = htmlToText(m[2]);
-    const vIdx = text.toLowerCase().indexOf(' v ');
-    if (vIdx > 0) {
-      const homeRaw = text.slice(0, vIdx).replace(/\d[\d.\s-]*$/, '').trim();
-      const awayRaw = text.slice(vIdx + 3).replace(/\d[\d.\s-]*$/, '').trim();
-      const home = normalizeTeam(homeRaw);
-      const away = normalizeTeam(awayRaw);
-      if (home) counts.set(home, (counts.get(home) || 0) + 1);
-      if (away) counts.set(away, (counts.get(away) || 0) + 1);
-    }
-    m = linkRegex.exec(html);
-  }
-  return counts;
+  return new Map();
 }
 
 const TEAM_ALIASES = {

@@ -1001,7 +1001,7 @@ function normalizeNbaTeam(team: string): string {
   return NBA_TEAM_ABBR_ALIASES[normalizedAbbr] || normalizedAbbr;
 }
 
-const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v5';
+const AFL_PROPS_CACHE_KEY = 'afl_props_list_cache_v6';
 const WC_PROPS_CACHE_KEY = 'wc_props_list_cache_v9';
 const WC_PROPS_MIN_DECIMAL_ODDS = 1.6;
 
@@ -1085,14 +1085,23 @@ function aflPropHasHistoricalStats(row: {
   return row.last5Avg != null || row.last10Avg != null || row.seasonAvg != null;
 }
 
+/** Match server AFL_ENRICHED_STATS_MIN_COVERAGE — partial L5 (e.g. 30%) must still refetch. */
+const AFL_HISTORICAL_STATS_MIN_COVERAGE = 0.8;
+
 function countAflPropsWithHistoricalStats(props: PlayerProp[]): number {
   return props.filter(isAflCombinedListProp).filter(aflPropHasHistoricalStats).length;
+}
+
+function aflPropsHistoricalStatsCoverage(props: PlayerProp[]): number {
+  const listed = props.filter(isAflCombinedListProp);
+  if (listed.length === 0) return 1;
+  return countAflPropsWithHistoricalStats(listed) / listed.length;
 }
 
 function aflPropsMissingHistoricalStats(props: PlayerProp[]): boolean {
   const listed = props.filter(isAflCombinedListProp);
   if (listed.length === 0) return false;
-  return countAflPropsWithHistoricalStats(listed) === 0;
+  return aflPropsHistoricalStatsCoverage(listed) < AFL_HISTORICAL_STATS_MIN_COVERAGE;
 }
 
 async function backfillAflPropStatsBatch(props: PlayerProp[]): Promise<PlayerProp[] | null> {
@@ -1454,9 +1463,9 @@ function selectedGameIdsForProps(
 function propsRowShowsUnderOdds(rowSport: 'nba' | 'afl' | 'world-cup'): boolean {
   return rowSport !== 'world-cup';
 }
-const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v3';
-const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v3';
-const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v3';
+const COMBINED_PROPS_CACHE_KEY = 'combined_props_snapshot_cache_v4';
+const COMBINED_PROPS_LS_KEY = 'combined_props_snapshot_ls_v4';
+const COMBINED_PROPS_LS_TS_KEY = 'combined_props_snapshot_ls_ts_v4';
 const COMBINED_PROPS_LS_TTL_MS = 30 * 60 * 1000;
 
 type CombinedSnapshotBrowserCache = CombinedPropsSnapshotResponse & {
@@ -2196,15 +2205,43 @@ export default function NBALandingPage() {
         if (snapshot?.afl?.noAflOdds) {
           sessionStorage.removeItem(AFL_PROPS_CACHE_KEY);
         } else if (aflPropsForCache.length > 0 || aflGamesForCache.length > 0) {
-          sessionStorage.setItem(
-            AFL_PROPS_CACHE_KEY,
-            JSON.stringify({
-              props: aflPropsForCache,
-              games: aflGamesForCache,
-              selectedGameIds,
-              timestamp: now,
-            })
-          );
+          let writeAflCache = true;
+          try {
+            const existingRaw = sessionStorage.getItem(AFL_PROPS_CACHE_KEY);
+            if (existingRaw) {
+              const existingParsed = JSON.parse(existingRaw) as { props?: PlayerProp[] };
+              const existingProps = Array.isArray(existingParsed?.props) ? existingParsed.props : [];
+              const existingCoverage = aflPropsHistoricalStatsCoverage(existingProps);
+              const incomingCoverage = aflPropsHistoricalStatsCoverage(aflPropsForCache);
+              if (
+                existingCoverage >= AFL_HISTORICAL_STATS_MIN_COVERAGE &&
+                incomingCoverage < existingCoverage
+              ) {
+                writeAflCache = false;
+              }
+            }
+          } catch {
+            // keep writeAflCache true
+          }
+          // Never lock the AFL tab onto a mostly-N/A snapshot.
+          if (
+            writeAflCache &&
+            aflPropsForCache.some(isAflCombinedListProp) &&
+            aflPropsHistoricalStatsCoverage(aflPropsForCache) < AFL_HISTORICAL_STATS_MIN_COVERAGE
+          ) {
+            writeAflCache = false;
+          }
+          if (writeAflCache) {
+            sessionStorage.setItem(
+              AFL_PROPS_CACHE_KEY,
+              JSON.stringify({
+                props: aflPropsForCache,
+                games: aflGamesForCache,
+                selectedGameIds,
+                timestamp: now,
+              })
+            );
+          }
         }
 
         const wcPropsForCache = Array.isArray(paintSnapshot?.worldCup?.props) ? paintSnapshot.worldCup.props : [];

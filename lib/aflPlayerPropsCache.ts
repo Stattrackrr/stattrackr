@@ -623,13 +623,16 @@ function aflEnrichedRowsWithStatsCount(payload: AflEnrichedListPayload | null | 
   }).length;
 }
 
+/** Min share of rows with L5/Season before an enriched list is considered paint-ready. */
+export const AFL_ENRICHED_STATS_MIN_COVERAGE = 0.8;
+
 /** True when the payload has props with enough stats to show on the props page. */
 export function aflEnrichedPayloadHasUsableStats(payload: AflEnrichedListPayload | null | undefined): boolean {
   const rows = aflEnrichedListRows(payload);
   if (rows.length === 0) return false;
   const withStats = aflEnrichedRowsWithStatsCount(payload);
-  if (withStats >= 10) return true;
-  return withStats / rows.length >= 0.3;
+  // Require high coverage — "10 rows with stats" used to mark 150+ row slates as OK while L5 stayed N/A.
+  return withStats / rows.length >= AFL_ENRICHED_STATS_MIN_COVERAGE;
 }
 
 /** Live assembly mostly N/A — prefer last good weekly snapshot. */
@@ -638,7 +641,7 @@ export function aflEnrichedPayloadIsDegraded(payload: AflEnrichedListPayload | n
   if (rows.length === 0) return true;
   const withStats = aflEnrichedRowsWithStatsCount(payload);
   if (withStats === 0) return true;
-  return withStats / rows.length < 0.2;
+  return withStats / rows.length < AFL_ENRICHED_STATS_MIN_COVERAGE;
 }
 
 export function markAflEnrichedPayloadStale(

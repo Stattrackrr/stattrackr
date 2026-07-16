@@ -8,6 +8,7 @@ import {
   slimCombinedPropsSnapshotForClient,
   warmCombinedPropsSnapshot,
 } from '@/lib/combinedPropsSnapshot';
+import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,6 +25,15 @@ function wantsFullCombinedSnapshot(request: NextRequest, cronSecret?: string): b
   );
 }
 
+/** Reject cached combined paint when AFL L5/Season coverage is too low (would show mass N/A). */
+function combinedSnapshotAflStatsReady(
+  snapshot: NonNullable<Awaited<ReturnType<typeof getCombinedPropsSnapshot>>>
+): boolean {
+  const props = snapshot.afl?.props ?? [];
+  if (props.length === 0) return true;
+  return aflEnrichedPayloadHasUsableStats({ data: props });
+}
+
 async function resolveClientCombinedSnapshot(
   fullSnapshot: Awaited<ReturnType<typeof getCombinedPropsSnapshot>>,
   wantsFull: boolean
@@ -31,7 +41,10 @@ async function resolveClientCombinedSnapshot(
   if (!fullSnapshot) return null;
   if (wantsFull) return fullSnapshot;
   const paintSnapshot = await getCombinedPropsPaintSnapshot();
-  return paintSnapshot ?? slimCombinedPropsSnapshotForClient(fullSnapshot);
+  if (paintSnapshot && combinedSnapshotAflStatsReady(paintSnapshot)) {
+    return paintSnapshot;
+  }
+  return slimCombinedPropsSnapshotForClient(fullSnapshot);
 }
 
 export async function GET(request: NextRequest) {
@@ -44,7 +57,7 @@ export async function GET(request: NextRequest) {
   try {
     if (!refresh && !debugStats) {
       const cachedSnapshot = await getCombinedPropsSnapshot();
-      if (cachedSnapshot) {
+      if (cachedSnapshot && combinedSnapshotAflStatsReady(cachedSnapshot)) {
         const stale = isCombinedPropsSnapshotStale(cachedSnapshot);
         if (stale) {
           void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
@@ -73,6 +86,14 @@ export async function GET(request: NextRequest) {
             },
           }
         );
+      }
+      if (cachedSnapshot && !combinedSnapshotAflStatsReady(cachedSnapshot)) {
+        void warmCombinedPropsSnapshot({ origin, cronSecret }).catch((error) => {
+          console.warn(
+            '[Props Combined] Background rebuild after low AFL stats coverage failed:',
+            error instanceof Error ? error.message : error
+          );
+        });
       }
     }
 

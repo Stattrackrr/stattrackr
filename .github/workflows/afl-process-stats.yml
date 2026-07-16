@@ -49,11 +49,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # FootyWire blocks GitHub Actions / Vercel. League stats are refreshed weekly from home:
-      #   npm run refresh:afl:footywire:weekly
-      # then commit data/*.json and push. CI uses the committed files below.
-      - name: Use committed league player stats (FootyWire refreshed locally)
+      - name: Refresh FootyInfo league player stats
         run: |
+          npm run fetch:footyinfo-league-player-stats -- --season=2026 --concurrency=16
+          npm run fetch:footyinfo-league-player-stats -- --season=2025 --concurrency=16
           for SEASON in 2026 2025; do
             GAMES=$(node -e "try { const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json'); const m=Math.max(...(j.players||[]).map(p=>Number(p.games)||0),0); process.stdout.write(String(m)); } catch { process.stdout.write('0'); }" "$SEASON")
             GEN=$(node -e "try{const j=require('./data/afl-league-player-stats-'+process.argv[1]+'.json');process.stdout.write(j.generatedAt||'missing');}catch{process.stdout.write('missing');}" "$SEASON")
@@ -65,15 +64,16 @@ jobs:
         run: |
           npm run prefetch:afl:headshots -- --season=2026 --concurrency=10
 
-      # Opponent Breakdown team rankings — refreshed with refresh:afl:footywire:weekly from home.
-      - name: Use committed team rankings (FootyWire refreshed locally)
+      - name: Refresh FootyInfo team rankings
         run: |
+          npm run fetch:footyinfo-team-rankings -- --season=2026 --concurrency=8
           for SEASON in 2026 2025; do
             test -f "data/afl-team-rankings-${SEASON}-oa.json" && echo "Team rankings ${SEASON}: ok" || echo "⚠️ Missing data/afl-team-rankings-${SEASON}-oa.json"
           done
 
-      - name: Use committed injuries and team selections (FootyWire refreshed locally)
+      - name: Refresh FootyInfo injuries and use team selections
         run: |
+          npm run fetch:footyinfo-injuries
           test -f data/afl-injuries.json && echo "Injuries snapshot: ok" || echo "⚠️ Missing data/afl-injuries.json"
           test -f data/afl-team-selections-snapshot.json && echo "Team selections snapshot: ok" || echo "⚠️ Missing data/afl-team-selections-snapshot.json"
 

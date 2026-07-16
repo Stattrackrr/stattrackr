@@ -1,0 +1,2285 @@
+{
+  "season": 2026,
+  "generatedAt": "2026-07-16T06:43:35.546Z",
+  "source": "footyinfo.com",
+  "sourcePage": "afl-league-player-stats-2026.json",
+  "playerCount": 569,
+  "players": [
+    {
+      "name": "Aaron Cadman",
+      "team": "GWS"
+    },
+    {
+      "name": "Aaron Naughton",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Adam Cerra",
+      "team": "Carlton"
+    },
+    {
+      "name": "Adam Saad",
+      "team": "Carlton"
+    },
+    {
+      "name": "Adam Treloar",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Aidan Corr",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Aidan Johnson",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Alex Davies",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Alex Neal-Bullen",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Alex Pearce",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Aliir Aliir",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Alix Tauru",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Andrew Brayshaw",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Andrew McGrath",
+      "team": "Essendon"
+    },
+    {
+      "name": "Andy Moniz-Wakefield",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Angus Anderson",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Angus Clarke",
+      "team": "Essendon"
+    },
+    {
+      "name": "Angus Hastie",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Angus Sheldrick",
+      "team": "Sydney"
+    },
+    {
+      "name": "Anthony Caminiti",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Archer Day-Wicks",
+      "team": "Essendon"
+    },
+    {
+      "name": "Archer Reid",
+      "team": "West Coast"
+    },
+    {
+      "name": "Archie Perkins",
+      "team": "Essendon"
+    },
+    {
+      "name": "Ashton Moir",
+      "team": "Carlton"
+    },
+    {
+      "name": "Bailey Dale",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Bailey Humphrey",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Bailey J. Williams",
+      "team": "West Coast"
+    },
+    {
+      "name": "Bailey Laurie",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Bailey Macdonald",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Bailey Smith",
+      "team": "Geelong"
+    },
+    {
+      "name": "Bailey Williams",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Bayley Fritsch",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Beau Addinsall",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Beau McCreery",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Ben Ainsworth",
+      "team": "Carlton"
+    },
+    {
+      "name": "Ben Jepson",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Ben Keays",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Ben King",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Ben Long",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Ben McKay",
+      "team": "Essendon"
+    },
+    {
+      "name": "Ben Miller",
+      "team": "Richmond"
+    },
+    {
+      "name": "Billy Cootee",
+      "team": "Sydney"
+    },
+    {
+      "name": "Billy Dowling",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Billy Frampton",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Blake Acres",
+      "team": "Carlton"
+    },
+    {
+      "name": "Blake Hardwick",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Blake Howes",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Bo Allan",
+      "team": "West Coast"
+    },
+    {
+      "name": "Bodhi Uwland",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Bodie Ryan",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Bradley Hill",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Brady Hough",
+      "team": "West Coast"
+    },
+    {
+      "name": "Brandon Starcevich",
+      "team": "West Coast"
+    },
+    {
+      "name": "Brandon Walker",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Brandon Zerk-Thatcher",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Brayden Cook",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Brayden Fiorini",
+      "team": "Essendon"
+    },
+    {
+      "name": "Brayden Maynard",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Brennan Cox",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Brent Daniels",
+      "team": "GWS"
+    },
+    {
+      "name": "Brodie Grundy",
+      "team": "Sydney"
+    },
+    {
+      "name": "Brodie Kemp",
+      "team": "Carlton"
+    },
+    {
+      "name": "Brody Mihocek",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Bruce Reville",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Buku Khamis",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Caiden Cleary",
+      "team": "Sydney"
+    },
+    {
+      "name": "Caleb Daniel",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Caleb Serong",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Caleb Windsor",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Callum Ah Chee",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Callum Brown",
+      "team": "GWS"
+    },
+    {
+      "name": "Callum Coleman-Jones",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Callum Mills",
+      "team": "Sydney"
+    },
+    {
+      "name": "Callum Wilkie",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Calsher Dear",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Cameron Nairn",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Cameron Zurhaar",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Campbell Chesser",
+      "team": "Carlton"
+    },
+    {
+      "name": "Campbell Gray",
+      "team": "Richmond"
+    },
+    {
+      "name": "Campbell Lake",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Chad Warner",
+      "team": "Sydney"
+    },
+    {
+      "name": "Changkuoth Jiath",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Charlie Ballard",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Charlie Banfield",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Charlie Comben",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Charlie Curnow",
+      "team": "Sydney"
+    },
+    {
+      "name": "Charlie Edwards",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Charlie Spargo",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Chayce Jones",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Christian Moraes",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Christian Petracca",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Christian Salem",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Clayton Oliver",
+      "team": "GWS"
+    },
+    {
+      "name": "Cody Curtin",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Cody Weightman",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Colby McKercher",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Connor Budarick",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Connor Idun",
+      "team": "GWS"
+    },
+    {
+      "name": "Connor MacDonald",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Connor Rozee",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Conor McKenna",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Conor Nash",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Conor Stone",
+      "team": "GWS"
+    },
+    {
+      "name": "Cooper Duff-Tytler",
+      "team": "West Coast"
+    },
+    {
+      "name": "Cooper Harvey",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Cooper Hynes",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Cooper Lord",
+      "team": "Carlton"
+    },
+    {
+      "name": "Cooper Sharman",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Cooper Trembath",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Corey Durdin",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Corey Wagner",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Corey Warner",
+      "team": "Sydney"
+    },
+    {
+      "name": "Dan Houston",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Dane Rampe",
+      "team": "Sydney"
+    },
+    {
+      "name": "Daniel Annable",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Daniel Curtin",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Daniel McStay",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Daniel Rioli",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Daniel Turner",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Dante Visentini",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Darcy Byrne-Jones",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Darcy Cameron",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Darcy Fogarty",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Darcy Fort",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Darcy Gardiner",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Darcy Moore",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Darcy Parish",
+      "team": "Essendon"
+    },
+    {
+      "name": "Darcy Wilmot",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Darcy Wilson",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Darragh Joyce",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Dayne Zorko",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Deven Robertson",
+      "team": "West Coast"
+    },
+    {
+      "name": "Dion Prestia",
+      "team": "Richmond"
+    },
+    {
+      "name": "Dougal Howard",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Dylan Moore",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Dylan Patterson",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Dylan Stephens",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Dyson Sharp",
+      "team": "Essendon"
+    },
+    {
+      "name": "Ed Langdon",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Ed Richards",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Edward Allan",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Elijah Hewett",
+      "team": "West Coast"
+    },
+    {
+      "name": "Elijah Hollands",
+      "team": "Carlton"
+    },
+    {
+      "name": "Elijah Tsatas",
+      "team": "Essendon"
+    },
+    {
+      "name": "Elliot Yeo",
+      "team": "West Coast"
+    },
+    {
+      "name": "Eric Hipwood",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Errol Gulden",
+      "team": "Sydney"
+    },
+    {
+      "name": "Esava Ratugolea",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Ethan Read",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Ewan Mackinlay",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Finn Callaghan",
+      "team": "GWS"
+    },
+    {
+      "name": "Finn Maginness",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Finnbar Maley",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Flynn Perez",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Flynn Riley",
+      "team": "Carlton"
+    },
+    {
+      "name": "Flynn Young",
+      "team": "Carlton"
+    },
+    {
+      "name": "Francis Evans",
+      "team": "Carlton"
+    },
+    {
+      "name": "George Hewett",
+      "team": "Carlton"
+    },
+    {
+      "name": "George Stevens",
+      "team": "Geelong"
+    },
+    {
+      "name": "George Wardlaw",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Griffin Logue",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Gryan Miers",
+      "team": "Geelong"
+    },
+    {
+      "name": "Hamish Davis",
+      "team": "West Coast"
+    },
+    {
+      "name": "Harley Reid",
+      "team": "West Coast"
+    },
+    {
+      "name": "Harris Andrews",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Harrison Oliver",
+      "team": "GWS"
+    },
+    {
+      "name": "Harrison Petty",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Harrison Ramm",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Harry Armstrong",
+      "team": "Richmond"
+    },
+    {
+      "name": "Harry Cunningham",
+      "team": "Sydney"
+    },
+    {
+      "name": "Harry Dean",
+      "team": "Carlton"
+    },
+    {
+      "name": "Harry Edwards",
+      "team": "West Coast"
+    },
+    {
+      "name": "Harry Kyle",
+      "team": "Sydney"
+    },
+    {
+      "name": "Harry McKay",
+      "team": "Carlton"
+    },
+    {
+      "name": "Harry Morrison",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Harry Perryman",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Harry Rowston",
+      "team": "GWS"
+    },
+    {
+      "name": "Harry Schoenberg",
+      "team": "West Coast"
+    },
+    {
+      "name": "Harry Sharp",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Harry Sheezel",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Harvey Gallagher",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Harvey Harrison",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Harvey Johnston",
+      "team": "West Coast"
+    },
+    {
+      "name": "Harvey Langford",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Harvey Thomas",
+      "team": "GWS"
+    },
+    {
+      "name": "Hayden McLean",
+      "team": "Sydney"
+    },
+    {
+      "name": "Hayden Young",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Heath Chapman",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Henry Hustwaite",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Hugh Bond",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Hugh Boxshall",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Hugh McCluggage",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Hugo Garcia",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Hugo Hall-Kahan",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Hugo Ralphsmith",
+      "team": "Richmond"
+    },
+    {
+      "name": "Hunter Clark",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Hussien El Achkar",
+      "team": "Essendon"
+    },
+    {
+      "name": "Isaac Cumming",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Isaac Heeney",
+      "team": "Sydney"
+    },
+    {
+      "name": "Isaac Kako",
+      "team": "Essendon"
+    },
+    {
+      "name": "Isaac Keeler",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Isaac Quaynor",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Isaiah Dudley",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Izak Rankine",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Jack Bowes",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jack Buller",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Jack Crisp",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Jack Darling",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Jack Ginnivan",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Jack Graham",
+      "team": "West Coast"
+    },
+    {
+      "name": "Jack Gunston",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Jack Higgins",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Jack Hutchinson",
+      "team": "West Coast"
+    },
+    {
+      "name": "Jack Ison",
+      "team": "Carlton"
+    },
+    {
+      "name": "Jack Lukosius",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jack Martin",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jack Ough",
+      "team": "GWS"
+    },
+    {
+      "name": "Jack Scrimshaw",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Jack Silvagni",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Jack Sinclair",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Jack Steele",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jack Watkins",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jack Whitlock",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jackson Mead",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jacob Farrow",
+      "team": "Essendon"
+    },
+    {
+      "name": "Jacob Hopper",
+      "team": "Richmond"
+    },
+    {
+      "name": "Jacob Konstanty",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Jacob Newton",
+      "team": "West Coast"
+    },
+    {
+      "name": "Jacob Van Rooyen",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jacob Wehr",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jacob Weitering",
+      "team": "Carlton"
+    },
+    {
+      "name": "Jade Gresham",
+      "team": "Essendon"
+    },
+    {
+      "name": "Jagga Smith",
+      "team": "Carlton"
+    },
+    {
+      "name": "Jai Culley",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jai Murray",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jai Newcombe",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Jai Serong",
+      "team": "Sydney"
+    },
+    {
+      "name": "Jake Bowey",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jake Kolodjashnij",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jake Lever",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jake Lloyd",
+      "team": "Sydney"
+    },
+    {
+      "name": "Jake Melksham",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Jake Riccardi",
+      "team": "GWS"
+    },
+    {
+      "name": "Jake Rogers",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jake Soligo",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Jake Stringer",
+      "team": "GWS"
+    },
+    {
+      "name": "Jake Waterman",
+      "team": "West Coast"
+    },
+    {
+      "name": "Jamarra Ugle-Hagan",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "James Borlase",
+      "team": "Adelaide"
+    },
+    {
+      "name": "James Jordon",
+      "team": "Sydney"
+    },
+    {
+      "name": "James Leake",
+      "team": "GWS"
+    },
+    {
+      "name": "James Peatling",
+      "team": "Adelaide"
+    },
+    {
+      "name": "James Rowbottom",
+      "team": "Sydney"
+    },
+    {
+      "name": "James Sicily",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "James Trezise",
+      "team": "Richmond"
+    },
+    {
+      "name": "James Tunstill",
+      "team": "Brisbane"
+    },
+    {
+      "name": "James Worpel",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jamie Cripps",
+      "team": "West Coast"
+    },
+    {
+      "name": "Jarman Impey",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Jarrod Berry",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Jarrod Witts",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jase Burgoyne",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jason Horne-Francis",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Jaspa Fletcher",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Jasper Alger",
+      "team": "Richmond"
+    },
+    {
+      "name": "Jaxon Prior",
+      "team": "Essendon"
+    },
+    {
+      "name": "Jayden Laverde",
+      "team": "GWS"
+    },
+    {
+      "name": "Jayden Nguyen",
+      "team": "Essendon"
+    },
+    {
+      "name": "Jayden Short",
+      "team": "Richmond"
+    },
+    {
+      "name": "Jed Walter",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jedd Busslinger",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Jeremy Cameron",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jeremy Howe",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Jeremy Sharp",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Jesse Hogan",
+      "team": "GWS"
+    },
+    {
+      "name": "Jhye Clark",
+      "team": "Geelong"
+    },
+    {
+      "name": "Jobe Shanahan",
+      "team": "West Coast"
+    },
+    {
+      "name": "Joe Berry",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Joe Richards",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Joel Amartey",
+      "team": "Sydney"
+    },
+    {
+      "name": "Joel Fitzgerald",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Joel Freijah",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Joel Hamling",
+      "team": "Sydney"
+    },
+    {
+      "name": "Joel Jeffrey",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "John Noble",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jonty Faull",
+      "team": "Richmond"
+    },
+    {
+      "name": "Jordan Boyd",
+      "team": "Carlton"
+    },
+    {
+      "name": "Jordan Clark",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Jordan Croft",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Jordan Dawson",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Jordan De Goey",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Jordan Ridley",
+      "team": "Essendon"
+    },
+    {
+      "name": "Jordon Butts",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Jordon Sweet",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Josaia Delana",
+      "team": "GWS"
+    },
+    {
+      "name": "Josh Battle",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Josh Daicos",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Josh Dolan",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Josh Dunkley",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Josh Gibcus",
+      "team": "Richmond"
+    },
+    {
+      "name": "Josh Goater",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Josh Lai",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Josh Lindsay",
+      "team": "West Coast"
+    },
+    {
+      "name": "Josh Rachele",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Josh Treacy",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Josh Ward",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Josh Worrell",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Judd McVee",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Justin McInerney",
+      "team": "Sydney"
+    },
+    {
+      "name": "Jy Farrar",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Jy Simpkin",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Jye Amiss",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Jye Caldwell",
+      "team": "Essendon"
+    },
+    {
+      "name": "Kade Chandler",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Kai Lohmann",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Kane Farrell",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Kane McAuliffe",
+      "team": "Richmond"
+    },
+    {
+      "name": "Karl Amon",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Karl Worner",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Keidean Coleman",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Kieren Briggs",
+      "team": "GWS"
+    },
+    {
+      "name": "Koltyn Tholstrup",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Kye Annand",
+      "team": "Richmond"
+    },
+    {
+      "name": "Kyle Langford",
+      "team": "Essendon"
+    },
+    {
+      "name": "Kysaiah Pickett",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Lachie Jaques",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Lachie Neale",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Lachie Whitfield",
+      "team": "GWS"
+    },
+    {
+      "name": "Lachlan Bramble",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Lachlan Cowan",
+      "team": "Carlton"
+    },
+    {
+      "name": "Lachlan Gulbin",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Lachlan McAndrew",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Lachlan McNeil",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Lachy Dovaston",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Laitham Vandermeer",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Latrelle Pickett",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Lawson Humphries",
+      "team": "Geelong"
+    },
+    {
+      "name": "Leek Aleer",
+      "team": "GWS"
+    },
+    {
+      "name": "Levi Ashcroft",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Lewis Melican",
+      "team": "Sydney"
+    },
+    {
+      "name": "Lewis Young",
+      "team": "Carlton"
+    },
+    {
+      "name": "Liam Baker",
+      "team": "West Coast"
+    },
+    {
+      "name": "Liam Duggan",
+      "team": "West Coast"
+    },
+    {
+      "name": "Liam Fawcett",
+      "team": "Richmond"
+    },
+    {
+      "name": "Liam Henry",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Liam Puncher",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Liam Reidy",
+      "team": "Carlton"
+    },
+    {
+      "name": "Liam Ryan",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Liam Stocker",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Lincoln McCarthy",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Lloyd Meek",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Logan Evans",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Logan McDonald",
+      "team": "Sydney"
+    },
+    {
+      "name": "Logan Morris",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Louis Emmett",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Lukas Cooke",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Luke Cleary",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Luke Davies-Uniacke",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Luke Jackson",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Luke Kennedy",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Luke McDonald",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Luke Nankervis",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Luke Parker",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Luke Pedlar",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Luke Ryan",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Luker Kentfield",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Mabior Chol",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Mac Andrew",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Malakai Champion",
+      "team": "West Coast"
+    },
+    {
+      "name": "Malcolm Rosas",
+      "team": "Sydney"
+    },
+    {
+      "name": "Marc Pittonet",
+      "team": "Carlton"
+    },
+    {
+      "name": "Marcus Bontempelli",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Marcus Herbert",
+      "team": "West Coast"
+    },
+    {
+      "name": "Marcus Windhager",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Mark Blicavs",
+      "team": "Geelong"
+    },
+    {
+      "name": "Mark Keane",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Mason Cox",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Mason Redman",
+      "team": "Essendon"
+    },
+    {
+      "name": "Mason Wood",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Matt Guelfi",
+      "team": "Essendon"
+    },
+    {
+      "name": "Matt Hill",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Matt Rowell",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Matt Whitlock",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Mattaes Phillipou",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Matthew Jefferson",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Max Gawn",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Max Gruzewski",
+      "team": "GWS"
+    },
+    {
+      "name": "Max Hall",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Max Heath",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Max Holmes",
+      "team": "Geelong"
+    },
+    {
+      "name": "Max Kondogiannis",
+      "team": "Essendon"
+    },
+    {
+      "name": "Max Michalanney",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Max Ramsden",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Michael Frederick",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Michael Sellwood",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Milan Murdock",
+      "team": "West Coast"
+    },
+    {
+      "name": "Miles Bergman",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Mitch Georgiades",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Mitch McGovern",
+      "team": "Carlton"
+    },
+    {
+      "name": "Mitch Podhajski",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Mitch Zadow",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Mitchell Edwards",
+      "team": "Geelong"
+    },
+    {
+      "name": "Mitchell Hinge",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Murphy Reid",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Mykelti Lefau",
+      "team": "Richmond"
+    },
+    {
+      "name": "Nasiah Wanganeen-Milera",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Nate Caddy",
+      "team": "Essendon"
+    },
+    {
+      "name": "Nathan Broad",
+      "team": "Richmond"
+    },
+    {
+      "name": "Ned Long",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Ned Moyle",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Ned Reeves",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Neil Erasmus",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Nic Newman",
+      "team": "Carlton"
+    },
+    {
+      "name": "Nick Blakey",
+      "team": "Sydney"
+    },
+    {
+      "name": "Nick Bryan",
+      "team": "Essendon"
+    },
+    {
+      "name": "Nick Daicos",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Nick Haynes",
+      "team": "Carlton"
+    },
+    {
+      "name": "Nick Larkey",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Nick Murray",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Nick Vlastuin",
+      "team": "Richmond"
+    },
+    {
+      "name": "Nick Watson",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Noah Anderson",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Noah Answerth",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Noah Balta",
+      "team": "Richmond"
+    },
+    {
+      "name": "Noah Mraz",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Noah Roberts-Thomson",
+      "team": "Richmond"
+    },
+    {
+      "name": "Oisin Mullin",
+      "team": "Geelong"
+    },
+    {
+      "name": "Oliver Florent",
+      "team": "Carlton"
+    },
+    {
+      "name": "Oliver Francou",
+      "team": "West Coast"
+    },
+    {
+      "name": "Oliver Hannaford",
+      "team": "GWS"
+    },
+    {
+      "name": "Oliver Hayes-Brown",
+      "team": "Richmond"
+    },
+    {
+      "name": "Oliver Henry",
+      "team": "Geelong"
+    },
+    {
+      "name": "Oliver Hollands",
+      "team": "Carlton"
+    },
+    {
+      "name": "Oliver Wiltshire",
+      "team": "Geelong"
+    },
+    {
+      "name": "Ollie Lord",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Oscar Adams",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Oscar Allen",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Oscar McDonald",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Oscar Steene",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Oskar Baker",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Paddy Cross",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Patrick Cripps",
+      "team": "Carlton"
+    },
+    {
+      "name": "Patrick Dangerfield",
+      "team": "Geelong"
+    },
+    {
+      "name": "Patrick Lipinski",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Patrick Retschko",
+      "team": "Richmond"
+    },
+    {
+      "name": "Patrick Voss",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Paul Curtis",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Peter Ladhams",
+      "team": "Sydney"
+    },
+    {
+      "name": "Peter Wright",
+      "team": "Essendon"
+    },
+    {
+      "name": "Phoenix Gothard",
+      "team": "GWS"
+    },
+    {
+      "name": "Reuben Ginbey",
+      "team": "West Coast"
+    },
+    {
+      "name": "Rhett Bazzo",
+      "team": "West Coast"
+    },
+    {
+      "name": "Rhyan Mansell",
+      "team": "Richmond"
+    },
+    {
+      "name": "Rhylee West",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Rhys Stanley",
+      "team": "Geelong"
+    },
+    {
+      "name": "Riley Bice",
+      "team": "Sydney"
+    },
+    {
+      "name": "Riley Hamilton",
+      "team": "GWS"
+    },
+    {
+      "name": "Riley Hardeman",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Riley Thilthorpe",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Roan Steele",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Rory Laird",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Rory Lobb",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Rowan Marshall",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Ryan Angwin",
+      "team": "GWS"
+    },
+    {
+      "name": "Ryan Byrnes",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Ryan Gardner",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Ryan Lester",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Ryan Maric",
+      "team": "West Coast"
+    },
+    {
+      "name": "Ryley Sanders",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Saad El-Hawli",
+      "team": "Essendon"
+    },
+    {
+      "name": "Sam Banks",
+      "team": "Richmond"
+    },
+    {
+      "name": "Sam Berry",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Sam Clohesy",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Sam Cumming",
+      "team": "Richmond"
+    },
+    {
+      "name": "Sam Darcy",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Sam Davidson",
+      "team": "Western Bulldogs"
+    },
+    {
+      "name": "Sam De Koning",
+      "team": "Geelong"
+    },
+    {
+      "name": "Sam Draper",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Sam Durham",
+      "team": "Essendon"
+    },
+    {
+      "name": "Sam Flanders",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Sam Lalor",
+      "team": "Richmond"
+    },
+    {
+      "name": "Sam Marshall",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Sam Switkowski",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Sam Taylor",
+      "team": "GWS"
+    },
+    {
+      "name": "Sam Walsh",
+      "team": "Carlton"
+    },
+    {
+      "name": "Sam Wicks",
+      "team": "Sydney"
+    },
+    {
+      "name": "Samson Ryan",
+      "team": "Richmond"
+    },
+    {
+      "name": "Sandy Brock",
+      "team": "West Coast"
+    },
+    {
+      "name": "Scott Pendlebury",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Sean Darcy",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Seth Campbell",
+      "team": "Richmond"
+    },
+    {
+      "name": "Shadeau Brain",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Shai Bolton",
+      "team": "Fremantle"
+    },
+    {
+      "name": "Shannon Neale",
+      "team": "Geelong"
+    },
+    {
+      "name": "Shaun Mannagh",
+      "team": "Geelong"
+    },
+    {
+      "name": "Steele Sidebottom",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Steely Green",
+      "team": "Richmond"
+    },
+    {
+      "name": "Stephen Coniglio",
+      "team": "GWS"
+    },
+    {
+      "name": "Sullivan Robey",
+      "team": "Essendon"
+    },
+    {
+      "name": "Taj Hotton",
+      "team": "Richmond"
+    },
+    {
+      "name": "Talor Byrne",
+      "team": "Carlton"
+    },
+    {
+      "name": "Tanner Bruhn",
+      "team": "Geelong"
+    },
+    {
+      "name": "Taylor Goad",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Taylor Walker",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Tim Kelly",
+      "team": "West Coast"
+    },
+    {
+      "name": "Tim Membrey",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Tim Taranto",
+      "team": "Richmond"
+    },
+    {
+      "name": "Tobie Travaglia",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Toby Bedford",
+      "team": "GWS"
+    },
+    {
+      "name": "Toby Greene",
+      "team": "GWS"
+    },
+    {
+      "name": "Toby McMullin",
+      "team": "GWS"
+    },
+    {
+      "name": "Toby Murray",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Toby Nankervis",
+      "team": "Richmond"
+    },
+    {
+      "name": "Toby Pink",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Todd Marshall",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Tom Anastasopoulos",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Tom Atkins",
+      "team": "Geelong"
+    },
+    {
+      "name": "Tom Barrass",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Tom Blamires",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Tom Brown",
+      "team": "Richmond"
+    },
+    {
+      "name": "Tom Cochrane",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Tom Cole",
+      "team": "West Coast"
+    },
+    {
+      "name": "Tom De Koning",
+      "team": "St Kilda"
+    },
+    {
+      "name": "Tom Gross",
+      "team": "West Coast"
+    },
+    {
+      "name": "Tom Hanily",
+      "team": "Sydney"
+    },
+    {
+      "name": "Tom McCarthy",
+      "team": "West Coast"
+    },
+    {
+      "name": "Tom McCartin",
+      "team": "Sydney"
+    },
+    {
+      "name": "Tom McDonald",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Tom Papley",
+      "team": "Sydney"
+    },
+    {
+      "name": "Tom Powell",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Tom Sparrow",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Touk Miller",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Trent Rivers",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Tristan Xerri",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Ty Gallop",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Tylar Young",
+      "team": "West Coast"
+    },
+    {
+      "name": "Tyler Sonsie",
+      "team": "Richmond"
+    },
+    {
+      "name": "Wade Derksen",
+      "team": "Carlton"
+    },
+    {
+      "name": "Wayne Milera",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Wil Dawson",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Wil Parker",
+      "team": "Collingwood"
+    },
+    {
+      "name": "Wil Powell",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Will Ashcroft",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Will Brodie",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Will Day",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Will Graham",
+      "team": "Gold Coast"
+    },
+    {
+      "name": "Will Hayward",
+      "team": "Carlton"
+    },
+    {
+      "name": "Will Lorenz",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Will McLachlan",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Will Setterfield",
+      "team": "Essendon"
+    },
+    {
+      "name": "Willem Drew",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Willem Duursma",
+      "team": "West Coast"
+    },
+    {
+      "name": "William McCabe",
+      "team": "Hawthorn"
+    },
+    {
+      "name": "Xavier Bamert",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Xavier Duursma",
+      "team": "Essendon"
+    },
+    {
+      "name": "Xavier Lindsay",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Xavier Taylor",
+      "team": "Melbourne"
+    },
+    {
+      "name": "Zac Bailey",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Zac Banch",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Zac Fisher",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Zac Taylor",
+      "team": "Adelaide"
+    },
+    {
+      "name": "Zach Guthrie",
+      "team": "Geelong"
+    },
+    {
+      "name": "Zach Reid",
+      "team": "Essendon"
+    },
+    {
+      "name": "Zak Butters",
+      "team": "Port Adelaide"
+    },
+    {
+      "name": "Zak Johnson",
+      "team": "Essendon"
+    },
+    {
+      "name": "Zane Duursma",
+      "team": "North Melbourne"
+    },
+    {
+      "name": "Zane Peucker",
+      "team": "Richmond"
+    },
+    {
+      "name": "Zane Zakostelsky",
+      "team": "Brisbane"
+    },
+    {
+      "name": "Zeke Uwland",
+      "team": "Gold Coast"
+    }
+  ]
+}

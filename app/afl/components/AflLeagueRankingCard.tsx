@@ -82,7 +82,7 @@ export function AflLeagueRankingCard({
     setError(null);
     fetch(`/api/afl/league-player-stats?season=${effectiveSeason}`)
       .then((r) => {
-        if (!r.ok) throw new Error(r.status === 404 ? 'League stats not loaded. Run: npm run fetch:footywire-league-player-stats' : 'Failed to load');
+        if (!r.ok) throw new Error(r.status === 404 ? 'League stats not loaded. Run: npm run fetch:footyinfo-league-player-stats' : 'Failed to load');
         return r.json();
       })
       .then((json) => {
