@@ -338,7 +338,9 @@ export function AflTeamSelectionsCard({
   }
 
   const baseTitle =
-    showLineup && isUpcomingLineup === false ? 'Most Recent Lineup' : 'Confirmed Lineups';
+    !hasFieldRows
+      ? 'Confirmed Players'
+      : showLineup && isUpcomingLineup === false ? 'Most Recent Lineup' : 'Confirmed Lineups';
 
   return (
     <div className={`rounded-lg border p-3 ${borderCls} ${bgCls}`}>
@@ -423,7 +425,9 @@ export function AflTeamSelectionsCard({
                       </div>
                     ); })
                   ) : (
-                    <p className={`text-[10px] text-center ${isDark ? 'text-green-200' : 'text-green-900'}`}>No positions parsed</p>
+                    <p className={`text-[10px] text-center ${isDark ? 'text-green-200' : 'text-green-900'}`}>
+                      FootyInfo has published players, not field positions.
+                    </p>
                   )}
                 </div>
               </div>
@@ -478,9 +482,11 @@ export function AflTeamSelectionsCard({
                 )}
               </div>
 
-              {/* Right when side-by-side: Interchanges (home, away, home, away …) */}
+              {/* Right when side-by-side: selected players (or named interchange) */}
               <div className={`rounded-lg border ${borderCls} p-2 flex flex-col flex-1 min-w-0 sm:min-w-[6rem] min-[1520px]:flex-none min-[1520px]:w-32 min-[1520px]:min-w-[8rem] min-[1600px]:w-36 min-[1600px]:min-w-[9rem] flex-shrink-0 min-[1520px]:order-3`}>
-                <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>Interchanges</p>
+                <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${mutedCls}`}>
+                  {hasFieldRows ? 'Interchanges' : 'Selected Players'}
+                </p>
                 <div className="flex flex-col gap-1 overflow-y-auto">
                   {interchangeInterleaved.map(({ name, isHome }, i) => (
                     <PlayerChip key={`i-${i}`} name={name} isHome={isHome} teamColor={isHome ? homeColor : awayColor} isDark={isDark} highlight={lineupNameMatchesSelected(name, selectedPlayerName)} />

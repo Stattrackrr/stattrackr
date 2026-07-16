@@ -274,6 +274,16 @@ function mapRowToGameLog(
 
 const matchMetaCache = new Map<number, FootyinfoMatchMeta | null>();
 
+function isCompletedMatch(meta: FootyinfoMatchMeta | null): boolean {
+  // FootyInfo includes a placeholder row for upcoming fixtures in some player
+  // logs. It has no stats but otherwise looks like a normal game to the chart.
+  if (!meta) return true;
+  const status = String(meta.st || '').trim().toUpperCase();
+  if (status && !['C', 'F', 'FINAL', 'COMPLETED'].includes(status)) return false;
+  const date = String(meta.match_date || '').slice(0, 10);
+  return !date || date <= new Date().toISOString().slice(0, 10);
+}
+
 async function getMatchMetaCached(matchId: number): Promise<FootyinfoMatchMeta | null> {
   if (!matchId) return null;
   if (matchMetaCache.has(matchId)) return matchMetaCache.get(matchId) ?? null;
@@ -344,6 +354,7 @@ export async function fetchFootyInfoPlayerGameLogs(
   for (const row of rows) {
     const matchId = Number(cellValue(row, 'match_id') || (row.round as Cell)?.linkId || 0);
     const meta = matchMetaCache.get(matchId) ?? null;
+    if (!isCompletedMatch(meta)) continue;
     games.push(mapRowToGameLog(row, season, meta));
   }
 

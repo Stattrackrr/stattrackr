@@ -37,10 +37,6 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
   const away = score?.away || [];
   const homeTeam = footyinfoNameToOfficial(match.home_team_full) || footyinfoAbbrevToOfficial(match.home_team) || match.home_team_full || match.home_team;
   const awayTeam = footyinfoNameToOfficial(match.away_team_full) || footyinfoAbbrevToOfficial(match.away_team) || match.away_team_full || match.away_team;
-  const rows = (players: typeof home) => players.slice(0, 18).map((player) => ({
-    name: player.playerName,
-    ...(player.guernsey != null ? { number: String(player.guernsey) } : {}),
-  }));
   return {
     url: match.slug ? `https://www.footyinfo.com/match/${match.slug}` : `https://www.footyinfo.com/match/${match.id}`,
     title: null,
@@ -48,8 +44,10 @@ async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundS
     match: `${homeTeam} v ${awayTeam}`,
     home_team: homeTeam,
     away_team: awayTeam,
-    positions: home.length || away.length ? [{ position: 'Selected', home_players: rows(home), away_players: rows(away) }] : [],
-    interchange: { home: home.slice(18).map((p) => p.playerName), away: away.slice(18).map((p) => p.playerName) },
+    // FootyInfo's public match API supplies selected player lists but not
+    // positional slots. Do not invent a field layout from list order.
+    positions: [],
+    interchange: { home: home.map((p) => p.playerName), away: away.map((p) => p.playerName) },
     ins: { home: [], away: [] },
     outs: { home: [], away: [] },
     emergencies: { home: [], away: [] },

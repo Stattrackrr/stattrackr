@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 // Bump when cache key semantics change (e.g. stop serving empty negative entries as hits).
-const AFL_CACHE_SCHEMA = 'v4';
+const AFL_CACHE_SCHEMA = 'v5';
 const AFL_CACHE_PREFIX = `afl:player-logs:${AFL_CACHE_SCHEMA}`;
 
 const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || '';
