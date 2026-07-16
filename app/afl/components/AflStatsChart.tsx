@@ -1059,7 +1059,7 @@ export function AflStatsChart({
       if (aSeason !== bSeason) return aSeason - bSeason;
       const aDate = new Date(a.gameDate || 0).getTime();
       const bDate = new Date(b.gameDate || 0).getTime();
-      if (Number.isFinite(aDate) && Number.isFinite(bDate)) return aDate - bDate;
+      if (Number.isFinite(aDate) && Number.isFinite(bDate) && aDate !== bDate) return aDate - bDate;
       const aRi = parseRoundIndex(a.round);
       const bRi = parseRoundIndex(b.round);
       if (aRi !== bRi) return aRi - bRi;
