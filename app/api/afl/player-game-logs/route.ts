@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   const team = request.nextUrl.searchParams.get('team')?.trim() || '';
   const includeBoth = ['1', 'true'].includes(request.nextUrl.searchParams.get('include_both') || '');
   const forceFetch = ['1', 'true'].includes(request.nextUrl.searchParams.get('force_fetch') || '');
+  const fast = ['1', 'true'].includes(request.nextUrl.searchParams.get('fast') || '');
   if (!SUPPORTED_SEASONS.has(season)) return NextResponse.json({ error: 'season query param must be 2024, 2025, or 2026' }, { status: 400 });
   if (!playerParam) return NextResponse.json({ error: 'player_name query param is required' }, { status: 400 });
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   const key = buildAflPlayerLogsCacheKey({ season, playerName, teamForRequest: team || null, includeQuarters: false });
   const quarterKey = buildAflPlayerLogsCacheKey({ season, playerName, teamForRequest: team || null, includeQuarters: true });
   const headers = { 'X-AFL-Cache-Enabled': String(cacheEnabled) };
-  if (cacheEnabled && !forceFetch) {
+  if (cacheEnabled && !forceFetch && !fast) {
     const [base, quarters] = await Promise.all([getAflPlayerLogsCache(key), getAflPlayerLogsCache(quarterKey)]);
     if (hasGames(base)) {
       return NextResponse.json(
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await fetchFootyInfoPlayerGameLogs(playerName, season, team);
+    const result = await fetchFootyInfoPlayerGameLogs(playerName, season, team, { skipMatchMetadata: fast });
     const games = result?.games || [];
     const payload: AflPlayerLogsCachePayload = {
       season,
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       ...(result?.height ? { height: result.height } : {}),
       ...(result?.guernsey != null ? { guernsey: result.guernsey } : {}),
     };
-    if (cacheEnabled) {
+    if (cacheEnabled && !fast) {
       await Promise.all([
         setAflPlayerLogsCache(key, payload, games.length ? undefined : { allowEmpty: true, ttlSeconds: AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS }),
         setAflPlayerLogsCache(quarterKey, payload, games.length ? undefined : { allowEmpty: true, ttlSeconds: AFL_PLAYER_LOGS_NEGATIVE_CACHE_TTL_SECONDS }),
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       includeBoth ? { ...payload, gamesWithQuarters: games } : payload,
-      { headers: { ...headers, 'X-AFL-Player-Logs-Source': games.length ? 'footyinfo' : 'footyinfo-empty' } }
+        { headers: { ...headers, 'X-AFL-Player-Logs-Source': fast ? 'footyinfo-fast' : games.length ? 'footyinfo' : 'footyinfo-empty' } }
     );
   } catch (error) {
     return NextResponse.json(

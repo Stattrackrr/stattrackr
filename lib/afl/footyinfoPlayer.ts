@@ -299,7 +299,7 @@ export async function fetchFootyInfoPlayerGameLogs(
   playerName: string,
   season: number,
   _teamName?: string | null,
-  options: { skipMemoryCache?: boolean } = {}
+  options: { skipMemoryCache?: boolean; skipMatchMetadata?: boolean } = {}
 ): Promise<{
   games: FootyinfoGameLogRow[];
   height: string | null;
@@ -352,29 +352,37 @@ export async function fetchFootyInfoPlayerGameLogs(
     };
   }
 
+  const playedRows = options.skipMatchMetadata
+    ? rows.filter((row) =>
+        ['kicks', 'handballs', 'disposals', 'marks', 'tackles', 'goals', 'hitouts']
+          .some((key) => cellValue(row, key) != null)
+      )
+    : rows;
   const matchIds = [
     ...new Set(
-      rows
+      playedRows
         .map((row) => Number(cellValue(row, 'match_id') || (row.round as Cell)?.linkId || 0))
         .filter((id) => id > 0)
     ),
   ];
 
-  // Parallel match meta for dates/results (shared process cache across warm).
-  const concurrency = 20;
-  for (let i = 0; i < matchIds.length; i += concurrency) {
-    const chunk = matchIds.slice(i, i + concurrency);
-    await Promise.all(
-      chunk.map(async (id) => {
-        if (!options.skipMemoryCache && matchMetaCache.has(id)) return;
-        const meta = await fetchFootyinfoMatchMeta(id);
-        matchMetaCache.set(id, meta);
-      })
-    );
+  if (!options.skipMatchMetadata) {
+    // Parallel match meta for dates/results (shared process cache across warm).
+    const concurrency = 20;
+    for (let i = 0; i < matchIds.length; i += concurrency) {
+      const chunk = matchIds.slice(i, i + concurrency);
+      await Promise.all(
+        chunk.map(async (id) => {
+          if (!options.skipMemoryCache && matchMetaCache.has(id)) return;
+          const meta = await fetchFootyinfoMatchMeta(id);
+          matchMetaCache.set(id, meta);
+        })
+      );
+    }
   }
 
   const games: FootyinfoGameLogRow[] = [];
-  for (const row of rows) {
+  for (const row of playedRows) {
     const matchId = Number(cellValue(row, 'match_id') || (row.round as Cell)?.linkId || 0);
     const meta = matchMetaCache.get(matchId) ?? null;
     if (!isCompletedMatch(meta)) continue;
