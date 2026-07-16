@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-07-16T06:40:37.517Z",
+  "generatedAt": "2026-07-16T14:34:43.484Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 333,
+  "injuryCount": 340,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Gryan Miers",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "active",
+      "returning": "Season"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Shaun Mannagh",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Taylor Walker",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Shai Bolton",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Bruce Reville",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Sydney Swans",
       "player": "Braeden Campbell",
@@ -1958,7 +2000,7 @@
       "team": "Richmond Tigers",
       "player": "Josh Smillie",
       "injury": "active",
-      "returning": "TBC"
+      "returning": "Season"
     },
     {
       "team": "GWS Giants",
