@@ -126,7 +126,10 @@ export default memo(function StaticLabelList({
         
         return (
           <text
-            key={`label-${x}-${y}-${value}`}
+            // Recharts updates x/y on every bar-animation frame. Keep the
+            // label element keyed to its game instead so its text is not
+            // repeatedly unmounted and recreated during that animation.
+            key={`label-${dataObject?.xKey ?? dataObject?.id ?? index ?? value}`}
             x={x + (width / 2)}
             y={labelY}
             textAnchor="middle"

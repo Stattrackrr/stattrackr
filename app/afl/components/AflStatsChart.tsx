@@ -1721,7 +1721,6 @@ export function AflStatsChart({
             customTooltip={customTooltip}
             customXAxisTick={aflXAxisTick}
             yAxisTickFormatter={(value) => String(Math.round(value))}
-            disableBarAnimation={true}
             teammateFilterName={teammateFilterName}
             withWithoutMode={withWithoutMode}
             clearTeammateFilter={clearTeammateFilter}
