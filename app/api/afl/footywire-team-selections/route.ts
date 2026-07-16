@@ -29,10 +29,11 @@ export type TeamSelectionsRoundResponse = {
 
 const TTL_MS = 1000 * 60 * 15;
 let cached: { expiresAt: number; data: TeamSelectionsRoundResponse } | null = null;
+let inFlight: Promise<TeamSelectionsRoundResponse> | null = null;
 const key = (value: string | null | undefined) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 async function toSelection(match: Awaited<ReturnType<typeof fetchFootyinfoRoundSummary>>[number]): Promise<TeamSelectionsResponse> {
-  const score = await fetchFootyinfoMatchBoxScore(match.id);
+  const score = await fetchFootyinfoMatchBoxScore(match.id, { lineupOnly: true });
   const home = score?.home || [];
   const away = score?.away || [];
   const homeTeam = footyinfoNameToOfficial(match.home_team_full) || footyinfoAbbrevToOfficial(match.home_team) || match.home_team_full || match.home_team;
@@ -89,14 +90,24 @@ export async function GET(request: Request) {
   if (!refresh && cached && cached.expiresAt > Date.now()) {
     return response(cached.data, teamParam, opponentParam);
   }
-  const matches = await fetchFootyinfoRoundSummary(season, 166);
-  const selections = await Promise.all(matches.map(toSelection));
-  const data: TeamSelectionsRoundResponse = {
-    url: 'https://www.footyinfo.com/',
-    title: 'FootyInfo AFL team selections',
-    round_label: selections[0]?.round_label || null,
-    matches: selections,
-  };
+  if (!inFlight || refresh) {
+    inFlight = (async () => {
+      const matches = await fetchFootyinfoRoundSummary(season, 166);
+      const selections = await Promise.all(matches.map(toSelection));
+      return {
+        url: 'https://www.footyinfo.com/',
+        title: 'FootyInfo AFL team selections',
+        round_label: selections[0]?.round_label || null,
+        matches: selections,
+      };
+    })();
+  }
+  let data: TeamSelectionsRoundResponse;
+  try {
+    data = await inFlight;
+  } finally {
+    inFlight = null;
+  }
   cached = { expiresAt: Date.now() + TTL_MS, data };
   return response(data, teamParam, opponentParam);
 }

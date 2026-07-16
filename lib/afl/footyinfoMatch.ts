@@ -141,17 +141,15 @@ function parsePublishedLineup(
     .filter((player) => player.playerName);
 }
 
-export async function fetchFootyinfoMatchBoxScore(matchId: number): Promise<{
+export async function fetchFootyinfoMatchBoxScore(
+  matchId: number,
+  options: { lineupOnly?: boolean } = {}
+): Promise<{
   meta: FootyinfoMatchMeta | null;
   home: FootyinfoBoxScorePlayer[];
   away: FootyinfoBoxScorePlayer[];
 } | null> {
   const meta = await fetchFootyinfoMatchMeta(matchId);
-  const stats = await fetchFootyinfoJson<{
-    home?: { rows?: Array<Record<string, Cell>> };
-    away?: { rows?: Array<Record<string, Cell>> };
-  }>(`/match/${matchId}/player_stats`);
-  if (!stats.ok) return null;
   const homeOfficial =
     footyinfoAbbrevToOfficial(meta?.h_abbrev) ||
     footyinfoNameToOfficial(meta?.h_name) ||
@@ -162,6 +160,18 @@ export async function fetchFootyinfoMatchBoxScore(matchId: number): Promise<{
     footyinfoNameToOfficial(meta?.a_name) ||
     meta?.a_name ||
     'Away';
+  if (options.lineupOnly) {
+    return {
+      meta,
+      home: parsePublishedLineup(meta?.home_stats?.player_stats, homeOfficial),
+      away: parsePublishedLineup(meta?.away_stats?.player_stats, awayOfficial),
+    };
+  }
+  const stats = await fetchFootyinfoJson<{
+    home?: { rows?: Array<Record<string, Cell>> };
+    away?: { rows?: Array<Record<string, Cell>> };
+  }>(`/match/${matchId}/player_stats`);
+  if (!stats.ok) return null;
   return {
     meta,
     home: (() => {
