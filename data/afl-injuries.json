@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-07-16T21:05:39.026Z",
+  "generatedAt": "2026-07-16T23:02:56.493Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 207,
+  "injuryCount": 209,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Shaun Mannagh",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jeremy Cameron",
+      "injury": "Ac joint",
+      "returning": "at least a month"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Max King",
+      "injury": "Shoulder",
+      "returning": "next round"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Lachie Schultz",
@@ -101,12 +125,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Jeremy Cameron",
-      "injury": "Soreness",
-      "returning": "active"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Jack Dalton",
       "injury": "Knee",
@@ -123,12 +141,6 @@
       "player": "Ben Miller",
       "injury": "Heel",
       "returning": "TBA"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Max King",
-      "injury": "Injury",
-      "returning": "3 Weeks"
     },
     {
       "team": "West Coast Eagles",
