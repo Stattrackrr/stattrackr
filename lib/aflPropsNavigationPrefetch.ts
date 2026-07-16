@@ -16,10 +16,8 @@ export function prefetchAflDashboardFromProps(options: {
   const logsBase = `/api/afl/player-game-logs?player_name=${encodeURIComponent(playerName)}${teamEnc}&include_both=1`;
   const urls = [
     `/api/afl/player-props?player=${encodeURIComponent(playerName)}&all=1${teamForApi ? `&team=${encodeURIComponent(teamForApi)}` : ''}${opponent ? `&opponent=${encodeURIComponent(opponent)}` : ''}`,
-    // Match the dashboard's critical-path request. Full historical enrichment
-    // runs after the player view has rendered; prefetching three full seasons
-    // here delays the navigation it is meant to accelerate.
-    `${logsBase}&season=${currentSeason}&fast=1`,
+    // Match the complete current-season payload the dashboard renders.
+    `${logsBase}&season=${currentSeason}`,
     `/api/afl/fantasy-positions?season=${currentSeason}&player=${encodeURIComponent(playerName)}`,
     `/api/afl/players?query=${encodeURIComponent(playerName)}&limit=30`,
   ];

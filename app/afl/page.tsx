@@ -3134,25 +3134,18 @@ export default function AFLPage() {
         }
       };
 
-      const countMergedGames = (rc: SeasonFetchResult, rp: SeasonFetchResult, ro: SeasonFetchResult) => {
-        const dataCurrent = rc.data;
-        const dataPrev = rp.data;
-        const dataOlder = ro.data;
-        let gamesCurrent = rc.ok && Array.isArray(dataCurrent?.games) ? (dataCurrent.games as Record<string, unknown>[]) : [];
-        const gamesPrev = rp.ok && Array.isArray(dataPrev?.games) ? (dataPrev.games as Record<string, unknown>[]) : [];
-        const gamesOlder = ro.ok && Array.isArray(dataOlder?.games) ? (dataOlder.games as Record<string, unknown>[]) : [];
-        const payloadSeasonCurrent = dataCurrent?.season;
-        const has2026InCurrent = gamesCurrent.length > 0 && aflGamesIncludeSeason(gamesCurrent, 2026);
-        const is2026ResponseActually2025 = currentYear === 2026 && !has2026InCurrent && (payloadSeasonCurrent === 2025 || gamesCurrent.length > 0);
-        if (is2026ResponseActually2025) gamesCurrent = [];
-        return dedupeAflGames([...gamesCurrent, ...gamesPrev, ...gamesOlder]).length;
-      };
-
       try {
-        // Current-season history is what powers the initial player view. Load
-        // it before starting older seasons so a cold selection cannot flood
-        // FootyInfo with three years of match-detail calls at once.
-        let resultCurrent = await fetchSeason(currentYear, '&fast=1');
+        // Build one complete history payload and render it once. Incrementally
+        // applying current, prior, and older seasons changes chart data under
+        // the user and produces visible label/bar churn.
+        const currentPromise = fetchSeason(currentYear);
+        const prevPromise = fetchSeason(prevYear);
+        const olderPromise = fetchSeason(olderYear);
+        let [resultCurrent, resultPrev, resultOlder] = await Promise.all([
+          currentPromise,
+          prevPromise,
+          olderPromise,
+        ]);
         if (cancelled) return;
         if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
           const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
@@ -3161,39 +3154,7 @@ export default function AFLPage() {
             resultCurrent = strictCurrent;
           }
         }
-        applyMergedSeasonResults(resultCurrent, emptyOlderSeason, emptyOlderSeason);
-        setStatsLoadingForPlayer(false);
-
-        // Enrich the already-visible rows with match dates/results in the
-        // background. This request also fills the server cache for revisits.
-        const enrichedCurrent = await fetchSeason(currentYear);
-        if (cancelled) return;
-        if (resultHasSeason(enrichedCurrent, currentYear)) {
-          resultCurrent = enrichedCurrent;
-          applyMergedSeasonResults(resultCurrent, emptyOlderSeason, emptyOlderSeason);
-        }
-
-        const p2 = fetchSeason(prevYear);
-        const p3 = fetchSeason(olderYear);
-        let resultPrev = await p2;
-        if (cancelled) return;
-        applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);
-
-        const mergedCountWithoutOldest = countMergedGames(resultCurrent, resultPrev, emptyOlderSeason);
-        if (mergedCountWithoutOldest === 0) {
-          const resultOlder = await p3;
-          if (cancelled) return;
-          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-        } else if (mergedCountWithoutOldest >= AFL_DEFER_OLDEST_SEASON_WHEN_GAME_COUNT_AT_LEAST) {
-          p3.then((resultOlder) => {
-            if (cancelled) return;
-            applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-          });
-        } else {
-          const resultOlder = await p3;
-          if (cancelled) return;
-          applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
-        }
+        applyMergedSeasonResults(resultCurrent, resultPrev, resultOlder);
       } catch (e) {
         if (!cancelled) {
           const elapsedMs = Date.now() - searchStartedAtMs;
