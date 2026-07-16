@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T12:34:38Z",
+  "generatedAt": "2026-07-16T14:15:39.851Z",
   "count": 44,
   "records": [
     {
@@ -1404,7 +1404,7 @@
           "recommendedEdge": 0.2251,
           "recommendedProb": 0.7161,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 35
         },
         {
           "playerName": "Patrick Dangerfield",
@@ -1415,7 +1415,7 @@
           "recommendedEdge": 0.166,
           "recommendedProb": 0.666,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 8
         },
         {
           "playerName": "Lawson Humphries",
@@ -1426,7 +1426,7 @@
           "recommendedEdge": 0.1357,
           "recommendedProb": 0.6317,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 26
         }
       ]
     },
@@ -1634,7 +1634,7 @@
           "playerName": "Hugh Mccluggage",
           "bookmaker": "PointsBet (AU)",
           "line": 22.5,
-          "expectedDisposals": 19.0,
+          "expectedDisposals": 19,
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1492,
           "recommendedProb": 0.6582,
