@@ -3149,11 +3149,10 @@ export default function AFLPage() {
       };
 
       try {
-        const p1 = fetchSeason(currentYear, '');
-        const p2 = fetchSeason(prevYear);
-        const p3 = fetchSeason(olderYear);
-        // Paint current season as soon as it arrives — don't block ~10s on a cold prior-season scrape.
-        let resultCurrent = await p1;
+        // Current-season history is what powers the initial player view. Load
+        // it before starting older seasons so a cold selection cannot flood
+        // FootyInfo with three years of match-detail calls at once.
+        let resultCurrent = await fetchSeason(currentYear, '');
         if (cancelled) return;
         if (currentYear === 2026 && !resultHasSeason(resultCurrent, 2026)) {
           const strictCurrent = await fetchSeason(currentYear, '&strict_season=1');
@@ -3165,6 +3164,8 @@ export default function AFLPage() {
         applyMergedSeasonResults(resultCurrent, emptyOlderSeason, emptyOlderSeason);
         setStatsLoadingForPlayer(false);
 
+        const p2 = fetchSeason(prevYear);
+        const p3 = fetchSeason(olderYear);
         let resultPrev = await p2;
         if (cancelled) return;
         applyMergedSeasonResults(resultCurrent, resultPrev, emptyOlderSeason);

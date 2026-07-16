@@ -16,6 +16,26 @@ export const FOOTYINFO_DEFAULT_HEADERS: Record<string, string> = {
   Referer: `${FOOTYINFO_SITE_BASE}/`,
 };
 
+const maxConcurrentRequests = Math.max(
+  1,
+  Number(process.env.FOOTYINFO_MAX_CONCURRENT_REQUESTS ?? 6)
+);
+let activeRequests = 0;
+const requestWaiters: Array<() => void> = [];
+
+async function withFootyinfoRequestSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (activeRequests >= maxConcurrentRequests) {
+    await new Promise<void>((resolve) => requestWaiters.push(resolve));
+  }
+  activeRequests += 1;
+  try {
+    return await work();
+  } finally {
+    activeRequests -= 1;
+    requestWaiters.shift()?.();
+  }
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -55,9 +75,11 @@ export async function fetchFootyinfoJson<T = unknown>(
   let lastError = '';
   for (let i = 0; i < attempts; i += 1) {
     try {
-      const res = await fetch(url, { headers, signal: options.signal, cache: 'no-store' });
+      const { res, text } = await withFootyinfoRequestSlot(async () => {
+        const response = await fetch(url, { headers, signal: options.signal, cache: 'no-store' });
+        return { res: response, text: await response.text() };
+      });
       lastStatus = res.status;
-      const text = await res.text();
       let data: unknown = null;
       if (text) {
         try {
