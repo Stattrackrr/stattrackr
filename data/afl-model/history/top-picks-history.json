@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T18:06:43Z",
+  "generatedAt": "2026-07-17T13:39:41.443Z",
   "count": 44,
   "records": [
     {
@@ -1451,7 +1451,7 @@
           "recommendedEdge": 0.2412,
           "recommendedProb": 0.7322,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 29
         },
         {
           "playerName": "Wayne Milera",
@@ -1462,7 +1462,7 @@
           "recommendedEdge": 0.1612,
           "recommendedProb": 0.6542,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 26
         },
         {
           "playerName": "Jai Serong",
@@ -1473,7 +1473,7 @@
           "recommendedEdge": 0.0842,
           "recommendedProb": 0.5842,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 12
         }
       ]
     },
@@ -1692,7 +1692,7 @@
           "playerName": "Jarman Impey",
           "bookmaker": "PointsBet (AU)",
           "line": 24.5,
-          "expectedDisposals": 21.0,
+          "expectedDisposals": 21,
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1526,
           "recommendedProb": 0.6526,
