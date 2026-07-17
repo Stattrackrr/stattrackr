@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T06:24:17.935Z",
+  "generatedAt": "2026-07-17T10:04:17.214Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -10798,8 +10798,8 @@
       "name": "Matthew Johnson",
       "team": "Fremantle",
       "position": "MID",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },

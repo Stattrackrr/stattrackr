@@ -1,9 +1,93 @@
 {
-  "generatedAt": "2026-07-17T06:23:51.035Z",
+  "generatedAt": "2026-07-17T10:03:50.934Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 216,
+  "injuryCount": 228,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Harry Kyle",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Joel Hamling",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Tom Hanily",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Caiden Cleary",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Rory Laird",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Harrison Jones",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Lachlan Blakiston",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Harvey Thomas",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Jasper Alger",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Zane Peucker",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Matt Hill",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Darcy Parish",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Archie Perkins",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Adam Treloar",
+      "injury": "Calf",
+      "returning": "four to six weeks"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Jake Melksham",
@@ -15,12 +99,6 @@
       "player": "Kane Farrell",
       "injury": "Groin",
       "returning": "Season"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Harvey Thomas",
-      "injury": "Soreness",
-      "returning": "1 Week"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -68,7 +146,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "TBC"
+      "returning": "unlikely to return before the completion of the home and away season"
     },
     {
       "team": "Geelong Cats",
@@ -255,12 +333,6 @@
       "player": "Josh Lindsay",
       "injury": "Quad",
       "returning": "1 Week"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Rory Laird",
-      "injury": "Ankle",
-      "returning": "2-4 weeks"
     },
     {
       "team": "Carlton Blues",
