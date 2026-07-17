@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-07-16T23:02:56.493Z",
+  "generatedAt": "2026-07-17T02:20:30.430Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 209,
+  "injuryCount": 214,
   "injuries": [
+    {
+      "team": "GWS Giants",
+      "player": "Harvey Thomas",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Zac Banch",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Taylor Walker",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Nick Holman",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Kieren Briggs",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Joel Freijah",
+      "injury": "dropped from the senior side, needs a 'circuit breaker'",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Luke Cleary",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Luke Kennedy",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Max Holmes",
@@ -51,12 +99,6 @@
       "player": "Jamie Elliott",
       "injury": "active",
       "returning": "Season"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Taylor Walker",
-      "injury": "rested",
-      "returning": "active"
     },
     {
       "team": "Fremantle Dockers",
@@ -194,19 +236,13 @@
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
       "injury": "Shoulder",
-      "returning": "at least the next five weeks"
+      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
       "player": "Josh Lindsay",
       "injury": "Quad",
       "returning": "1 Week"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Jayden Short",
-      "injury": "Quad",
-      "returning": "Test"
     },
     {
       "team": "Adelaide Crows",
@@ -384,6 +420,12 @@
     },
     {
       "team": "Richmond Tigers",
+      "player": "Jayden Short",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Richmond Tigers",
       "player": "Jack Ross",
       "injury": "Soreness",
       "returning": "TBC"
@@ -485,12 +527,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Josh Battle",
-      "injury": "Injury",
-      "returning": "Test"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Lewis Young",
       "injury": "Injury",
@@ -522,6 +558,12 @@
     },
     {
       "team": "Hawthorn Hawks",
+      "player": "Josh Battle",
+      "injury": "Illness",
+      "returning": "a test to return against the Tigers"
+    },
+    {
+      "team": "Hawthorn Hawks",
       "player": "Nick Watson",
       "injury": "active",
       "returning": "TBC"
@@ -543,12 +585,6 @@
       "player": "Luke Trainor",
       "injury": "Concussion",
       "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Maurice Rioli",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "Sydney Swans",
@@ -608,12 +644,6 @@
       "team": "GWS Giants",
       "player": "Finnegan Davis",
       "injury": "Quad",
-      "returning": "Test"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Max Heath",
-      "injury": "Shoulder",
       "returning": "Test"
     },
     {
