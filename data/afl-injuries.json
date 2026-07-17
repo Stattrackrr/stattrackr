@@ -1,45 +1,9 @@
 {
-  "generatedAt": "2026-07-17T15:23:47.185Z",
+  "generatedAt": "2026-07-17T17:19:33.960Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 230,
+  "injuryCount": 218,
   "injuries": [
-    {
-      "team": "Sydney Swans",
-      "player": "Isaac Heeney",
-      "injury": "Back",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Harry Cunningham",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Harry Kyle",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Joel Hamling",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Tom Hanily",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Caiden Cleary",
-      "injury": "active",
-      "returning": "TBC"
-    },
     {
       "team": "Adelaide Crows",
       "player": "Rory Laird",
@@ -215,12 +179,6 @@
       "returning": "active"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Braeden Campbell",
-      "injury": "Shin",
-      "returning": "This week"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Mark Blicavs",
       "injury": "Soreness",
@@ -243,12 +201,6 @@
       "player": "Will Day",
       "injury": "Calf",
       "returning": "miss Sunday's clash"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Mark Keane",
-      "injury": "Concussion",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -689,21 +641,9 @@
       "returning": "TBA"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Logan McDonald",
-      "injury": "Quad",
-      "returning": "This week"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Elijah Hewett",
       "injury": "dropped again, partly to make way for the returning Tim Kelly",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Isaac Cumming",
-      "injury": "left out by opponents Adelaide",
       "returning": "TBC"
     },
     {
@@ -1007,12 +947,6 @@
       "returning": "remainder of the Under-18s National Championships"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Lincoln McCarthy",
-      "injury": "Calf",
-      "returning": "2-3 weeks"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Luke Pedlar",
       "injury": "Hamstring",
@@ -1119,12 +1053,6 @@
       "player": "Lewis Hayes",
       "injury": "ACL",
       "returning": "Season"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Oscar Allen",
-      "injury": "missing",
-      "returning": "TBC"
     },
     {
       "team": "Brisbane Lions",
