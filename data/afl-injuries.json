@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-17T02:20:30.430Z",
+  "generatedAt": "2026-07-17T06:23:51.035Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 214,
+  "injuryCount": 216,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Jake Melksham",
+      "injury": "Ankle",
+      "returning": "active"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Kane Farrell",
+      "injury": "Groin",
+      "returning": "Season"
+    },
     {
       "team": "GWS Giants",
       "player": "Harvey Thomas",
