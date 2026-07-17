@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-17T13:30:44.460Z",
+  "generatedAt": "2026-07-17T15:23:47.185Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 228,
+  "injuryCount": 230,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Isaac Heeney",
+      "injury": "Back",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Harry Cunningham",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "Sydney Swans",
       "player": "Harry Kyle",
