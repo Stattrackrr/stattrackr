@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T08:59:20.232Z",
+  "generatedAt": "2026-07-18T09:38:33.143Z",
   "count": 44,
   "records": [
     {
@@ -1545,7 +1545,7 @@
           "recommendedEdge": 0.2366,
           "recommendedProb": 0.7456,
           "rank": 1,
-          "actualDisposals": 32
+          "actualDisposals": 33
         },
         {
           "playerName": "Colby Mckercher",
@@ -1556,7 +1556,7 @@
           "recommendedEdge": 0.1964,
           "recommendedProb": 0.6964,
           "rank": 2,
-          "actualDisposals": 24
+          "actualDisposals": 26
         },
         {
           "playerName": "Harry Sheezel",
