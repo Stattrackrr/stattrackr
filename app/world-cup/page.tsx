@@ -13450,6 +13450,7 @@ function WorldCupPublicGate() {
 
   useEffect(() => {
     if (!mounted || WORLD_CUP_PUBLIC_ENABLED) return;
+    clearWorldCupDashboardPersistence();
     router.replace('/props?sport=all');
   }, [mounted, router]);
 

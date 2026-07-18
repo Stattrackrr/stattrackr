@@ -64,7 +64,6 @@ const nextConfig: NextConfig = {
     return [
       { source: "/favicon.ico", destination: "/images/stattrackr-icon.png" },
       { source: "/world-cup/player/:slug", destination: "/world-cup" },
-      { source: "/images/world-cup-logo.png", destination: "/api/world-cup/dashboard?logo=1" },
     ];
   },
   typescript: {

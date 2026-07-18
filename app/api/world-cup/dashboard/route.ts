@@ -3785,6 +3785,12 @@ async function handleWorldCupOddsRefreshGet(request: NextRequest): Promise<NextR
 }
 
 export async function GET(request: NextRequest) {
+  if (!WORLD_CUP_PUBLIC_ENABLED) {
+    return NextResponse.json(
+      { error: 'Not found' },
+      { status: 404, headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
   if (request.nextUrl.searchParams.get('logo') === '1') {
     return handleWorldCupLogoGet();
   }
@@ -3795,17 +3801,7 @@ export async function GET(request: NextRequest) {
     return handleWorldCupPropsStatsWarmGet(request);
   }
   if (request.nextUrl.searchParams.get('playerPropsList') === '1') {
-    if (!WORLD_CUP_PUBLIC_ENABLED) {
-      return NextResponse.json({ props: [], disabled: true, reason: 'world_cup_closed' });
-    }
     return handleWorldCupPlayerPropsListGet(request);
-  }
-  if (!WORLD_CUP_PUBLIC_ENABLED) {
-    // Keep logo + cron warm endpoints available; block public dashboard reads.
-    return NextResponse.json(
-      { error: 'World Cup is temporarily unavailable', disabled: true, reason: 'world_cup_closed' },
-      { status: 503 }
-    );
   }
   const debug = isWcCacheDebug(request);
   return runWithWcCacheDebug(debug, async () => {

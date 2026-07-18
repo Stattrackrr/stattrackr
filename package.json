@@ -3,8 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/warm-games.js copy-world-cup-logo",
-    "copy:world-cup-logo": "node scripts/warm-games.js copy-world-cup-logo",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

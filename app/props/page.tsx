@@ -7849,35 +7849,27 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   decoding="async"
                 />
               </button>
-              <button
-                type="button"
-                disabled={!WORLD_CUP_PUBLIC_ENABLED}
-                onClick={() => {
-                  if (!WORLD_CUP_PUBLIC_ENABLED) return;
-                  toggleSportSelection('world-cup');
-                }}
-                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
-                  !WORLD_CUP_PUBLIC_ENABLED
-                    ? mounted && isDark
-                      ? 'bg-[#0d1528] text-gray-500 border-[#2a2545] opacity-60 cursor-not-allowed grayscale'
-                      : 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 cursor-not-allowed grayscale'
-                    : propsSport === 'world-cup'
+              {WORLD_CUP_PUBLIC_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => toggleSportSelection('world-cup')}
+                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                    propsSport === 'world-cup'
                       ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
                       : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                }`}
-                aria-label="World Cup"
-                aria-disabled={!WORLD_CUP_PUBLIC_ENABLED}
-                title={!WORLD_CUP_PUBLIC_ENABLED ? 'Coming Soon' : undefined}
-              >
-                <img
-                  src={WORLD_CUP_LOGO_PATH}
-                  alt=""
-                  className={WORLD_CUP_LOGO_TOGGLE_CLASS}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              </button>
+                  }`}
+                  aria-label="World Cup"
+                >
+                  <img
+                    src={WORLD_CUP_LOGO_PATH}
+                    alt=""
+                    className={WORLD_CUP_LOGO_TOGGLE_CLASS}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </button>
+              )}
             </div>
 
             {/* Search Bar */}

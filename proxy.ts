@@ -7,6 +7,25 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const worldCupPublicEnabled =
+    process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === 'true' ||
+    process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === '1';
+  if (!worldCupPublicEnabled) {
+    if (request.nextUrl.pathname.startsWith('/world-cup')) {
+      const destination = request.nextUrl.clone();
+      destination.pathname = '/props';
+      destination.search = '?sport=all';
+      return NextResponse.redirect(destination);
+    }
+
+    const sport = request.nextUrl.searchParams.get('sport');
+    if (sport === 'world-cup' || sport === 'worldcup') {
+      const destination = request.nextUrl.clone();
+      destination.searchParams.set('sport', 'all');
+      return NextResponse.redirect(destination);
+    }
+  }
+
   // Create response
   const response = NextResponse.next();
 

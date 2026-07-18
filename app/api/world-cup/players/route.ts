@@ -139,8 +139,8 @@ function dedupePlayers(
 export async function GET(request: NextRequest) {
   if (!WORLD_CUP_PUBLIC_ENABLED) {
     return NextResponse.json(
-      { data: [], disabled: true, reason: 'world_cup_closed' },
-      { status: 503, headers: { 'Cache-Control': 'no-store' } }
+      { error: 'Not found' },
+      { status: 404, headers: { 'Cache-Control': 'no-store' } }
     );
   }
   const debug = isWcCacheDebug(request);
