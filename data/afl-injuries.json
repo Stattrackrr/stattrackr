@@ -1,14 +1,38 @@
 {
-  "generatedAt": "2026-07-18T05:05:40.561Z",
+  "generatedAt": "2026-07-18T07:51:48.562Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 221,
   "injuries": [
     {
       "team": "Port Adelaide Power",
+      "player": "Connor Rozee",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Zak Butters",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
       "player": "Mitch Georgiades",
-      "injury": "active",
-      "returning": "This week"
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Harrison Ramm",
+      "injury": "Illness",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jaeger O'Meara",
+      "injury": "Ankle",
+      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
@@ -19,8 +43,8 @@
     {
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
-      "injury": "Faces MRO review for swinging arm on Harry Cunningham.",
-      "returning": "could be suspended in the range of three weeks"
+      "injury": "suspended for collecting Sydney's Harry Cunningham high",
+      "returning": "three matches"
     },
     {
       "team": "Sydney Swans",
@@ -345,12 +369,6 @@
       "player": "Karl Amon",
       "injury": "Knee",
       "returning": "before finals"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Zak Butters",
-      "injury": "Syndesmosis",
-      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -816,12 +834,6 @@
     },
     {
       "team": "Port Adelaide Power",
-      "player": "Harrison Ramm",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
       "player": "Tom Cochrane",
       "injury": "active",
       "returning": "TBC"
@@ -992,12 +1004,6 @@
       "team": "Sydney Swans",
       "player": "Colin O'Riordan",
       "injury": "Hip",
-      "returning": "Season"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Connor Rozee",
-      "injury": "Nerve",
       "returning": "Season"
     },
     {
