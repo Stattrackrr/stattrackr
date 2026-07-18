@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-07-17T22:56:29.478Z",
+  "generatedAt": "2026-07-18T02:12:00.510Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Mitch Georgiades",
+      "injury": "active",
+      "returning": "This week"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jack Lukosius",
+      "injury": "active",
+      "returning": "This week"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Darcy Fogarty",
+      "injury": "Faces MRO review for swinging arm on Harry Cunningham.",
+      "returning": "could be suspended in the range of three weeks"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Harry Cunningham",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Rory Laird",
@@ -169,8 +193,8 @@
     {
       "team": "Fremantle Dockers",
       "player": "Shai Bolton",
-      "injury": "rested",
-      "returning": "active"
+      "injury": "being rested",
+      "returning": "This week"
     },
     {
       "team": "Brisbane Lions",
@@ -317,12 +341,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Port Adelaide Power",
-      "player": "Jack Lukosius",
-      "injury": "Injury",
-      "returning": "TBA"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Karl Amon",
       "injury": "Knee",
@@ -332,7 +350,7 @@
       "team": "Port Adelaide Power",
       "player": "Zak Butters",
       "injury": "Syndesmosis",
-      "returning": "at least four weeks"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -344,13 +362,7 @@
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
       "injury": "accepted a one-game suspension for rough conduct",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Mitch Georgiades",
-      "injury": "Concussion",
-      "returning": "TBC"
+      "returning": "This week"
     },
     {
       "team": "Port Adelaide Power",
