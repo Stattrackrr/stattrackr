@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-18T11:22:09.700Z",
+  "generatedAt": "2026-07-18T13:16:16.698Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 223,
+  "injuryCount": 226,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Adam Cerra",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Changkuoth Jiath",
+      "injury": "Lower leg",
+      "returning": "TBC"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
