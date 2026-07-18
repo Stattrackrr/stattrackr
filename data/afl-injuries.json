@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-18T07:51:48.562Z",
+  "generatedAt": "2026-07-18T09:29:55.610Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 223,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jason Horne-Francis",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Daniel Turner",
+      "injury": "Rib",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Sid Draper",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Connor Rozee",
@@ -375,12 +393,6 @@
       "player": "Scott Pendlebury",
       "injury": "managed carefully this season and has played just 12 of Collingwood's 17 games",
       "returning": "active"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jason Horne-Francis",
-      "injury": "accepted a one-game suspension for rough conduct",
-      "returning": "This week"
     },
     {
       "team": "Port Adelaide Power",
