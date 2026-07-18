@@ -286,9 +286,13 @@ export function AflTeamSelectionsCard({
   const followersAway = (folRow?.away_players ?? []).map(toPlayerEntry);
   const ovalRows: { position: string; players: PlayerEntry[]; isHome: boolean }[] = [];
   OVAL_POSITION_ORDER.forEach((pos) => {
-    const row = getByPos(pos);
-    const homeThree = (row?.home_players ?? []).slice(0, 3).map(toPlayerEntry);
-    const awayThree = (row?.away_players ?? []).slice(0, 3).map(toPlayerEntry);
+    const homeRow = getByPos(pos);
+    // The away team faces the opposite direction on the oval. Pair the home
+    // back line with the away forward line, rather than relabelling away backs
+    // as forwards while leaving those players in the wrong physical row.
+    const awayRow = getByPos(oppositePositionLabel(pos));
+    const homeThree = (homeRow?.home_players ?? []).slice(0, 3).map(toPlayerEntry);
+    const awayThree = (awayRow?.away_players ?? []).slice(0, 3).map(toPlayerEntry);
     if (homeThree.length > 0) ovalRows.push({ position: pos, players: homeThree, isHome: true });
     if (awayThree.length > 0) ovalRows.push({ position: pos, players: awayThree, isHome: false });
   });
