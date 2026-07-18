@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T11:54:13Z",
+  "generatedAt": "2026-07-18T13:24:35.735Z",
   "count": 44,
   "records": [
     {
@@ -1592,7 +1592,7 @@
           "recommendedEdge": 0.1524,
           "recommendedProb": 0.6384,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 25
         },
         {
           "playerName": "Edward Allan",
@@ -1603,7 +1603,7 @@
           "recommendedEdge": 0.1417,
           "recommendedProb": 0.6417,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 16
         },
         {
           "playerName": "Jack Crisp",
@@ -1614,7 +1614,7 @@
           "recommendedEdge": 0.1381,
           "recommendedProb": 0.6291,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 17
         }
       ]
     },
@@ -1639,7 +1639,7 @@
           "recommendedEdge": 0.1818,
           "recommendedProb": 0.6908,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 13
         },
         {
           "playerName": "Lachie Neale",
@@ -1650,7 +1650,7 @@
           "recommendedEdge": 0.1815,
           "recommendedProb": 0.6775,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 32
         },
         {
           "playerName": "Levi Ashcroft",
@@ -1661,7 +1661,7 @@
           "recommendedEdge": 0.1008,
           "recommendedProb": 0.6008,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 15
         }
       ]
     },
