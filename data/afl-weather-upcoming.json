@@ -1,52 +1,8 @@
 {
-  "generatedAt": "2026-07-17T17:35:55.971Z",
+  "generatedAt": "2026-07-18T11:51:48.910Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "8c4510d90a64277cb42017c36010cb09",
-      "homeTeam": "Port Adelaide Power",
-      "awayTeam": "Fremantle Dockers",
-      "commenceTime": "2026-07-18T03:15:21Z",
-      "weather": {
-        "temperatureC": 15.9,
-        "precipitationMm": 0,
-        "windKmh": 6.9
-      }
-    },
-    {
-      "gameId": "084ae8d6d0d000e014b32ebc6876de6c",
-      "homeTeam": "North Melbourne Kangaroos",
-      "awayTeam": "Melbourne Demons",
-      "commenceTime": "2026-07-18T06:15:03Z",
-      "weather": {
-        "temperatureC": 12.9,
-        "precipitationMm": 0,
-        "windKmh": 8.1
-      }
-    },
-    {
-      "gameId": "e98bbce4f8fecc2b4f69334e7845a4f9",
-      "homeTeam": "Collingwood Magpies",
-      "awayTeam": "Carlton Blues",
-      "commenceTime": "2026-07-18T09:35:33Z",
-      "weather": {
-        "temperatureC": 9,
-        "precipitationMm": 0,
-        "windKmh": 2.4
-      }
-    },
-    {
-      "gameId": "01bc6d63ad92ac98728f0549d2a5505c",
-      "homeTeam": "West Coast Eagles",
-      "awayTeam": "Brisbane Lions",
-      "commenceTime": "2026-07-18T10:10:56Z",
-      "weather": {
-        "temperatureC": 15.4,
-        "precipitationMm": 0,
-        "windKmh": 10.7
-      }
-    },
     {
       "gameId": "08fce59c25dc27b5a81232584ecb0ded",
       "homeTeam": "Richmond Tigers",
@@ -55,7 +11,7 @@
       "weather": {
         "temperatureC": 15.9,
         "precipitationMm": 0,
-        "windKmh": 8.4
+        "windKmh": 9.6
       }
     },
     {
@@ -65,8 +21,8 @@
       "commenceTime": "2026-07-19T05:15:18Z",
       "weather": {
         "temperatureC": 18.4,
-        "precipitationMm": 0.7,
-        "windKmh": 30
+        "precipitationMm": 1.1,
+        "windKmh": 29.9
       }
     },
     {
@@ -77,9 +33,9 @@
       "weather": {
         "temperatureC": 15.4,
         "precipitationMm": 0,
-        "windKmh": 5.2
+        "windKmh": 11.1
       }
     }
   ],
-  "count": 7
+  "count": 3
 }

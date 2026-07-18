@@ -1,11 +1,86 @@
 {
-  "generatedAt": "2026-07-17T17:58:14Z",
-  "modelVersion": "afl-disp-20260717-175353",
+  "generatedAt": "2026-07-18T11:53:51Z",
+  "modelVersion": "afl-disp-20260718-115222",
   "sampleCount": 1097,
-  "guardrailsPass": true,
-  "promoted": true,
+  "guardrailsPass": false,
+  "promoted": false,
   "candidateMetrics": {
     "name": "candidate",
+    "sampleCount": 1097,
+    "hitRate": 0.536007,
+    "brierScore": 0.268032,
+    "logLoss": 0.747197,
+    "mae": 4.537413,
+    "avgClvLite": -0.001781,
+    "positiveClvRate": 0.184139,
+    "clvSampleCount": 1097,
+    "calibrationBins": [
+      {
+        "bin": 0,
+        "count": 22,
+        "avgPred": 0.0535,
+        "avgActual": 0.3182
+      },
+      {
+        "bin": 1,
+        "count": 54,
+        "avgPred": 0.1549,
+        "avgActual": 0.4815
+      },
+      {
+        "bin": 2,
+        "count": 121,
+        "avgPred": 0.2578,
+        "avgActual": 0.5702
+      },
+      {
+        "bin": 3,
+        "count": 253,
+        "avgPred": 0.3527,
+        "avgActual": 0.4348
+      },
+      {
+        "bin": 4,
+        "count": 301,
+        "avgPred": 0.447,
+        "avgActual": 0.4452
+      },
+      {
+        "bin": 5,
+        "count": 232,
+        "avgPred": 0.5472,
+        "avgActual": 0.5043
+      },
+      {
+        "bin": 6,
+        "count": 81,
+        "avgPred": 0.6398,
+        "avgActual": 0.5679
+      },
+      {
+        "bin": 7,
+        "count": 28,
+        "avgPred": 0.7353,
+        "avgActual": 0.5714
+      },
+      {
+        "bin": 8,
+        "count": 4,
+        "avgPred": 0.8252,
+        "avgActual": 0.75
+      },
+      {
+        "bin": 9,
+        "count": 1,
+        "avgPred": 0.9084,
+        "avgActual": 1.0
+      }
+    ],
+    "calibrationMethod": "identity",
+    "modelVersion": "afl-disp-20260718-115222"
+  },
+  "currentMetrics": {
+    "name": "current",
     "sampleCount": 1097,
     "hitRate": 0.530538,
     "brierScore": 0.266574,
@@ -79,134 +154,59 @@
     "calibrationMethod": "identity",
     "modelVersion": "afl-disp-20260717-175353"
   },
-  "currentMetrics": {
-    "name": "current",
-    "sampleCount": 1097,
-    "hitRate": 0.531449,
-    "brierScore": 0.265382,
-    "logLoss": 0.738,
-    "mae": 4.498329,
-    "avgClvLite": -0.002099,
-    "positiveClvRate": 0.177758,
-    "clvSampleCount": 1097,
-    "calibrationBins": [
-      {
-        "bin": 0,
-        "count": 15,
-        "avgPred": 0.052,
-        "avgActual": 0.3333
-      },
-      {
-        "bin": 1,
-        "count": 36,
-        "avgPred": 0.1622,
-        "avgActual": 0.4722
-      },
-      {
-        "bin": 2,
-        "count": 111,
-        "avgPred": 0.2526,
-        "avgActual": 0.4955
-      },
-      {
-        "bin": 3,
-        "count": 206,
-        "avgPred": 0.3563,
-        "avgActual": 0.4612
-      },
-      {
-        "bin": 4,
-        "count": 344,
-        "avgPred": 0.4489,
-        "avgActual": 0.4564
-      },
-      {
-        "bin": 5,
-        "count": 243,
-        "avgPred": 0.5483,
-        "avgActual": 0.5062
-      },
-      {
-        "bin": 6,
-        "count": 109,
-        "avgPred": 0.6429,
-        "avgActual": 0.5596
-      },
-      {
-        "bin": 7,
-        "count": 27,
-        "avgPred": 0.745,
-        "avgActual": 0.4444
-      },
-      {
-        "bin": 8,
-        "count": 5,
-        "avgPred": 0.8251,
-        "avgActual": 0.6
-      },
-      {
-        "bin": 9,
-        "count": 1,
-        "avgPred": 0.9042,
-        "avgActual": 1.0
-      }
-    ],
-    "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260716-180203"
-  },
   "deltas": {
-    "brierImprovement": -0.004492,
-    "logLossChange": 0.003178,
-    "hitRateDelta": -0.000911
+    "brierImprovement": -0.005469,
+    "logLossChange": 0.009255,
+    "hitRateDelta": 0.005469
   },
   "confidenceBuckets": [
     {
       "bucketType": "confidence",
       "bucket": "high_0.65_plus",
-      "count": 330,
-      "hitRate": 0.518182
+      "count": 377,
+      "hitRate": 0.517241
     },
     {
       "bucketType": "confidence",
       "bucket": "low",
-      "count": 423,
-      "hitRate": 0.539007
+      "count": 373,
+      "hitRate": 0.530831
     },
     {
       "bucketType": "confidence",
       "bucket": "mid_0.57_0.65",
-      "count": 344,
-      "hitRate": 0.531977
+      "count": 347,
+      "hitRate": 0.56196
     }
   ],
   "edgeBuckets": [
     {
       "bucketType": "edge",
       "bucket": "edge_5_8",
-      "count": 189,
-      "hitRate": 0.550265
+      "count": 173,
+      "hitRate": 0.537572
     },
     {
       "bucketType": "edge",
       "bucket": "edge_8_plus",
-      "count": 623,
-      "hitRate": 0.521669
+      "count": 660,
+      "hitRate": 0.530303
     },
     {
       "bucketType": "edge",
       "bucket": "edge_under_5",
-      "count": 285,
-      "hitRate": 0.536842
+      "count": 264,
+      "hitRate": 0.549242
     }
   ],
   "topLossTypes": [
     {
       "type": "Under->Over",
-      "count": 328
+      "count": 346
     },
     {
       "type": "Over->Under",
-      "count": 187
+      "count": 163
     }
   ]
 }
