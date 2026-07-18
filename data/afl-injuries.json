@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-18T19:09:22.191Z",
+  "generatedAt": "2026-07-18T20:54:09.569Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 204,
+  "injuryCount": 205,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Lachie Jones",
+      "injury": "Rib",
+      "returning": "TBA"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
