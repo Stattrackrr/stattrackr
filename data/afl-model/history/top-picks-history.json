@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T17:58:47Z",
+  "generatedAt": "2026-07-18T06:05:40.028Z",
   "count": 44,
   "records": [
     {
@@ -1498,7 +1498,7 @@
           "recommendedEdge": 0.1748,
           "recommendedProb": 0.6748,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 28
         },
         {
           "playerName": "Luke Jackson",
@@ -1509,7 +1509,7 @@
           "recommendedEdge": 0.1335,
           "recommendedProb": 0.6335,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 16
         },
         {
           "playerName": "Logan Evans",
@@ -1520,7 +1520,7 @@
           "recommendedEdge": 0.1278,
           "recommendedProb": 0.6075,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 23
         }
       ]
     },
@@ -1634,7 +1634,7 @@
           "playerName": "Hugh Mccluggage",
           "bookmaker": "PointsBet (AU)",
           "line": 22.5,
-          "expectedDisposals": 18.0,
+          "expectedDisposals": 18,
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1818,
           "recommendedProb": 0.6908,
