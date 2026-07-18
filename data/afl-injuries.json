@@ -1,37 +1,13 @@
 {
-  "generatedAt": "2026-07-18T14:59:11.397Z",
+  "generatedAt": "2026-07-18T17:02:37.952Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 226,
+  "injuryCount": 204,
   "injuries": [
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Knee",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Adam Cerra",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Changkuoth Jiath",
-      "injury": "Lower leg",
-      "returning": "TBC"
-    },
     {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Daniel Turner",
-      "injury": "Rib",
       "returning": "TBC"
     },
     {
@@ -63,12 +39,6 @@
       "player": "Harrison Ramm",
       "injury": "Illness",
       "returning": "active"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Jaeger O'Meara",
-      "injury": "Ankle",
-      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
@@ -147,12 +117,6 @@
       "player": "Adam Treloar",
       "injury": "Calf",
       "returning": "four to six weeks"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Jake Melksham",
-      "injury": "Ankle",
-      "returning": "active"
     },
     {
       "team": "Port Adelaide Power",
@@ -287,24 +251,6 @@
       "returning": "miss Sunday's clash"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Mitch Knevitt",
-      "injury": "dropped",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jack Bowes",
-      "injury": "dropped",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Angus Hastie",
-      "injury": "omitted",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Jack Dalton",
       "injury": "Knee",
@@ -383,12 +329,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Carlton Blues",
-      "player": "George Hewett",
-      "injury": "Back",
-      "returning": "Test"
-    },
-    {
       "team": "Gold Coast Suns",
       "player": "Will Graham",
       "injury": "Shoulder",
@@ -407,27 +347,9 @@
       "returning": "before finals"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "managed carefully this season and has played just 12 of Collingwood's 17 games",
-      "returning": "active"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Lachie Jones",
-      "injury": "Rib",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Harrison Petty",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Bayley Fritsch",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
@@ -435,12 +357,6 @@
       "player": "Tanner Bruhn",
       "injury": "Neck",
       "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Billy Frampton",
-      "injury": "Copped a one-game ban for a dangerous tackle against North Melbourne. Charged with rough conduct, graded as careless with medium impact and high contact.",
-      "returning": "1 game"
     },
     {
       "team": "GWS Giants",
@@ -467,12 +383,6 @@
       "returning": "TBC"
     },
     {
-      "team": "North Melbourne Kangaroos",
-      "player": "Paul Curtis",
-      "injury": "banned for a tackle",
-      "returning": "3 games"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Ryley Sanders",
       "injury": "Hand",
@@ -485,18 +395,6 @@
       "returning": "active"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Harvey Harrison",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Josh Goater",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "Jacob Konstanty",
       "injury": "managed",
@@ -505,12 +403,6 @@
     {
       "team": "Essendon Bombers",
       "player": "Nik Cox",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "James Tunstill",
       "injury": "active",
       "returning": "TBC"
     },
@@ -560,18 +452,6 @@
       "team": "Fremantle Dockers",
       "player": "Sean Darcy",
       "injury": "managed off a five-day break",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Hayden Young",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Brandon Zerk-Thatcher",
-      "injury": "unlucky omission",
       "returning": "TBC"
     },
     {
@@ -719,12 +599,6 @@
       "returning": "4 Weeks"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Isaac Quaynor",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Thomas Edwards",
       "injury": "Hamstring",
@@ -866,12 +740,6 @@
       "team": "Port Adelaide Power",
       "player": "Tom Cochrane",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Todd Marshall",
-      "injury": "dropped among five changes",
       "returning": "TBC"
     },
     {
