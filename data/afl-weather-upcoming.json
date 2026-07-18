@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T11:51:48.910Z",
+  "generatedAt": "2026-07-18T17:27:58.384Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-07-19T03:10:46Z",
       "weather": {
-        "temperatureC": 15.9,
+        "temperatureC": 16,
         "precipitationMm": 0,
-        "windKmh": 9.6
+        "windKmh": 7.6
       }
     },
     {
@@ -20,8 +20,8 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-07-19T05:15:18Z",
       "weather": {
-        "temperatureC": 18.4,
-        "precipitationMm": 1.1,
+        "temperatureC": 18.7,
+        "precipitationMm": 0.7,
         "windKmh": 29.9
       }
     },
@@ -31,9 +31,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-07-19T06:40:02Z",
       "weather": {
-        "temperatureC": 15.4,
+        "temperatureC": 15.7,
         "precipitationMm": 0,
-        "windKmh": 11.1
+        "windKmh": 7.9
       }
     }
   ],
