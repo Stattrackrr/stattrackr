@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-07-18T13:06:48.329Z",
+  "generatedAt": "2026-07-18T14:50:04.373Z",
   "source": "footyinfo.com",
   "sourcePage": "player/{slug}/game_logs_summary?mode=averages&columns=all",
   "playerCount": 569,
@@ -111,7 +111,7 @@
       "rebound_50s": 1.8,
       "contested_possessions": 13.2,
       "uncontested_possessions": 16.9,
-      "meters_gained": 337.8,
+      "meters_gained": 337.7,
       "free_kicks_for": 1.1
     },
     {
@@ -231,13 +231,13 @@
       "handballs": 11.5,
       "marks": 5.1,
       "goals": 0.6,
-      "tackles": 3.5,
+      "tackles": 3.6,
       "clearances": 5.3,
       "inside_50s": 4.6,
       "rebound_50s": 2.1,
       "contested_possessions": 9.3,
       "uncontested_possessions": 17.3,
-      "meters_gained": 384.2,
+      "meters_gained": 384.1,
       "free_kicks_for": 1.2
     },
     {
@@ -939,7 +939,7 @@
       "rebound_50s": 1.1,
       "contested_possessions": 12.8,
       "uncontested_possessions": 11.6,
-      "meters_gained": 415.2,
+      "meters_gained": 414.7,
       "free_kicks_for": 2.5
     },
     {
@@ -993,7 +993,7 @@
       "rebound_50s": 1.6,
       "contested_possessions": 9.5,
       "uncontested_possessions": 13.8,
-      "meters_gained": 397.4,
+      "meters_gained": 397.2,
       "free_kicks_for": 0.9
     },
     {
@@ -1119,7 +1119,7 @@
       "rebound_50s": 4.5,
       "contested_possessions": 5.4,
       "uncontested_possessions": 13.4,
-      "meters_gained": 405.7,
+      "meters_gained": 405.8,
       "free_kicks_for": 0.6
     },
     {
@@ -1281,7 +1281,7 @@
       "rebound_50s": 5.8,
       "contested_possessions": 4.8,
       "uncontested_possessions": 13.2,
-      "meters_gained": 449.1,
+      "meters_gained": 449.2,
       "free_kicks_for": 0.4
     },
     {
@@ -1947,7 +1947,7 @@
       "rebound_50s": 1.6,
       "contested_possessions": 5.8,
       "uncontested_possessions": 13.7,
-      "meters_gained": 275.1,
+      "meters_gained": 274.8,
       "free_kicks_for": 0.9
     },
     {
@@ -1999,9 +1999,9 @@
       "clearances": 3.1,
       "inside_50s": 2.9,
       "rebound_50s": 1.4,
-      "contested_possessions": 8.6,
-      "uncontested_possessions": 11.4,
-      "meters_gained": 228.7,
+      "contested_possessions": 8.5,
+      "uncontested_possessions": 11.5,
+      "meters_gained": 229,
       "free_kicks_for": 0.7
     },
     {
@@ -2289,7 +2289,7 @@
       "rebound_50s": 4.3,
       "contested_possessions": 3.4,
       "uncontested_possessions": 14.6,
-      "meters_gained": 396.8,
+      "meters_gained": 399,
       "free_kicks_for": 0.6
     },
     {
@@ -2343,7 +2343,7 @@
       "rebound_50s": 2.9,
       "contested_possessions": 4.7,
       "uncontested_possessions": 12.2,
-      "meters_gained": 304.6,
+      "meters_gained": 304.9,
       "free_kicks_for": 0.3
     },
     {
@@ -2553,7 +2553,7 @@
       "handballs": 7.4,
       "marks": 4.4,
       "goals": 0.8,
-      "tackles": 3.5,
+      "tackles": 3.6,
       "clearances": 2.3,
       "inside_50s": 3.4,
       "rebound_50s": 1.5,
@@ -2937,7 +2937,7 @@
       "rebound_50s": 2.2,
       "contested_possessions": 6.6,
       "uncontested_possessions": 10.9,
-      "meters_gained": 263.2,
+      "meters_gained": 262.8,
       "free_kicks_for": 1.4
     },
     {
@@ -3081,7 +3081,7 @@
       "rebound_50s": 2.2,
       "contested_possessions": 4.8,
       "uncontested_possessions": 11.6,
-      "meters_gained": 191.2,
+      "meters_gained": 193.6,
       "free_kicks_for": 0
     },
     {
@@ -3171,7 +3171,7 @@
       "rebound_50s": 1.4,
       "contested_possessions": 7.7,
       "uncontested_possessions": 9.7,
-      "meters_gained": 274.1,
+      "meters_gained": 273.7,
       "free_kicks_for": 0.5
     },
     {
@@ -3435,13 +3435,13 @@
       "handballs": 8.1,
       "marks": 2.5,
       "goals": 0.9,
-      "tackles": 4,
+      "tackles": 4.1,
       "clearances": 1.1,
       "inside_50s": 2.7,
       "rebound_50s": 0.7,
       "contested_possessions": 6.8,
       "uncontested_possessions": 9.5,
-      "meters_gained": 190.9,
+      "meters_gained": 191.2,
       "free_kicks_for": 1.2
     },
     {
@@ -3837,7 +3837,7 @@
       "rebound_50s": 2.6,
       "contested_possessions": 4.1,
       "uncontested_possessions": 11.3,
-      "meters_gained": 261.3,
+      "meters_gained": 261.1,
       "free_kicks_for": 0.5
     },
     {
@@ -4953,7 +4953,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 5.9,
       "uncontested_possessions": 8.1,
-      "meters_gained": 175.3,
+      "meters_gained": 174.9,
       "free_kicks_for": 0.5
     },
     {
@@ -4989,7 +4989,7 @@
       "rebound_50s": 1.5,
       "contested_possessions": 5.2,
       "uncontested_possessions": 9.3,
-      "meters_gained": 195.9,
+      "meters_gained": 195.6,
       "free_kicks_for": 0.6
     },
     {
@@ -5167,7 +5167,7 @@
       "clearances": 0.1,
       "inside_50s": 1.2,
       "rebound_50s": 3.2,
-      "contested_possessions": 3.7,
+      "contested_possessions": 3.8,
       "uncontested_possessions": 9.3,
       "meters_gained": 270.1,
       "free_kicks_for": 0.8
@@ -5457,7 +5457,7 @@
       "rebound_50s": 1.2,
       "contested_possessions": 10.2,
       "uncontested_possessions": 3.9,
-      "meters_gained": 221.3,
+      "meters_gained": 224.4,
       "free_kicks_for": 1.9
     },
     {
@@ -5691,7 +5691,7 @@
       "rebound_50s": 3.3,
       "contested_possessions": 4.7,
       "uncontested_possessions": 5.2,
-      "meters_gained": 261,
+      "meters_gained": 262.5,
       "free_kicks_for": 0.7
     },
     {
@@ -5853,7 +5853,7 @@
       "rebound_50s": 0.3,
       "contested_possessions": 3.8,
       "uncontested_possessions": 8.7,
-      "meters_gained": 253.2,
+      "meters_gained": 253.3,
       "free_kicks_for": 1.2
     },
     {
@@ -6537,7 +6537,7 @@
       "rebound_50s": 0,
       "contested_possessions": 4.6,
       "uncontested_possessions": 6.9,
-      "meters_gained": 221.8,
+      "meters_gained": 221.5,
       "free_kicks_for": 1.2
     },
     {
@@ -6609,7 +6609,7 @@
       "rebound_50s": 1.2,
       "contested_possessions": 4.2,
       "uncontested_possessions": 8.4,
-      "meters_gained": 168.9,
+      "meters_gained": 169.5,
       "free_kicks_for": 0.2
     },
     {
@@ -6627,7 +6627,7 @@
       "rebound_50s": 0.1,
       "contested_possessions": 5.2,
       "uncontested_possessions": 7.3,
-      "meters_gained": 227.9,
+      "meters_gained": 228,
       "free_kicks_for": 0.7
     },
     {
@@ -6915,7 +6915,7 @@
       "rebound_50s": 2.2,
       "contested_possessions": 3.1,
       "uncontested_possessions": 9.5,
-      "meters_gained": 263.1,
+      "meters_gained": 267.7,
       "free_kicks_for": 0.5
     },
     {
