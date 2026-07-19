@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-07-18T22:54:51.077Z",
+  "generatedAt": "2026-07-19T02:24:24.872Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 205,
+  "injuryCount": 212,
   "injuries": [
+    {
+      "team": "Richmond Tigers",
+      "player": "Jayden Short",
+      "injury": "Back",
+      "returning": "Returned"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harley Reid",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Dayne Zorko",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Hutchinson",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Adam Cerra",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Daniel Turner",
+      "injury": "Rib",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Changkuoth Jiath",
+      "injury": "Lower-leg",
+      "returning": "TBC"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Lachie Jones",
@@ -91,20 +139,20 @@
     {
       "team": "Richmond Tigers",
       "player": "Jasper Alger",
-      "injury": "active",
-      "returning": "active"
+      "injury": "makes way",
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
       "player": "Zane Peucker",
-      "injury": "active",
-      "returning": "active"
+      "injury": "gone straight back out of the side",
+      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
       "player": "Matt Hill",
-      "injury": "active",
-      "returning": "active"
+      "injury": "omitted after playing his first two games",
+      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
@@ -254,7 +302,7 @@
       "team": "Hawthorn Hawks",
       "player": "Will Day",
       "injury": "Calf",
-      "returning": "miss Sunday's clash"
+      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -272,7 +320,7 @@
       "team": "Richmond Tigers",
       "player": "Ben Miller",
       "injury": "Heel",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
@@ -421,12 +469,6 @@
     {
       "team": "Brisbane Lions",
       "player": "Darcy Gardiner",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Jayden Short",
       "injury": "Soreness",
       "returning": "TBC"
     },

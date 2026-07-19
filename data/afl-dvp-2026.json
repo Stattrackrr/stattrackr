@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T22:55:17.115Z",
+  "generatedAt": "2026-07-19T02:24:43.766Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -6892,8 +6892,8 @@
       "name": "Billy Wilson",
       "team": "Carlton",
       "position": "DEF",
-      "status": 200,
-      "error": null,
+      "status": 503,
+      "error": "Player history is not warmed yet",
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },
