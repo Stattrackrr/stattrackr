@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-07-19T19:07:07.561Z",
+  "generatedAt": "2026-07-19T20:47:31.397Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 179,
+  "injuryCount": 186,
   "injuries": [
+    {
+      "team": "Richmond Tigers",
+      "player": "Kaleb Smith",
+      "injury": "Concussion",
+      "returning": "Test"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Luke Trainor",
+      "injury": "Concussion",
+      "returning": "Test"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Back",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Alex Davies",
+      "injury": "Foot",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Jy Farrar",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Finnegan Davis",
+      "injury": "Quad",
+      "returning": "Test"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Sam Butler",
+      "injury": "Leg",
+      "returning": "Test"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
