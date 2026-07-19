@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-07-19T20:47:31.397Z",
+  "generatedAt": "2026-07-19T22:52:23.703Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 186,
+  "injuryCount": 191,
   "injuries": [
+    {
+      "team": "GWS Giants",
+      "player": "Toby Greene",
+      "injury": "Quad",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Xavier Duursma",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Nate Caddy",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Nick Bryan",
+      "injury": "Rib",
+      "returning": "TBC"
+    },
+    {
+      "team": "Oakleigh Chargers",
+      "player": "Harper McCullough",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "Richmond Tigers",
       "player": "Kaleb Smith",
