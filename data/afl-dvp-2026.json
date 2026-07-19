@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T17:00:16.088Z",
+  "generatedAt": "2026-07-19T19:07:30.175Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -6958,8 +6958,8 @@
       "name": "Archie Roberts",
       "team": "Essendon",
       "position": "DEF",
-      "status": 200,
-      "error": null,
+      "status": 503,
+      "error": "Player history is not warmed yet",
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },

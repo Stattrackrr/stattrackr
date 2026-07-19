@@ -1,33 +1,9 @@
 {
-  "generatedAt": "2026-07-19T16:59:51.832Z",
+  "generatedAt": "2026-07-19T19:07:07.561Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 216,
+  "injuryCount": 179,
   "injuries": [
-    {
-      "team": "Essendon Bombers",
-      "player": "Nate Caddy",
-      "injury": "Illness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Ginnivan",
-      "injury": "Back",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Taj Hotton",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Harrison Oliver",
-      "injury": "active",
-      "returning": "TBC"
-    },
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
@@ -39,12 +15,6 @@
       "player": "Tom Liberatore",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Jayden Short",
-      "injury": "Back",
-      "returning": "Returned"
     },
     {
       "team": "West Coast Eagles",
@@ -156,12 +126,6 @@
     },
     {
       "team": "Essendon Bombers",
-      "player": "Harrison Jones",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
       "player": "Lachlan Blakiston",
       "injury": "active",
       "returning": "TBC"
@@ -169,30 +133,6 @@
     {
       "team": "GWS Giants",
       "player": "Harvey Thomas",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Jasper Alger",
-      "injury": "makes way",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Zane Peucker",
-      "injury": "gone straight back out of the side",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Matt Hill",
-      "injury": "omitted after playing his first two games",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Darcy Parish",
       "injury": "active",
       "returning": "TBC"
     },
@@ -236,24 +176,6 @@
       "team": "GWS Giants",
       "player": "Kieren Briggs",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Joel Freijah",
-      "injury": "dropped from the senior side, needs a 'circuit breaker'",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Luke Cleary",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Luke Kennedy",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -389,12 +311,6 @@
       "returning": "Season"
     },
     {
-      "team": "Melbourne Demons",
-      "player": "Christian Salem",
-      "injury": "Foot",
-      "returning": "TBC"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Connor Budarick",
       "injury": "Syndesmosis",
@@ -438,21 +354,9 @@
     },
     {
       "team": "GWS Giants",
-      "player": "Conor Stone",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "GWS Giants",
       "player": "Josaia Delana",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Back",
-      "returning": "TBC"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -461,34 +365,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Ryley Sanders",
-      "injury": "Hand",
-      "returning": "TBC"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "George Wardlaw",
       "injury": "Soft tissue",
       "returning": "active"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Jacob Konstanty",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Nik Cox",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Steely Green",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Brisbane Lions",
@@ -499,12 +379,6 @@
     {
       "team": "Richmond Tigers",
       "player": "Jack Ross",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Nick Coffield",
       "injury": "Soreness",
       "returning": "TBC"
     },
@@ -524,12 +398,6 @@
       "team": "Fremantle Dockers",
       "player": "Sean Darcy",
       "injury": "managed off a five-day break",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Jordan Ridley",
-      "injury": "decided to rest Jordan Ridley",
       "returning": "TBC"
     },
     {
@@ -564,21 +432,9 @@
     },
     {
       "team": "Hawthorn Hawks",
-      "player": "Sam Butler",
-      "injury": "Leg",
-      "returning": "pushing to return this week"
-    },
-    {
-      "team": "Hawthorn Hawks",
       "player": "Henry Hustwaite",
       "injury": "Face",
       "returning": "4 Weeks"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Kaleb Smith",
-      "injury": "Concussion",
-      "returning": "Test"
     },
     {
       "team": "West Coast Eagles",
@@ -594,38 +450,8 @@
     },
     {
       "team": "GWS Giants",
-      "player": "Lachie Whitfield",
-      "injury": "Concussion",
-      "returning": "TBA"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Ben Long",
-      "injury": "for a hit on Collingwood’s Brayden Maynard",
-      "returning": "2-match suspension"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Max Gruzewski",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "GWS Giants",
       "player": "Brent Daniels",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Josh Battle",
-      "injury": "Illness",
-      "returning": "a test to return against the Tigers"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Nick Watson",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -639,12 +465,6 @@
       "player": "Tom De Koning",
       "injury": "Ribs",
       "returning": "active"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Luke Trainor",
-      "injury": "Concussion",
-      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
@@ -681,12 +501,6 @@
       "player": "Kayle Gerreyn",
       "injury": "Knee",
       "returning": "2 Weeks"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Finnegan Davis",
-      "injury": "Quad",
-      "returning": "Test"
     },
     {
       "team": "Port Adelaide Power",
@@ -911,18 +725,6 @@
       "returning": "Season"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Daniel Rioli",
-      "injury": "Jaw",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Josh Weddle",
-      "injury": "Three match ban for a collision with Daniel Rioli.",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Tyler Welsh",
       "injury": "Ankle",
@@ -951,12 +753,6 @@
       "player": "Jack Scrimshaw",
       "injury": "Knee",
       "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Kyle Langford",
-      "injury": "Quad",
-      "returning": "1 Week"
     },
     {
       "team": "Dandenong Stingrays",
@@ -1055,12 +851,6 @@
       "returning": "Season"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Alex Davies",
-      "injury": "Foot",
-      "returning": "Test"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "Blake Thredgold",
       "injury": "Foot",
@@ -1130,12 +920,6 @@
       "team": "Richmond Tigers",
       "player": "Campbell Gray",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Sam Lalor",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
@@ -1227,12 +1011,6 @@
       "player": "Harry O'Farrell",
       "injury": "Knee",
       "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Jy Farrar",
-      "injury": "Ankle",
-      "returning": "extended period"
     },
     {
       "team": "Melbourne Demons",
