@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-18T17:48:23Z",
+  "generatedAt": "2026-07-19T06:40:54.242Z",
   "count": 44,
   "records": [
     {
@@ -1686,7 +1686,7 @@
           "recommendedEdge": 0.2093,
           "recommendedProb": 0.7093,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Jarman Impey",
@@ -1697,7 +1697,7 @@
           "recommendedEdge": 0.1602,
           "recommendedProb": 0.6602,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 34
         },
         {
           "playerName": "Tim Taranto",
@@ -1708,7 +1708,7 @@
           "recommendedEdge": 0.1243,
           "recommendedProb": 0.6243,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 27
         }
       ]
     },
