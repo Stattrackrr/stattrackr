@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T06:40:54.242Z",
+  "generatedAt": "2026-07-19T09:17:03.060Z",
   "count": 44,
   "records": [
     {
@@ -1733,7 +1733,7 @@
           "recommendedEdge": 0.3231,
           "recommendedProb": 0.8321,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 17
         },
         {
           "playerName": "Ryley Sanders",
@@ -1744,7 +1744,7 @@
           "recommendedEdge": 0.2714,
           "recommendedProb": 0.7714,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 22
         }
       ]
     },
@@ -1769,7 +1769,7 @@
           "recommendedEdge": 0.2456,
           "recommendedProb": 0.7762,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 17
         },
         {
           "playerName": "Andrew Mcgrath",
@@ -1780,7 +1780,7 @@
           "recommendedEdge": 0.2342,
           "recommendedProb": 0.7342,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 18
         },
         {
           "playerName": "Sam Durham",
@@ -1791,7 +1791,7 @@
           "recommendedEdge": 0.1982,
           "recommendedProb": 0.6862,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 25
         }
       ]
     }
