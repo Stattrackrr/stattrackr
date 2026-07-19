@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-19T06:38:08.488Z",
+  "generatedAt": "2026-07-19T09:56:49.157Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 216,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Nate Caddy",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
     {
       "team": "Hawthorn Hawks",
       "player": "Jack Ginnivan",
