@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-07-19T02:24:24.872Z",
+  "generatedAt": "2026-07-19T06:38:08.488Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 212,
+  "injuryCount": 215,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Ginnivan",
+      "injury": "Back",
+      "returning": "TBC"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Taj Hotton",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Harrison Oliver",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Bailey Dale",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
     {
       "team": "Richmond Tigers",
       "player": "Jayden Short",
@@ -38,7 +68,7 @@
       "team": "Carlton Blues",
       "player": "Harry McKay",
       "injury": "Knee",
-      "returning": "TBC"
+      "returning": "Season"
     },
     {
       "team": "Melbourne Demons",
@@ -122,19 +152,19 @@
       "team": "Essendon Bombers",
       "player": "Harrison Jones",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
       "player": "Lachlan Blakiston",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
       "player": "Harvey Thomas",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
@@ -158,13 +188,13 @@
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
       "player": "Archie Perkins",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -200,7 +230,7 @@
       "team": "GWS Giants",
       "player": "Kieren Briggs",
       "injury": "Injury",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -353,12 +383,6 @@
       "returning": "Season"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Christian Salem",
       "injury": "Foot",
@@ -368,12 +392,6 @@
       "team": "Western Bulldogs",
       "player": "Connor Budarick",
       "injury": "Syndesmosis",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Bailey Dale",
-      "injury": "Shoulder",
       "returning": "TBC"
     },
     {
