@@ -1,9 +1,63 @@
 {
-  "generatedAt": "2026-07-19T22:52:23.703Z",
+  "generatedAt": "2026-07-20T02:37:22.811Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 191,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jaeger O'Meara",
+      "injury": "Ankle",
+      "returning": "TBA"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Ginnivan",
+      "injury": "Back",
+      "returning": "TBA"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Changkuoth Jiath",
+      "injury": "Leg",
+      "returning": "TBA"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Steely Green",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Taj Hotton",
+      "injury": "Ankle",
+      "returning": "TBA"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Liam Baker",
+      "injury": "Suspended AFL",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Riley Garcia",
+      "injury": "Hamstring",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Jamarra Ugle-Hagan",
+      "injury": "Calf",
+      "returning": "active"
+    },
     {
       "team": "GWS Giants",
       "player": "Toby Greene",
@@ -35,42 +89,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Richmond Tigers",
-      "player": "Kaleb Smith",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Luke Trainor",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Back",
-      "returning": "Test"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Alex Davies",
-      "injury": "Foot",
-      "returning": "Test"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Jy Farrar",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Finnegan Davis",
-      "injury": "Quad",
-      "returning": "Test"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Sam Butler",
       "injury": "Leg",
@@ -79,12 +97,6 @@
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -125,18 +137,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Melbourne Demons",
-      "player": "Changkuoth Jiath",
-      "injury": "Lower-leg",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Lachie Jones",
-      "injury": "Rib",
-      "returning": "TBA"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
       "injury": "Injury",
@@ -170,7 +170,7 @@
       "team": "Port Adelaide Power",
       "player": "Harrison Ramm",
       "injury": "Illness",
-      "returning": "active"
+      "returning": "1 Week"
     },
     {
       "team": "Port Adelaide Power",
