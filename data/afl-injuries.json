@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-20T19:45:04.824Z",
+  "generatedAt": "2026-07-20T21:13:31.106Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 192,
+  "injuryCount": 194,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Erone Fitzpatrick",
+      "injury": "ACL",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Errol Gulden",
+      "injury": "long-term injury",
+      "returning": "Round 16"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Dyson Sharp",
