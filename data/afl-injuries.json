@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T06:48:11.935Z",
+  "generatedAt": "2026-07-20T10:56:38.145Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 192,
@@ -187,14 +187,14 @@
     {
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
-      "injury": "suspended for collecting Sydney's Harry Cunningham high",
-      "returning": "three matches"
+      "injury": "ban was upheld at the Tribunal for striking Harry Cunningham",
+      "returning": "miss the next three games"
     },
     {
       "team": "Sydney Swans",
       "player": "Harry Cunningham",
       "injury": "Concussion",
-      "returning": "TBC"
+      "returning": "at least the Sydney Derby"
     },
     {
       "team": "Adelaide Crows",
