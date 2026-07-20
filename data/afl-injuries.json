@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-20T02:37:22.811Z",
+  "generatedAt": "2026-07-20T06:48:11.935Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 191,
+  "injuryCount": 192,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Dyson Sharp",
+      "injury": "Shoulder",
+      "returning": "active"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Jaeger O'Meara",
@@ -128,7 +134,7 @@
       "team": "Carlton Blues",
       "player": "Harry McKay",
       "injury": "Knee",
-      "returning": "Season"
+      "returning": "2 weeks"
     },
     {
       "team": "Melbourne Demons",
@@ -254,7 +260,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "unlikely to return before the completion of the home and away season"
+      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
