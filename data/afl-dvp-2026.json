@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T06:31:32.341Z",
+  "generatedAt": "2026-07-21T10:28:18.042Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -6958,8 +6958,8 @@
       "name": "Archie Roberts",
       "team": "Essendon",
       "position": "DEF",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },
@@ -12871,8 +12871,8 @@
       "name": "Tom Liberatore",
       "team": "Western Bulldogs",
       "position": "MID",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },

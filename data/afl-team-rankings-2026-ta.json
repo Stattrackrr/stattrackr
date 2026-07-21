@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-07-21T06:31:07.227Z",
+  "generatedAt": "2026-07-21T10:27:53.624Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
@@ -251,27 +251,6 @@
     },
     {
       "rank": 11,
-      "team": "Crows",
-      "stats": {
-        "Team": "Crows",
-        "Gm": 18,
-        "K": 227.44,
-        "HB": 144.72,
-        "D": 372.2,
-        "G": 21.11,
-        "M": 92.6,
-        "T": 69.9,
-        "CL": 36.7,
-        "I50": 52.5,
-        "R50": 40.7,
-        "CP": 140,
-        "UP": 221.17,
-        "MG": 10.94,
-        "Rk": 11
-      }
-    },
-    {
-      "rank": 12,
       "team": "Suns",
       "stats": {
         "Team": "Suns",
@@ -287,6 +266,27 @@
         "R50": 39.2,
         "CP": 127.1,
         "UP": 234.94,
+        "MG": 10.94,
+        "Rk": 11
+      }
+    },
+    {
+      "rank": 12,
+      "team": "Crows",
+      "stats": {
+        "Team": "Crows",
+        "Gm": 18,
+        "K": 227.44,
+        "HB": 144.72,
+        "D": 372.2,
+        "G": 21.11,
+        "M": 92.6,
+        "T": 69.9,
+        "CL": 36.7,
+        "I50": 52.5,
+        "R50": 40.7,
+        "CP": 140,
+        "UP": 221.17,
         "MG": 10.94,
         "Rk": 12
       }

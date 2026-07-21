@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-07-21T06:31:08.459Z",
+  "generatedAt": "2026-07-21T10:27:54.835Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 195,
+  "injuryCount": 199,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Henry Smith",
+      "injury": "Foot",
+      "returning": "Season"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Hugh Bond",
+      "injury": "Hamstring",
+      "returning": "3-4 weeks"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Noah Balta",
+      "injury": "Toe",
+      "returning": "not expecting him to play on Saturday night"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Joe Richards",
+      "injury": "Finger",
+      "returning": "3-4 weeks"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Lachie Schultz",
+      "injury": "Syndesmosis",
+      "returning": "next week or the week after"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Kyle Langford",
@@ -205,8 +235,8 @@
     {
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
-      "injury": "ban was upheld at the Tribunal for striking Harry Cunningham",
-      "returning": "miss the next three games"
+      "injury": "three-game suspension upheld",
+      "returning": "Round 23"
     },
     {
       "team": "Sydney Swans",
@@ -297,12 +327,6 @@
       "player": "Max King",
       "injury": "Shoulder",
       "returning": "next round"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Lachie Schultz",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -584,7 +608,7 @@
       "team": "Adelaide Crows",
       "player": "Mitchell Hinge",
       "injury": "Hamstring",
-      "returning": "4 Weeks"
+      "returning": "1-2 weeks"
     },
     {
       "team": "Essendon Bombers",
@@ -649,7 +673,7 @@
     {
       "team": "Geelong Cats",
       "player": "Tyson Stengle",
-      "injury": "Took leave from the program over the pre-season; struggling to commit to the program and finding it tough.",
+      "injury": "Has not played at AFL level this year, currently back in South Australia due to personal issues.",
       "returning": "TBC"
     },
     {
@@ -842,7 +866,7 @@
       "team": "Adelaide Crows",
       "player": "Luke Pedlar",
       "injury": "Hamstring",
-      "returning": "1-2 weeks"
+      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -1039,8 +1063,8 @@
     {
       "team": "Collingwood Magpies",
       "player": "Bobby Hill",
-      "injury": "Hasn't played a senior game since round 21 last year due to personal issues and has barely trained with the program at all this year. Club is negotiating his exit.",
-      "returning": "long way away from playing"
+      "injury": "Dealing with personal issues, spent significant time away from the club over the past year.",
+      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
