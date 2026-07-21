@@ -952,6 +952,7 @@ const PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX = 'props-next-sport-survey-v1';
 const NEXT_SPORT_SURVEY_OPTIONS = ['Tennis', 'Soccer', 'MLB', 'Esports'] as const;
 type NextSportSurveyOption = (typeof NEXT_SPORT_SURVEY_OPTIONS)[number];
 const PROPS_NEXT_SPORT_SURVEY_ENDS_AT = '2026-04-14T01:19:00.000Z';
+const PROPS_NBL_ANNOUNCEMENT_DISMISSED_KEY = 'props_nbl_announcement_dismissed_v1';
 const NBA_TEAM_ABBR_ALIASES: Record<string, string> = {
   WSH: 'WAS',
   GS: 'GSW',
@@ -2473,6 +2474,7 @@ export default function NBALandingPage() {
   const [selectedSurveySport, setSelectedSurveySport] = useState<NextSportSurveyOption | null>(null);
   const [surveySubmitting, setSurveySubmitting] = useState(false);
   const [surveyError, setSurveyError] = useState<string | null>(null);
+  const [nblAnnouncementOpen, setNblAnnouncementOpen] = useState(false);
   const surveyStorageKey = useMemo(
     () => viewerId ? `${PROPS_NEXT_SPORT_SURVEY_STORAGE_PREFIX}:${viewerId}` : null,
     [viewerId]
@@ -3228,6 +3230,43 @@ export default function NBALandingPage() {
       document.body.style.overflow = previousOverflow;
     };
   }, [surveyOpen]);
+
+  useEffect(() => {
+    if (!mounted || !subscriptionChecked || !isPro || surveyOpen) {
+      return;
+    }
+
+    try {
+      if (localStorage.getItem(PROPS_NBL_ANNOUNCEMENT_DISMISSED_KEY) === '1') {
+        return;
+      }
+    } catch {
+      // Ignore storage errors and still show the announcement.
+    }
+
+    setNblAnnouncementOpen(true);
+  }, [mounted, subscriptionChecked, isPro, surveyOpen]);
+
+  useEffect(() => {
+    if (!nblAnnouncementOpen || typeof document === 'undefined') {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [nblAnnouncementOpen]);
+
+  const dismissNblAnnouncement = useCallback(() => {
+    try {
+      localStorage.setItem(PROPS_NBL_ANNOUNCEMENT_DISMISSED_KEY, '1');
+    } catch {
+      // Ignore storage errors.
+    }
+    setNblAnnouncementOpen(false);
+  }, []);
 
   const handleNextSportSurveySubmit = useCallback(async () => {
     if (!selectedSurveySport || surveySubmitting) {
@@ -11528,6 +11567,61 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </button>
+      )}
+
+      {nblAnnouncementOpen && !surveyOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-md rounded-3xl border shadow-2xl ${
+              mounted && isDark ? 'bg-[#081525]/95 border-slate-700/80' : 'bg-white/95 border-gray-200'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="props-nbl-announcement-title"
+          >
+            <div className="p-5 sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${
+                    mounted && isDark ? 'border-slate-700 bg-slate-900/80' : 'border-gray-200 bg-gray-50'
+                  }`}>
+                    <StatTrackrLogo className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      mounted && isDark ? 'text-purple-300/80' : 'text-purple-600'
+                    }`}>
+                      Coming Next
+                    </div>
+                    <h2
+                      id="props-nbl-announcement-title"
+                      className={`mt-1 text-[28px] leading-none font-semibold ${
+                        mounted && isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      NBL is next
+                    </h2>
+                  </div>
+                </div>
+              </div>
+
+              <p className={`mt-4 text-sm sm:text-[15px] leading-6 ${mounted && isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                We know the World Cup dashboard didn&apos;t go as expected because we rushed it. We&apos;re going to build the next sport properly, just like AFL and NBA.
+              </p>
+              <p className={`mt-3 text-sm sm:text-[15px] leading-6 ${mounted && isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                Next up: <span className={`font-semibold ${mounted && isDark ? 'text-white' : 'text-gray-900'}`}>NBL</span>. Same quality bar you already get on AFL and NBA.
+              </p>
+
+              <button
+                type="button"
+                onClick={dismissNblAnnouncement}
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-violet-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:from-purple-500 hover:to-violet-400"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {surveyOpen && (

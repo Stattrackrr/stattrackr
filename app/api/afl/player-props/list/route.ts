@@ -847,18 +847,19 @@ export async function GET(request: Request) {
     const dfsPlayers = await loadDfsRolePlayers();
     const rowContexts = rows.map((r) => {
       const { playerTeam, opponent } = resolveMatchupForProp(r.playerName, r.homeTeam, r.awayTeam);
-      const filePos = resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID';
+      const filePos = normalizeFantasyPositionToDvp(
+        resolvePositionForPlayer(r.playerName, playerTeam) ?? 'MID'
+      );
       const dfsP = findDfsRolePlayer(dfsPlayers, r.playerName);
-      const position =
-        dfsP?.roleBucket != null ? dfsP.roleBucket : normalizeFantasyPositionToDvp(filePos);
-      return { r, playerTeam, opponent, position };
+      const position = dfsP?.roleBucket != null ? dfsP.roleBucket : filePos;
+      return { r, playerTeam, opponent, position, fantasyPosition: filePos };
     });
     const dfsShortByNormalizedName = new Map<string, string | null>();
     const fantasyDvpByPlayerKey = new Map<string, 'DEF' | 'MID' | 'FWD' | 'RUC'>();
     for (const ctx of rowContexts) {
       const nk = normalizeAflPlayerNameForMatch(ctx.r.playerName);
       if (!fantasyDvpByPlayerKey.has(nk)) {
-        fantasyDvpByPlayerKey.set(nk, normalizeFantasyPositionToDvp(ctx.position));
+        fantasyDvpByPlayerKey.set(nk, ctx.fantasyPosition);
       }
     }
     for (const [nk, fantasyDvp] of fantasyDvpByPlayerKey) {
@@ -867,25 +868,53 @@ export async function GET(request: Request) {
       const group = sampleName ? findDfsRoleGroup(dfsPlayers, sampleName) : null;
       dfsShortByNormalizedName.set(nk, resolveDfsRoleDisplayLabel(group, fantasyDvp));
     }
-    const neededPositions = Array.from(new Set(rowContexts.map((ctx) => ctx.position).filter(Boolean)));
+    const neededPositions = Array.from(
+      new Set(
+        rowContexts.flatMap((ctx) => [ctx.position, ctx.fantasyPosition]).filter(Boolean)
+      )
+    );
     await Promise.all(neededPositions.map((pos) => loadDvpBatchForPosition(pos)));
 
-    const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(({ r, playerTeam, opponent, position }) => {
-      const fantasyDvp = normalizeFantasyPositionToDvp(position);
+    const resolveDvpLookup = (
+      opponent: string,
+      statType: string,
+      preferredPosition: string,
+      fantasyPosition: string
+    ): { rank: number; value: number; usedPosition: string } | null => {
+      const metric = statType === 'goals_over' ? 'goals' : 'disposals';
+      const tryPosition = (pos: string): { rank: number; value: number; usedPosition: string } | null => {
+        const batch = dvpBatchByPosition.get(pos || 'MID');
+        const rankFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
+        const valueFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
+        if (rankFromBatch != null && valueFromBatch != null) {
+          return { rank: rankFromBatch, value: valueFromBatch, usedPosition: pos };
+        }
+        const fileHit = getDvpOverride(opponent, statType, pos);
+        if (fileHit) return { ...fileHit, usedPosition: pos };
+        return null;
+      };
+
+      const preferred = tryPosition(preferredPosition || 'MID');
+      if (preferred) return preferred;
+      // Dual-role players (e.g. DFS MID / fantasy DEF): if preferred bucket is missing for this
+      // opponent, fall back to fantasy position only — never to unrelated positions.
+      if (fantasyPosition && fantasyPosition !== preferredPosition) {
+        return tryPosition(fantasyPosition);
+      }
+      return null;
+    };
+
+    const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(
+      ({ r, playerTeam, opponent, position, fantasyPosition }) => {
+      const fantasyDvp = fantasyPosition;
       const dfsShort =
         dfsShortByNormalizedName.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
       const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
-      const batch = dvpBatchByPosition.get(position || 'MID');
-      const metric = r.statType === 'goals_over' ? 'goals' : 'disposals';
-      const rankFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
-      const valueFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
-      const dvpLookupResult = rankFromBatch != null && valueFromBatch != null
-        ? { rank: rankFromBatch, value: valueFromBatch }
-        : getDvpOverride(opponent, r.statType, position);
       // Always use the live position-aware team-total DvP lookup (dashboard source of truth).
       // Never fall back to cached prop-level DvP values, which can be stale after mapping changes.
+      const dvpLookupResult = resolveDvpLookup(opponent, r.statType, position, fantasyPosition);
       const dvpRating = dvpLookupResult?.rank ?? null;
       const dvpStatValue = dvpLookupResult?.value ?? null;
       const disposalsModel =
@@ -922,7 +951,14 @@ export async function GET(request: Request) {
         modelScoredAt: disposalsModel?.scoredAt ?? null,
         aflFantasyPosition: fantasyDvp,
         aflDfsRole: dfsShort,
-        ...(debugStats ? { _dvpPosition: position, _dvpOpponent: opponent } : {}),
+        ...(debugStats
+          ? {
+              _dvpPosition: position,
+              _dvpFantasyPosition: fantasyPosition,
+              _dvpUsedPosition: dvpLookupResult?.usedPosition ?? null,
+              _dvpOpponent: opponent,
+            }
+          : {}),
       };
       return baseRow;
     });

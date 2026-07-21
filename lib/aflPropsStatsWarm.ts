@@ -10,6 +10,7 @@ import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_S
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
+import { findDfsRolePlayer, loadDfsRolePlayers, normalizeFantasyPositionToDvp } from '@/lib/aflDfsRoleMap';
 
 const BATCH_SIZE = 50;
 const CONCURRENT_BATCHES = 2;
@@ -103,13 +104,19 @@ export async function runAflPropsStatsWarm(
     }
     let positionMap = await getAflPlayerPositionMap(season);
     if (positionMap.size === 0) positionMap = await getAflPlayerPositionMap(season - 1);
+    const dfsPlayers = await loadDfsRolePlayers();
     const teamMatches = (a: string, b: string) => {
       const officialA = (a ?? '').trim() ? toOfficialAflTeamDisplayName((a ?? '').trim()) : '';
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
-    const getDvp = (opponent: string, statType: string, position?: string | null) => {
-      return getDvpLookupTeamTotal(opponent, statType, dvpMaps, position);
+    const getDvp = (opponent: string, statType: string, preferredPosition?: string | null, fantasyPosition?: string | null) => {
+      const preferred = getDvpLookupTeamTotal(opponent, statType, dvpMaps, preferredPosition);
+      if (preferred) return preferred;
+      if (fantasyPosition && fantasyPosition !== preferredPosition) {
+        return getDvpLookupTeamTotal(opponent, statType, dvpMaps, fantasyPosition);
+      }
+      return null;
     };
     console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map:', playerTeamMap.size, 'position map:', positionMap.size);
 
@@ -143,8 +150,12 @@ export async function runAflPropsStatsWarm(
     const runBatch = (batch: PropToWarm[]) =>
       Promise.all(
         batch.map((p) => {
-          const position = positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? undefined;
-          const dvp = getDvp(p.opponent, p.statType, position);
+          const fantasyPosition = normalizeFantasyPositionToDvp(
+            positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? 'MID'
+          );
+          const dfsP = findDfsRolePlayer(dfsPlayers, p.playerName);
+          const preferredPosition = dfsP?.roleBucket != null ? dfsP.roleBucket : fantasyPosition;
+          const dvp = getDvp(p.opponent, p.statType, preferredPosition, fantasyPosition);
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (!r) {

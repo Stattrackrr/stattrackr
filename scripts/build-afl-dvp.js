@@ -395,6 +395,10 @@ function getAppRequestHeaders() {
   return {
     'x-vercel-protection-bypass': secret,
     Authorization: `Bearer ${secret}`,
+    // Vercel Deployment Protection can consume Authorization; X-Cron-Secret is what
+    // player-game-logs uses to authorize cache-miss warm fetches.
+    'X-Cron-Secret': secret,
+    'X-AFL-Cache-Warm': '1',
   };
 }
 
