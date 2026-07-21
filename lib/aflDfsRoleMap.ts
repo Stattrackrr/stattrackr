@@ -6,7 +6,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import type { DfsRolePlayer } from './aflDfsRoleLabels';
+import type { AflDepthRole, DfsRolePlayer } from './aflDfsRoleLabels';
 import { normalizeDfsRolePlayerMatchKey, roleBucketFromDfsRoleGroup } from './aflDfsRoleLabels';
 
 export type { DfsRolePlayer, AflDepthRole };
