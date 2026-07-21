@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-21T19:18:17.106Z",
+  "generatedAt": "2026-07-21T21:08:38.681Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 199,
+  "injuryCount": 200,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Cody Walker",
+      "injury": "Ac joint",
+      "returning": "active"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Tom Cochrane",
+      "injury": "Knee",
+      "returning": "very soon"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Bobby Hill",
@@ -746,12 +758,6 @@
       "team": "Adelaide Crows",
       "player": "Nick Murray",
       "injury": "dropped this week",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Tom Cochrane",
-      "injury": "active",
       "returning": "TBC"
     },
     {
