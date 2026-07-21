@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-21T10:27:54.835Z",
+  "generatedAt": "2026-07-21T13:34:54.580Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 199,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Bobby Hill",
+      "injury": "off-field issues, contract termination",
+      "returning": "Season"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Tyson Stengle",
+      "injury": "off-field issues, contract termination",
+      "returning": "Season"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Henry Smith",
@@ -672,12 +684,6 @@
     },
     {
       "team": "Geelong Cats",
-      "player": "Tyson Stengle",
-      "injury": "Has not played at AFL level this year, currently back in South Australia due to personal issues.",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
       "player": "Harley Barker",
       "injury": "ACL",
       "returning": "Indefinite"
@@ -1059,12 +1065,6 @@
       "player": "Jess Bula",
       "injury": "Finger",
       "returning": "before the end of the month"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Bobby Hill",
-      "injury": "Dealing with personal issues, spent significant time away from the club over the past year.",
-      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
