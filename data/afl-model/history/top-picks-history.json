@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-19T09:17:03.060Z",
-  "count": 44,
+  "generatedAt": "2026-07-21T12:26:36Z",
+  "count": 53,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -1792,6 +1792,308 @@
           "recommendedProb": 0.6862,
           "rank": 3,
           "actualDisposals": 25
+        }
+      ]
+    },
+    {
+      "gameKey": "adelaidecrows|collingwoodmagpies|2026-07-23",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "Adelaide Crows",
+      "awayTeam": "Collingwood Magpies",
+      "commenceTime": "2026-07-23T09:30:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Jordan De Goey",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 17.77,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2177,
+          "recommendedProb": 0.7418,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Nick Daicos",
+          "bookmaker": "SportsBet",
+          "line": 33.5,
+          "expectedDisposals": 30.72,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.113,
+          "recommendedProb": 0.612,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "melbournedemons|geelongcats|2026-07-24",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:25:25Z",
+      "modelVersion": "afl-disp-20260721-122351",
+      "homeTeam": "Melbourne Demons",
+      "awayTeam": "Geelong Cats",
+      "commenceTime": "2026-07-24T09:40:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Jack Steele",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 25.24,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.17,
+          "recommendedProb": 0.6369,
+          "rank": 1,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "fremantledockers|westcoasteagles|2026-07-24",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "Fremantle Dockers",
+      "awayTeam": "West Coast Eagles",
+      "commenceTime": "2026-07-24T10:10:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Andrew Brayshaw",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 28.48,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.187,
+          "recommendedProb": 0.701,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jordan Clark",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 21.57,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.095,
+          "recommendedProb": 0.604,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "carltonblues|goldcoastsuns|2026-07-25",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "Carlton Blues",
+      "awayTeam": "Gold Coast Suns",
+      "commenceTime": "2026-07-25T03:05:56Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Matt Rowell",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 26.11,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0722,
+          "recommendedProb": 0.5712,
+          "rank": 1,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "hawthornhawks|essendonbombers|2026-07-25",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "Hawthorn Hawks",
+      "awayTeam": "Essendon Bombers",
+      "commenceTime": "2026-07-25T06:15:34Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Connor Macdonald",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 20.21,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1499,
+          "recommendedProb": 0.6489,
+          "rank": 1,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "gwsgiants|sydneyswans|2026-07-25",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "GWS Giants",
+      "awayTeam": "Sydney Swans",
+      "commenceTime": "2026-07-25T06:35:15Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Errol Gulden",
+          "bookmaker": "SportsBet",
+          "line": 24.5,
+          "expectedDisposals": 26.34,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.145,
+          "recommendedProb": 0.642,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Finn Callaghan",
+          "bookmaker": "SportsBet",
+          "line": 27.5,
+          "expectedDisposals": 28.58,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1001,
+          "recommendedProb": 0.6011,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Clayton Oliver",
+          "bookmaker": "SportsBet",
+          "line": 31.5,
+          "expectedDisposals": 29.25,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0913,
+          "recommendedProb": 0.5903,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "westernbulldogs|richmondtigers|2026-07-25",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:25:25Z",
+      "modelVersion": "afl-disp-20260721-122351",
+      "homeTeam": "Western Bulldogs",
+      "awayTeam": "Richmond Tigers",
+      "commenceTime": "2026-07-25T09:40:45Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Jayden Short",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 23.97,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1475,
+          "recommendedProb": 0.6157,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Dion Prestia",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 21.93,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1088,
+          "recommendedProb": 0.6158,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "brisbanelions|portadelaidepower|2026-07-26",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Port Adelaide Power",
+      "commenceTime": "2026-07-26T03:10:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Jason Horne Francis",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 19.79,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1624,
+          "recommendedProb": 0.6614,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Will Ashcroft",
+          "bookmaker": "SportsBet",
+          "line": 30.5,
+          "expectedDisposals": 27.6,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.127,
+          "recommendedProb": 0.626,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "northmelbournekangaroos|stkildasaints|2026-07-26",
+      "finalizedAt": "2026-07-21T12:25:25Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-07-21T12:26:35Z",
+      "modelVersion": "afl-disp-20260718-174550",
+      "homeTeam": "North Melbourne Kangaroos",
+      "awayTeam": "St Kilda Saints",
+      "commenceTime": "2026-07-26T05:15:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R20",
+      "picks": [
+        {
+          "playerName": "Luke Davies Uniacke",
+          "bookmaker": "SportsBet",
+          "line": 24.5,
+          "expectedDisposals": 27.25,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1954,
+          "recommendedProb": 0.6914,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Bradley Hill",
+          "bookmaker": "SportsBet",
+          "line": 26.5,
+          "expectedDisposals": 29.09,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1773,
+          "recommendedProb": 0.6733,
+          "rank": 2,
+          "actualDisposals": null
         }
       ]
     }
