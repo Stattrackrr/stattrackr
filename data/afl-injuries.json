@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-20T23:01:16.145Z",
+  "generatedAt": "2026-07-21T02:16:07.499Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 194,
+  "injuryCount": 195,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Kyle Langford",
+      "injury": "Suspended AFL",
+      "returning": "1 Week"
+    },
     {
       "team": "Carlton Blues",
       "player": "Erone Fitzpatrick",
@@ -86,7 +92,7 @@
       "team": "Essendon Bombers",
       "player": "Xavier Duursma",
       "injury": "Hamstring",
-      "returning": "TBC"
+      "returning": "Season"
     },
     {
       "team": "Essendon Bombers",
