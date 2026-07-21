@@ -9,7 +9,7 @@ import path from 'path';
 import type { DfsRolePlayer } from './aflDfsRoleLabels';
 import { normalizeDfsRolePlayerMatchKey, roleBucketFromDfsRoleGroup } from './aflDfsRoleLabels';
 
-export type { DfsRolePlayer };
+export type { DfsRolePlayer, AflDepthRole };
 
 export {
   normalizeDfsRolePlayerKey,
@@ -20,6 +20,9 @@ export {
   findDfsRoleGroup,
   findDfsRolePlayer,
   roleBucketFromDfsRoleGroup,
+  depthRoleFromDfsRoleGroup,
+  depthRoleFromFantasyPosition,
+  depthRoleApiPosition,
 } from './aflDfsRoleLabels';
 
 type DfsRoleFile = {

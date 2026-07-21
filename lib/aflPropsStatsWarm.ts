@@ -10,7 +10,7 @@ import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_S
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
-import { findDfsRolePlayer, loadDfsRolePlayers, normalizeFantasyPositionToDvp } from '@/lib/aflDfsRoleMap';
+import { findDfsRolePlayer, loadDfsRolePlayers, normalizeFantasyPositionToDvp, depthRoleFromDfsRoleGroup, depthRoleFromFantasyPosition, depthRoleApiPosition, type AflDepthRole } from '@/lib/aflDfsRoleMap';
 
 const BATCH_SIZE = 50;
 const CONCURRENT_BATCHES = 2;
@@ -110,15 +110,90 @@ export async function runAflPropsStatsWarm(
       const officialB = (b ?? '').trim() ? toOfficialAflTeamDisplayName((b ?? '').trim()) : '';
       return (officialA && officialB) && officialA === officialB;
     };
-    const getDvp = (opponent: string, statType: string, preferredPosition?: string | null, fantasyPosition?: string | null) => {
-      const preferred = getDvpLookupTeamTotal(opponent, statType, dvpMaps, preferredPosition);
-      if (preferred) return preferred;
-      if (fantasyPosition && fantasyPosition !== preferredPosition) {
-        return getDvpLookupTeamTotal(opponent, statType, dvpMaps, fantasyPosition);
+    type DvpBatchPayload = {
+      metrics?: Record<
+        string,
+        {
+          teamTotalRanks?: Record<string, number>;
+          teamTotalValues?: Record<string, number>;
+        }
+      >;
+    };
+    const dvpBatchByDepthRole = new Map<AflDepthRole, DvpBatchPayload>();
+    const loadDvpBatchForDepthRole = async (depthRole: AflDepthRole): Promise<void> => {
+      if (dvpBatchByDepthRole.has(depthRole)) return;
+      const apiPos = depthRoleApiPosition(depthRole);
+      try {
+        const res = await fetch(
+          `${url}/api/afl/dvp/batch?season=${DVP_MATCHUP_SEASON}&mode=depth&position=${encodeURIComponent(apiPos)}&depthRole=${encodeURIComponent(depthRole)}&stats=disposals,goals`,
+          { cache: 'no-store' }
+        );
+        if (!res.ok) return;
+        const json = (await res.json().catch(() => null)) as DvpBatchPayload | null;
+        if (json && typeof json === 'object') dvpBatchByDepthRole.set(depthRole, json);
+      } catch {
+        // Fall back to basic file maps below.
+      }
+    };
+    const ALL_DEPTH_ROLES: AflDepthRole[] = [
+      'key_fwd',
+      'gen_fwd',
+      'ins_mid',
+      'ruck',
+      'wng_def',
+      'gen_def',
+      'des_kck',
+    ];
+    await Promise.all(ALL_DEPTH_ROLES.map((role) => loadDvpBatchForDepthRole(role)));
+
+    const findTeamValue = (values: Record<string, number> | undefined, opponent: string): number | null => {
+      if (!values) return null;
+      const normalize = (v: string) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const wanted = normalize(toOfficialAflTeamDisplayName(opponent) || opponent);
+      for (const [k, v] of Object.entries(values)) {
+        if (!Number.isFinite(Number(v))) continue;
+        if (normalize(k) === wanted || normalize(toOfficialAflTeamDisplayName(k)) === wanted) {
+          return Number(v);
+        }
       }
       return null;
     };
-    console.log('[AFL props-stats/warm] DvP maps loaded (disposals:', dvpMaps.disposals.size, 'goals:', dvpMaps.goals.size, '). Player team map:', playerTeamMap.size, 'position map:', positionMap.size);
+
+    const getDvp = (
+      opponent: string,
+      statType: string,
+      preferredDepthRole: AflDepthRole,
+      fantasyDepthRole: AflDepthRole,
+      fantasyPosition: string
+    ) => {
+      const metric = statType === 'goals_over' ? 'goals' : 'disposals';
+      const tryRole = (role: AflDepthRole) => {
+        const batch = dvpBatchByDepthRole.get(role);
+        const rank = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
+        const value = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
+        if (rank != null && value != null) return { rank, value };
+        return null;
+      };
+      const preferred = tryRole(preferredDepthRole);
+      if (preferred) return preferred;
+      if (fantasyDepthRole !== preferredDepthRole) {
+        const fantasyHit = tryRole(fantasyDepthRole);
+        if (fantasyHit) return fantasyHit;
+      }
+      return getDvpLookupTeamTotal(opponent, statType, dvpMaps, fantasyPosition);
+    };
+    console.log(
+      '[AFL props-stats/warm] DvP maps loaded (disposals:',
+      dvpMaps.disposals.size,
+      'goals:',
+      dvpMaps.goals.size,
+      '). Depth batches:',
+      dvpBatchByDepthRole.size,
+      '. Player team map:',
+      playerTeamMap.size,
+      'position map:',
+      positionMap.size
+    );
 
     const seen = new Set<string>();
     const toWarm: PropToWarm[] = [];
@@ -154,8 +229,16 @@ export async function runAflPropsStatsWarm(
             positionMap.get(normalizeAflPlayerNameForMatch(p.playerName)) ?? 'MID'
           );
           const dfsP = findDfsRolePlayer(dfsPlayers, p.playerName);
-          const preferredPosition = dfsP?.roleBucket != null ? dfsP.roleBucket : fantasyPosition;
-          const dvp = getDvp(p.opponent, p.statType, preferredPosition, fantasyPosition);
+          const fantasyDepthRole = depthRoleFromFantasyPosition(fantasyPosition);
+          const preferredDepthRole =
+            depthRoleFromDfsRoleGroup(dfsP?.roleGroup) ?? fantasyDepthRole;
+          const dvp = getDvp(
+            p.opponent,
+            p.statType,
+            preferredDepthRole,
+            fantasyDepthRole,
+            fantasyPosition
+          );
           const resolvedTeam = resolvePlayerTeam(p.playerName) ?? undefined;
           return getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, url, dvp, false, cronSecret, resolvedTeam).then((r) => {
             if (!r) {

@@ -35,6 +35,10 @@ import {
   loadDfsRolePlayers,
   normalizeFantasyPositionToDvp,
   resolveDfsRoleDisplayLabel,
+  depthRoleFromDfsRoleGroup,
+  depthRoleFromFantasyPosition,
+  depthRoleApiPosition,
+  type AflDepthRole,
 } from '@/lib/aflDfsRoleMap';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -795,25 +799,26 @@ export async function GET(request: Request) {
         }
       >;
     };
-    const dvpBatchByPosition = new Map<string, DvpBatchPayload>();
-    const loadDvpBatchForPosition = async (position: string): Promise<DvpBatchPayload | null> => {
-      const pos = ['DEF', 'MID', 'FWD', 'RUC'].includes(position) ? position : 'MID';
-      if (dvpBatchByPosition.has(pos)) return dvpBatchByPosition.get(pos) ?? null;
+    const dvpBatchByDepthRole = new Map<string, DvpBatchPayload>();
+    const loadDvpBatchForDepthRole = async (depthRole: AflDepthRole): Promise<DvpBatchPayload | null> => {
+      if (dvpBatchByDepthRole.has(depthRole)) return dvpBatchByDepthRole.get(depthRole) ?? null;
+      const apiPos = depthRoleApiPosition(depthRole);
       try {
         const res = await fetch(
-          `${baseUrl}/api/afl/dvp/batch?season=${DVP_MATCHUP_SEASON}&position=${encodeURIComponent(pos)}&stats=disposals,goals`,
+          `${baseUrl}/api/afl/dvp/batch?season=${DVP_MATCHUP_SEASON}&mode=depth&position=${encodeURIComponent(apiPos)}&depthRole=${encodeURIComponent(depthRole)}&stats=disposals,goals`,
           { cache: 'no-store' }
         );
         if (!res.ok) return null;
         const json = (await res.json().catch(() => null)) as DvpBatchPayload | null;
         if (!json || typeof json !== 'object') return null;
-        dvpBatchByPosition.set(pos, json);
+        dvpBatchByDepthRole.set(depthRole, json);
         return json;
       } catch {
         return null;
       }
     };
     const getDvpOverride = (opponent: string, statType: string, position?: string | null) => {
+      // Basic-file fallback only (used when depth batch miss). Prefer depth batch ranks.
       return getDvpLookupTeamTotal(opponent, statType, dvpMapsForOverride, position);
     };
     const findTeamValue = (
@@ -852,7 +857,18 @@ export async function GET(request: Request) {
       );
       const dfsP = findDfsRolePlayer(dfsPlayers, r.playerName);
       const position = dfsP?.roleBucket != null ? dfsP.roleBucket : filePos;
-      return { r, playerTeam, opponent, position, fantasyPosition: filePos };
+      const fantasyDepthRole = depthRoleFromFantasyPosition(filePos);
+      const preferredDepthRole =
+        depthRoleFromDfsRoleGroup(dfsP?.roleGroup) ?? fantasyDepthRole;
+      return {
+        r,
+        playerTeam,
+        opponent,
+        position,
+        fantasyPosition: filePos,
+        depthRole: preferredDepthRole,
+        fantasyDepthRole,
+      };
     });
     const dfsShortByNormalizedName = new Map<string, string | null>();
     const fantasyDvpByPlayerKey = new Map<string, 'DEF' | 'MID' | 'FWD' | 'RUC'>();
@@ -868,53 +884,73 @@ export async function GET(request: Request) {
       const group = sampleName ? findDfsRoleGroup(dfsPlayers, sampleName) : null;
       dfsShortByNormalizedName.set(nk, resolveDfsRoleDisplayLabel(group, fantasyDvp));
     }
-    const neededPositions = Array.from(
-      new Set(
-        rowContexts.flatMap((ctx) => [ctx.position, ctx.fantasyPosition]).filter(Boolean)
-      )
-    );
-    await Promise.all(neededPositions.map((pos) => loadDvpBatchForPosition(pos)));
+    const neededDepthRoles = Array.from(
+      new Set(rowContexts.flatMap((ctx) => [ctx.depthRole, ctx.fantasyDepthRole]).filter(Boolean))
+    ) as AflDepthRole[];
+    await Promise.all(neededDepthRoles.map((role) => loadDvpBatchForDepthRole(role)));
 
     const resolveDvpLookup = (
       opponent: string,
       statType: string,
-      preferredPosition: string,
+      preferredDepthRole: AflDepthRole,
+      fantasyDepthRole: AflDepthRole,
       fantasyPosition: string
-    ): { rank: number; value: number; usedPosition: string } | null => {
+    ): { rank: number; value: number; usedDepthRole: AflDepthRole | null; usedPosition: string } | null => {
       const metric = statType === 'goals_over' ? 'goals' : 'disposals';
-      const tryPosition = (pos: string): { rank: number; value: number; usedPosition: string } | null => {
-        const batch = dvpBatchByPosition.get(pos || 'MID');
+      const tryDepthRole = (
+        role: AflDepthRole
+      ): { rank: number; value: number; usedDepthRole: AflDepthRole; usedPosition: string } | null => {
+        const batch = dvpBatchByDepthRole.get(role);
         const rankFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalRanks, opponent);
         const valueFromBatch = findTeamValue(batch?.metrics?.[metric]?.teamTotalValues, opponent);
         if (rankFromBatch != null && valueFromBatch != null) {
-          return { rank: rankFromBatch, value: valueFromBatch, usedPosition: pos };
+          return {
+            rank: rankFromBatch,
+            value: valueFromBatch,
+            usedDepthRole: role,
+            usedPosition: depthRoleApiPosition(role),
+          };
         }
-        const fileHit = getDvpOverride(opponent, statType, pos);
-        if (fileHit) return { ...fileHit, usedPosition: pos };
         return null;
       };
 
-      const preferred = tryPosition(preferredPosition || 'MID');
+      const preferred = tryDepthRole(preferredDepthRole);
       if (preferred) return preferred;
-      // Dual-role players (e.g. DFS MID / fantasy DEF): if preferred bucket is missing for this
-      // opponent, fall back to fantasy position only — never to unrelated positions.
-      if (fantasyPosition && fantasyPosition !== preferredPosition) {
-        return tryPosition(fantasyPosition);
+      // Dual-role players: if preferred depth role is missing for this opponent, fall back to
+      // fantasy depth role only — never to an unrelated specialty (e.g. des_kck → key_fwd).
+      if (fantasyDepthRole && fantasyDepthRole !== preferredDepthRole) {
+        const fantasyHit = tryDepthRole(fantasyDepthRole);
+        if (fantasyHit) return fantasyHit;
+      }
+      // Last resort: basic fantasy position file map (not depth-accurate).
+      const fileHit = getDvpOverride(opponent, statType, fantasyPosition);
+      if (fileHit) {
+        return {
+          ...fileHit,
+          usedDepthRole: null,
+          usedPosition: fantasyPosition,
+        };
       }
       return null;
     };
 
     const enrichedRows: (AflListPropRow & Record<string, unknown>)[] = rowContexts.map(
-      ({ r, playerTeam, opponent, position, fantasyPosition }) => {
+      ({ r, playerTeam, opponent, position, fantasyPosition, depthRole, fantasyDepthRole }) => {
       const fantasyDvp = fantasyPosition;
       const dfsShort =
         dfsShortByNormalizedName.get(normalizeAflPlayerNameForMatch(r.playerName)) ?? null;
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       const keyAlt = getAflPropStatsCacheKey(r.playerName, r.awayTeam, r.homeTeam, r.statType, r.line);
       const stats = statsByKey.get(key) ?? statsByKey.get(keyAlt);
-      // Always use the live position-aware team-total DvP lookup (dashboard source of truth).
+      // Always use the live depth-role team-total DvP lookup (dashboard depth source of truth).
       // Never fall back to cached prop-level DvP values, which can be stale after mapping changes.
-      const dvpLookupResult = resolveDvpLookup(opponent, r.statType, position, fantasyPosition);
+      const dvpLookupResult = resolveDvpLookup(
+        opponent,
+        r.statType,
+        depthRole,
+        fantasyDepthRole,
+        fantasyPosition
+      );
       const dvpRating = dvpLookupResult?.rank ?? null;
       const dvpStatValue = dvpLookupResult?.value ?? null;
       const disposalsModel =
@@ -955,6 +991,9 @@ export async function GET(request: Request) {
           ? {
               _dvpPosition: position,
               _dvpFantasyPosition: fantasyPosition,
+              _dvpDepthRole: depthRole,
+              _dvpFantasyDepthRole: fantasyDepthRole,
+              _dvpUsedDepthRole: dvpLookupResult?.usedDepthRole ?? null,
               _dvpUsedPosition: dvpLookupResult?.usedPosition ?? null,
               _dvpOpponent: opponent,
             }

@@ -1722,7 +1722,7 @@ export function AflStatsChart({
             customXAxisTick={aflXAxisTick}
             yAxisTickFormatter={(value) => String(Math.round(value))}
             disableBarAnimation={false}
-            barAnimationDuration={420}
+            barAnimationDuration={180}
             chartAnimationKey={`${mode}-${selectedStat}-${selectedTimeframe}-${chartData.map((row) => row.xKey).join('|')}`}
             teammateFilterName={teammateFilterName}
             withWithoutMode={withWithoutMode}

@@ -141,6 +141,56 @@ export function roleBucketFromDfsRoleGroup(group: string | null | undefined): 'D
   return null;
 }
 
+/** Depth DvP roles used by `/api/afl/dvp/batch?mode=depth` and `data/afl-dvp-depth-*.json`. */
+export type AflDepthRole =
+  | 'key_fwd'
+  | 'gen_fwd'
+  | 'ins_mid'
+  | 'ruck'
+  | 'wng_def'
+  | 'gen_def'
+  | 'des_kck';
+
+/** Map DFS role group → depth role (e.g. Designated Kicker → des_kck). */
+export function depthRoleFromDfsRoleGroup(group: string | null | undefined): AflDepthRole | null {
+  const key = normalizeDfsRoleGroupKey(String(group || ''));
+  if (!key) return null;
+  if (key === 'key forward' || (key.includes('key') && key.includes('forward'))) return 'key_fwd';
+  if (
+    key === 'small/medium forward' ||
+    ((key.includes('small') || key.includes('medium')) && key.includes('forward'))
+  ) {
+    return 'gen_fwd';
+  }
+  if (key === 'inside midfielder' || (key.includes('inside') && key.includes('midfield'))) return 'ins_mid';
+  if (key === 'ruck' || key === 'ruckman') return 'ruck';
+  if (key === 'wing/attacking defender' || (key.includes('wing') && key.includes('defender'))) {
+    return 'wng_def';
+  }
+  if (key === 'general defender' || (key.includes('general') && key.includes('defender'))) {
+    return 'gen_def';
+  }
+  if (key === 'designated kicker' || (key.includes('designated') && key.includes('kicker'))) {
+    return 'des_kck';
+  }
+  return null;
+}
+
+/** Fantasy DEF/MID/FWD/RUC → default depth role when DFS group is missing. */
+export function depthRoleFromFantasyPosition(pos: 'DEF' | 'MID' | 'FWD' | 'RUC'): AflDepthRole {
+  if (pos === 'DEF') return 'gen_def';
+  if (pos === 'FWD') return 'gen_fwd';
+  if (pos === 'RUC') return 'ruck';
+  return 'ins_mid';
+}
+
+export function depthRoleApiPosition(role: AflDepthRole): 'DEF' | 'MID' | 'FWD' | 'RUC' {
+  if (role === 'key_fwd' || role === 'gen_fwd') return 'FWD';
+  if (role === 'ins_mid') return 'MID';
+  if (role === 'ruck') return 'RUC';
+  return 'DEF';
+}
+
 export function findDfsRolePlayer(players: DfsRolePlayer[], playerName: string): DfsRolePlayer | null {
   if (!normalizeDfsRolePlayerKey(playerName)) return null;
   const target = normalizeDfsRolePlayerMatchKey(playerName);
