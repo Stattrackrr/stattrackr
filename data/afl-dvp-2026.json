@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T02:16:34.412Z",
+  "generatedAt": "2026-07-21T06:31:32.341Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -12943,8 +12943,8 @@
       "name": "Tom Stewart",
       "team": "Geelong",
       "position": "DEF",
-      "status": 503,
-      "error": "Player history is not warmed yet",
+      "status": 200,
+      "error": null,
       "likelyPlayed": false,
       "reason": "likely_no_games_2025"
     },
