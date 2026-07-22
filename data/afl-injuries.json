@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-22T02:13:42.337Z",
+  "generatedAt": "2026-07-22T06:31:12.770Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 207,
+  "injuryCount": 209,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Mark Keane",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Izak Rankine",
+      "injury": "suspended for four matches for a slur aimed at Magpies defender Isaac Quaynor, missed finals campaign last season and season-opener this year",
+      "returning": "active"
+    },
     {
       "team": "Richmond Tigers",
       "player": "Jasper Alger",
@@ -337,8 +349,8 @@
     {
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
-      "injury": "three-game suspension upheld",
-      "returning": "Round 23"
+      "injury": "First week of his three-game ban for striking Sydney Swans defender Harry Cunningham.",
+      "returning": "3 weeks"
     },
     {
       "team": "Sydney Swans",
