@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-22T06:31:12.770Z",
+  "generatedAt": "2026-07-22T10:28:14.171Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 209,
+  "injuryCount": 210,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Gunston",
+      "injury": "Foot",
+      "returning": "active"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Mark Keane",
