@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-07-23T15:58:22.515Z",
+  "generatedAt": "2026-07-23T17:22:23.247Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 214,
   "injuries": [
-    {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
-      "injury": "Leg",
-      "returning": "TBC"
-    },
     {
       "team": "Geelong Cats",
       "player": "Oliver Henry",
@@ -71,12 +65,6 @@
       "returning": "This week"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Sam Swadling",
-      "injury": "dropped to make room for Jeremy Howe's return",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Jack Gunston",
       "injury": "Foot",
@@ -87,12 +75,6 @@
       "player": "Mark Keane",
       "injury": "Illness",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Izak Rankine",
-      "injury": "suspended for aiming a slur at Quaynor last August",
-      "returning": "4 matches"
     },
     {
       "team": "Richmond Tigers",
@@ -486,12 +468,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Sat out the rivalry blockbuster as a precaution/management decision in anticipation of needing him for the next game.",
-      "returning": "To face Adelaide on Thursday night"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Darcy Moore",
       "injury": "active",
       "returning": "Season"
@@ -501,12 +477,6 @@
       "player": "Jamie Elliott",
       "injury": "active",
       "returning": "Season"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Taylor Walker",
-      "injury": "Managed",
-      "returning": "TBC"
     },
     {
       "team": "Fremantle Dockers",
@@ -873,12 +843,6 @@
       "player": "Jesse Hogan",
       "injury": "Injury",
       "returning": "2 months"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Nick Murray",
-      "injury": "dropped this week",
-      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
