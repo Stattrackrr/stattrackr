@@ -1,13 +1,48 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 /**
- * Validate AFL props-list DvP ratings against /api/afl/dvp/batch.
- * Fails with non-zero exit code when mismatches are found.
+ * Validate AFL props-list DvP ratings against /api/afl/dvp/batch?mode=depth.
+ * Props list ranks by DFS depth role (des_kck / gen_def / …); this script must
+ * compare against the same depth batches, not basic DEF/MID/FWD/RUC.
  *
  * Usage:
  *   PROD_URL=https://your-app.vercel.app node scripts/validate-afl-dvp-consistency.js
  *   node scripts/validate-afl-dvp-consistency.js --base-url=http://localhost:3000 --season=2026
  */
+
+const DEPTH_ROLES = [
+  { key: 'key_fwd', apiPosition: 'FWD' },
+  { key: 'gen_fwd', apiPosition: 'FWD' },
+  { key: 'ins_mid', apiPosition: 'MID' },
+  { key: 'ruck', apiPosition: 'RUC' },
+  { key: 'wng_def', apiPosition: 'DEF' },
+  { key: 'gen_def', apiPosition: 'DEF' },
+  { key: 'des_kck', apiPosition: 'DEF' },
+];
+
+function depthRoleFromFantasyPosition(pos) {
+  if (pos === 'DEF') return 'gen_def';
+  if (pos === 'FWD') return 'gen_fwd';
+  if (pos === 'RUC') return 'ruck';
+  return 'ins_mid';
+}
+
+function normalizeDepthRole(raw) {
+  const key = String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  if (DEPTH_ROLES.some((r) => r.key === key)) return key;
+  // Short display labels from props (DES KCK, GEN DEF, …)
+  if (key === 'deskck' || (key.includes('des') && key.includes('kck'))) return 'des_kck';
+  if (key === 'gendef' || (key.includes('gen') && key.includes('def'))) return 'gen_def';
+  if (key === 'wngdef' || (key.includes('wng') && key.includes('def'))) return 'wng_def';
+  if (key === 'keyfwd' || (key.includes('key') && key.includes('fwd'))) return 'key_fwd';
+  if (key === 'genfwd' || (key.includes('gen') && key.includes('fwd'))) return 'gen_fwd';
+  if (key === 'insmid' || (key.includes('ins') && key.includes('mid'))) return 'ins_mid';
+  if (key === 'ruck' || key === 'ruckman') return 'ruck';
+  return null;
+}
 
 function getArg(name, fallback) {
   const pref = `--${name}=`;
@@ -193,19 +228,22 @@ function findValueByTeam(values, teamName) {
 }
 
 async function validateOnce(baseUrl, season) {
-  const [listJson, batchDEF, batchMID, batchFWD, batchRUC, fantasyJson] = await Promise.all([
+  const depthBatchUrls = DEPTH_ROLES.map(
+    (r) =>
+      `${baseUrl}/api/afl/dvp/batch?season=${season}&mode=depth&position=${encodeURIComponent(r.apiPosition)}&depthRole=${encodeURIComponent(r.key)}&stats=disposals,goals`
+  );
+  const [listJson, fantasyJson, ...depthBatches] = await Promise.all([
     getJson(`${baseUrl}/api/afl/player-props/list?debugStats=1`),
-    getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=DEF&stats=disposals,goals`),
-    getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=MID&stats=disposals,goals`),
-    getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=FWD&stats=disposals,goals`),
-    getJson(`${baseUrl}/api/afl/dvp/batch?season=${season}&position=RUC&stats=disposals,goals`),
     getJsonOptional(`${baseUrl}/api/afl/fantasy-positions?season=${season}`, 'fantasy-positions'),
+    ...depthBatchUrls.map((u) => getJson(u)),
   ]);
 
   const rows = Array.isArray(listJson?.data) ? listJson.data : [];
   const fantasyPlayers = Array.isArray(fantasyJson?.players) ? fantasyJson.players : [];
   const posIndex = buildPositionIndex(fantasyPlayers);
-  const byPos = { DEF: batchDEF, MID: batchMID, FWD: batchFWD, RUC: batchRUC };
+  const byDepthRole = Object.fromEntries(
+    DEPTH_ROLES.map((r, i) => [r.key, depthBatches[i]])
+  );
   const supported = new Set(['disposals', 'goals_over']);
 
   const mismatches = [];
@@ -244,6 +282,7 @@ async function validateOnce(baseUrl, season) {
       mismatches.push({
         player,
         statType,
+        depthRole: 'ins_mid',
         position: 'MID',
         playerTeam: '',
         opponent: '',
@@ -261,6 +300,15 @@ async function validateOnce(baseUrl, season) {
       unresolved.push({ player, team: playerTeam, fallback: 'MID' });
     }
 
+    // Prefer the depth role the list API actually used (debugStats), then preferred depth role,
+    // then DFS short label, then fantasy-position default. Matches props list enrich path.
+    const depthRole =
+      normalizeDepthRole(row?._dvpUsedDepthRole) ||
+      normalizeDepthRole(row?._dvpDepthRole) ||
+      normalizeDepthRole(row?._dvpFantasyDepthRole) ||
+      normalizeDepthRole(row?.aflDfsRole) ||
+      depthRoleFromFantasyPosition(position);
+
     const opponent = debugOpponent || (
       playerTeam === canonicalTeamKey(home) ? away :
       playerTeam === canonicalTeamKey(away) ? home :
@@ -268,7 +316,7 @@ async function validateOnce(baseUrl, season) {
     );
 
     const metric = statType === 'goals_over' ? 'goals' : 'disposals';
-    const payload = byPos[position] || byPos.MID;
+    const payload = byDepthRole[depthRole] || byDepthRole.ins_mid;
     const ranks = payload?.metrics?.[metric]?.teamTotalRanks;
     const expectedRank = findValueByTeam(ranks, opponent);
     if (!Number.isFinite(expectedRank)) continue;
@@ -278,6 +326,7 @@ async function validateOnce(baseUrl, season) {
       mismatches.push({
         player,
         statType,
+        depthRole,
         position,
         playerTeam,
         opponent,
