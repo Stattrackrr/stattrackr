@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-23T10:27:29.336Z",
+  "generatedAt": "2026-07-23T13:51:57.950Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 219,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Leg",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Oliver Henry",
@@ -85,8 +91,8 @@
     {
       "team": "Adelaide Crows",
       "player": "Izak Rankine",
-      "injury": "suspended for four matches for a slur aimed at Magpies defender Isaac Quaynor, missed finals campaign last season and season-opener this year",
-      "returning": "active"
+      "injury": "suspended for aiming a slur at Quaynor last August",
+      "returning": "4 matches"
     },
     {
       "team": "Richmond Tigers",
