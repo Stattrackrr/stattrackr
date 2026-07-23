@@ -1,14 +1,62 @@
 {
-  "generatedAt": "2026-07-23T06:34:10.099Z",
+  "generatedAt": "2026-07-23T10:27:29.336Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 219,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Oliver Henry",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Jake Melksham",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Max Heath",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Oscar Adams",
+      "injury": "omitted this week for Ballard",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Hayden Young",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Graham",
+      "injury": "managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Angus Sheldrick",
+      "injury": "dropped",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Caleb Windsor",
+      "injury": "Groin",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Brayden Cook",
-      "injury": "Soreness",
-      "returning": "1 Week"
+      "injury": "rested",
+      "returning": "TBC"
     },
     {
       "team": "Carlton Blues",
@@ -19,7 +67,7 @@
     {
       "team": "Collingwood Magpies",
       "player": "Sam Swadling",
-      "injury": "active",
+      "injury": "dropped to make room for Jeremy Howe's return",
       "returning": "TBC"
     },
     {
@@ -218,7 +266,7 @@
       "team": "Melbourne Demons",
       "player": "Changkuoth Jiath",
       "injury": "Leg",
-      "returning": "Test"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
