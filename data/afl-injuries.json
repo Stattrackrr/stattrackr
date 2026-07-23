@@ -1,19 +1,25 @@
 {
-  "generatedAt": "2026-07-22T23:04:27.881Z",
+  "generatedAt": "2026-07-23T02:22:17.777Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 212,
+  "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Brayden Cook",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Meniscus",
+      "returning": "This week"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Sam Swadling",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Brayden Cook",
-      "injury": "managed",
       "returning": "TBC"
     },
     {
@@ -68,12 +74,6 @@
       "team": "Sydney Swans",
       "player": "Lewis Melican",
       "injury": "Adductor",
-      "returning": "Test"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Josh Daicos",
-      "injury": "Ankle",
       "returning": "Test"
     },
     {
@@ -309,12 +309,6 @@
       "player": "Adam Cerra",
       "injury": "Hamstring",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Knee",
-      "returning": "2 weeks"
     },
     {
       "team": "Melbourne Demons",
@@ -1082,7 +1076,7 @@
       "team": "Hawthorn Hawks",
       "player": "Conor Nash",
       "injury": "Neck",
-      "returning": "definitely won’t play for a month ... could miss the rest of this season"
+      "returning": "Won't play next two games, TBC"
     },
     {
       "team": "Melbourne Demons",
