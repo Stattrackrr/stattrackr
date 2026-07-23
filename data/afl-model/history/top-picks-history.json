@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T12:23:44Z",
+  "generatedAt": "2026-07-23T13:55:14.108Z",
   "count": 53,
   "records": [
     {
@@ -740,7 +740,7 @@
           "recommendedEdge": 0.1103,
           "recommendedProb": 0.6103,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 0
         },
         {
           "playerName": "Sam Berry",
@@ -1816,7 +1816,7 @@
           "recommendedEdge": 0.2258,
           "recommendedProb": 0.7055,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 20
         },
         {
           "playerName": "Nick Daicos",
@@ -1827,7 +1827,7 @@
           "recommendedEdge": 0.1528,
           "recommendedProb": 0.6325,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 39
         },
         {
           "playerName": "Josh Worrell",
@@ -1838,7 +1838,7 @@
           "recommendedEdge": 0.1234,
           "recommendedProb": 0.6234,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 21
         }
       ]
     },
