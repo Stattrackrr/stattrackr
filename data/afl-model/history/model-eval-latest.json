@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T12:25:54Z",
+  "generatedAt": "2026-07-23T12:23:23Z",
   "sampleCount": 1086,
   "candidateArtifactPath": "/home/runner/work/stattrackr/stattrackr/data/afl-model/models/latest-candidate-model.json",
   "candidateFallbackToCurrent": false,
@@ -31,7 +31,7 @@
     "pass": false,
     "promoted": false,
     "freezeActive": false,
-    "freezeFailStreak": 1,
+    "freezeFailStreak": 2,
     "freezeWouldBlockLegacy": false,
     "metricGuardrailsSkipped": false,
     "promotionInfo": {
@@ -45,8 +45,8 @@
     "brierScore": 0.275454,
     "logLoss": 0.773013,
     "mae": 4.657688,
-    "avgClvLite": -0.001912,
-    "positiveClvRate": 0.18232,
+    "avgClvLite": -0.001986,
+    "positiveClvRate": 0.176796,
     "clvSampleCount": 1086,
     "calibrationBins": [
       {
@@ -105,7 +105,7 @@
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260722-122440"
+    "modelVersion": "afl-disp-20260723-122211"
   },
   "current": {
     "name": "current",
@@ -114,8 +114,8 @@
     "brierScore": 0.267055,
     "logLoss": 0.742444,
     "mae": 4.523969,
-    "avgClvLite": -0.002138,
-    "positiveClvRate": 0.172192,
+    "avgClvLite": -0.002247,
+    "positiveClvRate": 0.166667,
     "clvSampleCount": 1086,
     "calibrationBins": [
       {
@@ -1080,9 +1080,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.491,
+        "marketPOverOpen": 0.5,
         "marketPOverLatest": 0.5,
-        "clvLite": -0.009
+        "clvLite": 0.0
       },
       {
         "snapshotKey": "tom sparrow|2026-W25",

@@ -1,11 +1,11 @@
 # AFL Disposals Model Card
 
-- Generated: 2026-07-22T12:25:54Z
-- Model: afl-disp-20260722-122440
+- Generated: 2026-07-23T12:23:23Z
+- Model: afl-disp-20260723-122211
 - Sample count: 1086
 - Guardrails pass: False
 - Promoted: False
-- Candidate metrics: hit 51.01%, brier 0.275454, logloss 0.773013, clv+ 18.23%
+- Candidate metrics: hit 51.01%, brier 0.275454, logloss 0.773013, clv+ 17.68%
 
 ## Confidence Buckets
 - high_0.65_plus: n=388, hit=51.55%
