@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T12:20:00Z",
+  "generatedAt": "2026-07-24T13:36:35.813Z",
   "count": 53,
   "records": [
     {
@@ -23,7 +23,7 @@
           "recommendedEdge": 0.094,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 24
         }
       ]
     },
@@ -48,7 +48,7 @@
           "recommendedEdge": 0.11800000000000001,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 14
         }
       ]
     },
@@ -73,7 +73,7 @@
           "recommendedEdge": 0.07,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 15
         },
         {
           "playerName": "Jai Serong",
@@ -84,7 +84,7 @@
           "recommendedEdge": 0.043,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Brodie Grundy",
@@ -95,7 +95,7 @@
           "recommendedEdge": 0.037000000000000005,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 26
         }
       ]
     },
@@ -120,7 +120,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 27
         },
         {
           "playerName": "Sam Banks",
@@ -131,7 +131,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 22
         },
         {
           "playerName": "Jacob Hopper",
@@ -142,7 +142,7 @@
           "recommendedEdge": 0.04,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 17
         }
       ]
     },
@@ -167,7 +167,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 28
         },
         {
           "playerName": "Harrison Himmelberg",
@@ -178,7 +178,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 13
         },
         {
           "playerName": "Callum Wilkie",
@@ -189,7 +189,7 @@
           "recommendedEdge": 0.04,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 21
         }
       ]
     },
@@ -214,7 +214,7 @@
           "recommendedEdge": 0.091,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Matt Johnson",
@@ -225,7 +225,7 @@
           "recommendedEdge": 0.142,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 15
         }
       ]
     },
@@ -297,7 +297,7 @@
           "recommendedEdge": 0.1604,
           "recommendedProb": 0.6604,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 18
         },
         {
           "playerName": "Tom Sparrow",
@@ -308,7 +308,7 @@
           "recommendedEdge": 0.1671,
           "recommendedProb": 0.6591,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 28
         }
       ]
     },
@@ -333,7 +333,7 @@
           "recommendedEdge": 0.0782,
           "recommendedProb": 0.5782,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 33
         }
       ]
     },
@@ -358,7 +358,7 @@
           "recommendedEdge": 0.1604,
           "recommendedProb": 0.6604,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 10
         },
         {
           "playerName": "Jase Burgoyne",
@@ -369,7 +369,7 @@
           "recommendedEdge": 0.0737,
           "recommendedProb": 0.5737,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 23
         }
       ]
     },
@@ -1863,7 +1863,7 @@
           "recommendedEdge": 0.2097,
           "recommendedProb": 0.6935,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 15
         },
         {
           "playerName": "Ed Langdon",
@@ -1874,7 +1874,7 @@
           "recommendedEdge": 0.1793,
           "recommendedProb": 0.6793,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 18
         },
         {
           "playerName": "Koltyn Tholstrup",
@@ -1885,7 +1885,7 @@
           "recommendedEdge": 0.0515,
           "recommendedProb": 0.5821,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 22
         }
       ]
     },
@@ -1910,7 +1910,7 @@
           "recommendedEdge": 0.18,
           "recommendedProb": 0.68,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 14
         },
         {
           "playerName": "Andrew Brayshaw",
@@ -1921,7 +1921,7 @@
           "recommendedEdge": 0.1348,
           "recommendedProb": 0.6388,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 25
         },
         {
           "playerName": "Liam Duggan",
@@ -1932,7 +1932,7 @@
           "recommendedEdge": 0.1216,
           "recommendedProb": 0.6013,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 14
         }
       ]
     },
@@ -2035,7 +2035,7 @@
           "playerName": "Harry Rowston",
           "bookmaker": "PointsBet (AU)",
           "line": 16.5,
-          "expectedDisposals": 12.0,
+          "expectedDisposals": 12,
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1756,
           "recommendedProb": 0.6756,
