@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-07-24T21:05:39.028Z",
+  "generatedAt": "2026-07-24T23:04:58.220Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
@@ -293,27 +293,6 @@
     },
     {
       "rank": 13,
-      "team": "Demons",
-      "stats": {
-        "Team": "Demons",
-        "Gm": 19,
-        "K": 209.37,
-        "HB": 148.58,
-        "D": 357.9,
-        "G": 17.53,
-        "M": 87.4,
-        "T": 56.1,
-        "CL": 37.2,
-        "I50": 57.1,
-        "R50": 38.9,
-        "CP": 132.9,
-        "UP": 213.74,
-        "MG": 12.95,
-        "Rk": 13
-      }
-    },
-    {
-      "rank": 14,
       "team": "Bombers",
       "stats": {
         "Team": "Bombers",
@@ -330,6 +309,27 @@
         "CP": 117.4,
         "UP": 230.11,
         "MG": 10.22,
+        "Rk": 13
+      }
+    },
+    {
+      "rank": 14,
+      "team": "Demons",
+      "stats": {
+        "Team": "Demons",
+        "Gm": 19,
+        "K": 209.37,
+        "HB": 148.58,
+        "D": 357.9,
+        "G": 17.53,
+        "M": 87.4,
+        "T": 56.1,
+        "CL": 37.2,
+        "I50": 57.1,
+        "R50": 38.9,
+        "CP": 132.9,
+        "UP": 213.74,
+        "MG": 12.95,
         "Rk": 14
       }
     },
