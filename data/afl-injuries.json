@@ -1,13 +1,49 @@
 {
-  "generatedAt": "2026-07-23T23:02:41.418Z",
+  "generatedAt": "2026-07-24T02:16:21.455Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 214,
+  "injuryCount": 217,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Nick Bryan",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Jye Caldwell",
+      "injury": "Soreness",
+      "returning": "TBA"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brennan Cox",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
     {
       "team": "Geelong Cats",
       "player": "Oliver Henry",
-      "injury": "active",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Caleb Windsor",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Graham",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Patrick Dangerfield",
+      "injury": "Calf",
       "returning": "active"
     },
     {
@@ -35,21 +71,9 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Jack Graham",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
       "team": "Sydney Swans",
       "player": "Angus Sheldrick",
       "injury": "dropped",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Caleb Windsor",
-      "injury": "Groin",
       "returning": "TBC"
     },
     {
@@ -275,12 +299,6 @@
       "returning": "Indefinite"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Soreness",
-      "returning": "Test"
-    },
-    {
       "team": "Gold Coast Suns",
       "player": "Jamarra Ugle-Hagan",
       "injury": "Calf",
@@ -305,12 +323,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Essendon Bombers",
-      "player": "Nick Bryan",
-      "injury": "Rib",
-      "returning": "TBC"
-    },
-    {
       "team": "Oakleigh Chargers",
       "player": "Harper McCullough",
       "injury": "Concussion",
@@ -319,6 +331,12 @@
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
       "injury": "Injury",
       "returning": "TBC"
     },
