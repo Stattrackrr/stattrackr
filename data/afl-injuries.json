@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-07-24T15:29:29.023Z",
+  "generatedAt": "2026-07-24T17:31:56.496Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 211,
   "injuries": [
-    {
-      "team": "Geelong Cats",
-      "player": "Patrick Dangerfield",
-      "injury": "Shin",
-      "returning": "TBC"
-    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
@@ -91,12 +85,6 @@
     {
       "team": "Fremantle Dockers",
       "player": "Brennan Cox",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Oliver Henry",
       "injury": "Soreness",
       "returning": "1 Week"
     },
@@ -389,12 +377,6 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Harley Reid",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
       "team": "Brisbane Lions",
       "player": "Dayne Zorko",
       "injury": "Hamstring",
@@ -497,12 +479,6 @@
       "returning": "Season"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Shaun Mannagh",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
       "team": "St Kilda Saints",
       "player": "Max King",
       "injury": "Shoulder",
@@ -521,12 +497,6 @@
       "returning": "Season"
     },
     {
-      "team": "Fremantle Dockers",
-      "player": "Shai Bolton",
-      "injury": "being rested",
-      "returning": "This week"
-    },
-    {
       "team": "Brisbane Lions",
       "player": "Bruce Reville",
       "injury": "active",
@@ -536,12 +506,6 @@
       "team": "Hawthorn Hawks",
       "player": "Will Day",
       "injury": "Calf",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mark Blicavs",
-      "injury": "managed",
       "returning": "TBC"
     },
     {
@@ -627,18 +591,6 @@
       "player": "Karl Amon",
       "injury": "Knee",
       "returning": "before finals"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Harrison Petty",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Tanner Bruhn",
-      "injury": "Neck",
-      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
@@ -863,12 +815,6 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Harvey Johnston",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Jacob Weitering",
       "injury": "active",
@@ -987,12 +933,6 @@
       "player": "Tyler Welsh",
       "injury": "Ankle",
       "returning": "Retired"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Oscar McDonald",
-      "injury": "dropped for Thursday’s thrilling win over Geelong",
-      "returning": "TBC"
     },
     {
       "team": "Brisbane Lions",
