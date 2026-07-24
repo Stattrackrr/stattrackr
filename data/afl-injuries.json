@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-24T19:25:28.680Z",
+  "generatedAt": "2026-07-24T21:05:40.311Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 213,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Oliver Henry",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Shaun Mannagh",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
