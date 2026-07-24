@@ -1,9 +1,63 @@
 {
-  "generatedAt": "2026-07-24T06:29:26.267Z",
+  "generatedAt": "2026-07-24T10:19:22.195Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 217,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jaeger O'Meara",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Hutchinson",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Sam De Koning",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Changkuoth Jiath",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Daniel Turner",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Campbell Lake",
+      "injury": "Calf",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jacob Wehr",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jackson Mead",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tom Liberatore",
@@ -38,7 +92,7 @@
       "team": "Melbourne Demons",
       "player": "Caleb Windsor",
       "injury": "Injury",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
@@ -55,14 +109,14 @@
     {
       "team": "Melbourne Demons",
       "player": "Jake Melksham",
-      "injury": "active",
-      "returning": "active"
+      "injury": "dropped",
+      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
       "player": "Max Heath",
-      "injury": "active",
-      "returning": "active"
+      "injury": "dropped",
+      "returning": "TBC"
     },
     {
       "team": "Gold Coast Suns",
@@ -188,7 +242,7 @@
       "team": "North Melbourne Kangaroos",
       "player": "Luke McDonald",
       "injury": "Calf",
-      "returning": "Test"
+      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
@@ -242,7 +296,7 @@
       "team": "Port Adelaide Power",
       "player": "Joe Richards",
       "injury": "Finger",
-      "returning": "3-4 weeks"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -275,18 +329,6 @@
       "returning": "active"
     },
     {
-      "team": "Fremantle Dockers",
-      "player": "Jaeger O'Meara",
-      "injury": "Ankle",
-      "returning": "TBA"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Changkuoth Jiath",
-      "injury": "Leg",
-      "returning": "TBC"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Steely Green",
       "injury": "Concussion",
@@ -296,7 +338,7 @@
       "team": "West Coast Eagles",
       "player": "Liam Baker",
       "injury": "Suspended AFL",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -353,21 +395,9 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Jack Hutchinson",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Adam Cerra",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Daniel Turner",
-      "injury": "Rib",
       "returning": "TBC"
     },
     {
@@ -459,12 +489,6 @@
       "player": "Kane Farrell",
       "injury": "Groin",
       "returning": "Season"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "Ankle",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
