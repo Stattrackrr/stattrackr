@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-24T02:16:21.455Z",
+  "generatedAt": "2026-07-24T06:29:26.267Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 217,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Soreness",
+      "returning": "Will return against Richmond"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Nick Bryan",
@@ -296,7 +302,7 @@
       "team": "Western Bulldogs",
       "player": "Riley Garcia",
       "injury": "Hamstring",
-      "returning": "Indefinite"
+      "returning": "Season"
     },
     {
       "team": "Gold Coast Suns",
@@ -331,12 +337,6 @@
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -452,7 +452,7 @@
       "team": "Western Bulldogs",
       "player": "Adam Treloar",
       "injury": "Calf",
-      "returning": "four to six weeks"
+      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
