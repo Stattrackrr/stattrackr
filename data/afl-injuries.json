@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-24T10:19:22.195Z",
+  "generatedAt": "2026-07-24T13:33:09.060Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 221,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Patrick Dangerfield",
+      "injury": "Groin",
+      "returning": "active"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Jaeger O'Meara",
@@ -99,12 +105,6 @@
       "player": "Jack Graham",
       "injury": "Soreness",
       "returning": "1 Week"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Patrick Dangerfield",
-      "injury": "Calf",
-      "returning": "active"
     },
     {
       "team": "Melbourne Demons",
