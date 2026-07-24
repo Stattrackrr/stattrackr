@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T18:14:12Z",
+  "generatedAt": "2026-07-24T11:58:08.821Z",
   "count": 53,
   "records": [
     {
@@ -23,7 +23,7 @@
           "recommendedEdge": 0.094,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 24
+          "actualDisposals": null
         }
       ]
     },
@@ -48,7 +48,7 @@
           "recommendedEdge": 0.11800000000000001,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 14
+          "actualDisposals": null
         }
       ]
     },
@@ -73,7 +73,7 @@
           "recommendedEdge": 0.07,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 15
+          "actualDisposals": null
         },
         {
           "playerName": "Jai Serong",
@@ -84,7 +84,7 @@
           "recommendedEdge": 0.043,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": 19
+          "actualDisposals": null
         },
         {
           "playerName": "Brodie Grundy",
@@ -95,7 +95,7 @@
           "recommendedEdge": 0.037000000000000005,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": 26
+          "actualDisposals": null
         }
       ]
     },
@@ -120,7 +120,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 27
+          "actualDisposals": null
         },
         {
           "playerName": "Sam Banks",
@@ -131,7 +131,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": 22
+          "actualDisposals": null
         },
         {
           "playerName": "Jacob Hopper",
@@ -142,7 +142,7 @@
           "recommendedEdge": 0.04,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": 17
+          "actualDisposals": null
         }
       ]
     },
@@ -167,7 +167,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 28
+          "actualDisposals": null
         },
         {
           "playerName": "Harrison Himmelberg",
@@ -178,7 +178,7 @@
           "recommendedEdge": 0.052000000000000005,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": 13
+          "actualDisposals": null
         },
         {
           "playerName": "Callum Wilkie",
@@ -189,7 +189,7 @@
           "recommendedEdge": 0.04,
           "recommendedProb": null,
           "rank": 3,
-          "actualDisposals": 21
+          "actualDisposals": null
         }
       ]
     },
@@ -214,7 +214,7 @@
           "recommendedEdge": 0.091,
           "recommendedProb": null,
           "rank": 1,
-          "actualDisposals": 19
+          "actualDisposals": null
         },
         {
           "playerName": "Matt Johnson",
@@ -225,7 +225,7 @@
           "recommendedEdge": 0.142,
           "recommendedProb": null,
           "rank": 2,
-          "actualDisposals": 15
+          "actualDisposals": null
         }
       ]
     },
@@ -297,7 +297,7 @@
           "recommendedEdge": 0.1604,
           "recommendedProb": 0.6604,
           "rank": 1,
-          "actualDisposals": 18
+          "actualDisposals": null
         },
         {
           "playerName": "Tom Sparrow",
@@ -308,7 +308,7 @@
           "recommendedEdge": 0.1671,
           "recommendedProb": 0.6591,
           "rank": 2,
-          "actualDisposals": 28
+          "actualDisposals": null
         }
       ]
     },
@@ -333,7 +333,7 @@
           "recommendedEdge": 0.0782,
           "recommendedProb": 0.5782,
           "rank": 1,
-          "actualDisposals": 33
+          "actualDisposals": null
         }
       ]
     },
@@ -358,7 +358,7 @@
           "recommendedEdge": 0.1604,
           "recommendedProb": 0.6604,
           "rank": 1,
-          "actualDisposals": 10
+          "actualDisposals": null
         },
         {
           "playerName": "Jase Burgoyne",
@@ -369,7 +369,7 @@
           "recommendedEdge": 0.0737,
           "recommendedProb": 0.5737,
           "rank": 2,
-          "actualDisposals": 23
+          "actualDisposals": null
         }
       ]
     },
