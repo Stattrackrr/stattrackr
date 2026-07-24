@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T11:58:08.821Z",
+  "generatedAt": "2026-07-24T12:20:00Z",
   "count": 53,
   "records": [
     {
@@ -1940,7 +1940,7 @@
       "gameKey": "carltonblues|goldcoastsuns|2026-07-25",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "Carlton Blues",
       "awayTeam": "Gold Coast Suns",
@@ -1949,14 +1949,25 @@
       "roundKey": "2026-R20",
       "picks": [
         {
-          "playerName": "Noah Anderson",
-          "bookmaker": "SportsBet",
-          "line": 28.5,
-          "expectedDisposals": 26.52,
+          "playerName": "Blake Acres",
+          "bookmaker": "PointsBet (AU)",
+          "line": 20.5,
+          "expectedDisposals": 13.9,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.0846,
-          "recommendedProb": 0.5726,
+          "recommendedEdge": 0.2393,
+          "recommendedProb": 0.7393,
           "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Zeke Uwland",
+          "bookmaker": "PointsBet (AU)",
+          "line": 22.5,
+          "expectedDisposals": 17.97,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1692,
+          "recommendedProb": 0.6692,
+          "rank": 2,
           "actualDisposals": null
         }
       ]
@@ -1965,7 +1976,7 @@
       "gameKey": "hawthornhawks|essendonbombers|2026-07-25",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Essendon Bombers",
@@ -1974,25 +1985,36 @@
       "roundKey": "2026-R20",
       "picks": [
         {
-          "playerName": "Connor Macdonald",
-          "bookmaker": "SportsBet",
-          "line": 23.5,
-          "expectedDisposals": 19.83,
+          "playerName": "Cameron Mackenzie",
+          "bookmaker": "PointsBet (AU)",
+          "line": 21.5,
+          "expectedDisposals": 15.77,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1675,
-          "recommendedProb": 0.6685,
+          "recommendedEdge": 0.2415,
+          "recommendedProb": 0.7415,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Zachary Merrett",
-          "bookmaker": "SportsBet",
-          "line": 27.5,
-          "expectedDisposals": 25.03,
+          "playerName": "Massimo D Ambrosio",
+          "bookmaker": "PointsBet (AU)",
+          "line": 22.5,
+          "expectedDisposals": 18.03,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1022,
-          "recommendedProb": 0.5982,
+          "recommendedEdge": 0.1902,
+          "recommendedProb": 0.6902,
           "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Mason Redman",
+          "bookmaker": "PointsBet (AU)",
+          "line": 18.5,
+          "expectedDisposals": 19.4,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0741,
+          "recommendedProb": 0.5944,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2001,7 +2023,7 @@
       "gameKey": "gwsgiants|sydneyswans|2026-07-25",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "GWS Giants",
       "awayTeam": "Sydney Swans",
@@ -2010,25 +2032,36 @@
       "roundKey": "2026-R20",
       "picks": [
         {
-          "playerName": "Clayton Oliver",
-          "bookmaker": "SportsBet",
-          "line": 31.5,
-          "expectedDisposals": 28.89,
+          "playerName": "Harry Rowston",
+          "bookmaker": "PointsBet (AU)",
+          "line": 16.5,
+          "expectedDisposals": 12.0,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1165,
-          "recommendedProb": 0.6095,
+          "recommendedEdge": 0.1756,
+          "recommendedProb": 0.6756,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Errol Gulden",
-          "bookmaker": "SportsBet",
-          "line": 24.5,
-          "expectedDisposals": 25.7,
+          "playerName": "Harvey Thomas",
+          "bookmaker": "PointsBet (AU)",
+          "line": 18.5,
+          "expectedDisposals": 19.93,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.0964,
-          "recommendedProb": 0.6084,
+          "recommendedEdge": 0.1202,
+          "recommendedProb": 0.6202,
           "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Riley Bice",
+          "bookmaker": "PointsBet (AU)",
+          "line": 19.5,
+          "expectedDisposals": 15.91,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1176,
+          "recommendedProb": 0.6379,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2037,7 +2070,7 @@
       "gameKey": "westernbulldogs|richmondtigers|2026-07-25",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "Western Bulldogs",
       "awayTeam": "Richmond Tigers",
@@ -2046,24 +2079,24 @@
       "roundKey": "2026-R20",
       "picks": [
         {
-          "playerName": "Jayden Short",
-          "bookmaker": "SportsBet",
-          "line": 22.5,
-          "expectedDisposals": 23.15,
+          "playerName": "Timothy English",
+          "bookmaker": "PointsBet (AU)",
+          "line": 16.5,
+          "expectedDisposals": 17.64,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.0971,
-          "recommendedProb": 0.5701,
+          "recommendedEdge": 0.1132,
+          "recommendedProb": 0.6132,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Ed Richards",
+          "playerName": "Jayden Short",
           "bookmaker": "SportsBet",
-          "line": 26.5,
-          "expectedDisposals": 27.23,
+          "line": 22.5,
+          "expectedDisposals": 23.17,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.0809,
-          "recommendedProb": 0.5809,
+          "recommendedEdge": 0.101,
+          "recommendedProb": 0.574,
           "rank": 2,
           "actualDisposals": null
         }
@@ -2073,7 +2106,7 @@
       "gameKey": "brisbanelions|portadelaidepower|2026-07-26",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Port Adelaide Power",
@@ -2082,14 +2115,36 @@
       "roundKey": "2026-R20",
       "picks": [
         {
-          "playerName": "Jason Horne Francis",
-          "bookmaker": "SportsBet",
-          "line": 23.5,
-          "expectedDisposals": 20.38,
+          "playerName": "Miles Bergman",
+          "bookmaker": "PointsBet (AU)",
+          "line": 19.5,
+          "expectedDisposals": 15.52,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.138,
-          "recommendedProb": 0.634,
+          "recommendedEdge": 0.1845,
+          "recommendedProb": 0.6845,
           "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Dayne Zorko",
+          "bookmaker": "PointsBet (AU)",
+          "line": 27.5,
+          "expectedDisposals": 23.96,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1448,
+          "recommendedProb": 0.6448,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Darcy Wilmot",
+          "bookmaker": "PointsBet (AU)",
+          "line": 21.5,
+          "expectedDisposals": 22.5,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0994,
+          "recommendedProb": 0.5994,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2098,7 +2153,7 @@
       "gameKey": "northmelbournekangaroos|stkildasaints|2026-07-26",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-23T18:14:12Z",
+      "projectionGeneratedAt": "2026-07-24T12:20:00Z",
       "modelVersion": "afl-disp-20260723-181153",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "St Kilda Saints",
@@ -2110,32 +2165,32 @@
           "playerName": "Luke Davies Uniacke",
           "bookmaker": "SportsBet",
           "line": 24.5,
-          "expectedDisposals": 25.98,
+          "expectedDisposals": 25.83,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.1263,
-          "recommendedProb": 0.6223,
+          "recommendedEdge": 0.1108,
+          "recommendedProb": 0.6178,
           "rank": 1,
-          "actualDisposals": null
-        },
-        {
-          "playerName": "Hugo Garcia",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 27.02,
-          "recommendedSide": "OVER",
-          "recommendedEdge": 0.0978,
-          "recommendedProb": 0.6147,
-          "rank": 2,
           "actualDisposals": null
         },
         {
           "playerName": "Luke Parker",
           "bookmaker": "SportsBet",
           "line": 26.5,
-          "expectedDisposals": 24.33,
+          "expectedDisposals": 23.98,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.0872,
-          "recommendedProb": 0.5832,
+          "recommendedEdge": 0.1056,
+          "recommendedProb": 0.5966,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Caleb Daniel",
+          "bookmaker": "PointsBet (AU)",
+          "line": 25.5,
+          "expectedDisposals": 23.32,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0733,
+          "recommendedProb": 0.5733,
           "rank": 3,
           "actualDisposals": null
         }
