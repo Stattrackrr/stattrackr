@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T13:33:35.550Z",
+  "generatedAt": "2026-07-24T15:29:50.073Z",
   "season": 2026,
   "source": "afl fantasy positions + player-game-logs",
   "mode": "basic",
@@ -15,10 +15,10 @@
   },
   "leagueBaselineByPosition": {
     "DEF": {
-      "sampleSize": 2446,
+      "sampleSize": 2447,
       "perPlayerGame": {
         "disposals": 16.16,
-        "kicks": 10.27,
+        "kicks": 10.26,
         "handballs": 5.9,
         "marks": 4.96,
         "goals": 0.13,
@@ -36,9 +36,9 @@
         "marks_inside_50": 0.12,
         "one_percenters": 3.06,
         "goal_assists": 0.2,
-        "meters_gained": 281.77,
+        "meters_gained": 281.73,
         "percent_played": 80.21,
-        "free_kicks_for": 0.65,
+        "free_kicks_for": 0.64,
         "free_kicks_against": 0.73
       }
     },
@@ -210,7 +210,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.933,
-        "kicks": 0.953,
+        "kicks": 0.954,
         "handballs": 0.897,
         "marks": 0.899,
         "goals": 1.231,
@@ -230,7 +230,7 @@
         "goal_assists": 1,
         "meters_gained": 0.987,
         "percent_played": 0.995,
-        "free_kicks_for": 1.077,
+        "free_kicks_for": 1.094,
         "free_kicks_against": 0.959
       }
     },
@@ -634,7 +634,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.951,
-        "kicks": 0.883,
+        "kicks": 0.884,
         "handballs": 1.068,
         "marks": 0.748,
         "goals": 0.692,
@@ -654,7 +654,7 @@
         "goal_assists": 1.05,
         "meters_gained": 0.977,
         "percent_played": 1.011,
-        "free_kicks_for": 0.969,
+        "free_kicks_for": 0.984,
         "free_kicks_against": 0.932
       }
     },
@@ -1058,7 +1058,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.95,
-        "kicks": 0.967,
+        "kicks": 0.968,
         "handballs": 0.919,
         "marks": 0.919,
         "goals": 1.308,
@@ -1078,7 +1078,7 @@
         "goal_assists": 1.1,
         "meters_gained": 0.949,
         "percent_played": 0.989,
-        "free_kicks_for": 1.015,
+        "free_kicks_for": 1.031,
         "free_kicks_against": 1.137
       }
     },
@@ -1482,7 +1482,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.045,
-        "kicks": 1.054,
+        "kicks": 1.055,
         "handballs": 1.029,
         "marks": 1.123,
         "goals": 0.923,
@@ -1502,7 +1502,7 @@
         "goal_assists": 0.8,
         "meters_gained": 1.002,
         "percent_played": 1.003,
-        "free_kicks_for": 0.877,
+        "free_kicks_for": 0.891,
         "free_kicks_against": 0.836
       }
     },
@@ -1906,7 +1906,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.114,
-        "kicks": 1.113,
+        "kicks": 1.114,
         "handballs": 1.115,
         "marks": 1.248,
         "goals": 1.077,
@@ -1926,7 +1926,7 @@
         "goal_assists": 1.45,
         "meters_gained": 1.017,
         "percent_played": 1.003,
-        "free_kicks_for": 0.938,
+        "free_kicks_for": 0.953,
         "free_kicks_against": 0.986
       }
     },
@@ -2330,7 +2330,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.912,
-        "kicks": 0.964,
+        "kicks": 0.965,
         "handballs": 0.819,
         "marks": 1.014,
         "goals": 0.692,
@@ -2350,7 +2350,7 @@
         "goal_assists": 0.85,
         "meters_gained": 0.956,
         "percent_played": 0.989,
-        "free_kicks_for": 0.769,
+        "free_kicks_for": 0.781,
         "free_kicks_against": 1.192
       }
     },
@@ -2754,7 +2754,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.017,
-        "kicks": 0.962,
+        "kicks": 0.963,
         "handballs": 1.114,
         "marks": 0.837,
         "goals": 1.154,
@@ -2772,9 +2772,9 @@
         "marks_inside_50": 1,
         "one_percenters": 1.013,
         "goal_assists": 0.85,
-        "meters_gained": 1.04,
+        "meters_gained": 1.041,
         "percent_played": 1.003,
-        "free_kicks_for": 0.877,
+        "free_kicks_for": 0.891,
         "free_kicks_against": 1.123
       }
     },
@@ -3198,7 +3198,7 @@
         "goal_assists": 1.15,
         "meters_gained": 0.985,
         "percent_played": 0.987,
-        "free_kicks_for": 1.108,
+        "free_kicks_for": 1.125,
         "free_kicks_against": 0.986
       }
     },
@@ -3602,7 +3602,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.006,
-        "kicks": 1.007,
+        "kicks": 1.008,
         "handballs": 1.002,
         "marks": 1.006,
         "goals": 1.077,
@@ -3622,7 +3622,7 @@
         "goal_assists": 1.15,
         "meters_gained": 1.043,
         "percent_played": 0.999,
-        "free_kicks_for": 1.046,
+        "free_kicks_for": 1.063,
         "free_kicks_against": 0.877
       }
     },
@@ -4026,7 +4026,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.999,
-        "kicks": 0.981,
+        "kicks": 0.982,
         "handballs": 1.031,
         "marks": 0.944,
         "goals": 0.769,
@@ -4046,7 +4046,7 @@
         "goal_assists": 0.85,
         "meters_gained": 1.046,
         "percent_played": 1.013,
-        "free_kicks_for": 1.092,
+        "free_kicks_for": 1.109,
         "free_kicks_against": 0.945
       }
     },
@@ -4371,106 +4371,106 @@
     {
       "opponent": "Melbourne",
       "position": "DEF",
-      "sampleSize": 137,
+      "sampleSize": 138,
       "teamGames": 19,
       "totals": {
-        "disposals": 2288,
-        "kicks": 1474,
-        "handballs": 814,
-        "marks": 755,
+        "disposals": 2298,
+        "kicks": 1477,
+        "handballs": 821,
+        "marks": 759,
         "goals": 17,
         "behinds": 21,
-        "tackles": 238,
+        "tackles": 239,
         "hitouts": 55,
         "inside_50s": 0,
-        "clearances": 85,
-        "intercepts": 644,
+        "clearances": 86,
+        "intercepts": 645,
         "tackles_inside_50": 9,
-        "score_involvements": 411,
-        "contested_possessions": 601,
-        "uncontested_possessions": 1514,
+        "score_involvements": 414,
+        "contested_possessions": 604,
+        "uncontested_possessions": 1521,
         "contested_marks": 58,
         "marks_inside_50": 19,
         "one_percenters": 444,
-        "goal_assists": 34,
-        "meters_gained": 37989,
-        "percent_played": 10967,
+        "goal_assists": 35,
+        "meters_gained": 38173,
+        "percent_played": 11043,
         "free_kicks_for": 82,
-        "free_kicks_against": 86
+        "free_kicks_against": 87
       },
       "perPlayerGame": {
-        "disposals": 16.7,
-        "kicks": 10.76,
-        "handballs": 5.94,
-        "marks": 5.51,
+        "disposals": 16.65,
+        "kicks": 10.7,
+        "handballs": 5.95,
+        "marks": 5.5,
         "goals": 0.12,
         "behinds": 0.15,
-        "tackles": 1.74,
+        "tackles": 1.73,
         "hitouts": 0.4,
         "inside_50s": 0,
         "clearances": 0.62,
-        "intercepts": 4.7,
+        "intercepts": 4.67,
         "tackles_inside_50": 0.07,
         "score_involvements": 3,
-        "contested_possessions": 4.39,
-        "uncontested_possessions": 11.05,
+        "contested_possessions": 4.38,
+        "uncontested_possessions": 11.02,
         "contested_marks": 0.42,
         "marks_inside_50": 0.14,
-        "one_percenters": 3.24,
+        "one_percenters": 3.22,
         "goal_assists": 0.25,
-        "meters_gained": 277.29,
-        "percent_played": 80.05,
-        "free_kicks_for": 0.6,
+        "meters_gained": 276.62,
+        "percent_played": 80.02,
+        "free_kicks_for": 0.59,
         "free_kicks_against": 0.63
       },
       "perTeamGame": {
-        "disposals": 120.42,
-        "kicks": 77.58,
-        "handballs": 42.84,
-        "marks": 39.74,
+        "disposals": 120.95,
+        "kicks": 77.74,
+        "handballs": 43.21,
+        "marks": 39.95,
         "goals": 0.89,
         "behinds": 1.11,
-        "tackles": 12.53,
+        "tackles": 12.58,
         "hitouts": 2.89,
         "inside_50s": 0,
-        "clearances": 4.47,
-        "intercepts": 33.89,
+        "clearances": 4.53,
+        "intercepts": 33.95,
         "tackles_inside_50": 0.47,
-        "score_involvements": 21.63,
-        "contested_possessions": 31.63,
-        "uncontested_possessions": 79.68,
+        "score_involvements": 21.79,
+        "contested_possessions": 31.79,
+        "uncontested_possessions": 80.05,
         "contested_marks": 3.05,
         "marks_inside_50": 1,
         "one_percenters": 23.37,
-        "goal_assists": 1.79,
-        "meters_gained": 1999.42,
-        "percent_played": 577.21,
+        "goal_assists": 1.84,
+        "meters_gained": 2009.11,
+        "percent_played": 581.21,
         "free_kicks_for": 4.32,
-        "free_kicks_against": 4.53
+        "free_kicks_against": 4.58
       },
       "indexVsLeague": {
-        "disposals": 1.033,
-        "kicks": 1.048,
-        "handballs": 1.007,
-        "marks": 1.111,
+        "disposals": 1.03,
+        "kicks": 1.043,
+        "handballs": 1.008,
+        "marks": 1.109,
         "goals": 0.923,
         "behinds": 1.25,
-        "tackles": 0.967,
+        "tackles": 0.961,
         "hitouts": 1.667,
         "inside_50s": null,
         "clearances": 1.069,
-        "intercepts": 1.038,
+        "intercepts": 1.031,
         "tackles_inside_50": 0.7,
         "score_involvements": 1.007,
-        "contested_possessions": 1.023,
-        "uncontested_possessions": 1.043,
+        "contested_possessions": 1.021,
+        "uncontested_possessions": 1.041,
         "contested_marks": 1.024,
         "marks_inside_50": 1.167,
-        "one_percenters": 1.059,
+        "one_percenters": 1.052,
         "goal_assists": 1.25,
-        "meters_gained": 0.984,
+        "meters_gained": 0.982,
         "percent_played": 0.998,
-        "free_kicks_for": 0.923,
+        "free_kicks_for": 0.922,
         "free_kicks_against": 0.863
       }
     },
@@ -4690,7 +4690,7 @@
       "opponent": "Melbourne",
       "position": "RUC",
       "sampleSize": 21,
-      "teamGames": 18,
+      "teamGames": 19,
       "totals": {
         "disposals": 234,
         "kicks": 104,
@@ -4742,29 +4742,29 @@
         "free_kicks_against": 2.1
       },
       "perTeamGame": {
-        "disposals": 13,
-        "kicks": 5.78,
-        "handballs": 7.22,
-        "marks": 2.44,
-        "goals": 0.5,
-        "behinds": 0.44,
-        "tackles": 3.17,
-        "hitouts": 22,
+        "disposals": 12.32,
+        "kicks": 5.47,
+        "handballs": 6.84,
+        "marks": 2.32,
+        "goals": 0.47,
+        "behinds": 0.42,
+        "tackles": 3,
+        "hitouts": 20.84,
         "inside_50s": 0,
-        "clearances": 4.61,
-        "intercepts": 1.67,
-        "tackles_inside_50": 0.44,
-        "score_involvements": 5.61,
-        "contested_possessions": 8.61,
-        "uncontested_possessions": 4.5,
-        "contested_marks": 0.72,
-        "marks_inside_50": 0.33,
-        "one_percenters": 2.94,
-        "goal_assists": 0.5,
-        "meters_gained": 149.33,
-        "percent_played": 80.94,
-        "free_kicks_for": 1.56,
-        "free_kicks_against": 2.44
+        "clearances": 4.37,
+        "intercepts": 1.58,
+        "tackles_inside_50": 0.42,
+        "score_involvements": 5.32,
+        "contested_possessions": 8.16,
+        "uncontested_possessions": 4.26,
+        "contested_marks": 0.68,
+        "marks_inside_50": 0.32,
+        "one_percenters": 2.79,
+        "goal_assists": 0.47,
+        "meters_gained": 141.47,
+        "percent_played": 76.68,
+        "free_kicks_for": 1.47,
+        "free_kicks_against": 2.32
       },
       "indexVsLeague": {
         "disposals": 0.894,
@@ -4874,7 +4874,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.93,
-        "kicks": 0.917,
+        "kicks": 0.918,
         "handballs": 0.951,
         "marks": 0.95,
         "goals": 1.077,
@@ -4894,7 +4894,7 @@
         "goal_assists": 1.1,
         "meters_gained": 0.962,
         "percent_played": 1,
-        "free_kicks_for": 1.108,
+        "free_kicks_for": 1.125,
         "free_kicks_against": 1.137
       }
     },
@@ -5298,7 +5298,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.984,
-        "kicks": 0.978,
+        "kicks": 0.979,
         "handballs": 0.995,
         "marks": 0.984,
         "goals": 1.231,
@@ -5318,7 +5318,7 @@
         "goal_assists": 0.8,
         "meters_gained": 0.972,
         "percent_played": 1,
-        "free_kicks_for": 1.123,
+        "free_kicks_for": 1.141,
         "free_kicks_against": 1.068
       }
     },
@@ -5722,7 +5722,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.073,
-        "kicks": 1.065,
+        "kicks": 1.066,
         "handballs": 1.085,
         "marks": 1.129,
         "goals": 1.385,
@@ -5742,7 +5742,7 @@
         "goal_assists": 1,
         "meters_gained": 0.981,
         "percent_played": 1.016,
-        "free_kicks_for": 0.846,
+        "free_kicks_for": 0.859,
         "free_kicks_against": 0.959
       }
     },
@@ -6146,7 +6146,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.079,
-        "kicks": 1.086,
+        "kicks": 1.087,
         "handballs": 1.064,
         "marks": 1.161,
         "goals": 1,
@@ -6166,7 +6166,7 @@
         "goal_assists": 1,
         "meters_gained": 1.045,
         "percent_played": 0.982,
-        "free_kicks_for": 0.831,
+        "free_kicks_for": 0.844,
         "free_kicks_against": 1.027
       }
     },
@@ -6570,7 +6570,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.977,
-        "kicks": 0.979,
+        "kicks": 0.98,
         "handballs": 0.973,
         "marks": 0.857,
         "goals": 1,
@@ -6590,7 +6590,7 @@
         "goal_assists": 0.65,
         "meters_gained": 1.065,
         "percent_played": 1.009,
-        "free_kicks_for": 0.985,
+        "free_kicks_for": 1,
         "free_kicks_against": 0.986
       }
     },
@@ -6994,7 +6994,7 @@
       },
       "indexVsLeague": {
         "disposals": 0.973,
-        "kicks": 0.993,
+        "kicks": 0.994,
         "handballs": 0.937,
         "marks": 1.004,
         "goals": 1.462,
@@ -7014,7 +7014,7 @@
         "goal_assists": 0.9,
         "meters_gained": 0.952,
         "percent_played": 0.995,
-        "free_kicks_for": 1.154,
+        "free_kicks_for": 1.172,
         "free_kicks_against": 0.973
       }
     },
@@ -7418,7 +7418,7 @@
       },
       "indexVsLeague": {
         "disposals": 1.108,
-        "kicks": 1.139,
+        "kicks": 1.14,
         "handballs": 1.051,
         "marks": 1.26,
         "goals": 1.154,
@@ -7438,7 +7438,7 @@
         "goal_assists": 0.75,
         "meters_gained": 1.04,
         "percent_played": 1.01,
-        "free_kicks_for": 1.154,
+        "free_kicks_for": 1.172,
         "free_kicks_against": 1.096
       }
     },

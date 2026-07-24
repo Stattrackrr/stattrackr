@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T13:33:09.060Z",
+  "generatedAt": "2026-07-24T15:29:29.023Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 221,
@@ -7,8 +7,14 @@
     {
       "team": "Geelong Cats",
       "player": "Patrick Dangerfield",
-      "injury": "Groin",
-      "returning": "active"
+      "injury": "Shin",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jeremy Cameron",
+      "injury": "Injury",
+      "returning": "TBC"
     },
     {
       "team": "Fremantle Dockers",
@@ -44,7 +50,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Injury",
-      "returning": "TBC"
+      "returning": "rest of the home-and-away season"
     },
     {
       "team": "St Kilda Saints",
@@ -495,12 +501,6 @@
       "player": "Shaun Mannagh",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jeremy Cameron",
-      "injury": "Ac joint",
-      "returning": "at least a month"
     },
     {
       "team": "St Kilda Saints",
