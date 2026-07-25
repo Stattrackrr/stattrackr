@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-07-25T19:09:07.997Z",
+  "generatedAt": "2026-07-25T20:51:06.477Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 186,
+  "injuryCount": 193,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Lewis Melican",
+      "injury": "Adductor",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harry Barnett",
+      "injury": "Abdomen",
+      "returning": "Test"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Laitham Vandermeer",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Koby Coulson",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Lachlan Gulbin",
+      "injury": "Hand",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Jake Rogers",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Flynn Perez",
+      "injury": "Abdomen",
+      "returning": "Test"
+    },
     {
       "team": "GWS Giants",
       "player": "Toby Greene",
