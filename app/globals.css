@@ -208,8 +208,19 @@
   grid-template-columns: 1fr;
 }
 
+.afl-role-stats-total {
+  font-size: 9px;
+  letter-spacing: -0.01em;
+}
+
 @container afl-role-stats (min-width: 22rem) {
   .afl-role-stats-grid > .afl-role-stats-cols {
     grid-template-columns: 1fr 1fr;
+  }
+
+  /* Slightly under Avg / Rate when side-by-side on desktop panels. */
+  .afl-role-stats-total {
+    font-size: 11px;
+    letter-spacing: normal;
   }
 }

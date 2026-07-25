@@ -168,7 +168,7 @@ function StatTable({
               <span
                 key={`${row.label}-${i}`}
                 className={`min-w-0 font-semibold tabular-nums text-center leading-tight ${
-                  row.valueSize === 'sm' ? 'text-[9px] tracking-tight' : 'text-[12px]'
+                  row.valueSize === 'sm' ? 'afl-role-stats-total' : 'text-[12px]'
                 } ${valueCls}`}
               >
                 {v}
