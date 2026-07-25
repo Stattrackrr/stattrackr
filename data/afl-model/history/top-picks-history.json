@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T18:13:04Z",
+  "generatedAt": "2026-07-25T06:25:33.646Z",
   "count": 53,
   "records": [
     {
@@ -1957,7 +1957,7 @@
           "recommendedEdge": 0.2277,
           "recommendedProb": 0.7277,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "John Noble",
@@ -1968,7 +1968,7 @@
           "recommendedEdge": 0.1546,
           "recommendedProb": 0.6546,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 18
         }
       ]
     },
@@ -2035,7 +2035,7 @@
           "playerName": "Harvey Thomas",
           "bookmaker": "PointsBet (AU)",
           "line": 18.5,
-          "expectedDisposals": 20.0,
+          "expectedDisposals": 20,
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1293,
           "recommendedProb": 0.6293,
@@ -2046,7 +2046,7 @@
           "playerName": "Riley Bice",
           "bookmaker": "PointsBet (AU)",
           "line": 19.5,
-          "expectedDisposals": 16.0,
+          "expectedDisposals": 16,
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1058,
           "recommendedProb": 0.6261,
