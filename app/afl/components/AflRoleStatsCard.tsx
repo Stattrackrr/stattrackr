@@ -145,13 +145,13 @@ function StatTable({
   const line = isDark ? 'border-white/10' : 'border-black/5';
 
   return (
-    <div className="w-full min-w-0">
-      <div className={`grid grid-cols-[2.75rem_1fr_1fr_1fr] gap-x-1 border-b pb-1 mb-1 ${line}`}>
-        <span className={`text-[10px] font-semibold uppercase tracking-wide ${muted}`} />
+    <div className="w-full min-w-0 overflow-hidden">
+      <div className={`grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-0.5 border-b pb-1 mb-1 ${line}`}>
+        <span className={`text-[9px] font-semibold uppercase tracking-wide ${muted}`} />
         {WINDOWS.map((w) => (
           <span
             key={w.key}
-            className={`text-[10px] font-semibold uppercase tracking-wide ${muted} text-center`}
+            className={`text-[9px] font-semibold uppercase tracking-wide ${muted} text-center truncate`}
           >
             {w.label}
           </span>
@@ -159,12 +159,17 @@ function StatTable({
       </div>
       <div className="space-y-1">
         {rows.map((row) => (
-          <div key={row.label} className="grid grid-cols-[2.75rem_1fr_1fr_1fr] gap-x-1 items-baseline">
-            <span className={`text-[11px] ${labelCls}`}>{row.label}</span>
+          <div
+            key={row.label}
+            className="grid grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-0.5 items-baseline"
+          >
+            <span className={`text-[10px] ${labelCls}`}>{row.label}</span>
             {row.values.map((v, i) => (
               <span
                 key={`${row.label}-${i}`}
-                className={`${row.valueSize === 'sm' ? 'text-[11px]' : 'text-[13px]'} font-semibold tabular-nums text-center ${valueCls}`}
+                className={`min-w-0 font-semibold tabular-nums text-center leading-tight ${
+                  row.valueSize === 'sm' ? 'text-[9px] tracking-tight' : 'text-[12px]'
+                } ${valueCls}`}
               >
                 {v}
               </span>
@@ -188,7 +193,7 @@ function StatBlock({
   children: ReactNode;
 }) {
   return (
-    <div className={`rounded-lg border px-3 py-2.5 ${frameClass}`}>
+    <div className={`min-w-0 overflow-hidden rounded-lg border px-2.5 py-2 ${frameClass}`}>
       <div className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${accentClass}`}>
         {title}
       </div>
@@ -474,7 +479,9 @@ export function AflRoleStatsCard({
         <span className={`text-xs uppercase tracking-wide font-semibold ${muted}`}>Role Stats</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* Stack in narrow side-panel/mobile; 50/50 only when this container is wide enough. */}
+      <div className="afl-role-stats-grid w-full min-w-0">
+      <div className="afl-role-stats-cols gap-2.5">
         <div className="min-w-0">
           <StatBlock title="CBA" accentClass={cbaAccent} frameClass={cbaFrame}>
             <StatTable
@@ -539,6 +546,7 @@ export function AflRoleStatsCard({
               rows={[
                 {
                   label: 'Total',
+                  valueSize: 'sm',
                   values: [
                     data.kick_ins.season.fraction,
                     data.kick_ins.l5.fraction,
@@ -588,6 +596,7 @@ export function AflRoleStatsCard({
             />
           ) : null}
         </div>
+      </div>
       </div>
     </div>
   );
