@@ -362,11 +362,20 @@ function parseAflGoalsFromResult(resultRaw: unknown): { team: number; opponent: 
   return null;
 }
 
-function hasVerifiedSupportingStats(game: Record<string, unknown>): boolean {
-  const tog = typeof game.percent_played === 'number'
-    ? game.percent_played
-    : (typeof game.percent_played === 'string' ? parseFloat(game.percent_played) : NaN);
-  return Number.isFinite(tog) && tog > 0;
+/**
+ * Chart eligibility: hide games where the player recorded 0% TOG (DNP / unused).
+ * Keep rows with missing/unknown TOG so unenriched seasons still chart.
+ */
+function aflChartGameHasPlayingTime(game: Record<string, unknown>): boolean {
+  const raw = game.percent_played;
+  const tog =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+        ? parseFloat(raw.replace(/%/g, '').trim())
+        : NaN;
+  if (!Number.isFinite(tog)) return true;
+  return tog > 0;
 }
 
 const VALID_AFL_TIMEFRAMES = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
@@ -4082,13 +4091,14 @@ export default function AFLPage() {
         return resolved === aflTeamFilter.trim();
       });
 
-    // Keep all games with box-score stats on the chart. Do not drop 2026 rows just because
-    // TOG/advanced enrichment is missing — that was hiding current-season games and leaving 2025 only.
+    // Keep games with box-score stats. Do not drop rows just because TOG enrichment is
+    // missing — but never chart explicit 0% TOG (DNP / unused).
     const withCoreStats = baseLogs.filter((g) => {
       const d = Number((g as Record<string, unknown>).disposals);
       return Number.isFinite(d);
     });
-    return withCoreStats.length > 0 ? withCoreStats : baseLogs;
+    const candidates = withCoreStats.length > 0 ? withCoreStats : baseLogs;
+    return candidates.filter((g) => aflChartGameHasPlayingTime(g as Record<string, unknown>));
   }, [aflPropsMode, filteredPlayerGameLogs, aflTeamFilter]);
 
   // In Game Props mode, optionally filter team logs by selected opponent from Team dropdown.
@@ -4870,7 +4880,13 @@ export default function AFLPage() {
                       <AflStatsChart
                         stats={selectedPlayer ?? {}}
                         gameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : chartGameLogsForPlayer}
-                        allGameLogs={aflPropsMode === 'team' ? chartGameLogsForTeamMode : selectedPlayerGameLogsForChart}
+                        allGameLogs={
+                          aflPropsMode === 'team'
+                            ? chartGameLogsForTeamMode
+                            : selectedPlayerGameLogsForChart.filter((g) =>
+                                aflChartGameHasPlayingTime(g as Record<string, unknown>)
+                              )
+                        }
                         isDark={!!mounted && isDark}
                         logoByTeam={logoByTeam}
                         isLoading={
