@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T09:52:37.626Z",
+  "generatedAt": "2026-07-25T12:03:31Z",
   "count": 53,
   "records": [
     {
@@ -2095,7 +2095,7 @@
       "gameKey": "brisbanelions|portadelaidepower|2026-07-26",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-24T18:13:04Z",
+      "projectionGeneratedAt": "2026-07-25T12:03:31Z",
       "modelVersion": "afl-disp-20260724-181021",
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Port Adelaide Power",
@@ -2109,8 +2109,8 @@
           "line": 19.5,
           "expectedDisposals": 15.53,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1756,
-          "recommendedProb": 0.6756,
+          "recommendedEdge": 0.1893,
+          "recommendedProb": 0.6893,
           "rank": 1,
           "actualDisposals": null
         },
@@ -2118,10 +2118,10 @@
           "playerName": "Jason Horne Francis",
           "bookmaker": "SportsBet",
           "line": 23.5,
-          "expectedDisposals": 20.17,
+          "expectedDisposals": 20.14,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1411,
-          "recommendedProb": 0.6321,
+          "recommendedEdge": 0.1483,
+          "recommendedProb": 0.6473,
           "rank": 2,
           "actualDisposals": null
         },
@@ -2129,10 +2129,10 @@
           "playerName": "Willem Drew",
           "bookmaker": "PointsBet (AU)",
           "line": 18.5,
-          "expectedDisposals": 19.34,
+          "expectedDisposals": 19.29,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.0973,
-          "recommendedProb": 0.5973,
+          "recommendedEdge": 0.1027,
+          "recommendedProb": 0.5824,
           "rank": 3,
           "actualDisposals": null
         }
@@ -2142,7 +2142,7 @@
       "gameKey": "northmelbournekangaroos|stkildasaints|2026-07-26",
       "finalizedAt": "2026-07-21T12:25:25Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-24T18:13:04Z",
+      "projectionGeneratedAt": "2026-07-25T12:03:31Z",
       "modelVersion": "afl-disp-20260724-181021",
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "St Kilda Saints",
@@ -2156,8 +2156,8 @@
           "line": 24.5,
           "expectedDisposals": 26.06,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.1286,
-          "recommendedProb": 0.6356,
+          "recommendedEdge": 0.1212,
+          "recommendedProb": 0.6282,
           "rank": 1,
           "actualDisposals": null
         },
@@ -2167,20 +2167,9 @@
           "line": 26.5,
           "expectedDisposals": 23.92,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1011,
-          "recommendedProb": 0.5921,
+          "recommendedEdge": 0.1131,
+          "recommendedProb": 0.6041,
           "rank": 2,
-          "actualDisposals": null
-        },
-        {
-          "playerName": "Hugo Garcia",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 26.05,
-          "recommendedSide": "OVER",
-          "recommendedEdge": 0.0519,
-          "recommendedProb": 0.576,
-          "rank": 3,
           "actualDisposals": null
         }
       ]
