@@ -196,3 +196,20 @@
 .animate-live-badge-pulse-green {
   animation: liveBadgePulseGreen 1.6s ease-in-out infinite;
 }
+
+/* AFL Role Stats: stack CBA / Kick-ins in narrow panels; 50/50 when wide enough. */
+.afl-role-stats-grid {
+  container-type: inline-size;
+  container-name: afl-role-stats;
+}
+
+.afl-role-stats-grid > .afl-role-stats-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@container afl-role-stats (min-width: 22rem) {
+  .afl-role-stats-grid > .afl-role-stats-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
