@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-24T23:04:59.518Z",
+  "generatedAt": "2026-07-25T02:15:52.697Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 215,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Liam Reidy",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Patrick Dangerfield",
+      "injury": "Hip",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Oliver Henry",
