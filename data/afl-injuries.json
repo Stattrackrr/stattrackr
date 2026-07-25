@@ -1,19 +1,79 @@
 {
-  "generatedAt": "2026-07-25T02:15:52.697Z",
+  "generatedAt": "2026-07-25T06:22:24.476Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 218,
   "injuries": [
     {
+      "team": "GWS Giants",
+      "player": "Toby Greene",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Harry Cunningham",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
       "team": "Carlton Blues",
-      "player": "Liam Reidy",
+      "player": "Harry McKay",
       "injury": "active",
       "returning": "active"
     },
     {
+      "team": "Essendon Bombers",
+      "player": "Jye Caldwell",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Will Day",
+      "injury": "management against Richmond last round",
+      "returning": "active"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "William McCabe",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Nic Newman",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
       "team": "Geelong Cats",
       "player": "Patrick Dangerfield",
-      "injury": "Hip",
+      "injury": "Adductor",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Reef McInnes",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Darcy Moore",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Liam Reidy",
+      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -101,12 +161,6 @@
       "returning": "TBA"
     },
     {
-      "team": "Essendon Bombers",
-      "player": "Jye Caldwell",
-      "injury": "Soreness",
-      "returning": "TBA"
-    },
-    {
       "team": "Fremantle Dockers",
       "player": "Brennan Cox",
       "injury": "Soreness",
@@ -159,12 +213,6 @@
       "player": "Brayden Cook",
       "injury": "rested",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Meniscus",
-      "returning": "This week"
     },
     {
       "team": "Hawthorn Hawks",
@@ -326,7 +374,7 @@
       "team": "Essendon Bombers",
       "player": "Kyle Langford",
       "injury": "Suspended AFL",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Carlton Blues",
@@ -371,16 +419,10 @@
       "returning": "active"
     },
     {
-      "team": "GWS Giants",
-      "player": "Toby Greene",
-      "injury": "Quad",
-      "returning": "TBC"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Xavier Duursma",
       "injury": "Hamstring",
-      "returning": "Season"
+      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
@@ -461,12 +503,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Harry Cunningham",
-      "injury": "Concussion",
-      "returning": "at least the Sydney Derby"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Rory Laird",
       "injury": "Soreness",
@@ -510,12 +546,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Darcy Moore",
-      "injury": "active",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Jamie Elliott",
       "injury": "active",
       "returning": "Season"
@@ -525,12 +555,6 @@
       "player": "Bruce Reville",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Will Day",
-      "injury": "Calf",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -795,12 +819,6 @@
       "player": "Ethan Matthews",
       "injury": "Foot",
       "returning": "rest of Marsh AFL National Under-18 Boys Championships"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Reef McInnes",
-      "injury": "Knee",
-      "returning": "Season"
     },
     {
       "team": "Geelong Cats",
