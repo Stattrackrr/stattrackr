@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-25T09:50:30.543Z",
+  "generatedAt": "2026-07-25T11:13:59.011Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Sullivan Robey",
+      "injury": "Knee",
+      "returning": "Season"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Jordan Ridley",
