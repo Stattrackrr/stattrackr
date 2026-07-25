@@ -15,6 +15,7 @@ import { AflLadderCard, getTeamAbbrev } from '@/app/afl/components/AflLadderCard
 import { AflBoxScore } from '@/app/afl/components/AflBoxScore';
 import { AflSidebarHotPicks } from '@/app/afl/components/AflSidebarHotPicks';
 import { AflSupportingStats, type SupportingStatKind } from '@/app/afl/components/AflSupportingStats';
+import { AflRoleStatsCard } from '@/app/afl/components/AflRoleStatsCard';
 import { type AflBookRow, type AflPropLine, type AflPropOverOnly, type AflPropYesNo, getGoalsMarketLineOver, getGoalsMarketLines } from '@/app/afl/components/AflBestOddsTable';
 import { AflLineSelector } from '@/app/afl/components/AflLineSelector';
 import { calculateImpliedProbabilities } from '@/lib/impliedProbability';
@@ -162,7 +163,7 @@ function normalizeForRankMatch(value: string): string {
   return String(value ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
-const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v9';
+const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:v11';
 const AFL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const AFL_TEAM_LOGS_CACHE_PREFIX = 'aflTeamLogsCache:v4';
 const AFL_TEAM_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes
@@ -1282,7 +1283,7 @@ export default function AFLPage() {
   const [mainChartStat, setMainChartStat] = useState<string>('');
   const [supportingStatKind, setSupportingStatKind] = useState<SupportingStatKind>('tog');
   const [playerVsRankScope, setPlayerVsRankScope] = useState<'team' | 'league'>('team');
-  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<'comparison' | 'prediction'>('comparison');
+  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<'comparison' | 'prediction' | 'role'>('comparison');
   const showAflPredictionPanel =
     !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction';
   useEffect(() => {
@@ -5309,11 +5310,11 @@ export default function AFLPage() {
                 {/* 4.52. Player vs Team - mobile */}
                 {aflPropsMode === 'player' && (
                   <div className={`lg:hidden w-full min-w-0 rounded-lg ${AFL_DASH_CARD_GLOW} px-2 sm:px-2.5 py-2.5 sm:py-3`}>
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-1.5 sm:gap-2 mb-3">
                       <button
                         type="button"
                         onClick={() => setPlayerVsContainerTab('comparison')}
-                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
+                        className={`flex-1 px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-medium rounded-lg transition-colors border ${
                           playerVsContainerTab === 'comparison'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5334,7 +5335,7 @@ export default function AFLPage() {
                             setPlayerVsContainerTab('prediction');
                           }
                         }}
-                        className={`relative flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors border ${
+                        className={`relative flex-1 px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-medium rounded-lg transition-colors border ${
                           !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
@@ -5353,8 +5354,27 @@ export default function AFLPage() {
                           </span>
                         ) : null}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('role')}
+                        className={`flex-1 px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'role'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Role Stats
+                      </button>
                     </div>
-                    {!showAflPredictionPanel ? (
+                    {playerVsContainerTab === 'role' ? (
+                      <AflRoleStatsCard
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        team={selectedPlayer?.team ? String(selectedPlayer.team) : null}
+                        gameLogs={selectedPlayerGameLogs}
+                        season={new Date().getFullYear()}
+                        isDark={!!mounted && isDark}
+                      />
+                    ) : !showAflPredictionPanel ? (
                       <>
                         <div className="flex justify-center mb-2">
                           <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
@@ -5794,11 +5814,11 @@ export default function AFLPage() {
                 {/* Player vs Team - desktop right panel */}
                 {aflPropsMode === 'player' && (
                 <div className={`hidden lg:block rounded-lg ${AFL_DASH_CARD_GLOW} px-1.5 xl:px-2 py-1.5 xl:py-2 w-full min-w-0 mt-0`}>
-                  <div className="flex gap-1.5 xl:gap-2 mb-2">
+                  <div className="flex gap-1 xl:gap-1.5 mb-2">
                     <button
                       type="button"
                       onClick={() => setPlayerVsContainerTab('comparison')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                      className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
                         playerVsContainerTab === 'comparison'
                           ? 'bg-purple-600 text-white border-purple-600'
                           : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -5819,7 +5839,7 @@ export default function AFLPage() {
                           setPlayerVsContainerTab('prediction');
                         }
                       }}
-                      className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                      className={`relative flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
                         !AFL_PREDICTION_MODEL_UNDER_MAINTENANCE && playerVsContainerTab === 'prediction'
                           ? 'bg-purple-600 text-white border-purple-600'
                           : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
@@ -5838,8 +5858,27 @@ export default function AFLPage() {
                         </span>
                       ) : null}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlayerVsContainerTab('role')}
+                      className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                        playerVsContainerTab === 'role'
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                      }`}
+                    >
+                      Role Stats
+                    </button>
                   </div>
-                  {!showAflPredictionPanel ? (
+                  {playerVsContainerTab === 'role' ? (
+                    <AflRoleStatsCard
+                      playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                      team={selectedPlayer?.team ? String(selectedPlayer.team) : null}
+                      gameLogs={selectedPlayerGameLogs}
+                      season={new Date().getFullYear()}
+                      isDark={!!mounted && isDark}
+                    />
+                  ) : !showAflPredictionPanel ? (
                     <>
                       <div className="flex justify-center mb-2">
                         <div className={`inline-flex rounded-lg border overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>

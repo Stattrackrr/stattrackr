@@ -1,5 +1,7 @@
 import { Redis } from '@upstash/redis';
-// Bump when cache key semantics change (e.g. stop serving empty negative entries as hits).
+// Do NOT bump casually: a new schema orphans the warmed Upstash keys and every
+// unauthenticated player-game-logs request returns empty (503 cache-miss).
+// New mapped fields (CBA / kick-ins) land on the next warm overwrite of the same keys.
 const AFL_CACHE_SCHEMA = 'v5';
 const AFL_CACHE_PREFIX = `afl:player-logs:${AFL_CACHE_SCHEMA}`;
 

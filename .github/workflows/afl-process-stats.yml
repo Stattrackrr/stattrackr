@@ -1,5 +1,6 @@
 # Single AFL stats workflow: Compare tab (league stats), Opponent Breakdown (team rankings),
-# player logs cache warm, optional odds/props refresh, props-stats warm, top-picks enrich.
+# Role Stats leaders (CBA / kick-ins), player logs cache warm (Role Stats game fields),
+# optional odds/props refresh, props-stats warm, top-picks enrich.
 # Model train/score lives in afl-model-daily.yml and afl-model-nightly.yml.
 name: AFL Process Stats
 
@@ -77,6 +78,12 @@ jobs:
           test -f data/afl-injuries.json && echo "Injuries snapshot: ok" || echo "⚠️ Missing data/afl-injuries.json"
           test -f data/afl-team-selections-snapshot.json && echo "Team selections snapshot: ok" || echo "⚠️ Missing data/afl-team-selections-snapshot.json"
 
+      # Role Stats leaders (CBA / kick-ins) — FootyInfo fantasy-tools snapshot for the dashboard.
+      - name: Refresh AFL Role Stats leaders (CBA / kick-ins)
+        run: |
+          npm run fetch:afl:role-leaders -- --season=2026 --concurrency=4 --limit=10
+          test -f data/afl-role-leaders-2026.json && echo "Role leaders 2026: ok" || (echo "❌ Missing data/afl-role-leaders-2026.json" && exit 1)
+
       # Build DvP files locally from latest player logs. Only rebuild Depth when the DFS role map
       # is populated, otherwise the builder falls back to default roles and can wipe specialist
       # roles like key_fwd / wng_def / des_kck from the tracked depth dataset.
@@ -146,11 +153,12 @@ jobs:
 
       - name: Commit and push data files to master if changed
         run: |
-          bash scripts/ci-commit-data-files.sh "chore(data): update AFL stats, rankings, and headshots [skip ci]" \
+          bash scripts/ci-commit-data-files.sh "chore(data): update AFL stats, rankings, role leaders, and headshots [skip ci]" \
             "data/afl-league-player-stats-*.json" \
             "data/afl-team-rankings-*.json" \
             "data/afl-player-headshots*.json" \
             "data/afl-dvp*.json" \
+            "data/afl-role-leaders-*.json" \
             "data/afl-injuries.json" \
             "data/afl-team-selections-snapshot.html" \
             "data/afl-team-selections-snapshot.json"
@@ -168,20 +176,29 @@ jobs:
             echo "configured=true" >> $GITHUB_OUTPUT
           fi
 
-      # Player logs cache warm (Redis) — do not prewarm enriched list here; it would re-seed
-      # last week's slate before odds/props refresh runs later in this workflow.
+      # Player logs cache warm (Redis) — force-fetches current season so Role Stats fields
+      # (cba, cba_pct, cba_team, kick_ins, kick_ins_team) overwrite stale cache rows.
+      # Do not prewarm enriched list here; it would re-seed last week's slate before odds/props refresh.
       - name: Warm AFL player logs cache
         if: steps.check.outputs.configured == 'true'
         run: |
-          echo "🔄 Warming AFL player logs cache..."
+          echo "🔄 Warming AFL player logs cache (force 2026 for Role Stats CBA / kick-ins)..."
           npm run warm:afl:player-logs
         env:
           AFL_WARM_LIMIT: ${{ github.event.inputs.warm_limit || '0' }}
           AFL_WARM_SEASONS: ${{ github.event.inputs.seasons || '2026,2025,2024' }}
           AFL_WARM_FORCE_FETCH_SEASONS: '2026'
-          AFL_WARM_FORCE_CONCURRENCY: '8'
+          AFL_WARM_FORCE_CONCURRENCY: '12'
           AFL_WARM_CONCURRENCY: '16'
           AFL_WARM_MAX_FAILURES: '100'
+
+      - name: Validate Role Stats fields in warmed player logs
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "🔍 Validating Role Stats CBA / kick-ins in warmed cache..."
+          npm run validate:afl:role-stats-warm
+        env:
+          AFL_ROLE_STATS_SEASON: '2026'
 
       - name: Enrich Top Picks actual disposals
         if: steps.check.outputs.configured == 'true'

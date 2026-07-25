@@ -43,6 +43,18 @@ export type FootyinfoGameLogRow = {
   one_percenters: number;
   bounces: number;
   goal_assists: number;
+  /** Centre bounce attendances (FootyInfo `centre_bounce_attend`). */
+  cba: number;
+  /** Centre bounce attendance % (FootyInfo `cba_pct`, e.g. "73%"). */
+  cba_pct: number | null;
+  /** Team/match centre bounces (FootyInfo match `cba_total`, else derived from CBA %). */
+  cba_team: number | null;
+  /** Kick-ins (FootyInfo `kickins`). */
+  kick_ins: number;
+  /** Team kick-ins in the same match (sum of teammate `kickins`). */
+  kick_ins_team: number | null;
+  /** Kick-ins played on (FootyInfo `kickins_playon`). */
+  kick_ins_play_on: number;
   fantasy_points?: number | null;
   percent_played: number | null;
   effective_disposals: number;
@@ -181,10 +193,72 @@ type GameLogsPayload = {
   };
 };
 
+type TeamKickinsBySide = { home: number; away: number };
+
+const teamKickinsCache = new Map<number, TeamKickinsBySide | null>();
+
+function sumKickins(rows: Array<Record<string, Cell>> | undefined): number {
+  let sum = 0;
+  for (const row of rows ?? []) {
+    sum += num(cellValue(row, 'kickins'));
+  }
+  return sum;
+}
+
+async function fetchTeamKickinsByMatch(matchId: number): Promise<TeamKickinsBySide | null> {
+  if (!Number.isFinite(matchId) || matchId <= 0) return null;
+  if (teamKickinsCache.has(matchId)) return teamKickinsCache.get(matchId) ?? null;
+  const res = await fetchFootyinfoJson<{
+    home?: { rows?: Array<Record<string, Cell>> };
+    away?: { rows?: Array<Record<string, Cell>> };
+  }>(`/match/${matchId}/player_stats`);
+  if (!res.ok) {
+    teamKickinsCache.set(matchId, null);
+    return null;
+  }
+  const totals: TeamKickinsBySide = {
+    home: sumKickins(res.data.home?.rows),
+    away: sumKickins(res.data.away?.rows),
+  };
+  teamKickinsCache.set(matchId, totals);
+  return totals;
+}
+
+function playerKickinsTeamTotal(
+  row: Record<string, Cell>,
+  matchMeta: FootyinfoMatchMeta | null,
+  teamTotals: TeamKickinsBySide | null
+): number | null {
+  if (!teamTotals || !matchMeta) return null;
+  const oppAbbrev = String(cellValue(row, 'opp_abbrev') ?? '').toUpperCase();
+  if (!oppAbbrev) return null;
+  const awayAbbrev = String(matchMeta.a_abbrev || '').toUpperCase();
+  const homeAbbrev = String(matchMeta.h_abbrev || '').toUpperCase();
+  if (awayAbbrev && awayAbbrev === oppAbbrev) return teamTotals.home;
+  if (homeAbbrev && homeAbbrev === oppAbbrev) return teamTotals.away;
+  return null;
+}
+
+function resolveCbaTeam(
+  cba: number,
+  cbaPct: number | null,
+  matchMeta: FootyinfoMatchMeta | null
+): number | null {
+  const fromMatch = matchMeta?.cba_total;
+  if (typeof fromMatch === 'number' && Number.isFinite(fromMatch) && fromMatch > 0) {
+    return Math.round(fromMatch);
+  }
+  if (cbaPct != null && cbaPct > 0 && cba > 0) {
+    return Math.round(cba / (cbaPct / 100));
+  }
+  return null;
+}
+
 function mapRowToGameLog(
   row: Record<string, Cell>,
   season: number,
-  matchMeta: FootyinfoMatchMeta | null
+  matchMeta: FootyinfoMatchMeta | null,
+  kickInsTeam: number | null = null
 ): FootyinfoGameLogRow {
   const { goals, behinds } = goalsFromCell(row);
   const oppAbbrev = String(cellValue(row, 'opp_abbrev') ?? '');
@@ -257,6 +331,16 @@ function mapRowToGameLog(
     one_percenters: num(cellValue(row, 'one_percenters')),
     bounces: num(cellValue(row, 'bounces')),
     goal_assists: num(cellValue(row, 'goal_assists')),
+    cba: num(cellValue(row, 'centre_bounce_attend')),
+    cba_pct: percent(cellValue(row, 'cba_pct')),
+    cba_team: resolveCbaTeam(
+      num(cellValue(row, 'centre_bounce_attend')),
+      percent(cellValue(row, 'cba_pct')),
+      matchMeta
+    ),
+    kick_ins: num(cellValue(row, 'kickins')),
+    kick_ins_team: kickInsTeam,
+    kick_ins_play_on: num(cellValue(row, 'kickins_playon')),
     fantasy_points: (() => {
       const v = cellValue(row, 'afl_fantasy');
       return v == null ? null : num(v);
@@ -367,15 +451,24 @@ export async function fetchFootyInfoPlayerGameLogs(
   ];
 
   if (!options.skipMatchMetadata) {
-    // Parallel match meta for dates/results (shared process cache across warm).
+    // Parallel match meta + team kick-in totals (shared process cache across warm).
     const concurrency = 20;
     for (let i = 0; i < matchIds.length; i += concurrency) {
       const chunk = matchIds.slice(i, i + concurrency);
       await Promise.all(
         chunk.map(async (id) => {
-          if (!options.skipMemoryCache && matchMetaCache.has(id)) return;
-          const meta = await fetchFootyinfoMatchMeta(id);
-          matchMetaCache.set(id, meta);
+          const needMeta = options.skipMemoryCache || !matchMetaCache.has(id);
+          const needKickins = options.skipMemoryCache || !teamKickinsCache.has(id);
+          await Promise.all([
+            needMeta
+              ? fetchFootyinfoMatchMeta(id).then((meta) => {
+                  matchMetaCache.set(id, meta);
+                })
+              : Promise.resolve(),
+            needKickins
+              ? fetchTeamKickinsByMatch(id).then(() => undefined)
+              : Promise.resolve(),
+          ]);
         })
       );
     }
@@ -386,7 +479,9 @@ export async function fetchFootyInfoPlayerGameLogs(
     const matchId = Number(cellValue(row, 'match_id') || (row.round as Cell)?.linkId || 0);
     const meta = matchMetaCache.get(matchId) ?? null;
     if (!isCompletedMatch(meta)) continue;
-    games.push(mapRowToGameLog(row, season, meta));
+    const teamTotals = teamKickinsCache.get(matchId) ?? null;
+    const kickInsTeam = playerKickinsTeamTotal(row, meta, teamTotals);
+    games.push(mapRowToGameLog(row, season, meta, kickInsTeam));
   }
 
   // Newest first to match FootyWire ordering expectations in some UI paths

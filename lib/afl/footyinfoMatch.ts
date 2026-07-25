@@ -26,6 +26,8 @@ export type FootyinfoMatchMeta = {
   as?: number;
   sts?: string;
   st?: string;
+  /** Centre bounces in the match (denominator for CBA %). */
+  cba_total?: number;
   home_stats?: { player_stats?: FootyinfoLineupPlayer[]; player_ins?: FootyinfoLineupChange[]; player_outs?: FootyinfoLineupChange[] };
   away_stats?: { player_stats?: FootyinfoLineupPlayer[]; player_ins?: FootyinfoLineupChange[]; player_outs?: FootyinfoLineupChange[] };
 };

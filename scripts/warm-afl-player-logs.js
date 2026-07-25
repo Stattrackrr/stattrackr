@@ -37,7 +37,7 @@ const forceFetchSeasons = new Set(
 );
 const forceFetchConcurrency = Math.max(
   1,
-  parseInt(process.env.AFL_WARM_FORCE_CONCURRENCY || '6', 10)
+  parseInt(process.env.AFL_WARM_FORCE_CONCURRENCY || '12', 10)
 );
 
 if (!prodUrl) {
