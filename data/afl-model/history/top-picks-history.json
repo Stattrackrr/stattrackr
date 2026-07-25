@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T12:03:31Z",
+  "generatedAt": "2026-07-25T13:23:38.922Z",
   "count": 53,
   "records": [
     {
@@ -2076,7 +2076,7 @@
           "recommendedEdge": 0.1231,
           "recommendedProb": 0.6231,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 32
         },
         {
           "playerName": "Timothy English",
@@ -2087,7 +2087,7 @@
           "recommendedEdge": 0.1126,
           "recommendedProb": 0.6126,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 13
         }
       ]
     },
