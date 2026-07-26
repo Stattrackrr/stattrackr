@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-26T15:08:58.408Z",
+  "generatedAt": "2026-07-26T17:00:43.936Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 202,
+  "injuryCount": 194,
   "injuries": [
     {
       "team": "St Kilda Saints",
@@ -17,22 +17,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Logan Morris",
-      "injury": "Corked",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Noah Mraz",
       "injury": "Kidney",
       "returning": "a number of weeks"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Ty Gallop",
-      "injury": "Slamming Mitch Georgiades into the turf, graded as intentional and high contact.",
-      "returning": "2 weeks"
     },
     {
       "team": "Adelaide Crows",
@@ -312,12 +300,6 @@
     },
     {
       "team": "North Melbourne Kangaroos",
-      "player": "Zac Banch",
-      "injury": "Hamstring",
-      "returning": "Test"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
       "player": "Callum Coleman-Jones",
       "injury": "Ankle",
       "returning": "Test"
@@ -443,18 +425,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Dayne Zorko",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jason Horne-Francis",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Sid Draper",
       "injury": "Ankle",
@@ -469,12 +439,6 @@
     {
       "team": "Port Adelaide Power",
       "player": "Zak Butters",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Mitch Georgiades",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -513,12 +477,6 @@
       "player": "Kane Farrell",
       "injury": "Groin",
       "returning": "Season"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Max King",
-      "injury": "Shoulder",
-      "returning": "This Sunday"
     },
     {
       "team": "Collingwood Magpies",
@@ -657,12 +615,6 @@
       "player": "Ned Reeves",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Tom De Koning",
-      "injury": "Ribs",
-      "returning": "active"
     },
     {
       "team": "Sydney Swans",
