@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-07-25T22:56:40.480Z",
+  "generatedAt": "2026-07-26T02:22:12.868Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 193,
+  "injuryCount": 197,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Izak Rankine",
+      "injury": "for a homophobic slur",
+      "returning": "six weeks"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Sullivan Robey",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Jordan Ridley",
+      "injury": "Foot",
+      "returning": "Next week"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Finn Callaghan",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
     {
       "team": "Sydney Swans",
       "player": "Lewis Melican",
@@ -326,7 +350,7 @@
       "team": "Richmond Tigers",
       "player": "Noah Balta",
       "injury": "Toe",
-      "returning": "not expecting him to play on Saturday night"
+      "returning": "next week"
     },
     {
       "team": "Port Adelaide Power",
@@ -500,7 +524,7 @@
       "team": "Richmond Tigers",
       "player": "Ben Miller",
       "injury": "Heel",
-      "returning": "TBC"
+      "returning": "next week"
     },
     {
       "team": "Geelong Cats",
