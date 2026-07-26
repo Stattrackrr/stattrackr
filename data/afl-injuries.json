@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-26T06:41:39.878Z",
+  "generatedAt": "2026-07-26T10:03:39.194Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 200,
+  "injuryCount": 202,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Cooper Sharman",
+      "injury": "managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Rowan Marshall",
+      "injury": "Back",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Logan Morris",
+      "injury": "Corked",
+      "returning": "TBC"
+    },
     {
       "team": "Hawthorn Hawks",
       "player": "Noah Mraz",
@@ -15,12 +33,6 @@
       "player": "Ty Gallop",
       "injury": "Slamming Mitch Georgiades into the turf, graded as intentional and high contact.",
       "returning": "2 weeks"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Cooper Sharman",
-      "injury": "managed",
-      "returning": "active"
     },
     {
       "team": "Adelaide Crows",
