@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-26T19:11:08.074Z",
+  "generatedAt": "2026-07-26T20:58:50.025Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 194,
+  "injuryCount": 195,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Zac Banch",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Cooper Sharman",
