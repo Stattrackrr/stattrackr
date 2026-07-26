@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-26T20:58:50.025Z",
+  "generatedAt": "2026-07-26T23:03:19.723Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 195,
+  "injuryCount": 196,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Max King",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Zac Banch",
