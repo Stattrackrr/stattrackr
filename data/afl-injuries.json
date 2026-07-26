@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-26T02:22:12.868Z",
+  "generatedAt": "2026-07-26T06:41:39.878Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 197,
+  "injuryCount": 200,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Noah Mraz",
+      "injury": "Kidney",
+      "returning": "a number of weeks"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Ty Gallop",
+      "injury": "Slamming Mitch Georgiades into the turf, graded as intentional and high contact.",
+      "returning": "2 weeks"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Cooper Sharman",
+      "injury": "managed",
+      "returning": "active"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Izak Rankine",
@@ -14,13 +32,13 @@
       "team": "Essendon Bombers",
       "player": "Sullivan Robey",
       "injury": "Knee",
-      "returning": "Season"
+      "returning": "ruled out of next week's game"
     },
     {
       "team": "Essendon Bombers",
       "player": "Jordan Ridley",
       "injury": "Foot",
-      "returning": "Next week"
+      "returning": "in doubt for Sunday's clash"
     },
     {
       "team": "GWS Giants",
