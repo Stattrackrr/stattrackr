@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T17:48:51Z",
+  "generatedAt": "2026-07-26T06:06:34.609Z",
   "count": 53,
   "records": [
     {
@@ -2112,7 +2112,7 @@
           "recommendedEdge": 0.1981,
           "recommendedProb": 0.6981,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 20
         },
         {
           "playerName": "Jason Horne Francis",
@@ -2123,7 +2123,7 @@
           "recommendedEdge": 0.162,
           "recommendedProb": 0.65,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 30
         },
         {
           "playerName": "Darcy Wilmot",
@@ -2134,7 +2134,7 @@
           "recommendedEdge": 0.0799,
           "recommendedProb": 0.5799,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 16
         }
       ]
     },
