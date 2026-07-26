@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T06:06:34.609Z",
+  "generatedAt": "2026-07-26T08:57:24.627Z",
   "count": 53,
   "records": [
     {
@@ -2159,7 +2159,7 @@
           "recommendedEdge": 0.1288,
           "recommendedProb": 0.6298,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 17
         },
         {
           "playerName": "Luke Parker",
@@ -2170,7 +2170,7 @@
           "recommendedEdge": 0.1121,
           "recommendedProb": 0.6121,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 25
         }
       ]
     }
