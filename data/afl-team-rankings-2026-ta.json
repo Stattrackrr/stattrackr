@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-07-27T07:06:08.112Z",
+  "generatedAt": "2026-07-27T11:23:12.230Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
@@ -125,27 +125,6 @@
     },
     {
       "rank": 5,
-      "team": "Magpies",
-      "stats": {
-        "Team": "Magpies",
-        "Gm": 19,
-        "K": 214.74,
-        "HB": 168.84,
-        "D": 383.6,
-        "G": 16.74,
-        "M": 100.5,
-        "T": 61.3,
-        "CL": 32.9,
-        "I50": 52.3,
-        "R50": 42.3,
-        "CP": 122.3,
-        "UP": 245.74,
-        "MG": 12.63,
-        "Rk": 5
-      }
-    },
-    {
-      "rank": 6,
       "team": "Blues",
       "stats": {
         "Team": "Blues",
@@ -162,6 +141,27 @@
         "CP": 132.8,
         "UP": 239.89,
         "MG": 11.68,
+        "Rk": 5
+      }
+    },
+    {
+      "rank": 6,
+      "team": "Magpies",
+      "stats": {
+        "Team": "Magpies",
+        "Gm": 19,
+        "K": 214.74,
+        "HB": 168.84,
+        "D": 383.6,
+        "G": 16.74,
+        "M": 100.5,
+        "T": 61.3,
+        "CL": 32.9,
+        "I50": 52.3,
+        "R50": 42.3,
+        "CP": 122.3,
+        "UP": 245.74,
+        "MG": 12.63,
         "Rk": 6
       }
     },

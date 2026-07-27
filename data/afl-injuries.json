@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-27T07:06:09.401Z",
+  "generatedAt": "2026-07-27T11:23:13.510Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 195,
+  "injuryCount": 196,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Ty Gallop",
+      "injury": "Sent to tribunal for serious misconduct (shoving Mitch Georgiades' head into the turf)",
+      "returning": "multiple weeks"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Mitch Georgiades",
@@ -116,7 +122,7 @@
       "team": "GWS Giants",
       "player": "Finn Callaghan",
       "injury": "Ankle",
-      "returning": "TBA"
+      "returning": "Season"
     },
     {
       "team": "West Coast Eagles",
@@ -350,7 +356,7 @@
       "team": "Port Adelaide Power",
       "player": "Tom Cochrane",
       "injury": "Knee",
-      "returning": "very soon"
+      "returning": "this weekend"
     },
     {
       "team": "Collingwood Magpies",
