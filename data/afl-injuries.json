@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-27T19:26:43.129Z",
+  "generatedAt": "2026-07-27T21:12:50.752Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 196,
+  "injuryCount": 197,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Errol Gulden",
+      "injury": "Shoulder",
+      "returning": "active"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Ty Gallop",
