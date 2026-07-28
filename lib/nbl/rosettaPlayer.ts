@@ -18,6 +18,52 @@ function toNum(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Classic basketball efficiency (matches Rosetta season `efficiency` totals):
+ * PTS + REB + AST + STL + BLK − (FGA − FGM) − (FTA − FTM) − TO
+ *
+ * Per-game Rosetta boxscores omit `efficiency` / `plus_minus`; season aggregates include both.
+ */
+export function computeNblEfficiency(row: {
+  points?: number | null;
+  rebounds?: number | null;
+  assists?: number | null;
+  steals?: number | null;
+  blocks?: number | null;
+  fgMade?: number | null;
+  fgAttempted?: number | null;
+  ftMade?: number | null;
+  ftAttempted?: number | null;
+  turnovers?: number | null;
+  field_goals_made?: number | null;
+  field_goals_attempted?: number | null;
+  free_throws_made?: number | null;
+  free_throws_attempted?: number | null;
+}): number {
+  const pts = toNum(row.points) ?? 0;
+  const reb = toNum(row.rebounds) ?? 0;
+  const ast = toNum(row.assists) ?? 0;
+  const stl = toNum(row.steals) ?? 0;
+  const blk = toNum(row.blocks) ?? 0;
+  const fgm = toNum(row.fgMade ?? row.field_goals_made) ?? 0;
+  const fga = toNum(row.fgAttempted ?? row.field_goals_attempted) ?? 0;
+  const ftm = toNum(row.ftMade ?? row.free_throws_made) ?? 0;
+  const fta = toNum(row.ftAttempted ?? row.free_throws_attempted) ?? 0;
+  const to = toNum(row.turnovers) ?? 0;
+  return pts + reb + ast + stl + blk - (fga - fgm) - (fta - ftm) - to;
+}
+
+/** Fill EFF when Rosetta omitted it on the box score (common for player_boxscores). */
+export function withComputedNblBoxStats<T extends { efficiency?: number | null; plusMinus?: number | null }>(
+  row: T
+): T {
+  const efficiency =
+    row.efficiency != null && Number.isFinite(row.efficiency)
+      ? row.efficiency
+      : computeNblEfficiency(row as Parameters<typeof computeNblEfficiency>[0]);
+  return { ...row, efficiency };
+}
+
 function playerDisplayName(entry: {
   full_name?: string | null;
   first_name?: string | null;
@@ -195,7 +241,7 @@ export function normalizePlayerBoxScore(
     ftAttempted: toNum(row.free_throws_attempted),
     ftPct: toNum(row.free_throws_percentage),
     plusMinus: toNum(row.plus_minus),
-    efficiency: toNum(row.efficiency),
+    efficiency: toNum(row.efficiency) ?? computeNblEfficiency(row),
     pra:
       points != null && rebounds != null && assists != null
         ? points + rebounds + assists
@@ -216,5 +262,6 @@ export async function fetchNormalizedPlayerGameLogs(
   return boxes
     .map((b) => normalizePlayerBoxScore(b, year))
     .filter((r): r is NblGameLogRow => Boolean(r))
+    .map((r) => withComputedNblBoxStats(r))
     .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
 }

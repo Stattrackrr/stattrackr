@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { enrichGameLogsFromSchedule } from '@/lib/nbl/enrichGameLogsFromSchedule';
-import { fetchNormalizedPlayerGameLogs } from '@/lib/nbl/rosettaPlayer';
+import { fetchNormalizedPlayerGameLogs, withComputedNblBoxStats } from '@/lib/nbl/rosettaPlayer';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import {
   NBL_CHART_HISTORY_YEARS,
@@ -10,6 +10,9 @@ import {
   nblSeasonLabel,
 } from '@/lib/nblTeamCanonical';
 
+function finalizeGames(games: NblGameLogRow[], year: number): NblGameLogRow[] {
+  return enrichGameLogsFromSchedule(games, year).map((g) => withComputedNblBoxStats(g));
+}
 function parseYears(request: NextRequest): number[] {
   const yearsParam = String(request.nextUrl.searchParams.get('years') || '').trim();
   if (yearsParam) {
@@ -58,7 +61,7 @@ function readCachedGames(playerId: string, year: number): NblGameLogRow[] | null
       Object.prototype.hasOwnProperty.call(sample, 'efficiency') &&
       Object.prototype.hasOwnProperty.call(sample, 'pr');
     if (!cacheHasExtendedStats && cachedGames.length > 0) return null;
-    return cachedGames;
+    return cachedGames.map((g) => withComputedNblBoxStats(g));
   } catch {
     return null;
   }
@@ -105,11 +108,11 @@ async function loadYearGames(
   if (!live) {
     const cached = readCachedGames(playerId, year);
     if (cached != null) {
-      return enrichGameLogsFromSchedule(cached, year);
+      return finalizeGames(cached, year);
     }
   }
 
-  const games = enrichGameLogsFromSchedule(
+  const games = finalizeGames(
     await fetchNormalizedPlayerGameLogs(playerId, year, 'regular'),
     year
   );

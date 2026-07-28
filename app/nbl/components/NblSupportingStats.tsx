@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/nbl/components/NblStatsChart';
@@ -419,7 +419,27 @@ function readGameStats(g: Record<string, unknown>): StatBag {
   const points = n('points');
   const rebounds = n('rebounds');
   const assists = n('assists');
+  const steals = n('steals');
+  const blocks = n('blocks');
+  const fgMade = n('fgMade');
+  const fgAttempted = n('fgAttempted');
+  const ftMade = n('ftMade');
+  const ftAttempted = n('ftAttempted');
+  const turnovers = n('turnovers');
   const rawMinutes = n('minutes');
+  const existingEff = toNumericValue(g.efficiency);
+  // Rosetta per-game boxscores omit efficiency — derive classic EFF from box stats.
+  const efficiency =
+    existingEff != null
+      ? existingEff
+      : points +
+        rebounds +
+        assists +
+        steals +
+        blocks -
+        (fgAttempted - fgMade) -
+        (ftAttempted - ftMade) -
+        turnovers;
   return {
     minutes: Math.round(rawMinutes),
     points,
@@ -429,26 +449,26 @@ function readGameStats(g: Record<string, unknown>): StatBag {
     pr: n('pr') || points + rebounds,
     pa: n('pa') || points + assists,
     ra: n('ra') || rebounds + assists,
-    steals: n('steals'),
-    blocks: n('blocks'),
-    turnovers: n('turnovers'),
+    steals,
+    blocks,
+    turnovers,
     threeMade: n('threeMade'),
     threeAttempted: n('threeAttempted'),
     threePct: toPercentValue(g.threePct),
     offensiveRebounds: n('offensiveRebounds'),
     defensiveRebounds: n('defensiveRebounds'),
-    fgMade: n('fgMade'),
-    fgAttempted: n('fgAttempted'),
+    fgMade,
+    fgAttempted,
     fgPct: toPercentValue(g.fgPct),
     twoMade: n('twoMade'),
     twoAttempted: n('twoAttempted'),
     twoPct: toPercentValue(g.twoPct),
-    ftMade: n('ftMade'),
-    ftAttempted: n('ftAttempted'),
+    ftMade,
+    ftAttempted,
     ftPct: toPercentValue(g.ftPct),
     fouls: n('fouls'),
     plusMinus: signed('plusMinus'),
-    efficiency: signed('efficiency'),
+    efficiency,
   };
 }
 
@@ -475,7 +495,22 @@ export function NblSupportingStats({
   isDark,
   alignRightTight = false,
 }: NblSupportingStatsProps) {
-  const supportingOptions = supportingOptionsForMain(mainChartStat);
+  const supportingOptions = useMemo(() => {
+    const opts = supportingOptionsForMain(mainChartStat);
+    // Rosetta player boxscores do not include per-game +/- — hide the empty pill.
+    const hasPlusMinus = gameLogs.some((g) => toNumericValue(g.plusMinus) != null);
+    return hasPlusMinus ? opts : opts.filter((o) => o.value !== 'plusMinus');
+  }, [mainChartStat, gameLogs]);
+
+  useEffect(() => {
+    if (
+      supportingOptions.length > 0 &&
+      !supportingOptions.some((o) => o.value === supportingStatKind)
+    ) {
+      onSupportingStatKindChange(supportingOptions[0].value);
+    }
+  }, [supportingOptions, supportingStatKind, onSupportingStatKindChange]);
+
   const showSupportingToggle = true;
   const toggleRailPaddingClass = alignRightTight ? 'pl-3 pr-4 sm:pl-4 sm:pr-6' : 'px-3 sm:px-4';
 

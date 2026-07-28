@@ -456,6 +456,21 @@ function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unkno
     if (stat === 'pa') return pts + ast;
     if (stat === 'ra') return reb + ast;
   }
+  if (row && stat === 'efficiency') {
+    const existing = toNumericValue(raw);
+    if (existing != null) return existing;
+    const pts = toNumericValue(row.points) ?? 0;
+    const reb = toNumericValue(row.rebounds) ?? 0;
+    const ast = toNumericValue(row.assists) ?? 0;
+    const stl = toNumericValue(row.steals) ?? 0;
+    const blk = toNumericValue(row.blocks) ?? 0;
+    const fgm = toNumericValue(row.fgMade) ?? 0;
+    const fga = toNumericValue(row.fgAttempted) ?? 0;
+    const ftm = toNumericValue(row.ftMade) ?? 0;
+    const fta = toNumericValue(row.ftAttempted) ?? 0;
+    const to = toNumericValue(row.turnovers) ?? 0;
+    return pts + reb + ast + stl + blk - (fga - fgm) - (fta - ftm) - to;
+  }
   const n = toNumericValue(raw) ?? 0;
   if (PCT_STATS.has(stat) && n <= 1) return n * 100;
   // Rosetta minutes are fractional — round to whole numbers for the chart.
@@ -718,6 +733,16 @@ export function NblStatsChart({
     if (keys.has('points') && keys.has('rebounds')) keys.add('pr');
     if (keys.has('points') && keys.has('assists')) keys.add('pa');
     if (keys.has('rebounds') && keys.has('assists')) keys.add('ra');
+    // Rosetta omits per-game efficiency; derive classic EFF when box stats exist.
+    if (
+      keys.has('points') &&
+      keys.has('rebounds') &&
+      keys.has('assists') &&
+      keys.has('fgMade') &&
+      keys.has('fgAttempted')
+    ) {
+      keys.add('efficiency');
+    }
     const ordered: string[] = [];
     for (const k of STAT_PRIORITY) if (keys.has(k)) ordered.push(k);
     for (const k of keys) if (!ordered.includes(k)) ordered.push(k);
