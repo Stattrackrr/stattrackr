@@ -112,7 +112,7 @@ export type SupportingStatKind =
 
 const PCT_KINDS = new Set<SupportingStatKind>(['fgPct', 'twoPct', 'threePct', 'ftPct']);
 
-/** Same order as NBA PLAYER_STAT_OPTIONS, then NBL-only extras. */
+/** Labels for every supporting kind (also used for averages / empty copy). */
 const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'minutes', label: 'MINS' },
   { value: 'points', label: 'PTS' },
@@ -144,9 +144,271 @@ const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'efficiency', label: 'EFF' },
 ];
 
-function supportingOptionsForMain(mainChartStat?: string): { value: SupportingStatKind; label: string }[] {
-  // Show every stat except the active main-chart one; keep NBA order.
-  return ALL_TOGGLE_OPTIONS.filter((o) => o.value !== mainChartStat);
+const OPT = Object.fromEntries(ALL_TOGGLE_OPTIONS.map((o) => [o.value, o])) as Record<
+  SupportingStatKind,
+  { value: SupportingStatKind; label: string }
+>;
+
+/** Scoring volume / efficiency — what drives points. */
+const POINTS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.fgMade,
+  OPT.fgAttempted,
+  OPT.fgPct,
+  OPT.threeMade,
+  OPT.threeAttempted,
+  OPT.threePct,
+  OPT.twoMade,
+  OPT.twoAttempted,
+  OPT.twoPct,
+  OPT.ftMade,
+  OPT.ftAttempted,
+  OPT.ftPct,
+];
+
+/** Field-goal family (FGM / FGA / FG%). */
+const FG_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.fgMade,
+  OPT.fgAttempted,
+  OPT.fgPct,
+  OPT.threeMade,
+  OPT.threeAttempted,
+  OPT.threePct,
+  OPT.twoMade,
+  OPT.twoAttempted,
+  OPT.twoPct,
+];
+
+/** Three-point family. */
+const THREE_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.threeMade,
+  OPT.threeAttempted,
+  OPT.threePct,
+  OPT.fgMade,
+  OPT.fgAttempted,
+  OPT.fgPct,
+  OPT.twoMade,
+  OPT.twoAttempted,
+  OPT.twoPct,
+];
+
+/** Two-point family. */
+const TWO_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.twoMade,
+  OPT.twoAttempted,
+  OPT.twoPct,
+  OPT.fgMade,
+  OPT.fgAttempted,
+  OPT.fgPct,
+  OPT.threeMade,
+  OPT.threeAttempted,
+  OPT.threePct,
+];
+
+/** Free-throw family. */
+const FT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.ftMade,
+  OPT.ftAttempted,
+  OPT.ftPct,
+  OPT.fgMade,
+  OPT.fgAttempted,
+  OPT.fgPct,
+];
+
+const REBOUNDS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.offensiveRebounds,
+  OPT.defensiveRebounds,
+  OPT.rebounds,
+  OPT.blocks,
+];
+
+const ASSISTS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.turnovers,
+  OPT.pa,
+  OPT.pra,
+];
+
+const PRA_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.rebounds,
+  OPT.assists,
+  OPT.pr,
+  OPT.pa,
+  OPT.ra,
+];
+
+const PR_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.rebounds,
+  OPT.pra,
+  OPT.offensiveRebounds,
+  OPT.defensiveRebounds,
+];
+
+const PA_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.assists,
+  OPT.pra,
+  OPT.turnovers,
+];
+
+const RA_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.rebounds,
+  OPT.assists,
+  OPT.pra,
+  OPT.offensiveRebounds,
+  OPT.defensiveRebounds,
+];
+
+const STEALS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.blocks,
+  OPT.turnovers,
+  OPT.fouls,
+  OPT.assists,
+];
+
+const BLOCKS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.steals,
+  OPT.rebounds,
+  OPT.offensiveRebounds,
+  OPT.defensiveRebounds,
+];
+
+const TURNOVERS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.assists,
+  OPT.steals,
+  OPT.fouls,
+  OPT.points,
+];
+
+const FOULS_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.turnovers,
+  OPT.steals,
+  OPT.blocks,
+];
+
+const MINUTES_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.points,
+  OPT.rebounds,
+  OPT.assists,
+  OPT.efficiency,
+  OPT.plusMinus,
+];
+
+const IMPACT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  OPT.minutes,
+  OPT.points,
+  OPT.rebounds,
+  OPT.assists,
+  OPT.turnovers,
+  OPT.efficiency,
+  OPT.plusMinus,
+];
+
+/** Fallback when main chart has no dedicated supporting set yet. */
+const DEFAULT_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [OPT.minutes];
+
+/**
+ * AFL-style: supporting pills depend on the main chart stat.
+ * Always excludes the active main-chart kind.
+ */
+export function supportingOptionsForMain(
+  mainChartStat?: string
+): { value: SupportingStatKind; label: string }[] {
+  const main = (mainChartStat ?? '').trim();
+  let options: { value: SupportingStatKind; label: string }[];
+  switch (main) {
+    case 'points':
+      options = POINTS_TOGGLE_OPTIONS;
+      break;
+    case 'fgMade':
+    case 'fgAttempted':
+    case 'fgPct':
+      options = FG_TOGGLE_OPTIONS;
+      break;
+    case 'threeMade':
+    case 'threeAttempted':
+    case 'threePct':
+      options = THREE_TOGGLE_OPTIONS;
+      break;
+    case 'twoMade':
+    case 'twoAttempted':
+    case 'twoPct':
+      options = TWO_TOGGLE_OPTIONS;
+      break;
+    case 'ftMade':
+    case 'ftAttempted':
+    case 'ftPct':
+      options = FT_TOGGLE_OPTIONS;
+      break;
+    case 'rebounds':
+    case 'offensiveRebounds':
+    case 'defensiveRebounds':
+      options = REBOUNDS_TOGGLE_OPTIONS;
+      break;
+    case 'assists':
+      options = ASSISTS_TOGGLE_OPTIONS;
+      break;
+    case 'pra':
+      options = PRA_TOGGLE_OPTIONS;
+      break;
+    case 'pr':
+      options = PR_TOGGLE_OPTIONS;
+      break;
+    case 'pa':
+      options = PA_TOGGLE_OPTIONS;
+      break;
+    case 'ra':
+      options = RA_TOGGLE_OPTIONS;
+      break;
+    case 'steals':
+      options = STEALS_TOGGLE_OPTIONS;
+      break;
+    case 'blocks':
+      options = BLOCKS_TOGGLE_OPTIONS;
+      break;
+    case 'turnovers':
+      options = TURNOVERS_TOGGLE_OPTIONS;
+      break;
+    case 'fouls':
+      options = FOULS_TOGGLE_OPTIONS;
+      break;
+    case 'minutes':
+      options = MINUTES_TOGGLE_OPTIONS;
+      break;
+    case 'plusMinus':
+    case 'efficiency':
+      options = IMPACT_TOGGLE_OPTIONS;
+      break;
+    default:
+      options = DEFAULT_TOGGLE_OPTIONS;
+      break;
+  }
+  return options.filter((o) => o.value !== main);
+}
+
+/** First pill when the main chart stat changes (mirrors AFL resetting to TOG). */
+export function defaultSupportingStatForMain(mainChartStat?: string): SupportingStatKind {
+  return supportingOptionsForMain(mainChartStat)[0]?.value ?? 'minutes';
 }
 
 type StatBag = Record<SupportingStatKind, number>;

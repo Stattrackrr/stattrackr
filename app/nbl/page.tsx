@@ -12,6 +12,7 @@ import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { NblStatsChart, type NblChartTimeframe } from '@/app/nbl/components/NblStatsChart';
 import {
   NblSupportingStats,
+  defaultSupportingStatForMain,
   type SupportingStatKind,
 } from '@/app/nbl/components/NblSupportingStats';
 import {
@@ -37,6 +38,7 @@ import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashbo
 import { Search } from 'lucide-react';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import {
+  NBL_CHART_HISTORY_YEARS,
   NBL_CLUBS,
   NBL_CURRENT_SEASON_YEAR,
   normalizeTeamKey,
@@ -285,7 +287,7 @@ export default function NblDashboardPage() {
     (async () => {
       try {
         const res = await fetch(
-          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(selectedPlayer.playerId)}&year=${NBL_CURRENT_SEASON_YEAR}`
+          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(selectedPlayer.playerId)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`
         );
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
@@ -302,9 +304,9 @@ export default function NblDashboardPage() {
     };
   }, [selectedPlayer?.playerId]);
 
-  // Reset supporting when main chart changes — prefer MINS (NBA first pill) unless MINS is selected.
+  // Reset supporting to the first context-relevant pill when main chart stat changes.
   useEffect(() => {
-    setSupportingStatKind(mainChartStat === 'minutes' ? 'points' : 'minutes');
+    setSupportingStatKind(defaultSupportingStatForMain(mainChartStat));
   }, [mainChartStat]);
 
   const chartGameLogsForPlayer = useMemo(() => {

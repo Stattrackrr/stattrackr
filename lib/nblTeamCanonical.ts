@@ -5,6 +5,9 @@
 
 export const NBL_CURRENT_SEASON_YEAR = 2025; // NBL26
 
+/** Seasons loaded into the player chart (current → older). Rosetta start years. */
+export const NBL_CHART_HISTORY_YEARS: readonly number[] = [2025, 2024, 2023];
+
 export type NblClubCode =
   | 'ADL'
   | 'BRI'
