@@ -275,7 +275,7 @@ export default function LeftSidebar({
   };
 
   // Sport icons from public/images.
-  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "world-cup" }) => (
+  const SportLogo = ({ sport }: { sport: "nba" | "afl" | "nbl" | "world-cup" }) => (
     <span
       className={`flex-shrink-0 flex items-center justify-center ${
         sport === "world-cup" ? "w-7 h-7" : "w-6 h-6"
@@ -288,7 +288,9 @@ export default function LeftSidebar({
             ? "/images/nba-logo.png"
             : sport === "afl"
               ? "/images/afl-logo.png"
-              : WORLD_CUP_LOGO_PATH
+              : sport === "nbl"
+                ? "/images/nbl-logo.png"
+                : WORLD_CUP_LOGO_PATH
         }
         alt=""
         className={sport === "world-cup" ? "w-6 h-6 object-contain" : "w-5 h-5 object-contain"}
@@ -310,9 +312,14 @@ export default function LeftSidebar({
           },
         ]),
     { name: "AFL", href: "/props?sport=afl", logo: <SportLogo sport="afl" /> },
+    {
+      name: "NBL",
+      href: "/nbl",
+      comingSoon: true,
+      logo: <SportLogo sport="nbl" />,
+    },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },
-    // { name: "NBL", href: "/nbl/research/dashboard" },
     // { name: "TENNIS", href: "/tennis/research/dashboard" },
   ];
 
