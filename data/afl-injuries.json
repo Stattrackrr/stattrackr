@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-28T06:30:04.764Z",
+  "generatedAt": "2026-07-28T10:36:50.305Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 200,
+  "injuryCount": 201,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Ty Gallop",
+      "injury": "Thumb",
+      "returning": "active"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Logan Evans",
+      "injury": "Shoulder",
+      "returning": "Season"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Charlie Comben",
+      "injury": "Chest",
+      "returning": "TBC"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
@@ -41,12 +59,6 @@
       "returning": "active"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Ty Gallop",
-      "injury": "Sent to tribunal for serious misconduct (shoving Mitch Georgiades' head into the turf)",
-      "returning": "multiple weeks"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Mitch Georgiades",
       "injury": "Hamstring",
@@ -74,7 +86,7 @@
       "team": "Carlton Blues",
       "player": "Nic Newman",
       "injury": "Hamstring",
-      "returning": "TBA"
+      "returning": "Season"
     },
     {
       "team": "Essendon Bombers",
@@ -92,12 +104,6 @@
       "team": "Hawthorn Hawks",
       "player": "Mitch Lewis",
       "injury": "Ankle",
-      "returning": "TBA"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Charlie Comben",
-      "injury": "Injury",
       "returning": "TBA"
     },
     {
@@ -320,7 +326,7 @@
       "team": "Richmond Tigers",
       "player": "Jasper Alger",
       "injury": "Ankle",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
@@ -332,7 +338,7 @@
       "team": "Richmond Tigers",
       "player": "Tom Burton",
       "injury": "Groin",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
