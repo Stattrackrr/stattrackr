@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-07-27T23:03:49.017Z",
+  "generatedAt": "2026-07-28T02:10:20.231Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 197,
+  "injuryCount": 198,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Leg",
+      "returning": "3-4 weeks"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Will Day",
+      "injury": "Shoulder",
+      "returning": "Returned"
+    },
     {
       "team": "Sydney Swans",
       "player": "Errol Gulden",
@@ -164,12 +182,6 @@
       "team": "Hawthorn Hawks",
       "player": "William McCabe",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
-      "injury": "Knee",
       "returning": "TBC"
     },
     {
@@ -563,12 +575,6 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Josh Lindsay",
-      "injury": "Quad",
-      "returning": "Test"
-    },
-    {
       "team": "Gold Coast Suns",
       "player": "Will Graham",
       "injury": "Shoulder",
@@ -737,12 +743,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Cooper Duff-Tytler",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "James Harmes",
       "injury": "active",
@@ -759,6 +759,12 @@
       "player": "Jacob Weitering",
       "injury": "active",
       "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Josh Lindsay",
+      "injury": "active",
+      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
