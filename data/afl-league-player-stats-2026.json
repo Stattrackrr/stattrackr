@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-07-29T02:06:50.942Z",
+  "generatedAt": "2026-07-29T06:28:55.818Z",
   "source": "footyinfo.com",
   "sourcePage": "player/{slug}/game_logs_summary?mode=averages&columns=all",
   "playerCount": 569,
@@ -81,7 +81,7 @@
     {
       "name": "Nasiah Wanganeen-Milera",
       "team": "St Kilda",
-      "games": 16,
+      "games": 15,
       "disposals": 31.1,
       "kicks": 22.8,
       "handballs": 8.3,
@@ -153,7 +153,7 @@
     {
       "name": "Lachie Whitfield",
       "team": "GWS",
-      "games": 18,
+      "games": 17,
       "disposals": 28.3,
       "kicks": 17.3,
       "handballs": 11,
@@ -477,7 +477,7 @@
     {
       "name": "Dayne Zorko",
       "team": "Brisbane",
-      "games": 11,
+      "games": 10,
       "disposals": 25.2,
       "kicks": 19.6,
       "handballs": 5.6,
@@ -657,7 +657,7 @@
     {
       "name": "Darcy Parish",
       "team": "Essendon",
-      "games": 15,
+      "games": 14,
       "disposals": 24.5,
       "kicks": 12.2,
       "handballs": 12.3,
@@ -783,7 +783,7 @@
     {
       "name": "Elijah Tsatas",
       "team": "Essendon",
-      "games": 10,
+      "games": 6,
       "disposals": 24.2,
       "kicks": 10.5,
       "handballs": 13.7,
@@ -801,7 +801,7 @@
     {
       "name": "Jayden Short",
       "team": "Richmond",
-      "games": 18,
+      "games": 17,
       "disposals": 23.7,
       "kicks": 18.4,
       "handballs": 5.3,
@@ -981,7 +981,7 @@
     {
       "name": "Tim Kelly",
       "team": "West Coast",
-      "games": 18,
+      "games": 17,
       "disposals": 23.5,
       "kicks": 11.8,
       "handballs": 11.7,
@@ -1143,7 +1143,7 @@
     {
       "name": "Gryan Miers",
       "team": "Geelong",
-      "games": 13,
+      "games": 11,
       "disposals": 21.8,
       "kicks": 12.5,
       "handballs": 9.4,
@@ -1377,7 +1377,7 @@
     {
       "name": "Will Setterfield",
       "team": "Essendon",
-      "games": 9,
+      "games": 7,
       "disposals": 21,
       "kicks": 12.3,
       "handballs": 8.7,
@@ -1395,7 +1395,7 @@
     {
       "name": "Blake Acres",
       "team": "Carlton",
-      "games": 11,
+      "games": 6,
       "disposals": 21,
       "kicks": 11.7,
       "handballs": 9.3,
@@ -1413,7 +1413,7 @@
     {
       "name": "Riley Bice",
       "team": "Sydney",
-      "games": 19,
+      "games": 17,
       "disposals": 21,
       "kicks": 11.9,
       "handballs": 9.1,
@@ -1449,7 +1449,7 @@
     {
       "name": "George Hewett",
       "team": "Carlton",
-      "games": 16,
+      "games": 15,
       "disposals": 22.1,
       "kicks": 9.9,
       "handballs": 12.3,
@@ -1485,7 +1485,7 @@
     {
       "name": "Darcy Wilson",
       "team": "St Kilda",
-      "games": 19,
+      "games": 18,
       "disposals": 22.3,
       "kicks": 11.6,
       "handballs": 10.7,
@@ -1557,7 +1557,7 @@
     {
       "name": "Cooper Lord",
       "team": "Carlton",
-      "games": 10,
+      "games": 5,
       "disposals": 21,
       "kicks": 11.2,
       "handballs": 9.8,
@@ -1629,7 +1629,7 @@
     {
       "name": "Tanner Bruhn",
       "team": "Geelong",
-      "games": 18,
+      "games": 17,
       "disposals": 21.5,
       "kicks": 12.8,
       "handballs": 8.7,
@@ -2025,7 +2025,7 @@
     {
       "name": "Hugo Hall-Kahan",
       "team": "Adelaide",
-      "games": 8,
+      "games": 7,
       "disposals": 19.6,
       "kicks": 13.7,
       "handballs": 5.9,
@@ -2061,7 +2061,7 @@
     {
       "name": "Trent Rivers",
       "team": "Melbourne",
-      "games": 13,
+      "games": 12,
       "disposals": 20.1,
       "kicks": 11.9,
       "handballs": 8.2,
@@ -2079,7 +2079,7 @@
     {
       "name": "Josh Lindsay",
       "team": "West Coast",
-      "games": 16,
+      "games": 12,
       "disposals": 19.8,
       "kicks": 14.3,
       "handballs": 5.4,
@@ -2187,7 +2187,7 @@
     {
       "name": "Kane McAuliffe",
       "team": "Richmond",
-      "games": 11,
+      "games": 9,
       "disposals": 18.7,
       "kicks": 10.8,
       "handballs": 7.9,
@@ -2205,7 +2205,7 @@
     {
       "name": "Conor Nash",
       "team": "Hawthorn",
-      "games": 11,
+      "games": 10,
       "disposals": 19.1,
       "kicks": 8,
       "handballs": 11.1,
@@ -2223,7 +2223,7 @@
     {
       "name": "Joel Jeffrey",
       "team": "Gold Coast",
-      "games": 19,
+      "games": 18,
       "disposals": 18.2,
       "kicks": 12.6,
       "handballs": 5.6,
@@ -2241,7 +2241,7 @@
     {
       "name": "Beau Addinsall",
       "team": "Gold Coast",
-      "games": 9,
+      "games": 6,
       "disposals": 18,
       "kicks": 6.7,
       "handballs": 11.3,
@@ -2259,7 +2259,7 @@
     {
       "name": "Henry Hustwaite",
       "team": "Hawthorn",
-      "games": 3,
+      "games": 1,
       "disposals": 19,
       "kicks": 7,
       "handballs": 12,
@@ -2367,7 +2367,7 @@
     {
       "name": "Cooper Harvey",
       "team": "North Melbourne",
-      "games": 12,
+      "games": 7,
       "disposals": 19.7,
       "kicks": 11.7,
       "handballs": 8,
@@ -2583,7 +2583,7 @@
     {
       "name": "Jacob Farrow",
       "team": "Essendon",
-      "games": 18,
+      "games": 17,
       "disposals": 18.5,
       "kicks": 11,
       "handballs": 7.5,
@@ -2637,7 +2637,7 @@
     {
       "name": "Corey Wagner",
       "team": "Fremantle",
-      "games": 16,
+      "games": 13,
       "disposals": 17.8,
       "kicks": 11.1,
       "handballs": 6.7,
@@ -2655,7 +2655,7 @@
     {
       "name": "Harry Morrison",
       "team": "Hawthorn",
-      "games": 14,
+      "games": 9,
       "disposals": 19,
       "kicks": 10.6,
       "handballs": 8.4,
@@ -2673,7 +2673,7 @@
     {
       "name": "Will Brodie",
       "team": "Port Adelaide",
-      "games": 3,
+      "games": 1,
       "disposals": 18,
       "kicks": 4,
       "handballs": 14,
@@ -2745,7 +2745,7 @@
     {
       "name": "Zak Johnson",
       "team": "Essendon",
-      "games": 6,
+      "games": 5,
       "disposals": 17.8,
       "kicks": 10.2,
       "handballs": 7.6,
@@ -2799,7 +2799,7 @@
     {
       "name": "Patrick Retschko",
       "team": "Richmond",
-      "games": 17,
+      "games": 14,
       "disposals": 17.8,
       "kicks": 11,
       "handballs": 6.8,
@@ -2817,7 +2817,7 @@
     {
       "name": "Ryan Maric",
       "team": "West Coast",
-      "games": 16,
+      "games": 11,
       "disposals": 18,
       "kicks": 9.9,
       "handballs": 8.1,
@@ -2889,7 +2889,7 @@
     {
       "name": "Jack Bowes",
       "team": "Geelong",
-      "games": 15,
+      "games": 9,
       "disposals": 17.6,
       "kicks": 10.1,
       "handballs": 7.4,
@@ -2943,7 +2943,7 @@
     {
       "name": "James Worpel",
       "team": "Geelong",
-      "games": 11,
+      "games": 8,
       "disposals": 18,
       "kicks": 10.9,
       "handballs": 7.1,
@@ -2979,7 +2979,7 @@
     {
       "name": "Tom Blamires",
       "team": "North Melbourne",
-      "games": 17,
+      "games": 14,
       "disposals": 17.4,
       "kicks": 10.1,
       "handballs": 7.4,
@@ -3033,7 +3033,7 @@
     {
       "name": "Jack Scrimshaw",
       "team": "Hawthorn",
-      "games": 7,
+      "games": 6,
       "disposals": 17.3,
       "kicks": 8.7,
       "handballs": 8.7,
@@ -3123,7 +3123,7 @@
     {
       "name": "Keidean Coleman",
       "team": "Brisbane",
-      "games": 13,
+      "games": 12,
       "disposals": 17.2,
       "kicks": 12.6,
       "handballs": 4.6,
@@ -3213,7 +3213,7 @@
     {
       "name": "Rhys Stanley",
       "team": "Geelong",
-      "games": 5,
+      "games": 1,
       "disposals": 17,
       "kicks": 8,
       "handballs": 9,
@@ -3321,7 +3321,7 @@
     {
       "name": "James Trezise",
       "team": "Richmond",
-      "games": 17,
+      "games": 14,
       "disposals": 16.1,
       "kicks": 7.9,
       "handballs": 8.2,
@@ -3357,7 +3357,7 @@
     {
       "name": "Oliver Hollands",
       "team": "Carlton",
-      "games": 13,
+      "games": 12,
       "disposals": 16.7,
       "kicks": 11,
       "handballs": 5.7,
@@ -3465,7 +3465,7 @@
     {
       "name": "Tyler Sonsie",
       "team": "Richmond",
-      "games": 17,
+      "games": 13,
       "disposals": 16.8,
       "kicks": 9.8,
       "handballs": 7,
@@ -3555,7 +3555,7 @@
     {
       "name": "Sam Marshall",
       "team": "Brisbane",
-      "games": 7,
+      "games": 2,
       "disposals": 16.5,
       "kicks": 6.5,
       "handballs": 10,
@@ -3609,7 +3609,7 @@
     {
       "name": "Mason Wood",
       "team": "St Kilda",
-      "games": 19,
+      "games": 18,
       "disposals": 16.9,
       "kicks": 10.2,
       "handballs": 6.7,
@@ -3663,7 +3663,7 @@
     {
       "name": "Jaxon Prior",
       "team": "Essendon",
-      "games": 19,
+      "games": 18,
       "disposals": 16.6,
       "kicks": 11.9,
       "handballs": 4.7,
@@ -3753,7 +3753,7 @@
     {
       "name": "Ned Long",
       "team": "Collingwood",
-      "games": 19,
+      "games": 17,
       "disposals": 16,
       "kicks": 6.2,
       "handballs": 9.8,
@@ -3771,7 +3771,7 @@
     {
       "name": "Alex Davies",
       "team": "Gold Coast",
-      "games": 8,
+      "games": 6,
       "disposals": 16.2,
       "kicks": 5.3,
       "handballs": 10.8,
@@ -3807,7 +3807,7 @@
     {
       "name": "Sam Clohesy",
       "team": "Gold Coast",
-      "games": 10,
+      "games": 9,
       "disposals": 16.1,
       "kicks": 9,
       "handballs": 7.1,
@@ -3879,7 +3879,7 @@
     {
       "name": "Luke McDonald",
       "team": "North Melbourne",
-      "games": 18,
+      "games": 17,
       "disposals": 15.5,
       "kicks": 10.1,
       "handballs": 5.5,
@@ -3897,7 +3897,7 @@
     {
       "name": "Will Lorenz",
       "team": "Port Adelaide",
-      "games": 4,
+      "games": 1,
       "disposals": 16,
       "kicks": 5,
       "handballs": 11,
@@ -4023,7 +4023,7 @@
     {
       "name": "Mattaes Phillipou",
       "team": "St Kilda",
-      "games": 18,
+      "games": 17,
       "disposals": 17.1,
       "kicks": 7.7,
       "handballs": 9.4,
@@ -4149,7 +4149,7 @@
     {
       "name": "Lachie Jaques",
       "team": "Western Bulldogs",
-      "games": 12,
+      "games": 8,
       "disposals": 15.5,
       "kicks": 10.4,
       "handballs": 5.1,
@@ -4239,7 +4239,7 @@
     {
       "name": "Zeke Uwland",
       "team": "Gold Coast",
-      "games": 18,
+      "games": 16,
       "disposals": 15.6,
       "kicks": 9.5,
       "handballs": 6.1,
@@ -4347,7 +4347,7 @@
     {
       "name": "Hugo Ralphsmith",
       "team": "Richmond",
-      "games": 10,
+      "games": 9,
       "disposals": 14.1,
       "kicks": 7.6,
       "handballs": 6.6,
@@ -4401,7 +4401,7 @@
     {
       "name": "Daniel Turner",
       "team": "Melbourne",
-      "games": 17,
+      "games": 16,
       "disposals": 14.3,
       "kicks": 9.9,
       "handballs": 4.4,
@@ -4419,7 +4419,7 @@
     {
       "name": "Edward Allan",
       "team": "Collingwood",
-      "games": 18,
+      "games": 14,
       "disposals": 15.2,
       "kicks": 6.4,
       "handballs": 8.9,
@@ -4455,7 +4455,7 @@
     {
       "name": "Charlie Edwards",
       "team": "Adelaide",
-      "games": 4,
+      "games": 3,
       "disposals": 15,
       "kicks": 10,
       "handballs": 5,
@@ -4509,7 +4509,7 @@
     {
       "name": "Archie Perkins",
       "team": "Essendon",
-      "games": 15,
+      "games": 13,
       "disposals": 14.9,
       "kicks": 8.2,
       "handballs": 6.7,
@@ -4527,7 +4527,7 @@
     {
       "name": "Christian Moraes",
       "team": "Port Adelaide",
-      "games": 14,
+      "games": 9,
       "disposals": 14.6,
       "kicks": 6.8,
       "handballs": 7.8,
@@ -4545,7 +4545,7 @@
     {
       "name": "Harry Rowston",
       "team": "GWS",
-      "games": 15,
+      "games": 8,
       "disposals": 14.9,
       "kicks": 9.1,
       "handballs": 5.8,
@@ -4563,7 +4563,7 @@
     {
       "name": "Changkuoth Jiath",
       "team": "Melbourne",
-      "games": 13,
+      "games": 11,
       "disposals": 14.5,
       "kicks": 9.6,
       "handballs": 4.9,
@@ -4617,7 +4617,7 @@
     {
       "name": "Tom Brown",
       "team": "Richmond",
-      "games": 16,
+      "games": 14,
       "disposals": 15.4,
       "kicks": 11,
       "handballs": 4.4,
@@ -4653,7 +4653,7 @@
     {
       "name": "Saad El-Hawli",
       "team": "Essendon",
-      "games": 14,
+      "games": 8,
       "disposals": 14.6,
       "kicks": 8.8,
       "handballs": 5.9,
@@ -4689,7 +4689,7 @@
     {
       "name": "Jedd Busslinger",
       "team": "Western Bulldogs",
-      "games": 12,
+      "games": 7,
       "disposals": 16.3,
       "kicks": 11.9,
       "handballs": 4.4,
@@ -4707,7 +4707,7 @@
     {
       "name": "Finn Maginness",
       "team": "Hawthorn",
-      "games": 6,
+      "games": 5,
       "disposals": 14.6,
       "kicks": 4.8,
       "handballs": 9.8,
@@ -4725,7 +4725,7 @@
     {
       "name": "Isaac Cumming",
       "team": "Adelaide",
-      "games": 13,
+      "games": 12,
       "disposals": 14.6,
       "kicks": 9.1,
       "handballs": 5.5,
@@ -4743,7 +4743,7 @@
     {
       "name": "Jai Murray",
       "team": "Gold Coast",
-      "games": 9,
+      "games": 8,
       "disposals": 14.4,
       "kicks": 9,
       "handballs": 5.4,
@@ -4761,7 +4761,7 @@
     {
       "name": "Jordan Boyd",
       "team": "Carlton",
-      "games": 7,
+      "games": 2,
       "disposals": 14.5,
       "kicks": 13,
       "handballs": 1.5,
@@ -4779,7 +4779,7 @@
     {
       "name": "Shadeau Brain",
       "team": "Brisbane",
-      "games": 11,
+      "games": 2,
       "disposals": 14.5,
       "kicks": 11,
       "handballs": 3.5,
@@ -4797,7 +4797,7 @@
     {
       "name": "Peter Ladhams",
       "team": "Sydney",
-      "games": 14,
+      "games": 2,
       "disposals": 14.5,
       "kicks": 7,
       "handballs": 7.5,
@@ -4815,7 +4815,7 @@
     {
       "name": "George Stevens",
       "team": "Geelong",
-      "games": 4,
+      "games": 2,
       "disposals": 14.5,
       "kicks": 5.5,
       "handballs": 9,
@@ -4869,7 +4869,7 @@
     {
       "name": "Luke Nankervis",
       "team": "Adelaide",
-      "games": 18,
+      "games": 13,
       "disposals": 15.3,
       "kicks": 8.4,
       "handballs": 6.9,
@@ -4887,7 +4887,7 @@
     {
       "name": "Adam Saad",
       "team": "Carlton",
-      "games": 4,
+      "games": 3,
       "disposals": 14.3,
       "kicks": 9,
       "handballs": 5.3,
@@ -5103,7 +5103,7 @@
     {
       "name": "Roan Steele",
       "team": "Collingwood",
-      "games": 18,
+      "games": 16,
       "disposals": 13.8,
       "kicks": 7.9,
       "handballs": 5.9,
@@ -5193,7 +5193,7 @@
     {
       "name": "Tom McDonald",
       "team": "Melbourne",
-      "games": 12,
+      "games": 6,
       "disposals": 13.7,
       "kicks": 9.5,
       "handballs": 4.2,
@@ -5247,7 +5247,7 @@
     {
       "name": "Noah Mraz",
       "team": "Hawthorn",
-      "games": 6,
+      "games": 4,
       "disposals": 15,
       "kicks": 10.8,
       "handballs": 4.3,
@@ -5283,7 +5283,7 @@
     {
       "name": "Rhylee West",
       "team": "Western Bulldogs",
-      "games": 19,
+      "games": 18,
       "disposals": 13.3,
       "kicks": 7.3,
       "handballs": 6.1,
@@ -5355,7 +5355,7 @@
     {
       "name": "Bo Allan",
       "team": "West Coast",
-      "games": 18,
+      "games": 16,
       "disposals": 13.3,
       "kicks": 7.4,
       "handballs": 5.9,
@@ -5373,7 +5373,7 @@
     {
       "name": "Jackson Mead",
       "team": "Port Adelaide",
-      "games": 11,
+      "games": 9,
       "disposals": 12.6,
       "kicks": 8.4,
       "handballs": 4.1,
@@ -5391,7 +5391,7 @@
     {
       "name": "Mark Blicavs",
       "team": "Geelong",
-      "games": 16,
+      "games": 15,
       "disposals": 13.2,
       "kicks": 5.5,
       "handballs": 7.7,
@@ -5427,7 +5427,7 @@
     {
       "name": "Riley Thilthorpe",
       "team": "Adelaide",
-      "games": 17,
+      "games": 16,
       "disposals": 12.8,
       "kicks": 8.4,
       "handballs": 4.3,
@@ -5445,7 +5445,7 @@
     {
       "name": "Bailey J. Williams",
       "team": "West Coast",
-      "games": 16,
+      "games": 15,
       "disposals": 13.1,
       "kicks": 7.5,
       "handballs": 5.6,
@@ -5463,7 +5463,7 @@
     {
       "name": "Jack Watkins",
       "team": "Port Adelaide",
-      "games": 15,
+      "games": 10,
       "disposals": 13.7,
       "kicks": 8.2,
       "handballs": 5.5,
@@ -5481,7 +5481,7 @@
     {
       "name": "Wade Derksen",
       "team": "Carlton",
-      "games": 13,
+      "games": 10,
       "disposals": 13.1,
       "kicks": 8.5,
       "handballs": 4.6,
@@ -5499,7 +5499,7 @@
     {
       "name": "Lincoln McCarthy",
       "team": "Brisbane",
-      "games": 9,
+      "games": 8,
       "disposals": 13,
       "kicks": 9.8,
       "handballs": 3.3,
@@ -5517,7 +5517,7 @@
     {
       "name": "James Leake",
       "team": "GWS",
-      "games": 13,
+      "games": 5,
       "disposals": 13,
       "kicks": 6.4,
       "handballs": 6.6,
@@ -5553,7 +5553,7 @@
     {
       "name": "Cameron Nairn",
       "team": "Hawthorn",
-      "games": 8,
+      "games": 4,
       "disposals": 13,
       "kicks": 7.5,
       "handballs": 5.5,
@@ -5571,7 +5571,7 @@
     {
       "name": "Tom Anastasopoulos",
       "team": "Port Adelaide",
-      "games": 3,
+      "games": 2,
       "disposals": 13,
       "kicks": 8,
       "handballs": 5,
@@ -5589,7 +5589,7 @@
     {
       "name": "Daniel Annable",
       "team": "Brisbane",
-      "games": 3,
+      "games": 1,
       "disposals": 13,
       "kicks": 10,
       "handballs": 3,
@@ -5607,7 +5607,7 @@
     {
       "name": "Billy Dowling",
       "team": "Adelaide",
-      "games": 12,
+      "games": 2,
       "disposals": 13,
       "kicks": 5,
       "handballs": 8,
@@ -5715,7 +5715,7 @@
     {
       "name": "Bailey Laurie",
       "team": "Melbourne",
-      "games": 17,
+      "games": 12,
       "disposals": 12.9,
       "kicks": 7.1,
       "handballs": 5.8,
@@ -5751,7 +5751,7 @@
     {
       "name": "Nick Murray",
       "team": "Adelaide",
-      "games": 18,
+      "games": 11,
       "disposals": 12.4,
       "kicks": 8.8,
       "handballs": 3.5,
@@ -5769,7 +5769,7 @@
     {
       "name": "Jordon Sweet",
       "team": "Port Adelaide",
-      "games": 19,
+      "games": 18,
       "disposals": 12.7,
       "kicks": 6.7,
       "handballs": 6.1,
@@ -5823,7 +5823,7 @@
     {
       "name": "Caiden Cleary",
       "team": "Sydney",
-      "games": 9,
+      "games": 8,
       "disposals": 12.6,
       "kicks": 4.3,
       "handballs": 8.4,
@@ -5859,7 +5859,7 @@
     {
       "name": "Bailey Macdonald",
       "team": "Hawthorn",
-      "games": 10,
+      "games": 9,
       "disposals": 13.1,
       "kicks": 5.4,
       "handballs": 7.7,
@@ -5877,7 +5877,7 @@
     {
       "name": "Harry Cunningham",
       "team": "Sydney",
-      "games": 15,
+      "games": 12,
       "disposals": 11.7,
       "kicks": 6.5,
       "handballs": 5.2,
@@ -5931,7 +5931,7 @@
     {
       "name": "Tobie Travaglia",
       "team": "St Kilda",
-      "games": 6,
+      "games": 4,
       "disposals": 12.3,
       "kicks": 4.8,
       "handballs": 7.5,
@@ -5949,7 +5949,7 @@
     {
       "name": "Oskar Baker",
       "team": "Western Bulldogs",
-      "games": 15,
+      "games": 9,
       "disposals": 12.4,
       "kicks": 7.4,
       "handballs": 5,
@@ -6003,7 +6003,7 @@
     {
       "name": "Jacob Wehr",
       "team": "Port Adelaide",
-      "games": 17,
+      "games": 14,
       "disposals": 12.1,
       "kicks": 8.7,
       "handballs": 3.4,
@@ -6129,7 +6129,7 @@
     {
       "name": "Tom Cole",
       "team": "West Coast",
-      "games": 16,
+      "games": 13,
       "disposals": 12.3,
       "kicks": 7.1,
       "handballs": 5.2,
@@ -6201,7 +6201,7 @@
     {
       "name": "Cooper Hynes",
       "team": "Western Bulldogs",
-      "games": 18,
+      "games": 17,
       "disposals": 12.2,
       "kicks": 6.2,
       "handballs": 5.9,
@@ -6219,7 +6219,7 @@
     {
       "name": "Angus Anderson",
       "team": "Collingwood",
-      "games": 15,
+      "games": 12,
       "disposals": 12.3,
       "kicks": 7.4,
       "handballs": 4.8,
@@ -6237,7 +6237,7 @@
     {
       "name": "Oscar McDonald",
       "team": "Fremantle",
-      "games": 12,
+      "games": 6,
       "disposals": 12.3,
       "kicks": 8.7,
       "handballs": 3.7,
@@ -6255,7 +6255,7 @@
     {
       "name": "Toby Pink",
       "team": "North Melbourne",
-      "games": 10,
+      "games": 5,
       "disposals": 12.2,
       "kicks": 7.6,
       "handballs": 4.6,
@@ -6309,7 +6309,7 @@
     {
       "name": "Charlie Comben",
       "team": "North Melbourne",
-      "games": 19,
+      "games": 18,
       "disposals": 12.2,
       "kicks": 7.4,
       "handballs": 4.7,
@@ -6327,7 +6327,7 @@
     {
       "name": "Rhett Bazzo",
       "team": "West Coast",
-      "games": 12,
+      "games": 10,
       "disposals": 12.1,
       "kicks": 5.4,
       "handballs": 6.7,
@@ -6345,7 +6345,7 @@
     {
       "name": "Dougal Howard",
       "team": "St Kilda",
-      "games": 8,
+      "games": 6,
       "disposals": 12,
       "kicks": 9.7,
       "handballs": 2.3,
@@ -6363,7 +6363,7 @@
     {
       "name": "Harry Kyle",
       "team": "Sydney",
-      "games": 7,
+      "games": 6,
       "disposals": 12,
       "kicks": 5.3,
       "handballs": 6.7,
@@ -6381,7 +6381,7 @@
     {
       "name": "Harry Schoenberg",
       "team": "West Coast",
-      "games": 9,
+      "games": 5,
       "disposals": 12,
       "kicks": 6.6,
       "handballs": 5.4,
@@ -6417,7 +6417,7 @@
     {
       "name": "Jeremy Sharp",
       "team": "Fremantle",
-      "games": 7,
+      "games": 2,
       "disposals": 12,
       "kicks": 7.5,
       "handballs": 4.5,
@@ -6435,7 +6435,7 @@
     {
       "name": "Laitham Vandermeer",
       "team": "Western Bulldogs",
-      "games": 3,
+      "games": 1,
       "disposals": 12,
       "kicks": 7,
       "handballs": 5,
@@ -6489,7 +6489,7 @@
     {
       "name": "Jake Kolodjashnij",
       "team": "Geelong",
-      "games": 14,
+      "games": 11,
       "disposals": 11.9,
       "kicks": 6.9,
       "handballs": 5,
@@ -6543,7 +6543,7 @@
     {
       "name": "Conor Stone",
       "team": "GWS",
-      "games": 13,
+      "games": 8,
       "disposals": 12,
       "kicks": 5.9,
       "handballs": 6.1,
@@ -6597,7 +6597,7 @@
     {
       "name": "James Tunstill",
       "team": "Brisbane",
-      "games": 18,
+      "games": 11,
       "disposals": 12.9,
       "kicks": 7.7,
       "handballs": 5.2,
@@ -6633,7 +6633,7 @@
     {
       "name": "Darcy Fort",
       "team": "Brisbane",
-      "games": 19,
+      "games": 18,
       "disposals": 11.4,
       "kicks": 6.9,
       "handballs": 4.6,
@@ -6651,7 +6651,7 @@
     {
       "name": "Jhye Clark",
       "team": "Geelong",
-      "games": 7,
+      "games": 5,
       "disposals": 15.8,
       "kicks": 8.4,
       "handballs": 7.4,
@@ -6669,7 +6669,7 @@
     {
       "name": "Chayce Jones",
       "team": "Adelaide",
-      "games": 5,
+      "games": 3,
       "disposals": 11.7,
       "kicks": 6.3,
       "handballs": 5.3,
@@ -6741,7 +6741,7 @@
     {
       "name": "Jayden Nguyen",
       "team": "Essendon",
-      "games": 11,
+      "games": 5,
       "disposals": 11.6,
       "kicks": 3.6,
       "handballs": 8,
@@ -6777,7 +6777,7 @@
     {
       "name": "Jake Riccardi",
       "team": "GWS",
-      "games": 11,
+      "games": 9,
       "disposals": 11.6,
       "kicks": 7,
       "handballs": 4.6,
@@ -6813,7 +6813,7 @@
     {
       "name": "Jack Lukosius",
       "team": "Port Adelaide",
-      "games": 9,
+      "games": 8,
       "disposals": 11.5,
       "kicks": 9.3,
       "handballs": 2.3,
@@ -6849,7 +6849,7 @@
     {
       "name": "Elijah Hewett",
       "team": "West Coast",
-      "games": 7,
+      "games": 6,
       "disposals": 11.5,
       "kicks": 5.5,
       "handballs": 6,
@@ -6921,7 +6921,7 @@
     {
       "name": "Hugh Boxshall",
       "team": "St Kilda",
-      "games": 14,
+      "games": 6,
       "disposals": 12.3,
       "kicks": 6.5,
       "handballs": 5.8,
@@ -6939,7 +6939,7 @@
     {
       "name": "Steely Green",
       "team": "Richmond",
-      "games": 18,
+      "games": 17,
       "disposals": 11.1,
       "kicks": 6.8,
       "handballs": 4.3,
@@ -6957,7 +6957,7 @@
     {
       "name": "Lewis Melican",
       "team": "Sydney",
-      "games": 11,
+      "games": 9,
       "disposals": 11.3,
       "kicks": 6.7,
       "handballs": 4.7,
@@ -6975,7 +6975,7 @@
     {
       "name": "Harvey Gallagher",
       "team": "Western Bulldogs",
-      "games": 5,
+      "games": 3,
       "disposals": 11.3,
       "kicks": 7.7,
       "handballs": 3.7,
@@ -6993,7 +6993,7 @@
     {
       "name": "Riley Hardeman",
       "team": "North Melbourne",
-      "games": 7,
+      "games": 4,
       "disposals": 12,
       "kicks": 9,
       "handballs": 3,
@@ -7011,7 +7011,7 @@
     {
       "name": "Josh Lai",
       "team": "Port Adelaide",
-      "games": 16,
+      "games": 15,
       "disposals": 11.8,
       "kicks": 8.3,
       "handballs": 3.5,
@@ -7029,7 +7029,7 @@
     {
       "name": "Flynn Perez",
       "team": "Hawthorn",
-      "games": 11,
+      "games": 7,
       "disposals": 11.3,
       "kicks": 5.1,
       "handballs": 6.1,
@@ -7065,7 +7065,7 @@
     {
       "name": "Jack Ison",
       "team": "Carlton",
-      "games": 9,
+      "games": 8,
       "disposals": 11.3,
       "kicks": 7.5,
       "handballs": 3.8,
@@ -7101,7 +7101,7 @@
     {
       "name": "Jordon Butts",
       "team": "Adelaide",
-      "games": 10,
+      "games": 9,
       "disposals": 11.2,
       "kicks": 6.3,
       "handballs": 4.9,
@@ -7119,7 +7119,7 @@
     {
       "name": "Josh Dolan",
       "team": "Western Bulldogs",
-      "games": 9,
+      "games": 7,
       "disposals": 11.1,
       "kicks": 5.7,
       "handballs": 5.4,
@@ -7137,7 +7137,7 @@
     {
       "name": "Oliver Henry",
       "team": "Geelong",
-      "games": 19,
+      "games": 18,
       "disposals": 10.9,
       "kicks": 7.1,
       "handballs": 3.8,
@@ -7173,7 +7173,7 @@
     {
       "name": "Max Kondogiannis",
       "team": "Essendon",
-      "games": 10,
+      "games": 8,
       "disposals": 10.3,
       "kicks": 4.3,
       "handballs": 6,
@@ -7191,7 +7191,7 @@
     {
       "name": "Jack Martin",
       "team": "Geelong",
-      "games": 16,
+      "games": 15,
       "disposals": 11.1,
       "kicks": 6.5,
       "handballs": 4.6,
@@ -7227,7 +7227,7 @@
     {
       "name": "Sam Davidson",
       "team": "Western Bulldogs",
-      "games": 17,
+      "games": 12,
       "disposals": 10.8,
       "kicks": 7.3,
       "handballs": 3.5,
@@ -7245,7 +7245,7 @@
     {
       "name": "James Borlase",
       "team": "Adelaide",
-      "games": 19,
+      "games": 14,
       "disposals": 11.1,
       "kicks": 6.8,
       "handballs": 4.3,
@@ -7281,7 +7281,7 @@
     {
       "name": "Darcy Fogarty",
       "team": "Adelaide",
-      "games": 13,
+      "games": 12,
       "disposals": 11.8,
       "kicks": 8,
       "handballs": 3.8,
@@ -7299,7 +7299,7 @@
     {
       "name": "Hugh Bond",
       "team": "Adelaide",
-      "games": 12,
+      "games": 7,
       "disposals": 11,
       "kicks": 7.6,
       "handballs": 3.4,
@@ -7317,7 +7317,7 @@
     {
       "name": "Angus Hastie",
       "team": "St Kilda",
-      "games": 13,
+      "games": 5,
       "disposals": 11,
       "kicks": 7.8,
       "handballs": 3.2,
@@ -7335,7 +7335,7 @@
     {
       "name": "Wil Parker",
       "team": "Collingwood",
-      "games": 12,
+      "games": 5,
       "disposals": 11,
       "kicks": 5.4,
       "handballs": 5.6,
@@ -7353,7 +7353,7 @@
     {
       "name": "Corey Warner",
       "team": "Sydney",
-      "games": 11,
+      "games": 5,
       "disposals": 11,
       "kicks": 6.2,
       "handballs": 4.8,
@@ -7371,7 +7371,7 @@
     {
       "name": "Tom Hanily",
       "team": "Sydney",
-      "games": 8,
+      "games": 4,
       "disposals": 11,
       "kicks": 5.5,
       "handballs": 5.5,
@@ -7407,7 +7407,7 @@
     {
       "name": "Todd Marshall",
       "team": "Port Adelaide",
-      "games": 15,
+      "games": 12,
       "disposals": 10,
       "kicks": 8.1,
       "handballs": 1.9,
@@ -7425,7 +7425,7 @@
     {
       "name": "Jade Gresham",
       "team": "Essendon",
-      "games": 11,
+      "games": 7,
       "disposals": 10.9,
       "kicks": 6,
       "handballs": 4.9,
@@ -7497,7 +7497,7 @@
     {
       "name": "Liam Stocker",
       "team": "St Kilda",
-      "games": 17,
+      "games": 14,
       "disposals": 12.1,
       "kicks": 6.9,
       "handballs": 5.1,
@@ -7515,7 +7515,7 @@
     {
       "name": "Lachlan Gulbin",
       "team": "Gold Coast",
-      "games": 13,
+      "games": 8,
       "disposals": 10.8,
       "kicks": 4.8,
       "handballs": 6,
@@ -7569,7 +7569,7 @@
     {
       "name": "Jack Darling",
       "team": "North Melbourne",
-      "games": 19,
+      "games": 18,
       "disposals": 10.4,
       "kicks": 6.7,
       "handballs": 3.7,
@@ -7641,7 +7641,7 @@
     {
       "name": "Jarrod Witts",
       "team": "Gold Coast",
-      "games": 14,
+      "games": 12,
       "disposals": 10.6,
       "kicks": 5.5,
       "handballs": 5.1,
@@ -7713,7 +7713,7 @@
     {
       "name": "Isaac Keeler",
       "team": "St Kilda",
-      "games": 3,
+      "games": 2,
       "disposals": 10.5,
       "kicks": 4.5,
       "handballs": 6,
@@ -7731,7 +7731,7 @@
     {
       "name": "Mitch Podhajski",
       "team": "Collingwood",
-      "games": 3,
+      "games": 2,
       "disposals": 10.5,
       "kicks": 7,
       "handballs": 3.5,
@@ -7803,7 +7803,7 @@
     {
       "name": "Lachlan McNeil",
       "team": "Western Bulldogs",
-      "games": 14,
+      "games": 10,
       "disposals": 10.3,
       "kicks": 4,
       "handballs": 6.3,
@@ -7821,7 +7821,7 @@
     {
       "name": "Oliver Wiltshire",
       "team": "Geelong",
-      "games": 17,
+      "games": 11,
       "disposals": 10.9,
       "kicks": 6.6,
       "handballs": 4.3,
@@ -7857,7 +7857,7 @@
     {
       "name": "Callum Brown",
       "team": "GWS",
-      "games": 16,
+      "games": 14,
       "disposals": 10.4,
       "kicks": 6.3,
       "handballs": 4.1,
@@ -7911,7 +7911,7 @@
     {
       "name": "Harvey Harrison",
       "team": "Collingwood",
-      "games": 9,
+      "games": 7,
       "disposals": 10.1,
       "kicks": 6,
       "handballs": 4.1,
@@ -7929,7 +7929,7 @@
     {
       "name": "Bodie Ryan",
       "team": "Hawthorn",
-      "games": 8,
+      "games": 5,
       "disposals": 10.2,
       "kicks": 7.8,
       "handballs": 2.4,
@@ -7965,7 +7965,7 @@
     {
       "name": "Ned Moyle",
       "team": "Gold Coast",
-      "games": 18,
+      "games": 12,
       "disposals": 9.9,
       "kicks": 4.8,
       "handballs": 5.1,
@@ -7983,7 +7983,7 @@
     {
       "name": "Griffin Logue",
       "team": "North Melbourne",
-      "games": 16,
+      "games": 12,
       "disposals": 10.4,
       "kicks": 5.4,
       "handballs": 5,
@@ -8019,7 +8019,7 @@
     {
       "name": "Oscar Adams",
       "team": "Gold Coast",
-      "games": 16,
+      "games": 13,
       "disposals": 9.9,
       "kicks": 4.4,
       "handballs": 5.5,
@@ -8037,7 +8037,7 @@
     {
       "name": "Harrison Oliver",
       "team": "GWS",
-      "games": 10,
+      "games": 5,
       "disposals": 10,
       "kicks": 6.4,
       "handballs": 3.6,
@@ -8055,7 +8055,7 @@
     {
       "name": "Darragh Joyce",
       "team": "Brisbane",
-      "games": 12,
+      "games": 3,
       "disposals": 10,
       "kicks": 8.7,
       "handballs": 1.3,
@@ -8145,7 +8145,7 @@
     {
       "name": "Brandon Walker",
       "team": "Fremantle",
-      "games": 6,
+      "games": 1,
       "disposals": 10,
       "kicks": 5,
       "handballs": 5,
@@ -8163,7 +8163,7 @@
     {
       "name": "Jack Higgins",
       "team": "St Kilda",
-      "games": 14,
+      "games": 13,
       "disposals": 10.1,
       "kicks": 5.9,
       "handballs": 4.2,
@@ -8199,7 +8199,7 @@
     {
       "name": "Harrison Petty",
       "team": "Melbourne",
-      "games": 16,
+      "games": 15,
       "disposals": 10.1,
       "kicks": 6.1,
       "handballs": 4.1,
@@ -8217,7 +8217,7 @@
     {
       "name": "Oliver Hayes-Brown",
       "team": "Richmond",
-      "games": 11,
+      "games": 7,
       "disposals": 9.9,
       "kicks": 2.7,
       "handballs": 7.1,
@@ -8235,7 +8235,7 @@
     {
       "name": "Toby McMullin",
       "team": "GWS",
-      "games": 8,
+      "games": 6,
       "disposals": 9.8,
       "kicks": 4.8,
       "handballs": 5,
@@ -8253,7 +8253,7 @@
     {
       "name": "Jake Rogers",
       "team": "Gold Coast",
-      "games": 6,
+      "games": 5,
       "disposals": 9.8,
       "kicks": 4.2,
       "handballs": 5.6,
@@ -8289,7 +8289,7 @@
     {
       "name": "Ben Jepson",
       "team": "Gold Coast",
-      "games": 8,
+      "games": 4,
       "disposals": 9.8,
       "kicks": 6.3,
       "handballs": 3.5,
@@ -8307,7 +8307,7 @@
     {
       "name": "Charlie Banfield",
       "team": "St Kilda",
-      "games": 6,
+      "games": 3,
       "disposals": 9.7,
       "kicks": 7,
       "handballs": 2.7,
@@ -8325,7 +8325,7 @@
     {
       "name": "Ben McKay",
       "team": "Essendon",
-      "games": 17,
+      "games": 15,
       "disposals": 9.3,
       "kicks": 5.3,
       "handballs": 4,
@@ -8379,7 +8379,7 @@
     {
       "name": "Jacob Konstanty",
       "team": "North Melbourne",
-      "games": 18,
+      "games": 10,
       "disposals": 9.5,
       "kicks": 4.3,
       "handballs": 5.2,
@@ -8397,7 +8397,7 @@
     {
       "name": "Luke Pedlar",
       "team": "Adelaide",
-      "games": 11,
+      "games": 10,
       "disposals": 9.5,
       "kicks": 5.9,
       "handballs": 3.6,
@@ -8415,7 +8415,7 @@
     {
       "name": "Lewis Young",
       "team": "Carlton",
-      "games": 12,
+      "games": 9,
       "disposals": 10.4,
       "kicks": 5.3,
       "handballs": 5.1,
@@ -8433,7 +8433,7 @@
     {
       "name": "Hayden McLean",
       "team": "Sydney",
-      "games": 18,
+      "games": 8,
       "disposals": 8.5,
       "kicks": 4.8,
       "handballs": 3.8,
@@ -8451,7 +8451,7 @@
     {
       "name": "Max Ramsden",
       "team": "Hawthorn",
-      "games": 5,
+      "games": 2,
       "disposals": 9.5,
       "kicks": 3,
       "handballs": 6.5,
@@ -8469,7 +8469,7 @@
     {
       "name": "Mitchell Edwards",
       "team": "Geelong",
-      "games": 19,
+      "games": 15,
       "disposals": 9.7,
       "kicks": 3.1,
       "handballs": 6.5,
@@ -8523,7 +8523,7 @@
     {
       "name": "Flynn Young",
       "team": "Carlton",
-      "games": 11,
+      "games": 3,
       "disposals": 9.3,
       "kicks": 5.3,
       "handballs": 4,
@@ -8577,7 +8577,7 @@
     {
       "name": "Latrelle Pickett",
       "team": "Melbourne",
-      "games": 17,
+      "games": 16,
       "disposals": 8.8,
       "kicks": 5.1,
       "handballs": 3.6,
@@ -8595,7 +8595,7 @@
     {
       "name": "Callum Coleman-Jones",
       "team": "North Melbourne",
-      "games": 7,
+      "games": 5,
       "disposals": 9.2,
       "kicks": 4.2,
       "handballs": 5,
@@ -8613,7 +8613,7 @@
     {
       "name": "Oliver Hannaford",
       "team": "GWS",
-      "games": 11,
+      "games": 5,
       "disposals": 9.2,
       "kicks": 5.2,
       "handballs": 4,
@@ -8649,7 +8649,7 @@
     {
       "name": "Charlie Ballard",
       "team": "Gold Coast",
-      "games": 14,
+      "games": 7,
       "disposals": 8.9,
       "kicks": 5.3,
       "handballs": 3.6,
@@ -8685,7 +8685,7 @@
     {
       "name": "Cooper Duff-Tytler",
       "team": "West Coast",
-      "games": 14,
+      "games": 12,
       "disposals": 9,
       "kicks": 4.1,
       "handballs": 4.9,
@@ -8703,7 +8703,7 @@
     {
       "name": "Jesse Hogan",
       "team": "GWS",
-      "games": 10,
+      "games": 9,
       "disposals": 9,
       "kicks": 6.2,
       "handballs": 2.8,
@@ -8721,7 +8721,7 @@
     {
       "name": "Calsher Dear",
       "team": "Hawthorn",
-      "games": 9,
+      "games": 5,
       "disposals": 9,
       "kicks": 5.4,
       "handballs": 3.6,
@@ -8811,7 +8811,7 @@
     {
       "name": "Sandy Brock",
       "team": "West Coast",
-      "games": 9,
+      "games": 5,
       "disposals": 8.6,
       "kicks": 5.2,
       "handballs": 3.4,
@@ -8847,7 +8847,7 @@
     {
       "name": "Leek Aleer",
       "team": "GWS",
-      "games": 9,
+      "games": 7,
       "disposals": 8.7,
       "kicks": 3.9,
       "handballs": 4.9,
@@ -8865,7 +8865,7 @@
     {
       "name": "Liam Reidy",
       "team": "Carlton",
-      "games": 6,
+      "games": 4,
       "disposals": 10.5,
       "kicks": 5,
       "handballs": 5.5,
@@ -8919,7 +8919,7 @@
     {
       "name": "Ashton Moir",
       "team": "Carlton",
-      "games": 3,
+      "games": 2,
       "disposals": 8.5,
       "kicks": 5,
       "handballs": 3.5,
@@ -8937,7 +8937,7 @@
     {
       "name": "Oscar Steene",
       "team": "Collingwood",
-      "games": 10,
+      "games": 8,
       "disposals": 8.4,
       "kicks": 2.9,
       "handballs": 5.5,
@@ -8955,7 +8955,7 @@
     {
       "name": "Samson Ryan",
       "team": "Richmond",
-      "games": 10,
+      "games": 3,
       "disposals": 8.3,
       "kicks": 4,
       "handballs": 4.3,
@@ -8973,7 +8973,7 @@
     {
       "name": "Jed Walter",
       "team": "Gold Coast",
-      "games": 16,
+      "games": 14,
       "disposals": 7.9,
       "kicks": 5.2,
       "handballs": 2.7,
@@ -8991,7 +8991,7 @@
     {
       "name": "Billy Cootee",
       "team": "Sydney",
-      "games": 7,
+      "games": 5,
       "disposals": 9,
       "kicks": 4.2,
       "handballs": 4.8,
@@ -9027,7 +9027,7 @@
     {
       "name": "Lachy Dovaston",
       "team": "North Melbourne",
-      "games": 7,
+      "games": 6,
       "disposals": 8.2,
       "kicks": 4.8,
       "handballs": 3.3,
@@ -9045,7 +9045,7 @@
     {
       "name": "Joel Hamling",
       "team": "Sydney",
-      "games": 11,
+      "games": 6,
       "disposals": 8.2,
       "kicks": 3.5,
       "handballs": 4.7,
@@ -9081,7 +9081,7 @@
     {
       "name": "Alix Tauru",
       "team": "St Kilda",
-      "games": 13,
+      "games": 8,
       "disposals": 8.1,
       "kicks": 5.1,
       "handballs": 3,
@@ -9099,7 +9099,7 @@
     {
       "name": "Paddy Cross",
       "team": "Melbourne",
-      "games": 13,
+      "games": 10,
       "disposals": 8.2,
       "kicks": 4.9,
       "handballs": 3.3,
@@ -9153,7 +9153,7 @@
     {
       "name": "Jordan Croft",
       "team": "Western Bulldogs",
-      "games": 15,
+      "games": 14,
       "disposals": 7.9,
       "kicks": 4.5,
       "handballs": 3.4,
@@ -9171,7 +9171,7 @@
     {
       "name": "Jack Buller",
       "team": "Collingwood",
-      "games": 18,
+      "games": 11,
       "disposals": 8,
       "kicks": 4.1,
       "handballs": 3.9,
@@ -9189,7 +9189,7 @@
     {
       "name": "Matthew Jefferson",
       "team": "Melbourne",
-      "games": 13,
+      "games": 12,
       "disposals": 7.8,
       "kicks": 4.4,
       "handballs": 3.4,
@@ -9225,7 +9225,7 @@
     {
       "name": "Jake Melksham",
       "team": "Melbourne",
-      "games": 8,
+      "games": 6,
       "disposals": 7.8,
       "kicks": 4.5,
       "handballs": 3.3,
@@ -9243,7 +9243,7 @@
     {
       "name": "Luke Kennedy",
       "team": "Western Bulldogs",
-      "games": 7,
+      "games": 4,
       "disposals": 8,
       "kicks": 3.5,
       "handballs": 4.5,
@@ -9261,7 +9261,7 @@
     {
       "name": "Liam Puncher",
       "team": "Collingwood",
-      "games": 5,
+      "games": 4,
       "disposals": 6.5,
       "kicks": 4,
       "handballs": 2.5,
@@ -9279,7 +9279,7 @@
     {
       "name": "Tom Gross",
       "team": "West Coast",
-      "games": 8,
+      "games": 1,
       "disposals": 8,
       "kicks": 5,
       "handballs": 3,
@@ -9297,7 +9297,7 @@
     {
       "name": "Mykelti Lefau",
       "team": "Richmond",
-      "games": 18,
+      "games": 17,
       "disposals": 7.9,
       "kicks": 4.4,
       "handballs": 3.5,
@@ -9315,7 +9315,7 @@
     {
       "name": "Talor Byrne",
       "team": "Carlton",
-      "games": 16,
+      "games": 14,
       "disposals": 8.8,
       "kicks": 5.6,
       "handballs": 3.2,
@@ -9333,7 +9333,7 @@
     {
       "name": "Harvey Johnston",
       "team": "West Coast",
-      "games": 9,
+      "games": 7,
       "disposals": 8.3,
       "kicks": 4,
       "handballs": 4.3,
@@ -9351,7 +9351,7 @@
     {
       "name": "Zac Banch",
       "team": "North Melbourne",
-      "games": 10,
+      "games": 4,
       "disposals": 7.8,
       "kicks": 4.5,
       "handballs": 3.3,
@@ -9369,7 +9369,7 @@
     {
       "name": "Max Gruzewski",
       "team": "GWS",
-      "games": 12,
+      "games": 11,
       "disposals": 8,
       "kicks": 5.5,
       "handballs": 2.5,
@@ -9387,7 +9387,7 @@
     {
       "name": "Ned Reeves",
       "team": "Hawthorn",
-      "games": 15,
+      "games": 14,
       "disposals": 7.5,
       "kicks": 4.3,
       "handballs": 3.2,
@@ -9405,7 +9405,7 @@
     {
       "name": "Andy Moniz-Wakefield",
       "team": "Melbourne",
-      "games": 5,
+      "games": 2,
       "disposals": 7.5,
       "kicks": 3.5,
       "handballs": 4,
@@ -9423,7 +9423,7 @@
     {
       "name": "Xavier Taylor",
       "team": "Melbourne",
-      "games": 3,
+      "games": 2,
       "disposals": 7.5,
       "kicks": 3,
       "handballs": 4.5,
@@ -9441,7 +9441,7 @@
     {
       "name": "Malakai Champion",
       "team": "West Coast",
-      "games": 10,
+      "games": 8,
       "disposals": 7.4,
       "kicks": 3.5,
       "handballs": 3.9,
@@ -9459,7 +9459,7 @@
     {
       "name": "Tom Cochrane",
       "team": "Port Adelaide",
-      "games": 4,
+      "games": 3,
       "disposals": 7.3,
       "kicks": 5.7,
       "handballs": 1.7,
@@ -9477,7 +9477,7 @@
     {
       "name": "William McCabe",
       "team": "Hawthorn",
-      "games": 9,
+      "games": 4,
       "disposals": 8.8,
       "kicks": 5.8,
       "handballs": 3,
@@ -9495,7 +9495,7 @@
     {
       "name": "Zane Zakostelsky",
       "team": "Brisbane",
-      "games": 8,
+      "games": 3,
       "disposals": 7.3,
       "kicks": 5.3,
       "handballs": 2,
@@ -9567,7 +9567,7 @@
     {
       "name": "Toby Murray",
       "team": "Adelaide",
-      "games": 15,
+      "games": 12,
       "disposals": 6.6,
       "kicks": 4.8,
       "handballs": 1.8,
@@ -9585,7 +9585,7 @@
     {
       "name": "Louis Emmett",
       "team": "Western Bulldogs",
-      "games": 10,
+      "games": 5,
       "disposals": 7,
       "kicks": 2.8,
       "handballs": 4.2,
@@ -9603,7 +9603,7 @@
     {
       "name": "Finnbar Maley",
       "team": "Adelaide",
-      "games": 10,
+      "games": 6,
       "disposals": 6.8,
       "kicks": 3.3,
       "handballs": 3.5,
@@ -9639,7 +9639,7 @@
     {
       "name": "Luke Cleary",
       "team": "Western Bulldogs",
-      "games": 4,
+      "games": 2,
       "disposals": 7,
       "kicks": 4.5,
       "handballs": 2.5,
@@ -9657,7 +9657,7 @@
     {
       "name": "Jy Farrar",
       "team": "Gold Coast",
-      "games": 4,
+      "games": 2,
       "disposals": 7,
       "kicks": 3,
       "handballs": 4,
@@ -9675,7 +9675,7 @@
     {
       "name": "Dylan Patterson",
       "team": "Gold Coast",
-      "games": 5,
+      "games": 4,
       "disposals": 7.5,
       "kicks": 4.5,
       "handballs": 3,
@@ -9693,7 +9693,7 @@
     {
       "name": "Brandon Zerk-Thatcher",
       "team": "Port Adelaide",
-      "games": 10,
+      "games": 4,
       "disposals": 7.3,
       "kicks": 4,
       "handballs": 3.3,
@@ -9711,7 +9711,7 @@
     {
       "name": "Lukas Cooke",
       "team": "Melbourne",
-      "games": 3,
+      "games": 2,
       "disposals": 8,
       "kicks": 4.5,
       "handballs": 3.5,
@@ -9747,7 +9747,7 @@
     {
       "name": "Zane Peucker",
       "team": "Richmond",
-      "games": 7,
+      "games": 2,
       "disposals": 8.5,
       "kicks": 7.5,
       "handballs": 1,
@@ -9765,7 +9765,7 @@
     {
       "name": "Matt Whitlock",
       "team": "North Melbourne",
-      "games": 6,
+      "games": 3,
       "disposals": 6.3,
       "kicks": 4,
       "handballs": 2.3,
@@ -9783,7 +9783,7 @@
     {
       "name": "Mason Cox",
       "team": "Fremantle",
-      "games": 17,
+      "games": 12,
       "disposals": 6.9,
       "kicks": 4.3,
       "handballs": 2.7,
@@ -9819,7 +9819,7 @@
     {
       "name": "Hussien El Achkar",
       "team": "Essendon",
-      "games": 10,
+      "games": 7,
       "disposals": 7,
       "kicks": 3.6,
       "handballs": 3.4,
@@ -9837,7 +9837,7 @@
     {
       "name": "Max Heath",
       "team": "Melbourne",
-      "games": 14,
+      "games": 7,
       "disposals": 6.6,
       "kicks": 2.7,
       "handballs": 3.9,
@@ -9855,7 +9855,7 @@
     {
       "name": "Zane Duursma",
       "team": "North Melbourne",
-      "games": 16,
+      "games": 15,
       "disposals": 6.6,
       "kicks": 4.3,
       "handballs": 2.3,
@@ -9873,7 +9873,7 @@
     {
       "name": "Campbell Gray",
       "team": "Richmond",
-      "games": 10,
+      "games": 9,
       "disposals": 6.6,
       "kicks": 4.2,
       "handballs": 2.3,
@@ -9891,7 +9891,7 @@
     {
       "name": "Cody Curtin",
       "team": "Brisbane",
-      "games": 6,
+      "games": 4,
       "disposals": 6.5,
       "kicks": 2.8,
       "handballs": 3.8,
@@ -9909,7 +9909,7 @@
     {
       "name": "Matt Hill",
       "team": "Hawthorn",
-      "games": 5,
+      "games": 2,
       "disposals": 6.5,
       "kicks": 2.5,
       "handballs": 4,
@@ -9963,7 +9963,7 @@
     {
       "name": "Noah Roberts-Thomson",
       "team": "Richmond",
-      "games": 7,
+      "games": 3,
       "disposals": 6,
       "kicks": 4.7,
       "handballs": 1.3,
@@ -9981,7 +9981,7 @@
     {
       "name": "Flynn Riley",
       "team": "Carlton",
-      "games": 5,
+      "games": 1,
       "disposals": 6,
       "kicks": 4,
       "handballs": 2,
@@ -9999,7 +9999,7 @@
     {
       "name": "Jamarra Ugle-Hagan",
       "team": "Gold Coast",
-      "games": 4,
+      "games": 3,
       "disposals": 5.7,
       "kicks": 5,
       "handballs": 0.7,
@@ -10017,7 +10017,7 @@
     {
       "name": "Josaia Delana",
       "team": "GWS",
-      "games": 13,
+      "games": 5,
       "disposals": 5.6,
       "kicks": 2.8,
       "handballs": 2.8,
@@ -10035,7 +10035,7 @@
     {
       "name": "Dante Visentini",
       "team": "Port Adelaide",
-      "games": 19,
+      "games": 11,
       "disposals": 6.5,
       "kicks": 3,
       "handballs": 3.5,
@@ -10053,7 +10053,7 @@
     {
       "name": "Liam Fawcett",
       "team": "Richmond",
-      "games": 9,
+      "games": 7,
       "disposals": 5.4,
       "kicks": 4.1,
       "handballs": 1.3,
@@ -10071,7 +10071,7 @@
     {
       "name": "Wil Dawson",
       "team": "North Melbourne",
-      "games": 8,
+      "games": 6,
       "disposals": 5.3,
       "kicks": 2.7,
       "handballs": 2.7,
@@ -10107,7 +10107,7 @@
     {
       "name": "Matt Guelfi",
       "team": "Essendon",
-      "games": 4,
+      "games": 3,
       "disposals": 4.7,
       "kicks": 1.3,
       "handballs": 3.3,
@@ -10125,7 +10125,7 @@
     {
       "name": "Luker Kentfield",
       "team": "Melbourne",
-      "games": 8,
+      "games": 3,
       "disposals": 4.7,
       "kicks": 3.3,
       "handballs": 1.3,
@@ -10143,7 +10143,7 @@
     {
       "name": "Mitch Zadow",
       "team": "Port Adelaide",
-      "games": 10,
+      "games": 5,
       "disposals": 5.8,
       "kicks": 4.8,
       "handballs": 1,
@@ -10161,7 +10161,7 @@
     {
       "name": "Will McLachlan",
       "team": "Brisbane",
-      "games": 3,
+      "games": 1,
       "disposals": 4,
       "kicks": 2,
       "handballs": 2,
@@ -10179,7 +10179,7 @@
     {
       "name": "Taylor Goad",
       "team": "North Melbourne",
-      "games": 3,
+      "games": 2,
       "disposals": 3.5,
       "kicks": 2,
       "handballs": 1.5,
@@ -10197,7 +10197,7 @@
     {
       "name": "Harry Armstrong",
       "team": "Richmond",
-      "games": 4,
+      "games": 3,
       "disposals": 3.3,
       "kicks": 2.7,
       "handballs": 0.7,
@@ -10215,7 +10215,7 @@
     {
       "name": "Harrison Ramm",
       "team": "Port Adelaide",
-      "games": 4,
+      "games": 2,
       "disposals": 2.5,
       "kicks": 2,
       "handballs": 0.5,
