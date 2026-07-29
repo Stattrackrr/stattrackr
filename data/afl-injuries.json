@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-29T06:35:20.374Z",
+  "generatedAt": "2026-07-29T10:42:17.505Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Patrick Dangerfield",
+      "injury": "Managed",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Keighton Matofai-Forbes",
@@ -131,12 +143,6 @@
       "returning": "active"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
-      "injury": "Leg",
-      "returning": "3-4 weeks"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Will Day",
       "injury": "Shoulder",
@@ -182,12 +188,6 @@
       "team": "Essendon Bombers",
       "player": "Jordan Ridley",
       "injury": "Ankle",
-      "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Patrick Dangerfield",
-      "injury": "Groin",
       "returning": "TBA"
     },
     {
