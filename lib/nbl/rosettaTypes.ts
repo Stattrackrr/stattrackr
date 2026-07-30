@@ -219,6 +219,8 @@ export type NblLeaguePlayerStatRow = {
   jersey: string | null;
   imageUrl: string | null;
   games: number;
+  /** Season games started (Rosetta `games_started`). */
+  gamesStarted: number;
   minutes: number | null;
   points: number | null;
   rebounds: number | null;

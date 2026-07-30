@@ -20,7 +20,7 @@ import { isCurrentNblClubId, nblSeasonLabel } from '../lib/nblTeamCanonical';
 const year = Number(
   process.argv.find((arg) => arg.startsWith('--year='))?.slice(7) ||
     process.argv.find((arg) => arg.startsWith('--season='))?.slice(9) ||
-    2025
+    2026
 );
 
 async function mapPool<T, R>(

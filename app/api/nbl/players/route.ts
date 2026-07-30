@@ -10,11 +10,19 @@ export async function GET(request: NextRequest) {
       NBL_CURRENT_SEASON_YEAR
   );
   const year = Number.isFinite(requested) ? requested : NBL_CURRENT_SEASON_YEAR;
-  const file = path.join(process.cwd(), 'data', `nbl-roster-${year}.json`);
+  const byTeam = ['1', 'true'].includes(
+    String(request.nextUrl.searchParams.get('byTeam') || '').toLowerCase()
+  );
+
+  const file = path.join(
+    process.cwd(),
+    'data',
+    byTeam ? `nbl-rosters-by-team-${year}.json` : `nbl-roster-${year}.json`
+  );
   if (!fs.existsSync(file)) {
     return NextResponse.json(
       {
-        error: `Roster for ${year} not found. Run: npm run fetch:nbl:league-player-stats -- --year=${year}`,
+        error: `Roster for ${year} not found. Run: npm run fetch:nbl:roster:nbl27`,
       },
       { status: 404 }
     );

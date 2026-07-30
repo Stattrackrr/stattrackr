@@ -152,6 +152,7 @@ export function normalizeLeaguePlayerStatRow(
           : null,
     imageUrl: player.external_player_image ?? player.image ?? null,
     games: toNum(stats?.games) ?? 0,
+    gamesStarted: toNum(stats?.games_started) ?? 0,
     minutes: toNum(stats?.minutes_average),
     points,
     rebounds,

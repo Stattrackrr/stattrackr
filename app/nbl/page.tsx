@@ -35,6 +35,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchProfileProStatusWithRetries } from '@/lib/profileSubscriptionGate';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
+import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search } from 'lucide-react';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
 import {
@@ -45,12 +46,15 @@ import {
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
 
+/** Basketball tipoff LIVE window (~2.5h). */
+const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
+
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'breakdown' | 'team_matchup';
 type NblPlayerVsTab = 'comparison' | 'prediction' | 'role';
 
 type NblRosterPlayer = {
-  playerId: string;
+  playerId: string | null;
   name: string;
   team: string;
   teamCode: string | null;
@@ -122,6 +126,15 @@ export default function NblDashboardPage() {
   }));
   const [nblTeamFilter, setNblTeamFilter] = useState<string>('All');
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
+  const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
+  const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
+  const [nextGameOpponentLogo, setNextGameOpponentLogo] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+  const [isGameInProgress, setIsGameInProgress] = useState(false);
 
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -138,6 +151,8 @@ export default function NblDashboardPage() {
     mainContentClassName,
     mainContentStyle,
   } = useDashboardStyles({ sidebarOpen });
+
+  useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
 
   useEffect(() => {
     setMounted(true);
@@ -287,7 +302,7 @@ export default function NblDashboardPage() {
     (async () => {
       try {
         const res = await fetch(
-          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(selectedPlayer.playerId)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`
+          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(selectedPlayer.playerId!)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`
         );
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
@@ -303,6 +318,69 @@ export default function NblDashboardPage() {
       cancelled = true;
     };
   }, [selectedPlayer?.playerId]);
+
+  // Resolve upcoming tipoff for the selected player's team (or Game Props team).
+  useEffect(() => {
+    const team =
+      nblPropsMode === 'team'
+        ? selectedTeam
+        : selectedPlayer?.team || selectedTeam;
+    if (!team) {
+      setNextGameOpponent(null);
+      setNextGameTipoff(null);
+      setNextGameOpponentLogo(null);
+      setIsGameInProgress(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/nbl/next-game?team=${encodeURIComponent(team)}&year=${NBL_CURRENT_SEASON_YEAR}`
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const opponent = data?.next_opponent ? String(data.next_opponent) : null;
+        const tipoffRaw = data?.next_game_tipoff ? String(data.next_game_tipoff) : null;
+        const tipoff = tipoffRaw && !Number.isNaN(Date.parse(tipoffRaw)) ? new Date(tipoffRaw) : null;
+        setNextGameOpponent(opponent);
+        setNextGameTipoff(tipoff);
+        setNextGameOpponentLogo(
+          data?.opponent_logo
+            ? String(data.opponent_logo)
+            : opponent
+              ? resolveNblTeamLogo(opponent, logoByTeam)
+              : null
+        );
+      } catch {
+        if (!cancelled) {
+          setNextGameOpponent(null);
+          setNextGameTipoff(null);
+          setNextGameOpponentLogo(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nblPropsMode, selectedPlayer?.team, selectedTeam, logoByTeam]);
+
+  // Mark tipoff LIVE for ~2.5h after start.
+  useEffect(() => {
+    if (!nextGameTipoff) {
+      setIsGameInProgress(false);
+      return;
+    }
+    const tick = () => {
+      const now = Date.now();
+      const tip = nextGameTipoff.getTime();
+      setIsGameInProgress(now >= tip && now - tip < NBL_MATCH_DURATION_MS);
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [nextGameTipoff]);
 
   // Reset supporting to the first context-relevant pill when main chart stat changes.
   useEffect(() => {
@@ -335,7 +413,15 @@ export default function NblDashboardPage() {
         ? selectedPlayer.team
         : 'Search for a player below';
   const matchupLeft = nblPropsMode === 'team' ? selectedTeam : selectedPlayer?.team || null;
-  const matchupLeftLogo = matchupLeft ? logoByTeam[matchupLeft] : null;
+  const matchupLeftLogo = matchupLeft ? resolveNblTeamLogo(matchupLeft, logoByTeam) : null;
+  const displayOpponent = nextGameOpponent
+    ? resolveNblClubName(nextGameOpponent) || nextGameOpponent
+    : null;
+  const matchupOpponentLogo =
+    nextGameOpponentLogo ||
+    (displayOpponent ? resolveNblTeamLogo(displayOpponent, logoByTeam) : null);
+  const matchupLeftAbbrev = matchupLeft ? getNblTeamAbbrev(matchupLeft) : '';
+  const displayOpponentAbbrev = displayOpponent ? getNblTeamAbbrev(displayOpponent) : '—';
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -472,12 +558,54 @@ export default function NblDashboardPage() {
                                 {matchupLeft}
                               </span>
                             </div>
-                            <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">
-                              VS
-                            </span>
-                            <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">
-                              —
-                            </span>
+                            {displayOpponent && countdown && !isGameInProgress ? (
+                              <div className="flex flex-col items-center flex-shrink-0 min-w-0 w-14 xl:w-20">
+                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 whitespace-nowrap">
+                                  Tipoff in
+                                </div>
+                                <div className="text-xs xl:text-sm font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+                                  {String(countdown.hours).padStart(2, '0')}:
+                                  {String(countdown.minutes).padStart(2, '0')}:
+                                  {String(countdown.seconds).padStart(2, '0')}
+                                </div>
+                              </div>
+                            ) : displayOpponent && isGameInProgress ? (
+                              <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+                                <div className="text-xs xl:text-sm font-semibold text-green-600 dark:text-green-400 animate-live-pulse-green">
+                                  LIVE
+                                </div>
+                              </div>
+                            ) : displayOpponent && nextGameTipoff ? (
+                              <div className="flex flex-col items-center flex-shrink-0 min-w-0">
+                                <div className="text-[9px] xl:text-[10px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                  Game time passed
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500 dark:text-gray-400 font-medium text-xs flex-shrink-0">
+                                VS
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-shrink">
+                              {displayOpponent ? (
+                                <>
+                                  {matchupOpponentLogo ? (
+                                    <img
+                                      src={matchupOpponentLogo}
+                                      alt={displayOpponent}
+                                      className="w-6 h-6 xl:w-8 xl:h-8 object-contain flex-shrink-0"
+                                    />
+                                  ) : null}
+                                  <span className="font-bold text-gray-900 dark:text-white text-xs xl:text-sm truncate">
+                                    {displayOpponent}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">
+                                  —
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-4 py-2">
@@ -522,19 +650,51 @@ export default function NblDashboardPage() {
                       </div>
                       <div className="flex items-center justify-center mt-1">
                         {matchupLeft ? (
-                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-1.5">
+                          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-1.5 min-w-0">
                             {matchupLeftLogo ? (
                               <img
                                 src={matchupLeftLogo}
                                 alt={matchupLeft}
-                                className="w-5 h-5 object-contain"
+                                className="w-5 h-5 object-contain flex-shrink-0"
                               />
                             ) : null}
-                            <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                              {matchupLeft}
+                            <span className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                              {matchupLeftAbbrev || matchupLeft}
                             </span>
-                            <span className="text-gray-400 text-xs">VS</span>
-                            <span className="text-gray-400 text-xs">—</span>
+                            {displayOpponent && countdown && !isGameInProgress ? (
+                              <div className="flex flex-col items-center flex-shrink-0">
+                                <div className="text-[9px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                  Tipoff in
+                                </div>
+                                <div className="text-[10px] font-mono font-semibold text-gray-900 dark:text-white tabular-nums">
+                                  {String(countdown.hours).padStart(2, '0')}:
+                                  {String(countdown.minutes).padStart(2, '0')}:
+                                  {String(countdown.seconds).padStart(2, '0')}
+                                </div>
+                              </div>
+                            ) : displayOpponent && isGameInProgress ? (
+                              <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
+                                LIVE
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">VS</span>
+                            )}
+                            {displayOpponent ? (
+                              <>
+                                {matchupOpponentLogo ? (
+                                  <img
+                                    src={matchupOpponentLogo}
+                                    alt={displayOpponent}
+                                    className="w-5 h-5 object-contain flex-shrink-0"
+                                  />
+                                ) : null}
+                                <span className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                                  {displayOpponentAbbrev}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#0a1929] rounded-lg px-3 py-1.5">
@@ -620,7 +780,7 @@ export default function NblDashboardPage() {
                                 className={`px-3 py-4 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
                               >
                                 {rosterPlayers.length === 0
-                                  ? 'No roster loaded — run npm run refresh:nbl:rosetta'
+                                  ? 'No roster loaded — run npm run fetch:nbl:roster:nbl27'
                                   : 'No players match'}
                               </div>
                             ) : (
@@ -698,7 +858,7 @@ export default function NblDashboardPage() {
                     nblGameFilters={nblPropsMode === 'player' ? nblGameFilters : undefined}
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
                     perGameFilterData={null}
-                    nextOpponent={null}
+                    nextOpponent={displayOpponent}
                     uiResetToken={chartUiResetToken}
                     slotLeftOfLine={null}
                     slotRightOfControls={
@@ -812,7 +972,7 @@ export default function NblDashboardPage() {
                           gameLogs={chartGameLogsForPlayer as unknown as Array<Record<string, unknown>>}
                           timeframe={chartTimeframe}
                           season={NBL_CURRENT_SEASON_YEAR}
-                          nextOpponent={null}
+                          nextOpponent={displayOpponent}
                           mainChartStat={mainChartStat}
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}
@@ -824,7 +984,12 @@ export default function NblDashboardPage() {
                       <div className="min-h-[220px]" />
                     )}
                     <div className="hidden lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <NblTeamSelectionsCard isDark={!!mounted && isDark} />
+                      <NblTeamSelectionsCard
+                        isDark={!!mounted && isDark}
+                        playerTeam={matchupLeft}
+                        opponentTeam={displayOpponent}
+                        selectedPlayerName={selectedPlayer?.name}
+                      />
                     </div>
                   </div>
                 )}
@@ -834,7 +999,12 @@ export default function NblDashboardPage() {
                   <div
                     className={`w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
                   >
-                    <NblTeamSelectionsCard isDark={!!mounted && isDark} />
+                    <NblTeamSelectionsCard
+                      isDark={!!mounted && isDark}
+                      playerTeam={matchupLeft}
+                      opponentTeam={displayOpponent}
+                      selectedPlayerName={selectedPlayer?.name}
+                    />
                   </div>
                 )}
 
@@ -990,7 +1160,12 @@ export default function NblDashboardPage() {
                 <div
                   className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
                 >
-                  <NblTeamSelectionsCard isDark={!!mounted && isDark} />
+                  <NblTeamSelectionsCard
+                    isDark={!!mounted && isDark}
+                    playerTeam={matchupLeft}
+                    opponentTeam={displayOpponent}
+                    selectedPlayerName={selectedPlayer?.name}
+                  />
                 </div>
 
                 {/* 4.6 Injuries — mobile */}

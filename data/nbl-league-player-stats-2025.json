@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:37:04.480Z",
+  "generatedAt": "2026-07-30T06:31:18.818Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 165,
   "withSeasonStats": 160,
@@ -31,7 +31,8 @@
       "threePct": 0.323944,
       "ftPct": 0.622222,
       "threeMade": 1.53333,
-      "pra": 14.57
+      "pra": 14.57,
+      "gamesStarted": 15
     },
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -57,7 +58,8 @@
       "threePct": 0.25641,
       "ftPct": 0.755556,
       "threeMade": 0.34483,
-      "pra": 8
+      "pra": 8,
+      "gamesStarted": 0
     },
     {
       "playerId": "06acb9c6-f0a2-4cd8-a23e-1e61c64e4564",
@@ -83,7 +85,8 @@
       "threePct": 0.283951,
       "ftPct": 0.8,
       "threeMade": 1.53333,
-      "pra": 12.83
+      "pra": 12.83,
+      "gamesStarted": 24
     },
     {
       "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -109,7 +112,8 @@
       "threePct": 0.263158,
       "ftPct": 0.461538,
       "threeMade": 0.55556,
-      "pra": 11.89
+      "pra": 11.89,
+      "gamesStarted": 3
     },
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
@@ -135,7 +139,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1.5
+      "pra": 1.5,
+      "gamesStarted": 0
     },
     {
       "playerId": "3d041480-2429-4a21-9306-094f9020c8c9",
@@ -161,7 +166,8 @@
       "threePct": 0.307692,
       "ftPct": 0.769231,
       "threeMade": 1.67742,
-      "pra": 25.58
+      "pra": 25.58,
+      "gamesStarted": 31
     },
     {
       "playerId": "79fe0730-aca0-4167-97cc-1ef09514cc66",
@@ -187,7 +193,8 @@
       "threePct": 0.368421,
       "ftPct": 0.791667,
       "threeMade": 2.2,
-      "pra": 15.51
+      "pra": 15.51,
+      "gamesStarted": 0
     },
     {
       "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
@@ -213,7 +220,8 @@
       "threePct": 0.340909,
       "ftPct": 0.642857,
       "threeMade": 1,
-      "pra": 7.47
+      "pra": 7.47,
+      "gamesStarted": 3
     },
     {
       "playerId": "c18d40cc-7977-4b30-a1b8-f0fcc14e98ab",
@@ -239,7 +247,8 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 2.56
+      "pra": 2.56,
+      "gamesStarted": 1
     },
     {
       "playerId": "21f993b1-b0cf-4891-a5a1-5394abde51de",
@@ -265,7 +274,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 2
+      "pra": 2,
+      "gamesStarted": 0
     },
     {
       "playerId": "75f0d755-2f57-4460-9b0f-41b0eac46e7e",
@@ -291,7 +301,8 @@
       "threePct": 0.302326,
       "ftPct": 0.878049,
       "threeMade": 0.89655,
-      "pra": 9.62
+      "pra": 9.62,
+      "gamesStarted": 3
     },
     {
       "playerId": "24a2f29d-6bfd-427a-9cb4-4ac0f4088083",
@@ -317,7 +328,8 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null
+      "pra": null,
+      "gamesStarted": 0
     },
     {
       "playerId": "a2b82e4e-7995-4db3-bfa7-11db68c18ea1",
@@ -343,7 +355,8 @@
       "threePct": 0.294118,
       "ftPct": 0.836364,
       "threeMade": 1.02941,
-      "pra": 15.24
+      "pra": 15.24,
+      "gamesStarted": 20
     },
     {
       "playerId": "26a882d2-07f4-45af-8e60-8f28eaf9969a",
@@ -369,7 +382,8 @@
       "threePct": 0.258065,
       "ftPct": 0.375,
       "threeMade": 0.2963,
-      "pra": 5.93
+      "pra": 5.93,
+      "gamesStarted": 7
     },
     {
       "playerId": "2af413b6-88d0-45a1-a036-1ce92473f039",
@@ -395,7 +409,8 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 1.5
+      "pra": 1.5,
+      "gamesStarted": 0
     },
     {
       "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
@@ -421,7 +436,8 @@
       "threePct": 0,
       "ftPct": 0.75,
       "threeMade": 0,
-      "pra": 2
+      "pra": 2,
+      "gamesStarted": 0
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -447,7 +463,8 @@
       "threePct": 0.383041,
       "ftPct": 0.901515,
       "threeMade": 3.275,
-      "pra": 37.3
+      "pra": 37.3,
+      "gamesStarted": 40
     },
     {
       "playerId": "3ffb3584-1aba-4815-a32c-ae7779646051",
@@ -473,7 +490,8 @@
       "threePct": 0.351191,
       "ftPct": 0.671233,
       "threeMade": 2.18519,
-      "pra": 26.11
+      "pra": 26.11,
+      "gamesStarted": 27
     },
     {
       "playerId": "0b14fdbe-9516-47b3-b317-de92bffd64de",
@@ -499,7 +517,8 @@
       "threePct": 0.44,
       "ftPct": 0.846154,
       "threeMade": 1.1,
-      "pra": 12
+      "pra": 12,
+      "gamesStarted": 13
     },
     {
       "playerId": "bbd4bc26-f75e-4e1d-ae46-f8089bf34d33",
@@ -525,7 +544,8 @@
       "threePct": 0.25,
       "ftPct": 0.5,
       "threeMade": 0.0625,
-      "pra": 3.5
+      "pra": 3.5,
+      "gamesStarted": 0
     },
     {
       "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
@@ -551,7 +571,8 @@
       "threePct": 0.428571,
       "ftPct": 0.75,
       "threeMade": 0.27273,
-      "pra": 2.64
+      "pra": 2.64,
+      "gamesStarted": 0
     },
     {
       "playerId": "3cded371-4883-4e5a-aa6c-2e438d3bcc09",
@@ -577,7 +598,8 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 1.11
+      "pra": 1.11,
+      "gamesStarted": 0
     },
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
@@ -603,7 +625,8 @@
       "threePct": 0.282051,
       "ftPct": 0.5,
       "threeMade": 0.33333,
-      "pra": 9.67
+      "pra": 9.67,
+      "gamesStarted": 0
     },
     {
       "playerId": "a8400498-6a7b-49d5-a46c-b2a427580eff",
@@ -629,7 +652,8 @@
       "threePct": 0.305556,
       "ftPct": 0.746479,
       "threeMade": 1.83333,
-      "pra": 34.17
+      "pra": 34.17,
+      "gamesStarted": 12
     },
     {
       "playerId": "065cf78e-aa0f-4195-8fc7-cddf8b4794ac",
@@ -655,7 +679,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1
+      "pra": 1,
+      "gamesStarted": 0
     },
     {
       "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
@@ -681,7 +706,8 @@
       "threePct": 0.30531,
       "ftPct": 0.906667,
       "threeMade": 2.3,
-      "pra": 15.77
+      "pra": 15.77,
+      "gamesStarted": 19
     },
     {
       "playerId": "83f36c6e-d1f1-44cb-8576-78717cc826f2",
@@ -707,7 +733,8 @@
       "threePct": 0.367347,
       "ftPct": 0.909091,
       "threeMade": 2.25,
-      "pra": 16.13
+      "pra": 16.13,
+      "gamesStarted": 5
     },
     {
       "playerId": "b151cb86-4bf1-4b47-8b0c-14c0b9f51604",
@@ -733,7 +760,8 @@
       "threePct": 0.294118,
       "ftPct": 0.741935,
       "threeMade": 0.15625,
-      "pra": 5.38
+      "pra": 5.38,
+      "gamesStarted": 1
     },
     {
       "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
@@ -759,7 +787,8 @@
       "threePct": 0.481482,
       "ftPct": 0.763158,
       "threeMade": 0.44828,
-      "pra": 8.03
+      "pra": 8.03,
+      "gamesStarted": 1
     },
     {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
@@ -785,7 +814,8 @@
       "threePct": 0.36,
       "ftPct": 0.37931,
       "threeMade": 0.51429,
-      "pra": 7.31
+      "pra": 7.31,
+      "gamesStarted": 11
     },
     {
       "playerId": "4bd329eb-e26f-4377-8d9f-718634af1ee3",
@@ -811,7 +841,8 @@
       "threePct": 0.278481,
       "ftPct": 0.825,
       "threeMade": 1.15789,
-      "pra": 18.32
+      "pra": 18.32,
+      "gamesStarted": 12
     },
     {
       "playerId": "5dc2188c-e53b-4273-9573-aae63a31bd39",
@@ -837,7 +868,8 @@
       "threePct": 0.324138,
       "ftPct": 0.711864,
       "threeMade": 2.04348,
-      "pra": 18.7
+      "pra": 18.7,
+      "gamesStarted": 12
     },
     {
       "playerId": "93de282f-0e7d-4acb-a0df-a82365c21f34",
@@ -863,7 +895,8 @@
       "threePct": 0.344828,
       "ftPct": 0.704545,
       "threeMade": 0.29412,
-      "pra": 9.24
+      "pra": 9.24,
+      "gamesStarted": 3
     },
     {
       "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
@@ -889,7 +922,8 @@
       "threePct": 0.358209,
       "ftPct": 0.950617,
       "threeMade": 2.34146,
-      "pra": 14.02
+      "pra": 14.02,
+      "gamesStarted": 17
     },
     {
       "playerId": "93583e5b-367b-42b8-aee2-6620b50ce6c2",
@@ -915,7 +949,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0
+      "pra": 0,
+      "gamesStarted": 0
     },
     {
       "playerId": "2ee40f4c-3d96-4c5e-9090-885c0fbc606f",
@@ -941,7 +976,8 @@
       "threePct": 0.314286,
       "ftPct": 0.821429,
       "threeMade": 0.70968,
-      "pra": 7.16
+      "pra": 7.16,
+      "gamesStarted": 0
     },
     {
       "playerId": "8071714c-30c7-43be-bc15-7d68fdba3526",
@@ -967,7 +1003,8 @@
       "threePct": 0.268293,
       "ftPct": 0.5,
       "threeMade": 0.39286,
-      "pra": 5.79
+      "pra": 5.79,
+      "gamesStarted": 7
     },
     {
       "playerId": "19611d1d-9349-4e39-a3ef-0733577b56e5",
@@ -993,7 +1030,8 @@
       "threePct": 0.390411,
       "ftPct": 0.761905,
       "threeMade": 1.78125,
-      "pra": 22.31
+      "pra": 22.31,
+      "gamesStarted": 32
     },
     {
       "playerId": "318cc011-ca3e-4a82-b1cf-fd805b05d6d4",
@@ -1019,7 +1057,8 @@
       "threePct": 0.320755,
       "ftPct": 0.881356,
       "threeMade": 1.83784,
-      "pra": 15.43
+      "pra": 15.43,
+      "gamesStarted": 26
     },
     {
       "playerId": "b495af94-c2ca-4bfc-b356-58f847ba4390",
@@ -1045,7 +1084,8 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 1.67
+      "pra": 1.67,
+      "gamesStarted": 0
     },
     {
       "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
@@ -1071,7 +1111,8 @@
       "threePct": 0.253333,
       "ftPct": 0.777778,
       "threeMade": 0.54286,
-      "pra": 10.83
+      "pra": 10.83,
+      "gamesStarted": 5
     },
     {
       "playerId": "5fda4fdf-ab76-4bab-98d7-be3c92aecdca",
@@ -1097,7 +1138,8 @@
       "threePct": 0.293578,
       "ftPct": 0.83871,
       "threeMade": 0.9697,
-      "pra": 19.3
+      "pra": 19.3,
+      "gamesStarted": 33
     },
     {
       "playerId": "06116392-133b-4cac-93a5-a6aefc375717",
@@ -1123,7 +1165,8 @@
       "threePct": 0.374359,
       "ftPct": 0.805825,
       "threeMade": 1.78049,
-      "pra": 18.93
+      "pra": 18.93,
+      "gamesStarted": 41
     },
     {
       "playerId": "8f9aeb57-6629-473a-a503-09dfff6f3ae5",
@@ -1149,7 +1192,8 @@
       "threePct": 0.25,
       "ftPct": 0.857143,
       "threeMade": 0.11111,
-      "pra": 2.56
+      "pra": 2.56,
+      "gamesStarted": 0
     },
     {
       "playerId": "149d004f-e800-471d-84a3-c6fbc8f3b07f",
@@ -1175,7 +1219,8 @@
       "threePct": 0.583333,
       "ftPct": 0.571429,
       "threeMade": 0.5,
-      "pra": 4.86
+      "pra": 4.86,
+      "gamesStarted": 0
     },
     {
       "playerId": "948cf6d2-39c9-4c92-a13a-2a1b99cc660e",
@@ -1201,7 +1246,8 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null
+      "pra": null,
+      "gamesStarted": 0
     },
     {
       "playerId": "0a5486ee-953a-4fae-920d-4a77de1bdf03",
@@ -1227,7 +1273,8 @@
       "threePct": 0,
       "ftPct": 0.538462,
       "threeMade": 0,
-      "pra": 5.03
+      "pra": 5.03,
+      "gamesStarted": 0
     },
     {
       "playerId": "229b6769-821b-4133-815d-e9b673c50ea1",
@@ -1253,7 +1300,8 @@
       "threePct": 0.240741,
       "ftPct": 0.54902,
       "threeMade": 0.8125,
-      "pra": 16.56
+      "pra": 16.56,
+      "gamesStarted": 5
     },
     {
       "playerId": "874f02e8-a2f5-4d37-8296-f2946dfc939b",
@@ -1279,7 +1327,8 @@
       "threePct": 0.336449,
       "ftPct": 0.9,
       "threeMade": 2,
-      "pra": 17.44
+      "pra": 17.44,
+      "gamesStarted": 1
     },
     {
       "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
@@ -1305,7 +1354,8 @@
       "threePct": 0,
       "ftPct": 0.72093,
       "threeMade": 0,
-      "pra": 18.93
+      "pra": 18.93,
+      "gamesStarted": 41
     },
     {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
@@ -1331,7 +1381,8 @@
       "threePct": 0.342105,
       "ftPct": 0.634146,
       "threeMade": 0.65,
-      "pra": 7.83
+      "pra": 7.83,
+      "gamesStarted": 2
     },
     {
       "playerId": "09763f95-e11e-429f-b00e-7a7f472177cf",
@@ -1357,7 +1408,8 @@
       "threePct": 0.338843,
       "ftPct": 0.875,
       "threeMade": 1.28125,
-      "pra": 21.78
+      "pra": 21.78,
+      "gamesStarted": 31
     },
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
@@ -1383,7 +1435,8 @@
       "threePct": 0.22449,
       "ftPct": 0.9,
       "threeMade": 0.73333,
-      "pra": 6.73
+      "pra": 6.73,
+      "gamesStarted": 0
     },
     {
       "playerId": "c922ea7b-4118-4430-a981-14a37572db7b",
@@ -1409,7 +1462,8 @@
       "threePct": 0.75,
       "ftPct": 0.5,
       "threeMade": 0.375,
-      "pra": 2.88
+      "pra": 2.88,
+      "gamesStarted": 0
     },
     {
       "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
@@ -1435,7 +1489,8 @@
       "threePct": 0.364583,
       "ftPct": 0.875,
       "threeMade": 2.41379,
-      "pra": 31.48
+      "pra": 31.48,
+      "gamesStarted": 29
     },
     {
       "playerId": "e5b102fe-d4c9-4ccf-bf4a-57d40a3c2409",
@@ -1461,7 +1516,8 @@
       "threePct": 0.3,
       "ftPct": 1,
       "threeMade": 0.53571,
-      "pra": 3.04
+      "pra": 3.04,
+      "gamesStarted": 0
     },
     {
       "playerId": "3f6bf43b-cd1a-4e63-a150-bf859afc9a7e",
@@ -1487,7 +1543,8 @@
       "threePct": 0.133333,
       "ftPct": 0.75,
       "threeMade": 0.18182,
-      "pra": 3.45
+      "pra": 3.45,
+      "gamesStarted": 4
     },
     {
       "playerId": "00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b",
@@ -1513,7 +1570,8 @@
       "threePct": 0.272727,
       "ftPct": 0.671642,
       "threeMade": 0.40909,
-      "pra": 15.32
+      "pra": 15.32,
+      "gamesStarted": 10
     },
     {
       "playerId": "8431bed8-a6fe-4219-8fa5-093d08f81462",
@@ -1539,7 +1597,8 @@
       "threePct": 0.083333,
       "ftPct": 0,
       "threeMade": 0.08333,
-      "pra": 1.75
+      "pra": 1.75,
+      "gamesStarted": 0
     },
     {
       "playerId": "a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9",
@@ -1565,7 +1624,8 @@
       "threePct": 0.357143,
       "ftPct": 0.961539,
       "threeMade": 1.07143,
-      "pra": 13.64
+      "pra": 13.64,
+      "gamesStarted": 5
     },
     {
       "playerId": "be414749-6d0f-4620-857d-a9b017a2c0b4",
@@ -1591,7 +1651,8 @@
       "threePct": 1,
       "ftPct": 0,
       "threeMade": 1,
-      "pra": 7
+      "pra": 7,
+      "gamesStarted": 0
     },
     {
       "playerId": "d5971e26-07e4-4f7f-aa3b-68e7f423fcf2",
@@ -1617,7 +1678,8 @@
       "threePct": 0.208333,
       "ftPct": 0.737931,
       "threeMade": 0.16129,
-      "pra": 31.39
+      "pra": 31.39,
+      "gamesStarted": 30
     },
     {
       "playerId": "e945087b-8394-4713-a79a-92e843a080a4",
@@ -1643,7 +1705,8 @@
       "threePct": 0.263158,
       "ftPct": 0.807692,
       "threeMade": 1.11111,
-      "pra": 21.78
+      "pra": 21.78,
+      "gamesStarted": 6
     },
     {
       "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
@@ -1669,7 +1732,8 @@
       "threePct": 0.372881,
       "ftPct": 0.724638,
       "threeMade": 1.69231,
-      "pra": 14.15
+      "pra": 14.15,
+      "gamesStarted": 25
     },
     {
       "playerId": "44c17e2b-7e6a-43b7-9421-c50c0f001071",
@@ -1695,7 +1759,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.67
+      "pra": 0.67,
+      "gamesStarted": 0
     },
     {
       "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
@@ -1721,7 +1786,8 @@
       "threePct": 0.090909,
       "ftPct": 0.5,
       "threeMade": 0.07692,
-      "pra": 1.54
+      "pra": 1.54,
+      "gamesStarted": 0
     },
     {
       "playerId": "763e39a5-9c57-4abb-bb53-f823e9cdeb10",
@@ -1747,7 +1813,8 @@
       "threePct": 0,
       "ftPct": 0.630952,
       "threeMade": 0,
-      "pra": 22.67
+      "pra": 22.67,
+      "gamesStarted": 30
     },
     {
       "playerId": "4a3d7bc9-18a9-4106-a201-79643586e4c3",
@@ -1773,7 +1840,8 @@
       "threePct": 0.344828,
       "ftPct": 0.928571,
       "threeMade": 0.28571,
-      "pra": 6.03
+      "pra": 6.03,
+      "gamesStarted": 0
     },
     {
       "playerId": "5adef25b-648e-442b-983e-020043e7872d",
@@ -1799,7 +1867,8 @@
       "threePct": 0.055556,
       "ftPct": 0.564444,
       "threeMade": 0.02703,
-      "pra": 25.22
+      "pra": 25.22,
+      "gamesStarted": 37
     },
     {
       "playerId": "fdeea6c4-05cd-46b7-b2a8-87c47f8f987f",
@@ -1825,7 +1894,8 @@
       "threePct": 0.076923,
       "ftPct": 0.795181,
       "threeMade": 0.02703,
-      "pra": 19.41
+      "pra": 19.41,
+      "gamesStarted": 37
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
@@ -1851,7 +1921,8 @@
       "threePct": 0.401961,
       "ftPct": 0.923077,
       "threeMade": 2.41176,
-      "pra": 11.88
+      "pra": 11.88,
+      "gamesStarted": 10
     },
     {
       "playerId": "1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5",
@@ -1877,7 +1948,8 @@
       "threePct": 0.142857,
       "ftPct": 0.733333,
       "threeMade": 0.11111,
-      "pra": 4.22
+      "pra": 4.22,
+      "gamesStarted": 0
     },
     {
       "playerId": "dd13bc60-7ff4-4523-8d57-0c4303089bd4",
@@ -1903,7 +1975,8 @@
       "threePct": 0.142857,
       "ftPct": 1,
       "threeMade": 0.16667,
-      "pra": 1.17
+      "pra": 1.17,
+      "gamesStarted": 0
     },
     {
       "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
@@ -1929,7 +2002,8 @@
       "threePct": 0,
       "ftPct": 0.7,
       "threeMade": 0,
-      "pra": 10.38
+      "pra": 10.38,
+      "gamesStarted": 2
     },
     {
       "playerId": "6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9",
@@ -1955,7 +2029,8 @@
       "threePct": 0.401515,
       "ftPct": 0.776596,
       "threeMade": 1.43243,
-      "pra": 18.32
+      "pra": 18.32,
+      "gamesStarted": 37
     },
     {
       "playerId": "fdf9d29d-b00b-4db0-a69a-cc5eaa23a234",
@@ -1981,7 +2056,8 @@
       "threePct": 0.285714,
       "ftPct": 0.676471,
       "threeMade": 0.64706,
-      "pra": 27.18
+      "pra": 27.18,
+      "gamesStarted": 34
     },
     {
       "playerId": "5c7ec83d-9427-4afc-a325-a753fe6abde0",
@@ -2007,7 +2083,8 @@
       "threePct": 0.322222,
       "ftPct": 0.738636,
       "threeMade": 0.96667,
-      "pra": 19.9
+      "pra": 19.9,
+      "gamesStarted": 30
     },
     {
       "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
@@ -2033,7 +2110,8 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 1.13
+      "pra": 1.13,
+      "gamesStarted": 0
     },
     {
       "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
@@ -2059,7 +2137,8 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null
+      "pra": null,
+      "gamesStarted": 0
     },
     {
       "playerId": "be4c5c96-8667-40f8-98d0-4c1d99641bc5",
@@ -2085,7 +2164,8 @@
       "threePct": 0.360424,
       "ftPct": 0.814815,
       "threeMade": 2.55,
-      "pra": 35.92
+      "pra": 35.92,
+      "gamesStarted": 40
     },
     {
       "playerId": "ea653a63-5183-4a45-b1ab-6d27491a2700",
@@ -2111,7 +2191,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1
+      "pra": 1,
+      "gamesStarted": 0
     },
     {
       "playerId": "d21a6ba4-66ef-4623-b652-53b490002170",
@@ -2137,7 +2218,8 @@
       "threePct": 0.166667,
       "ftPct": 0,
       "threeMade": 0.2,
-      "pra": 2
+      "pra": 2,
+      "gamesStarted": 0
     },
     {
       "playerId": "a10eef82-dac8-4efd-acd5-cdf867139034",
@@ -2163,7 +2245,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.71
+      "pra": 0.71,
+      "gamesStarted": 0
     },
     {
       "playerId": "47557326-f6ee-4da8-b4dc-493372a9ffd7",
@@ -2189,7 +2272,8 @@
       "threePct": 0.306122,
       "ftPct": 0.844444,
       "threeMade": 0.65217,
-      "pra": 9.91
+      "pra": 9.91,
+      "gamesStarted": 7
     },
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -2215,7 +2299,8 @@
       "threePct": 0.318436,
       "ftPct": 0.8,
       "threeMade": 1.46154,
-      "pra": 14.41
+      "pra": 14.41,
+      "gamesStarted": 0
     },
     {
       "playerId": "37613082-354f-48d0-b16d-0d9ff613f64c",
@@ -2241,7 +2326,8 @@
       "threePct": 0.338462,
       "ftPct": 0.82967,
       "threeMade": 1.78378,
-      "pra": 28.3
+      "pra": 28.3,
+      "gamesStarted": 37
     },
     {
       "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
@@ -2267,7 +2353,8 @@
       "threePct": 0.096774,
       "ftPct": 1,
       "threeMade": 0.16667,
-      "pra": 4.83
+      "pra": 4.83,
+      "gamesStarted": 0
     },
     {
       "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
@@ -2293,7 +2380,8 @@
       "threePct": 0.3,
       "ftPct": 0.659574,
       "threeMade": 0.17143,
-      "pra": 8.2
+      "pra": 8.2,
+      "gamesStarted": 2
     },
     {
       "playerId": "872bdcab-a933-4436-874d-4d94f4e184e8",
@@ -2319,7 +2407,8 @@
       "threePct": 0.353448,
       "ftPct": 0.763158,
       "threeMade": 1.24242,
-      "pra": 12.97
+      "pra": 12.97,
+      "gamesStarted": 22
     },
     {
       "playerId": "ae626970-50ba-4a3c-8cf8-03ad817f934a",
@@ -2345,7 +2434,8 @@
       "threePct": 0.341463,
       "ftPct": 0.846154,
       "threeMade": 0.53846,
-      "pra": 6.92
+      "pra": 6.92,
+      "gamesStarted": 4
     },
     {
       "playerId": "58dbbdf4-ca53-42bd-8fc7-62e2b664de6a",
@@ -2371,7 +2461,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 3
+      "pra": 3,
+      "gamesStarted": 0
     },
     {
       "playerId": "72703b55-4db2-4e14-b7a4-a38f31c32388",
@@ -2397,7 +2488,8 @@
       "threePct": 0.304348,
       "ftPct": 0.5,
       "threeMade": 0.77778,
-      "pra": 16.78
+      "pra": 16.78,
+      "gamesStarted": 3
     },
     {
       "playerId": "2337cf0e-9ee7-439d-8aec-770b3876368c",
@@ -2423,7 +2515,8 @@
       "threePct": 0.324324,
       "ftPct": 0.5625,
       "threeMade": 0.41379,
-      "pra": 4
+      "pra": 4,
+      "gamesStarted": 1
     },
     {
       "playerId": "6dd411fc-79f8-409d-aca8-6b9f43f59c47",
@@ -2449,7 +2542,8 @@
       "threePct": 0.5,
       "ftPct": 0,
       "threeMade": 0.5,
-      "pra": 2.5
+      "pra": 2.5,
+      "gamesStarted": 0
     },
     {
       "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
@@ -2475,7 +2569,8 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 2.4
+      "pra": 2.4,
+      "gamesStarted": 0
     },
     {
       "playerId": "23f56f6b-c7d2-434e-8929-9eada1c1a143",
@@ -2501,7 +2596,8 @@
       "threePct": 0,
       "ftPct": 0.4,
       "threeMade": 0,
-      "pra": 1.08
+      "pra": 1.08,
+      "gamesStarted": 1
     },
     {
       "playerId": "70330528-c7cc-4cdf-8188-f5798c6d6e96",
@@ -2527,7 +2623,8 @@
       "threePct": 0.416667,
       "ftPct": 0,
       "threeMade": 0.38462,
-      "pra": 2.15
+      "pra": 2.15,
+      "gamesStarted": 0
     },
     {
       "playerId": "a6b5a951-716b-4892-b850-5cdbcd77871f",
@@ -2553,7 +2650,8 @@
       "threePct": 0.333333,
       "ftPct": 0.666667,
       "threeMade": 0.25,
-      "pra": 1.75
+      "pra": 1.75,
+      "gamesStarted": 0
     },
     {
       "playerId": "28d424fa-f1b2-4583-84f1-525ff5c38a73",
@@ -2579,7 +2677,8 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null
+      "pra": null,
+      "gamesStarted": 0
     },
     {
       "playerId": "0dd6e2f3-0358-4a6e-a340-fe5279db28fa",
@@ -2605,7 +2704,8 @@
       "threePct": 0.291262,
       "ftPct": 0.884615,
       "threeMade": 1.03448,
-      "pra": 16.59
+      "pra": 16.59,
+      "gamesStarted": 9
     },
     {
       "playerId": "6a42971e-6638-4472-b289-98c544aaa90a",
@@ -2631,7 +2731,8 @@
       "threePct": 0.327586,
       "ftPct": 0.795455,
       "threeMade": 1,
-      "pra": 12.32
+      "pra": 12.32,
+      "gamesStarted": 14
     },
     {
       "playerId": "c6b7202f-6619-422a-8d2b-8e52a8d48935",
@@ -2657,7 +2758,8 @@
       "threePct": 0.376471,
       "ftPct": 0.818182,
       "threeMade": 1.10345,
-      "pra": 13.21
+      "pra": 13.21,
+      "gamesStarted": 11
     },
     {
       "playerId": "135b961b-2a30-4044-9d4e-52128c10a33c",
@@ -2683,7 +2785,8 @@
       "threePct": 0.31579,
       "ftPct": 0.6,
       "threeMade": 0.25,
-      "pra": 2.13
+      "pra": 2.13,
+      "gamesStarted": 0
     },
     {
       "playerId": "04859f22-d351-4235-b108-10db1f0b7092",
@@ -2709,7 +2812,8 @@
       "threePct": 0,
       "ftPct": 0.493976,
       "threeMade": 0,
-      "pra": 13.45
+      "pra": 13.45,
+      "gamesStarted": 11
     },
     {
       "playerId": "a02b99c8-0fde-41b1-9ccb-f78d47576d17",
@@ -2735,7 +2839,8 @@
       "threePct": 0.275862,
       "ftPct": 0.789474,
       "threeMade": 1.6,
-      "pra": 15.8
+      "pra": 15.8,
+      "gamesStarted": 5
     },
     {
       "playerId": "db202f21-d605-4ca1-8901-8abbd440f105",
@@ -2761,7 +2866,8 @@
       "threePct": 0.285714,
       "ftPct": 0.551724,
       "threeMade": 0.54545,
-      "pra": 12.55
+      "pra": 12.55,
+      "gamesStarted": 21
     },
     {
       "playerId": "0c6e8860-99ba-44d2-9f1a-8b6e58936bb8",
@@ -2787,7 +2893,8 @@
       "threePct": 0.3,
       "ftPct": 0.631579,
       "threeMade": 0.225,
-      "pra": 4.05
+      "pra": 4.05,
+      "gamesStarted": 4
     },
     {
       "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
@@ -2813,7 +2920,8 @@
       "threePct": 0.28866,
       "ftPct": 0.825,
       "threeMade": 0.82353,
-      "pra": 16.32
+      "pra": 16.32,
+      "gamesStarted": 27
     },
     {
       "playerId": "b3b5ecb0-ba46-4821-9e2b-6e4180a30f95",
@@ -2839,7 +2947,8 @@
       "threePct": 0.357143,
       "ftPct": 0.692308,
       "threeMade": 0.3125,
-      "pra": 5.63
+      "pra": 5.63,
+      "gamesStarted": 1
     },
     {
       "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
@@ -2865,7 +2974,8 @@
       "threePct": 0.333333,
       "ftPct": 0.538462,
       "threeMade": 0.38095,
-      "pra": 4.67
+      "pra": 4.67,
+      "gamesStarted": 1
     },
     {
       "playerId": "c946f7e6-4321-403c-bc8c-f9a359254733",
@@ -2891,7 +3001,8 @@
       "threePct": 0.214286,
       "ftPct": 1,
       "threeMade": 0.17647,
-      "pra": 1.47
+      "pra": 1.47,
+      "gamesStarted": 0
     },
     {
       "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
@@ -2917,7 +3028,8 @@
       "threePct": 0.325991,
       "ftPct": 0.865979,
       "threeMade": 2.11429,
-      "pra": 24.03
+      "pra": 24.03,
+      "gamesStarted": 24
     },
     {
       "playerId": "2e2291aa-36b6-4928-b348-0f5951fbc3b4",
@@ -2943,7 +3055,8 @@
       "threePct": 0.181818,
       "ftPct": 0.866667,
       "threeMade": 0.52174,
-      "pra": 13.22
+      "pra": 13.22,
+      "gamesStarted": 21
     },
     {
       "playerId": "3443c855-3ca4-4274-8cbf-74423c32b425",
@@ -2969,7 +3082,8 @@
       "threePct": 0.386793,
       "ftPct": 0.744186,
       "threeMade": 1.86364,
-      "pra": 17.14
+      "pra": 17.14,
+      "gamesStarted": 20
     },
     {
       "playerId": "7f6e18b2-6494-41c7-9791-d72c632317d5",
@@ -2995,7 +3109,8 @@
       "threePct": 0.348214,
       "ftPct": 0.790055,
       "threeMade": 3.25,
-      "pra": 31.42
+      "pra": 31.42,
+      "gamesStarted": 36
     },
     {
       "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
@@ -3021,7 +3136,8 @@
       "threePct": 0.142857,
       "ftPct": 0.7,
       "threeMade": 0.09524,
-      "pra": 3.67
+      "pra": 3.67,
+      "gamesStarted": 0
     },
     {
       "playerId": "c9019743-60ae-4700-852e-6ae15c1cbef6",
@@ -3047,7 +3163,8 @@
       "threePct": 0.421569,
       "ftPct": 0.774193,
       "threeMade": 1.26471,
-      "pra": 17.68
+      "pra": 17.68,
+      "gamesStarted": 26
     },
     {
       "playerId": "eb26560d-c56e-4409-b482-8b141421ce79",
@@ -3073,7 +3190,8 @@
       "threePct": 0.268293,
       "ftPct": 0.565789,
       "threeMade": 0.28947,
-      "pra": 16.05
+      "pra": 16.05,
+      "gamesStarted": 0
     },
     {
       "playerId": "fc35a1fb-d6b9-40ce-a539-53f1116b6067",
@@ -3099,7 +3217,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0
+      "pra": 0,
+      "gamesStarted": 0
     },
     {
       "playerId": "5ce242ee-271f-4cf5-bfa8-665c6fd528d5",
@@ -3125,7 +3244,8 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 2.65
+      "pra": 2.65,
+      "gamesStarted": 0
     },
     {
       "playerId": "704ee709-8974-47d6-9aa3-358261545354",
@@ -3151,7 +3271,8 @@
       "threePct": 0.344538,
       "ftPct": 0.805556,
       "threeMade": 1.28125,
-      "pra": 18.28
+      "pra": 18.28,
+      "gamesStarted": 31
     },
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
@@ -3177,7 +3298,8 @@
       "threePct": 0.296774,
       "ftPct": 0.740741,
       "threeMade": 1.39394,
-      "pra": 29.73
+      "pra": 29.73,
+      "gamesStarted": 33
     },
     {
       "playerId": "9b71131b-787a-475d-aa1b-00dc4394f5e2",
@@ -3203,7 +3325,8 @@
       "threePct": 0.545455,
       "ftPct": 0,
       "threeMade": 0.42857,
-      "pra": 1.93
+      "pra": 1.93,
+      "gamesStarted": 0
     },
     {
       "playerId": "1d7fec11-f8ac-4bfd-9165-df664a90169e",
@@ -3229,7 +3352,8 @@
       "threePct": 0.371257,
       "ftPct": 0.887097,
       "threeMade": 2.38462,
-      "pra": 22.08
+      "pra": 22.08,
+      "gamesStarted": 13
     },
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
@@ -3255,7 +3379,8 @@
       "threePct": 0.320388,
       "ftPct": 0.651163,
       "threeMade": 1,
-      "pra": 9.48
+      "pra": 9.48,
+      "gamesStarted": 11
     },
     {
       "playerId": "b21f6432-c1e5-446a-b516-d1c981b77c48",
@@ -3281,7 +3406,8 @@
       "threePct": 0.358974,
       "ftPct": 0.941176,
       "threeMade": 2,
-      "pra": 13.21
+      "pra": 13.21,
+      "gamesStarted": 14
     },
     {
       "playerId": "f7b67b4a-478f-4544-baf8-7923643e3585",
@@ -3307,7 +3433,8 @@
       "threePct": 0.392857,
       "ftPct": 0.690476,
       "threeMade": 1.76,
-      "pra": 15.76
+      "pra": 15.76,
+      "gamesStarted": 21
     },
     {
       "playerId": "24f1f4d9-c856-46f8-a152-f62b0e9b1f39",
@@ -3333,7 +3460,8 @@
       "threePct": 0.328571,
       "ftPct": 0.705882,
       "threeMade": 0.7931,
-      "pra": 8.72
+      "pra": 8.72,
+      "gamesStarted": 7
     },
     {
       "playerId": "96a3897c-483c-4089-b824-2bb65d265828",
@@ -3359,7 +3487,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1
+      "pra": 1,
+      "gamesStarted": 0
     },
     {
       "playerId": "5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1",
@@ -3385,7 +3514,8 @@
       "threePct": 0,
       "ftPct": 0.6,
       "threeMade": 0,
-      "pra": 20.4
+      "pra": 20.4,
+      "gamesStarted": 7
     },
     {
       "playerId": "f36a7c02-4846-4a7d-a778-f8910383c455",
@@ -3411,7 +3541,8 @@
       "threePct": 0.428571,
       "ftPct": 0.454545,
       "threeMade": 0.9,
-      "pra": 10.4
+      "pra": 10.4,
+      "gamesStarted": 7
     },
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
@@ -3437,7 +3568,8 @@
       "threePct": 0.233333,
       "ftPct": 0.666667,
       "threeMade": 0.77778,
-      "pra": 26.3
+      "pra": 26.3,
+      "gamesStarted": 27
     },
     {
       "playerId": "6f9d3d60-119f-408f-b8f9-a44978929b2e",
@@ -3463,7 +3595,8 @@
       "threePct": 0.434783,
       "ftPct": 0.8,
       "threeMade": 1.25,
-      "pra": 23.63
+      "pra": 23.63,
+      "gamesStarted": 8
     },
     {
       "playerId": "05180ec9-e559-40cc-8b48-198da892c37d",
@@ -3489,7 +3622,8 @@
       "threePct": 0.166667,
       "ftPct": 0.8,
       "threeMade": 0.08696,
-      "pra": 4.09
+      "pra": 4.09,
+      "gamesStarted": 4
     },
     {
       "playerId": "43ece052-4c0c-4878-8cbe-5fe7055f648d",
@@ -3515,7 +3649,8 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null
+      "pra": null,
+      "gamesStarted": 0
     },
     {
       "playerId": "f4c4d041-69b8-4757-9142-f5c028a070f2",
@@ -3541,7 +3676,8 @@
       "threePct": 0.35,
       "ftPct": 0.857143,
       "threeMade": 0.46667,
-      "pra": 5.17
+      "pra": 5.17,
+      "gamesStarted": 0
     },
     {
       "playerId": "74d07046-c14c-4b63-8f13-ad04902494a3",
@@ -3567,7 +3703,8 @@
       "threePct": 0.142857,
       "ftPct": 0.833333,
       "threeMade": 0.16667,
-      "pra": 11.92
+      "pra": 11.92,
+      "gamesStarted": 2
     },
     {
       "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",
@@ -3593,7 +3730,8 @@
       "threePct": 0.339623,
       "ftPct": 0.8,
       "threeMade": 0.6,
-      "pra": 4.8
+      "pra": 4.8,
+      "gamesStarted": 0
     },
     {
       "playerId": "3cb6b666-d6bf-41bb-b471-a63bb17c236c",
@@ -3619,7 +3757,8 @@
       "threePct": 0.185185,
       "ftPct": 0.757576,
       "threeMade": 0.3125,
-      "pra": 12.19
+      "pra": 12.19,
+      "gamesStarted": 0
     },
     {
       "playerId": "bf2ff692-c8a9-4e97-bf5e-907ee38b9af1",
@@ -3645,7 +3784,8 @@
       "threePct": 0.317647,
       "ftPct": 0.619048,
       "threeMade": 0.96429,
-      "pra": 9.11
+      "pra": 9.11,
+      "gamesStarted": 15
     },
     {
       "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
@@ -3671,7 +3811,8 @@
       "threePct": 0.393443,
       "ftPct": 0.878788,
       "threeMade": 1.37143,
-      "pra": 12.29
+      "pra": 12.29,
+      "gamesStarted": 14
     },
     {
       "playerId": "635563c3-4946-466f-8d6c-417b58d0049f",
@@ -3697,7 +3838,8 @@
       "threePct": 0.125,
       "ftPct": 0.5,
       "threeMade": 0.05263,
-      "pra": 3.32
+      "pra": 3.32,
+      "gamesStarted": 0
     },
     {
       "playerId": "14d4fada-6d04-420a-83e9-123a94cdf40c",
@@ -3723,7 +3865,8 @@
       "threePct": 0.222222,
       "ftPct": 0.5,
       "threeMade": 0.82353,
-      "pra": 20.18
+      "pra": 20.18,
+      "gamesStarted": 17
     },
     {
       "playerId": "7623e128-1104-45bf-af1e-3f0d93c0c906",
@@ -3749,7 +3892,8 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.8
+      "pra": 0.8,
+      "gamesStarted": 0
     },
     {
       "playerId": "5f41affb-6b54-4a16-ae86-ee38ca16237c",
@@ -3775,7 +3919,8 @@
       "threePct": 0.40566,
       "ftPct": 0.802632,
       "threeMade": 1.075,
-      "pra": 18.6
+      "pra": 18.6,
+      "gamesStarted": 40
     },
     {
       "playerId": "6f3bc391-d618-4bdc-bfd9-8467b03006a6",
@@ -3801,7 +3946,8 @@
       "threePct": 0.3,
       "ftPct": 0,
       "threeMade": 0.42857,
-      "pra": 7.57
+      "pra": 7.57,
+      "gamesStarted": 0
     },
     {
       "playerId": "f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c",
@@ -3827,7 +3973,8 @@
       "threePct": 0.281818,
       "ftPct": 0.833333,
       "threeMade": 0.96875,
-      "pra": 10.22
+      "pra": 10.22,
+      "gamesStarted": 3
     },
     {
       "playerId": "e9227af3-5300-4490-8e45-287088ec0475",
@@ -3853,7 +4000,8 @@
       "threePct": 0.241935,
       "ftPct": 0.71875,
       "threeMade": 0.53571,
-      "pra": 8.43
+      "pra": 8.43,
+      "gamesStarted": 1
     },
     {
       "playerId": "4afa66cc-d497-4320-bc6e-047af378b8c4",
@@ -3879,7 +4027,8 @@
       "threePct": 0.2,
       "ftPct": 0.666667,
       "threeMade": 0.09091,
-      "pra": 3
+      "pra": 3,
+      "gamesStarted": 1
     },
     {
       "playerId": "fd0678c3-5b7e-4550-bb6b-5849534e3769",
@@ -3905,7 +4054,8 @@
       "threePct": 0.266667,
       "ftPct": 0.75,
       "threeMade": 0.2963,
-      "pra": 3.93
+      "pra": 3.93,
+      "gamesStarted": 0
     },
     {
       "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
@@ -3931,7 +4081,8 @@
       "threePct": 0.4,
       "ftPct": 0.777778,
       "threeMade": 1.46667,
-      "pra": 20.53
+      "pra": 20.53,
+      "gamesStarted": 1
     },
     {
       "playerId": "c9632926-0fab-40e9-8722-579d176a9794",
@@ -3957,7 +4108,8 @@
       "threePct": 0.339623,
       "ftPct": 0.682927,
       "threeMade": 0.62069,
-      "pra": 7.52
+      "pra": 7.52,
+      "gamesStarted": 6
     },
     {
       "playerId": "9dc846fe-0454-445c-be6c-f2935f227317",
@@ -3983,7 +4135,8 @@
       "threePct": 0.243243,
       "ftPct": 0.636364,
       "threeMade": 0.69231,
-      "pra": 10.92
+      "pra": 10.92,
+      "gamesStarted": 9
     },
     {
       "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
@@ -4009,7 +4162,8 @@
       "threePct": 0.25,
       "ftPct": 0,
       "threeMade": 0.5,
-      "pra": 4
+      "pra": 4,
+      "gamesStarted": 0
     },
     {
       "playerId": "c962b2bd-988a-4570-aa0a-67e1a987a355",
@@ -4035,7 +4189,8 @@
       "threePct": 0.330275,
       "ftPct": 0.8,
       "threeMade": 1.05882,
-      "pra": 16.35
+      "pra": 16.35,
+      "gamesStarted": 31
     },
     {
       "playerId": "7efc81c9-d26e-4950-97e1-1b9b03b1bacd",
@@ -4061,7 +4216,8 @@
       "threePct": 0.388626,
       "ftPct": 0.894737,
       "threeMade": 2.64516,
-      "pra": 23.39
+      "pra": 23.39,
+      "gamesStarted": 28
     },
     {
       "playerId": "ac10899d-d7cc-4994-8ee6-fda299502786",
@@ -4087,7 +4243,8 @@
       "threePct": 0.478261,
       "ftPct": 0.628571,
       "threeMade": 1.22222,
-      "pra": 8.85
+      "pra": 8.85,
+      "gamesStarted": 6
     },
     {
       "playerId": "fb85d99d-86ac-46f7-b60d-ea33ae00a9fd",
@@ -4113,7 +4270,8 @@
       "threePct": 0.333333,
       "ftPct": 0.61165,
       "threeMade": 0.04,
-      "pra": 25.6
+      "pra": 25.6,
+      "gamesStarted": 23
     },
     {
       "playerId": "95e728f9-a01a-4466-afe4-fe68c5faea6b",
@@ -4139,7 +4297,8 @@
       "threePct": 0.351351,
       "ftPct": 0.80198,
       "threeMade": 1.52941,
-      "pra": 21.56
+      "pra": 21.56,
+      "gamesStarted": 34
     },
     {
       "playerId": "6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592",
@@ -4165,7 +4324,8 @@
       "threePct": 0.43299,
       "ftPct": 0.848485,
       "threeMade": 1.27273,
-      "pra": 11.36
+      "pra": 11.36,
+      "gamesStarted": 33
     },
     {
       "playerId": "706f7e82-104e-486d-b895-ddf527db6cfb",
@@ -4191,7 +4351,8 @@
       "threePct": 0.344371,
       "ftPct": 0.838235,
       "threeMade": 1.625,
-      "pra": 16.88
+      "pra": 16.88,
+      "gamesStarted": 26
     },
     {
       "playerId": "cd541bbb-db3f-4821-82e1-c3c104d99fd8",
@@ -4217,7 +4378,8 @@
       "threePct": 0.272727,
       "ftPct": 0.554455,
       "threeMade": 0.125,
-      "pra": 18.79
+      "pra": 18.79,
+      "gamesStarted": 24
     },
     {
       "playerId": "3af27cad-ac89-4122-842c-2772197168c5",
@@ -4243,7 +4405,8 @@
       "threePct": 0.283019,
       "ftPct": 0.671233,
       "threeMade": 0.55556,
-      "pra": 24.74
+      "pra": 24.74,
+      "gamesStarted": 12
     },
     {
       "playerId": "46fc1fe9-abf7-4e72-9c80-60483ae9da5e",
@@ -4269,7 +4432,8 @@
       "threePct": 0.2,
       "ftPct": 0.490446,
       "threeMade": 0.02778,
-      "pra": 23.28
+      "pra": 23.28,
+      "gamesStarted": 34
     },
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
@@ -4295,7 +4459,8 @@
       "threePct": 0.340425,
       "ftPct": 0.758621,
       "threeMade": 0.39024,
-      "pra": 25.95
+      "pra": 25.95,
+      "gamesStarted": 41
     }
   ]
 }

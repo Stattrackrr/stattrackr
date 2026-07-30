@@ -92,7 +92,7 @@ const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_dat
 /** All numeric game-log stats are shown on the main chart pills. */
 const STATS_HIDDEN = new Set<string>([]);
 const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct']);
-const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2025', 'season2024', 'season2023'] as const;
+const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024', 'season2023'] as const;
 
 interface NblChartTooltipProps {
   active?: boolean;
@@ -1024,7 +1024,9 @@ export function NblStatsChart({
     if (!baseChartData.length) return [];
 
     let data: typeof baseChartData;
-    if (selectedTimeframe === 'season2025') {
+    if (selectedTimeframe === 'season2026') {
+      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2026);
+    } else if (selectedTimeframe === 'season2025') {
       data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2025);
     } else if (selectedTimeframe === 'season2024') {
       data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2024);
@@ -1252,6 +1254,7 @@ export function NblStatsChart({
     last20: 'L20',
     last50: 'L50',
     h2h: 'H2H',
+    season2026: '2026',
     season2025: '2025',
     season2024: '2024',
     season2023: '2023',

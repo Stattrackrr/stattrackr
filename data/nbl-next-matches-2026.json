@@ -1,0 +1,209 @@
+{
+  "year": 2026,
+  "seasonLabel": "NBL27",
+  "generatedAt": "2026-07-30T06:06:43.975Z",
+  "source": "rosetta.nbl.com.au",
+  "teamCount": 10,
+  "teams": [
+    {
+      "id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "name": "Melbourne United",
+      "team_code": "MEL",
+      "nextMatches": [
+        {
+          "id": "b5e8f132-77c1-4839-a86a-16c6274b9096",
+          "match_slug": "melbourne-united-v-adelaide-36ers-men-19-09-2026",
+          "match_title": "Melbourne United v Adelaide 36ers men 19-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=UNITED26",
+          "external_id": "36dbeb55-58ad-11f1-a69b-43a6b5595d3e",
+          "start_time_datetime": "2026-09-19T09:30:00",
+          "is_home": true,
+          "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+          "opponent_name": "Adelaide 36ers",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+          "venue": "John Cain Arena"
+        }
+      ]
+    },
+    {
+      "id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "name": "Adelaide 36ers",
+      "team_code": "ADL",
+      "nextMatches": [
+        {
+          "id": "b5e8f132-77c1-4839-a86a-16c6274b9096",
+          "match_slug": "melbourne-united-v-adelaide-36ers-men-19-09-2026",
+          "match_title": "Melbourne United v Adelaide 36ers men 19-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=ADL36ERS26",
+          "external_id": "36dbeb55-58ad-11f1-a69b-43a6b5595d3e",
+          "start_time_datetime": "2026-09-19T09:30:00",
+          "is_home": false,
+          "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "opponent_name": "Melbourne United",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
+          "venue": "John Cain Arena"
+        }
+      ]
+    },
+    {
+      "id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "name": "Perth Wildcats",
+      "team_code": "PER",
+      "nextMatches": [
+        {
+          "id": "40f7fa2c-ec7d-43a3-883d-254cc8441137",
+          "match_slug": "perth-wildcats-v-south-east-melbourne-phoenix-men-19-09-2026",
+          "match_title": "Perth Wildcats v South East Melbourne Phoenix men 19-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS26",
+          "external_id": "36e0e11c-58ad-11f1-93d0-e78395b5c13c",
+          "start_time_datetime": "2026-09-19T11:30:00",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "RAC Arena"
+        }
+      ]
+    },
+    {
+      "id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "name": "South East Melbourne Phoenix",
+      "team_code": "SEM",
+      "nextMatches": [
+        {
+          "id": "40f7fa2c-ec7d-43a3-883d-254cc8441137",
+          "match_slug": "perth-wildcats-v-south-east-melbourne-phoenix-men-19-09-2026",
+          "match_title": "Perth Wildcats v South East Melbourne Phoenix men 19-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=PHOENIX26",
+          "external_id": "36e0e11c-58ad-11f1-93d0-e78395b5c13c",
+          "start_time_datetime": "2026-09-19T11:30:00",
+          "is_home": false,
+          "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "opponent_name": "Perth Wildcats",
+          "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
+          "venue": "RAC Arena"
+        }
+      ]
+    },
+    {
+      "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "name": "New Zealand Breakers",
+      "team_code": "NZL",
+      "nextMatches": [
+        {
+          "id": "5c846b51-7fc1-4180-878c-6d13fd381922",
+          "match_slug": "new-zealand-breakers-v-illawarra-hawks-men-20-09-2026",
+          "match_title": "New Zealand Breakers v Illawarra Hawks men 20-09-2026",
+          "match_ticket_url": "https://am.ticketmaster.com/nzbreakers/",
+          "external_id": "3700706c-58ad-11f1-ae9e-a93048d70593",
+          "start_time_datetime": "2026-09-20T05:00:00",
+          "is_home": true,
+          "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "opponent_name": "Illawarra Hawks",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
+          "venue": "Spark Arena"
+        }
+      ]
+    },
+    {
+      "id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "name": "Illawarra Hawks",
+      "team_code": "ILL",
+      "nextMatches": [
+        {
+          "id": "5c846b51-7fc1-4180-878c-6d13fd381922",
+          "match_slug": "new-zealand-breakers-v-illawarra-hawks-men-20-09-2026",
+          "match_title": "New Zealand Breakers v Illawarra Hawks men 20-09-2026",
+          "match_ticket_url": "https://am.ticketmaster.com/thehawks/",
+          "external_id": "3700706c-58ad-11f1-ae9e-a93048d70593",
+          "start_time_datetime": "2026-09-20T05:00:00",
+          "is_home": false,
+          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "opponent_name": "New Zealand Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bcbd4822cde14f55bd5c14484730b153",
+          "venue": "Spark Arena"
+        }
+      ]
+    },
+    {
+      "id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "name": "Sydney Kings",
+      "team_code": "SYD",
+      "nextMatches": [
+        {
+          "id": "09d24dd3-50f5-46c5-97d8-80ff1af5704d",
+          "match_slug": "sydney-kings-v-cairns-taipans-men-20-09-2026",
+          "match_title": "Sydney Kings v Cairns Taipans men 20-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=KINGS26",
+          "external_id": "36e225dc-58ad-11f1-b0d4-e94b8c35b649",
+          "start_time_datetime": "2026-09-20T07:00:00",
+          "is_home": true,
+          "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "opponent_name": "Cairns Taipans",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
+          "venue": "Afterpay Arena"
+        }
+      ]
+    },
+    {
+      "id": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "name": "Cairns Taipans",
+      "team_code": "CNS",
+      "nextMatches": [
+        {
+          "id": "09d24dd3-50f5-46c5-97d8-80ff1af5704d",
+          "match_slug": "sydney-kings-v-cairns-taipans-men-20-09-2026",
+          "match_title": "Sydney Kings v Cairns Taipans men 20-09-2026",
+          "match_ticket_url": "https://tickets.taipans.com/",
+          "external_id": "36e225dc-58ad-11f1-b0d4-e94b8c35b649",
+          "start_time_datetime": "2026-09-20T07:00:00",
+          "is_home": false,
+          "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "opponent_name": "Sydney Kings",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
+          "venue": "Afterpay Arena"
+        }
+      ]
+    },
+    {
+      "id": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "name": "Tasmania JackJumpers",
+      "team_code": "TAS",
+      "nextMatches": [
+        {
+          "id": "b6d2e488-8730-4329-923f-d7eaefca3487",
+          "match_slug": "tasmania-jackjumpers-v-south-east-melbourne-phoenix-men-21-09-2026",
+          "match_title": "Tasmania JackJumpers v South East Melbourne Phoenix men 21-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=JACKJUMP26",
+          "external_id": "36e80b8c-58ad-11f1-ab03-2572c13c410b",
+          "start_time_datetime": "2026-09-21T09:30:00",
+          "is_home": true,
+          "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "opponent_name": "South East Melbourne Phoenix",
+          "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
+          "venue": "MyState Bank Arena"
+        }
+      ]
+    },
+    {
+      "id": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "name": "Brisbane Bullets",
+      "team_code": "BRI",
+      "nextMatches": [
+        {
+          "id": "0993b54a-79cd-4eda-bdbd-ef50a8ccc6c9",
+          "match_slug": "brisbane-bullets-v-new-zealand-breakers-men-22-09-2026",
+          "match_title": "Brisbane Bullets v New Zealand Breakers men 22-09-2026",
+          "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=BULLETS26",
+          "external_id": "36e7aa3c-58ad-11f1-b88d-1138b8cb68ba",
+          "start_time_datetime": "2026-09-22T09:30:00",
+          "is_home": true,
+          "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "opponent_name": "New Zealand Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bcbd4822cde14f55bd5c14484730b153",
+          "venue": "Pat Rafter Arena *subject to change"
+        }
+      ]
+    }
+  ]
+}

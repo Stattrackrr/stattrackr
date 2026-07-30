@@ -49,6 +49,9 @@ function applyTimeframe<T extends BaseRow>(
   nextOpponent?: string | null
 ): T[] {
   if (!baseData.length) return [];
+  if (timeframe === 'season2026') {
+    return baseData.filter((row) => row.gameSeason === 2026) as T[];
+  }
   if (timeframe === 'season2025') {
     return baseData.filter((row) => row.gameSeason === 2025) as T[];
   }
