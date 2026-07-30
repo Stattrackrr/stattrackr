@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-07-30T08:22:42.460Z",
+  "generatedAt": "2026-07-30T11:56:01.729Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 214,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "West Perth",
+      "player": "Jonah Brooks",
+      "injury": "received a 32-week suspension for striking, assault, and choking an opponent",
+      "returning": "32-week suspension"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Aaron Naughton",
+      "injury": "resting from the long flight west",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Cody Weightman",
+      "injury": "resting from the long flight west",
+      "returning": "active"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Dayne Zorko",
+      "injury": "Hamstring",
+      "returning": "active"
+    },
     {
       "team": "Hawthorn Hawks",
       "player": "Mitch Lewis",
@@ -15,12 +51,6 @@
       "player": "Charlie Comben",
       "injury": "Head",
       "returning": "test for this week"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -111,12 +141,6 @@
       "player": "Liam Reidy",
       "injury": "Concussion",
       "returning": "1 Week"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Aaron Naughton",
-      "injury": "Soreness",
-      "returning": "Round 22"
     },
     {
       "team": "Brisbane Lions",
@@ -321,12 +345,6 @@
       "player": "Daniel Turner",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "Injury",
-      "returning": "rest of the home-and-away season"
     },
     {
       "team": "St Kilda Saints",
