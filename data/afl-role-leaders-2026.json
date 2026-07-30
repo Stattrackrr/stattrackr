@@ -1,121 +1,121 @@
 {
   "season": 2026,
-  "generatedAt": "2026-07-30T02:02:28.082Z",
+  "generatedAt": "2026-07-30T05:02:53.093Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
-    "carlton": {
-      "slug": "carlton",
-      "name": "Carlton",
-      "abbrev": "CAR",
+    "adelaide": {
+      "slug": "adelaide",
+      "name": "Adelaide",
+      "abbrev": "ADE",
       "cba": {
         "leaders": [
           {
-            "player": "Patrick Cripps",
-            "total": 444,
-            "rate": 80
+            "player": "Lachlan McAndrew",
+            "total": 423,
+            "rate": 76
           },
           {
-            "player": "Sam Walsh",
-            "total": 403,
-            "rate": 73
+            "player": "Sam Berry",
+            "total": 377,
+            "rate": 70
           },
           {
-            "player": "Marc Pittonet",
-            "total": 353,
-            "rate": 75
+            "player": "James Peatling",
+            "total": 319,
+            "rate": 60
           },
           {
-            "player": "Jagga Smith",
-            "total": 283,
-            "rate": 52
+            "player": "Jordan Dawson",
+            "total": 317,
+            "rate": 66
           },
           {
-            "player": "George Hewett",
-            "total": 275,
-            "rate": 63
+            "player": "Izak Rankine",
+            "total": 247,
+            "rate": 55
           },
           {
-            "player": "Adam Cerra",
-            "total": 113,
-            "rate": 24
+            "player": "Josh Rachele",
+            "total": 161,
+            "rate": 29
           },
           {
-            "player": "Liam Reidy",
-            "total": 83,
-            "rate": 56
+            "player": "Jake Soligo",
+            "total": 139,
+            "rate": 30
           },
           {
-            "player": "Harry McKay",
-            "total": 59,
-            "rate": 13
-          },
-          {
-            "player": "Ben Ainsworth",
-            "total": 46,
-            "rate": 9
-          },
-          {
-            "player": "Cooper Lord",
-            "total": 42,
+            "player": "Toby Murray",
+            "total": 84,
             "rate": 23
+          },
+          {
+            "player": "Charlie Edwards",
+            "total": 50,
+            "rate": 57
+          },
+          {
+            "player": "Riley Thilthorpe",
+            "total": 48,
+            "rate": 11
           }
         ],
-        "teamTotal": 2232
+        "teamTotal": 2240
       },
       "kick_ins": {
         "leaders": [
           {
-            "player": "Nic Newman",
-            "total": 69,
-            "rate": 34
+            "player": "Wayne Milera",
+            "total": 72,
+            "rate": 31
           },
           {
-            "player": "Oliver Florent",
-            "total": 60,
-            "rate": 29
+            "player": "Josh Worrell",
+            "total": 65,
+            "rate": 28
           },
           {
-            "player": "Billy Wilson",
-            "total": 17,
+            "player": "Hugo Hall-Kahan",
+            "total": 20,
+            "rate": 9
+          },
+          {
+            "player": "Mark Keane",
+            "total": 18,
             "rate": 8
           },
           {
-            "player": "Zac Williams",
-            "total": 12,
+            "player": "Rory Laird",
+            "total": 14,
             "rate": 6
           },
           {
-            "player": "Adam Saad",
-            "total": 9,
-            "rate": 4
+            "player": "Nick Murray",
+            "total": 14,
+            "rate": 6
           },
           {
-            "player": "Jordan Boyd",
-            "total": 9,
-            "rate": 4
-          },
-          {
-            "player": "Oliver Hollands",
+            "player": "Chayce Jones",
             "total": 5,
             "rate": 2
           },
           {
-            "player": "Mitch McGovern",
+            "player": "Max Michalanney",
             "total": 5,
             "rate": 2
           },
           {
-            "player": "Nick Haynes",
+            "player": "Jordan Dawson",
             "total": 4,
             "rate": 2
           },
           {
-            "player": "Lewis Young",
-            "total": 3,
-            "rate": 1
+            "player": "Luke Nankervis",
+            "total": 4,
+            "rate": 2
           }
         ],
-        "teamTotal": 205
+        "teamTotal": 230
       }
     },
     "brisbane": {
@@ -233,119 +233,119 @@
         "teamTotal": 223
       }
     },
-    "adelaide": {
-      "slug": "adelaide",
-      "name": "Adelaide",
-      "abbrev": "ADE",
+    "carlton": {
+      "slug": "carlton",
+      "name": "Carlton",
+      "abbrev": "CAR",
       "cba": {
         "leaders": [
           {
-            "player": "Lachlan McAndrew",
-            "total": 423,
-            "rate": 76
+            "player": "Patrick Cripps",
+            "total": 444,
+            "rate": 80
           },
           {
-            "player": "Sam Berry",
-            "total": 377,
-            "rate": 70
+            "player": "Sam Walsh",
+            "total": 403,
+            "rate": 73
           },
           {
-            "player": "James Peatling",
-            "total": 319,
-            "rate": 60
+            "player": "Marc Pittonet",
+            "total": 353,
+            "rate": 75
           },
           {
-            "player": "Jordan Dawson",
-            "total": 317,
-            "rate": 66
+            "player": "Jagga Smith",
+            "total": 283,
+            "rate": 52
           },
           {
-            "player": "Izak Rankine",
-            "total": 247,
-            "rate": 55
+            "player": "George Hewett",
+            "total": 275,
+            "rate": 63
           },
           {
-            "player": "Josh Rachele",
-            "total": 161,
-            "rate": 29
+            "player": "Adam Cerra",
+            "total": 113,
+            "rate": 24
           },
           {
-            "player": "Jake Soligo",
-            "total": 139,
-            "rate": 30
+            "player": "Liam Reidy",
+            "total": 83,
+            "rate": 56
           },
           {
-            "player": "Toby Murray",
-            "total": 84,
+            "player": "Harry McKay",
+            "total": 59,
+            "rate": 13
+          },
+          {
+            "player": "Ben Ainsworth",
+            "total": 46,
+            "rate": 9
+          },
+          {
+            "player": "Cooper Lord",
+            "total": 42,
             "rate": 23
-          },
-          {
-            "player": "Charlie Edwards",
-            "total": 50,
-            "rate": 57
-          },
-          {
-            "player": "Riley Thilthorpe",
-            "total": 48,
-            "rate": 11
           }
         ],
-        "teamTotal": 2240
+        "teamTotal": 2232
       },
       "kick_ins": {
         "leaders": [
           {
-            "player": "Wayne Milera",
-            "total": 72,
-            "rate": 31
+            "player": "Nic Newman",
+            "total": 69,
+            "rate": 34
           },
           {
-            "player": "Josh Worrell",
-            "total": 65,
-            "rate": 28
+            "player": "Oliver Florent",
+            "total": 60,
+            "rate": 29
           },
           {
-            "player": "Hugo Hall-Kahan",
-            "total": 20,
-            "rate": 9
-          },
-          {
-            "player": "Mark Keane",
-            "total": 18,
+            "player": "Billy Wilson",
+            "total": 17,
             "rate": 8
           },
           {
-            "player": "Rory Laird",
-            "total": 14,
+            "player": "Zac Williams",
+            "total": 12,
             "rate": 6
           },
           {
-            "player": "Nick Murray",
-            "total": 14,
-            "rate": 6
+            "player": "Adam Saad",
+            "total": 9,
+            "rate": 4
           },
           {
-            "player": "Chayce Jones",
+            "player": "Jordan Boyd",
+            "total": 9,
+            "rate": 4
+          },
+          {
+            "player": "Oliver Hollands",
             "total": 5,
             "rate": 2
           },
           {
-            "player": "Max Michalanney",
+            "player": "Mitch McGovern",
             "total": 5,
             "rate": 2
           },
           {
-            "player": "Jordan Dawson",
+            "player": "Nick Haynes",
             "total": 4,
             "rate": 2
           },
           {
-            "player": "Luke Nankervis",
-            "total": 4,
-            "rate": 2
+            "player": "Lewis Young",
+            "total": 3,
+            "rate": 1
           }
         ],
-        "teamTotal": 230
+        "teamTotal": 205
       }
     },
     "collingwood": {
