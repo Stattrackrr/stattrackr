@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-07-30T19:25:59.316Z",
+  "generatedAt": "2026-07-30T21:09:12.241Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 210,
+  "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Illness",
+      "returning": "Test"
+    },
     {
       "team": "Geelong Cats",
       "player": "Max Holmes",
