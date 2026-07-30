@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-07-30T15:54:59.747Z",
+  "generatedAt": "2026-07-30T17:28:33.426Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 216,
+  "injuryCount": 210,
   "injuries": [
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Arm",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Harry Perryman",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
     {
       "team": "Geelong Cats",
       "player": "Max Holmes",
@@ -165,24 +153,6 @@
       "player": "Logan Evans",
       "injury": "Shoulder",
       "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Virus",
-      "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Darcy Cameron",
-      "injury": "Soreness",
-      "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Josh Daicos",
-      "injury": "Soreness",
-      "returning": "active"
     },
     {
       "team": "Hawthorn Hawks",
@@ -519,12 +489,6 @@
       "player": "Joe Richards",
       "injury": "Finger",
       "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Lachie Schultz",
-      "injury": "Syndesmosis",
-      "returning": "next week or the week after"
     },
     {
       "team": "Essendon Bombers",
