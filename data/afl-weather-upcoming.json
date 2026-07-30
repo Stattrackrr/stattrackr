@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-30T12:27:24.690Z",
+  "generatedAt": "2026-07-30T17:55:33.108Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -136,6 +136,17 @@
       }
     },
     {
+      "gameId": "c1c6de81152c3b2dc03d974eac8f06a7",
+      "homeTeam": "Geelong Cats",
+      "awayTeam": "Essendon Bombers",
+      "commenceTime": "2026-08-08T06:35:59Z",
+      "weather": {
+        "temperatureC": 15.8,
+        "precipitationMm": 0,
+        "windKmh": 13.7
+      }
+    },
+    {
       "gameId": "76a86953955b35a31f030b6d7c32d380",
       "homeTeam": "Adelaide Crows",
       "awayTeam": "Richmond Tigers",
@@ -158,6 +169,17 @@
       }
     },
     {
+      "gameId": "ec6df00d6ff1a488ee18af9e4028e959",
+      "homeTeam": "West Coast Eagles",
+      "awayTeam": "Collingwood Magpies",
+      "commenceTime": "2026-08-09T06:10:00Z",
+      "weather": {
+        "temperatureC": 14.4,
+        "precipitationMm": 0,
+        "windKmh": 6.7
+      }
+    },
+    {
       "gameId": "a581514da5f2ea3ba47ba687d63ba0a3",
       "homeTeam": "St Kilda Saints",
       "awayTeam": "Carlton Blues",
@@ -169,5 +191,5 @@
       }
     }
   ],
-  "count": 15
+  "count": 17
 }
