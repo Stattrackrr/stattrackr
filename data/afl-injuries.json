@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-30T21:09:12.241Z",
+  "generatedAt": "2026-07-30T23:07:29.482Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 213,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Harry Perryman",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Arm",
+      "returning": "TBC"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
