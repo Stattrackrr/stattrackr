@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-30T11:56:01.729Z",
+  "generatedAt": "2026-07-30T13:53:19.821Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 214,
+  "injuryCount": 216,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Arm",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Harry Perryman",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Max Holmes",
