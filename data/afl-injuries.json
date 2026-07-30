@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-29T23:04:13.988Z",
+  "generatedAt": "2026-07-30T02:02:26.951Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Mitch Lewis",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Charlie Comben",
+      "injury": "Head",
+      "returning": "test for this week"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Brayden Maynard",
@@ -119,12 +131,6 @@
       "returning": "Season"
     },
     {
-      "team": "North Melbourne Kangaroos",
-      "player": "Charlie Comben",
-      "injury": "Chest",
-      "returning": "Test"
-    },
-    {
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
       "injury": "Virus",
@@ -182,19 +188,13 @@
       "team": "Carlton Blues",
       "player": "Nic Newman",
       "injury": "Hamstring",
-      "returning": "Season"
+      "returning": "Round 21"
     },
     {
       "team": "Essendon Bombers",
       "player": "Jordan Ridley",
       "injury": "Ankle",
       "returning": "TBA"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Mitch Lewis",
-      "injury": "Ankle",
-      "returning": "2 Weeks"
     },
     {
       "team": "Melbourne Demons",
