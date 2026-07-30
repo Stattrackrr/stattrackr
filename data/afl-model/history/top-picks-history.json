@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-29T13:00:40Z",
+  "generatedAt": "2026-07-30T12:13:06.163Z",
   "count": 62,
   "records": [
     {
@@ -2195,7 +2195,7 @@
           "recommendedEdge": 0.2196,
           "recommendedProb": 0.7106,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 15
         },
         {
           "playerName": "Josh Daicos",
@@ -2206,7 +2206,7 @@
           "recommendedEdge": 0.1616,
           "recommendedProb": 0.6616,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 33
         },
         {
           "playerName": "Tanner Bruhn",
@@ -2217,7 +2217,7 @@
           "recommendedEdge": 0.1361,
           "recommendedProb": 0.6241,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 24
         }
       ]
     },
