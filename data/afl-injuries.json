@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-07-30T23:07:29.482Z",
+  "generatedAt": "2026-07-31T02:20:59.344Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 215,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Sam Berry",
+      "injury": "Foot",
+      "returning": "TBA"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Wayne Milera",
+      "injury": "Hamstring",
+      "returning": "TBA"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Rhyan Mansell",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Dan Butler",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Liam Baker",
+      "injury": "Calf",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Cody Weightman",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Kaleb Smith",
+      "injury": "Concussion",
+      "returning": "active"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Harry Perryman",
@@ -37,18 +79,12 @@
     {
       "team": "West Perth",
       "player": "Jonah Brooks",
-      "injury": "received a 32-week suspension for striking, assault, and choking an opponent",
-      "returning": "32-week suspension"
+      "injury": "32-week suspension for striking during a country footy match.",
+      "returning": "32 weeks"
     },
     {
       "team": "Western Bulldogs",
       "player": "Aaron Naughton",
-      "injury": "resting from the long flight west",
-      "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Cody Weightman",
       "injury": "resting from the long flight west",
       "returning": "active"
     },
@@ -105,12 +141,6 @@
       "player": "Jed Adams",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Bayley Fritsch",
-      "injury": "Rib",
-      "returning": "Test"
     },
     {
       "team": "St Kilda Saints",
@@ -425,12 +455,6 @@
       "returning": "Season"
     },
     {
-      "team": "Richmond Tigers",
-      "player": "Kaleb Smith",
-      "injury": "Quad",
-      "returning": "Season"
-    },
-    {
       "team": "GWS Giants",
       "player": "Kieren Briggs",
       "injury": "Leg",
@@ -519,18 +543,6 @@
       "player": "Erone Fitzpatrick",
       "injury": "ACL",
       "returning": "active"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Steely Green",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Liam Baker",
-      "injury": "Suspended AFL",
-      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
