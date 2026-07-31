@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T12:54:04.761Z",
+  "generatedAt": "2026-07-31T18:01:12.187Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -92,6 +92,17 @@
       }
     },
     {
+      "gameId": "d23cf4a2ba0ea48c3292e39094b32eed",
+      "homeTeam": "Melbourne Demons",
+      "awayTeam": "Fremantle Dockers",
+      "commenceTime": "2026-08-08T03:15:36Z",
+      "weather": {
+        "temperatureC": 11.1,
+        "precipitationMm": 0.1,
+        "windKmh": 20.1
+      }
+    },
+    {
       "gameId": "6dce80237d59afc2f0575239e29f51d2",
       "homeTeam": "Sydney Swans",
       "awayTeam": "Port Adelaide Power",
@@ -158,5 +169,5 @@
       }
     }
   ],
-  "count": 14
+  "count": 15
 }
