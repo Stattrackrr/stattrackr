@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-07-31T06:47:10.011Z",
+  "generatedAt": "2026-07-31T10:41:10.898Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 216,
+  "injuryCount": 223,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Lukas Cooke",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Caleb Lewis",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Ben McKay",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Nik Cox",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Lachlan Blakiston",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Zeke Uwland",
+      "injury": "managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Darcy Parish",
+      "injury": "no room for",
+      "returning": "TBC"
+    },
     {
       "team": "Brisbane Lions",
       "player": "James Tunstill",
@@ -260,13 +302,13 @@
       "team": "Melbourne Demons",
       "player": "Kade Chandler",
       "injury": "Hand",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
       "player": "Latrelle Pickett",
       "injury": "Concussion",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
@@ -296,7 +338,7 @@
       "team": "Essendon Bombers",
       "player": "Sullivan Robey",
       "injury": "Knee",
-      "returning": "ruled out of next week's game"
+      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
