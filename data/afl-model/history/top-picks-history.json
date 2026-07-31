@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T12:56:40Z",
+  "generatedAt": "2026-07-31T14:02:27.250Z",
   "count": 62,
   "records": [
     {
@@ -2242,7 +2242,7 @@
           "recommendedEdge": 0.1626,
           "recommendedProb": 0.6423,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Joel Freijah",
@@ -2253,7 +2253,7 @@
           "recommendedEdge": 0.1463,
           "recommendedProb": 0.6553,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Caleb Serong",
@@ -2264,7 +2264,7 @@
           "recommendedEdge": 0.1373,
           "recommendedProb": 0.6303,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 17
         }
       ]
     },
