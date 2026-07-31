@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-31T02:20:59.344Z",
+  "generatedAt": "2026-07-31T06:47:10.011Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 216,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "James Tunstill",
+      "injury": "dropped",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Dayne Zorko",
+      "injury": "rested veteran",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Sam Berry",
@@ -14,7 +26,7 @@
       "team": "Adelaide Crows",
       "player": "Wayne Milera",
       "injury": "Hamstring",
-      "returning": "TBA"
+      "returning": "2-3 weeks"
     },
     {
       "team": "Richmond Tigers",
@@ -86,12 +98,6 @@
       "team": "Western Bulldogs",
       "player": "Aaron Naughton",
       "injury": "resting from the long flight west",
-      "returning": "active"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Dayne Zorko",
-      "injury": "Hamstring",
       "returning": "active"
     },
     {
