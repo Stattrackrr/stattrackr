@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-31T16:14:58.170Z",
+  "generatedAt": "2026-07-31T17:49:52.828Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 223,
+  "injuryCount": 220,
   "injuries": [
     {
       "team": "Melbourne Demons",
@@ -407,12 +407,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Sam De Koning",
-      "injury": "Illness",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Changkuoth Jiath",
       "injury": "Injury",
@@ -452,12 +446,6 @@
       "team": "Gold Coast Suns",
       "player": "Oscar Adams",
       "injury": "omitted this week for Ballard",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Hayden Young",
-      "injury": "Illness",
       "returning": "TBC"
     },
     {
@@ -687,12 +675,6 @@
       "player": "Bruce Reville",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jake Kolodjashnij",
-      "injury": "managed",
-      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
