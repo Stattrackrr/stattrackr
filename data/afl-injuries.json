@@ -1,49 +1,13 @@
 {
-  "generatedAt": "2026-08-01T15:02:58.717Z",
+  "generatedAt": "2026-08-01T17:01:08.551Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 228,
+  "injuryCount": 201,
   "injuries": [
-    {
-      "team": "Brisbane Lions",
-      "player": "Ryan Lester",
-      "injury": "Shoulder",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Keidean Coleman",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Tom De Koning",
-      "injury": "Hip",
-      "returning": "TBC"
-    },
     {
       "team": "Port Adelaide Power",
       "player": "Brandon Zerk-Thatcher",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "William Edwards",
-      "injury": "Leg",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Jack Silvagni",
-      "injury": "Shoulder",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Rowbottom",
-      "injury": "Hand",
       "returning": "TBC"
     },
     {
@@ -98,12 +62,6 @@
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "no room for",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "James Tunstill",
-      "injury": "dropped",
       "returning": "TBC"
     },
     {
@@ -197,12 +155,6 @@
       "returning": "TBC"
     },
     {
-      "team": "North Melbourne Kangaroos",
-      "player": "Charlie Comben",
-      "injury": "Head",
-      "returning": "test for this week"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Patrick Dangerfield",
       "injury": "Managed",
@@ -258,21 +210,9 @@
     },
     {
       "team": "Carlton Blues",
-      "player": "Lucas Camporeale",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
       "player": "Campbell Chesser",
       "injury": "Knee",
       "returning": "TBA"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Lachie Fogarty",
-      "injury": "Rib",
-      "returning": "Test"
     },
     {
       "team": "Carlton Blues",
@@ -297,24 +237,6 @@
       "player": "Logan Evans",
       "injury": "Shoulder",
       "returning": "Season"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Will Day",
-      "injury": "Shoulder",
-      "returning": "Returned"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Errol Gulden",
-      "injury": "Shoulder",
-      "returning": "active"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Mitch Georgiades",
-      "injury": "Hamstring",
-      "returning": "active"
     },
     {
       "team": "St Kilda Saints",
@@ -365,12 +287,6 @@
       "returning": "Season"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Rowan Marshall",
-      "injury": "Back",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Noah Mraz",
       "injury": "Kidney",
@@ -407,20 +323,8 @@
       "returning": "TBC"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Jye Caldwell",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "William McCabe",
       "injury": "active",
       "returning": "TBC"
     },
@@ -464,12 +368,6 @@
       "team": "Melbourne Demons",
       "player": "Daniel Turner",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Campbell Lake",
-      "injury": "Calf",
       "returning": "TBC"
     },
     {
@@ -537,12 +435,6 @@
       "player": "Tom Sims",
       "injury": "Toe",
       "returning": "Season"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Kieren Briggs",
-      "injury": "Leg",
-      "returning": "Test"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -659,12 +551,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Sid Draper",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Connor Rozee",
       "injury": "Injury",
@@ -675,12 +561,6 @@
       "player": "Zak Butters",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Harrison Ramm",
-      "injury": "Illness",
-      "returning": "1 Week"
     },
     {
       "team": "Port Adelaide Power",
@@ -719,22 +599,10 @@
       "returning": "Season"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Bruce Reville",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Jack Dalton",
       "injury": "Knee",
       "returning": "5 Weeks"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Tom Powell",
-      "injury": "Groin",
-      "returning": "Test"
     },
     {
       "team": "Richmond Tigers",
@@ -875,12 +743,6 @@
       "returning": "6 Weeks"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Sam Wicks",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Tyler Brockman",
       "injury": "Hamstring",
@@ -965,12 +827,6 @@
       "returning": "Not available"
     },
     {
-      "team": "GWS Giants",
-      "player": "Oliver Hannaford",
-      "injury": "Foot",
-      "returning": "Test"
-    },
-    {
       "team": "Fremantle Dockers",
       "player": "Sam Sturt",
       "injury": "Quad",
@@ -1035,12 +891,6 @@
       "player": "Ewan Mackinlay",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Tyler Welsh",
-      "injury": "Ankle",
-      "returning": "Retired"
     },
     {
       "team": "Brisbane Lions",
@@ -1122,12 +972,6 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Jordon Butts",
-      "injury": "Calf",
-      "returning": "Round 14"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Callum Ah Chee",
       "injury": "Hamstring",
       "returning": "1 week"
@@ -1161,12 +1005,6 @@
       "player": "Archer May",
       "injury": "Shoulder",
       "returning": "Season"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Jake Riccardi",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "Tasmania Devils",
