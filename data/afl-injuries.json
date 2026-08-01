@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-01T11:22:00.177Z",
+  "generatedAt": "2026-08-01T13:14:44.552Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 226,
+  "injuryCount": 228,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Ryan Lester",
+      "injury": "Shoulder",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Keidean Coleman",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Tom De Koning",
