@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-01T02:23:07.664Z",
+  "generatedAt": "2026-08-01T06:33:08.492Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 224,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "William Edwards",
+      "injury": "Leg",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Jack Silvagni",
+      "injury": "Shoulder",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Rowbottom",
+      "injury": "Hand",
+      "returning": "active"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Dan Butler",
