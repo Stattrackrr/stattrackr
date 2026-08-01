@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-31T23:03:15.754Z",
+  "generatedAt": "2026-08-01T02:23:07.664Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Dan Butler",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Darcy Cameron",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Lukas Cooke",
@@ -77,12 +89,6 @@
       "returning": "TBA"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Dan Butler",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Liam Baker",
       "injury": "Calf",
@@ -92,7 +98,7 @@
       "team": "Western Bulldogs",
       "player": "Cody Weightman",
       "injury": "Soreness",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
