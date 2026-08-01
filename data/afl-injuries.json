@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-01T19:10:30.014Z",
+  "generatedAt": "2026-08-01T20:52:09.800Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 201,
+  "injuryCount": 209,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Lucas Camporeale",
+      "injury": "Calf",
+      "returning": "Test"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Lachie Fogarty",
+      "injury": "Rib",
+      "returning": "Test"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Knee",
+      "returning": "Test"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Kieren Briggs",
+      "injury": "Leg",
+      "returning": "Test"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Oliver Hannaford",
+      "injury": "Foot",
+      "returning": "Test"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Jake Riccardi",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Tom Powell",
+      "injury": "Groin",
+      "returning": "Test"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Sam Wicks",
+      "injury": "Hamstring",
+      "returning": "2 Weeks"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Brandon Zerk-Thatcher",
