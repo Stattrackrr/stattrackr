@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01T06:35:17.349Z",
+  "generatedAt": "2026-08-01T11:16:58.901Z",
   "count": 62,
   "records": [
     {
@@ -2383,7 +2383,7 @@
           "recommendedEdge": 0.1406,
           "recommendedProb": 0.6336,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 18
         },
         {
           "playerName": "Jase Burgoyne",
@@ -2394,7 +2394,7 @@
           "recommendedEdge": 0.0971,
           "recommendedProb": 0.5851,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 17
         }
       ]
     },
