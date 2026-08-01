@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01T11:16:58.901Z",
+  "generatedAt": "2026-08-01T12:03:28Z",
   "count": 62,
   "records": [
     {
@@ -2449,7 +2449,7 @@
       "gameKey": "richmondtigers|westcoasteagles|2026-08-02",
       "finalizedAt": "2026-07-28T12:52:44Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-31T18:22:37Z",
+      "projectionGeneratedAt": "2026-08-01T12:03:28Z",
       "modelVersion": "afl-disp-20260731-181856",
       "homeTeam": "Richmond Tigers",
       "awayTeam": "West Coast Eagles",
@@ -2461,22 +2461,33 @@
           "playerName": "Tom Mccarthy",
           "bookmaker": "SportsBet",
           "line": 23.5,
-          "expectedDisposals": 20.46,
+          "expectedDisposals": 19.9,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1477,
-          "recommendedProb": 0.6285,
+          "recommendedEdge": 0.1814,
+          "recommendedProb": 0.6585,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Tim Kelly",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 22.02,
+          "playerName": "Willem Duursma",
+          "bookmaker": "PointsBet (AU)",
+          "line": 19.5,
+          "expectedDisposals": 16.31,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1462,
-          "recommendedProb": 0.6392,
+          "recommendedEdge": 0.1642,
+          "recommendedProb": 0.6642,
           "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Nick Vlastuin",
+          "bookmaker": "PointsBet (AU)",
+          "line": 16.5,
+          "expectedDisposals": 17.43,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0971,
+          "recommendedProb": 0.5971,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2485,7 +2496,7 @@
       "gameKey": "goldcoastsuns|melbournedemons|2026-08-02",
       "finalizedAt": "2026-07-28T12:52:44Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-31T18:22:37Z",
+      "projectionGeneratedAt": "2026-08-01T12:03:28Z",
       "modelVersion": "afl-disp-20260731-181856",
       "homeTeam": "Gold Coast Suns",
       "awayTeam": "Melbourne Demons",
@@ -2496,34 +2507,23 @@
         {
           "playerName": "Tom Sparrow",
           "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 18.3,
+          "line": 24.5,
+          "expectedDisposals": 17.85,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.2501,
-          "recommendedProb": 0.7799,
+          "recommendedEdge": 0.283,
+          "recommendedProb": 0.7532,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Christian Petracca",
-          "bookmaker": "SportsBet",
-          "line": 23.5,
-          "expectedDisposals": 20.67,
+          "playerName": "Harvey Langford",
+          "bookmaker": "PointsBet (AU)",
+          "line": 18.5,
+          "expectedDisposals": 14.34,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1414,
-          "recommendedProb": 0.6193,
+          "recommendedEdge": 0.177,
+          "recommendedProb": 0.677,
           "rank": 2,
-          "actualDisposals": null
-        },
-        {
-          "playerName": "Matt Rowell",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 26.34,
-          "recommendedSide": "OVER",
-          "recommendedEdge": 0.0978,
-          "recommendedProb": 0.5888,
-          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2532,7 +2532,7 @@
       "gameKey": "essendonbombers|adelaidecrows|2026-08-02",
       "finalizedAt": "2026-07-28T12:52:44Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-07-31T18:22:37Z",
+      "projectionGeneratedAt": "2026-08-01T12:03:28Z",
       "modelVersion": "afl-disp-20260731-181856",
       "homeTeam": "Essendon Bombers",
       "awayTeam": "Adelaide Crows",
@@ -2541,25 +2541,36 @@
       "roundKey": "2026-R21",
       "picks": [
         {
-          "playerName": "Sam Durham",
-          "bookmaker": "SportsBet",
-          "line": 22.5,
-          "expectedDisposals": 18.6,
-          "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1729,
-          "recommendedProb": 0.6689,
+          "playerName": "Andrew Mcgrath",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 21.35,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.2465,
+          "recommendedProb": 0.7465,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Jordan Dawson",
-          "bookmaker": "SportsBet",
-          "line": 25.5,
-          "expectedDisposals": 21.9,
+          "playerName": "Jake Soligo",
+          "bookmaker": "PointsBet (AU)",
+          "line": 21.5,
+          "expectedDisposals": 16.85,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1542,
-          "recommendedProb": 0.6612,
+          "recommendedEdge": 0.1983,
+          "recommendedProb": 0.6983,
           "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Sam Durham",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 18.72,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1721,
+          "recommendedProb": 0.6671,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
