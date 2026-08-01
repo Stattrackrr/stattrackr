@@ -1,0 +1,43 @@
+{
+  "version": "afl-disp-20260801-174353",
+  "createdAt": "2026-08-01T17:43:53Z",
+  "modelType": "rf",
+  "metrics": {
+    "baseline": {
+      "mae": 4.210592644797478,
+      "rmse": 5.346242349055726
+    },
+    "ridge": {
+      "mae": 3.8599419050320427,
+      "rmse": 4.94091311885639,
+      "cv_mae": 3.920558517524558,
+      "cv_rmse": 5.02771781013842,
+      "bestParams": {
+        "alpha": 16.0
+      }
+    },
+    "hgb": {
+      "mae": 3.892996036600221,
+      "rmse": 4.984880840847273,
+      "cv_mae": 3.9362031962514115,
+      "cv_rmse": 5.036746089613332,
+      "bestParams": {
+        "max_depth": 4,
+        "learning_rate": 0.03,
+        "max_iter": 220,
+        "min_samples_leaf": 20
+      }
+    },
+    "rf": {
+      "mae": 3.8486923621829714,
+      "rmse": 4.934122662309818,
+      "cv_mae": 3.947013774182049,
+      "cv_rmse": 5.058058548719204,
+      "bestParams": {
+        "n_estimators": 300,
+        "max_depth": 8,
+        "min_samples_leaf": 6
+      }
+    }
+  }
+}
