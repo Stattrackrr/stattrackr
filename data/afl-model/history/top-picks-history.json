@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01T12:03:28Z",
+  "generatedAt": "2026-08-01T12:33:02.682Z",
   "count": 62,
   "records": [
     {
@@ -2419,7 +2419,7 @@
           "recommendedEdge": 0.1616,
           "recommendedProb": 0.6616,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 27
         },
         {
           "playerName": "Hugh Mccluggage",
@@ -2430,7 +2430,7 @@
           "recommendedEdge": 0.1608,
           "recommendedProb": 0.6608,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 18
         },
         {
           "playerName": "Blake Acres",
@@ -2441,7 +2441,7 @@
           "recommendedEdge": 0.0707,
           "recommendedProb": 0.5707,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 17
         }
       ]
     },
