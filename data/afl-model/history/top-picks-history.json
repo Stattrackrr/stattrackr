@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T18:22:37Z",
+  "generatedAt": "2026-08-01T06:35:17.349Z",
   "count": 62,
   "records": [
     {
@@ -2289,7 +2289,7 @@
           "recommendedEdge": 0.1826,
           "recommendedProb": 0.6686,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 22
         },
         {
           "playerName": "Nasiah Wanganeen Milera",
@@ -2300,7 +2300,7 @@
           "recommendedEdge": 0.1536,
           "recommendedProb": 0.6728,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 24
         },
         {
           "playerName": "Hugo Garcia",
@@ -2311,7 +2311,7 @@
           "recommendedEdge": 0.135,
           "recommendedProb": 0.636,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 15
         }
       ]
     },
@@ -2336,7 +2336,7 @@
           "recommendedEdge": 0.245,
           "recommendedProb": 0.7671,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 30
         },
         {
           "playerName": "Connor Macdonald",
@@ -2347,7 +2347,7 @@
           "recommendedEdge": 0.157,
           "recommendedProb": 0.653,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Colby Mckercher",
@@ -2358,7 +2358,7 @@
           "recommendedEdge": 0.1557,
           "recommendedProb": 0.6557,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 21
         }
       ]
     },
