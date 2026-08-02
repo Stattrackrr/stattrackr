@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-01T22:57:19.213Z",
+  "generatedAt": "2026-08-02T02:20:49.658Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 209,
+  "injuryCount": 212,
   "injuries": [
+    {
+      "team": "Richmond Tigers",
+      "player": "Rhyan Mansell",
+      "injury": "Foot",
+      "returning": "Round 21"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Zane Peucker",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Hamish Davis",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Oliver Francou",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry Dean",
+      "injury": "facing Match Review Officer scrutiny for a dangerous tackle on Brisbane’s Cam Rayner",
+      "returning": "TBC"
+    },
     {
       "team": "Carlton Blues",
       "player": "Lucas Camporeale",
@@ -129,12 +159,6 @@
       "player": "Wayne Milera",
       "injury": "Hamstring",
       "returning": "2-3 weeks"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Rhyan Mansell",
-      "injury": "Injury",
-      "returning": "TBA"
     },
     {
       "team": "West Coast Eagles",
@@ -297,12 +321,6 @@
       "player": "Brayden Fiorini",
       "injury": "Soreness",
       "returning": "active"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Oliver Francou",
-      "injury": "Knee",
-      "returning": "TBA"
     },
     {
       "team": "Carlton Blues",
