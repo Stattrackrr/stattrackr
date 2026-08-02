@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-02T19:10:28.575Z",
+  "generatedAt": "2026-08-02T20:55:16.993Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 198,
+  "injuryCount": 200,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Jack Henderson",
+      "injury": "Knee",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Malakai Champion",
+      "injury": "Hand",
+      "returning": "Test"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Toby Murray",
