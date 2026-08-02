@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T06:33:26.722Z",
+  "generatedAt": "2026-08-02T09:09:21.969Z",
   "count": 62,
   "records": [
     {
@@ -2513,7 +2513,7 @@
           "recommendedEdge": 0.2747,
           "recommendedProb": 0.7477,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 25
         },
         {
           "playerName": "Wil Powell",
@@ -2524,7 +2524,7 @@
           "recommendedEdge": 0.1139,
           "recommendedProb": 0.6229,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 13
         },
         {
           "playerName": "Trent Rivers",
@@ -2535,7 +2535,7 @@
           "recommendedEdge": 0.0997,
           "recommendedProb": 0.5997,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 29
         }
       ]
     },
