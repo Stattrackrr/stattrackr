@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-02T06:38:14.295Z",
+  "generatedAt": "2026-08-02T10:00:46.318Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Angus Clarke",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Blake Howes",
+      "injury": "Arm",
+      "returning": "TBC"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Sam Collins",
+      "injury": "Rib",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Toby Murray",
@@ -163,7 +181,7 @@
     {
       "team": "Essendon Bombers",
       "player": "Ben McKay",
-      "injury": "active",
+      "injury": "dropped again",
       "returning": "TBC"
     },
     {
