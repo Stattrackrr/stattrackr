@@ -81,34 +81,27 @@ export async function fetchNblMatchShotChart(
   const res = await fetch(url, { headers: srHeaders(), signal: options.signal });
   if (!res.ok) return null;
 
+  type SrCompetitor = {
+    name?: string;
+    code?: string;
+    entityId?: string;
+    isHome?: boolean;
+    score?: string | number | null;
+  };
+
   const json = (await res.json()) as {
     data?: {
       fixture?: {
-        competitors?: Array<{
-          name?: string;
-          code?: string;
-          entityId?: string;
-          isHome?: boolean;
-          score?: string | number | null;
-        }>;
+        competitors?: SrCompetitor[];
       };
       banner?: {
         fixture?: {
-          competitors?: Array<{
-            name?: string;
-            code?: string;
-            entityId?: string;
-            isHome?: boolean;
-            score?: string | number | null;
-          }>;
+          competitors?: SrCompetitor[];
         };
       };
       shotChart?: {
         shots?: SrShotRow[];
-        competitors?: Record<
-          string,
-          { name?: string; code?: string; entityId?: string; isHome?: boolean }
-        >;
+        competitors?: Record<string, SrCompetitor>;
       };
     };
   };
