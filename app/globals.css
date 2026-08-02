@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --brand-bg: #ffffff; --brand-fg: #0b1220; }
-.dark { --brand-bg: #050d1a; --brand-fg: #ffffff; }
+/* Default to dark so the first paint matches the landing page / app shell.
+   Light theme only applies when <html> does not have .dark (set before paint). */
+:root {
+  --brand-bg: #050d1a;
+  --brand-fg: #ffffff;
+  color-scheme: dark;
+}
+html:not(.dark) {
+  --brand-bg: #ffffff;
+  --brand-fg: #0b1220;
+  color-scheme: light;
+}
+.dark {
+  --brand-bg: #050d1a;
+  --brand-fg: #ffffff;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: var(--brand-bg);
+  color: var(--brand-fg);
+}
 
 @supports (padding: max(0px)) {
   .pt-safe {

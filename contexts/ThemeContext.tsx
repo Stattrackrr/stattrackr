@@ -13,27 +13,34 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('Dark');
+  const [theme, setThemeState] = useState<Theme>('Dark');
+  const [themeReady, setThemeReady] = useState(false);
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage on mount (blocking script already applied class for first paint)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme && (savedTheme === 'Light' || savedTheme === 'Dark')) {
-      setTheme(savedTheme);
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    if (savedTheme === 'Light' || savedTheme === 'Dark') {
+      setThemeState(savedTheme);
     }
+    setThemeReady(true);
   }, []);
 
-  // Apply theme to document root and save to localStorage
+  // Apply theme to document root and persist only after initial load
   useEffect(() => {
     if (theme === 'Dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    
-    // Save theme to localStorage whenever it changes
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+
+    if (themeReady) {
+      localStorage.setItem('theme', theme);
+    }
+  }, [theme, themeReady]);
+
+  const setTheme = (next: Theme) => {
+    setThemeState(next);
+  };
 
   const isDark = theme === 'Dark';
 

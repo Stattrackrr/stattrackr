@@ -7,7 +7,10 @@ import TikTokPixel from "../components/TikTokPixel";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://stattrackr.co"),
-  title: "StatTrackr - Advanced Sports Statistic Dashboard",
+  title: {
+    default: "StatTrackr - Advanced Sports Statistic Dashboard",
+    template: "%s | StatTrackr",
+  },
   description: "Advanced multi-sport statistics dashboard covering NBA, AFL, soccer and more. Analyze player statistics, team trends, game props, and matchup data with fast, data-driven tools.",
   keywords: [
     "sports analytics",
@@ -58,6 +61,7 @@ export const metadata: Metadata = {
     description: "Analyze multi-sport player stats, team trends, and game props with an advanced, fast sports statistic dashboard.",
     type: "website",
     siteName: "StatTrackr",
+    url: "/",
     images: [
       {
         url: "/images/stattrackr-icon-512.webp?v=20260802",
@@ -84,11 +88,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full dark" suppressHydrationWarning>
       <head>
-        {/* Devtools disabled */}
+        {/* Apply saved theme before first paint to avoid a white flash on mobile. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='Light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`,
+          }}
+        />
       </head>
-      <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]">
+      <body className="min-h-screen antialiased bg-[var(--brand-bg)] text-[var(--brand-fg)]" suppressHydrationWarning>
         <TikTokPixel />
         <MetaPixel />
         {/* Capture password-reset hash before React so it survives; runs on first paint */}

@@ -84,6 +84,16 @@ export default function HomePage() {
     prefetchPropsResources();
     router.push('/props?sport=all');
   };
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Keep the hash in the URL without a hard navigation / flash
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `${window.location.pathname}#${id}`);
+    }
+  };
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
@@ -229,6 +239,17 @@ export default function HomePage() {
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, [showProfileMenu]);
+
+  // If we land with a hash (e.g. /#pricing), smooth-scroll instead of jumping
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const checkPremiumStatus = async (userId: string, checkId: number) => {
     const cached = readViewerProfileCache(userId);
@@ -450,7 +471,7 @@ export default function HomePage() {
                   ) : (
                     <>
                       <button
-                        onClick={() => router.push('/home#pricing')}
+                        onClick={() => scrollToSection('pricing')}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors"
                       >
                         Upgrade to Pro
@@ -495,7 +516,7 @@ export default function HomePage() {
               ) : (
                 <>
                   <button
-                    onClick={() => router.push('/home#pricing')}
+                    onClick={() => scrollToSection('pricing')}
                     className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                   >
                     Get Started
@@ -549,14 +570,14 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <button
-                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => scrollToSection('pricing')}
                   className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-all hover:scale-[1.02] shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2"
                 >
                   Get Started
                   <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => scrollToSection('faq')}
                   className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-lg font-semibold transition-colors"
                 >
                   Learn More
@@ -714,7 +735,7 @@ export default function HomePage() {
                 Profitable every round this AFL season.
               </p>
               <button
-                onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => scrollToSection('pricing')}
                 className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2"
               >
                 Get Access <ArrowRight className="w-3.5 h-3.5" />
@@ -731,7 +752,7 @@ export default function HomePage() {
       </section>
 
       {/* Key Features Grid */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+      <section id="features" className="scroll-mt-20 py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Everything you need, nothing you don&apos;t</h2>
@@ -801,7 +822,7 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+      <section id="pricing" className="scroll-mt-20 py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-4">Competitive pricing</h2>
@@ -931,7 +952,7 @@ export default function HomePage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
+      <section id="faq" className="scroll-mt-20 py-20 px-4 sm:px-6 lg:px-8 bg-[#050d1a]">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-white">Questions, answered</h2>
@@ -1001,7 +1022,7 @@ export default function HomePage() {
           <button
             onClick={() => {
               if (user && hasPremium) goToProps();
-              else if (user) router.push('/home#pricing');
+              else if (user) scrollToSection('pricing');
               else router.push('/login');
             }}
             className="px-8 py-4 bg-white text-purple-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-all hover:scale-[1.02] shadow-lg"
@@ -1033,9 +1054,9 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+                <li><button type="button" onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Features</button></li>
+                <li><button type="button" onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Pricing</button></li>
+                <li><button type="button" onClick={() => scrollToSection('faq')} className="hover:text-white transition-colors">FAQ</button></li>
                 <li><button onMouseEnter={prefetchPropsResources} onFocus={prefetchPropsResources} onClick={goToProps} className="hover:text-white transition-colors">Player Props</button></li>
                 <li>
                   {NBA_PUBLIC_ENABLED ? (
