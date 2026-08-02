@@ -1,27 +1,9 @@
 {
-  "generatedAt": "2026-08-02T15:05:59.333Z",
+  "generatedAt": "2026-08-02T17:01:32.414Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 198,
   "injuries": [
-    {
-      "team": "Essendon Bombers",
-      "player": "Angus Clarke",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Blake Howes",
-      "injury": "Arm",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Sam Collins",
-      "injury": "Rib",
-      "returning": "TBC"
-    },
     {
       "team": "Adelaide Crows",
       "player": "Toby Murray",
@@ -39,12 +21,6 @@
       "player": "Nick Murray",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Luke Trainor",
-      "injury": "Set for a stint on the sidelines after appearing to punch West Coast Eagles defender Jack Williams.",
-      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
@@ -149,12 +125,6 @@
       "returning": "2 Weeks"
     },
     {
-      "team": "Port Adelaide Power",
-      "player": "Brandon Zerk-Thatcher",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "St Kilda Saints",
       "player": "Dan Butler",
       "injury": "active",
@@ -164,18 +134,6 @@
       "team": "Collingwood Magpies",
       "player": "Darcy Cameron",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Lukas Cooke",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Caleb Lewis",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -413,12 +371,6 @@
       "returning": "a number of weeks"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Izak Rankine",
-      "injury": "for a homophobic slur",
-      "returning": "six weeks"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Sullivan Robey",
       "injury": "Knee",
@@ -480,31 +432,7 @@
     },
     {
       "team": "Melbourne Demons",
-      "player": "Changkuoth Jiath",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
       "player": "Daniel Turner",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jacob Wehr",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jackson Mead",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Caleb Windsor",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -512,24 +440,6 @@
       "team": "Gold Coast Suns",
       "player": "Oscar Adams",
       "injury": "omitted this week for Ballard",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Jack Graham",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Brayden Cook",
-      "injury": "rested",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Mark Keane",
-      "injury": "Illness",
       "returning": "TBC"
     },
     {
@@ -575,22 +485,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Melbourne Demons",
-      "player": "Jack Henderson",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Cody Walker",
       "injury": "Ac joint",
       "returning": "active"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Tom Cochrane",
-      "injury": "Knee",
-      "returning": "this weekend"
     },
     {
       "team": "Collingwood Magpies",
@@ -629,12 +527,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Essendon Bombers",
-      "player": "Kyle Langford",
-      "injury": "Suspended AFL",
-      "returning": "TBC"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Erone Fitzpatrick",
       "injury": "ACL",
@@ -650,12 +542,6 @@
       "team": "Essendon Bombers",
       "player": "Xavier Duursma",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Nick Bryan",
-      "injury": "Rib",
       "returning": "TBC"
     },
     {
@@ -723,12 +609,6 @@
       "player": "Jack Dalton",
       "injury": "Knee",
       "returning": "5 Weeks"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Ben Miller",
-      "injury": "Heel",
-      "returning": "next week"
     },
     {
       "team": "Geelong Cats",
@@ -806,12 +686,6 @@
       "team": "Hawthorn Hawks",
       "player": "Henry Hustwaite",
       "injury": "Face",
-      "returning": "Test"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Malakai Champion",
-      "injury": "Hand",
       "returning": "Test"
     },
     {
@@ -1091,12 +965,6 @@
       "returning": "active"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Callum Ah Chee",
-      "injury": "Hamstring",
-      "returning": "1 week"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Lewis Hayes",
       "injury": "ACL",
@@ -1250,12 +1118,6 @@
       "team": "West Coast Eagles",
       "player": "Deven Robertson",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Xavier Lindsay",
-      "injury": "active",
       "returning": "TBC"
     },
     {
