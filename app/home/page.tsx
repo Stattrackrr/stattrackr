@@ -651,11 +651,12 @@ export default function HomePage() {
                         style={{ boxShadow: `0 0 0 1px ${bk.color}33` }}
                       >
                         <Image
-                          src={`/images/bookmakers/${bk.logo}.png`}
+                          src={`/images/bookmakers/${bk.logo}.png?v=20260802b`}
                           alt={`${bk.name} logo`}
                           width={28}
                           height={28}
                           className="w-7 h-7 object-contain"
+                          unoptimized
                         />
                       </div>
                       <span className="text-[10px] font-semibold text-gray-300 text-center leading-tight">{bk.name}</span>
