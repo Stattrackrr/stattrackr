@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-02T02:20:49.658Z",
+  "generatedAt": "2026-08-02T06:38:14.295Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 212,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Toby Murray",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Finnbar Maley",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Nick Murray",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Luke Trainor",
+      "injury": "Set for a stint on the sidelines after appearing to punch West Coast Eagles defender Jack Williams.",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Kade Chandler",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Latrelle Pickett",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "William Edwards",
+      "injury": "Fibula",
+      "returning": "long spell out"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Rowbottom",
+      "injury": "Hand",
+      "returning": "miss the rest of the home and away season"
+    },
     {
       "team": "Richmond Tigers",
       "player": "Rhyan Mansell",
@@ -133,7 +181,7 @@
     {
       "team": "Gold Coast Suns",
       "player": "Zeke Uwland",
-      "injury": "managed",
+      "injury": "Managed",
       "returning": "TBC"
     },
     {
@@ -333,18 +381,6 @@
       "player": "Jordan Ridley",
       "injury": "Ankle",
       "returning": "TBA"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Kade Chandler",
-      "injury": "Hand",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Latrelle Pickett",
-      "injury": "Concussion",
-      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
