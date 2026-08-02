@@ -22,6 +22,7 @@ const TAB_NAMESPACE_LIST_KEY = 'stattrackr_tab_namespaces'
 const MAX_TAB_SESSIONS = 10
 const PERSISTENT_STORAGE_KEY = 'sb-auth-token'
 const SESSION_STORAGE_KEY = 'sb-session-token'
+const SIGNED_OUT_FLAG_KEY = 'stattrackr_signed_out'
 const AFL_PAGE_STATE_KEY = 'aflPageState:v1'
 const AFL_PLAYER_LOGS_CACHE_PREFIX = 'aflPlayerLogsCache:'
 
@@ -109,9 +110,43 @@ function setLocalStorageWithQuotaRecovery(namespace: string, key: string, value:
   window.localStorage.setItem(targetKey, value)
 }
 
+const isSignedOutFlagSet = (): boolean => {
+  if (!isBrowser) return false
+  try {
+    return window.localStorage.getItem(SIGNED_OUT_FLAG_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+const markSignedOutFlag = () => {
+  if (!isBrowser) return
+  try {
+    window.localStorage.setItem(SIGNED_OUT_FLAG_KEY, '1')
+  } catch {
+    // ignore
+  }
+}
+
+const clearSignedOutFlag = () => {
+  if (!isBrowser) return
+  try {
+    window.localStorage.removeItem(SIGNED_OUT_FLAG_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 const createNamespacedStorage = (storage: Storage, namespace: string, recoverQuota = false): StorageAdapter => ({
   getItem: (key: string) => storage.getItem(`${namespace}:${key}`),
   setItem: (key: string, value: string) => {
+    // Any fresh auth write means the user signed in again — allow session persistence.
+    if (
+      key === PERSISTENT_STORAGE_KEY ||
+      key === SESSION_STORAGE_KEY
+    ) {
+      clearSignedOutFlag()
+    }
     if (recoverQuota && isBrowser && storage === window.localStorage) {
       setLocalStorageWithQuotaRecovery(namespace, key, value)
       return
@@ -185,8 +220,27 @@ const ensureTabNamespace = (): string => {
 const tabNamespace = ensureTabNamespace()
 const registeredNamespaces = registerNamespace(tabNamespace)
 
+/** Wipe auth tokens from every tab namespace so logout can't be undone by cross-tab copy. */
+const clearAllTabAuthTokens = () => {
+  if (!isBrowser) return
+  const namespaces = new Set(getRegisteredNamespaces())
+  namespaces.add(tabNamespace)
+  for (const ns of namespaces) {
+    cleanupNamespace(ns)
+  }
+  try {
+    window.localStorage.removeItem('stattrackr_remember_me')
+    window.localStorage.removeItem('stattrackr_google_login')
+    window.sessionStorage.removeItem('st_viewer_profile_v1')
+  } catch {
+    // ignore
+  }
+}
+
 const copySessionFromNamespace = (source: string, target: string) => {
   if (!isBrowser || source === target) return
+  // After an explicit logout, never resurrect a session from another tab namespace.
+  if (isSignedOutFlagSet()) return
   const persistent = window.localStorage.getItem(`${source}:${PERSISTENT_STORAGE_KEY}`)
   const sessionOnly = window.localStorage.getItem(`${source}:${SESSION_STORAGE_KEY}`)
   if (persistent !== null && !window.localStorage.getItem(`${target}:${PERSISTENT_STORAGE_KEY}`)) {
@@ -208,7 +262,7 @@ const copySessionFromNamespace = (source: string, target: string) => {
 if (isBrowser) {
   const existingPersistent = window.localStorage.getItem(`${tabNamespace}:${PERSISTENT_STORAGE_KEY}`)
   const existingSession = window.localStorage.getItem(`${tabNamespace}:${SESSION_STORAGE_KEY}`)
-  if (!existingPersistent && !existingSession) {
+  if (!existingPersistent && !existingSession && !isSignedOutFlagSet()) {
     const candidateNamespaces = registeredNamespaces.filter(ns => ns !== tabNamespace)
     const sourceNamespace = candidateNamespaces[candidateNamespaces.length - 1]
     if (sourceNamespace) {
@@ -412,7 +466,24 @@ try {
         throw error;
       }
     };
+
       }
+    }
+
+    // Patch once per browser context (including when reusing the window singleton).
+    const WIN_SIGNOUT_PATCHED = '__STATTACKR_SIGNOUT_PATCHED__';
+    if (!(window as unknown as Record<string, unknown>)[WIN_SIGNOUT_PATCHED]) {
+      const originalSignOut = supabase.auth.signOut.bind(supabase.auth);
+      supabase.auth.signOut = async (options) => {
+        const result = await originalSignOut(options);
+        markSignedOutFlag();
+        clearAllTabAuthTokens();
+        void import('@/lib/profileSubscriptionGate')
+          .then((m) => m.invalidateViewerProfileCache())
+          .catch(() => {});
+        return result;
+      };
+      (window as unknown as Record<string, unknown>)[WIN_SIGNOUT_PATCHED] = true;
     }
   } else {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -456,7 +527,18 @@ if (!isBrowser && originalConsoleError && originalConsoleWarn) {
   }, 0);
 }
 
-export { supabase, supabaseSessionOnly, getSupabaseSessionOnly };
+/** Explicit logout helper used by UI — same cleanup as the patched signOut. */
+async function signOutFully(
+  options: { scope?: 'global' | 'local' | 'others' } = { scope: 'local' },
+) {
+  const result = await supabase.auth.signOut(options);
+  // Patched signOut already clears namespaces; keep this as a safe second pass.
+  markSignedOutFlag();
+  clearAllTabAuthTokens();
+  return result;
+}
+
+export { supabase, supabaseSessionOnly, getSupabaseSessionOnly, signOutFully };
 
 // Types for the database schema
 export type Json =

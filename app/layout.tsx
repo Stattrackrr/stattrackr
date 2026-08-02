@@ -37,15 +37,15 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/images/transparent-photo.png?v=20260302", sizes: "48x48", type: "image/png" },
-      { url: "/images/transparent-photo.png?v=20260302", sizes: "192x192", type: "image/png" },
-      { url: "/images/transparent-photo.png?v=20260302", sizes: "512x512", type: "image/png" },
+      { url: "/images/favicon-32.png?v=20260802", sizes: "32x32", type: "image/png" },
+      { url: "/images/favicon-48.png?v=20260802", sizes: "48x48", type: "image/png" },
+      { url: "/images/stattrackr-logo-512.webp?v=20260802", sizes: "512x512", type: "image/webp" },
     ],
     shortcut: [
-      { url: "/images/transparent-photo.png?v=20260302", type: "image/png" },
+      { url: "/images/favicon-32.png?v=20260802", type: "image/png" },
     ],
     apple: [
-      { url: "/images/transparent-photo.png?v=20260302", sizes: "180x180", type: "image/png" },
+      { url: "/images/apple-touch-icon.png?v=20260802", sizes: "180x180", type: "image/png" },
     ],
   },
   appleWebApp: {
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     siteName: "StatTrackr",
     images: [
       {
-        url: "/images/stattrackr-icon.png?v=20260302",
+        url: "/images/stattrackr-icon-512.webp?v=20260802",
         width: 512,
         height: 512,
         alt: "StatTrackr logo",

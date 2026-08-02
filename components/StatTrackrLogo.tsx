@@ -17,13 +17,12 @@ export function StatTrackrLogo({
   return (
     <div className={`${className} relative flex-shrink-0 overflow-visible`}>
       <Image
-        src="/images/transparent-photo.png"
+        src="/images/stattrackr-logo-512.webp"
         alt="StatTrackr Logo"
         width={200}
         height={200}
         className="w-full h-full object-contain"
         priority
-        unoptimized
         onLoad={handleReady}
         onError={handleReady}
       />

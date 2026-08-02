@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
   // Serve the app icon at /favicon.ico for legacy requests
   async rewrites() {
     return [
-      { source: "/favicon.ico", destination: "/images/stattrackr-icon.png" },
+      { source: "/favicon.ico", destination: "/images/favicon-32.png" },
       { source: "/world-cup/player/:slug", destination: "/world-cup" },
     ];
   },

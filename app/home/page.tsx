@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
-import { readViewerProfileCache, resolveViewerProfile } from '@/lib/profileSubscriptionGate';
+import { signOutFully, supabase } from '@/lib/supabaseClient';
+import { invalidateViewerProfileCache, readViewerProfileCache, resolveViewerProfile } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
@@ -50,6 +50,22 @@ function getAvatarColor(name: string): string {
   return AVATAR_GRADIENTS[Math.abs(h) % AVATAR_GRADIENTS.length];
 }
 
+function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    Promise.resolve(promise).then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
@@ -71,20 +87,27 @@ export default function HomePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
-  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  // Paint marketing content immediately for anonymous/mobile visitors.
+  // Only flip to a redirect spinner once we confirm a logged-in Pro user.
+  const [isRedirectingPro, setIsRedirectingPro] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [loadingBrandReady, setLoadingBrandReady] = useState(false);
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const authCheckIdRef = useRef(0);
 
-  useEffect(() => {
-    if (loadingBrandReady) return;
-    const t = setTimeout(() => setLoadingBrandReady(true), 700);
-    return () => clearTimeout(t);
-  }, [loadingBrandReady]);
+  const handleLogout = async () => {
+    authCheckIdRef.current += 1;
+    setUser(null);
+    setHasPremium(false);
+    setIsRedirectingPro(false);
+    setShowProfileMenu(false);
+    invalidateViewerProfileCache();
+    await signOutFully({ scope: 'local' });
+    router.replace('/');
+  };
 
   // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
@@ -101,35 +124,69 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
+    let cancelled = false;
+    const checkId = ++authCheckIdRef.current;
+
     const run = async () => {
       // If Supabase redirected here with tokens in the hash (e.g. /home#access_token=...), set the session
       if (typeof window !== "undefined" && window.location.hash) {
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const at = params.get("access_token");
         const rt = params.get("refresh_token");
+        const type = params.get("type");
         if (at && rt) {
-          await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+          try {
+            await withTimeout(
+              supabase.auth.setSession({ access_token: at, refresh_token: rt }),
+              4000,
+            );
+          } catch {
+            // Fall through — don't block the landing page on auth recovery.
+          }
           window.history.replaceState(null, "", window.location.pathname + window.location.search || "/home");
+          if (type === "recovery") {
+            router.replace("/auth/update-password");
+            return;
+          }
         }
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkPremiumStatus(session.user.id);
-      } else {
-        setIsCheckingSubscription(false);
+      try {
+        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 2500);
+        if (cancelled || checkId !== authCheckIdRef.current) return;
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          void checkPremiumStatus(session.user.id, checkId);
+        } else {
+          setHasPremium(false);
+          setIsRedirectingPro(false);
+        }
+      } catch {
+        // Supabase slow/blocked (common on mobile privacy DNS) — keep landing visible.
+        if (!cancelled && checkId === authCheckIdRef.current) {
+          setUser(null);
+          setHasPremium(false);
+          setIsRedirectingPro(false);
+        }
       }
     };
-    run();
+    void run();
+
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        authCheckIdRef.current += 1;
+        setUser(null);
+        setHasPremium(false);
+        setIsRedirectingPro(false);
+        return;
+      }
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkPremiumStatus(session.user.id);
+        void checkPremiumStatus(session.user.id, authCheckIdRef.current);
       } else {
-        setIsCheckingSubscription(false);
         setHasPremium(false);
+        setIsRedirectingPro(false);
       }
     });
 
@@ -140,14 +197,16 @@ export default function HomePage() {
     window.addEventListener('scroll', handleScroll);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [router]);
 
   // Logged-in Pro users: redirect to props page, don't show home (preserve query e.g. test_event_code for Meta)
   useEffect(() => {
-    if (!isCheckingSubscription && user && hasPremium) {
+    if (user && hasPremium) {
+      setIsRedirectingPro(true);
       prefetchPropsResources();
       const search = typeof window !== "undefined" ? window.location.search : "";
       const params = new URLSearchParams(search);
@@ -157,7 +216,7 @@ export default function HomePage() {
       const qs = params.toString();
       router.replace(qs ? `/props?${qs}` : '/props');
     }
-  }, [isCheckingSubscription, user, hasPremium, router]);
+  }, [user, hasPremium, router]);
 
   // Close profile menu on click outside
   useEffect(() => {
@@ -171,31 +230,34 @@ export default function HomePage() {
     return () => document.removeEventListener('click', handleClick);
   }, [showProfileMenu]);
 
-  const checkPremiumStatus = async (userId: string) => {
+  const checkPremiumStatus = async (userId: string, checkId: number) => {
     const cached = readViewerProfileCache(userId);
-    if (cached) {
+    if (cached && checkId === authCheckIdRef.current) {
       setHasPremium(cached.isPro);
-      setIsCheckingSubscription(false);
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withTimeout(supabase.auth.getSession(), 2500);
+      if (checkId !== authCheckIdRef.current) return;
       if (!session?.user) {
         setHasPremium(false);
+        setIsRedirectingPro(false);
         return;
       }
 
-      const profile = await resolveViewerProfile(supabase, session.user, {
-        forceRefresh: !cached,
-      });
+      const profile = await withTimeout(
+        resolveViewerProfile(supabase, session.user, {
+          forceRefresh: !cached,
+        }),
+        4000,
+      );
+      if (checkId !== authCheckIdRef.current) return;
       setHasPremium(profile.isPro);
     } catch (error) {
       console.error('Error checking subscription:', error);
-      if (!cached) {
+      if (!cached && checkId === authCheckIdRef.current) {
         setHasPremium(false);
       }
-    } finally {
-      setIsCheckingSubscription(false);
     }
   };
 
@@ -305,23 +367,12 @@ export default function HomePage() {
     },
   ];
 
-  if (isCheckingSubscription) {
+  // Logged-in Pro: redirect to /props; show loading only once confirmed
+  if (isRedirectingPro || (user && hasPremium)) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-        <div className={`flex flex-col items-center gap-3 transition-opacity duration-150 ${loadingBrandReady ? 'opacity-100' : 'opacity-0'}`}>
-          <StatTrackrLogo className="w-20 h-20" onReady={() => setLoadingBrandReady(true)} />
-          <span className="font-bold text-4xl text-white">StatTrackr</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Logged-in Pro: redirect to /props; show loading until redirect
-  if (user && hasPremium) {
-    return (
-      <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-        <div className={`flex flex-col items-center gap-3 transition-opacity duration-150 ${loadingBrandReady ? 'opacity-100' : 'opacity-0'}`}>
-          <StatTrackrLogo className="w-20 h-20" onReady={() => setLoadingBrandReady(true)} />
+        <div className="flex flex-col items-center gap-3">
+          <StatTrackrLogo className="w-20 h-20" />
           <span className="font-bold text-4xl text-white">StatTrackr</span>
         </div>
       </div>
@@ -338,11 +389,12 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2 sm:gap-3">
               <Image 
-                src="/images/transparent-photo.png" 
+                src="/images/stattrackr-logo-512.webp" 
                 alt="StatTrackr" 
                 width={32} 
                 height={32}
                 className="w-7 h-7 sm:w-8 sm:h-8"
+                priority
               />
               <span className="text-lg sm:text-xl font-bold">StatTrackr</span>
             </div>
@@ -386,11 +438,7 @@ export default function HomePage() {
                               Manage subscription
                             </button>
                             <button
-                              onClick={async () => {
-                                await supabase.auth.signOut({ scope: 'local' });
-                                setShowProfileMenu(false);
-                                router.push('/home');
-                              }}
+                              onClick={() => { void handleLogout(); }}
                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
                             >
                               Log out
@@ -433,11 +481,7 @@ export default function HomePage() {
                               Manage subscription
                             </button>
                             <button
-                              onClick={async () => {
-                                await supabase.auth.signOut({ scope: 'local' });
-                                setShowProfileMenu(false);
-                                router.push('/home');
-                              }}
+                              onClick={() => { void handleLogout(); }}
                               className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white"
                             >
                               Log out
@@ -477,10 +521,10 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Decorative background glow */}
+        {/* Decorative background glow — lighter on mobile to avoid GPU jank */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/20 blur-[120px]" />
-          <div className="absolute top-0 -right-40 w-[38rem] h-[38rem] rounded-full bg-blue-600/20 blur-[120px]" />
+          <div className="absolute -top-40 -left-32 w-[40rem] h-[40rem] rounded-full bg-purple-600/15 md:bg-purple-600/20 blur-3xl md:blur-[120px]" />
+          <div className="absolute top-0 -right-40 w-[38rem] h-[38rem] rounded-full bg-blue-600/15 md:bg-blue-600/20 blur-3xl md:blur-[120px]" />
         </div>
 
         <div className="max-w-7xl mx-auto relative">
@@ -529,14 +573,15 @@ export default function HomePage() {
             {/* Right: hero photo */}
             <div className="relative pb-10">
               <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-                <div aria-hidden className="absolute -inset-4 bg-gradient-to-tr from-purple-600/30 via-fuchsia-500/20 to-blue-600/30 rounded-[2rem] blur-2xl" />
+                <div aria-hidden className="absolute -inset-4 hidden md:block bg-gradient-to-tr from-purple-600/30 via-fuchsia-500/20 to-blue-600/30 rounded-[2rem] blur-2xl" />
                 <div className="relative rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-purple-900/50">
                   <Image
-                    src="/images/hero-app-in-use.png"
+                    src="/images/hero-app-in-use.webp"
                     alt="A StatTrackr user checking live player stats on their phone"
                     width={900}
                     height={900}
                     priority
+                    sizes="(max-width: 1024px) 90vw, 450px"
                     className="w-full h-auto object-cover"
                   />
                   <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-[#050d1a]/50 via-transparent to-transparent" />
@@ -550,11 +595,13 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-[auto_1fr_1fr] gap-10 lg:gap-12 items-center">
               {/* Image — left */}
               <div className="relative flex justify-center lg:justify-start">
-                <div aria-hidden className="absolute inset-0 bg-gradient-to-tr from-purple-600/15 via-fuchsia-500/10 to-blue-600/15 blur-3xl rounded-full pointer-events-none" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/hero-devices.png"
+                <div aria-hidden className="absolute inset-0 hidden md:block bg-gradient-to-tr from-purple-600/15 via-fuchsia-500/10 to-blue-600/15 blur-3xl rounded-full pointer-events-none" />
+                <Image
+                  src="/images/hero-devices.webp"
                   alt="StatTrackr running across laptop, tablet, and phone"
+                  width={760}
+                  height={760}
+                  sizes="(max-width: 1024px) 320px, 380px"
                   className="relative w-full max-w-[320px] lg:max-w-[380px] h-auto drop-shadow-2xl"
                   style={{
                     maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%)',
@@ -579,35 +626,36 @@ export default function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-4">Bookmakers covered</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { domain: 'sportsbet.com.au', name: 'Sportsbet',  color: '#0b61ff' },
-                    { domain: 'pointsbet.com.au', name: 'PointsBet',  color: '#EE3124' },
-                    { domain: 'bet365.com',       name: 'Bet365',     color: '#1C6E38' },
-                    { domain: 'ladbrokes.com.au', name: 'Ladbrokes',  color: '#006B3F' },
-                    { domain: 'tab.com.au',       name: 'TAB',        color: '#00843D' },
-                    { domain: 'neds.com.au',      name: 'Neds',       color: '#E31837' },
-                    { domain: 'betr.com.au',      name: 'Betr',       color: '#9333ea' },
-                    { domain: 'betfair.com.au',   name: 'Betfair',    color: '#FFB81C' },
-                    { domain: 'unibet.com.au',    name: 'Unibet',     color: '#43B649' },
-                    { domain: 'draftkings.com',   name: 'DraftKings', color: '#53D337' },
-                    { domain: 'fanduel.com',      name: 'FanDuel',    color: '#0070EB' },
-                    { domain: 'betmgm.com',       name: 'BetMGM',     color: '#C5A572' },
-                    { domain: 'fanatics.com',     name: 'Fanatics',   color: '#011E41' },
-                    { domain: 'caesars.com',      name: 'Caesars',    color: '#002855' },
-                    { domain: 'dabble.com.au',    name: 'Dabble',     color: '#7C3AED' },
+                    { name: 'Sportsbet',  color: '#0b61ff', logo: 'sportsbet' },
+                    { name: 'PointsBet',  color: '#EE3124', logo: 'pointsbet' },
+                    { name: 'Bet365',     color: '#1C6E38', logo: 'bet365' },
+                    { name: 'Ladbrokes',  color: '#006B3F', logo: 'ladbrokes' },
+                    { name: 'TAB',        color: '#00843D', logo: 'tab' },
+                    { name: 'Neds',       color: '#E31837', logo: 'neds' },
+                    { name: 'Betr',       color: '#9333ea', logo: 'betr' },
+                    { name: 'Betfair',    color: '#FFB81C', logo: 'betfair' },
+                    { name: 'Unibet',     color: '#43B649', logo: 'unibet' },
+                    { name: 'DraftKings', color: '#53D337', logo: 'draftkings' },
+                    { name: 'FanDuel',    color: '#0070EB', logo: 'fanduel' },
+                    { name: 'BetMGM',     color: '#C5A572', logo: 'betmgm' },
+                    { name: 'Fanatics',   color: '#011E41', logo: 'fanatics' },
+                    { name: 'Caesars',    color: '#002855', logo: 'caesars' },
+                    { name: 'Dabble',     color: '#7C3AED', logo: 'dabble' },
                   ].map((bk) => (
                     <div
                       key={bk.name}
                       className="flex flex-col items-center gap-2 rounded-2xl p-3 border border-white/[0.07] bg-gradient-to-b from-white/[0.05] to-transparent hover:border-purple-500/40 hover:from-white/[0.08] transition-all"
                     >
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                        style={{ background: `linear-gradient(135deg, ${bk.color}40, ${bk.color}15)` }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm bg-white/95 overflow-hidden"
+                        style={{ boxShadow: `0 0 0 1px ${bk.color}33` }}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${bk.domain}&sz=32`}
-                          alt={bk.name}
-                          className="w-6 h-6"
+                        <Image
+                          src={`/images/bookmakers/${bk.logo}.png`}
+                          alt={`${bk.name} logo`}
+                          width={28}
+                          height={28}
+                          className="w-7 h-7 object-contain"
                         />
                       </div>
                       <span className="text-[10px] font-semibold text-gray-300 text-center leading-tight">{bk.name}</span>
@@ -637,14 +685,16 @@ export default function HomePage() {
 
           {/* Image + floating stats */}
           <div className="relative">
-            <div aria-hidden className="absolute -inset-10 bg-gradient-to-tr from-purple-600/20 via-fuchsia-500/10 to-blue-600/20 blur-3xl pointer-events-none" />
+            <div aria-hidden className="absolute -inset-10 hidden md:block bg-gradient-to-tr from-purple-600/20 via-fuchsia-500/10 to-blue-600/20 blur-3xl pointer-events-none" />
 
             {/* Laptop image — full width */}
             <div className="relative rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-purple-900/40">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/hero-picks.png"
+              <Image
+                src="/images/hero-picks.webp"
                 alt="StatTrackr Top Picks model"
+                width={1400}
+                height={900}
+                sizes="(max-width: 1280px) 100vw, 1280px"
                 className="w-full h-auto"
                 style={{
                   maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
@@ -967,7 +1017,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <Image 
-                  src="/images/stattrackr-icon.png" 
+                  src="/images/stattrackr-logo-512.webp" 
                   alt="StatTrackr" 
                   width={32} 
                   height={32}
