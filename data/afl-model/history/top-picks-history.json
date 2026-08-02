@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T09:09:21.969Z",
+  "generatedAt": "2026-08-02T09:20:58.534Z",
   "count": 62,
   "records": [
     {
@@ -2560,7 +2560,7 @@
           "recommendedEdge": 0.2211,
           "recommendedProb": 0.7211,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 21
         },
         {
           "playerName": "Jake Soligo",
@@ -2571,7 +2571,7 @@
           "recommendedEdge": 0.2057,
           "recommendedProb": 0.7057,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 19
         },
         {
           "playerName": "Sam Durham",
@@ -2582,7 +2582,7 @@
           "recommendedEdge": 0.1743,
           "recommendedProb": 0.6653,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 24
         }
       ]
     }
