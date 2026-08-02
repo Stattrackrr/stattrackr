@@ -20,6 +20,7 @@ import {
   type NblGameFiltersState,
 } from '@/app/nbl/components/NblGameFilters';
 import { NblBoxScore } from '@/app/nbl/components/NblBoxScore';
+import { NblShotChart } from '@/app/nbl/components/NblShotChart';
 import NblDvpCard from '@/app/nbl/components/NblDvpCard';
 import NblOpponentBreakdownCard from '@/app/nbl/components/NblOpponentBreakdownCard';
 import NblTeamMatchupCard from '@/app/nbl/components/NblTeamMatchupCard';
@@ -199,7 +200,8 @@ export default function NblDashboardPage() {
       setRosterLoading(true);
       try {
         const [playersRes, logosRes] = await Promise.all([
-          fetch(`/api/nbl/players?year=${NBL_CURRENT_SEASON_YEAR}`),
+          // NBL27 tracker/current roster only — no prior-season players in search.
+          fetch(`/api/nbl/players?year=${NBL_CURRENT_SEASON_YEAR}&currentOnly=1`),
           fetch(`/api/nbl/team-logos?year=${NBL_CURRENT_SEASON_YEAR}`),
         ]);
         if (cancelled) return;
@@ -249,7 +251,7 @@ export default function NblDashboardPage() {
 
   const filteredPlayers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return rosterPlayers.slice(0, 12);
+    if (!q) return rosterPlayers.slice(0, 20);
     return rosterPlayers
       .filter((p) => {
         const name = String(p.name || '').toLowerCase();
@@ -257,7 +259,7 @@ export default function NblDashboardPage() {
         const code = String(p.teamCode || '').toLowerCase();
         return name.includes(q) || team.includes(q) || code.includes(q);
       })
-      .slice(0, 12);
+      .slice(0, 20);
   }, [rosterPlayers, searchQuery]);
 
   const filteredTeams = useMemo(() => {
@@ -719,7 +721,7 @@ export default function NblDashboardPage() {
                           }}
                           onFocus={() => setShowSearchDropdown(true)}
                           placeholder={
-                            nblPropsMode === 'team' ? 'Search NBL teams...' : 'Search NBL players...'
+                            nblPropsMode === 'team' ? 'Search NBL teams...' : 'Search NBL27 players...'
                           }
                           className={`w-full pl-9 pr-3 py-2 rounded-lg border text-sm placeholder-gray-500 dark:placeholder-gray-400 ${
                             isDark
@@ -786,7 +788,7 @@ export default function NblDashboardPage() {
                             ) : (
                               filteredPlayers.map((player) => (
                                 <button
-                                  key={player.playerId}
+                                  key={player.playerId || `${player.name}|${player.team}`}
                                   type="button"
                                   onClick={() => selectPlayer(player)}
                                   className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 ${
@@ -1180,7 +1182,19 @@ export default function NblDashboardPage() {
                   <NblLadderCard isDark={!!mounted && isDark} />
                 </div>
 
-                {/* 5. Box score */}
+                {/* 5. Shot chart — mobile (desktop lives in right panel, same as NBA) */}
+                {nblPropsMode === 'player' ? (
+                  <div className="lg:hidden w-full min-w-0">
+                    <NblShotChart
+                      isDark={!!mounted && isDark}
+                      playerName={selectedPlayer?.name}
+                      playerTeam={selectedPlayer?.team}
+                      opponentTeam={displayOpponent}
+                    />
+                  </div>
+                ) : null}
+
+                {/* 6. Box score */}
                 <div className={`w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} overflow-hidden`}>
                   <NblBoxScore isDark={!!mounted && isDark} />
                 </div>
@@ -1313,6 +1327,18 @@ export default function NblDashboardPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Shot Chart — desktop (right panel, matches NBA placement) */}
+                {nblPropsMode === 'player' ? (
+                  <div className="hidden lg:block w-full min-w-0">
+                    <NblShotChart
+                      isDark={!!mounted && isDark}
+                      playerName={selectedPlayer?.name}
+                      playerTeam={selectedPlayer?.team}
+                      opponentTeam={displayOpponent}
+                    />
+                  </div>
+                ) : null}
 
                 {/* Player vs Team — desktop (player mode) */}
                 {nblPropsMode === 'player' && (
