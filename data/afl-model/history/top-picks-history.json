@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-01T17:45:46Z",
+  "generatedAt": "2026-08-02T06:33:26.722Z",
   "count": 62,
   "records": [
     {
@@ -2466,7 +2466,7 @@
           "recommendedEdge": 0.1837,
           "recommendedProb": 0.6837,
           "rank": 1,
-          "actualDisposals": null
+          "actualDisposals": 11
         },
         {
           "playerName": "Tom Mccarthy",
@@ -2477,7 +2477,7 @@
           "recommendedEdge": 0.1782,
           "recommendedProb": 0.6484,
           "rank": 2,
-          "actualDisposals": null
+          "actualDisposals": 22
         },
         {
           "playerName": "Nick Vlastuin",
@@ -2488,7 +2488,7 @@
           "recommendedEdge": 0.1336,
           "recommendedProb": 0.6336,
           "rank": 3,
-          "actualDisposals": null
+          "actualDisposals": 16
         }
       ]
     },
