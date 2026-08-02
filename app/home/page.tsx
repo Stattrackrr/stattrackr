@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { signOutFully, supabase } from '@/lib/supabaseClient';
-import { invalidateViewerProfileCache, readViewerProfileCache, resolveViewerProfile } from '@/lib/profileSubscriptionGate';
+import {
+  invalidateViewerProfileCache,
+  peekViewerProfileCache,
+  readViewerProfileCache,
+  resolveViewerProfile,
+} from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
@@ -66,6 +71,33 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   });
 }
 
+/** True when a Supabase auth token is still in localStorage (returning logged-in user). */
+function hasStoredAuthSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.localStorage.getItem('stattrackr_signed_out') === '1') return false;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key) continue;
+      if (key.endsWith(':sb-auth-token') || key.endsWith(':sb-session-token')) {
+        const val = window.localStorage.getItem(key);
+        if (val && val.length > 20) return true;
+      }
+    }
+  } catch {
+    // private mode / blocked storage
+  }
+  return false;
+}
+
+function buildPropsHref(): string {
+  const search = typeof window !== 'undefined' ? window.location.search : '';
+  const params = new URLSearchParams(search);
+  if (!params.has('sport')) params.set('sport', 'all');
+  const qs = params.toString();
+  return qs ? `/props?${qs}` : '/props';
+}
+
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
@@ -98,8 +130,9 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
   // Paint marketing content immediately for anonymous/mobile visitors.
-  // Only flip to a redirect spinner once we confirm a logged-in Pro user.
+  // Returning Pro / logged-in users gate behind a spinner before first paint (useLayoutEffect).
   const [isRedirectingPro, setIsRedirectingPro] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -113,11 +146,29 @@ export default function HomePage() {
     setUser(null);
     setHasPremium(false);
     setIsRedirectingPro(false);
+    setIsCheckingSession(false);
     setShowProfileMenu(false);
     invalidateViewerProfileCache();
     await signOutFully({ scope: 'local' });
     router.replace('/');
   };
+
+  // Before first paint: if we already know this is a Pro session, skip the marketing flash.
+  useLayoutEffect(() => {
+    const cached = peekViewerProfileCache();
+    if (cached?.isPro) {
+      setHasPremium(true);
+      setIsRedirectingPro(true);
+      setIsCheckingSession(false);
+      prefetchPropsResources();
+      router.replace(buildPropsHref());
+      return;
+    }
+    if (hasStoredAuthSession()) {
+      setIsCheckingSession(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
@@ -170,6 +221,7 @@ export default function HomePage() {
         } else {
           setHasPremium(false);
           setIsRedirectingPro(false);
+          setIsCheckingSession(false);
         }
       } catch {
         // Supabase slow/blocked (common on mobile privacy DNS) — keep landing visible.
@@ -177,6 +229,7 @@ export default function HomePage() {
           setUser(null);
           setHasPremium(false);
           setIsRedirectingPro(false);
+          setIsCheckingSession(false);
         }
       }
     };
@@ -189,6 +242,7 @@ export default function HomePage() {
         setUser(null);
         setHasPremium(false);
         setIsRedirectingPro(false);
+        setIsCheckingSession(false);
         return;
       }
       setUser(session?.user ?? null);
@@ -197,6 +251,7 @@ export default function HomePage() {
       } else {
         setHasPremium(false);
         setIsRedirectingPro(false);
+        setIsCheckingSession(false);
       }
     });
 
@@ -217,14 +272,9 @@ export default function HomePage() {
   useEffect(() => {
     if (user && hasPremium) {
       setIsRedirectingPro(true);
+      setIsCheckingSession(false);
       prefetchPropsResources();
-      const search = typeof window !== "undefined" ? window.location.search : "";
-      const params = new URLSearchParams(search);
-      if (!params.has('sport')) {
-        params.set('sport', 'all');
-      }
-      const qs = params.toString();
-      router.replace(qs ? `/props?${qs}` : '/props');
+      router.replace(buildPropsHref());
     }
   }, [user, hasPremium, router]);
 
@@ -255,6 +305,12 @@ export default function HomePage() {
     const cached = readViewerProfileCache(userId);
     if (cached && checkId === authCheckIdRef.current) {
       setHasPremium(cached.isPro);
+      if (cached.isPro) {
+        setIsRedirectingPro(true);
+        setIsCheckingSession(false);
+      } else {
+        setIsCheckingSession(false);
+      }
     }
 
     try {
@@ -263,6 +319,7 @@ export default function HomePage() {
       if (!session?.user) {
         setHasPremium(false);
         setIsRedirectingPro(false);
+        setIsCheckingSession(false);
         return;
       }
 
@@ -274,10 +331,15 @@ export default function HomePage() {
       );
       if (checkId !== authCheckIdRef.current) return;
       setHasPremium(profile.isPro);
+      if (profile.isPro) {
+        setIsRedirectingPro(true);
+      }
+      setIsCheckingSession(false);
     } catch (error) {
       console.error('Error checking subscription:', error);
-      if (!cached && checkId === authCheckIdRef.current) {
-        setHasPremium(false);
+      if (checkId === authCheckIdRef.current) {
+        if (!cached) setHasPremium(false);
+        setIsCheckingSession(false);
       }
     }
   };
@@ -389,7 +451,7 @@ export default function HomePage() {
   ];
 
   // Logged-in Pro: redirect to /props; show loading only once confirmed
-  if (isRedirectingPro || (user && hasPremium)) {
+  if (isRedirectingPro || isCheckingSession || (user && hasPremium)) {
     return (
       <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

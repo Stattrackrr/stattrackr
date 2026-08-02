@@ -136,6 +136,30 @@ export function readViewerProfileCache(userId: string): ViewerProfile | null {
   return { ...rest, cached: true };
 }
 
+/** Sync peek of any fresh cached viewer profile (used to skip marketing flash for Pro). */
+export function peekViewerProfileCache(): ViewerProfile | null {
+  if (
+    memoryViewerProfile &&
+    Date.now() - memoryViewerProfile.timestamp < VIEWER_PROFILE_CACHE_TTL_MS
+  ) {
+    const { timestamp: _ts, ...rest } = memoryViewerProfile;
+    return { ...rest, cached: true };
+  }
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(VIEWER_PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ViewerProfileCacheEntry;
+    if (!parsed?.userId) return null;
+    if (Date.now() - Number(parsed.timestamp) > VIEWER_PROFILE_CACHE_TTL_MS) return null;
+    memoryViewerProfile = parsed;
+    const { timestamp: _ts, ...rest } = parsed;
+    return { ...rest, cached: true };
+  } catch {
+    return null;
+  }
+}
+
 export function invalidateViewerProfileCache(): void {
   memoryViewerProfile = null;
   viewerProfileInFlight.clear();
