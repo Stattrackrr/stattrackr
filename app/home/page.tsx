@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { signOutFully, supabase } from '@/lib/supabaseClient';
@@ -71,31 +71,23 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
   });
 }
 
-/** True when a Supabase auth token is still in localStorage (returning logged-in user). */
-function hasStoredAuthSession(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    if (window.localStorage.getItem('stattrackr_signed_out') === '1') return false;
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
-      if (!key) continue;
-      if (key.endsWith(':sb-auth-token') || key.endsWith(':sb-session-token')) {
-        const val = window.localStorage.getItem(key);
-        if (val && val.length > 20) return true;
-      }
-    }
-  } catch {
-    // private mode / blocked storage
-  }
-  return false;
-}
-
 function buildPropsHref(): string {
   const search = typeof window !== 'undefined' ? window.location.search : '';
   const params = new URLSearchParams(search);
   if (!params.has('sport')) params.set('sport', 'all');
   const qs = params.toString();
   return qs ? `/props?${qs}` : '/props';
+}
+
+function HomeSplash() {
+  return (
+    <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <StatTrackrLogo className="w-20 h-20" />
+        <span className="font-bold text-4xl text-white">StatTrackr</span>
+      </div>
+    </div>
+  );
 }
 
 export default function HomePage() {
@@ -129,10 +121,9 @@ export default function HomePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly');
   const [user, setUser] = useState<User | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
-  // Paint marketing content immediately for anonymous/mobile visitors.
-  // Returning Pro / logged-in users gate behind a spinner before first paint (useLayoutEffect).
+  // Always show logo splash until auth resolves, then marketing or /props.
+  const [bootReady, setBootReady] = useState(false);
   const [isRedirectingPro, setIsRedirectingPro] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -140,35 +131,41 @@ export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const authCheckIdRef = useRef(0);
+  const redirectingRef = useRef(false);
+  const bootReadyRef = useRef(false);
+
+  const finishBootToMarketing = () => {
+    if (redirectingRef.current) return;
+    setIsRedirectingPro(false);
+    setHasPremium(false);
+    bootReadyRef.current = true;
+    setBootReady(true);
+  };
+
+  const goProToProps = () => {
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
+    setHasPremium(true);
+    setIsRedirectingPro(true);
+    bootReadyRef.current = false;
+    setBootReady(false);
+    prefetchPropsResources();
+    // Hard navigate so the marketing page never paints underneath a soft route change.
+    window.location.replace(buildPropsHref());
+  };
 
   const handleLogout = async () => {
     authCheckIdRef.current += 1;
+    redirectingRef.current = false;
     setUser(null);
     setHasPremium(false);
     setIsRedirectingPro(false);
-    setIsCheckingSession(false);
+    setBootReady(true);
     setShowProfileMenu(false);
     invalidateViewerProfileCache();
     await signOutFully({ scope: 'local' });
     router.replace('/');
   };
-
-  // Before first paint: if we already know this is a Pro session, skip the marketing flash.
-  useLayoutEffect(() => {
-    const cached = peekViewerProfileCache();
-    if (cached?.isPro) {
-      setHasPremium(true);
-      setIsRedirectingPro(true);
-      setIsCheckingSession(false);
-      prefetchPropsResources();
-      router.replace(buildPropsHref());
-      return;
-    }
-    if (hasStoredAuthSession()) {
-      setIsCheckingSession(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // User reviews / testimonials (2 price, 1 journal, 7 varied personal)
   const reviews = [
@@ -189,6 +186,13 @@ export default function HomePage() {
     const checkId = ++authCheckIdRef.current;
 
     const run = async () => {
+      // Fast path: known Pro from cache — stay on splash and hard-redirect.
+      const cachedPro = peekViewerProfileCache();
+      if (cachedPro?.isPro) {
+        goProToProps();
+        return;
+      }
+
       // If Supabase redirected here with tokens in the hash (e.g. /home#access_token=...), set the session
       if (typeof window !== "undefined" && window.location.hash) {
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -202,7 +206,7 @@ export default function HomePage() {
               4000,
             );
           } catch {
-            // Fall through — don't block the landing page on auth recovery.
+            // Fall through — don't block boot forever on auth recovery.
           }
           window.history.replaceState(null, "", window.location.pathname + window.location.search || "/home");
           if (type === "recovery") {
@@ -217,41 +221,38 @@ export default function HomePage() {
         if (cancelled || checkId !== authCheckIdRef.current) return;
         setUser(session?.user ?? null);
         if (session?.user) {
-          void checkPremiumStatus(session.user.id, checkId);
+          await checkPremiumStatus(session.user.id, checkId);
         } else {
-          setHasPremium(false);
-          setIsRedirectingPro(false);
-          setIsCheckingSession(false);
+          finishBootToMarketing();
         }
       } catch {
-        // Supabase slow/blocked (common on mobile privacy DNS) — keep landing visible.
+        // Supabase slow/blocked — show marketing rather than hang on splash.
         if (!cancelled && checkId === authCheckIdRef.current) {
           setUser(null);
-          setHasPremium(false);
-          setIsRedirectingPro(false);
-          setIsCheckingSession(false);
+          finishBootToMarketing();
         }
       }
     };
     void run();
 
-    // Listen for auth changes
+    // Listen for auth changes after boot (initial session is handled by run() above)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         authCheckIdRef.current += 1;
+        redirectingRef.current = false;
         setUser(null);
         setHasPremium(false);
         setIsRedirectingPro(false);
-        setIsCheckingSession(false);
+        bootReadyRef.current = true;
+        setBootReady(true);
         return;
       }
+      if (!bootReadyRef.current || redirectingRef.current) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         void checkPremiumStatus(session.user.id, authCheckIdRef.current);
       } else {
-        setHasPremium(false);
-        setIsRedirectingPro(false);
-        setIsCheckingSession(false);
+        finishBootToMarketing();
       }
     });
 
@@ -266,17 +267,8 @@ export default function HomePage() {
       subscription.unsubscribe();
       window.removeEventListener('scroll', handleScroll);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
-
-  // Logged-in Pro users: redirect to props page, don't show home (preserve query e.g. test_event_code for Meta)
-  useEffect(() => {
-    if (user && hasPremium) {
-      setIsRedirectingPro(true);
-      setIsCheckingSession(false);
-      prefetchPropsResources();
-      router.replace(buildPropsHref());
-    }
-  }, [user, hasPremium, router]);
 
   // Close profile menu on click outside
   useEffect(() => {
@@ -290,8 +282,9 @@ export default function HomePage() {
     return () => document.removeEventListener('click', handleClick);
   }, [showProfileMenu]);
 
-  // If we land with a hash (e.g. /#pricing), smooth-scroll instead of jumping
+  // If we land with a hash (e.g. /#pricing), smooth-scroll once marketing is ready
   useEffect(() => {
+    if (!bootReady || isRedirectingPro) return;
     if (typeof window === 'undefined') return;
     const hash = window.location.hash.replace(/^#/, '');
     if (!hash) return;
@@ -299,27 +292,23 @@ export default function HomePage() {
       document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [bootReady, isRedirectingPro]);
 
   const checkPremiumStatus = async (userId: string, checkId: number) => {
     const cached = readViewerProfileCache(userId);
+    if (cached?.isPro && checkId === authCheckIdRef.current) {
+      goProToProps();
+      return;
+    }
     if (cached && checkId === authCheckIdRef.current) {
-      setHasPremium(cached.isPro);
-      if (cached.isPro) {
-        setIsRedirectingPro(true);
-        setIsCheckingSession(false);
-      } else {
-        setIsCheckingSession(false);
-      }
+      setHasPremium(false);
     }
 
     try {
       const { data: { session } } = await withTimeout(supabase.auth.getSession(), 2500);
       if (checkId !== authCheckIdRef.current) return;
       if (!session?.user) {
-        setHasPremium(false);
-        setIsRedirectingPro(false);
-        setIsCheckingSession(false);
+        finishBootToMarketing();
         return;
       }
 
@@ -330,16 +319,17 @@ export default function HomePage() {
         4000,
       );
       if (checkId !== authCheckIdRef.current) return;
-      setHasPremium(profile.isPro);
       if (profile.isPro) {
-        setIsRedirectingPro(true);
+        goProToProps();
+        return;
       }
-      setIsCheckingSession(false);
+      setHasPremium(false);
+      setBootReady(true);
     } catch (error) {
       console.error('Error checking subscription:', error);
       if (checkId === authCheckIdRef.current) {
-        if (!cached) setHasPremium(false);
-        setIsCheckingSession(false);
+        // Cached free, or unknown — don't trap users on splash.
+        finishBootToMarketing();
       }
     }
   };
@@ -451,15 +441,9 @@ export default function HomePage() {
   ];
 
   // Logged-in Pro: redirect to /props; show loading only once confirmed
-  if (isRedirectingPro || isCheckingSession || (user && hasPremium)) {
-    return (
-      <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <StatTrackrLogo className="w-20 h-20" />
-          <span className="font-bold text-4xl text-white">StatTrackr</span>
-        </div>
-      </div>
-    );
+  // Splash until auth finishes — then marketing, or hard-redirect to props for Pro.
+  if (!bootReady || isRedirectingPro) {
+    return <HomeSplash />;
   }
 
   return (
