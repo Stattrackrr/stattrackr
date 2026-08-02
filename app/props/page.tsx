@@ -7716,11 +7716,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
   // Avoid full-screen blocking loader when navigating back from dashboards.
   // Let page skeletons render immediately; redirect non-pro users once checks finish.
   if (subscriptionChecked && !isPro) {
-    return null;
+    return <div className="min-h-screen bg-[#050d1a]" />;
   }
 
+  // Use isDark (not mounted&&isDark) for the page shell so first paint is never bg-gray-50.
+  const shellDark = !mounted || isDark;
+
   return (
-    <div className={`min-h-screen lg:h-screen ${mounted && isDark ? 'bg-[#050d1a]' : 'bg-gray-50'} transition-colors lg:overflow-x-auto lg:overflow-y-hidden`}>
+    <div className={`min-h-screen lg:h-screen ${shellDark ? 'bg-[#050d1a]' : 'bg-gray-50'} lg:overflow-x-auto lg:overflow-y-hidden`}>
       {/* Loading bar at top when navigating to dashboard - must be at root level */}
       <LoadingBar isLoading={navigatingToPlayer} isDark={isDark} showImmediately={navigatingToPlayer} mobileOffset={0} />
       <style jsx global>{`
@@ -7797,13 +7800,13 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         }
       `}</style>
       
-      <div className={`px-0 dashboard-container ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ 
+      <div className={`px-0 dashboard-container ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ 
         marginLeft: 'calc(var(--sidebar-width, 0px) + var(--gap, 2px))',
         width: 'calc(100% - (var(--sidebar-width, 0px) + var(--gap, 2px)))',
         paddingLeft: 0,
       }}>
-        <div className={`mx-auto w-full max-w-[1550px] ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0, paddingRight: '0px' }}>
-          <div className={`pt-4 min-h-0 lg:h-full dashboard-container ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0 }}>
+        <div className={`mx-auto w-full max-w-[1550px] ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0, paddingRight: '0px' }}>
+          <div className={`pt-4 min-h-0 lg:h-full dashboard-container ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingLeft: 0 }}>
             {/* Left Sidebar */}
             <LeftSidebar
               oddsFormat={oddsFormat}
@@ -7838,16 +7841,16 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
             {/* Main Content Area - Top Player Props */}
             <div 
-              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 pt-1 lg:pt-0 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
+              className={`relative z-50 flex-1 min-w-0 min-h-0 flex flex-col gap-2 pt-1 lg:pt-0 overflow-y-auto lg:overflow-x-hidden lg:h-screen lg:max-h-screen fade-scrollbar custom-scrollbar ${shellDark ? 'bg-[#050d1a]' : ''}`}
               style={{
                 scrollbarGutter: 'stable',
                 paddingLeft: 0,
                 paddingRight: 0,
               }}
             >
-          <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
+          <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Sport filter: default combined (none selected); click active sport again to return to combined */}
-            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${mounted && isDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] lg:bg-none lg:bg-[#050d1a] border-[#352f57] lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${shellDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] lg:bg-none lg:bg-[#050d1a] border-[#352f57] lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
               {NBA_PUBLIC_ENABLED && (
                 <button
                   type="button"
@@ -7912,7 +7915,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             </div>
 
             {/* Search Bar */}
-            <div className={`mb-3 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+            <div className={`mb-3 ${shellDark ? 'bg-[#050d1a]' : ''}`}>
               <form onSubmit={handleSearch} style={{ width: '100%', margin: 0, padding: 0, boxSizing: 'border-box' }}>
                 <div className="relative" style={{ width: '100%', boxSizing: 'border-box' }}>
                   <input
@@ -7942,7 +7945,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               {!isCombinedMode && (
               <div 
                 ref={filtersSectionRef}
-                className={`mt-2 flex flex-col gap-1.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`} 
+                className={`mt-2 flex flex-col gap-1.5 ${shellDark ? 'bg-[#050d1a]' : ''}`} 
                 style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               >
                 <div className="flex gap-1.5">
@@ -8562,14 +8565,14 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 isPropsLoadingSkeleton
                   ? 'min-h-[calc(100dvh-17rem)] lg:min-h-[calc(100dvh-15rem)]'
                   : 'h-[calc(100%-160px)]'
-              } ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}
+              } ${shellDark ? 'bg-[#050d1a]' : ''}`}
               style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}
             >
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
-                mounted && isDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
+                shellDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
               } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
                 <h2 className={`text-[1.75rem] lg:text-2xl text-center lg:text-left font-extrabold tracking-tight mb-3 ${
-                  mounted && isDark ? 'text-white' : 'text-gray-900'
+                  shellDark ? 'text-white' : 'text-gray-900'
                 }`} style={{ marginTop: 0, paddingTop: 0 }}>
                   Top Player Props
                 </h2>
@@ -10630,7 +10633,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       )}
                       
                       {/* Mobile Card View - Hidden on desktop */}
-                      <div className={`2xl:hidden space-y-4.5 ${mounted && isDark ? 'bg-[#050d1a]' : ''}`}>
+                      <div className={`2xl:hidden space-y-4.5 ${shellDark ? 'bg-[#050d1a]' : ''}`}>
                         {propsTablePaginatedProps.map((prop, idx) => {
                           const rowSport = propsSport === 'combined'
                             ? ((prop as CombinedPlayerPropRow).sportSource ?? 'nba')

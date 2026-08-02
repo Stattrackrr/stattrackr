@@ -11,7 +11,7 @@ import {
   resolveViewerProfile,
 } from '@/lib/profileSubscriptionGate';
 import type { User } from '@supabase/supabase-js';
-import { StatTrackrLogo } from '@/components/StatTrackrLogo';
+import { StatTrackrSplash } from '@/components/StatTrackrSplash';
 import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { 
   BarChart3, 
@@ -79,17 +79,6 @@ function buildPropsHref(): string {
   return qs ? `/props?${qs}` : '/props';
 }
 
-function HomeSplash() {
-  return (
-    <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <StatTrackrLogo className="w-20 h-20" />
-        <span className="font-bold text-4xl text-white">StatTrackr</span>
-      </div>
-    </div>
-  );
-}
-
 export default function HomePage() {
   const router = useRouter();
   const prefetchPropsResources = () => {
@@ -150,8 +139,8 @@ export default function HomePage() {
     bootReadyRef.current = false;
     setBootReady(false);
     prefetchPropsResources();
-    // Hard navigate so the marketing page never paints underneath a soft route change.
-    window.location.replace(buildPropsHref());
+    // Soft navigate while keeping the dark splash mounted — avoids a full-document white flash.
+    router.replace(buildPropsHref());
   };
 
   const handleLogout = async () => {
@@ -441,9 +430,9 @@ export default function HomePage() {
   ];
 
   // Logged-in Pro: redirect to /props; show loading only once confirmed
-  // Splash until auth finishes — then marketing, or hard-redirect to props for Pro.
+  // Splash until auth finishes — then marketing, or redirect to props for Pro.
   if (!bootReady || isRedirectingPro) {
-    return <HomeSplash />;
+    return <StatTrackrSplash />;
   }
 
   return (
