@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-03T02:22:02.374Z",
+  "generatedAt": "2026-08-03T07:02:51.709Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 201,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Forearm",
+      "returning": "TBC"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Keidean Coleman",
@@ -224,12 +230,6 @@
       "team": "Collingwood Magpies",
       "player": "Harry Perryman",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Arm",
       "returning": "TBC"
     },
     {
