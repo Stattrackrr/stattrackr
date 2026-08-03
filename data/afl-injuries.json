@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-03T21:06:39.849Z",
+  "generatedAt": "2026-08-03T23:04:18.886Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 204,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Jacob Weitering",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Cody Weightman",
@@ -825,12 +831,6 @@
       "player": "Chelsea Randall",
       "injury": "Concussion",
       "returning": "Season"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jacob Weitering",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "West Coast Eagles",

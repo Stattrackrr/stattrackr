@@ -1,123 +1,8 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-03T21:06:40.988Z",
+  "generatedAt": "2026-08-03T23:04:20.061Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
-    "brisbane": {
-      "slug": "brisbane",
-      "name": "Brisbane",
-      "abbrev": "BRL",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Lachie Neale",
-            "total": 544,
-            "rate": 79
-          },
-          {
-            "player": "Josh Dunkley",
-            "total": 459,
-            "rate": 67
-          },
-          {
-            "player": "Will Ashcroft",
-            "total": 420,
-            "rate": 62
-          },
-          {
-            "player": "Sam Draper",
-            "total": 379,
-            "rate": 61
-          },
-          {
-            "player": "Darcy Fort",
-            "total": 249,
-            "rate": 41
-          },
-          {
-            "player": "Zac Bailey",
-            "total": 210,
-            "rate": 32
-          },
-          {
-            "player": "Hugh McCluggage",
-            "total": 202,
-            "rate": 43
-          },
-          {
-            "player": "Cam Rayner",
-            "total": 125,
-            "rate": 19
-          },
-          {
-            "player": "Levi Ashcroft",
-            "total": 75,
-            "rate": 11
-          },
-          {
-            "player": "Zane Zakostelsky",
-            "total": 41,
-            "rate": 29
-          }
-        ],
-        "teamTotal": 2744
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Darcy Wilmot",
-            "total": 86,
-            "rate": 37
-          },
-          {
-            "player": "Jaspa Fletcher",
-            "total": 49,
-            "rate": 21
-          },
-          {
-            "player": "Dayne Zorko",
-            "total": 46,
-            "rate": 20
-          },
-          {
-            "player": "Keidean Coleman",
-            "total": 21,
-            "rate": 9
-          },
-          {
-            "player": "Bruce Reville",
-            "total": 10,
-            "rate": 4
-          },
-          {
-            "player": "Ryan Lester",
-            "total": 9,
-            "rate": 4
-          },
-          {
-            "player": "Conor McKenna",
-            "total": 3,
-            "rate": 1
-          },
-          {
-            "player": "Noah Answerth",
-            "total": 3,
-            "rate": 1
-          },
-          {
-            "player": "Jarrod Berry",
-            "total": 2,
-            "rate": 1
-          },
-          {
-            "player": "Harris Andrews",
-            "total": 2,
-            "rate": 1
-          }
-        ],
-        "teamTotal": 233
-      }
-    },
     "adelaide": {
       "slug": "adelaide",
       "name": "Adelaide",
@@ -346,6 +231,121 @@
           }
         ],
         "teamTotal": 217
+      }
+    },
+    "brisbane": {
+      "slug": "brisbane",
+      "name": "Brisbane",
+      "abbrev": "BRL",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Lachie Neale",
+            "total": 544,
+            "rate": 79
+          },
+          {
+            "player": "Josh Dunkley",
+            "total": 459,
+            "rate": 67
+          },
+          {
+            "player": "Will Ashcroft",
+            "total": 420,
+            "rate": 62
+          },
+          {
+            "player": "Sam Draper",
+            "total": 379,
+            "rate": 61
+          },
+          {
+            "player": "Darcy Fort",
+            "total": 249,
+            "rate": 41
+          },
+          {
+            "player": "Zac Bailey",
+            "total": 210,
+            "rate": 32
+          },
+          {
+            "player": "Hugh McCluggage",
+            "total": 202,
+            "rate": 43
+          },
+          {
+            "player": "Cam Rayner",
+            "total": 125,
+            "rate": 19
+          },
+          {
+            "player": "Levi Ashcroft",
+            "total": 75,
+            "rate": 11
+          },
+          {
+            "player": "Zane Zakostelsky",
+            "total": 41,
+            "rate": 29
+          }
+        ],
+        "teamTotal": 2744
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Darcy Wilmot",
+            "total": 86,
+            "rate": 37
+          },
+          {
+            "player": "Jaspa Fletcher",
+            "total": 49,
+            "rate": 21
+          },
+          {
+            "player": "Dayne Zorko",
+            "total": 46,
+            "rate": 20
+          },
+          {
+            "player": "Keidean Coleman",
+            "total": 21,
+            "rate": 9
+          },
+          {
+            "player": "Bruce Reville",
+            "total": 10,
+            "rate": 4
+          },
+          {
+            "player": "Ryan Lester",
+            "total": 9,
+            "rate": 4
+          },
+          {
+            "player": "Conor McKenna",
+            "total": 3,
+            "rate": 1
+          },
+          {
+            "player": "Noah Answerth",
+            "total": 3,
+            "rate": 1
+          },
+          {
+            "player": "Jarrod Berry",
+            "total": 2,
+            "rate": 1
+          },
+          {
+            "player": "Harris Andrews",
+            "total": 2,
+            "rate": 1
+          }
+        ],
+        "teamTotal": 233
       }
     },
     "collingwood": {
