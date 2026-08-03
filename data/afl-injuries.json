@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-03T07:02:51.709Z",
+  "generatedAt": "2026-08-03T11:24:05.864Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 201,
+  "injuryCount": 204,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Cody Weightman",
+      "injury": "rested for the fixture",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Aaron Naughton",
+      "injury": "rested for the fixture",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Dylan Moore",
+      "injury": "Handed a week for striking.",
+      "returning": "1 match"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "James Sicily",
+      "injury": "Handed a week for striking.",
+      "returning": "1 match"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harry Schoenberg",
+      "injury": "Handed a week for striking.",
+      "returning": "1 match"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Luke Trainor",
+      "injury": "Cited for striking West Coast Eagle Jack Williams, resulting in a one-match ban.",
+      "returning": "1 match"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Jeremy Howe",
@@ -215,12 +251,6 @@
       "returning": "TBA"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Cody Weightman",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Kaleb Smith",
       "injury": "Concussion",
@@ -255,12 +285,6 @@
       "player": "Jonah Brooks",
       "injury": "32-week suspension for striking during a country footy match.",
       "returning": "32 weeks"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Aaron Naughton",
-      "injury": "resting from the long flight west",
-      "returning": "active"
     },
     {
       "team": "Hawthorn Hawks",
@@ -1095,12 +1119,6 @@
       "player": "Harry Edwards",
       "injury": "Concussion",
       "returning": "Season"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Harry Schoenberg",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
