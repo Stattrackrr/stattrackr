@@ -1,14 +1,92 @@
 {
-  "generatedAt": "2026-08-02T22:58:23.492Z",
+  "generatedAt": "2026-08-03T02:22:02.374Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 200,
+  "injuryCount": 201,
   "injuries": [
     {
+      "team": "Brisbane Lions",
+      "player": "Keidean Coleman",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Ryan Lester",
+      "injury": "Shoulder",
+      "returning": "TBA"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Hugh McCluggage",
+      "injury": "Calf",
+      "returning": "TBA"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Dayne Zorko",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Angus Clarke",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Corey Wagner",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Sam Collins",
+      "injury": "Rib",
+      "returning": "TBA"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Zeke Uwland",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
       "team": "Melbourne Demons",
-      "player": "Jack Henderson",
-      "injury": "Knee",
-      "returning": "Test"
+      "player": "Blake Howes",
+      "injury": "Arm",
+      "returning": "TBA"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Tom De Koning",
+      "injury": "Hip",
+      "returning": "TBA"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Jack Silvagni",
+      "injury": "Shoulder",
+      "returning": "TBA"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "William Edwards",
+      "injury": "Leg",
+      "returning": "TBA"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Rowbottom",
+      "injury": "Arm",
+      "returning": "TBA"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "James Borlase",
+      "injury": "Hamstring",
+      "returning": "next week"
     },
     {
       "team": "West Coast Eagles",
@@ -47,18 +125,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Sydney Swans",
-      "player": "William Edwards",
-      "injury": "Fibula",
-      "returning": "long spell out"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Rowbottom",
-      "injury": "Hand",
-      "returning": "miss the rest of the home and away season"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Rhyan Mansell",
       "injury": "Foot",
@@ -87,54 +153,6 @@
       "player": "Harry Dean",
       "injury": "facing Match Review Officer scrutiny for a dangerous tackle on Brisbane’s Cam Rayner",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Lucas Camporeale",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Lachie Fogarty",
-      "injury": "Rib",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Kieren Briggs",
-      "injury": "Leg",
-      "returning": "Test"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Oliver Hannaford",
-      "injury": "Foot",
-      "returning": "Test"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Jake Riccardi",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Tom Powell",
-      "injury": "Groin",
-      "returning": "Test"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Sam Wicks",
-      "injury": "Hamstring",
-      "returning": "2 Weeks"
     },
     {
       "team": "St Kilda Saints",
@@ -167,21 +185,9 @@
       "returning": "TBC"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Zeke Uwland",
-      "injury": "Managed",
-      "returning": "TBC"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "no room for",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Dayne Zorko",
-      "injury": "rested veteran",
       "returning": "TBC"
     },
     {
