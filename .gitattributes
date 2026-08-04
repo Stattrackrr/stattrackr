@@ -1,5 +1,9 @@
-# Deep AFL training can produce RandomForest/HGB pickles > GitHub's 100 MB blob limit.
-data/afl-model/models/*.pkl filter=lfs diff=lfs merge=lfs -text
+# AFL model pickles stay in normal Git when we only keep the latest artifact(s).
+# Do NOT track them with Git LFS: daily/nightly CI + Vercel clones were burning
+# the free 10GB/month LFS bandwidth in a few days.
+#
+# If a future pickle exceeds GitHub's 100MB blob limit, store it outside git
+# (or use a single LFS object with aggressive pruning) -- never accumulate history.
 
 # Keep workflow and source files UTF-8 + LF (avoid Windows UTF-16 breaking Turbopack/GitHub Actions).
 .github/workflows/* text eol=lf

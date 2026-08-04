@@ -24,7 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          lfs: true
+          # Do not pull Git LFS — AFL pickles are regular git blobs (latest only).
+          lfs: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -108,6 +109,9 @@ jobs:
 
       # Include top-picks-history.json: score_upcoming soft-locks / re-ranks upcoming Top 3
       # into that file. Excluding it left Current-round rankings stuck until a manual refresh.
+      - name: Prune historical model pickles (keep latest refs only)
+        run: python scripts/afl_model/prune_old_model_pickles.py
+
       - name: Commit and push model outputs to master if changed
         run: |
           rm -rf data/afl-model/afl-model
@@ -120,5 +124,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          CI_COMMIT_GIT_LFS: "1"
 
