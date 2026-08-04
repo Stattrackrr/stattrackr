@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-04T05:31:49.928Z",
+  "generatedAt": "2026-08-04T08:36:44.503Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 203,
+  "injuryCount": 204,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Patrick Lipinski",
+      "injury": "Calf",
+      "returning": "2 matches"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jamie Elliott",
+      "injury": "Injury",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Darcy Moore",
+      "injury": "Injury",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Reef McInnes",
+      "injury": "Injury",
+      "returning": "Season"
+    },
     {
       "team": "Carlton Blues",
       "player": "Jacob Weitering",
@@ -443,18 +467,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Reef McInnes",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Darcy Moore",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
       "injury": "Injury",
@@ -638,12 +650,6 @@
       "team": "Port Adelaide Power",
       "player": "Kane Farrell",
       "injury": "Groin",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jamie Elliott",
-      "injury": "active",
       "returning": "Season"
     },
     {
