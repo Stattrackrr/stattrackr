@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-03T23:04:18.886Z",
+  "generatedAt": "2026-08-04T02:09:26.198Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 204,
+  "injuryCount": 203,
   "injuries": [
     {
       "team": "Carlton Blues",
@@ -267,12 +267,6 @@
       "player": "Harry Perryman",
       "injury": "Hamstring",
       "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Illness",
-      "returning": "Test"
     },
     {
       "team": "Geelong Cats",
