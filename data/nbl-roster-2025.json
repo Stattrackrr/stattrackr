@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:37:04.174Z",
+  "generatedAt": "2026-08-04T05:23:12.332Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 165,
   "players": [
@@ -43,7 +43,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b307bf907eb14cefbca2fcca9bf30cd0?size=800&format=webp"
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp"
     },
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
@@ -663,7 +663,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "F",
       "jersey": "50",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e5154cd450a548b98157898fcce8d6ba?size=800&format=webp"
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp"
     },
     {
       "playerId": "763e39a5-9c57-4abb-bb53-f823e9cdeb10",
@@ -743,7 +743,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
       "jersey": "43",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e0a2f59c4cea44b2aac58c4028a60ae4?size=800&format=webp"
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp"
     },
     {
       "playerId": "6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9",

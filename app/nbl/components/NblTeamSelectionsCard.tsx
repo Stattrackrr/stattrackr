@@ -1,28 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-type Starter = {
+type LineupPlayer = {
   playerId: string | null;
   name: string;
   jersey?: string | null;
-  slot: string;
-  positionLabel: string;
+  slot?: string;
+  position?: string | null;
+  positionLabel?: string;
   imageUrl?: string | null;
 };
 
 type TeamLineup = {
   team: string;
   lineup: {
-    starters: Starter[];
+    starters: LineupPlayer[];
+    bench?: LineupPlayer[];
   };
   match?: {
     opponent?: string;
     tipoff?: string | null;
     homeTeam?: string;
     awayTeam?: string;
-    homeScore?: string | null;
-    awayScore?: string | null;
     matchSlug?: string | null;
   } | null;
 };
@@ -53,7 +53,26 @@ function shortLastName(name: string): string {
   return parts[parts.length - 1];
 }
 
-function StarterChip({
+function shortTeamLabel(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return name;
+  // Prefer last word for NBL clubs ("Illawarra Hawks" → "Hawks")
+  return parts[parts.length - 1];
+}
+
+function formatMatchDate(tipoff?: string | null): string | null {
+  if (!tipoff) return null;
+  const d = new Date(tipoff);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d.toLocaleDateString('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function PlayerChip({
   name,
   jersey,
   slot,
@@ -129,66 +148,72 @@ function StarterChip({
   );
 }
 
-function TeamColumn({
-  data,
+function PlayerColumn({
+  title,
+  players,
   isDark,
   selectedPlayerName,
 }: {
-  data: TeamLineup;
+  title: string;
+  players: LineupPlayer[];
   isDark: boolean;
   selectedPlayerName?: string | null;
 }) {
-  const starters = (data.lineup.starters || []).slice(0, 5);
   return (
     <div className="min-w-0 flex-1">
       <div
-        className={`text-[11px] font-bold tracking-wide uppercase mb-2.5 truncate ${
-          isDark ? 'text-gray-300' : 'text-gray-700'
+        className={`text-[10px] font-bold tracking-wide uppercase mb-2 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
         }`}
       >
-        {data.team}
+        {title}
       </div>
-      <div className="space-y-2">
-        {starters.map((p) => (
-          <StarterChip
-            key={`${p.slot}-${p.playerId || p.name}`}
-            name={p.name}
-            jersey={p.jersey}
-            slot={p.slot || p.positionLabel || '–'}
-            imageUrl={p.imageUrl}
-            isDark={isDark}
-            highlight={nameMatches(p.name, selectedPlayerName)}
-          />
-        ))}
-      </div>
+      {players.length ? (
+        <div className="space-y-2">
+          {players.map((p) => (
+            <PlayerChip
+              key={`${title}-${p.slot || p.position || 'x'}-${p.playerId || p.name}`}
+              name={p.name}
+              jersey={p.jersey}
+              slot={p.slot || p.positionLabel || p.position || '–'}
+              imageUrl={p.imageUrl}
+              isDark={isDark}
+              highlight={nameMatches(p.name, selectedPlayerName)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>None listed</p>
+      )}
     </div>
   );
 }
 
-/** Real starting five from last completed SportRadar box score. */
+/** Most recent game for the player's team — selector for both sides; starters left, bench right. */
 export function NblTeamSelectionsCard({
   isDark = false,
   playerTeam,
-  opponentTeam,
   selectedPlayerName,
+  resolveTeamLogo,
 }: {
   isDark?: boolean;
   playerTeam?: string | null;
   opponentTeam?: string | null;
   selectedPlayerName?: string | null;
+  resolveTeamLogo?: (teamName: string) => string | null;
 }) {
-  const [team, setTeam] = useState<TeamLineup | null>(null);
-  const [opponent, setOpponent] = useState<TeamLineup | null>(null);
-  const [sharedMatch, setSharedMatch] = useState(false);
+  const [playerSide, setPlayerSide] = useState<TeamLineup | null>(null);
+  const [otherSide, setOtherSide] = useState<TeamLineup | null>(null);
+  const [activeTeam, setActiveTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = playerTeam?.trim();
     if (!t) {
-      setTeam(null);
-      setOpponent(null);
-      setSharedMatch(false);
+      setPlayerSide(null);
+      setOtherSide(null);
+      setActiveTeam(null);
       setError(null);
       return;
     }
@@ -197,10 +222,7 @@ export function NblTeamSelectionsCard({
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ team: t });
-    if (opponentTeam?.trim()) params.set('opponent', opponentTeam.trim());
-
-    fetch(`/api/nbl/lineups?${params}`)
+    fetch(`/api/nbl/lineups?${new URLSearchParams({ team: t })}`)
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json?.error || 'Failed to load lineups');
@@ -208,15 +230,17 @@ export function NblTeamSelectionsCard({
       })
       .then((json) => {
         if (cancelled) return;
-        setTeam(json.team ?? null);
-        setOpponent(json.opponent ?? null);
-        setSharedMatch(Boolean(json.sharedMatch));
+        const team = (json.team ?? null) as TeamLineup | null;
+        const opp = (json.opponent ?? null) as TeamLineup | null;
+        setPlayerSide(team);
+        setOtherSide(opp);
+        setActiveTeam(team?.team || null);
       })
       .catch((e) => {
         if (cancelled) return;
-        setTeam(null);
-        setOpponent(null);
-        setSharedMatch(false);
+        setPlayerSide(null);
+        setOtherSide(null);
+        setActiveTeam(null);
         setError(e instanceof Error ? e.message : 'Failed to load');
       })
       .finally(() => {
@@ -226,33 +250,116 @@ export function NblTeamSelectionsCard({
     return () => {
       cancelled = true;
     };
-  }, [playerTeam, opponentTeam]);
+  }, [playerTeam]);
 
-  const matchLabel =
-    sharedMatch && team?.match
-      ? `${team.match.homeTeam || ''} ${team.match.homeScore ?? ''}–${team.match.awayScore ?? ''} ${team.match.awayTeam || ''}`.trim()
-      : null;
+  const teamOptions = useMemo(() => {
+    const opts: TeamLineup[] = [];
+    if (playerSide) opts.push(playerSide);
+    if (otherSide) opts.push(otherSide);
+    return opts;
+  }, [playerSide, otherSide]);
+
+  const active = useMemo(() => {
+    if (!teamOptions.length) return null;
+    return teamOptions.find((t) => t.team === activeTeam) || teamOptions[0];
+  }, [teamOptions, activeTeam]);
+
+  const starters = (active?.lineup.starters || []).slice(0, 5);
+  const bench = active?.lineup.bench || [];
+  const matchDate = formatMatchDate(playerSide?.match?.tipoff || otherSide?.match?.tipoff);
 
   return (
     <div className="w-full px-3">
-      <div className="flex items-baseline justify-between gap-2 mb-3">
-        <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-          {sharedMatch ? 'Starting fives' : 'Most recent starters'}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
+        <h3
+          className={`text-sm font-semibold justify-self-start ${
+            isDark ? 'text-gray-200' : 'text-gray-800'
+          }`}
+        >
+          Most recent lineup
         </h3>
-        {matchLabel ? (
-          <span
-            className={`text-[10px] font-medium truncate ${
-              isDark ? 'text-gray-500' : 'text-gray-400'
-            }`}
-          >
-            {matchLabel}
-          </span>
-        ) : null}
+
+        <div className="justify-self-center">
+          {!loading && !error && teamOptions.length > 1 ? (
+            <div className="flex gap-2">
+              {teamOptions.map((opt) => {
+                const selected = active?.team === opt.team;
+                const logo = resolveTeamLogo?.(opt.team) ?? null;
+                return (
+                  <button
+                    key={opt.team}
+                    type="button"
+                    onClick={() => setActiveTeam(opt.team)}
+                    title={opt.team}
+                    aria-label={opt.team}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors border ${
+                      selected
+                        ? 'bg-purple-600/20 border-purple-500 ring-2 ring-purple-500'
+                        : isDark
+                          ? 'bg-[#0a1929] border-gray-700 hover:bg-gray-800'
+                          : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logo}
+                        alt={opt.team}
+                        className="w-6 h-6 object-contain"
+                      />
+                    ) : (
+                      <span
+                        className={`text-[10px] font-bold ${
+                          isDark ? 'text-gray-300' : 'text-gray-700'
+                        }`}
+                      >
+                        {shortTeamLabel(opt.team).slice(0, 3).toUpperCase()}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : !loading && !error && active ? (
+            (() => {
+              const logo = resolveTeamLogo?.(active.team) ?? null;
+              return logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logo}
+                  alt={active.team}
+                  title={active.team}
+                  className="w-7 h-7 object-contain"
+                />
+              ) : (
+                <span
+                  className={`text-[11px] font-bold tracking-wide uppercase ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}
+                >
+                  {shortTeamLabel(active.team)}
+                </span>
+              );
+            })()
+          ) : null}
+        </div>
+
+        <div className="justify-self-end">
+          {matchDate ? (
+            <span
+              className={`text-[10px] font-medium truncate ${
+                isDark ? 'text-gray-500' : 'text-gray-400'
+              }`}
+            >
+              {matchDate}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {!playerTeam?.trim() && (
         <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          Select a player or team to see the starting five.
+          Select a player or team to see their most recent starting five and bench.
         </p>
       )}
 
@@ -264,25 +371,20 @@ export function NblTeamSelectionsCard({
         <p className={`text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
       )}
 
-      {!loading && !error && team && (
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-4 items-start">
-          <TeamColumn data={team} isDark={isDark} selectedPlayerName={selectedPlayerName} />
-          {opponent ? (
-            <>
-              <div
-                className={`hidden sm:flex self-center text-[10px] font-bold tracking-widest uppercase ${
-                  isDark ? 'text-gray-600' : 'text-gray-300'
-                }`}
-              >
-                vs
-              </div>
-              <TeamColumn
-                data={opponent}
-                isDark={isDark}
-                selectedPlayerName={selectedPlayerName}
-              />
-            </>
-          ) : null}
+      {!loading && !error && active && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
+          <PlayerColumn
+            title="Starting 5"
+            players={starters}
+            isDark={isDark}
+            selectedPlayerName={selectedPlayerName}
+          />
+          <PlayerColumn
+            title="Bench"
+            players={bench}
+            isDark={isDark}
+            selectedPlayerName={selectedPlayerName}
+          />
         </div>
       )}
     </div>

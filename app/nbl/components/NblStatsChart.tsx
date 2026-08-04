@@ -174,16 +174,16 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
     minutesVal = (point as { minutes: number }).minutes;
   }
 
-  // Date formatting (NBA-style MM/DD/YY; fallback to raw string if parse fails)
+  // Date formatting: day/month/year (AU-style)
   let dateShort = point.gameDate ?? '';
   if (point.gameDate) {
     const ts = Date.parse(point.gameDate);
     if (!Number.isNaN(ts)) {
       const d = new Date(ts);
-      const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      const year = String(d.getFullYear()).slice(-2);
-      dateShort = `${month}/${day}/${year}`;
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = String(d.getFullYear());
+      dateShort = `${day}/${month}/${year}`;
     }
   }
 

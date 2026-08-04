@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-30T06:31:18.818Z",
+  "generatedAt": "2026-08-04T05:23:21.986Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 165,
   "withSeasonStats": 160,
@@ -19,6 +19,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/831d42bb415f428383569b97c6befc47?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 15,
       "minutes": 21.950001,
       "points": 8.8,
       "rebounds": 4.33333,
@@ -31,8 +32,7 @@
       "threePct": 0.323944,
       "ftPct": 0.622222,
       "threeMade": 1.53333,
-      "pra": 14.57,
-      "gamesStarted": 15
+      "pra": 14.57
     },
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -46,6 +46,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 0,
       "minutes": 11.25,
       "points": 4.34483,
       "rebounds": 2.51724,
@@ -58,8 +59,7 @@
       "threePct": 0.25641,
       "ftPct": 0.755556,
       "threeMade": 0.34483,
-      "pra": 8,
-      "gamesStarted": 0
+      "pra": 8
     },
     {
       "playerId": "06acb9c6-f0a2-4cd8-a23e-1e61c64e4564",
@@ -73,6 +73,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b0c45a0fc893483aa53486c172453059?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 24,
       "minutes": 23.383333,
       "points": 8.53333,
       "rebounds": 2.8,
@@ -85,8 +86,7 @@
       "threePct": 0.283951,
       "ftPct": 0.8,
       "threeMade": 1.53333,
-      "pra": 12.83,
-      "gamesStarted": 24
+      "pra": 12.83
     },
     {
       "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -98,8 +98,9 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b307bf907eb14cefbca2fcca9bf30cd0?size=800&format=webp",
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 3,
       "minutes": 19.683332,
       "points": 6.33333,
       "rebounds": 4.55556,
@@ -112,8 +113,7 @@
       "threePct": 0.263158,
       "ftPct": 0.461538,
       "threeMade": 0.55556,
-      "pra": 11.89,
-      "gamesStarted": 3
+      "pra": 11.89
     },
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
@@ -127,6 +127,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0dc80f7a13c34e40ae93c6e85d2c1f8d?size=800&format=webp",
       "games": 2,
+      "gamesStarted": 0,
       "minutes": 2.333333,
       "points": 1,
       "rebounds": 0.5,
@@ -139,8 +140,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1.5,
-      "gamesStarted": 0
+      "pra": 1.5
     },
     {
       "playerId": "3d041480-2429-4a21-9306-094f9020c8c9",
@@ -154,6 +154,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ae1095bef6b5439bb3eff4d16667d23a?size=800&format=webp",
       "games": 31,
+      "gamesStarted": 31,
       "minutes": 33.266666,
       "points": 14.77419,
       "rebounds": 3.22581,
@@ -166,8 +167,7 @@
       "threePct": 0.307692,
       "ftPct": 0.769231,
       "threeMade": 1.67742,
-      "pra": 25.58,
-      "gamesStarted": 31
+      "pra": 25.58
     },
     {
       "playerId": "79fe0730-aca0-4167-97cc-1ef09514cc66",
@@ -181,6 +181,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 0,
       "minutes": 21.15,
       "points": 10.42857,
       "rebounds": 3.02857,
@@ -193,8 +194,7 @@
       "threePct": 0.368421,
       "ftPct": 0.791667,
       "threeMade": 2.2,
-      "pra": 15.51,
-      "gamesStarted": 0
+      "pra": 15.51
     },
     {
       "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
@@ -208,6 +208,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp",
       "games": 15,
+      "gamesStarted": 3,
       "minutes": 14.9,
       "points": 4.8,
       "rebounds": 2,
@@ -220,8 +221,7 @@
       "threePct": 0.340909,
       "ftPct": 0.642857,
       "threeMade": 1,
-      "pra": 7.47,
-      "gamesStarted": 3
+      "pra": 7.47
     },
     {
       "playerId": "c18d40cc-7977-4b30-a1b8-f0fcc14e98ab",
@@ -235,6 +235,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a4ed274ff4124404b2533f6ee447927c?size=800&format=webp",
       "games": 16,
+      "gamesStarted": 1,
       "minutes": 5.866667,
       "points": 1.0625,
       "rebounds": 1.375,
@@ -247,8 +248,7 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 2.56,
-      "gamesStarted": 1
+      "pra": 2.56
     },
     {
       "playerId": "21f993b1-b0cf-4891-a5a1-5394abde51de",
@@ -262,6 +262,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/96296c1e39df463382db40cc4efbd311?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 3.133333,
       "points": 2,
       "rebounds": 0,
@@ -274,8 +275,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 2,
-      "gamesStarted": 0
+      "pra": 2
     },
     {
       "playerId": "75f0d755-2f57-4460-9b0f-41b0eac46e7e",
@@ -289,6 +289,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6d3b79735e8341dabd5f1010212403e4?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 3,
       "minutes": 17.85,
       "points": 6.27586,
       "rebounds": 1.27586,
@@ -301,8 +302,7 @@
       "threePct": 0.302326,
       "ftPct": 0.878049,
       "threeMade": 0.89655,
-      "pra": 9.62,
-      "gamesStarted": 3
+      "pra": 9.62
     },
     {
       "playerId": "24a2f29d-6bfd-427a-9cb4-4ac0f4088083",
@@ -316,6 +316,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp",
       "games": 0,
+      "gamesStarted": 0,
       "minutes": null,
       "points": null,
       "rebounds": null,
@@ -328,8 +329,7 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null,
-      "gamesStarted": 0
+      "pra": null
     },
     {
       "playerId": "a2b82e4e-7995-4db3-bfa7-11db68c18ea1",
@@ -343,6 +343,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/82fe3a5845d74199a7ce7fa9ce4ec84e?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 20,
       "minutes": 20.966667,
       "points": 8.85294,
       "rebounds": 3.47059,
@@ -355,8 +356,7 @@
       "threePct": 0.294118,
       "ftPct": 0.836364,
       "threeMade": 1.02941,
-      "pra": 15.24,
-      "gamesStarted": 20
+      "pra": 15.24
     },
     {
       "playerId": "26a882d2-07f4-45af-8e60-8f28eaf9969a",
@@ -370,6 +370,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fa65f253d11a4d198a96c89ca2a92470?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 7,
       "minutes": 11.183333,
       "points": 2.18519,
       "rebounds": 2.2963,
@@ -382,8 +383,7 @@
       "threePct": 0.258065,
       "ftPct": 0.375,
       "threeMade": 0.2963,
-      "pra": 5.93,
-      "gamesStarted": 7
+      "pra": 5.93
     },
     {
       "playerId": "2af413b6-88d0-45a1-a036-1ce92473f039",
@@ -397,6 +397,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2966b348a383489ea79bfbd880bc0b43?size=800&format=webp",
       "games": 2,
+      "gamesStarted": 0,
       "minutes": 1.883333,
       "points": 1,
       "rebounds": 0.5,
@@ -409,8 +410,7 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 1.5,
-      "gamesStarted": 0
+      "pra": 1.5
     },
     {
       "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
@@ -424,6 +424,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 0,
       "minutes": 6.383333,
       "points": 0.77778,
       "rebounds": 0.44444,
@@ -436,8 +437,7 @@
       "threePct": 0,
       "ftPct": 0.75,
       "threeMade": 0,
-      "pra": 2,
-      "gamesStarted": 0
+      "pra": 2
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -451,6 +451,7 @@
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp",
       "games": 40,
+      "gamesStarted": 40,
       "minutes": 38.150002,
       "points": 25.925,
       "rebounds": 3.75,
@@ -463,8 +464,7 @@
       "threePct": 0.383041,
       "ftPct": 0.901515,
       "threeMade": 3.275,
-      "pra": 37.3,
-      "gamesStarted": 40
+      "pra": 37.3
     },
     {
       "playerId": "3ffb3584-1aba-4815-a32c-ae7779646051",
@@ -478,6 +478,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 27,
       "minutes": 32.016666,
       "points": 18.22222,
       "rebounds": 4.55556,
@@ -490,8 +491,7 @@
       "threePct": 0.351191,
       "ftPct": 0.671233,
       "threeMade": 2.18519,
-      "pra": 26.11,
-      "gamesStarted": 27
+      "pra": 26.11
     },
     {
       "playerId": "0b14fdbe-9516-47b3-b317-de92bffd64de",
@@ -505,6 +505,7 @@
       "jersey": "42",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp",
       "games": 20,
+      "gamesStarted": 13,
       "minutes": 22.583332,
       "points": 6.7,
       "rebounds": 4.2,
@@ -517,8 +518,7 @@
       "threePct": 0.44,
       "ftPct": 0.846154,
       "threeMade": 1.1,
-      "pra": 12,
-      "gamesStarted": 13
+      "pra": 12
     },
     {
       "playerId": "bbd4bc26-f75e-4e1d-ae46-f8089bf34d33",
@@ -532,6 +532,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2c99856eb6b4471fb00f242f3500166d?size=800&format=webp",
       "games": 16,
+      "gamesStarted": 0,
       "minutes": 6.066667,
       "points": 1.25,
       "rebounds": 1.5625,
@@ -544,8 +545,7 @@
       "threePct": 0.25,
       "ftPct": 0.5,
       "threeMade": 0.0625,
-      "pra": 3.5,
-      "gamesStarted": 0
+      "pra": 3.5
     },
     {
       "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
@@ -559,6 +559,7 @@
       "jersey": "25",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp",
       "games": 11,
+      "gamesStarted": 0,
       "minutes": 4.133333,
       "points": 1.63636,
       "rebounds": 0.90909,
@@ -571,8 +572,7 @@
       "threePct": 0.428571,
       "ftPct": 0.75,
       "threeMade": 0.27273,
-      "pra": 2.64,
-      "gamesStarted": 0
+      "pra": 2.64
     },
     {
       "playerId": "3cded371-4883-4e5a-aa6c-2e438d3bcc09",
@@ -586,6 +586,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/897afb9df2dc4de19359e52c06ae0270?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 0,
       "minutes": 2.5,
       "points": 0.88889,
       "rebounds": 0.11111,
@@ -598,8 +599,7 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 1.11,
-      "gamesStarted": 0
+      "pra": 1.11
     },
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
@@ -613,6 +613,7 @@
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 0,
       "minutes": 15.766667,
       "points": 5.18182,
       "rebounds": 3.33333,
@@ -625,8 +626,7 @@
       "threePct": 0.282051,
       "ftPct": 0.5,
       "threeMade": 0.33333,
-      "pra": 9.67,
-      "gamesStarted": 0
+      "pra": 9.67
     },
     {
       "playerId": "a8400498-6a7b-49d5-a46c-b2a427580eff",
@@ -640,6 +640,7 @@
       "jersey": "23",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8115ce4026bb4ebb85b641269981f7b8?size=800&format=webp",
       "games": 12,
+      "gamesStarted": 12,
       "minutes": 31.35,
       "points": 24.41667,
       "rebounds": 7.08333,
@@ -652,8 +653,7 @@
       "threePct": 0.305556,
       "ftPct": 0.746479,
       "threeMade": 1.83333,
-      "pra": 34.17,
-      "gamesStarted": 12
+      "pra": 34.17
     },
     {
       "playerId": "065cf78e-aa0f-4195-8fc7-cddf8b4794ac",
@@ -667,6 +667,7 @@
       "jersey": "42",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b8222bd993644a76bb2c1ee7f548edef?size=800&format=webp",
       "games": 4,
+      "gamesStarted": 0,
       "minutes": 1.416667,
       "points": 0,
       "rebounds": 0.75,
@@ -679,8 +680,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1,
-      "gamesStarted": 0
+      "pra": 1
     },
     {
       "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
@@ -694,6 +694,7 @@
       "jersey": "43",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 19,
       "minutes": 23.516666,
       "points": 12.83333,
       "rebounds": 1.66667,
@@ -706,8 +707,7 @@
       "threePct": 0.30531,
       "ftPct": 0.906667,
       "threeMade": 2.3,
-      "pra": 15.77,
-      "gamesStarted": 19
+      "pra": 15.77
     },
     {
       "playerId": "83f36c6e-d1f1-44cb-8576-78717cc826f2",
@@ -721,6 +721,7 @@
       "jersey": "31",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp",
       "games": 8,
+      "gamesStarted": 5,
       "minutes": 24.316668,
       "points": 11.75,
       "rebounds": 3.375,
@@ -733,8 +734,7 @@
       "threePct": 0.367347,
       "ftPct": 0.909091,
       "threeMade": 2.25,
-      "pra": 16.13,
-      "gamesStarted": 5
+      "pra": 16.13
     },
     {
       "playerId": "b151cb86-4bf1-4b47-8b0c-14c0b9f51604",
@@ -748,6 +748,7 @@
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 1,
       "minutes": 9.283333,
       "points": 2.75,
       "rebounds": 1.8125,
@@ -760,8 +761,7 @@
       "threePct": 0.294118,
       "ftPct": 0.741935,
       "threeMade": 0.15625,
-      "pra": 5.38,
-      "gamesStarted": 1
+      "pra": 5.38
     },
     {
       "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
@@ -775,6 +775,7 @@
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 1,
       "minutes": 11.983333,
       "points": 6.27586,
       "rebounds": 1.37931,
@@ -787,8 +788,7 @@
       "threePct": 0.481482,
       "ftPct": 0.763158,
       "threeMade": 0.44828,
-      "pra": 8.03,
-      "gamesStarted": 1
+      "pra": 8.03
     },
     {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
@@ -802,6 +802,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 11,
       "minutes": 14.333333,
       "points": 4.08571,
       "rebounds": 2.37143,
@@ -814,8 +815,7 @@
       "threePct": 0.36,
       "ftPct": 0.37931,
       "threeMade": 0.51429,
-      "pra": 7.31,
-      "gamesStarted": 11
+      "pra": 7.31
     },
     {
       "playerId": "4bd329eb-e26f-4377-8d9f-718634af1ee3",
@@ -829,6 +829,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8f253d09169f490c9936be53ebb1ffe7?size=800&format=webp",
       "games": 19,
+      "gamesStarted": 12,
       "minutes": 24.950001,
       "points": 12.21053,
       "rebounds": 2.84211,
@@ -841,8 +842,7 @@
       "threePct": 0.278481,
       "ftPct": 0.825,
       "threeMade": 1.15789,
-      "pra": 18.32,
-      "gamesStarted": 12
+      "pra": 18.32
     },
     {
       "playerId": "5dc2188c-e53b-4273-9573-aae63a31bd39",
@@ -856,6 +856,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp",
       "games": 23,
+      "gamesStarted": 12,
       "minutes": 25.316668,
       "points": 12.82609,
       "rebounds": 3.82609,
@@ -868,8 +869,7 @@
       "threePct": 0.324138,
       "ftPct": 0.711864,
       "threeMade": 2.04348,
-      "pra": 18.7,
-      "gamesStarted": 12
+      "pra": 18.7
     },
     {
       "playerId": "93de282f-0e7d-4acb-a0df-a82365c21f34",
@@ -883,6 +883,7 @@
       "jersey": "35",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2ddec141c7c947e2a9e1f91b44e92aa1?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 3,
       "minutes": 11.383333,
       "points": 5.14706,
       "rebounds": 3.08824,
@@ -895,8 +896,7 @@
       "threePct": 0.344828,
       "ftPct": 0.704545,
       "threeMade": 0.29412,
-      "pra": 9.24,
-      "gamesStarted": 3
+      "pra": 9.24
     },
     {
       "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
@@ -910,6 +910,7 @@
       "jersey": "34",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp",
       "games": 41,
+      "gamesStarted": 17,
       "minutes": 24.633333,
       "points": 10.85366,
       "rebounds": 2,
@@ -922,8 +923,7 @@
       "threePct": 0.358209,
       "ftPct": 0.950617,
       "threeMade": 2.34146,
-      "pra": 14.02,
-      "gamesStarted": 17
+      "pra": 14.02
     },
     {
       "playerId": "93583e5b-367b-42b8-aee2-6620b50ce6c2",
@@ -937,6 +937,7 @@
       "jersey": "39",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/417101606b39462c8324e4076f4e1367?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 0.4,
       "points": 0,
       "rebounds": 0,
@@ -949,8 +950,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0,
-      "gamesStarted": 0
+      "pra": 0
     },
     {
       "playerId": "2ee40f4c-3d96-4c5e-9090-885c0fbc606f",
@@ -964,6 +964,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5364025817c54afa9e4b33914b543285?size=800&format=webp",
       "games": 31,
+      "gamesStarted": 0,
       "minutes": 7.85,
       "points": 4.41935,
       "rebounds": 1.96774,
@@ -976,8 +977,7 @@
       "threePct": 0.314286,
       "ftPct": 0.821429,
       "threeMade": 0.70968,
-      "pra": 7.16,
-      "gamesStarted": 0
+      "pra": 7.16
     },
     {
       "playerId": "8071714c-30c7-43be-bc15-7d68fdba3526",
@@ -991,6 +991,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3e7c212064be44e4967e580580bec0c8?size=800&format=webp",
       "games": 28,
+      "gamesStarted": 7,
       "minutes": 10.25,
       "points": 2.78571,
       "rebounds": 1.64286,
@@ -1003,8 +1004,7 @@
       "threePct": 0.268293,
       "ftPct": 0.5,
       "threeMade": 0.39286,
-      "pra": 5.79,
-      "gamesStarted": 7
+      "pra": 5.79
     },
     {
       "playerId": "19611d1d-9349-4e39-a3ef-0733577b56e5",
@@ -1018,6 +1018,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 32,
       "minutes": 29.6,
       "points": 13.21875,
       "rebounds": 6.84375,
@@ -1030,8 +1031,7 @@
       "threePct": 0.390411,
       "ftPct": 0.761905,
       "threeMade": 1.78125,
-      "pra": 22.31,
-      "gamesStarted": 32
+      "pra": 22.31
     },
     {
       "playerId": "318cc011-ca3e-4a82-b1cf-fd805b05d6d4",
@@ -1045,6 +1045,7 @@
       "jersey": "40",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp",
       "games": 37,
+      "gamesStarted": 26,
       "minutes": 24.75,
       "points": 10.48649,
       "rebounds": 3.37838,
@@ -1057,8 +1058,7 @@
       "threePct": 0.320755,
       "ftPct": 0.881356,
       "threeMade": 1.83784,
-      "pra": 15.43,
-      "gamesStarted": 26
+      "pra": 15.43
     },
     {
       "playerId": "b495af94-c2ca-4bfc-b356-58f847ba4390",
@@ -1072,6 +1072,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp",
       "games": 3,
+      "gamesStarted": 0,
       "minutes": 3.45,
       "points": 0.66667,
       "rebounds": 1,
@@ -1084,8 +1085,7 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 1.67,
-      "gamesStarted": 0
+      "pra": 1.67
     },
     {
       "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
@@ -1099,6 +1099,7 @@
       "jersey": "18",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 5,
       "minutes": 18.383333,
       "points": 4.57143,
       "rebounds": 4.91429,
@@ -1111,8 +1112,7 @@
       "threePct": 0.253333,
       "ftPct": 0.777778,
       "threeMade": 0.54286,
-      "pra": 10.83,
-      "gamesStarted": 5
+      "pra": 10.83
     },
     {
       "playerId": "5fda4fdf-ab76-4bab-98d7-be3c92aecdca",
@@ -1126,6 +1126,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/652a8a6f08f0427594ce9ed5ff5290ff?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 33,
       "minutes": 26.083332,
       "points": 11.39394,
       "rebounds": 5.57576,
@@ -1138,8 +1139,7 @@
       "threePct": 0.293578,
       "ftPct": 0.83871,
       "threeMade": 0.9697,
-      "pra": 19.3,
-      "gamesStarted": 33
+      "pra": 19.3
     },
     {
       "playerId": "06116392-133b-4cac-93a5-a6aefc375717",
@@ -1153,6 +1153,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp",
       "games": 41,
+      "gamesStarted": 41,
       "minutes": 28.4,
       "points": 11.31707,
       "rebounds": 4.31707,
@@ -1165,8 +1166,7 @@
       "threePct": 0.374359,
       "ftPct": 0.805825,
       "threeMade": 1.78049,
-      "pra": 18.93,
-      "gamesStarted": 41
+      "pra": 18.93
     },
     {
       "playerId": "8f9aeb57-6629-473a-a503-09dfff6f3ae5",
@@ -1180,6 +1180,7 @@
       "jersey": "20",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5a9af95089d34491ba3743a28eda501d?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 0,
       "minutes": 2.983333,
       "points": 1.66667,
       "rebounds": 0.88889,
@@ -1192,8 +1193,7 @@
       "threePct": 0.25,
       "ftPct": 0.857143,
       "threeMade": 0.11111,
-      "pra": 2.56,
-      "gamesStarted": 0
+      "pra": 2.56
     },
     {
       "playerId": "149d004f-e800-471d-84a3-c6fbc8f3b07f",
@@ -1207,6 +1207,7 @@
       "jersey": "31",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/95ab4f74ebaa4125b3e528259f20bd9e?size=800&format=webp",
       "games": 14,
+      "gamesStarted": 0,
       "minutes": 4.683333,
       "points": 3.35714,
       "rebounds": 0.92857,
@@ -1219,8 +1220,7 @@
       "threePct": 0.583333,
       "ftPct": 0.571429,
       "threeMade": 0.5,
-      "pra": 4.86,
-      "gamesStarted": 0
+      "pra": 4.86
     },
     {
       "playerId": "948cf6d2-39c9-4c92-a13a-2a1b99cc660e",
@@ -1234,6 +1234,7 @@
       "jersey": "32",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1305d5f3a5b54126a1db0539df7bdf8e?size=800&format=webp",
       "games": 0,
+      "gamesStarted": 0,
       "minutes": null,
       "points": null,
       "rebounds": null,
@@ -1246,8 +1247,7 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null,
-      "gamesStarted": 0
+      "pra": null
     },
     {
       "playerId": "0a5486ee-953a-4fae-920d-4a77de1bdf03",
@@ -1261,6 +1261,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 0,
       "minutes": 7.783333,
       "points": 2.06061,
       "rebounds": 2.39394,
@@ -1273,8 +1274,7 @@
       "threePct": 0,
       "ftPct": 0.538462,
       "threeMade": 0,
-      "pra": 5.03,
-      "gamesStarted": 0
+      "pra": 5.03
     },
     {
       "playerId": "229b6769-821b-4133-815d-e9b673c50ea1",
@@ -1288,6 +1288,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3f353eb77f5e4335be947f5da004d746?size=800&format=webp",
       "games": 16,
+      "gamesStarted": 5,
       "minutes": 19.183332,
       "points": 8.9375,
       "rebounds": 3.375,
@@ -1300,8 +1301,7 @@
       "threePct": 0.240741,
       "ftPct": 0.54902,
       "threeMade": 0.8125,
-      "pra": 16.56,
-      "gamesStarted": 5
+      "pra": 16.56
     },
     {
       "playerId": "874f02e8-a2f5-4d37-8296-f2946dfc939b",
@@ -1315,6 +1315,7 @@
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fe3f0b5f7fad4b8aaef8881a8d796822?size=800&format=webp",
       "games": 18,
+      "gamesStarted": 1,
       "minutes": 18.166668,
       "points": 13.94444,
       "rebounds": 1.66667,
@@ -1327,8 +1328,7 @@
       "threePct": 0.336449,
       "ftPct": 0.9,
       "threeMade": 2,
-      "pra": 17.44,
-      "gamesStarted": 1
+      "pra": 17.44
     },
     {
       "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
@@ -1342,6 +1342,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp",
       "games": 41,
+      "gamesStarted": 41,
       "minutes": 21.6,
       "points": 12.63415,
       "rebounds": 5.04878,
@@ -1354,8 +1355,7 @@
       "threePct": 0,
       "ftPct": 0.72093,
       "threeMade": 0,
-      "pra": 18.93,
-      "gamesStarted": 41
+      "pra": 18.93
     },
     {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
@@ -1369,6 +1369,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp",
       "games": 40,
+      "gamesStarted": 2,
       "minutes": 14.966667,
       "points": 4.65,
       "rebounds": 1.6,
@@ -1381,8 +1382,7 @@
       "threePct": 0.342105,
       "ftPct": 0.634146,
       "threeMade": 0.65,
-      "pra": 7.83,
-      "gamesStarted": 2
+      "pra": 7.83
     },
     {
       "playerId": "09763f95-e11e-429f-b00e-7a7f472177cf",
@@ -1396,6 +1396,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/85389cef34a0438486db14cac8614399?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 31,
       "minutes": 28.666668,
       "points": 15.875,
       "rebounds": 3.875,
@@ -1408,8 +1409,7 @@
       "threePct": 0.338843,
       "ftPct": 0.875,
       "threeMade": 1.28125,
-      "pra": 21.78,
-      "gamesStarted": 31
+      "pra": 21.78
     },
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
@@ -1423,6 +1423,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp",
       "games": 15,
+      "gamesStarted": 0,
       "minutes": 15.333333,
       "points": 3.46667,
       "rebounds": 1.6,
@@ -1435,8 +1436,7 @@
       "threePct": 0.22449,
       "ftPct": 0.9,
       "threeMade": 0.73333,
-      "pra": 6.73,
-      "gamesStarted": 0
+      "pra": 6.73
     },
     {
       "playerId": "c922ea7b-4118-4430-a981-14a37572db7b",
@@ -1450,6 +1450,7 @@
       "jersey": "20",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/02c790f3b13c4bd99896ff7436d70e46?size=800&format=webp",
       "games": 8,
+      "gamesStarted": 0,
       "minutes": 5.033333,
       "points": 2,
       "rebounds": 0.625,
@@ -1462,8 +1463,7 @@
       "threePct": 0.75,
       "ftPct": 0.5,
       "threeMade": 0.375,
-      "pra": 2.88,
-      "gamesStarted": 0
+      "pra": 2.88
     },
     {
       "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
@@ -1477,6 +1477,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 29,
       "minutes": 36.433334,
       "points": 21.24138,
       "rebounds": 6.27586,
@@ -1489,8 +1490,7 @@
       "threePct": 0.364583,
       "ftPct": 0.875,
       "threeMade": 2.41379,
-      "pra": 31.48,
-      "gamesStarted": 29
+      "pra": 31.48
     },
     {
       "playerId": "e5b102fe-d4c9-4ccf-bf4a-57d40a3c2409",
@@ -1504,6 +1504,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/68ad16be42604ecc8ce12fed29829678?size=800&format=webp",
       "games": 28,
+      "gamesStarted": 0,
       "minutes": 7.016667,
       "points": 1.71429,
       "rebounds": 1.10714,
@@ -1516,8 +1517,7 @@
       "threePct": 0.3,
       "ftPct": 1,
       "threeMade": 0.53571,
-      "pra": 3.04,
-      "gamesStarted": 0
+      "pra": 3.04
     },
     {
       "playerId": "3f6bf43b-cd1a-4e63-a150-bf859afc9a7e",
@@ -1531,6 +1531,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/63e189a13e7a4f2689b62d32ace42e9c?size=800&format=webp",
       "games": 11,
+      "gamesStarted": 4,
       "minutes": 9.783333,
       "points": 1.81818,
       "rebounds": 1.18182,
@@ -1543,8 +1544,7 @@
       "threePct": 0.133333,
       "ftPct": 0.75,
       "threeMade": 0.18182,
-      "pra": 3.45,
-      "gamesStarted": 4
+      "pra": 3.45
     },
     {
       "playerId": "00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b",
@@ -1558,6 +1558,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp",
       "games": 22,
+      "gamesStarted": 10,
       "minutes": 19.25,
       "points": 9.27273,
       "rebounds": 5.22727,
@@ -1570,8 +1571,7 @@
       "threePct": 0.272727,
       "ftPct": 0.671642,
       "threeMade": 0.40909,
-      "pra": 15.32,
-      "gamesStarted": 10
+      "pra": 15.32
     },
     {
       "playerId": "8431bed8-a6fe-4219-8fa5-093d08f81462",
@@ -1585,6 +1585,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5f30f05a5e1f4bf080a2a5faf6dc6098?size=800&format=webp",
       "games": 12,
+      "gamesStarted": 0,
       "minutes": 5.516667,
       "points": 0.75,
       "rebounds": 0.83333,
@@ -1597,8 +1598,7 @@
       "threePct": 0.083333,
       "ftPct": 0,
       "threeMade": 0.08333,
-      "pra": 1.75,
-      "gamesStarted": 0
+      "pra": 1.75
     },
     {
       "playerId": "a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9",
@@ -1612,6 +1612,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp",
       "games": 14,
+      "gamesStarted": 5,
       "minutes": 19.200001,
       "points": 8.14286,
       "rebounds": 2.92857,
@@ -1624,8 +1625,7 @@
       "threePct": 0.357143,
       "ftPct": 0.961539,
       "threeMade": 1.07143,
-      "pra": 13.64,
-      "gamesStarted": 5
+      "pra": 13.64
     },
     {
       "playerId": "be414749-6d0f-4620-857d-a9b017a2c0b4",
@@ -1639,6 +1639,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 2.433333,
       "points": 5,
       "rebounds": 2,
@@ -1651,8 +1652,7 @@
       "threePct": 1,
       "ftPct": 0,
       "threeMade": 1,
-      "pra": 7,
-      "gamesStarted": 0
+      "pra": 7
     },
     {
       "playerId": "d5971e26-07e4-4f7f-aa3b-68e7f423fcf2",
@@ -1666,6 +1666,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8e81ced1be504eb6878aa920d9422547?size=800&format=webp",
       "games": 31,
+      "gamesStarted": 30,
       "minutes": 24.916668,
       "points": 19.29032,
       "rebounds": 10,
@@ -1678,8 +1679,7 @@
       "threePct": 0.208333,
       "ftPct": 0.737931,
       "threeMade": 0.16129,
-      "pra": 31.39,
-      "gamesStarted": 30
+      "pra": 31.39
     },
     {
       "playerId": "e945087b-8394-4713-a79a-92e843a080a4",
@@ -1693,6 +1693,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4a232456fbc747fdb547c99bcfcddc52?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 6,
       "minutes": 28.533333,
       "points": 13.44444,
       "rebounds": 4.88889,
@@ -1705,8 +1706,7 @@
       "threePct": 0.263158,
       "ftPct": 0.807692,
       "threeMade": 1.11111,
-      "pra": 21.78,
-      "gamesStarted": 6
+      "pra": 21.78
     },
     {
       "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
@@ -1720,6 +1720,7 @@
       "jersey": "6",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
       "games": 39,
+      "gamesStarted": 25,
       "minutes": 22.266666,
       "points": 9.74359,
       "rebounds": 3,
@@ -1732,8 +1733,7 @@
       "threePct": 0.372881,
       "ftPct": 0.724638,
       "threeMade": 1.69231,
-      "pra": 14.15,
-      "gamesStarted": 25
+      "pra": 14.15
     },
     {
       "playerId": "44c17e2b-7e6a-43b7-9421-c50c0f001071",
@@ -1747,6 +1747,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp",
       "games": 3,
+      "gamesStarted": 0,
       "minutes": 1.633333,
       "points": 0,
       "rebounds": 0.66667,
@@ -1759,8 +1760,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.67,
-      "gamesStarted": 0
+      "pra": 0.67
     },
     {
       "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
@@ -1772,8 +1772,9 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "F",
       "jersey": "50",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e5154cd450a548b98157898fcce8d6ba?size=800&format=webp",
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
       "games": 13,
+      "gamesStarted": 0,
       "minutes": 3.9,
       "points": 0.69231,
       "rebounds": 0.76923,
@@ -1786,8 +1787,7 @@
       "threePct": 0.090909,
       "ftPct": 0.5,
       "threeMade": 0.07692,
-      "pra": 1.54,
-      "gamesStarted": 0
+      "pra": 1.54
     },
     {
       "playerId": "763e39a5-9c57-4abb-bb53-f823e9cdeb10",
@@ -1801,6 +1801,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e7172b9e628749f0914309ce902c620c?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 30,
       "minutes": 22.333332,
       "points": 13.45455,
       "rebounds": 8.45455,
@@ -1813,8 +1814,7 @@
       "threePct": 0,
       "ftPct": 0.630952,
       "threeMade": 0,
-      "pra": 22.67,
-      "gamesStarted": 30
+      "pra": 22.67
     },
     {
       "playerId": "4a3d7bc9-18a9-4106-a201-79643586e4c3",
@@ -1828,6 +1828,7 @@
       "jersey": "24",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 0,
       "minutes": 9.3,
       "points": 3.28571,
       "rebounds": 1.97143,
@@ -1840,8 +1841,7 @@
       "threePct": 0.344828,
       "ftPct": 0.928571,
       "threeMade": 0.28571,
-      "pra": 6.03,
-      "gamesStarted": 0
+      "pra": 6.03
     },
     {
       "playerId": "5adef25b-648e-442b-983e-020043e7872d",
@@ -1855,6 +1855,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp",
       "games": 37,
+      "gamesStarted": 37,
       "minutes": 27.65,
       "points": 17.08108,
       "rebounds": 6.81081,
@@ -1867,8 +1868,7 @@
       "threePct": 0.055556,
       "ftPct": 0.564444,
       "threeMade": 0.02703,
-      "pra": 25.22,
-      "gamesStarted": 37
+      "pra": 25.22
     },
     {
       "playerId": "fdeea6c4-05cd-46b7-b2a8-87c47f8f987f",
@@ -1882,6 +1882,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7e7cced5d9194eef88c9f251c44a584f?size=800&format=webp",
       "games": 37,
+      "gamesStarted": 37,
       "minutes": 28.366667,
       "points": 10.67568,
       "rebounds": 6.37838,
@@ -1894,8 +1895,7 @@
       "threePct": 0.076923,
       "ftPct": 0.795181,
       "threeMade": 0.02703,
-      "pra": 19.41,
-      "gamesStarted": 37
+      "pra": 19.41
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
@@ -1909,6 +1909,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp",
       "games": 17,
+      "gamesStarted": 10,
       "minutes": 19.783333,
       "points": 9.94118,
       "rebounds": 1.05882,
@@ -1921,8 +1922,7 @@
       "threePct": 0.401961,
       "ftPct": 0.923077,
       "threeMade": 2.41176,
-      "pra": 11.88,
-      "gamesStarted": 10
+      "pra": 11.88
     },
     {
       "playerId": "1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5",
@@ -1936,6 +1936,7 @@
       "jersey": "16",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp",
       "games": 18,
+      "gamesStarted": 0,
       "minutes": 7.733333,
       "points": 2.05556,
       "rebounds": 1.77778,
@@ -1948,8 +1949,7 @@
       "threePct": 0.142857,
       "ftPct": 0.733333,
       "threeMade": 0.11111,
-      "pra": 4.22,
-      "gamesStarted": 0
+      "pra": 4.22
     },
     {
       "playerId": "dd13bc60-7ff4-4523-8d57-0c4303089bd4",
@@ -1963,6 +1963,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/16cf0df1b78b4b5ba5f9e5ba18305a04?size=800&format=webp",
       "games": 6,
+      "gamesStarted": 0,
       "minutes": 4.216667,
       "points": 0.83333,
       "rebounds": 0.33333,
@@ -1975,8 +1976,7 @@
       "threePct": 0.142857,
       "ftPct": 1,
       "threeMade": 0.16667,
-      "pra": 1.17,
-      "gamesStarted": 0
+      "pra": 1.17
     },
     {
       "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
@@ -1988,8 +1988,9 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
       "jersey": "43",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e0a2f59c4cea44b2aac58c4028a60ae4?size=800&format=webp",
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
       "games": 8,
+      "gamesStarted": 2,
       "minutes": 15.85,
       "points": 4.375,
       "rebounds": 5.5,
@@ -2002,8 +2003,7 @@
       "threePct": 0,
       "ftPct": 0.7,
       "threeMade": 0,
-      "pra": 10.38,
-      "gamesStarted": 2
+      "pra": 10.38
     },
     {
       "playerId": "6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9",
@@ -2017,6 +2017,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp",
       "games": 37,
+      "gamesStarted": 37,
       "minutes": 20.200001,
       "points": 11.62162,
       "rebounds": 5.86486,
@@ -2029,8 +2030,7 @@
       "threePct": 0.401515,
       "ftPct": 0.776596,
       "threeMade": 1.43243,
-      "pra": 18.32,
-      "gamesStarted": 37
+      "pra": 18.32
     },
     {
       "playerId": "fdf9d29d-b00b-4db0-a69a-cc5eaa23a234",
@@ -2044,6 +2044,7 @@
       "jersey": "33",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 34,
       "minutes": 30.6,
       "points": 15.47059,
       "rebounds": 9.44118,
@@ -2056,8 +2057,7 @@
       "threePct": 0.285714,
       "ftPct": 0.676471,
       "threeMade": 0.64706,
-      "pra": 27.18,
-      "gamesStarted": 34
+      "pra": 27.18
     },
     {
       "playerId": "5c7ec83d-9427-4afc-a325-a753fe6abde0",
@@ -2071,6 +2071,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/118cfd2424224238b8224373d4f789a8?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 30,
       "minutes": 25.583332,
       "points": 11.93333,
       "rebounds": 6.06667,
@@ -2083,8 +2084,7 @@
       "threePct": 0.322222,
       "ftPct": 0.738636,
       "threeMade": 0.96667,
-      "pra": 19.9,
-      "gamesStarted": 30
+      "pra": 19.9
     },
     {
       "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
@@ -2098,6 +2098,7 @@
       "jersey": "22",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp",
       "games": 15,
+      "gamesStarted": 0,
       "minutes": 4.016667,
       "points": 0.6,
       "rebounds": 0.4,
@@ -2110,8 +2111,7 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 1.13,
-      "gamesStarted": 0
+      "pra": 1.13
     },
     {
       "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
@@ -2125,6 +2125,7 @@
       "jersey": "34",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72eeb6c960da4f8080531796fcd6cdaa?size=800&format=webp",
       "games": 0,
+      "gamesStarted": 0,
       "minutes": null,
       "points": null,
       "rebounds": null,
@@ -2137,8 +2138,7 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null,
-      "gamesStarted": 0
+      "pra": null
     },
     {
       "playerId": "be4c5c96-8667-40f8-98d0-4c1d99641bc5",
@@ -2152,6 +2152,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp",
       "games": 40,
+      "gamesStarted": 40,
       "minutes": 32.75,
       "points": 25.1,
       "rebounds": 3.7,
@@ -2164,8 +2165,7 @@
       "threePct": 0.360424,
       "ftPct": 0.814815,
       "threeMade": 2.55,
-      "pra": 35.92,
-      "gamesStarted": 40
+      "pra": 35.92
     },
     {
       "playerId": "ea653a63-5183-4a45-b1ab-6d27491a2700",
@@ -2179,6 +2179,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2d4833a3968a4fc5930c0b2b3e9de36f?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 4.233333,
       "points": 0,
       "rebounds": 0,
@@ -2191,8 +2192,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1,
-      "gamesStarted": 0
+      "pra": 1
     },
     {
       "playerId": "d21a6ba4-66ef-4623-b652-53b490002170",
@@ -2206,6 +2206,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp",
       "games": 5,
+      "gamesStarted": 0,
       "minutes": 3.533333,
       "points": 1,
       "rebounds": 0.8,
@@ -2218,8 +2219,7 @@
       "threePct": 0.166667,
       "ftPct": 0,
       "threeMade": 0.2,
-      "pra": 2,
-      "gamesStarted": 0
+      "pra": 2
     },
     {
       "playerId": "a10eef82-dac8-4efd-acd5-cdf867139034",
@@ -2233,6 +2233,7 @@
       "jersey": "96",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1645c9003bca44ba93d4a9da2a4e2f1a?size=800&format=webp",
       "games": 7,
+      "gamesStarted": 0,
       "minutes": 3.133333,
       "points": 0,
       "rebounds": 0.71429,
@@ -2245,8 +2246,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.71,
-      "gamesStarted": 0
+      "pra": 0.71
     },
     {
       "playerId": "47557326-f6ee-4da8-b4dc-493372a9ffd7",
@@ -2260,6 +2260,7 @@
       "jersey": "6",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a93e48b7c166443d9b50e284c7948ac5?size=800&format=webp",
       "games": 23,
+      "gamesStarted": 7,
       "minutes": 17.4,
       "points": 6.56522,
       "rebounds": 2.30435,
@@ -2272,8 +2273,7 @@
       "threePct": 0.306122,
       "ftPct": 0.844444,
       "threeMade": 0.65217,
-      "pra": 9.91,
-      "gamesStarted": 7
+      "pra": 9.91
     },
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -2287,6 +2287,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp",
       "games": 39,
+      "gamesStarted": 0,
       "minutes": 18.483334,
       "points": 9.97436,
       "rebounds": 3.69231,
@@ -2299,8 +2300,7 @@
       "threePct": 0.318436,
       "ftPct": 0.8,
       "threeMade": 1.46154,
-      "pra": 14.41,
-      "gamesStarted": 0
+      "pra": 14.41
     },
     {
       "playerId": "37613082-354f-48d0-b16d-0d9ff613f64c",
@@ -2314,6 +2314,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp",
       "games": 37,
+      "gamesStarted": 37,
       "minutes": 34.683334,
       "points": 17.32432,
       "rebounds": 7.32432,
@@ -2326,8 +2327,7 @@
       "threePct": 0.338462,
       "ftPct": 0.82967,
       "threeMade": 1.78378,
-      "pra": 28.3,
-      "gamesStarted": 37
+      "pra": 28.3
     },
     {
       "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
@@ -2341,6 +2341,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
       "games": 18,
+      "gamesStarted": 0,
       "minutes": 11.066667,
       "points": 2.5,
       "rebounds": 1,
@@ -2353,8 +2354,7 @@
       "threePct": 0.096774,
       "ftPct": 1,
       "threeMade": 0.16667,
-      "pra": 4.83,
-      "gamesStarted": 0
+      "pra": 4.83
     },
     {
       "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
@@ -2368,6 +2368,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 2,
       "minutes": 13.566667,
       "points": 3.68571,
       "rebounds": 3.34286,
@@ -2380,8 +2381,7 @@
       "threePct": 0.3,
       "ftPct": 0.659574,
       "threeMade": 0.17143,
-      "pra": 8.2,
-      "gamesStarted": 2
+      "pra": 8.2
     },
     {
       "playerId": "872bdcab-a933-4436-874d-4d94f4e184e8",
@@ -2395,6 +2395,7 @@
       "jersey": "14",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 22,
       "minutes": 22.35,
       "points": 7.63636,
       "rebounds": 4.63636,
@@ -2407,8 +2408,7 @@
       "threePct": 0.353448,
       "ftPct": 0.763158,
       "threeMade": 1.24242,
-      "pra": 12.97,
-      "gamesStarted": 22
+      "pra": 12.97
     },
     {
       "playerId": "ae626970-50ba-4a3c-8cf8-03ad817f934a",
@@ -2422,6 +2422,7 @@
       "jersey": "38",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ff6c1ddc131048a38337fde7ad8b2bed?size=800&format=webp",
       "games": 26,
+      "gamesStarted": 4,
       "minutes": 14,
       "points": 4.46154,
       "rebounds": 1.19231,
@@ -2434,8 +2435,7 @@
       "threePct": 0.341463,
       "ftPct": 0.846154,
       "threeMade": 0.53846,
-      "pra": 6.92,
-      "gamesStarted": 4
+      "pra": 6.92
     },
     {
       "playerId": "58dbbdf4-ca53-42bd-8fc7-62e2b664de6a",
@@ -2449,6 +2449,7 @@
       "jersey": "17",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9cb8e97355294d4cb1dce2827742c03c?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 5.5,
       "points": 0,
       "rebounds": 3,
@@ -2461,8 +2462,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 3,
-      "gamesStarted": 0
+      "pra": 3
     },
     {
       "playerId": "72703b55-4db2-4e14-b7a4-a38f31c32388",
@@ -2476,6 +2476,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0690378dd57b49649e379f1e1679f6ce?size=800&format=webp",
       "games": 9,
+      "gamesStarted": 3,
       "minutes": 19.983334,
       "points": 9.88889,
       "rebounds": 3.88889,
@@ -2488,8 +2489,7 @@
       "threePct": 0.304348,
       "ftPct": 0.5,
       "threeMade": 0.77778,
-      "pra": 16.78,
-      "gamesStarted": 3
+      "pra": 16.78
     },
     {
       "playerId": "2337cf0e-9ee7-439d-8aec-770b3876368c",
@@ -2503,6 +2503,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 1,
       "minutes": 7.6,
       "points": 2.31034,
       "rebounds": 1.48276,
@@ -2515,8 +2516,7 @@
       "threePct": 0.324324,
       "ftPct": 0.5625,
       "threeMade": 0.41379,
-      "pra": 4,
-      "gamesStarted": 1
+      "pra": 4
     },
     {
       "playerId": "6dd411fc-79f8-409d-aca8-6b9f43f59c47",
@@ -2530,6 +2530,7 @@
       "jersey": "67",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/730c2bb26ea94abebdb863c072bf7db4?size=800&format=webp",
       "games": 2,
+      "gamesStarted": 0,
       "minutes": 2.7,
       "points": 1.5,
       "rebounds": 1,
@@ -2542,8 +2543,7 @@
       "threePct": 0.5,
       "ftPct": 0,
       "threeMade": 0.5,
-      "pra": 2.5,
-      "gamesStarted": 0
+      "pra": 2.5
     },
     {
       "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
@@ -2557,6 +2557,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
       "games": 10,
+      "gamesStarted": 0,
       "minutes": 4.05,
       "points": 1.3,
       "rebounds": 1,
@@ -2569,8 +2570,7 @@
       "threePct": 0,
       "ftPct": 1,
       "threeMade": 0,
-      "pra": 2.4,
-      "gamesStarted": 0
+      "pra": 2.4
     },
     {
       "playerId": "23f56f6b-c7d2-434e-8929-9eada1c1a143",
@@ -2584,6 +2584,7 @@
       "jersey": "19",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2801d51a00354fee9b3ace16e7166e65?size=800&format=webp",
       "games": 13,
+      "gamesStarted": 1,
       "minutes": 5.033333,
       "points": 0.46154,
       "rebounds": 0.53846,
@@ -2596,8 +2597,7 @@
       "threePct": 0,
       "ftPct": 0.4,
       "threeMade": 0,
-      "pra": 1.08,
-      "gamesStarted": 1
+      "pra": 1.08
     },
     {
       "playerId": "70330528-c7cc-4cdf-8188-f5798c6d6e96",
@@ -2611,6 +2611,7 @@
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3e8bbfb4a5564af4a4b3c0c59a370cb5?size=800&format=webp",
       "games": 13,
+      "gamesStarted": 0,
       "minutes": 3.266667,
       "points": 1.46154,
       "rebounds": 0.53846,
@@ -2623,8 +2624,7 @@
       "threePct": 0.416667,
       "ftPct": 0,
       "threeMade": 0.38462,
-      "pra": 2.15,
-      "gamesStarted": 0
+      "pra": 2.15
     },
     {
       "playerId": "a6b5a951-716b-4892-b850-5cdbcd77871f",
@@ -2638,6 +2638,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8001918fb49a4dea8acaceff817d7297?size=800&format=webp",
       "games": 4,
+      "gamesStarted": 0,
       "minutes": 1.533333,
       "points": 1.75,
       "rebounds": 0,
@@ -2650,8 +2651,7 @@
       "threePct": 0.333333,
       "ftPct": 0.666667,
       "threeMade": 0.25,
-      "pra": 1.75,
-      "gamesStarted": 0
+      "pra": 1.75
     },
     {
       "playerId": "28d424fa-f1b2-4583-84f1-525ff5c38a73",
@@ -2665,6 +2665,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1102abefd4284e10809581a8c97aa355?size=800&format=webp",
       "games": 0,
+      "gamesStarted": 0,
       "minutes": null,
       "points": null,
       "rebounds": null,
@@ -2677,8 +2678,7 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null,
-      "gamesStarted": 0
+      "pra": null
     },
     {
       "playerId": "0dd6e2f3-0358-4a6e-a340-fe5279db28fa",
@@ -2692,6 +2692,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 9,
       "minutes": 23.883333,
       "points": 10.75862,
       "rebounds": 4.86207,
@@ -2704,8 +2705,7 @@
       "threePct": 0.291262,
       "ftPct": 0.884615,
       "threeMade": 1.03448,
-      "pra": 16.59,
-      "gamesStarted": 9
+      "pra": 16.59
     },
     {
       "playerId": "6a42971e-6638-4472-b289-98c544aaa90a",
@@ -2719,6 +2719,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp",
       "games": 38,
+      "gamesStarted": 14,
       "minutes": 20.033333,
       "points": 8.39474,
       "rebounds": 3.10526,
@@ -2731,8 +2732,7 @@
       "threePct": 0.327586,
       "ftPct": 0.795455,
       "threeMade": 1,
-      "pra": 12.32,
-      "gamesStarted": 14
+      "pra": 12.32
     },
     {
       "playerId": "c6b7202f-6619-422a-8d2b-8e52a8d48935",
@@ -2746,6 +2746,7 @@
       "jersey": "33",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/58b14b2afc334ba692743e77156649ff?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 11,
       "minutes": 21.033333,
       "points": 6.89655,
       "rebounds": 4.27586,
@@ -2758,8 +2759,7 @@
       "threePct": 0.376471,
       "ftPct": 0.818182,
       "threeMade": 1.10345,
-      "pra": 13.21,
-      "gamesStarted": 11
+      "pra": 13.21
     },
     {
       "playerId": "135b961b-2a30-4044-9d4e-52128c10a33c",
@@ -2773,6 +2773,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp",
       "games": 24,
+      "gamesStarted": 0,
       "minutes": 4.433333,
       "points": 1.5,
       "rebounds": 0.54167,
@@ -2785,8 +2786,7 @@
       "threePct": 0.31579,
       "ftPct": 0.6,
       "threeMade": 0.25,
-      "pra": 2.13,
-      "gamesStarted": 0
+      "pra": 2.13
     },
     {
       "playerId": "04859f22-d351-4235-b108-10db1f0b7092",
@@ -2800,6 +2800,7 @@
       "jersey": "24",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c88a2d269cb8445984d42b97ba7b2751?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 11,
       "minutes": 20.483334,
       "points": 6.81818,
       "rebounds": 5.45455,
@@ -2812,8 +2813,7 @@
       "threePct": 0,
       "ftPct": 0.493976,
       "threeMade": 0,
-      "pra": 13.45,
-      "gamesStarted": 11
+      "pra": 13.45
     },
     {
       "playerId": "a02b99c8-0fde-41b1-9ccb-f78d47576d17",
@@ -2827,6 +2827,7 @@
       "jersey": "18",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0080e87aad9a46b1972a4b8ca84fcca9?size=800&format=webp",
       "games": 5,
+      "gamesStarted": 5,
       "minutes": 28.333332,
       "points": 11.4,
       "rebounds": 1.6,
@@ -2839,8 +2840,7 @@
       "threePct": 0.275862,
       "ftPct": 0.789474,
       "threeMade": 1.6,
-      "pra": 15.8,
-      "gamesStarted": 5
+      "pra": 15.8
     },
     {
       "playerId": "db202f21-d605-4ca1-8901-8abbd440f105",
@@ -2854,6 +2854,7 @@
       "jersey": "22",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 21,
       "minutes": 17.933332,
       "points": 6.06061,
       "rebounds": 4.78788,
@@ -2866,8 +2867,7 @@
       "threePct": 0.285714,
       "ftPct": 0.551724,
       "threeMade": 0.54545,
-      "pra": 12.55,
-      "gamesStarted": 21
+      "pra": 12.55
     },
     {
       "playerId": "0c6e8860-99ba-44d2-9f1a-8b6e58936bb8",
@@ -2881,6 +2881,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp",
       "games": 40,
+      "gamesStarted": 4,
       "minutes": 10.366667,
       "points": 1.975,
       "rebounds": 1.575,
@@ -2893,8 +2894,7 @@
       "threePct": 0.3,
       "ftPct": 0.631579,
       "threeMade": 0.225,
-      "pra": 4.05,
-      "gamesStarted": 4
+      "pra": 4.05
     },
     {
       "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
@@ -2908,6 +2908,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 27,
       "minutes": 23.450001,
       "points": 8.38235,
       "rebounds": 3.14706,
@@ -2920,8 +2921,7 @@
       "threePct": 0.28866,
       "ftPct": 0.825,
       "threeMade": 0.82353,
-      "pra": 16.32,
-      "gamesStarted": 27
+      "pra": 16.32
     },
     {
       "playerId": "b3b5ecb0-ba46-4821-9e2b-6e4180a30f95",
@@ -2935,6 +2935,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d27ad131a4c646bd81b24a65efc6bf57?size=800&format=webp",
       "games": 16,
+      "gamesStarted": 1,
       "minutes": 11.45,
       "points": 2.875,
       "rebounds": 2.25,
@@ -2947,8 +2948,7 @@
       "threePct": 0.357143,
       "ftPct": 0.692308,
       "threeMade": 0.3125,
-      "pra": 5.63,
-      "gamesStarted": 1
+      "pra": 5.63
     },
     {
       "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
@@ -2962,6 +2962,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a1c515af1b384efb972ea3f03793fca4?size=800&format=webp",
       "games": 21,
+      "gamesStarted": 1,
       "minutes": 9.483333,
       "points": 2.80952,
       "rebounds": 1.42857,
@@ -2974,8 +2975,7 @@
       "threePct": 0.333333,
       "ftPct": 0.538462,
       "threeMade": 0.38095,
-      "pra": 4.67,
-      "gamesStarted": 1
+      "pra": 4.67
     },
     {
       "playerId": "c946f7e6-4321-403c-bc8c-f9a359254733",
@@ -2989,6 +2989,7 @@
       "jersey": "17",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8a80ad2cc70a481d8549456c74985d4e?size=800&format=webp",
       "games": 17,
+      "gamesStarted": 0,
       "minutes": 4.5,
       "points": 0.82353,
       "rebounds": 0.47059,
@@ -3001,8 +3002,7 @@
       "threePct": 0.214286,
       "ftPct": 1,
       "threeMade": 0.17647,
-      "pra": 1.47,
-      "gamesStarted": 0
+      "pra": 1.47
     },
     {
       "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
@@ -3016,6 +3016,7 @@
       "jersey": "35",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ddf5b80f00c54cec9fd5002c12dc0d84?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 24,
       "minutes": 28.133333,
       "points": 16.17143,
       "rebounds": 3.57143,
@@ -3028,8 +3029,7 @@
       "threePct": 0.325991,
       "ftPct": 0.865979,
       "threeMade": 2.11429,
-      "pra": 24.03,
-      "gamesStarted": 24
+      "pra": 24.03
     },
     {
       "playerId": "2e2291aa-36b6-4928-b348-0f5951fbc3b4",
@@ -3043,6 +3043,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp",
       "games": 23,
+      "gamesStarted": 21,
       "minutes": 25.416668,
       "points": 7.52174,
       "rebounds": 2.43478,
@@ -3055,8 +3056,7 @@
       "threePct": 0.181818,
       "ftPct": 0.866667,
       "threeMade": 0.52174,
-      "pra": 13.22,
-      "gamesStarted": 21
+      "pra": 13.22
     },
     {
       "playerId": "3443c855-3ca4-4274-8cbf-74423c32b425",
@@ -3070,6 +3070,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9da93e66b20f4969a009646a965285b5?size=800&format=webp",
       "games": 22,
+      "gamesStarted": 20,
       "minutes": 25.933332,
       "points": 11.31818,
       "rebounds": 4.36364,
@@ -3082,8 +3083,7 @@
       "threePct": 0.386793,
       "ftPct": 0.744186,
       "threeMade": 1.86364,
-      "pra": 17.14,
-      "gamesStarted": 20
+      "pra": 17.14
     },
     {
       "playerId": "7f6e18b2-6494-41c7-9791-d72c632317d5",
@@ -3097,6 +3097,7 @@
       "jersey": "20",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp",
       "games": 36,
+      "gamesStarted": 36,
       "minutes": 30.6,
       "points": 22.5,
       "rebounds": 4.05556,
@@ -3109,8 +3110,7 @@
       "threePct": 0.348214,
       "ftPct": 0.790055,
       "threeMade": 3.25,
-      "pra": 31.42,
-      "gamesStarted": 36
+      "pra": 31.42
     },
     {
       "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
@@ -3124,6 +3124,7 @@
       "jersey": "4",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0cc5dbe271b74956a5886a5c605064bf?size=800&format=webp",
       "games": 21,
+      "gamesStarted": 0,
       "minutes": 6.75,
       "points": 2,
       "rebounds": 0.7619,
@@ -3136,8 +3137,7 @@
       "threePct": 0.142857,
       "ftPct": 0.7,
       "threeMade": 0.09524,
-      "pra": 3.67,
-      "gamesStarted": 0
+      "pra": 3.67
     },
     {
       "playerId": "c9019743-60ae-4700-852e-6ae15c1cbef6",
@@ -3151,6 +3151,7 @@
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 26,
       "minutes": 26.75,
       "points": 10.38235,
       "rebounds": 5.26471,
@@ -3163,8 +3164,7 @@
       "threePct": 0.421569,
       "ftPct": 0.774193,
       "threeMade": 1.26471,
-      "pra": 17.68,
-      "gamesStarted": 26
+      "pra": 17.68
     },
     {
       "playerId": "eb26560d-c56e-4409-b482-8b141421ce79",
@@ -3178,6 +3178,7 @@
       "jersey": "31",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp",
       "games": 38,
+      "gamesStarted": 0,
       "minutes": 18.366667,
       "points": 8.52632,
       "rebounds": 6.42105,
@@ -3190,8 +3191,7 @@
       "threePct": 0.268293,
       "ftPct": 0.565789,
       "threeMade": 0.28947,
-      "pra": 16.05,
-      "gamesStarted": 0
+      "pra": 16.05
     },
     {
       "playerId": "fc35a1fb-d6b9-40ce-a539-53f1116b6067",
@@ -3205,6 +3205,7 @@
       "jersey": "22",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/dbf6ccd4ed424ddd81eaf81971f8863e?size=800&format=webp",
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 0.033333,
       "points": 0,
       "rebounds": 0,
@@ -3217,8 +3218,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0,
-      "gamesStarted": 0
+      "pra": 0
     },
     {
       "playerId": "5ce242ee-271f-4cf5-bfa8-665c6fd528d5",
@@ -3232,6 +3232,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ddb81ed64daf4a6981e68e7cc3e2727e?size=800&format=webp",
       "games": 17,
+      "gamesStarted": 0,
       "minutes": 4.1,
       "points": 1.58824,
       "rebounds": 1,
@@ -3244,8 +3245,7 @@
       "threePct": 0,
       "ftPct": 0.5,
       "threeMade": 0,
-      "pra": 2.65,
-      "gamesStarted": 0
+      "pra": 2.65
     },
     {
       "playerId": "704ee709-8974-47d6-9aa3-358261545354",
@@ -3259,6 +3259,7 @@
       "jersey": "30",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c5945aca3e39452abafd751ee96eb947?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 31,
       "minutes": 23.950001,
       "points": 10.84375,
       "rebounds": 2.96875,
@@ -3271,8 +3272,7 @@
       "threePct": 0.344538,
       "ftPct": 0.805556,
       "threeMade": 1.28125,
-      "pra": 18.28,
-      "gamesStarted": 31
+      "pra": 18.28
     },
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
@@ -3286,6 +3286,7 @@
       "jersey": "6",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 33,
       "minutes": 30.866667,
       "points": 17.69697,
       "rebounds": 4.48485,
@@ -3298,8 +3299,7 @@
       "threePct": 0.296774,
       "ftPct": 0.740741,
       "threeMade": 1.39394,
-      "pra": 29.73,
-      "gamesStarted": 33
+      "pra": 29.73
     },
     {
       "playerId": "9b71131b-787a-475d-aa1b-00dc4394f5e2",
@@ -3313,6 +3313,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp",
       "games": 14,
+      "gamesStarted": 0,
       "minutes": 3.2,
       "points": 1.57143,
       "rebounds": 0.21429,
@@ -3325,8 +3326,7 @@
       "threePct": 0.545455,
       "ftPct": 0,
       "threeMade": 0.42857,
-      "pra": 1.93,
-      "gamesStarted": 0
+      "pra": 1.93
     },
     {
       "playerId": "1d7fec11-f8ac-4bfd-9165-df664a90169e",
@@ -3340,6 +3340,7 @@
       "jersey": "77",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5549a59115c74f4d885743cff56ccaff?size=800&format=webp",
       "games": 26,
+      "gamesStarted": 13,
       "minutes": 24.4,
       "points": 15.26923,
       "rebounds": 3.26923,
@@ -3352,8 +3353,7 @@
       "threePct": 0.371257,
       "ftPct": 0.887097,
       "threeMade": 2.38462,
-      "pra": 22.08,
-      "gamesStarted": 13
+      "pra": 22.08
     },
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
@@ -3367,6 +3367,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 11,
       "minutes": 18.549999,
       "points": 6.51515,
       "rebounds": 2.36364,
@@ -3379,8 +3380,7 @@
       "threePct": 0.320388,
       "ftPct": 0.651163,
       "threeMade": 1,
-      "pra": 9.48,
-      "gamesStarted": 11
+      "pra": 9.48
     },
     {
       "playerId": "b21f6432-c1e5-446a-b516-d1c981b77c48",
@@ -3394,6 +3394,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp",
       "games": 14,
+      "gamesStarted": 14,
       "minutes": 23.700001,
       "points": 9.85714,
       "rebounds": 2.07143,
@@ -3406,8 +3407,7 @@
       "threePct": 0.358974,
       "ftPct": 0.941176,
       "threeMade": 2,
-      "pra": 13.21,
-      "gamesStarted": 14
+      "pra": 13.21
     },
     {
       "playerId": "f7b67b4a-478f-4544-baf8-7923643e3585",
@@ -3421,6 +3421,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ab1b27ae79444020b99b9463f179d7e1?size=800&format=webp",
       "games": 25,
+      "gamesStarted": 21,
       "minutes": 20.816668,
       "points": 10.2,
       "rebounds": 4.88,
@@ -3433,8 +3434,7 @@
       "threePct": 0.392857,
       "ftPct": 0.690476,
       "threeMade": 1.76,
-      "pra": 15.76,
-      "gamesStarted": 21
+      "pra": 15.76
     },
     {
       "playerId": "24f1f4d9-c856-46f8-a152-f62b0e9b1f39",
@@ -3448,6 +3448,7 @@
       "jersey": "15",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2789abd6d7f41fdaa4b997256c70e37?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 7,
       "minutes": 13.883333,
       "points": 4.7931,
       "rebounds": 2.82759,
@@ -3460,8 +3461,7 @@
       "threePct": 0.328571,
       "ftPct": 0.705882,
       "threeMade": 0.7931,
-      "pra": 8.72,
-      "gamesStarted": 7
+      "pra": 8.72
     },
     {
       "playerId": "96a3897c-483c-4089-b824-2bb65d265828",
@@ -3475,6 +3475,7 @@
       "jersey": null,
       "imageUrl": null,
       "games": 1,
+      "gamesStarted": 0,
       "minutes": 7.583333,
       "points": 0,
       "rebounds": 1,
@@ -3487,8 +3488,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 1,
-      "gamesStarted": 0
+      "pra": 1
     },
     {
       "playerId": "5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1",
@@ -3502,6 +3502,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp",
       "games": 15,
+      "gamesStarted": 7,
       "minutes": 20.216667,
       "points": 11.2,
       "rebounds": 6.8,
@@ -3514,8 +3515,7 @@
       "threePct": 0,
       "ftPct": 0.6,
       "threeMade": 0,
-      "pra": 20.4,
-      "gamesStarted": 7
+      "pra": 20.4
     },
     {
       "playerId": "f36a7c02-4846-4a7d-a778-f8910383c455",
@@ -3529,6 +3529,7 @@
       "jersey": "26",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp",
       "games": 10,
+      "gamesStarted": 7,
       "minutes": 18.35,
       "points": 6.8,
       "rebounds": 2.3,
@@ -3541,8 +3542,7 @@
       "threePct": 0.428571,
       "ftPct": 0.454545,
       "threeMade": 0.9,
-      "pra": 10.4,
-      "gamesStarted": 7
+      "pra": 10.4
     },
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
@@ -3556,6 +3556,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 27,
       "minutes": 27.716667,
       "points": 17.74074,
       "rebounds": 6.88889,
@@ -3568,8 +3569,7 @@
       "threePct": 0.233333,
       "ftPct": 0.666667,
       "threeMade": 0.77778,
-      "pra": 26.3,
-      "gamesStarted": 27
+      "pra": 26.3
     },
     {
       "playerId": "6f9d3d60-119f-408f-b8f9-a44978929b2e",
@@ -3583,6 +3583,7 @@
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp",
       "games": 8,
+      "gamesStarted": 8,
       "minutes": 27.833332,
       "points": 15.5,
       "rebounds": 5.375,
@@ -3595,8 +3596,7 @@
       "threePct": 0.434783,
       "ftPct": 0.8,
       "threeMade": 1.25,
-      "pra": 23.63,
-      "gamesStarted": 8
+      "pra": 23.63
     },
     {
       "playerId": "05180ec9-e559-40cc-8b48-198da892c37d",
@@ -3610,6 +3610,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b6ebdab4c3c7475bbe59c55b2ba0aa5c?size=800&format=webp",
       "games": 23,
+      "gamesStarted": 4,
       "minutes": 10.316667,
       "points": 1.3913,
       "rebounds": 2,
@@ -3622,8 +3623,7 @@
       "threePct": 0.166667,
       "ftPct": 0.8,
       "threeMade": 0.08696,
-      "pra": 4.09,
-      "gamesStarted": 4
+      "pra": 4.09
     },
     {
       "playerId": "43ece052-4c0c-4878-8cbe-5fe7055f648d",
@@ -3637,6 +3637,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp",
       "games": 0,
+      "gamesStarted": 0,
       "minutes": null,
       "points": null,
       "rebounds": null,
@@ -3649,8 +3650,7 @@
       "threePct": null,
       "ftPct": null,
       "threeMade": null,
-      "pra": null,
-      "gamesStarted": 0
+      "pra": null
     },
     {
       "playerId": "f4c4d041-69b8-4757-9142-f5c028a070f2",
@@ -3664,6 +3664,7 @@
       "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 0,
       "minutes": 8.566667,
       "points": 2.33333,
       "rebounds": 1.33333,
@@ -3676,8 +3677,7 @@
       "threePct": 0.35,
       "ftPct": 0.857143,
       "threeMade": 0.46667,
-      "pra": 5.17,
-      "gamesStarted": 0
+      "pra": 5.17
     },
     {
       "playerId": "74d07046-c14c-4b63-8f13-ad04902494a3",
@@ -3691,6 +3691,7 @@
       "jersey": "51",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp",
       "games": 12,
+      "gamesStarted": 2,
       "minutes": 14.65,
       "points": 7.25,
       "rebounds": 1.58333,
@@ -3703,8 +3704,7 @@
       "threePct": 0.142857,
       "ftPct": 0.833333,
       "threeMade": 0.16667,
-      "pra": 11.92,
-      "gamesStarted": 2
+      "pra": 11.92
     },
     {
       "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",
@@ -3718,6 +3718,7 @@
       "jersey": "8",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp",
       "games": 30,
+      "gamesStarted": 0,
       "minutes": 9.85,
       "points": 3.2,
       "rebounds": 1.03333,
@@ -3730,8 +3731,7 @@
       "threePct": 0.339623,
       "ftPct": 0.8,
       "threeMade": 0.6,
-      "pra": 4.8,
-      "gamesStarted": 0
+      "pra": 4.8
     },
     {
       "playerId": "3cb6b666-d6bf-41bb-b471-a63bb17c236c",
@@ -3745,6 +3745,7 @@
       "jersey": "90",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5658f7b30fcf4af493a2e7c6933b89ec?size=800&format=webp",
       "games": 16,
+      "gamesStarted": 0,
       "minutes": 16.666668,
       "points": 7.25,
       "rebounds": 3.25,
@@ -3757,8 +3758,7 @@
       "threePct": 0.185185,
       "ftPct": 0.757576,
       "threeMade": 0.3125,
-      "pra": 12.19,
-      "gamesStarted": 0
+      "pra": 12.19
     },
     {
       "playerId": "bf2ff692-c8a9-4e97-bf5e-907ee38b9af1",
@@ -3772,6 +3772,7 @@
       "jersey": "0",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp",
       "games": 28,
+      "gamesStarted": 15,
       "minutes": 23.716667,
       "points": 5.92857,
       "rebounds": 1.96429,
@@ -3784,8 +3785,7 @@
       "threePct": 0.317647,
       "ftPct": 0.619048,
       "threeMade": 0.96429,
-      "pra": 9.11,
-      "gamesStarted": 15
+      "pra": 9.11
     },
     {
       "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
@@ -3799,6 +3799,7 @@
       "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp",
       "games": 35,
+      "gamesStarted": 14,
       "minutes": 17.833332,
       "points": 7.97143,
       "rebounds": 3.31429,
@@ -3811,8 +3812,7 @@
       "threePct": 0.393443,
       "ftPct": 0.878788,
       "threeMade": 1.37143,
-      "pra": 12.29,
-      "gamesStarted": 14
+      "pra": 12.29
     },
     {
       "playerId": "635563c3-4946-466f-8d6c-417b58d0049f",
@@ -3826,6 +3826,7 @@
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/767d31e8434142b395b452b20291d537?size=800&format=webp",
       "games": 19,
+      "gamesStarted": 0,
       "minutes": 7.616667,
       "points": 1.36842,
       "rebounds": 0.84211,
@@ -3838,8 +3839,7 @@
       "threePct": 0.125,
       "ftPct": 0.5,
       "threeMade": 0.05263,
-      "pra": 3.32,
-      "gamesStarted": 0
+      "pra": 3.32
     },
     {
       "playerId": "14d4fada-6d04-420a-83e9-123a94cdf40c",
@@ -3853,6 +3853,7 @@
       "jersey": "32",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a0576f8b33f641ff869e84eaa72465b5?size=800&format=webp",
       "games": 17,
+      "gamesStarted": 17,
       "minutes": 31.183332,
       "points": 12,
       "rebounds": 6.35294,
@@ -3865,8 +3866,7 @@
       "threePct": 0.222222,
       "ftPct": 0.5,
       "threeMade": 0.82353,
-      "pra": 20.18,
-      "gamesStarted": 17
+      "pra": 20.18
     },
     {
       "playerId": "7623e128-1104-45bf-af1e-3f0d93c0c906",
@@ -3880,6 +3880,7 @@
       "jersey": "22",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b7baf8e41f8e4950964ac26a1f9c957d?size=800&format=webp",
       "games": 5,
+      "gamesStarted": 0,
       "minutes": 1.916667,
       "points": 0,
       "rebounds": 0.6,
@@ -3892,8 +3893,7 @@
       "threePct": 0,
       "ftPct": 0,
       "threeMade": 0,
-      "pra": 0.8,
-      "gamesStarted": 0
+      "pra": 0.8
     },
     {
       "playerId": "5f41affb-6b54-4a16-ae86-ee38ca16237c",
@@ -3907,6 +3907,7 @@
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b8670b973fa34f8b843f9a0b46d7b094?size=800&format=webp",
       "games": 40,
+      "gamesStarted": 40,
       "minutes": 24.033333,
       "points": 11.4,
       "rebounds": 5.825,
@@ -3919,8 +3920,7 @@
       "threePct": 0.40566,
       "ftPct": 0.802632,
       "threeMade": 1.075,
-      "pra": 18.6,
-      "gamesStarted": 40
+      "pra": 18.6
     },
     {
       "playerId": "6f3bc391-d618-4bdc-bfd9-8467b03006a6",
@@ -3934,6 +3934,7 @@
       "jersey": "6",
       "imageUrl": null,
       "games": 7,
+      "gamesStarted": 0,
       "minutes": 13.9,
       "points": 4.71429,
       "rebounds": 1.28571,
@@ -3946,8 +3947,7 @@
       "threePct": 0.3,
       "ftPct": 0,
       "threeMade": 0.42857,
-      "pra": 7.57,
-      "gamesStarted": 0
+      "pra": 7.57
     },
     {
       "playerId": "f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c",
@@ -3961,6 +3961,7 @@
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 3,
       "minutes": 18,
       "points": 5.0625,
       "rebounds": 4.25,
@@ -3973,8 +3974,7 @@
       "threePct": 0.281818,
       "ftPct": 0.833333,
       "threeMade": 0.96875,
-      "pra": 10.22,
-      "gamesStarted": 3
+      "pra": 10.22
     },
     {
       "playerId": "e9227af3-5300-4490-8e45-287088ec0475",
@@ -3988,6 +3988,7 @@
       "jersey": "18",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f34d4cd8e1c2468c933753e80ced775a?size=800&format=webp",
       "games": 28,
+      "gamesStarted": 1,
       "minutes": 13.816667,
       "points": 4,
       "rebounds": 2.67857,
@@ -4000,8 +4001,7 @@
       "threePct": 0.241935,
       "ftPct": 0.71875,
       "threeMade": 0.53571,
-      "pra": 8.43,
-      "gamesStarted": 1
+      "pra": 8.43
     },
     {
       "playerId": "4afa66cc-d497-4320-bc6e-047af378b8c4",
@@ -4015,6 +4015,7 @@
       "jersey": "30",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f9c87e3e33d344d49591448c11108761?size=800&format=webp",
       "games": 22,
+      "gamesStarted": 1,
       "minutes": 5.133333,
       "points": 1.90909,
       "rebounds": 0.77273,
@@ -4027,8 +4028,7 @@
       "threePct": 0.2,
       "ftPct": 0.666667,
       "threeMade": 0.09091,
-      "pra": 3,
-      "gamesStarted": 1
+      "pra": 3
     },
     {
       "playerId": "fd0678c3-5b7e-4550-bb6b-5849534e3769",
@@ -4042,6 +4042,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fc70114a16a942c6ad86d1457b7c38e4?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 0,
       "minutes": 5.8,
       "points": 2.14815,
       "rebounds": 1.22222,
@@ -4054,8 +4055,7 @@
       "threePct": 0.266667,
       "ftPct": 0.75,
       "threeMade": 0.2963,
-      "pra": 3.93,
-      "gamesStarted": 0
+      "pra": 3.93
     },
     {
       "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
@@ -4069,6 +4069,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp",
       "games": 15,
+      "gamesStarted": 1,
       "minutes": 24.35,
       "points": 12.4,
       "rebounds": 6.4,
@@ -4081,8 +4082,7 @@
       "threePct": 0.4,
       "ftPct": 0.777778,
       "threeMade": 1.46667,
-      "pra": 20.53,
-      "gamesStarted": 1
+      "pra": 20.53
     },
     {
       "playerId": "c9632926-0fab-40e9-8722-579d176a9794",
@@ -4096,6 +4096,7 @@
       "jersey": "6",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/79feaab662e745758a2c205c0c5221d2?size=800&format=webp",
       "games": 29,
+      "gamesStarted": 6,
       "minutes": 15.966667,
       "points": 4.89655,
       "rebounds": 1.48276,
@@ -4108,8 +4109,7 @@
       "threePct": 0.339623,
       "ftPct": 0.682927,
       "threeMade": 0.62069,
-      "pra": 7.52,
-      "gamesStarted": 6
+      "pra": 7.52
     },
     {
       "playerId": "9dc846fe-0454-445c-be6c-f2935f227317",
@@ -4123,6 +4123,7 @@
       "jersey": "23",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7a8812f968c64a03885ef9dabc84659d?size=800&format=webp",
       "games": 13,
+      "gamesStarted": 9,
       "minutes": 21.033333,
       "points": 4.61538,
       "rebounds": 4.46154,
@@ -4135,8 +4136,7 @@
       "threePct": 0.243243,
       "ftPct": 0.636364,
       "threeMade": 0.69231,
-      "pra": 10.92,
-      "gamesStarted": 9
+      "pra": 10.92
     },
     {
       "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
@@ -4150,6 +4150,7 @@
       "jersey": "34",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp",
       "games": 2,
+      "gamesStarted": 0,
       "minutes": 10.133333,
       "points": 3.5,
       "rebounds": 0.5,
@@ -4162,8 +4163,7 @@
       "threePct": 0.25,
       "ftPct": 0,
       "threeMade": 0.5,
-      "pra": 4,
-      "gamesStarted": 0
+      "pra": 4
     },
     {
       "playerId": "c962b2bd-988a-4570-aa0a-67e1a987a355",
@@ -4177,6 +4177,7 @@
       "jersey": "12",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bec7b1801f384f4795c41f71eebd14cb?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 31,
       "minutes": 25.916668,
       "points": 10.35294,
       "rebounds": 2.14706,
@@ -4189,8 +4190,7 @@
       "threePct": 0.330275,
       "ftPct": 0.8,
       "threeMade": 1.05882,
-      "pra": 16.35,
-      "gamesStarted": 31
+      "pra": 16.35
     },
     {
       "playerId": "7efc81c9-d26e-4950-97e1-1b9b03b1bacd",
@@ -4204,6 +4204,7 @@
       "jersey": "1",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp",
       "games": 31,
+      "gamesStarted": 28,
       "minutes": 30.533333,
       "points": 16.90323,
       "rebounds": 2.83871,
@@ -4216,8 +4217,7 @@
       "threePct": 0.388626,
       "ftPct": 0.894737,
       "threeMade": 2.64516,
-      "pra": 23.39,
-      "gamesStarted": 28
+      "pra": 23.39
     },
     {
       "playerId": "ac10899d-d7cc-4994-8ee6-fda299502786",
@@ -4231,6 +4231,7 @@
       "jersey": "3",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 6,
       "minutes": 12.55,
       "points": 6.03704,
       "rebounds": 2,
@@ -4243,8 +4244,7 @@
       "threePct": 0.478261,
       "ftPct": 0.628571,
       "threeMade": 1.22222,
-      "pra": 8.85,
-      "gamesStarted": 6
+      "pra": 8.85
     },
     {
       "playerId": "fb85d99d-86ac-46f7-b60d-ea33ae00a9fd",
@@ -4258,6 +4258,7 @@
       "jersey": "24",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp",
       "games": 25,
+      "gamesStarted": 23,
       "minutes": 25.433332,
       "points": 14.96,
       "rebounds": 8.8,
@@ -4270,8 +4271,7 @@
       "threePct": 0.333333,
       "ftPct": 0.61165,
       "threeMade": 0.04,
-      "pra": 25.6,
-      "gamesStarted": 23
+      "pra": 25.6
     },
     {
       "playerId": "95e728f9-a01a-4466-afe4-fe68c5faea6b",
@@ -4285,6 +4285,7 @@
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/759651d0341a4585b84318a9656855a5?size=800&format=webp",
       "games": 34,
+      "gamesStarted": 34,
       "minutes": 27.916668,
       "points": 14.32353,
       "rebounds": 2.82353,
@@ -4297,8 +4298,7 @@
       "threePct": 0.351351,
       "ftPct": 0.80198,
       "threeMade": 1.52941,
-      "pra": 21.56,
-      "gamesStarted": 34
+      "pra": 21.56
     },
     {
       "playerId": "6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592",
@@ -4312,6 +4312,7 @@
       "jersey": "9",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp",
       "games": 33,
+      "gamesStarted": 33,
       "minutes": 23.783333,
       "points": 8,
       "rebounds": 2.39394,
@@ -4324,8 +4325,7 @@
       "threePct": 0.43299,
       "ftPct": 0.848485,
       "threeMade": 1.27273,
-      "pra": 11.36,
-      "gamesStarted": 33
+      "pra": 11.36
     },
     {
       "playerId": "706f7e82-104e-486d-b895-ddf527db6cfb",
@@ -4339,6 +4339,7 @@
       "jersey": "25",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d8088f52aa844ec1bf4bf459ec162174?size=800&format=webp",
       "games": 32,
+      "gamesStarted": 26,
       "minutes": 25.450001,
       "points": 11.65625,
       "rebounds": 3.28125,
@@ -4351,8 +4352,7 @@
       "threePct": 0.344371,
       "ftPct": 0.838235,
       "threeMade": 1.625,
-      "pra": 16.88,
-      "gamesStarted": 26
+      "pra": 16.88
     },
     {
       "playerId": "cd541bbb-db3f-4821-82e1-c3c104d99fd8",
@@ -4366,6 +4366,7 @@
       "jersey": "22",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp",
       "games": 24,
+      "gamesStarted": 24,
       "minutes": 27.416668,
       "points": 10.375,
       "rebounds": 7.04167,
@@ -4378,8 +4379,7 @@
       "threePct": 0.272727,
       "ftPct": 0.554455,
       "threeMade": 0.125,
-      "pra": 18.79,
-      "gamesStarted": 24
+      "pra": 18.79
     },
     {
       "playerId": "3af27cad-ac89-4122-842c-2772197168c5",
@@ -4393,6 +4393,7 @@
       "jersey": "6",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp",
       "games": 27,
+      "gamesStarted": 12,
       "minutes": 28.666668,
       "points": 12.66667,
       "rebounds": 5.85185,
@@ -4405,8 +4406,7 @@
       "threePct": 0.283019,
       "ftPct": 0.671233,
       "threeMade": 0.55556,
-      "pra": 24.74,
-      "gamesStarted": 12
+      "pra": 24.74
     },
     {
       "playerId": "46fc1fe9-abf7-4e72-9c80-60483ae9da5e",
@@ -4420,6 +4420,7 @@
       "jersey": "10",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp",
       "games": 36,
+      "gamesStarted": 34,
       "minutes": 25.383333,
       "points": 13.55556,
       "rebounds": 6.77778,
@@ -4432,8 +4433,7 @@
       "threePct": 0.2,
       "ftPct": 0.490446,
       "threeMade": 0.02778,
-      "pra": 23.28,
-      "gamesStarted": 34
+      "pra": 23.28
     },
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
@@ -4447,6 +4447,7 @@
       "jersey": "45",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp",
       "games": 41,
+      "gamesStarted": 41,
       "minutes": 31.15,
       "points": 11.80488,
       "rebounds": 10,
@@ -4459,8 +4460,7 @@
       "threePct": 0.340425,
       "ftPct": 0.758621,
       "threeMade": 0.39024,
-      "pra": 25.95,
-      "gamesStarted": 41
+      "pra": 25.95
     }
   ]
 }

@@ -139,26 +139,17 @@ function toCardLineup(side: NblTeamLineupFromMatch) {
   };
 }
 
-async function lineupFromGame(
-  team: string,
+function sideToCard(
+  side: NblTeamLineupFromMatch,
+  match: NblMatchLineups,
   game: ScheduleGame & { year: number }
-): Promise<NblTeamRealLineup | null> {
-  const fixtureId = fixtureIdForGame(game);
-  if (!fixtureId) return null;
-
-  const match = await fetchNblMatchLineupsFromSportRadar(fixtureId);
-  if (!match) return null;
-
-  const side = pickTeamSide(match, team);
-  if (!side || side.starters.length === 0) return null;
-
+): NblTeamRealLineup {
   const opponent = side.isHome ? match.awayTeam : match.homeTeam;
-
   return {
     team: side.team,
     lineup: toCardLineup(side),
     match: {
-      fixtureId,
+      fixtureId: match.fixtureId,
       opponent,
       isHome: side.isHome,
       tipoff: match.tipoff || game.startTime || null,
@@ -173,7 +164,8 @@ async function lineupFromGame(
 }
 
 /**
- * Prefer last completed H2H when opponent is known; else each team's latest completed game.
+ * Most recent completed game for the selected team.
+ * Returns both sides from that fixture (for a team selector + starters/bench UI).
  */
 export async function buildRealLineups(options: {
   team: string;
@@ -185,8 +177,6 @@ export async function buildRealLineups(options: {
   sharedMatch: boolean;
 }> {
   const team = resolveNblClubName(options.team) || options.team.trim();
-  const opponentRaw = options.opponent?.trim() || '';
-  const opponent = opponentRaw ? resolveNblClubName(opponentRaw) || opponentRaw : '';
   const year = options.year ?? NBL_CURRENT_SEASON_YEAR;
 
   const years = [
@@ -195,80 +185,37 @@ export async function buildRealLineups(options: {
   ];
   const games = loadCompletedGames(years);
 
-  if (opponent) {
-    const h2h = games.find(
-      (g) =>
-        (teamsMatch(g.homeTeam, team) && teamsMatch(g.awayTeam, opponent)) ||
-        (teamsMatch(g.awayTeam, team) && teamsMatch(g.homeTeam, opponent))
-    );
-    if (h2h) {
-      const match = await fetchNblMatchLineupsFromSportRadar(fixtureIdForGame(h2h)!);
-      if (match) {
-        const teamSide = pickTeamSide(match, team);
-        const oppSide = pickTeamSide(match, opponent);
-        if (teamSide?.starters.length) {
-          return {
-            sharedMatch: true,
-            team: {
-              team: teamSide.team,
-              lineup: toCardLineup(teamSide),
-              match: {
-                fixtureId: match.fixtureId,
-                opponent: oppSide?.team || opponent,
-                isHome: teamSide.isHome,
-                tipoff: match.tipoff || h2h.startTime || null,
-                homeTeam: match.homeTeam,
-                awayTeam: match.awayTeam,
-                homeScore: match.homeScore,
-                awayScore: match.awayScore,
-                matchSlug: h2h.matchSlug || null,
-                year: h2h.year,
-              },
-            },
-            opponent: oppSide?.starters.length
-              ? {
-                  team: oppSide.team,
-                  lineup: toCardLineup(oppSide),
-                  match: {
-                    fixtureId: match.fixtureId,
-                    opponent: teamSide.team,
-                    isHome: oppSide.isHome,
-                    tipoff: match.tipoff || h2h.startTime || null,
-                    homeTeam: match.homeTeam,
-                    awayTeam: match.awayTeam,
-                    homeScore: match.homeScore,
-                    awayScore: match.awayScore,
-                    matchSlug: h2h.matchSlug || null,
-                    year: h2h.year,
-                  },
-                }
-              : null,
-          };
-        }
-      }
-    }
-  }
-
   const teamGame = games.find(
     (g) => teamsMatch(g.homeTeam, team) || teamsMatch(g.awayTeam, team)
   );
-  const teamLineup = teamGame ? await lineupFromGame(team, teamGame) : null;
-
-  let opponentLineup: NblTeamRealLineup | null = null;
-  if (opponent) {
-    const oppGame = games.find(
-      (g) => teamsMatch(g.homeTeam, opponent) || teamsMatch(g.awayTeam, opponent)
-    );
-    opponentLineup = oppGame ? await lineupFromGame(opponent, oppGame) : null;
+  if (!teamGame) {
+    return { sharedMatch: false, team: null, opponent: null };
   }
 
+  const fixtureId = fixtureIdForGame(teamGame);
+  if (!fixtureId) {
+    return { sharedMatch: false, team: null, opponent: null };
+  }
+
+  const match = await fetchNblMatchLineupsFromSportRadar(fixtureId);
+  if (!match) {
+    return { sharedMatch: false, team: null, opponent: null };
+  }
+
+  const teamSide = pickTeamSide(match, team);
+  if (!teamSide?.starters.length) {
+    return { sharedMatch: false, team: null, opponent: null };
+  }
+
+  const oppName = teamSide.isHome ? match.awayTeam : match.homeTeam;
+  const oppSide = pickTeamSide(match, oppName);
+
   return {
-    sharedMatch: Boolean(
-      teamLineup?.match?.fixtureId &&
-        opponentLineup?.match?.fixtureId &&
-        teamLineup.match.fixtureId === opponentLineup.match.fixtureId
-    ),
-    team: teamLineup,
-    opponent: opponentLineup,
+    sharedMatch: true,
+    team: sideToCard(teamSide, match, teamGame),
+    opponent:
+      oppSide && oppSide.starters.length > 0
+        ? sideToCard(oppSide, match, teamGame)
+        : null,
   };
 }

@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-07-30T06:15:48.012Z",
+  "generatedAt": "2026-08-04T05:24:07.272Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -218,17 +218,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "a13a2ea7-3918-4cd3-93d2-a33703ce234d",
           "name": "Jaylin Williams",
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": null,
           "jersey": null,
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Stockton Kings - NBA G League",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": null,
@@ -262,9 +262,9 @@
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
-          "position": "G",
-          "jersey": "9",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4dc4d5563df14f74b6e76d1bb1a395cb?size=800&format=webp",
+          "position": null,
+          "jersey": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "LSU - NCAA",
           "idSource": "rosetta"
@@ -376,8 +376,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": "43",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e0a2f59c4cea44b2aac58c4028a60ae4?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -480,7 +480,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 10,
+      "playerCount": 11,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -532,6 +532,19 @@
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
+          "name": "Kyle Adnam",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": "G",
+          "jersey": "4",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
         },
         {
@@ -619,7 +632,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "headCoach": "Jacob Chance",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
@@ -641,8 +654,8 @@
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
-          "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4dfd736065624ea2bf526e27e26f4735?size=800&format=webp",
+          "jersey": "11",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -653,7 +666,7 @@
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": "F",
+          "position": "C",
           "jersey": "18",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp",
           "trackerStatus": "contracted",
@@ -661,14 +674,27 @@
           "idSource": "rosetta"
         },
         {
+          "playerId": null,
+          "name": "Harry Neilson",
+          "team": "Melbourne United",
+          "teamCode": "MEL",
+          "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Sandringham Sabres - NBL1 South",
+          "idSource": "unmatched"
+        },
+        {
           "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
           "name": "Jensen Bradtke",
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": "F",
-          "jersey": "50",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e5154cd450a548b98157898fcce8d6ba?size=800&format=webp",
+          "position": "C",
+          "jersey": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",
           "idSource": "rosetta"
@@ -687,17 +713,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "81099730-32f6-4aea-a76e-a48cc806d8e0",
           "name": "Josh Oduro",
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": null,
           "jersey": null,
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "New Orleans Pelicans - NBA",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
@@ -718,9 +744,9 @@
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": null,
-          "jersey": "10",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/02a2fc3e24804217b1e8e0ebf8b80a4f?size=800&format=webp",
+          "position": "GF",
+          "jersey": "23",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cleveland Cavaliers - NBA",
           "idSource": "rosetta"
@@ -732,7 +758,7 @@
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
-          "jersey": "",
+          "jersey": "9",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
@@ -744,7 +770,7 @@
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": "C",
+          "position": "FC",
           "jersey": "21",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp",
           "trackerStatus": "incoming",
@@ -852,17 +878,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "03695de5-49b2-48ca-8cf9-d3a411b7fb98",
           "name": "Josiah-Jordan James",
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": null,
           "jersey": null,
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Hapoel Jerusalem - Israel",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -946,7 +972,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b307bf907eb14cefbca2fcca9bf30cd0?size=800&format=webp",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -1182,17 +1208,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
           "name": "Skylar Mays",
           "team": "South East Melbourne Phoenix",
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": null,
           "jersey": null,
-          "imageUrl": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Budućnost - Montenegro",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
@@ -1366,7 +1392,7 @@
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "headCoach": "Scott Roth",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
@@ -1444,6 +1470,19 @@
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "44c17e2b-7e6a-43b7-9421-c50c0f001071",
+          "name": "Jed Richardson",
+          "team": "Tasmania JackJumpers",
+          "teamCode": "TAS",
+          "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+          "position": "F",
+          "jersey": "10",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
         },
         {

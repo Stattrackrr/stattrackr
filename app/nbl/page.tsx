@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * NBL research dashboard — empty 1:1 shell of the AFL dashboard layout.
- * Containers, glow, and fixed heights match AFL. No data fetching yet.
+ * NBL research dashboard — AFL layout parity including refresh screen logic:
+ * localStorage page state, URL sync, loading shells, and client game-logs cache.
  */
 
 import { DashboardStyles } from '@/app/nba/research/dashboard/components/DashboardStyles';
@@ -90,6 +90,183 @@ function getNblTeamAbbrev(teamName: string): string {
 }
 
 const NBL_TEAM_FILTER_OPTIONS = ['All', ...NBL_CLUBS.map((c) => c.name)];
+const NBL_PAGE_STATE_KEY = 'nblPageState:v1';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'nblPlayerLogsCache:v1';
+const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const CHART_DISPLAY_DELAY_MS = 120;
+const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [
+  'last5',
+  'last10',
+  'last15',
+  'last20',
+  'last50',
+  'h2h',
+  'season2026',
+  'season2025',
+  'season2024',
+  'season2023',
+];
+
+type PersistedNblPageState = {
+  selectedPlayer: NblRosterPlayer | null;
+  selectedTeam: string | null;
+  nblPropsMode: NblPropsMode;
+  nblTeamFilter?: string;
+  nblRightTab: NblRightTab;
+  chartTimeframe: NblChartTimeframe;
+  mainChartStat?: string;
+  nblGameFilters?: NblGameFiltersState | null;
+};
+
+type CachedNblPlayerLogs = {
+  createdAt: number;
+  years: number[];
+  games: NblGameLogRow[];
+};
+
+function normalizeNblPlayerNameForMatch(name: string): string {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function nblPlayerLogsCacheKey(playerId: string): string {
+  return `${NBL_PLAYER_LOGS_CACHE_PREFIX}:${playerId}:${NBL_CHART_HISTORY_YEARS.join(',')}`;
+}
+
+function readPersistedNblPageState(): Partial<PersistedNblPageState> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(NBL_PAGE_STATE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as Partial<PersistedNblPageState>;
+  } catch {
+    return null;
+  }
+}
+
+function readInitialNblSelection(): {
+  selectedPlayer: NblRosterPlayer | null;
+  selectedTeam: string | null;
+  nblPropsMode: NblPropsMode;
+  nblRightTab: NblRightTab;
+  nblTeamFilter: string;
+  chartTimeframe: NblChartTimeframe;
+  mainChartStat: string;
+  nblGameFilters: NblGameFiltersState;
+  searchQuery: string;
+  fromUrl: boolean;
+} {
+  const empty = {
+    selectedPlayer: null as NblRosterPlayer | null,
+    selectedTeam: null as string | null,
+    nblPropsMode: 'player' as NblPropsMode,
+    nblRightTab: 'dvp' as NblRightTab,
+    nblTeamFilter: 'All',
+    chartTimeframe: 'last10' as NblChartTimeframe,
+    mainChartStat: 'points',
+    nblGameFilters: { ...DEFAULT_NBL_GAME_FILTERS },
+    searchQuery: '',
+    fromUrl: false,
+  };
+  if (typeof window === 'undefined') return empty;
+
+  const url = new URL(window.location.href);
+  const playerParam = url.searchParams.get('player')?.trim() || '';
+  const nameParam = url.searchParams.get('name')?.trim() || '';
+  const teamParam = url.searchParams.get('team')?.trim() || '';
+  const targetName = playerParam || nameParam;
+  const persisted = readPersistedNblPageState();
+
+  // Prefer a full persisted player when URL name matches (keeps playerId).
+  if (targetName) {
+    const persistedPlayer =
+      persisted?.selectedPlayer && typeof persisted.selectedPlayer === 'object'
+        ? (persisted.selectedPlayer as NblRosterPlayer)
+        : null;
+    const sameName =
+      persistedPlayer &&
+      normalizeNblPlayerNameForMatch(persistedPlayer.name) ===
+        normalizeNblPlayerNameForMatch(targetName);
+    const player: NblRosterPlayer = sameName
+      ? persistedPlayer!
+      : {
+          playerId: null,
+          name: targetName,
+          team: teamParam || persistedPlayer?.team || '',
+          teamCode: sameName ? persistedPlayer!.teamCode : null,
+          teamId: sameName ? persistedPlayer!.teamId : null,
+          position: sameName ? persistedPlayer!.position : null,
+          jersey: sameName ? persistedPlayer!.jersey : null,
+          imageUrl: sameName ? persistedPlayer!.imageUrl : null,
+        };
+    const tf = url.searchParams.get('tf')?.trim() || '';
+    const stat = url.searchParams.get('stat')?.trim() || '';
+    return {
+      ...empty,
+      selectedPlayer: player,
+      selectedTeam: player.team || teamParam || null,
+      nblPropsMode: 'player',
+      nblRightTab: 'dvp',
+      searchQuery: player.name,
+      mainChartStat: stat || empty.mainChartStat,
+      chartTimeframe:
+        tf && (NBL_CHART_TIMEFRAMES as readonly string[]).includes(tf)
+          ? (tf as NblChartTimeframe)
+          : empty.chartTimeframe,
+      fromUrl: true,
+    };
+  }
+
+  if (!persisted) return empty;
+
+  const player =
+    persisted.selectedPlayer && typeof persisted.selectedPlayer === 'object'
+      ? (persisted.selectedPlayer as NblRosterPlayer)
+      : null;
+  const mode =
+    persisted.nblPropsMode === 'team' || persisted.nblPropsMode === 'player'
+      ? persisted.nblPropsMode
+      : 'player';
+  const rightTab =
+    persisted.nblRightTab === 'breakdown' ||
+    persisted.nblRightTab === 'team_matchup' ||
+    persisted.nblRightTab === 'dvp'
+      ? persisted.nblRightTab
+      : 'dvp';
+  const tf =
+    typeof persisted.chartTimeframe === 'string' &&
+    (NBL_CHART_TIMEFRAMES as readonly string[]).includes(persisted.chartTimeframe)
+      ? (persisted.chartTimeframe as NblChartTimeframe)
+      : 'last10';
+
+  return {
+    selectedPlayer: player,
+    selectedTeam:
+      typeof persisted.selectedTeam === 'string' && persisted.selectedTeam.trim()
+        ? persisted.selectedTeam
+        : player?.team || null,
+    nblPropsMode: mode,
+    nblRightTab: rightTab,
+    nblTeamFilter:
+      typeof persisted.nblTeamFilter === 'string' &&
+      NBL_TEAM_FILTER_OPTIONS.includes(persisted.nblTeamFilter)
+        ? persisted.nblTeamFilter
+        : 'All',
+    chartTimeframe: tf,
+    mainChartStat:
+      typeof persisted.mainChartStat === 'string' && persisted.mainChartStat.trim()
+        ? persisted.mainChartStat
+        : 'points',
+    nblGameFilters:
+      persisted.nblGameFilters && typeof persisted.nblGameFilters === 'object'
+        ? { ...DEFAULT_NBL_GAME_FILTERS, ...persisted.nblGameFilters }
+        : { ...DEFAULT_NBL_GAME_FILTERS },
+    searchQuery: player?.name || (mode === 'team' ? String(persisted.selectedTeam || '') : ''),
+    fromUrl: false,
+  };
+}
 
 export default function NblDashboardPage() {
   const router = useRouter();
@@ -102,6 +279,7 @@ export default function NblDashboardPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // SSR-safe defaults only — restore from localStorage/URL after mount (avoids hydration mismatch).
   const [nblPropsMode, setNblPropsMode] = useState<NblPropsMode>('player');
   const [nblRightTab, setNblRightTab] = useState<NblRightTab>('dvp');
   const [nblRightTabsVisited, setNblRightTabsVisited] = useState<Set<NblRightTab>>(
@@ -116,7 +294,9 @@ export default function NblDashboardPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<NblRosterPlayer | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<NblGameLogRow[]>([]);
-  const [gameLogsLoading, setGameLogsLoading] = useState(false);
+  const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
+  const [loadingPlayerFromUrl, setLoadingPlayerFromUrl] = useState(false);
+  const [chartDelayElapsed, setChartDelayElapsed] = useState(false);
   const chartUiResetToken = `${nblPropsMode}:${String(selectedPlayer?.name ?? '')}`;
   const [mainChartStat, setMainChartStat] = useState<string>('points');
   const [chartTimeframe, setChartTimeframe] = useState<NblChartTimeframe>('last10');
@@ -127,6 +307,7 @@ export default function NblDashboardPage() {
   }));
   const [nblTeamFilter, setNblTeamFilter] = useState<string>('All');
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
+  const [selectionHydrated, setSelectionHydrated] = useState(false);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [nextGameOpponentLogo, setNextGameOpponentLogo] = useState<string | null>(null);
@@ -162,6 +343,26 @@ export default function NblDashboardPage() {
     } catch {
       /* ignore */
     }
+  }, []);
+
+  // Restore selection after mount only (localStorage / URL) — keeps SSR HTML identical.
+  useEffect(() => {
+    const restored = readInitialNblSelection();
+    if (restored.selectedPlayer) {
+      setSelectedPlayer(restored.selectedPlayer);
+      setStatsLoadingForPlayer(Boolean(restored.selectedPlayer.playerId) || restored.fromUrl);
+      setLoadingPlayerFromUrl(restored.fromUrl && !restored.selectedPlayer.playerId);
+    }
+    if (restored.selectedTeam) setSelectedTeam(restored.selectedTeam);
+    setNblPropsMode(restored.nblPropsMode);
+    setNblRightTab(restored.nblRightTab);
+    setNblRightTabsVisited(new Set([restored.nblRightTab]));
+    setNblTeamFilter(restored.nblTeamFilter);
+    setChartTimeframe(restored.chartTimeframe);
+    setMainChartStat(restored.mainChartStat);
+    setNblGameFilters(restored.nblGameFilters);
+    if (restored.searchQuery) setSearchQuery(restored.searchQuery);
+    setSelectionHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -244,6 +445,158 @@ export default function NblDashboardPage() {
     }
   }, [nblPropsMode, nblRightTab]);
 
+  // Reset chart delay when player/mode changes (same as AFL).
+  useEffect(() => {
+    setChartDelayElapsed(false);
+  }, [nblPropsMode, selectedPlayer?.playerId, selectedPlayer?.name, selectedTeam]);
+
+  // After stats load, brief delay before showing chart content.
+  useEffect(() => {
+    if (nblPropsMode === 'team') {
+      if (!String(selectedTeam || '').trim()) return;
+    } else if (!selectedPlayer || statsLoadingForPlayer || loadingPlayerFromUrl) {
+      return;
+    }
+    const t = setTimeout(() => setChartDelayElapsed(true), CHART_DISPLAY_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [
+    nblPropsMode,
+    selectedTeam,
+    selectedPlayer,
+    statsLoadingForPlayer,
+    loadingPlayerFromUrl,
+  ]);
+
+  // Resolve restored/URL player against roster once loaded (needs playerId for logs).
+  useEffect(() => {
+    if (rosterLoading || rosterPlayers.length === 0) return;
+    if (!selectedPlayer?.name) {
+      if (loadingPlayerFromUrl) setLoadingPlayerFromUrl(false);
+      return;
+    }
+    if (selectedPlayer.playerId) {
+      if (loadingPlayerFromUrl) setLoadingPlayerFromUrl(false);
+      return;
+    }
+    const want = normalizeNblPlayerNameForMatch(selectedPlayer.name);
+    const teamWant = selectedPlayer.team ? normalizeTeamKey(selectedPlayer.team) : '';
+    const match =
+      rosterPlayers.find((p) => {
+        if (normalizeNblPlayerNameForMatch(p.name) !== want) return false;
+        if (!teamWant) return true;
+        return normalizeTeamKey(p.team) === teamWant;
+      }) ||
+      rosterPlayers.find((p) => normalizeNblPlayerNameForMatch(p.name) === want) ||
+      rosterPlayers.find((p) => normalizeNblPlayerNameForMatch(p.name).includes(want));
+    if (match) {
+      setSelectedPlayer(match);
+      setSelectedTeam(match.team || null);
+      setSearchQuery(match.name);
+    }
+    setLoadingPlayerFromUrl(false);
+  }, [
+    rosterLoading,
+    rosterPlayers,
+    selectedPlayer?.name,
+    selectedPlayer?.playerId,
+    selectedPlayer?.team,
+    loadingPlayerFromUrl,
+  ]);
+
+  // Persist page context as user navigates tabs/filters/players.
+  useEffect(() => {
+    if (!selectionHydrated) return;
+    // Never overwrite a saved player with a blank state on the first paint race.
+    if (!selectedPlayer && !selectedTeam) {
+      const existing = readPersistedNblPageState();
+      if (existing?.selectedPlayer || existing?.selectedTeam) return;
+    }
+    const payload: PersistedNblPageState = {
+      selectedPlayer,
+      selectedTeam,
+      nblPropsMode,
+      nblTeamFilter,
+      nblRightTab,
+      chartTimeframe,
+      mainChartStat,
+      nblGameFilters,
+    };
+    try {
+      localStorage.setItem(NBL_PAGE_STATE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore */
+    }
+  }, [
+    selectedPlayer,
+    selectedTeam,
+    nblPropsMode,
+    nblTeamFilter,
+    nblRightTab,
+    chartTimeframe,
+    mainChartStat,
+    nblGameFilters,
+    selectionHydrated,
+  ]);
+
+  // Keep URL in sync with selection (same pattern as AFL/NBA).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!selectionHydrated) return;
+    // Don't strip shareable URL params when nothing is selected.
+    if (!selectedPlayer?.name && nblPropsMode === 'player') return;
+    if (!selectedTeam && nblPropsMode === 'team') return;
+    const url = new URL(window.location.href);
+    if (nblPropsMode === 'player' && selectedPlayer?.name) {
+      url.searchParams.set('mode', 'player');
+      url.searchParams.set('name', String(selectedPlayer.name ?? ''));
+      url.searchParams.set('team', String(selectedPlayer.team ?? '').trim());
+      const nextOpp =
+        nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
+          ? nextGameOpponent
+          : null;
+      if (nextOpp) url.searchParams.set('opponent', nextOpp);
+      else url.searchParams.delete('opponent');
+      if (mainChartStat) url.searchParams.set('stat', mainChartStat);
+      else url.searchParams.delete('stat');
+      url.searchParams.set('tf', chartTimeframe);
+      url.searchParams.delete('player');
+    } else if (nblPropsMode === 'team' && selectedTeam) {
+      url.searchParams.set('mode', 'team');
+      url.searchParams.set('team', selectedTeam);
+      url.searchParams.delete('name');
+      url.searchParams.delete('player');
+      url.searchParams.delete('stat');
+      url.searchParams.delete('tf');
+      const nextOpp =
+        nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
+          ? nextGameOpponent
+          : null;
+      if (nextOpp) url.searchParams.set('opponent', nextOpp);
+      else url.searchParams.delete('opponent');
+    } else {
+      url.searchParams.delete('mode');
+      url.searchParams.delete('name');
+      url.searchParams.delete('team');
+      url.searchParams.delete('opponent');
+      url.searchParams.delete('player');
+      url.searchParams.delete('stat');
+      url.searchParams.delete('tf');
+    }
+    const next = url.toString();
+    if (window.location.href !== next) {
+      window.history.replaceState({}, '', next);
+    }
+  }, [
+    nblPropsMode,
+    selectedPlayer?.name,
+    selectedPlayer?.team,
+    selectedTeam,
+    nextGameOpponent,
+    mainChartStat,
+    chartTimeframe,
+    selectionHydrated,
+  ]);
+
   const visitRightTab = (tab: NblRightTab) => {
     setNblRightTab(tab);
     setNblRightTabsVisited((prev) => new Set(prev).add(tab));
@@ -280,46 +633,88 @@ export default function NblDashboardPage() {
     setSearchQuery(player.name);
     setShowSearchDropdown(false);
     setSelectedPlayerGameLogs([]);
-    setGameLogsLoading(true);
+    setStatsLoadingForPlayer(true);
+    setLoadingPlayerFromUrl(false);
+    setChartDelayElapsed(false);
   };
 
   const selectTeam = (teamName: string) => {
     setSelectedTeam(teamName);
     setSelectedPlayer(null);
     setSelectedPlayerGameLogs([]);
-    setGameLogsLoading(false);
+    setStatsLoadingForPlayer(false);
+    setLoadingPlayerFromUrl(false);
     setSearchQuery(teamName);
     setShowSearchDropdown(false);
   };
 
-  // Load game logs whenever a player is selected.
+  // Load game logs whenever a player is selected (cache-first soft remount, then network).
   useEffect(() => {
     if (!selectedPlayer?.playerId) {
-      setSelectedPlayerGameLogs([]);
-      setGameLogsLoading(false);
+      if (!loadingPlayerFromUrl) {
+        setSelectedPlayerGameLogs([]);
+        setStatsLoadingForPlayer(false);
+      }
       return;
     }
+    const playerId = selectedPlayer.playerId;
+    const cacheKey = nblPlayerLogsCacheKey(playerId);
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CachedNblPlayerLogs;
+        const fresh =
+          Number.isFinite(parsed?.createdAt) &&
+          Date.now() - Number(parsed.createdAt) <= NBL_PLAYER_LOGS_CACHE_TTL_MS;
+        const yearsMatch =
+          Array.isArray(parsed.years) &&
+          parsed.years.join(',') === NBL_CHART_HISTORY_YEARS.join(',');
+        if (fresh && yearsMatch && Array.isArray(parsed.games)) {
+          setSelectedPlayerGameLogs(parsed.games);
+          setStatsLoadingForPlayer(false);
+          return;
+        }
+      }
+    } catch {
+      /* ignore malformed cache */
+    }
+
     let cancelled = false;
-    setGameLogsLoading(true);
+    setStatsLoadingForPlayer(true);
     (async () => {
       try {
         const res = await fetch(
-          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(selectedPlayer.playerId!)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`
+          `/api/nbl/player-game-logs?playerId=${encodeURIComponent(playerId)}&years=${NBL_CHART_HISTORY_YEARS.join(',')}`,
+          { cache: 'no-store' }
         );
         if (!res.ok) throw new Error(`logs ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
-        setSelectedPlayerGameLogs(Array.isArray(data.games) ? data.games : []);
+        const games = Array.isArray(data.games) ? (data.games as NblGameLogRow[]) : [];
+        setSelectedPlayerGameLogs(games);
+        try {
+          const payload: CachedNblPlayerLogs = {
+            createdAt: Date.now(),
+            years: [...NBL_CHART_HISTORY_YEARS],
+            games,
+          };
+          localStorage.setItem(cacheKey, JSON.stringify(payload));
+        } catch {
+          /* ignore quota */
+        }
       } catch {
-        if (!cancelled) setSelectedPlayerGameLogs([]);
+        if (!cancelled) {
+          // Keep already-painted logs on error (soft remount / cache path).
+          setSelectedPlayerGameLogs((prev) => prev);
+        }
       } finally {
-        if (!cancelled) setGameLogsLoading(false);
+        if (!cancelled) setStatsLoadingForPlayer(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [selectedPlayer?.playerId]);
+  }, [selectedPlayer?.playerId, loadingPlayerFromUrl]);
 
   // Resolve upcoming tipoff for the selected player's team (or Game Props team).
   useEffect(() => {
@@ -424,6 +819,18 @@ export default function NblDashboardPage() {
     (displayOpponent ? resolveNblTeamLogo(displayOpponent, logoByTeam) : null);
   const matchupLeftAbbrev = matchupLeft ? getNblTeamAbbrev(matchupLeft) : '';
   const displayOpponentAbbrev = displayOpponent ? getNblTeamAbbrev(displayOpponent) : '—';
+
+  const hasTeamModeSelection = !!String(selectedTeam ?? '').trim();
+  const showEmptyShell =
+    nblPropsMode === 'team'
+      ? !hasTeamModeSelection
+      : !selectedPlayer && !loadingPlayerFromUrl;
+  const showStatsLoadingShell =
+    nblPropsMode === 'team'
+      ? hasTeamModeSelection && !chartDelayElapsed
+      : loadingPlayerFromUrl ||
+        (!!selectedPlayer && (statsLoadingForPlayer || !chartDelayElapsed));
+  const pulse = isDark ? 'bg-gray-800' : 'bg-gray-200';
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
@@ -842,14 +1249,50 @@ export default function NblDashboardPage() {
                   }`}
                   style={{ outline: 'none' }}
                 >
+                  {showEmptyShell ? (
+                    <div className="h-full w-full" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="h-full w-full flex flex-col" style={{ padding: '16px 8px 8px 8px' }}>
+                      <div className="flex-1 flex items-end justify-center gap-1 px-2 h-full">
+                        {[...Array(20)].map((_, idx) => {
+                          const heights = [
+                            45, 62, 38, 71, 55, 48, 65, 42, 58, 51, 47, 63, 39, 72, 56, 49, 66, 43, 59,
+                            52,
+                          ];
+                          const height = heights[idx] || 48;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex-1 max-w-[50px] flex flex-col items-center justify-end"
+                              style={{ height: '100%' }}
+                            >
+                              <div
+                                className={`w-full rounded-t animate-pulse ${pulse}`}
+                                style={{
+                                  height: `${height}%`,
+                                  animationDelay: `${idx * 0.08}s`,
+                                  minHeight: '30px',
+                                  minWidth: '28px',
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
                   <NblStatsChart
                     stats={selectedPlayer ? { name: selectedPlayer.name } : {}}
                     gameLogs={chartGameLogsForPlayer as unknown as Array<Record<string, unknown>>}
                     allGameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
                     isDark={!!mounted && isDark}
                     logoByTeam={logoByTeam}
-                    isLoading={gameLogsLoading}
-                    hasSelectedPlayer={nblPropsMode === 'player' && !!selectedPlayer}
+                    isLoading={statsLoadingForPlayer}
+                    hasSelectedPlayer={
+                      nblPropsMode === 'team'
+                        ? hasTeamModeSelection
+                        : !!selectedPlayer
+                    }
                     mode={nblPropsMode}
                     selectedStat={mainChartStat}
                     onSelectedStatChange={setMainChartStat}
@@ -952,6 +1395,7 @@ export default function NblDashboardPage() {
                       </div>
                     }
                   />
+                  )}
                 </div>
 
                 {/* 4. Supporting stats + lineup (player mode) */}
@@ -961,7 +1405,25 @@ export default function NblDashboardPage() {
                       showAdvancedFilters ? 'lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-7' : 'lg:px-3 xl:px-4'
                     }`}
                   >
-                    {selectedPlayer ? (
+                    {showEmptyShell ? (
+                      <div className="min-h-[220px]" />
+                    ) : showStatsLoadingShell ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="space-y-3 w-full max-w-md">
+                          <div className={`h-4 w-32 rounded animate-pulse ${pulse} mx-auto`} />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div
+                              className={`h-20 rounded-lg animate-pulse ${pulse}`}
+                              style={{ animationDelay: '0.1s' }}
+                            />
+                            <div
+                              className={`h-20 rounded-lg animate-pulse ${pulse}`}
+                              style={{ animationDelay: '0.2s' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
                       <>
                         <h3
                           className={`text-sm font-semibold mb-1 ${
@@ -982,15 +1444,28 @@ export default function NblDashboardPage() {
                           alignRightTight={showAdvancedFilters}
                         />
                       </>
-                    ) : (
-                      <div className="min-h-[220px]" />
                     )}
                     <div className="hidden lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <NblTeamSelectionsCard
+                      {showEmptyShell || showStatsLoadingShell ? (
+                        <div className={`h-[180px] rounded-lg animate-pulse ${pulse}`} />
+                      ) : (
+                        <NblTeamSelectionsCard
+                          isDark={!!mounted && isDark}
+                          playerTeam={matchupLeft}
+                          opponentTeam={displayOpponent}
+                          selectedPlayerName={selectedPlayer?.name}
+                          resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                        />
+                      )}
+                    </div>
+                    {/* Game Log — desktop, directly under lineups (NBA parity) */}
+                    <div className="hidden lg:block mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <NblBoxScore
+                        gameLogs={selectedPlayerGameLogs}
+                        selectedPlayer={selectedPlayer}
+                        isLoading={statsLoadingForPlayer || showStatsLoadingShell}
                         isDark={!!mounted && isDark}
-                        playerTeam={matchupLeft}
-                        opponentTeam={displayOpponent}
-                        selectedPlayerName={selectedPlayer?.name}
+                        resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
                       />
                     </div>
                   </div>
@@ -1006,6 +1481,7 @@ export default function NblDashboardPage() {
                       playerTeam={matchupLeft}
                       opponentTeam={displayOpponent}
                       selectedPlayerName={selectedPlayer?.name}
+                      resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
                     />
                   </div>
                 )}
@@ -1014,6 +1490,18 @@ export default function NblDashboardPage() {
                 <div
                   className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0`}
                 >
+                  {showEmptyShell ? (
+                    <div className="min-h-[280px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center min-h-[280px]">
+                      <div className="space-y-3 w-full max-w-md px-2">
+                        <div className={`h-4 w-36 rounded animate-pulse ${pulse} mx-auto`} />
+                        <div className={`h-10 w-full rounded-lg animate-pulse ${pulse}`} />
+                        <div className={`h-44 w-full rounded-lg animate-pulse ${pulse}`} />
+                      </div>
+                    </div>
+                  ) : (
+                  <>
                   <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
                     {nblPropsMode === 'player' && (
                       <>
@@ -1104,6 +1592,8 @@ export default function NblDashboardPage() {
                       </div>
                     )}
                   </div>
+                  </>
+                  )}
                 </div>
 
                 {/* 4.52 Player vs Team / Prediction / Role — mobile (player mode) */}
@@ -1167,8 +1657,24 @@ export default function NblDashboardPage() {
                     playerTeam={matchupLeft}
                     opponentTeam={displayOpponent}
                     selectedPlayerName={selectedPlayer?.name}
+                    resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
                   />
                 </div>
+
+                {/* Game Log — mobile, directly under lineups (NBA parity) */}
+                {nblPropsMode === 'player' && (
+                  <div
+                    className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} overflow-hidden`}
+                  >
+                    <NblBoxScore
+                      gameLogs={selectedPlayerGameLogs}
+                      selectedPlayer={selectedPlayer}
+                      isLoading={statsLoadingForPlayer}
+                      isDark={!!mounted && isDark}
+                      resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                    />
+                  </div>
+                )}
 
                 {/* 4.6 Injuries — mobile */}
                 <div
@@ -1193,11 +1699,6 @@ export default function NblDashboardPage() {
                     />
                   </div>
                 ) : null}
-
-                {/* 6. Box score */}
-                <div className={`w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} overflow-hidden`}>
-                  <NblBoxScore isDark={!!mounted && isDark} />
-                </div>
               </div>
 
               {/* Right panel — desktop */}
@@ -1210,133 +1711,192 @@ export default function NblDashboardPage() {
                 <div
                   className={`hidden lg:block rounded-lg ${NBL_DASH_CARD_GLOW} px-3 pt-3 pb-4 relative overflow-visible`}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
-                      Filter By
-                    </h3>
-                  </div>
-                  <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNblPropsMode('player');
-                        setSearchQuery('');
-                        setShowSearchDropdown(false);
-                      }}
-                      className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        nblPropsMode === 'player'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Player Props
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNblPropsMode('team');
-                        setSearchQuery('');
-                        setShowSearchDropdown(false);
-                      }}
-                      className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
-                        nblPropsMode === 'team'
-                          ? 'bg-purple-600 text-white border-purple-500'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      Game Props
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
-                    {nblPropsMode === 'player'
-                      ? 'Analyze individual player statistics and props'
-                      : 'Analyze game totals, spreads, and game-based props'}
-                  </p>
+                  {showEmptyShell ? (
+                    <div className="h-[96px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="space-y-3 w-full max-w-md">
+                        <div className={`h-4 w-32 rounded animate-pulse ${pulse} mx-auto`} />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div
+                            className={`h-10 rounded-lg animate-pulse ${pulse}`}
+                            style={{ animationDelay: '0.1s' }}
+                          />
+                          <div
+                            className={`h-10 rounded-lg animate-pulse ${pulse}`}
+                            style={{ animationDelay: '0.2s' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
+                          Filter By
+                        </h3>
+                      </div>
+                      <div className="flex gap-2 md:gap-3 flex-wrap mb-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNblPropsMode('player');
+                            setSearchQuery('');
+                            setShowSearchDropdown(false);
+                          }}
+                          className={`relative px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                            nblPropsMode === 'player'
+                              ? 'bg-purple-600 text-white border-purple-500'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                          }`}
+                        >
+                          Player Props
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNblPropsMode('team');
+                            setSearchQuery('');
+                            setShowSearchDropdown(false);
+                          }}
+                          className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors border ${
+                            nblPropsMode === 'team'
+                              ? 'bg-purple-600 text-white border-purple-500'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600'
+                          }`}
+                        >
+                          Game Props
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                        {nblPropsMode === 'player'
+                          ? 'Analyze individual player statistics and props'
+                          : 'Analyze game totals, spreads, and game-based props'}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* DVP | Opponent Breakdown | Team Matchup — desktop */}
                 <div className={`hidden lg:block rounded-lg ${NBL_DASH_CARD_GLOW} p-1.5 xl:p-2 w-full min-w-0`}>
-                  <div className="flex gap-1.5 xl:gap-2 mb-2">
-                    {nblPropsMode === 'player' && (
-                      <button
-                        type="button"
-                        onClick={() => visitRightTab('dvp')}
-                        className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                          nblRightTab === 'dvp'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        DVP
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => visitRightTab('breakdown')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        nblRightTab === 'breakdown'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Opponent Breakdown
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => visitRightTab('team_matchup')}
-                      className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                        nblRightTab === 'team_matchup'
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      Team Matchup
-                    </button>
-                  </div>
-                  <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
-                    {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||
-                      (nblPropsMode === 'player' && nblRightTabsVisited.has('breakdown'))) && (
-                      <div
-                        className={
-                          nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                        }
-                      >
-                        <NblOpponentBreakdownCard isDark={!!mounted && isDark} />
+                  {showEmptyShell ? (
+                    <div className="h-[420px]" />
+                  ) : showStatsLoadingShell ? (
+                    <div className="flex items-center justify-center h-[420px]">
+                      <div className="space-y-3 w-full max-w-md px-2">
+                        <div className={`h-4 w-36 rounded animate-pulse ${pulse} mx-auto`} />
+                        <div
+                          className={`h-10 w-full rounded-lg animate-pulse ${pulse}`}
+                          style={{ animationDelay: '0.1s' }}
+                        />
+                        <div
+                          className={`h-10 w-full rounded-lg animate-pulse ${pulse}`}
+                          style={{ animationDelay: '0.2s' }}
+                        />
+                        <div
+                          className={`h-10 w-full rounded-lg animate-pulse ${pulse}`}
+                          style={{ animationDelay: '0.3s' }}
+                        />
+                        <div
+                          className={`h-44 w-full rounded-lg animate-pulse ${pulse}`}
+                          style={{ animationDelay: '0.4s' }}
+                        />
                       </div>
-                    )}
-                    {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                      <div
-                        className={
-                          nblRightTab === 'dvp'
-                            ? 'flex-1 min-h-0 overflow-y-auto flex flex-col'
-                            : 'hidden'
-                        }
-                      >
-                        <NblDvpCard isDark={!!mounted && isDark} />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-1.5 xl:gap-2 mb-2">
+                        {nblPropsMode === 'player' && (
+                          <button
+                            type="button"
+                            onClick={() => visitRightTab('dvp')}
+                            className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                              nblRightTab === 'dvp'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            DVP
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => visitRightTab('breakdown')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            nblRightTab === 'breakdown'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Opponent Breakdown
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => visitRightTab('team_matchup')}
+                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            nblRightTab === 'team_matchup'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Team Matchup
+                        </button>
                       </div>
-                    )}
-                    {((nblPropsMode === 'team' && nblRightTab === 'team_matchup') ||
-                      (nblPropsMode === 'player' && nblRightTabsVisited.has('team_matchup'))) && (
-                      <div
-                        className={
-                          nblRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                        }
-                      >
-                        <NblTeamMatchupCard isDark={!!mounted && isDark} />
+                      <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
+                        {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||
+                          (nblPropsMode === 'player' && nblRightTabsVisited.has('breakdown'))) && (
+                          <div
+                            className={
+                              nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                            }
+                          >
+                            <NblOpponentBreakdownCard isDark={!!mounted && isDark} />
+                          </div>
+                        )}
+                        {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
+                          <div
+                            className={
+                              nblRightTab === 'dvp'
+                                ? 'flex-1 min-h-0 overflow-y-auto flex flex-col'
+                                : 'hidden'
+                            }
+                          >
+                            <NblDvpCard isDark={!!mounted && isDark} />
+                          </div>
+                        )}
+                        {((nblPropsMode === 'team' && nblRightTab === 'team_matchup') ||
+                          (nblPropsMode === 'player' &&
+                            nblRightTabsVisited.has('team_matchup'))) && (
+                          <div
+                            className={
+                              nblRightTab === 'team_matchup'
+                                ? 'flex flex-col h-full min-h-0'
+                                : 'hidden'
+                            }
+                          >
+                            <NblTeamMatchupCard isDark={!!mounted && isDark} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Shot Chart — desktop (right panel, matches NBA placement) */}
                 {nblPropsMode === 'player' ? (
                   <div className="hidden lg:block w-full min-w-0">
-                    <NblShotChart
-                      isDark={!!mounted && isDark}
-                      playerName={selectedPlayer?.name}
-                      playerTeam={selectedPlayer?.team}
-                      opponentTeam={displayOpponent}
-                    />
+                    {showEmptyShell ? (
+                      <div className="h-[380px]" />
+                    ) : showStatsLoadingShell ? (
+                      <div className={`h-[380px] rounded-lg animate-pulse ${pulse}`} />
+                    ) : (
+                      <NblShotChart
+                        isDark={!!mounted && isDark}
+                        playerName={selectedPlayer?.name}
+                        playerTeam={selectedPlayer?.team}
+                        opponentTeam={displayOpponent}
+                      />
+                    )}
                   </div>
                 ) : null}
 
