@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Kendric Davis",
+  "team": "Sydney Kings",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 472,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 92,
+      "fgm": 71,
+      "fgPct": 77.17391304347827,
+      "share": 19.491525423728813
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 108,
+      "fgm": 54,
+      "fgPct": 50,
+      "share": 22.88135593220339
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 73,
+      "fgm": 32,
+      "fgPct": 43.83561643835616,
+      "share": 15.466101694915254
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 30,
+      "fgm": 12,
+      "fgPct": 40,
+      "share": 6.3559322033898304
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 35,
+      "fgm": 14,
+      "fgPct": 40,
+      "share": 7.415254237288135
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 134,
+      "fgm": 53,
+      "fgPct": 39.55223880597015,
+      "share": 28.389830508474578
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.445Z"
+}

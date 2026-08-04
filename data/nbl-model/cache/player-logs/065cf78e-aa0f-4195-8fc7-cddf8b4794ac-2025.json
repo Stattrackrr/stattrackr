@@ -5,7 +5,7 @@
   "teamCode": "ADL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:19.541Z",
+  "generatedAt": "2026-08-04T15:39:27.140Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 4,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "result": null,
+      "venue": null,
       "minutes": 0.983333,
       "points": 0,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "c7a2048d-b2f6-4309-82fc-c1f9554c25d9",
@@ -53,6 +61,7 @@
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "result": null,
+      "venue": null,
       "minutes": 2.283333,
       "points": 0,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 2,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "6bfd7c0d-ee04-4aa3-a57a-0cd3590e7f7d",
@@ -86,6 +102,7 @@
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "result": null,
+      "venue": null,
       "minutes": 1.983333,
       "points": 0,
       "rebounds": 1,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 0,
+      "pra": 2,
+      "pr": 1,
+      "pa": 1,
+      "ra": 2
     },
     {
       "matchId": "d32548b2-a0b0-4fce-ba92-c2211f1940c6",
@@ -119,6 +143,7 @@
       "team": "Adelaide 36ers",
       "teamCode": "ADL",
       "result": null,
+      "venue": null,
       "minutes": 0.4,
       "points": 0,
       "rebounds": 0,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     }
   ]
 }

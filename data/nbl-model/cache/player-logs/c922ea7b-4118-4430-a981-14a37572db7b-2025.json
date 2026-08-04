@@ -5,7 +5,7 @@
   "teamCode": "NZL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:19.526Z",
+  "generatedAt": "2026-08-04T15:39:27.427Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 8,
   "games": [
@@ -20,6 +20,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 1.183333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "8621bcd7-e007-4566-bd0e-fc6261b61b6f",
@@ -53,6 +61,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 1.733333,
       "points": 2,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 3,
+      "pra": 3,
+      "pr": 3,
+      "pa": 2,
+      "ra": 1
     },
     {
       "matchId": "138ba420-5a7c-45e8-98a8-86a696d2bd84",
@@ -86,6 +102,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 2.633333,
       "points": 0,
       "rebounds": 0,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 2,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -2,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "2b47c79c-b19c-4c25-85d8-ac35246871b5",
@@ -119,6 +143,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 3.8,
       "points": 0,
       "rebounds": 0,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 0,
+      "pa": 1,
+      "ra": 1
     },
     {
       "matchId": "8e4a2fb5-2bba-4c5e-8cf9-1e5c1ab33c18",
@@ -152,6 +184,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 1.433333,
       "points": 0,
       "rebounds": 0,
@@ -165,6 +198,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "5fbf2e8f-6e96-4811-b90c-4e57a91dbb0a",
@@ -185,6 +225,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 12.533333,
       "points": 6,
       "rebounds": 1,
@@ -198,6 +239,9 @@
       "fgMade": 2,
       "fgAttempted": 3,
       "fgPct": 0.666667,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 2,
       "threeAttempted": 3,
       "threePct": 0.666667,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 8
+      "efficiency": 6,
+      "pra": 8,
+      "pr": 7,
+      "pa": 7,
+      "ra": 2
     },
     {
       "matchId": "1ffab577-542b-4e44-a828-f8208e638791",
@@ -218,6 +266,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 12.5,
       "points": 6,
       "rebounds": 3,
@@ -231,6 +280,9 @@
       "fgMade": 2,
       "fgAttempted": 3,
       "fgPct": 0.666667,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -238,7 +290,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 9
+      "efficiency": 7,
+      "pra": 9,
+      "pr": 9,
+      "pa": 6,
+      "ra": 3
     },
     {
       "matchId": "67dba75f-8207-44d6-a206-bdbc891e85e8",
@@ -251,6 +307,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 4.35,
       "points": 2,
       "rebounds": 0,
@@ -264,6 +321,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 2,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     }
   ]
 }

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Will Magnay",
+  "team": "Tasmania JackJumpers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 83,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 43,
+      "fgm": 22,
+      "fgPct": 51.162790697674424,
+      "share": 51.80722891566265
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 34,
+      "fgm": 18,
+      "fgPct": 52.94117647058824,
+      "share": 40.963855421686745
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 1.2048192771084338
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 1.2048192771084338
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 4,
+      "fgm": 2,
+      "fgPct": 50,
+      "share": 4.819277108433735
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.695Z"
+}

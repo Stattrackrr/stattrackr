@@ -5,7 +5,7 @@
   "teamCode": "TAS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:13.172Z",
+  "generatedAt": "2026-08-04T15:39:19.851Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 7.583333,
       "points": 0,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     }
   ]
 }

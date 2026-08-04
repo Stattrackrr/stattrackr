@@ -5,7 +5,7 @@
   "teamCode": "TAS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:17.317Z",
+  "generatedAt": "2026-08-04T15:39:23.970Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 15,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 6.983333,
       "points": 0,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 2,
+      "pra": 3,
+      "pr": 1,
+      "pa": 2,
+      "ra": 3
     },
     {
       "matchId": "0d6a7e7d-8561-425a-a65a-f4dd464b8733",
@@ -53,6 +61,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 3.3,
       "points": 0,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 3,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -2,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "51d16cc1-96e2-4a85-8cdb-d72b3a10302b",
@@ -86,6 +102,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 26.083332,
       "points": 10,
       "rebounds": 0,
@@ -99,6 +116,9 @@
       "fgMade": 3,
       "fgAttempted": 8,
       "fgPct": 0.375,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 3,
       "threeAttempted": 7,
       "threePct": 0.428571,
@@ -106,7 +126,11 @@
       "ftAttempted": 4,
       "ftPct": 0.25,
       "plusMinus": null,
-      "pra": 13
+      "efficiency": 6,
+      "pra": 13,
+      "pr": 10,
+      "pa": 13,
+      "ra": 3
     },
     {
       "matchId": "0a7d7a17-ccc1-449a-8576-4151a8376d4a",
@@ -119,6 +143,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 12.433333,
       "points": 4,
       "rebounds": 2,
@@ -132,6 +157,9 @@
       "fgMade": 2,
       "fgAttempted": 4,
       "fgPct": 0.5,
+      "twoMade": 2,
+      "twoAttempted": 3,
+      "twoPct": 0.666667,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 7
+      "efficiency": 5,
+      "pra": 7,
+      "pr": 6,
+      "pa": 5,
+      "ra": 3
     },
     {
       "matchId": "18a5ebcb-8887-4c77-a1de-6551501502d1",
@@ -152,6 +184,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 14.933333,
       "points": 5,
       "rebounds": 3,
@@ -165,6 +198,9 @@
       "fgMade": 2,
       "fgAttempted": 6,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 1,
       "threeAttempted": 4,
       "threePct": 0.25,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 9
+      "efficiency": 7,
+      "pra": 9,
+      "pr": 8,
+      "pa": 6,
+      "ra": 4
     },
     {
       "matchId": "ad7c4a00-5a29-4f9f-a166-3bf1de10f007",
@@ -185,6 +225,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 18.083332,
       "points": 5,
       "rebounds": 4,
@@ -198,6 +239,9 @@
       "fgMade": 1,
       "fgAttempted": 5,
       "fgPct": 0.2,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 4,
       "threePct": 0.25,
@@ -205,7 +249,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 9
+      "efficiency": 5,
+      "pra": 9,
+      "pr": 9,
+      "pa": 5,
+      "ra": 4
     },
     {
       "matchId": "404c8661-e9eb-498a-b0b5-c3c4bf8d9712",
@@ -218,6 +266,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 6.583333,
       "points": 0,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "a64cd0e0-6f1b-4d37-ab24-367fdb864ddf",
@@ -251,6 +307,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 16.950001,
       "points": 3,
       "rebounds": 2,
@@ -264,6 +321,9 @@
       "fgMade": 1,
       "fgAttempted": 5,
       "fgPct": 0.2,
+      "twoMade": 1,
+      "twoAttempted": 3,
+      "twoPct": 0.333333,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 5
+      "efficiency": 1,
+      "pra": 5,
+      "pr": 5,
+      "pa": 3,
+      "ra": 2
     },
     {
       "matchId": "559e2a0d-9045-426d-8f8d-4eaf61013486",
@@ -284,6 +348,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 18.683332,
       "points": 13,
       "rebounds": 3,
@@ -297,6 +362,9 @@
       "fgMade": 5,
       "fgAttempted": 8,
       "fgPct": 0.625,
+      "twoMade": 2,
+      "twoAttempted": 3,
+      "twoPct": 0.666667,
       "threeMade": 3,
       "threeAttempted": 5,
       "threePct": 0.6,
@@ -304,7 +372,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 16
+      "efficiency": 12,
+      "pra": 16,
+      "pr": 16,
+      "pa": 13,
+      "ra": 3
     },
     {
       "matchId": "931db14c-577e-460c-a54e-36ff24f4e705",
@@ -317,6 +389,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 19.083332,
       "points": 2,
       "rebounds": 3,
@@ -330,6 +403,9 @@
       "fgMade": 0,
       "fgAttempted": 4,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 3,
       "threePct": 0,
@@ -337,7 +413,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 5
+      "efficiency": 0,
+      "pra": 5,
+      "pr": 5,
+      "pa": 2,
+      "ra": 3
     },
     {
       "matchId": "573b2c08-811e-4822-a732-c2cbdae6522f",
@@ -350,6 +430,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 12.733333,
       "points": 6,
       "rebounds": 3,
@@ -363,6 +444,9 @@
       "fgMade": 2,
       "fgAttempted": 2,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 2,
       "threeAttempted": 2,
       "threePct": 1,
@@ -370,7 +454,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 10
+      "efficiency": 9,
+      "pra": 10,
+      "pr": 9,
+      "pa": 7,
+      "ra": 4
     },
     {
       "matchId": "68169c62-1572-40d4-b1b2-91190826c748",
@@ -383,6 +471,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 15.433333,
       "points": 8,
       "rebounds": 3,
@@ -396,6 +485,9 @@
       "fgMade": 2,
       "fgAttempted": 4,
       "fgPct": 0.5,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 2,
       "threeAttempted": 4,
       "threePct": 0.5,
@@ -403,7 +495,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 13
+      "efficiency": 10,
+      "pra": 13,
+      "pr": 11,
+      "pa": 10,
+      "ra": 5
     },
     {
       "matchId": "880bd8a9-9d68-46e3-8711-7f6b1c17fed1",
@@ -416,6 +512,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 19.783333,
       "points": 11,
       "rebounds": 0,
@@ -429,6 +526,9 @@
       "fgMade": 4,
       "fgAttempted": 5,
       "fgPct": 0.8,
+      "twoMade": 2,
+      "twoAttempted": 3,
+      "twoPct": 0.666667,
       "threeMade": 2,
       "threeAttempted": 2,
       "threePct": 1,
@@ -436,7 +536,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 11
+      "efficiency": 10,
+      "pra": 11,
+      "pr": 11,
+      "pa": 11,
+      "ra": 0
     },
     {
       "matchId": "fa176926-2a86-424b-8934-258b040b2ecc",
@@ -449,6 +553,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 21.683332,
       "points": 5,
       "rebounds": 2,
@@ -462,6 +567,9 @@
       "fgMade": 2,
       "fgAttempted": 7,
       "fgPct": 0.285714,
+      "twoMade": 1,
+      "twoAttempted": 3,
+      "twoPct": 0.333333,
       "threeMade": 1,
       "threeAttempted": 4,
       "threePct": 0.25,
@@ -469,7 +577,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 7
+      "efficiency": 2,
+      "pra": 7,
+      "pr": 7,
+      "pa": 5,
+      "ra": 2
     },
     {
       "matchId": "33869ec6-20ab-4740-b3a9-2ec777950e31",
@@ -482,6 +594,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 10.783333,
       "points": 0,
       "rebounds": 3,
@@ -495,6 +608,9 @@
       "fgMade": 0,
       "fgAttempted": 5,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 2,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 3,
       "threePct": 0,
@@ -502,7 +618,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": -2,
+      "pra": 3,
+      "pr": 3,
+      "pa": 0,
+      "ra": 3
     }
   ]
 }

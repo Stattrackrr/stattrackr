@@ -5,7 +5,7 @@
   "teamCode": "SYD",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:14.452Z",
+  "generatedAt": "2026-08-04T15:39:21.602Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 2.433333,
       "points": 5,
       "rebounds": 2,
@@ -33,6 +34,9 @@
       "fgMade": 2,
       "fgAttempted": 2,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 7
+      "efficiency": 7,
+      "pra": 7,
+      "pr": 7,
+      "pa": 5,
+      "ra": 2
     }
   ]
 }

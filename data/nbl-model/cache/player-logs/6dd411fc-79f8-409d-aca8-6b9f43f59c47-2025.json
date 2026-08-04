@@ -5,7 +5,7 @@
   "teamCode": "NZL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:13.033Z",
+  "generatedAt": "2026-08-04T15:39:19.694Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 2,
   "games": [
@@ -20,6 +20,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 1.033333,
       "points": 0,
       "rebounds": 2,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 1,
+      "pra": 2,
+      "pr": 2,
+      "pa": 0,
+      "ra": 2
     },
     {
       "matchId": "67dba75f-8207-44d6-a206-bdbc891e85e8",
@@ -53,6 +61,7 @@
       "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "result": null,
+      "venue": null,
       "minutes": 4.35,
       "points": 3,
       "rebounds": 0,
@@ -66,6 +75,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 3,
+      "pra": 3,
+      "pr": 3,
+      "pa": 3,
+      "ra": 0
     }
   ]
 }

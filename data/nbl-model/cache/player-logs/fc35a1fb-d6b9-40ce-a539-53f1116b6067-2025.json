@@ -5,7 +5,7 @@
   "teamCode": "MEL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:12.716Z",
+  "generatedAt": "2026-08-04T15:39:19.041Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 0.033333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     }
   ]
 }

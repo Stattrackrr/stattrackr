@@ -5,7 +5,7 @@
   "teamCode": "SEM",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:20.150Z",
+  "generatedAt": "2026-08-04T15:39:28.351Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -20,6 +20,7 @@
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "result": null,
+      "venue": null,
       "minutes": 3.133333,
       "points": 2,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 1,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     }
   ]
 }

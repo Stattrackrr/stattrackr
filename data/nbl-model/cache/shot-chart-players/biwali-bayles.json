@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Biwali Bayles",
+  "team": "Illawarra Hawks",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 44,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 8,
+      "fgm": 4,
+      "fgPct": 50,
+      "share": 18.181818181818183
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 10,
+      "fgm": 2,
+      "fgPct": 20,
+      "share": 22.727272727272727
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 5,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 11.363636363636363
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 3,
+      "fgm": 2,
+      "fgPct": 66.66666666666666,
+      "share": 6.8181818181818175
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 8,
+      "fgm": 2,
+      "fgPct": 25,
+      "share": 18.181818181818183
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 10,
+      "fgm": 2,
+      "fgPct": 20,
+      "share": 22.727272727272727
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.372Z"
+}

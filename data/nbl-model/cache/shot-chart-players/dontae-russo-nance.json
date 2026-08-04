@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Dontae Russo-Nance",
+  "team": "Perth Wildcats",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 21,
+  "fixturesFetched": 0,
+  "fixturesCached": 21,
+  "shotCount": 38,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 9,
+      "fgm": 5,
+      "fgPct": 55.55555555555556,
+      "share": 23.684210526315788
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 8,
+      "fgm": 4,
+      "fgPct": 50,
+      "share": 21.052631578947366
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 2,
+      "fgm": 2,
+      "fgPct": 100,
+      "share": 5.263157894736842
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 6,
+      "fgm": 3,
+      "fgPct": 50,
+      "share": 15.789473684210526
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 5,
+      "fgm": 1,
+      "fgPct": 20,
+      "share": 13.157894736842104
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 8,
+      "fgm": 5,
+      "fgPct": 62.5,
+      "share": 21.052631578947366
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.752Z"
+}

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Akech Aliir",
+  "team": "South East Melbourne Phoenix",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 22,
+  "fixturesFetched": 0,
+  "fixturesCached": 22,
+  "shotCount": 55,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 25,
+      "fgm": 15,
+      "fgPct": 60,
+      "share": 45.45454545454545
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 16,
+      "fgm": 7,
+      "fgPct": 43.75,
+      "share": 29.09090909090909
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 1.8181818181818181
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 4,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 7.2727272727272725
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 3.6363636363636362
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 7,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 12.727272727272727
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.189Z"
+}

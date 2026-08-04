@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Ian Clark",
+  "team": "South East Melbourne Phoenix",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 22,
+  "fixturesFetched": 0,
+  "fixturesCached": 22,
+  "shotCount": 202,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 33,
+      "fgm": 28,
+      "fgPct": 84.84848484848484,
+      "share": 16.33663366336634
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 49,
+      "fgm": 24,
+      "fgPct": 48.97959183673469,
+      "share": 24.257425742574256
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 13,
+      "fgm": 6,
+      "fgPct": 46.15384615384615,
+      "share": 6.435643564356436
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 17,
+      "fgm": 7,
+      "fgPct": 41.17647058823529,
+      "share": 8.415841584158416
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 28,
+      "fgm": 9,
+      "fgPct": 32.142857142857146,
+      "share": 13.861386138613863
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 62,
+      "fgm": 20,
+      "fgPct": 32.25806451612903,
+      "share": 30.693069306930692
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.954Z"
+}

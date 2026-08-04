@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Tyson Walker",
+  "team": "Melbourne United",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 213,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 72,
+      "fgm": 38,
+      "fgPct": 52.77777777777778,
+      "share": 33.80281690140845
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 50,
+      "fgm": 21,
+      "fgPct": 42,
+      "share": 23.474178403755868
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 12,
+      "fgm": 4,
+      "fgPct": 33.33333333333333,
+      "share": 5.633802816901409
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 16,
+      "fgm": 6,
+      "fgPct": 37.5,
+      "share": 7.511737089201878
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 14,
+      "fgm": 5,
+      "fgPct": 35.714285714285715,
+      "share": 6.572769953051644
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 49,
+      "fgm": 19,
+      "fgPct": 38.775510204081634,
+      "share": 23.004694835680752
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.649Z"
+}

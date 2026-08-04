@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Kyle Bowen",
+  "team": "Melbourne United",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 53,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 26,
+      "fgm": 16,
+      "fgPct": 61.53846153846154,
+      "share": 49.056603773584904
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 16,
+      "fgm": 5,
+      "fgPct": 31.25,
+      "share": 30.18867924528302
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 3.7735849056603774
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 4,
+      "fgm": 1,
+      "fgPct": 25,
+      "share": 7.547169811320755
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 4,
+      "fgm": 2,
+      "fgPct": 50,
+      "share": 7.547169811320755
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 1.8867924528301887
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.560Z"
+}

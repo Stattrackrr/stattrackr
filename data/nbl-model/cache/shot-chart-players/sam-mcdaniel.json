@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Sam McDaniel",
+  "team": "Brisbane Bullets",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 36,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 5,
+      "fgm": 4,
+      "fgPct": 80,
+      "share": 13.88888888888889
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 10,
+      "fgm": 7,
+      "fgPct": 70,
+      "share": 27.77777777777778
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 6,
+      "fgm": 2,
+      "fgPct": 33.33333333333333,
+      "share": 16.666666666666664
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 3,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 8.333333333333332
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 5,
+      "fgm": 3,
+      "fgPct": 60,
+      "share": 13.88888888888889
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 7,
+      "fgm": 3,
+      "fgPct": 42.857142857142854,
+      "share": 19.444444444444446
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.230Z"
+}

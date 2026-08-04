@@ -5,7 +5,7 @@
   "teamCode": "BRI",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:17.237Z",
+  "generatedAt": "2026-08-04T15:39:23.871Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 13,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 1.783333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "35d34686-2503-465f-9c84-00c9d630cb4d",
@@ -53,6 +61,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 2.583333,
       "points": 1,
       "rebounds": 0,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 1,
+      "ra": 0
     },
     {
       "matchId": "b2b622f0-4d0d-4a6f-b112-63e854835d9d",
@@ -86,6 +102,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 5.883333,
       "points": 0,
       "rebounds": 1,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "26a28e6b-a2b6-4301-987f-d0a913c7f0be",
@@ -119,6 +143,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 1.433333,
       "points": 0,
       "rebounds": 1,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "8621bcd7-e007-4566-bd0e-fc6261b61b6f",
@@ -152,6 +184,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 2.833333,
       "points": 0,
       "rebounds": 0,
@@ -165,6 +198,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "72899057-ac3c-4add-a8e9-1bbb90372139",
@@ -185,6 +225,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 1.933333,
       "points": 0,
       "rebounds": 0,
@@ -198,6 +239,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "b9142dfa-be51-4aa3-af7b-18882575a688",
@@ -218,6 +266,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 0.683333,
       "points": 0,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "34842124-9045-47dd-afd5-f26ca9865979",
@@ -251,6 +307,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 1.783333,
       "points": 0,
       "rebounds": 0,
@@ -264,6 +321,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 0,
+      "pa": 1,
+      "ra": 1
     },
     {
       "matchId": "653c685e-063f-43db-9ebd-14bb6f1ff235",
@@ -284,6 +348,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 7.733333,
       "points": 6,
       "rebounds": 3,
@@ -297,6 +362,9 @@
       "fgMade": 2,
       "fgAttempted": 4,
       "fgPct": 0.5,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 1,
       "threeAttempted": 3,
       "threePct": 0.333333,
@@ -304,7 +372,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 9
+      "efficiency": 6,
+      "pra": 9,
+      "pr": 9,
+      "pa": 6,
+      "ra": 3
     },
     {
       "matchId": "bdf4856f-7e1d-4cc0-aaa9-e42bf652dfd7",
@@ -317,6 +389,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 6.033333,
       "points": 2,
       "rebounds": 0,
@@ -330,6 +403,9 @@
       "fgMade": 1,
       "fgAttempted": 2,
       "fgPct": 0.5,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -337,7 +413,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 1,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     },
     {
       "matchId": "90fb46b8-79b2-478f-8aec-9a9066aef639",
@@ -350,6 +430,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 3.033333,
       "points": 0,
       "rebounds": 1,
@@ -363,6 +444,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -370,7 +454,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "68169c62-1572-40d4-b1b2-91190826c748",
@@ -383,6 +471,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 7.933333,
       "points": 0,
       "rebounds": 3,
@@ -396,6 +485,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -403,7 +495,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 1,
+      "pra": 3,
+      "pr": 3,
+      "pa": 0,
+      "ra": 3
     },
     {
       "matchId": "ff358a5c-c35f-409d-b144-fa0789a4b19a",
@@ -416,6 +512,7 @@
       "team": "Brisbane Bullets",
       "teamCode": "BRI",
       "result": null,
+      "venue": null,
       "minutes": 6.983333,
       "points": 0,
       "rebounds": 1,
@@ -429,6 +526,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -436,7 +536,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     }
   ]
 }

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Tristan Devers",
+  "team": "Brisbane Bullets",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 53,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 17,
+      "fgm": 7,
+      "fgPct": 41.17647058823529,
+      "share": 32.075471698113205
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 8,
+      "fgm": 4,
+      "fgPct": 50,
+      "share": 15.09433962264151
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 10,
+      "fgm": 4,
+      "fgPct": 40,
+      "share": 18.867924528301888
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 10,
+      "fgm": 2,
+      "fgPct": 20,
+      "share": 18.867924528301888
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 8,
+      "fgm": 3,
+      "fgPct": 37.5,
+      "share": 15.09433962264151
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.539Z"
+}

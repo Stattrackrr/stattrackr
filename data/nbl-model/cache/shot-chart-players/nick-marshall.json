@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Nick Marshall",
+  "team": "Tasmania JackJumpers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 147,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 46,
+      "fgm": 32,
+      "fgPct": 69.56521739130434,
+      "share": 31.292517006802722
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 33,
+      "fgm": 15,
+      "fgPct": 45.45454545454545,
+      "share": 22.448979591836736
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 6,
+      "fgm": 1,
+      "fgPct": 16.666666666666664,
+      "share": 4.081632653061225
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 18,
+      "fgm": 8,
+      "fgPct": 44.44444444444444,
+      "share": 12.244897959183673
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 19,
+      "fgm": 8,
+      "fgPct": 42.10526315789473,
+      "share": 12.925170068027212
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 25,
+      "fgm": 13,
+      "fgPct": 52,
+      "share": 17.006802721088434
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.028Z"
+}

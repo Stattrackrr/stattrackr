@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "JaVale McGee",
+  "team": "Illawarra Hawks",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 201,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 97,
+      "fgm": 64,
+      "fgPct": 65.97938144329896,
+      "share": 48.258706467661696
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 87,
+      "fgm": 42,
+      "fgPct": 48.275862068965516,
+      "share": 43.28358208955223
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 8,
+      "fgm": 3,
+      "fgPct": 37.5,
+      "share": 3.9800995024875623
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0.4975124378109453
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0.4975124378109453
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 7,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 3.482587064676617
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.152Z"
+}

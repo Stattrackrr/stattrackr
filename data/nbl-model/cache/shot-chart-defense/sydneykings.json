@@ -1,0 +1,124 @@
+{
+  "mode": "defense",
+  "team": "Sydney Kings",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 1945,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 465,
+      "fgm": 289,
+      "fgPct": 62.1505376344086,
+      "share": 23.90745501285347
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 461,
+      "fgm": 202,
+      "fgPct": 43.817787418655094,
+      "share": 23.701799485861184
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 124,
+      "fgm": 45,
+      "fgPct": 36.29032258064516,
+      "share": 6.375321336760925
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 236,
+      "fgm": 74,
+      "fgPct": 31.35593220338983,
+      "share": 12.133676092544988
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 254,
+      "fgm": 96,
+      "fgPct": 37.79527559055118,
+      "share": 13.059125964010281
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 405,
+      "fgm": 113,
+      "fgPct": 27.901234567901234,
+      "share": 20.822622107969153
+    }
+  ],
+  "ranks": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 465,
+      "fgm": 289,
+      "fgPct": 62.1505376344086,
+      "share": 23.90745501285347,
+      "rank": 1,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 461,
+      "fgm": 202,
+      "fgPct": 43.817787418655094,
+      "share": 23.701799485861184,
+      "rank": 2,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 124,
+      "fgm": 45,
+      "fgPct": 36.29032258064516,
+      "share": 6.375321336760925,
+      "rank": 4,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 236,
+      "fgm": 74,
+      "fgPct": 31.35593220338983,
+      "share": 12.133676092544988,
+      "rank": 1,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 254,
+      "fgm": 96,
+      "fgPct": 37.79527559055118,
+      "share": 13.059125964010281,
+      "rank": 9,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 405,
+      "fgm": 113,
+      "fgPct": 27.901234567901234,
+      "share": 20.822622107969153,
+      "rank": 2,
+      "teamsCompared": 10
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:37.550Z"
+}

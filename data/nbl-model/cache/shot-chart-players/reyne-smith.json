@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Reyne Smith",
+  "team": "Cairns Taipans",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 24,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 2,
+      "fgm": 2,
+      "fgPct": 100,
+      "share": 8.333333333333332
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 4,
+      "fgm": 2,
+      "fgPct": 50,
+      "share": 16.666666666666664
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 4.166666666666666
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 3,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 12.5
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 6,
+      "fgm": 2,
+      "fgPct": 33.33333333333333,
+      "share": 25
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 8,
+      "fgm": 4,
+      "fgPct": 50,
+      "share": 33.33333333333333
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.165Z"
+}

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Majok Deng",
+  "team": "Tasmania JackJumpers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 122,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 30,
+      "fgm": 23,
+      "fgPct": 76.66666666666667,
+      "share": 24.59016393442623
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 23,
+      "fgm": 9,
+      "fgPct": 39.130434782608695,
+      "share": 18.852459016393443
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 20,
+      "fgm": 7,
+      "fgPct": 35,
+      "share": 16.39344262295082
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 18,
+      "fgm": 8,
+      "fgPct": 44.44444444444444,
+      "share": 14.754098360655737
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 15,
+      "fgm": 1,
+      "fgPct": 6.666666666666667,
+      "share": 12.295081967213115
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 16,
+      "fgm": 4,
+      "fgPct": 25,
+      "share": 13.114754098360656
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.755Z"
+}

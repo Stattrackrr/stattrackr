@@ -5,7 +5,7 @@
   "teamCode": "BRI",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-07-28T07:24:55.043Z",
+  "generatedAt": "2026-08-04T15:39:44.070Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -44,7 +44,7 @@
       "ftAttempted": 4,
       "ftPct": 1,
       "plusMinus": null,
-      "efficiency": null,
+      "efficiency": 13,
       "pra": 11,
       "pr": 10,
       "pa": 7,

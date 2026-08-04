@@ -5,7 +5,7 @@
   "teamCode": "ILL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:15.654Z",
+  "generatedAt": "2026-08-04T15:39:22.430Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 8,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 19.700001,
       "points": 0,
       "rebounds": 7,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 9
+      "efficiency": 7,
+      "pra": 9,
+      "pr": 7,
+      "pa": 2,
+      "ra": 9
     },
     {
       "matchId": "fb2f40c8-3dd9-4df4-86d6-d33ff816f10f",
@@ -53,6 +61,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 18.283333,
       "points": 2,
       "rebounds": 5,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 7
+      "efficiency": 7,
+      "pra": 7,
+      "pr": 7,
+      "pa": 2,
+      "ra": 5
     },
     {
       "matchId": "348b76ce-b09b-4c39-acfd-1743c0fd4686",
@@ -86,6 +102,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 17.233334,
       "points": 11,
       "rebounds": 5,
@@ -99,6 +116,9 @@
       "fgMade": 4,
       "fgAttempted": 6,
       "fgPct": 0.666667,
+      "twoMade": 4,
+      "twoAttempted": 5,
+      "twoPct": 0.8,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 3,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 17
+      "efficiency": 16,
+      "pra": 17,
+      "pr": 16,
+      "pa": 12,
+      "ra": 6
     },
     {
       "matchId": "9deead6b-b2df-45da-a483-f3a39066a554",
@@ -119,6 +143,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 17.833332,
       "points": 5,
       "rebounds": 8,
@@ -132,6 +157,9 @@
       "fgMade": 2,
       "fgAttempted": 3,
       "fgPct": 0.666667,
+      "twoMade": 2,
+      "twoAttempted": 2,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 1,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 13
+      "efficiency": 11,
+      "pra": 13,
+      "pr": 13,
+      "pa": 5,
+      "ra": 8
     },
     {
       "matchId": "c7080056-8696-4bf6-aad8-ef5b01ca64a0",
@@ -152,6 +184,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 18.033333,
       "points": 7,
       "rebounds": 8,
@@ -165,6 +198,9 @@
       "fgMade": 3,
       "fgAttempted": 4,
       "fgPct": 0.75,
+      "twoMade": 3,
+      "twoAttempted": 3,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 4,
       "ftPct": 0.25,
       "plusMinus": null,
-      "pra": 16
+      "efficiency": 13,
+      "pra": 16,
+      "pr": 15,
+      "pa": 8,
+      "ra": 9
     },
     {
       "matchId": "3fa3f14a-8959-4541-a5b0-a28b0ffdf0ca",
@@ -185,6 +225,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 17.683332,
       "points": 6,
       "rebounds": 7,
@@ -198,6 +239,9 @@
       "fgMade": 3,
       "fgAttempted": 5,
       "fgPct": 0.6,
+      "twoMade": 3,
+      "twoAttempted": 4,
+      "twoPct": 0.75,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 13
+      "efficiency": 11,
+      "pra": 13,
+      "pr": 13,
+      "pa": 6,
+      "ra": 7
     },
     {
       "matchId": "e3a0c96b-acdd-4df9-85c4-7cafd5dc6e5e",
@@ -218,6 +266,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 7.733333,
       "points": 2,
       "rebounds": 1,
@@ -231,6 +280,9 @@
       "fgMade": 1,
       "fgAttempted": 3,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 2,
+      "pra": 3,
+      "pr": 3,
+      "pa": 2,
+      "ra": 1
     },
     {
       "matchId": "4c777f65-fb9b-4d2f-abe8-aa894dbd36f7",
@@ -251,6 +307,7 @@
       "team": "Illawarra Hawks",
       "teamCode": "ILL",
       "result": null,
+      "venue": null,
       "minutes": 10.233333,
       "points": 2,
       "rebounds": 3,
@@ -264,6 +321,9 @@
       "fgMade": 1,
       "fgAttempted": 2,
       "fgPct": 0.5,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 5
+      "efficiency": 3,
+      "pra": 5,
+      "pr": 5,
+      "pa": 2,
+      "ra": 3
     }
   ]
 }

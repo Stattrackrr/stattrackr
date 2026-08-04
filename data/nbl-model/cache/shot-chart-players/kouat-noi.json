@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Kouat Noi",
+  "team": "Sydney Kings",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 191,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 62,
+      "fgm": 38,
+      "fgPct": 61.29032258064516,
+      "share": 32.460732984293195
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 24,
+      "fgm": 10,
+      "fgPct": 41.66666666666667,
+      "share": 12.56544502617801
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0.5235602094240838
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 18,
+      "fgm": 6,
+      "fgPct": 33.33333333333333,
+      "share": 9.424083769633508
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 26,
+      "fgm": 8,
+      "fgPct": 30.76923076923077,
+      "share": 13.612565445026178
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 60,
+      "fgm": 23,
+      "fgPct": 38.333333333333336,
+      "share": 31.413612565445025
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.516Z"
+}

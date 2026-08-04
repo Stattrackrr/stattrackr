@@ -5,7 +5,7 @@
   "teamCode": "ADL",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-07-28T07:24:54.525Z",
+  "generatedAt": "2026-08-04T15:39:43.794Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -44,7 +44,7 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "efficiency": null,
+      "efficiency": 0,
       "pra": 0,
       "pr": 0,
       "pa": 0,

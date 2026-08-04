@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Matt Kenyon",
+  "team": "Adelaide 36ers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 33,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 12,
+      "fgm": 10,
+      "fgPct": 83.33333333333334,
+      "share": 36.36363636363637
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 8,
+      "fgm": 1,
+      "fgPct": 12.5,
+      "share": 24.242424242424242
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 3.0303030303030303
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 5,
+      "fgm": 1,
+      "fgPct": 20,
+      "share": 15.151515151515152
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 7,
+      "fgm": 4,
+      "fgPct": 57.14285714285714,
+      "share": 21.21212121212121
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.868Z"
+}

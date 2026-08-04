@@ -5,7 +5,7 @@
   "teamCode": "MEL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:17.220Z",
+  "generatedAt": "2026-08-04T15:39:23.828Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 12,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 22.933332,
       "points": 12,
       "rebounds": 4,
@@ -33,6 +34,9 @@
       "fgMade": 3,
       "fgAttempted": 7,
       "fgPct": 0.428571,
+      "twoMade": 2,
+      "twoAttempted": 5,
+      "twoPct": 0.4,
       "threeMade": 1,
       "threeAttempted": 2,
       "threePct": 0.5,
@@ -40,7 +44,11 @@
       "ftAttempted": 7,
       "ftPct": 0.714286,
       "plusMinus": null,
-      "pra": 19
+      "efficiency": 13,
+      "pra": 19,
+      "pr": 16,
+      "pa": 15,
+      "ra": 7
     },
     {
       "matchId": "17f47300-a651-4be9-8aac-062d0a3c050f",
@@ -53,6 +61,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 19.483334,
       "points": 7,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 3,
       "fgAttempted": 6,
       "fgPct": 0.5,
+      "twoMade": 3,
+      "twoAttempted": 5,
+      "twoPct": 0.6,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 16
+      "efficiency": 15,
+      "pra": 16,
+      "pr": 8,
+      "pa": 15,
+      "ra": 9
     },
     {
       "matchId": "f8900e48-ccab-46c2-b2d2-6df814e3745b",
@@ -86,6 +102,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 21.283333,
       "points": 10,
       "rebounds": 4,
@@ -99,6 +116,9 @@
       "fgMade": 3,
       "fgAttempted": 5,
       "fgPct": 0.6,
+      "twoMade": 3,
+      "twoAttempted": 5,
+      "twoPct": 0.6,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 4,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 21
+      "efficiency": 14,
+      "pra": 21,
+      "pr": 14,
+      "pa": 17,
+      "ra": 11
     },
     {
       "matchId": "f2a77d85-1e4f-4b01-8310-67aac1acdcf3",
@@ -119,6 +143,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 14.933333,
       "points": 10,
       "rebounds": 3,
@@ -132,6 +157,9 @@
       "fgMade": 1,
       "fgAttempted": 3,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 9,
       "ftPct": 0.888889,
       "plusMinus": null,
-      "pra": 17
+      "efficiency": 12,
+      "pra": 17,
+      "pr": 13,
+      "pa": 14,
+      "ra": 7
     },
     {
       "matchId": "45693da0-2274-45c8-9d94-d08a58cf8975",
@@ -152,6 +184,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 18.433332,
       "points": 13,
       "rebounds": 3,
@@ -165,6 +198,9 @@
       "fgMade": 5,
       "fgAttempted": 9,
       "fgPct": 0.555556,
+      "twoMade": 5,
+      "twoAttempted": 8,
+      "twoPct": 0.625,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 4,
       "ftPct": 0.75,
       "plusMinus": null,
-      "pra": 19
+      "efficiency": 15,
+      "pra": 19,
+      "pr": 16,
+      "pa": 16,
+      "ra": 6
     },
     {
       "matchId": "269e515a-0eee-476f-abe7-3aa5d9478da5",
@@ -185,6 +225,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 20.533333,
       "points": 4,
       "rebounds": 1,
@@ -198,6 +239,9 @@
       "fgMade": 1,
       "fgAttempted": 5,
       "fgPct": 0.2,
+      "twoMade": 1,
+      "twoAttempted": 3,
+      "twoPct": 0.333333,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 8
+      "efficiency": 2,
+      "pra": 8,
+      "pr": 5,
+      "pa": 7,
+      "ra": 4
     },
     {
       "matchId": "6fc8407a-dec5-40eb-a16e-df0805f42a7f",
@@ -218,6 +266,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 8.2,
       "points": 7,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 1,
       "fgAttempted": 3,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 5,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 8
+      "efficiency": 4,
+      "pra": 8,
+      "pr": 7,
+      "pa": 8,
+      "ra": 1
     },
     {
       "matchId": "2b47c79c-b19c-4c25-85d8-ac35246871b5",
@@ -251,6 +307,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 15.183333,
       "points": 11,
       "rebounds": 2,
@@ -264,6 +321,9 @@
       "fgMade": 3,
       "fgAttempted": 6,
       "fgPct": 0.5,
+      "twoMade": 2,
+      "twoAttempted": 5,
+      "twoPct": 0.4,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -271,7 +331,11 @@
       "ftAttempted": 5,
       "ftPct": 0.8,
       "plusMinus": null,
-      "pra": 16
+      "efficiency": 13,
+      "pra": 16,
+      "pr": 13,
+      "pa": 14,
+      "ra": 5
     },
     {
       "matchId": "96f9c29f-e14d-41c0-bffe-563e4cc9ae4f",
@@ -284,6 +348,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 14.833333,
       "points": 1,
       "rebounds": 0,
@@ -297,6 +362,9 @@
       "fgMade": 0,
       "fgAttempted": 5,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 3,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -304,7 +372,11 @@
       "ftAttempted": 2,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 4
+      "efficiency": -2,
+      "pra": 4,
+      "pr": 1,
+      "pa": 4,
+      "ra": 3
     },
     {
       "matchId": "b79ea90e-39ad-430c-af8c-950e103437c1",
@@ -317,6 +389,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 6.883333,
       "points": 8,
       "rebounds": 1,
@@ -330,6 +403,9 @@
       "fgMade": 4,
       "fgAttempted": 5,
       "fgPct": 0.8,
+      "twoMade": 4,
+      "twoAttempted": 5,
+      "twoPct": 0.8,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -337,7 +413,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 10
+      "efficiency": 8,
+      "pra": 10,
+      "pr": 9,
+      "pa": 9,
+      "ra": 2
     },
     {
       "matchId": "33869ec6-20ab-4740-b3a9-2ec777950e31",
@@ -350,6 +430,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 8.333333,
       "points": 2,
       "rebounds": 0,
@@ -363,6 +444,9 @@
       "fgMade": 1,
       "fgAttempted": 3,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -370,7 +454,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 0,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     },
     {
       "matchId": "1471c36e-a25f-4198-ba22-6160c6dddce0",
@@ -383,6 +471,7 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "result": null,
+      "venue": null,
       "minutes": 4.783333,
       "points": 2,
       "rebounds": 0,
@@ -396,6 +485,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -403,7 +495,11 @@
       "ftAttempted": 2,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 2,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     }
   ]
 }

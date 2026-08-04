@@ -5,7 +5,7 @@
   "teamCode": "SYD",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:18.398Z",
+  "generatedAt": "2026-08-04T15:39:25.674Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 13,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 1.983333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "179fcbfb-a70b-4fab-b6bc-c920dadc9314",
@@ -53,6 +61,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 1.283333,
       "points": 0,
       "rebounds": 0,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -2,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "7620394a-1a76-433c-9cb4-7cde532c5d41",
@@ -86,6 +102,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 1.15,
       "points": 3,
       "rebounds": 0,
@@ -99,6 +116,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 3,
+      "pra": 3,
+      "pr": 3,
+      "pa": 3,
+      "ra": 0
     },
     {
       "matchId": "26a28e6b-a2b6-4301-987f-d0a913c7f0be",
@@ -119,6 +143,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 4.283333,
       "points": 0,
       "rebounds": 3,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 1,
+      "pra": 3,
+      "pr": 3,
+      "pa": 0,
+      "ra": 3
     },
     {
       "matchId": "81e2c4d4-a928-4934-a468-a81448d5b938",
@@ -152,6 +184,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 1.933333,
       "points": 0,
       "rebounds": 0,
@@ -165,6 +198,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 0,
+      "pa": 1,
+      "ra": 1
     },
     {
       "matchId": "4772d613-9100-44a0-b877-8310fc18341b",
@@ -185,6 +225,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 3.483333,
       "points": 5,
       "rebounds": 1,
@@ -198,6 +239,9 @@
       "fgMade": 2,
       "fgAttempted": 2,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 7
+      "efficiency": 7,
+      "pra": 7,
+      "pr": 6,
+      "pa": 6,
+      "ra": 2
     },
     {
       "matchId": "0fd96660-0c4a-4636-9bd3-18a450cf5abb",
@@ -218,6 +266,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 5.933333,
       "points": 8,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 3,
       "fgAttempted": 3,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 2,
       "threeAttempted": 2,
       "threePct": 1,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 8
+      "efficiency": 9,
+      "pra": 8,
+      "pr": 8,
+      "pa": 8,
+      "ra": 0
     },
     {
       "matchId": "4c47a81d-0431-4caf-80b0-8b2c4a2c4adf",
@@ -251,6 +307,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 2.833333,
       "points": 0,
       "rebounds": 1,
@@ -264,6 +321,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "32eab95d-b37d-48ce-b3b0-aea45d23934c",
@@ -284,6 +348,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 3.783333,
       "points": 0,
       "rebounds": 0,
@@ -297,6 +362,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -304,7 +372,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -2,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "138ba420-5a7c-45e8-98a8-86a696d2bd84",
@@ -317,6 +389,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 6.433333,
       "points": 3,
       "rebounds": 0,
@@ -330,6 +403,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -337,7 +413,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 2,
+      "pra": 3,
+      "pr": 3,
+      "pa": 3,
+      "ra": 0
     },
     {
       "matchId": "00941591-e94c-48ac-8826-3418feea2e49",
@@ -350,6 +430,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 2.283333,
       "points": 0,
       "rebounds": 0,
@@ -363,6 +444,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -370,7 +454,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "efc43267-d293-49ff-bd3b-ab58da9d976b",
@@ -383,6 +471,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 1.633333,
       "points": 0,
       "rebounds": 0,
@@ -396,6 +485,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -403,7 +495,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "47295997-e7a8-4bcf-b8d8-1f0056c936a9",
@@ -416,6 +512,7 @@
       "team": "Sydney Kings",
       "teamCode": "SYD",
       "result": null,
+      "venue": null,
       "minutes": 4.683333,
       "points": 0,
       "rebounds": 2,
@@ -429,6 +526,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -436,7 +536,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 2,
+      "pra": 2,
+      "pr": 2,
+      "pa": 0,
+      "ra": 2
     }
   ]
 }

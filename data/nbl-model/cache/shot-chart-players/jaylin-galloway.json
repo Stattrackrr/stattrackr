@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Jaylin Galloway",
+  "team": "Sydney Kings",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 189,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 48,
+      "fgm": 33,
+      "fgPct": 68.75,
+      "share": 25.396825396825395
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 26,
+      "fgm": 11,
+      "fgPct": 42.30769230769231,
+      "share": 13.756613756613756
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 1.5873015873015872
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 30,
+      "fgm": 11,
+      "fgPct": 36.666666666666664,
+      "share": 15.873015873015872
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 33,
+      "fgm": 14,
+      "fgPct": 42.42424242424242,
+      "share": 17.46031746031746
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 49,
+      "fgm": 18,
+      "fgPct": 36.734693877551024,
+      "share": 25.925925925925924
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.184Z"
+}

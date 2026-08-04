@@ -5,7 +5,7 @@
   "teamCode": "SEM",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:19.548Z",
+  "generatedAt": "2026-08-04T15:39:27.347Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 3,
   "games": [
@@ -20,6 +20,7 @@
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "result": null,
+      "venue": null,
       "minutes": 3.483333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "9deead6b-b2df-45da-a483-f3a39066a554",
@@ -53,6 +61,7 @@
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "result": null,
+      "venue": null,
       "minutes": 3.5,
       "points": 0,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "5f725e34-c934-4316-bf70-8d933d3090f7",
@@ -86,6 +102,7 @@
       "team": "South East Melbourne Phoenix",
       "teamCode": "SEM",
       "result": null,
+      "venue": null,
       "minutes": 3.333333,
       "points": 2,
       "rebounds": 2,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 4,
       "ftPct": 0.5,
       "plusMinus": null,
-      "pra": 4
+      "efficiency": 2,
+      "pra": 4,
+      "pr": 4,
+      "pa": 2,
+      "ra": 2
     }
   ]
 }

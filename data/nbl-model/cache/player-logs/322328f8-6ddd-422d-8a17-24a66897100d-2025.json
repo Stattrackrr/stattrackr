@@ -5,7 +5,7 @@
   "teamCode": "PER",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:18.064Z",
+  "generatedAt": "2026-08-04T15:39:25.350Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 11,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 1.4,
       "points": 2,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 3,
+      "pra": 3,
+      "pr": 3,
+      "pa": 2,
+      "ra": 1
     },
     {
       "matchId": "0937f132-0cfa-45ff-8ab0-5c8b6c173472",
@@ -53,6 +61,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 1.45,
       "points": 0,
       "rebounds": 0,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 0,
+      "pa": 1,
+      "ra": 1
     },
     {
       "matchId": "100ec7f3-ac3a-45cb-8ff2-8c9c4bdd5a57",
@@ -86,6 +102,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 2.4,
       "points": 0,
       "rebounds": 2,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 0,
+      "pra": 2,
+      "pr": 2,
+      "pa": 0,
+      "ra": 2
     },
     {
       "matchId": "d7c4b267-3f05-49c1-80cd-fbf6f091c178",
@@ -119,6 +143,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 1.783333,
       "points": 2,
       "rebounds": 0,
@@ -132,6 +157,9 @@
       "fgMade": 1,
       "fgAttempted": 2,
       "fgPct": 0.5,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 2
+      "efficiency": 1,
+      "pra": 2,
+      "pr": 2,
+      "pa": 2,
+      "ra": 0
     },
     {
       "matchId": "6f961366-cfef-448d-823e-c6c80876676c",
@@ -152,6 +184,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 3.033333,
       "points": 3,
       "rebounds": 0,
@@ -165,6 +198,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 2,
+      "pra": 3,
+      "pr": 3,
+      "pa": 3,
+      "ra": 0
     },
     {
       "matchId": "52ab655e-754e-4b88-b28e-05d04a8167da",
@@ -185,6 +225,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 5.233333,
       "points": 0,
       "rebounds": 1,
@@ -198,6 +239,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -2,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "391bc905-b8a6-419e-8f7b-e43cdd659f21",
@@ -218,6 +266,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 1.983333,
       "points": 0,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "efc43267-d293-49ff-bd3b-ab58da9d976b",
@@ -251,6 +307,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 12.283333,
       "points": 0,
       "rebounds": 0,
@@ -264,6 +321,9 @@
       "fgMade": 0,
       "fgAttempted": 2,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 2,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": -1,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "d3212171-0d30-40ce-9683-631a4be93322",
@@ -284,6 +348,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 4.783333,
       "points": 3,
       "rebounds": 0,
@@ -297,6 +362,9 @@
       "fgMade": 1,
       "fgAttempted": 1,
       "fgPct": 1,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -304,7 +372,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 3,
+      "pra": 3,
+      "pr": 3,
+      "pa": 3,
+      "ra": 0
     },
     {
       "matchId": "a36f17cb-a1de-42c4-989c-bf4769c324ad",
@@ -317,6 +389,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 9.733333,
       "points": 8,
       "rebounds": 6,
@@ -330,6 +403,9 @@
       "fgMade": 2,
       "fgAttempted": 3,
       "fgPct": 0.666667,
+      "twoMade": 1,
+      "twoAttempted": 2,
+      "twoPct": 0.5,
       "threeMade": 1,
       "threeAttempted": 1,
       "threePct": 1,
@@ -337,7 +413,11 @@
       "ftAttempted": 4,
       "ftPct": 0.75,
       "plusMinus": null,
-      "pra": 14
+      "efficiency": 12,
+      "pra": 14,
+      "pr": 14,
+      "pa": 8,
+      "ra": 6
     },
     {
       "matchId": "1471c36e-a25f-4198-ba22-6160c6dddce0",
@@ -350,6 +430,7 @@
       "team": "Perth Wildcats",
       "teamCode": "PER",
       "result": null,
+      "venue": null,
       "minutes": 1.283333,
       "points": 0,
       "rebounds": 0,
@@ -363,6 +444,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -370,7 +454,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     }
   ]
 }

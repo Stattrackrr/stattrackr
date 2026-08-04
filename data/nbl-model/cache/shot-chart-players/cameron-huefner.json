@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Cameron Huefner",
+  "team": "Perth Wildcats",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 21,
+  "fixturesFetched": 0,
+  "fixturesCached": 21,
+  "shotCount": 12,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 3,
+      "fgm": 2,
+      "fgPct": 66.66666666666666,
+      "share": 25
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 2,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 16.666666666666664
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 16.666666666666664
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 16.666666666666664
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 25
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.499Z"
+}

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Terry Taylor",
+  "team": "Brisbane Bullets",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 196,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 63,
+      "fgm": 40,
+      "fgPct": 63.49206349206349,
+      "share": 32.142857142857146
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 62,
+      "fgm": 31,
+      "fgPct": 50,
+      "share": 31.63265306122449
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 12,
+      "fgm": 2,
+      "fgPct": 16.666666666666664,
+      "share": 6.122448979591836
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 22,
+      "fgm": 4,
+      "fgPct": 18.181818181818183,
+      "share": 11.224489795918368
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 25,
+      "fgm": 8,
+      "fgPct": 32,
+      "share": 12.755102040816327
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 12,
+      "fgm": 2,
+      "fgPct": 16.666666666666664,
+      "share": 6.122448979591836
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:36.400Z"
+}

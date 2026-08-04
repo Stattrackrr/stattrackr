@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:15.823Z",
+  "generatedAt": "2026-08-04T15:39:22.847Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 10,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 3.983333,
       "points": 5,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 2,
       "fgAttempted": 2,
       "fgPct": 1,
+      "twoMade": 2,
+      "twoAttempted": 2,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 1,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 6
+      "efficiency": 6,
+      "pra": 6,
+      "pr": 6,
+      "pa": 5,
+      "ra": 1
     },
     {
       "matchId": "87410daf-ae7a-4e16-a333-7fbe46c29475",
@@ -53,6 +61,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 3.233333,
       "points": 2,
       "rebounds": 2,
@@ -66,6 +75,9 @@
       "fgMade": 1,
       "fgAttempted": 3,
       "fgPct": 0.333333,
+      "twoMade": 1,
+      "twoAttempted": 3,
+      "twoPct": 0.333333,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 4
+      "efficiency": 2,
+      "pra": 4,
+      "pr": 4,
+      "pa": 2,
+      "ra": 2
     },
     {
       "matchId": "d67bf5bf-4b73-4edb-8b9a-2db7c77f0f57",
@@ -86,6 +102,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 2.833333,
       "points": 0,
       "rebounds": 1,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "7c2e8842-b759-453f-b217-7c38ee143b66",
@@ -119,6 +143,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 4.433333,
       "points": 0,
       "rebounds": 1,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "b2b622f0-4d0d-4a6f-b112-63e854835d9d",
@@ -152,6 +184,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 2.55,
       "points": 0,
       "rebounds": 0,
@@ -165,6 +198,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "f7e7c77c-d492-4674-ad3e-6a498b57c86c",
@@ -185,6 +225,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 0.583333,
       "points": 0,
       "rebounds": 0,
@@ -198,6 +239,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "802f484a-9736-4102-81ec-41a904b1a478",
@@ -218,6 +266,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 5.333333,
       "points": 0,
       "rebounds": 1,
@@ -231,6 +280,9 @@
       "fgMade": 0,
       "fgAttempted": 3,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 2,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -2,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "52ab655e-754e-4b88-b28e-05d04a8167da",
@@ -251,6 +307,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 8.933333,
       "points": 0,
       "rebounds": 2,
@@ -264,6 +321,9 @@
       "fgMade": 0,
       "fgAttempted": 3,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 2,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -271,7 +331,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 3
+      "efficiency": 0,
+      "pra": 3,
+      "pr": 2,
+      "pa": 1,
+      "ra": 3
     },
     {
       "matchId": "e4bcd9fa-8065-4e7c-a96a-39f68ea04837",
@@ -284,6 +348,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 0.7,
       "points": 0,
       "rebounds": 0,
@@ -297,6 +362,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -304,7 +372,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "67dba75f-8207-44d6-a206-bdbc891e85e8",
@@ -317,6 +389,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 7.833333,
       "points": 6,
       "rebounds": 2,
@@ -330,6 +403,9 @@
       "fgMade": 1,
       "fgAttempted": 2,
       "fgPct": 0.5,
+      "twoMade": 1,
+      "twoAttempted": 1,
+      "twoPct": 1,
       "threeMade": 0,
       "threeAttempted": 1,
       "threePct": 0,
@@ -337,7 +413,11 @@
       "ftAttempted": 4,
       "ftPct": 1,
       "plusMinus": null,
-      "pra": 8
+      "efficiency": 7,
+      "pra": 8,
+      "pr": 8,
+      "pa": 6,
+      "ra": 2
     }
   ]
 }

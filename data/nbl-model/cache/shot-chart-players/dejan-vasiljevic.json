@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Dejan Vasiljevic",
+  "team": "Adelaide 36ers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 26,
+  "fixturesFetched": 0,
+  "fixturesCached": 26,
+  "shotCount": 234,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 22,
+      "fgm": 14,
+      "fgPct": 63.63636363636363,
+      "share": 9.401709401709402
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 29,
+      "fgm": 11,
+      "fgPct": 37.93103448275862,
+      "share": 12.393162393162394
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 13,
+      "fgm": 1,
+      "fgPct": 7.6923076923076925,
+      "share": 5.555555555555555
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 35,
+      "fgm": 17,
+      "fgPct": 48.57142857142857,
+      "share": 14.957264957264957
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 62,
+      "fgm": 20,
+      "fgPct": 32.25806451612903,
+      "share": 26.495726495726498
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 73,
+      "fgm": 22,
+      "fgPct": 30.136986301369863,
+      "share": 31.196581196581196
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:34.700Z"
+}

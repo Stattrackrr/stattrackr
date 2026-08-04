@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:14.287Z",
+  "generatedAt": "2026-08-04T15:39:21.752Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 3,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 1.833333,
       "points": 0,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "52ab655e-754e-4b88-b28e-05d04a8167da",
@@ -53,6 +61,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 2.333333,
       "points": 0,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "e4bcd9fa-8065-4e7c-a96a-39f68ea04837",
@@ -86,6 +102,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 0.7,
       "points": 0,
       "rebounds": 0,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     }
   ]
 }

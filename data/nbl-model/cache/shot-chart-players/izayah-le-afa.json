@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Izayah Le'Afa",
+  "team": "New Zealand Breakers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 0,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.025Z"
+}

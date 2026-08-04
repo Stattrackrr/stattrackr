@@ -5,7 +5,7 @@
   "teamCode": "CNS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:16.973Z",
+  "generatedAt": "2026-08-04T15:39:23.805Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "result": null,
+      "venue": null,
       "minutes": 4.233333,
       "points": 0,
       "rebounds": 0,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 0,
+      "pa": 1,
+      "ra": 1
     }
   ]
 }

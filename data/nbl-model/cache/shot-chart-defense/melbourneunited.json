@@ -1,0 +1,124 @@
+{
+  "mode": "defense",
+  "team": "Melbourne United",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 18,
+  "fixturesFetched": 0,
+  "fixturesCached": 18,
+  "shotCount": 1228,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 281,
+      "fgm": 176,
+      "fgPct": 62.63345195729537,
+      "share": 22.88273615635179
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 386,
+      "fgm": 176,
+      "fgPct": 45.59585492227979,
+      "share": 31.433224755700323
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 96,
+      "fgm": 54,
+      "fgPct": 56.25,
+      "share": 7.81758957654723
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 109,
+      "fgm": 35,
+      "fgPct": 32.11009174311927,
+      "share": 8.876221498371335
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 104,
+      "fgm": 36,
+      "fgPct": 34.61538461538461,
+      "share": 8.469055374592834
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 252,
+      "fgm": 75,
+      "fgPct": 29.761904761904763,
+      "share": 20.521172638436482
+    }
+  ],
+  "ranks": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 281,
+      "fgm": 176,
+      "fgPct": 62.63345195729537,
+      "share": 22.88273615635179,
+      "rank": 2,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 386,
+      "fgm": 176,
+      "fgPct": 45.59585492227979,
+      "share": 31.433224755700323,
+      "rank": 4,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 96,
+      "fgm": 54,
+      "fgPct": 56.25,
+      "share": 7.81758957654723,
+      "rank": 10,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 109,
+      "fgm": 35,
+      "fgPct": 32.11009174311927,
+      "share": 8.876221498371335,
+      "rank": 3,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 104,
+      "fgm": 36,
+      "fgPct": 34.61538461538461,
+      "share": 8.469055374592834,
+      "rank": 5,
+      "teamsCompared": 10
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 252,
+      "fgm": 75,
+      "fgPct": 29.761904761904763,
+      "share": 20.521172638436482,
+      "rank": 3,
+      "teamsCompared": 10
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:37.204Z"
+}

@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Lloyd McVeigh",
+  "team": "Cairns Taipans",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 17,
+  "fixturesFetched": 0,
+  "fixturesCached": 17,
+  "shotCount": 8,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 1,
+      "fgm": 1,
+      "fgPct": 100,
+      "share": 12.5
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 4,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 50
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 2,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 25
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 1,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 12.5
+    }
+  ],
+  "generatedAt": "2026-08-04T15:40:35.664Z"
+}

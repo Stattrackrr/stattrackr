@@ -5,7 +5,7 @@
   "teamCode": "TAS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-07-28T05:35:19.986Z",
+  "generatedAt": "2026-08-04T15:39:28.159Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 7,
   "games": [
@@ -20,6 +20,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 4.85,
       "points": 0,
       "rebounds": 1,
@@ -33,6 +34,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -40,7 +44,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "51d16cc1-96e2-4a85-8cdb-d72b3a10302b",
@@ -53,6 +61,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 3.033333,
       "points": 0,
       "rebounds": 1,
@@ -66,6 +75,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -73,7 +85,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "0a7d7a17-ccc1-449a-8576-4151a8376d4a",
@@ -86,6 +102,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 2.783333,
       "points": 0,
       "rebounds": 1,
@@ -99,6 +116,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -106,7 +126,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 0,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "18a5ebcb-8887-4c77-a1de-6551501502d1",
@@ -119,6 +143,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 1.383333,
       "points": 0,
       "rebounds": 0,
@@ -132,6 +157,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -139,7 +167,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     },
     {
       "matchId": "ad7c4a00-5a29-4f9f-a166-3bf1de10f007",
@@ -152,6 +184,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 0.733333,
       "points": 0,
       "rebounds": 1,
@@ -165,6 +198,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -172,7 +208,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": 1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "9b4c0569-b281-4aa5-ae16-cc7dee99880e",
@@ -185,6 +225,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 6.383333,
       "points": 0,
       "rebounds": 1,
@@ -198,6 +239,9 @@
       "fgMade": 0,
       "fgAttempted": 1,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 1,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -205,7 +249,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 1
+      "efficiency": -1,
+      "pra": 1,
+      "pr": 1,
+      "pa": 0,
+      "ra": 1
     },
     {
       "matchId": "7fcfd6d0-3b26-4644-bfac-7a5e90a2a95c",
@@ -218,6 +266,7 @@
       "team": "Tasmania JackJumpers",
       "teamCode": "TAS",
       "result": null,
+      "venue": null,
       "minutes": 2.683333,
       "points": 0,
       "rebounds": 0,
@@ -231,6 +280,9 @@
       "fgMade": 0,
       "fgAttempted": 0,
       "fgPct": 0,
+      "twoMade": 0,
+      "twoAttempted": 0,
+      "twoPct": 0,
       "threeMade": 0,
       "threeAttempted": 0,
       "threePct": 0,
@@ -238,7 +290,11 @@
       "ftAttempted": 0,
       "ftPct": 0,
       "plusMinus": null,
-      "pra": 0
+      "efficiency": 0,
+      "pra": 0,
+      "pr": 0,
+      "pa": 0,
+      "ra": 0
     }
   ]
 }
