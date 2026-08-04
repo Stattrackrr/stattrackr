@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-04T08:36:44.503Z",
+  "generatedAt": "2026-08-04T12:07:59.767Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 204,
+  "injuryCount": 207,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Logan Morris",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Mitchell Hinge",
+      "injury": "Soreness",
+      "returning": "Round 22"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Jordon Butts",
+      "injury": "Calf",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Luke Nankervis",
+      "injury": "Chest",
+      "returning": "Test"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Nick Murray",
+      "injury": "Knee",
+      "returning": "Test"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Patrick Lipinski",
@@ -80,7 +110,7 @@
       "team": "Brisbane Lions",
       "player": "Keidean Coleman",
       "injury": "Concussion",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "Brisbane Lions",
@@ -158,7 +188,7 @@
       "team": "Adelaide Crows",
       "player": "James Borlase",
       "injury": "Hamstring",
-      "returning": "next week"
+      "returning": "Test"
     },
     {
       "team": "West Coast Eagles",
@@ -175,12 +205,6 @@
     {
       "team": "Adelaide Crows",
       "player": "Finnbar Maley",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Nick Murray",
       "injury": "active",
       "returning": "active"
     },
@@ -759,12 +783,6 @@
       "player": "Joel Amartey",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Mitchell Hinge",
-      "injury": "Hamstring",
-      "returning": "1-2 weeks"
     },
     {
       "team": "Essendon Bombers",
