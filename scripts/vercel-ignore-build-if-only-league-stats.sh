@@ -30,8 +30,13 @@ while IFS= read -r path; do
     data/afl-top-picks*) ;;
     data/nbl-model/*) ;;
     data/nbl-league-player-stats-*.json) ;;
+    data/nbl-player-game-logs-*.json) ;;
     data/nbl-roster*.json) ;;
+    data/nbl-rosters-by-team-*.json) ;;
     data/nbl-schedule-*.json) ;;
+    data/nbl-ladder-*.json) ;;
+    data/nbl-team-stats-*.json) ;;
+    data/nbl-next-matches*.json) ;;
     *)
       exit 1
       ;;

@@ -3,7 +3,7 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 import type { NblShotZoneId, NblZoneStat } from '@/lib/nbl/nblShotZones';
 import { NBL_SHOT_ZONE_IDS } from '@/lib/nbl/nblShotZones';
-import { NBL_SHOT_CHART_SEASON_YEAR } from '@/lib/nblTeamCanonical';
+import { NBL_SHOT_CHART_CACHE_YEARS } from '@/lib/nblTeamCanonical';
 
 type ZoneRank = NblZoneStat & { rank: number | null; teamsCompared: number };
 
@@ -43,6 +43,41 @@ const paintLeft = centerX - paintWidth / 2;
 const paintRight = centerX + paintWidth / 2;
 const freeThrowLine = baseline - 21 * scale;
 const midRangeWidth = 80;
+/** Inside edge of the 3pt line — also the corner/mid-range hard boundary. */
+const midRangeLeft = paintLeft - midRangeWidth; // 90
+const midRangeRight = paintRight + midRangeWidth; // 410
+/**
+ * Mid-range = inside 3pt arc, paint notched out, down to baseline.
+ * Shared edge with corners is exactly midRangeLeft / midRangeRight.
+ */
+const midRangeZonePath = [
+  `M ${midRangeLeft} ${baseline}`,
+  `L ${midRangeLeft} ${freeThrowLine - 50}`,
+  `Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50}`,
+  `L ${midRangeRight} ${baseline}`,
+  `L ${paintRight} ${baseline}`,
+  `L ${paintRight} ${freeThrowLine}`,
+  `L ${paintLeft} ${freeThrowLine}`,
+  `L ${paintLeft} ${baseline}`,
+  'Z',
+].join(' ');
+/** Corners sit outside the 3pt line only (never into mid-range). */
+const leftCornerZonePath = `M 0 270 L ${midRangeLeft} 270 L ${midRangeLeft} ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} Z`;
+const rightCornerZonePath = `M ${midRangeRight} 270 L ${courtWidth} 270 L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${midRangeRight} ${baseline} Z`;
+const aboveBreakZonePath = [
+  `M 15 0`,
+  `L ${courtWidth - 15} 0`,
+  `Q ${courtWidth} 0 ${courtWidth} 15`,
+  `L ${courtWidth} 270`,
+  `L ${midRangeRight} 270`,
+  `L ${midRangeRight} ${freeThrowLine - 50}`,
+  `Q ${centerX} ${freeThrowLine - 120} ${midRangeLeft} ${freeThrowLine - 50}`,
+  `L ${midRangeLeft} 270`,
+  `L 0 270`,
+  `L 0 15`,
+  `Q 0 0 15 0`,
+  'Z',
+].join(' ');
 
 function getColorForDistribution(pct: number): string {
   if (pct >= 30) return '#10b981';
@@ -116,8 +151,7 @@ export function NblShotChart({
         const params = new URLSearchParams({
           mode: 'player',
           playerName,
-          maxGames: '80',
-          years: String(NBL_SHOT_CHART_SEASON_YEAR),
+          years: NBL_SHOT_CHART_CACHE_YEARS.join(','),
         });
         if (playerTeam) params.set('team', playerTeam);
         const res = await fetch(`/api/nbl/shot-chart?${params.toString()}`);
@@ -154,8 +188,7 @@ export function NblShotChart({
         const params = new URLSearchParams({
           mode: 'defense',
           team: opponentTeam,
-          maxGames: '80',
-          years: String(NBL_SHOT_CHART_SEASON_YEAR),
+          years: NBL_SHOT_CHART_CACHE_YEARS.join(','),
           ranks: '1',
         });
         const res = await fetch(`/api/nbl/shot-chart?${params.toString()}`);
@@ -268,13 +301,25 @@ export function NblShotChart({
           />
           <g clipPath={`url(#${clipId}-skel)`}>
             <path
-              d={`M 0 270 L 150 270 L 150 ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} Z`}
+              d={aboveBreakZonePath}
               fill="#d1d5db"
               className="dark:fill-gray-700 animate-pulse"
               opacity="0.6"
             />
             <path
-              d={`M ${courtWidth - 150} 270 L ${courtWidth} 270 L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${courtWidth - 150} ${baseline} Z`}
+              d={leftCornerZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={rightCornerZonePath}
+              fill="#d1d5db"
+              className="dark:fill-gray-700 animate-pulse"
+              opacity="0.6"
+            />
+            <path
+              d={midRangeZonePath}
               fill="#d1d5db"
               className="dark:fill-gray-700 animate-pulse"
               opacity="0.6"
@@ -295,18 +340,6 @@ export function NblShotChart({
               opacity="0.6"
               stroke="#000"
               strokeWidth="3"
-            />
-            <path
-              d={`M 15 0 L ${courtWidth - 15} 0 Q ${courtWidth} 0 ${courtWidth} 15 L ${courtWidth} 270 L ${courtWidth - 150} 270 L ${courtWidth - 150} ${freeThrowLine - 50} L ${paintRight + midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} L 150 ${freeThrowLine - 50} L 150 270 L 0 270 L 0 15 Q 0 0 15 0 Z`}
-              fill="#d1d5db"
-              className="dark:fill-gray-700 animate-pulse"
-              opacity="0.6"
-            />
-            <path
-              d={`M ${paintLeft - midRangeWidth} ${baseline - 15} Q ${paintLeft - midRangeWidth} ${baseline} ${paintLeft - midRangeWidth + 15} ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} L 0 ${baseline - 15} Q 0 ${baseline} 15 ${baseline} L ${paintLeft} ${baseline} L ${paintLeft} ${freeThrowLine} L ${paintRight} ${freeThrowLine} L ${paintRight} ${baseline} L ${courtWidth - 15} ${baseline} Q ${courtWidth} ${baseline} ${courtWidth} ${baseline - 15} L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${paintRight + midRangeWidth - 15} ${baseline} Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} L ${paintRight + midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
-              fill="#d1d5db"
-              className="dark:fill-gray-700 animate-pulse"
-              opacity="0.6"
             />
             <rect
               x="0"
@@ -329,14 +362,21 @@ export function NblShotChart({
               strokeWidth="3"
             />
             <path
-              d={`M ${paintLeft - midRangeWidth} ${baseline} L ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintRight + midRangeWidth} ${freeThrowLine - 50} L ${paintRight + midRangeWidth} ${baseline}`}
+              d={`M ${midRangeLeft} ${baseline} L ${midRangeLeft} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50} L ${midRangeRight} ${baseline}`}
               fill="none"
               stroke="#000"
               strokeWidth="3"
             />
             <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
-            <line x1="0" y1="270" x2="90" y2="270" stroke="#000" strokeWidth="3" />
-            <line x1="410" y1="270" x2="500" y2="270" stroke="#000" strokeWidth="3" />
+            <line x1="0" y1="270" x2={midRangeLeft} y2="270" stroke="#000" strokeWidth="3" />
+            <line
+              x1={midRangeRight}
+              y1="270"
+              x2={courtWidth}
+              y2="270"
+              stroke="#000"
+              strokeWidth="3"
+            />
             <text
               x={centerX}
               y="60"
@@ -511,7 +551,7 @@ export function NblShotChart({
                 <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
                   <strong>Shot Chart Views</strong>
                   <br />
-                  Full NBL26 season (last completed).
+                  Last completed season (NBL26). Cache only.
                   <br />
                   <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player&apos;s
                   shot distribution
@@ -595,63 +635,61 @@ export function NblShotChart({
             />
 
             <g clipPath={`url(#${clipId})`}>
-              {/* Left Corner 3 */}
-              <path
-                d={`M 0 270 L 150 270 L 150 ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} Z`}
-                fill={
-                  showOppDef && hasOppRanks ? fillRank('leftCorner3') : fillDist('leftCorner3')
-                }
-                stroke="none"
-              />
+              {/* Zone fills — crispEdges kills subpixel green/red fringe at seams */}
+              <g style={{ shapeRendering: 'crispEdges' }}>
+                <path
+                  d={aboveBreakZonePath}
+                  fill={
+                    showOppDef && hasOppRanks ? fillRank('aboveBreak3') : fillDist('aboveBreak3')
+                  }
+                />
+                {/* Corners first — clipped to outside the 3pt line only */}
+                <path
+                  d={leftCornerZonePath}
+                  fill={
+                    showOppDef && hasOppRanks ? fillRank('leftCorner3') : fillDist('leftCorner3')
+                  }
+                  stroke="none"
+                />
+                <path
+                  d={rightCornerZonePath}
+                  fill={
+                    showOppDef && hasOppRanks ? fillRank('rightCorner3') : fillDist('rightCorner3')
+                  }
+                  stroke="none"
+                />
+                {/* Mid-range last among wings — owns everything inside the 3pt line */}
+                <path
+                  d={midRangeZonePath}
+                  fill={
+                    showOppDef && hasOppRanks ? fillRank('midRange') : fillDist('midRange')
+                  }
+                  stroke="none"
+                />
+                <rect
+                  x={paintLeft}
+                  y={freeThrowLine}
+                  width={paintWidth}
+                  height={baseline - freeThrowLine}
+                  fill={showOppDef && hasOppRanks ? fillRank('paint') : fillDist('paint')}
+                  stroke="none"
+                />
+                <path
+                  d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
+                  fill={
+                    showOppDef && hasOppRanks ? fillRank('restricted') : fillDist('restricted')
+                  }
+                  stroke="none"
+                />
+              </g>
 
-              {/* Right Corner 3 */}
-              <path
-                d={`M ${courtWidth - 150} 270 L ${courtWidth} 270 L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${courtWidth - 150} ${baseline} Z`}
-                fill={
-                  showOppDef && hasOppRanks ? fillRank('rightCorner3') : fillDist('rightCorner3')
-                }
-                stroke="none"
-              />
-
-              {/* Above-break 3 */}
-              <path
-                d={`M 15 0 L ${courtWidth - 15} 0 Q ${courtWidth} 0 ${courtWidth} 15 L ${courtWidth} 270 L ${courtWidth - 150} 270 L ${courtWidth - 150} ${freeThrowLine - 50} L ${paintRight + midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} L 150 ${freeThrowLine - 50} L 150 270 L 0 270 L 0 15 Q 0 0 15 0 Z`}
-                fill={
-                  showOppDef && hasOppRanks ? fillRank('aboveBreak3') : fillDist('aboveBreak3')
-                }
-              />
-
-              {/* Mid-range — evenodd so the paint cutout stays empty for the paint layer */}
-              <path
-                d={`M ${paintLeft - midRangeWidth} ${baseline - 15} Q ${paintLeft - midRangeWidth} ${baseline} ${paintLeft - midRangeWidth + 15} ${baseline} L 15 ${baseline} Q 0 ${baseline} 0 ${baseline - 15} L 0 ${baseline - 15} Q 0 ${baseline} 15 ${baseline} L ${paintLeft} ${baseline} L ${paintLeft} ${freeThrowLine} L ${paintRight} ${freeThrowLine} L ${paintRight} ${baseline} L ${courtWidth - 15} ${baseline} Q ${courtWidth} ${baseline} ${courtWidth} ${baseline - 15} L ${courtWidth} ${baseline - 15} Q ${courtWidth} ${baseline} ${courtWidth - 15} ${baseline} L ${paintRight + midRangeWidth - 15} ${baseline} Q ${paintRight + midRangeWidth} ${baseline} ${paintRight + midRangeWidth} ${baseline - 15} L ${paintRight + midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Z`}
-                fill={
-                  showOppDef && hasOppRanks ? fillRank('midRange') : fillDist('midRange')
-                }
-                fillRule="evenodd"
-                stroke="none"
-              />
-
-              {/* Paint — drawn above mid-range so the middle never reads as empty/0 */}
-              <rect
-                x={paintLeft}
-                y={freeThrowLine}
-                width={paintWidth}
-                height={baseline - freeThrowLine}
-                fill={showOppDef && hasOppRanks ? fillRank('paint') : fillDist('paint')}
-                stroke="none"
-              />
-
-              {/* Restricted */}
+              {/* Restricted outline + court lines (smooth strokes) */}
               <path
                 d={`M ${centerX - 60} ${baseline} L ${centerX - 60} ${baseline - 60} Q ${centerX} ${baseline - 90} ${centerX + 60} ${baseline - 60} L ${centerX + 60} ${baseline} Z`}
-                fill={
-                  showOppDef && hasOppRanks ? fillRank('restricted') : fillDist('restricted')
-                }
+                fill="none"
                 stroke="#000"
                 strokeWidth="3"
               />
-
-              {/* Court lines */}
               <rect
                 x="0"
                 y="0"
@@ -673,14 +711,21 @@ export function NblShotChart({
                 strokeWidth="3"
               />
               <path
-                d={`M ${paintLeft - midRangeWidth} ${baseline} L ${paintLeft - midRangeWidth} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${paintRight + midRangeWidth} ${freeThrowLine - 50} L ${paintRight + midRangeWidth} ${baseline}`}
+                d={`M ${midRangeLeft} ${baseline} L ${midRangeLeft} ${freeThrowLine - 50} Q ${centerX} ${freeThrowLine - 120} ${midRangeRight} ${freeThrowLine - 50} L ${midRangeRight} ${baseline}`}
                 fill="none"
                 stroke="#000"
                 strokeWidth="3"
               />
               <circle cx={centerX} cy={freeThrowLine} r="3" fill="#000" />
-              <line x1="0" y1="270" x2="90" y2="270" stroke="#000" strokeWidth="3" />
-              <line x1="410" y1="270" x2="500" y2="270" stroke="#000" strokeWidth="3" />
+              <line x1="0" y1="270" x2={midRangeLeft} y2="270" stroke="#000" strokeWidth="3" />
+              <line
+                x1={midRangeRight}
+                y1="270"
+                x2={courtWidth}
+                y2="270"
+                stroke="#000"
+                strokeWidth="3"
+              />
 
               {showOppDef && hasOppRanks ? (
                 <>

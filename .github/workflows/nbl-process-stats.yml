@@ -1,0 +1,90 @@
+# Single NBL data workflow: Rosetta season stats (2023–2025) + NBL27 tracker bits,
+# SportRadar shot-chart warm for last season only (NBL26 / 2025), then commit.
+# Dashboard /api/nbl/shot-chart is cache-only — never hits SportRadar live.
+name: NBL Process Stats
+
+on:
+  schedule:
+    # 13:00 UTC daily (~11pm AEST)
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      force_shot_charts:
+        description: 'Force re-fetch all SportRadar fixture shot charts (slow)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: nbl-process-stats
+  cancel-in-progress: false
+
+env:
+  TZ: Australia/Brisbane
+
+jobs:
+  process_stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh NBL player stats + schedules (2023–2025)
+        run: |
+          for YEAR in 2025 2024 2023; do
+            echo "=== NBL season ${YEAR} ==="
+            npm run fetch:nbl:ladder -- --year=${YEAR}
+            npm run fetch:nbl:schedule -- --year=${YEAR}
+            npm run fetch:nbl:team-stats -- --year=${YEAR}
+            npm run fetch:nbl:league-player-stats -- --year=${YEAR}
+            npm run fetch:nbl:player-game-logs -- --year=${YEAR}
+          done
+
+      - name: Refresh NBL27 tracker roster / schedule / next matches
+        run: |
+          npm run fetch:nbl:schedule -- --year=2026
+          npm run fetch:nbl:next-matches -- --year=2026
+          npm run fetch:nbl:roster:nbl27
+          npm run fetch:nbl:league-player-stats -- --year=2026
+
+      - name: Warm shot charts + player/defense aggregates (NBL26 / 2025)
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force_shot_charts }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          npm run warm:nbl:shot-charts -- --years=2025 --concurrency=3 ${FORCE_FLAG}
+
+      - name: Commit NBL data + shot-chart caches
+        run: |
+          bash scripts/ci-commit-data-files.sh "chore(data): NBL process stats + shot chart cache [skip ci]" \
+            "data/nbl-ladder-*.json" \
+            "data/nbl-schedule-*.json" \
+            "data/nbl-team-stats-*.json" \
+            "data/nbl-league-player-stats-*.json" \
+            "data/nbl-roster-*.json" \
+            "data/nbl-rosters-by-team-*.json" \
+            "data/nbl-next-matches*.json" \
+            "data/nbl-model/cache/player-logs" \
+            "data/nbl-model/cache/shot-charts" \
+            "data/nbl-model/cache/shot-chart-players" \
+            "data/nbl-model/cache/shot-chart-defense" \
+            "data/nbl-model/cache/shot-chart-manifest-*.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}

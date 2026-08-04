@@ -6,10 +6,13 @@
 export const NBL_CURRENT_SEASON_YEAR = 2026; // NBL27
 
 /**
- * Shot chart + opp-def ranks: last completed season only (NBL27 hasn’t started).
- * Rosetta start year 2025 = NBL26.
+ * Shot-chart season: last completed season only (NBL26).
+ * NBL27 (2026) is excluded until that season has completed games.
  */
 export const NBL_SHOT_CHART_SEASON_YEAR = 2025; // NBL26
+
+/** Seasons warmed into shot-chart / defense disk caches. */
+export const NBL_SHOT_CHART_CACHE_YEARS: readonly number[] = [NBL_SHOT_CHART_SEASON_YEAR];
 
 /** Seasons loaded into the player chart (current → older). Rosetta start years. */
 export const NBL_CHART_HISTORY_YEARS: readonly number[] = [2026, 2025, 2024, 2023];

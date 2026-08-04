@@ -52,6 +52,7 @@ import { cachedFetch } from '@/lib/requestCache';
 import { prefetchAflDashboardFromProps } from '@/lib/aflPropsNavigationPrefetch';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
+import { PropsModelRecap } from '@/components/PropsModelRecap';
 import Image from 'next/image';
 import {
   defaultPropsSport,
@@ -8708,7 +8709,23 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       </div>
                       </>
                     ) : isSecondaryListMode && aflPropsFetchComplete ? (
-                      liveEligibleAflPropsCount === 0 ? (
+                      liveEligibleAflPropsCount === 0 && !debouncedSearchQuery.trim() ? (
+                        <PropsModelRecap
+                          isDark={!!mounted && isDark}
+                          onRetry={() => {
+                            userModifiedAflGamesRef.current = false;
+                            secondarySkipFetchSportRef.current = null;
+                            try {
+                              sessionStorage.removeItem(getSecondaryPropsCacheKey('afl'));
+                            } catch {
+                              // Ignore
+                            }
+                            setSecondaryPropsFetchComplete(false);
+                            setAflPropsLoading(true);
+                            setAflPropsRetryKey((k) => k + 1);
+                          }}
+                        />
+                      ) : liveEligibleAflPropsCount === 0 ? (
                         <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           <p className="text-lg font-medium max-w-lg">
                             {aflIngestMessage && /^Fetched \d+ stats/i.test(aflIngestMessage)
@@ -8741,10 +8758,31 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                         </div>
                       )
                     ) : propsSport === 'combined' ? (
-                      <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        <p className="text-lg font-medium mb-2">No props match your search</p>
-                        <p className="text-sm">Try a different player or stat search.</p>
-                      </div>
+                      combinedPaintUnlocked &&
+                      liveEligibleAflPropsCount === 0 &&
+                      !debouncedSearchQuery.trim() ? (
+                        <PropsModelRecap
+                          isDark={!!mounted && isDark}
+                          onRetry={() => {
+                            userModifiedAflGamesRef.current = false;
+                            secondarySkipFetchSportRef.current = null;
+                            try {
+                              sessionStorage.removeItem(getSecondaryPropsCacheKey('afl'));
+                            } catch {
+                              // Ignore
+                            }
+                            setSecondaryPropsFetchComplete(false);
+                            setAflPropsLoading(true);
+                            setAflPropsRetryKey((k) => k + 1);
+                            kickCombinedPropsEarlyFetch();
+                          }}
+                        />
+                      ) : (
+                        <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${mounted && isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className="text-lg font-medium mb-2">No props match your search</p>
+                          <p className="text-sm">Try a different player or stat search.</p>
+                        </div>
+                      )
                     ) : propsSport === 'nba' && showNoPropsMessage ? (
                       <div className={`flex flex-col items-center justify-center py-16 px-4 text-center ${
                         mounted && isDark ? 'text-gray-400' : 'text-gray-500'
