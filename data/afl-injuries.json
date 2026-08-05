@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-05T02:07:36.585Z",
+  "generatedAt": "2026-08-05T05:26:38.646Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 212,
+  "injuryCount": 213,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Callum Ah Chee",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Joel Cochran",
