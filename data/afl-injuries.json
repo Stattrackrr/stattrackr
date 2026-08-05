@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-05T08:35:35.313Z",
+  "generatedAt": "2026-08-05T12:02:03.088Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Bailey Scott",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Josh Goater",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Jedd Busslinger",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Laitham Vandermeer",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Louis Emmett",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Daniel McStay",
