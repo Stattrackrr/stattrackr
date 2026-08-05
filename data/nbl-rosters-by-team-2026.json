@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-04T15:40:24.011Z",
+  "generatedAt": "2026-08-05T15:31:36.699Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -480,7 +480,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 11,
+      "playerCount": 12,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -561,6 +561,19 @@
           "idSource": "rosetta"
         },
         {
+          "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
+          "name": "Milton Doyle",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": "G",
+          "jersey": "35",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ddf5b80f00c54cec9fd5002c12dc0d84?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Melbourne United",
+          "idSource": "rosetta"
+        },
+        {
           "playerId": "5bc7a4df-bd9f-4177-ab25-a1de3e4cb0a1",
           "name": "Sam Froling",
           "team": "Illawarra Hawks",
@@ -632,7 +645,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "headCoach": "Jacob Chance",
-      "playerCount": 14,
+      "playerCount": 15,
       "players": [
         {
           "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
@@ -659,6 +672,19 @@
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Cole Anthony",
+          "team": "Melbourne United",
+          "teamCode": "MEL",
+          "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Milwaukee Bucks",
+          "idSource": "unmatched"
         },
         {
           "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
@@ -811,7 +837,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "12",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fc70114a16a942c6ad86d1457b7c38e4?size=800&format=webp",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1136,7 +1162,7 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
-          "jersey": null,
+          "jersey": "7",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",

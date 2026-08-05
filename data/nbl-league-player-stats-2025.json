@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-04T15:39:17.698Z",
+  "generatedAt": "2026-08-05T15:30:26.077Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 165,
   "withSeasonStats": 160,
@@ -4040,7 +4040,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "12",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fc70114a16a942c6ad86d1457b7c38e4?size=800&format=webp",
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp",
       "games": 27,
       "gamesStarted": 0,
       "minutes": 5.8,
