@@ -1,9 +1,93 @@
 {
-  "generatedAt": "2026-08-04T23:10:23.458Z",
+  "generatedAt": "2026-08-05T02:07:36.585Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 207,
+  "injuryCount": 212,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Joel Cochran",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Glute",
+      "returning": "Test"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Tew Jiath",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Lachie Schultz",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Darcy Parish",
+      "injury": "Calf",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Corey Wagner",
+      "injury": "Hip",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brandon Walker",
+      "injury": "Shoulder",
+      "returning": "Test"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Oscar Adams",
+      "injury": "Back",
+      "returning": "Test"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Harrison Oliver",
+      "injury": "Adductor",
+      "returning": "2 Weeks"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Mitch Lewis",
+      "injury": "Concussion",
+      "returning": "Test"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Jacob Konstanty",
+      "injury": "Illness",
+      "returning": "TBA"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jack Watkins",
+      "injury": "Hamstring",
+      "returning": "TBA"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Sam Cumming",
+      "injury": "Ankle",
+      "returning": "Season"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Will Lewis",
+      "injury": "Calf",
+      "returning": "6 Weeks"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Logan Morris",
@@ -113,57 +197,21 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Ryan Lester",
-      "injury": "Shoulder",
-      "returning": "TBA"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Hugh McCluggage",
-      "injury": "Calf",
-      "returning": "TBA"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Dayne Zorko",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Angus Clarke",
       "injury": "Concussion",
-      "returning": "TBA"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Corey Wagner",
-      "injury": "Injury",
-      "returning": "TBA"
+      "returning": "1 Week"
     },
     {
       "team": "Gold Coast Suns",
       "player": "Sam Collins",
       "injury": "Rib",
-      "returning": "TBA"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Zeke Uwland",
-      "injury": "Soreness",
-      "returning": "1 Week"
+      "returning": "Test"
     },
     {
       "team": "Melbourne Demons",
       "player": "Blake Howes",
       "injury": "Arm",
-      "returning": "TBA"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Tom De Koning",
-      "injury": "Hip",
       "returning": "TBA"
     },
     {
@@ -182,7 +230,7 @@
       "team": "Sydney Swans",
       "player": "James Rowbottom",
       "injury": "Arm",
-      "returning": "TBA"
+      "returning": "4 Weeks"
     },
     {
       "team": "Adelaide Crows",
@@ -281,9 +329,15 @@
       "returning": "TBC"
     },
     {
-      "team": "Essendon Bombers",
-      "player": "Darcy Parish",
-      "injury": "no room for",
+      "team": "Gold Coast Suns",
+      "player": "Zeke Uwland",
+      "injury": "Managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Dayne Zorko",
+      "injury": "rested veteran",
       "returning": "TBC"
     },
     {
@@ -302,7 +356,7 @@
       "team": "West Coast Eagles",
       "player": "Liam Baker",
       "injury": "Calf",
-      "returning": "TBA"
+      "returning": "Test"
     },
     {
       "team": "Richmond Tigers",
@@ -335,12 +389,6 @@
       "returning": "32 weeks"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Mitch Lewis",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Patrick Dangerfield",
       "injury": "Managed",
@@ -350,13 +398,13 @@
       "team": "Geelong Cats",
       "player": "Keighton Matofai-Forbes",
       "injury": "Finger",
-      "returning": "TBA"
+      "returning": "5 Weeks"
     },
     {
       "team": "Geelong Cats",
       "player": "Jacob Molier",
       "injury": "Quad",
-      "returning": "TBA"
+      "returning": "1 Week"
     },
     {
       "team": "GWS Giants",
@@ -410,7 +458,7 @@
       "team": "Carlton Blues",
       "player": "Liam Reidy",
       "injury": "Concussion",
-      "returning": "1 Week"
+      "returning": "Test"
     },
     {
       "team": "Brisbane Lions",
@@ -515,22 +563,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Oscar Adams",
-      "injury": "omitted this week for Ballard",
-      "returning": "TBC"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Jasper Alger",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Harry Armstrong",
-      "injury": "Foot",
-      "returning": "1 Week"
     },
     {
       "team": "Richmond Tigers",
@@ -548,7 +584,7 @@
       "team": "North Melbourne Kangaroos",
       "player": "Callum Coleman-Jones",
       "injury": "Ankle",
-      "returning": "Test"
+      "returning": "1 Week"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -680,13 +716,7 @@
       "team": "Hawthorn Hawks",
       "player": "Jack Dalton",
       "injury": "Knee",
-      "returning": "5 Weeks"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Rhys Stanley",
-      "injury": "Hamstring",
-      "returning": "Test"
+      "returning": "1 Week"
     },
     {
       "team": "Gold Coast Suns",
@@ -788,7 +818,7 @@
       "team": "Essendon Bombers",
       "player": "Kayle Gerreyn",
       "injury": "Knee",
-      "returning": "1 Week"
+      "returning": "Test"
     },
     {
       "team": "Port Adelaide Power",
@@ -800,7 +830,7 @@
       "team": "St Kilda Saints",
       "player": "James Barrat",
       "injury": "Foot",
-      "returning": "6 Weeks"
+      "returning": "Season"
     },
     {
       "team": "West Coast Eagles",
@@ -830,13 +860,13 @@
       "team": "Geelong Cats",
       "player": "Harley Barker",
       "injury": "ACL",
-      "returning": "Indefinite"
+      "returning": "TBA"
     },
     {
       "team": "Geelong Cats",
       "player": "Toby Conway",
       "injury": "Foot",
-      "returning": "TBA"
+      "returning": "Season"
     },
     {
       "team": "Western Bulldogs",
@@ -914,7 +944,7 @@
       "team": "Sydney Swans",
       "player": "Noah Chamberlain",
       "injury": "Hamstring",
-      "returning": "7 Weeks"
+      "returning": "6 Weeks"
     },
     {
       "team": "Sydney Swans",
@@ -992,7 +1022,7 @@
       "team": "GWS Giants",
       "player": "Darcy Jones",
       "injury": "ACL",
-      "returning": "2 Weeks"
+      "returning": "Season"
     },
     {
       "team": "GWS Giants",
