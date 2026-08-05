@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-05T21:09:57.498Z",
+  "generatedAt": "2026-08-05T23:01:31.486Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 220,
   "injuries": [
+    {
+      "team": "West Coast Eagles",
+      "player": "Hamish Davis",
+      "injury": "Concussion",
+      "returning": "active"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Bailey Scott",
@@ -325,12 +331,6 @@
     {
       "team": "Richmond Tigers",
       "player": "Zane Peucker",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Hamish Davis",
       "injury": "active",
       "returning": "TBC"
     },
