@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-05T05:26:38.646Z",
+  "generatedAt": "2026-08-05T08:35:35.313Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 215,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Daniel McStay",
+      "injury": "Knee",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Errol Gulden",
+      "injury": "Shoulder",
+      "returning": "Round 16"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Callum Ah Chee",
@@ -224,7 +236,7 @@
       "team": "St Kilda Saints",
       "player": "Jack Silvagni",
       "injury": "Shoulder",
-      "returning": "TBA"
+      "returning": "Attempting to return for Sunday's match"
     },
     {
       "team": "Sydney Swans",
