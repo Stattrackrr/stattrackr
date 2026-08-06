@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-05T12:52:15Z",
-  "modelVersion": "afl-disp-20260805-125113",
+  "generatedAt": "2026-08-06T12:57:51Z",
+  "modelVersion": "afl-disp-20260806-125634",
   "sampleCount": 764,
   "guardrailsPass": false,
   "promoted": false,
@@ -71,7 +71,7 @@
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260805-125113"
+    "modelVersion": "afl-disp-20260806-125634"
   },
   "currentMetrics": {
     "name": "current",
