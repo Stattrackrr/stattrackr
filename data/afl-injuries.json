@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-06T06:32:18.850Z",
+  "generatedAt": "2026-08-06T10:42:13.335Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 226,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Hugh McCluggage",
+      "injury": "Calf",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Dane Rampe",
+      "injury": "resting to face Port Adelaide",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Mitchell Edwards",
+      "injury": "given a rest",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Calf",
+      "returning": "Round two"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Alex Pearce",
+      "injury": "rested for Saturday's MCG battle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "James Worpel",
+      "injury": "Finger",
+      "returning": "active"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Josh Goater",
