@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-05T23:01:31.486Z",
+  "generatedAt": "2026-08-06T02:12:24.336Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 220,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Josh Goater",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
     {
       "team": "West Coast Eagles",
       "player": "Hamish Davis",
@@ -13,12 +19,6 @@
     {
       "team": "North Melbourne Kangaroos",
       "player": "Bailey Scott",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Josh Goater",
       "injury": "active",
       "returning": "TBC"
     },
