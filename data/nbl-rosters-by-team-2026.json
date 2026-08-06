@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-05T15:31:36.699Z",
+  "generatedAt": "2026-08-06T15:25:41.978Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -480,7 +480,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -506,6 +506,19 @@
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
+          "name": "Darius Days",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": "F",
+          "jersey": "0",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "TNT Tropang 5G - Philippines",
           "idSource": "rosetta"
         },
         {
