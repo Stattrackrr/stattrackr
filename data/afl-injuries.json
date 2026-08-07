@@ -1,9 +1,99 @@
 {
-  "generatedAt": "2026-08-07T00:01:11.481Z",
+  "generatedAt": "2026-08-07T02:33:05.633Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 225,
+  "injuryCount": 233,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Alex Pearce",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Mitchell Edwards",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Beau Addinsall",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Jai Murray",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Dylan Patterson",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Bailey Macdonald",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Mitch Georgiades",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Dane Rampe",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Lachlan McAndrew",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Jake Soligo",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Nick Bryan",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "William Edwards",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jack Watkins",
+      "injury": "replaced",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Malcolm Rosas",
+      "injury": "out alongside",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tim English",
@@ -23,28 +113,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Dane Rampe",
-      "injury": "resting to face Port Adelaide",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mitchell Edwards",
-      "injury": "given a rest",
-      "returning": "TBC"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Harry McKay",
       "injury": "Calf",
       "returning": "Round two"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Alex Pearce",
-      "injury": "rested for Saturday's MCG battle",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -125,12 +197,6 @@
       "returning": "Season"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Lachie Schultz",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "Calf",
@@ -170,12 +236,6 @@
       "team": "North Melbourne Kangaroos",
       "player": "Jacob Konstanty",
       "injury": "Illness",
-      "returning": "TBA"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jack Watkins",
-      "injury": "Hamstring",
       "returning": "TBA"
     },
     {
@@ -293,12 +353,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Sam Collins",
-      "injury": "Rib",
-      "returning": "Test"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Blake Howes",
       "injury": "Arm",
@@ -309,12 +363,6 @@
       "player": "Jack Silvagni",
       "injury": "Shoulder",
       "returning": "Attempting to return for Sunday's match"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "William Edwards",
-      "injury": "Leg",
-      "returning": "TBA"
     },
     {
       "team": "Sydney Swans",
@@ -437,12 +485,6 @@
       "returning": "2-3 weeks"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Liam Baker",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Kaleb Smith",
       "injury": "Concussion",
@@ -507,12 +549,6 @@
       "player": "Jed Adams",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Cooper Sharman",
-      "injury": "Calf",
-      "returning": "Test"
     },
     {
       "team": "Sydney Swans",
@@ -585,6 +621,12 @@
       "player": "Max King",
       "injury": "Hamstring",
       "returning": "Season"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Cooper Sharman",
+      "injury": "managed",
+      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -729,6 +771,12 @@
       "player": "Erone Fitzpatrick",
       "injury": "ACL",
       "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Liam Baker",
+      "injury": "Suspended AFL",
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
