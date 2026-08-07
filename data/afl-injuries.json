@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-07T12:57:58.050Z",
+  "generatedAt": "2026-08-07T14:56:19.090Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 238,
+  "injuryCount": 230,
   "injuries": [
     {
       "team": "Hawthorn Hawks",
@@ -281,12 +281,6 @@
       "returning": "2 Weeks"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Mitch Lewis",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "Jacob Konstanty",
       "injury": "Illness",
@@ -510,12 +504,6 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Sam Berry",
-      "injury": "Foot",
-      "returning": "TBA"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Wayne Milera",
       "injury": "Hamstring",
       "returning": "2-3 weeks"
@@ -543,6 +531,12 @@
       "player": "Jonah Brooks",
       "injury": "32-week suspension for striking during a country footy match.",
       "returning": "32 weeks"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Mitch Lewis",
+      "injury": "Injury",
+      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -585,12 +579,6 @@
       "player": "Patrick Snell",
       "injury": "Knee",
       "returning": "1 Week"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "James Peatling",
-      "injury": "Hip",
-      "returning": "Test"
     },
     {
       "team": "Carlton Blues",
@@ -720,18 +708,6 @@
     },
     {
       "team": "Richmond Tigers",
-      "player": "Jasper Alger",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Tom Burton",
-      "injury": "Groin",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
       "player": "Tom Sims",
       "injury": "Toe",
       "returning": "Season"
@@ -801,12 +777,6 @@
       "player": "Erone Fitzpatrick",
       "injury": "ACL",
       "returning": "active"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Liam Baker",
-      "injury": "Suspended AFL",
-      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -903,12 +873,6 @@
       "player": "Phoenix Gothard",
       "injury": "Shoulder",
       "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Karl Amon",
-      "injury": "Knee",
-      "returning": "before finals"
     },
     {
       "team": "Brisbane Lions",
@@ -1065,12 +1029,6 @@
       "player": "Julie O'Sullivan",
       "injury": "ACL",
       "returning": "Not available"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sam Sturt",
-      "injury": "Quad",
-      "returning": "TBA"
     },
     {
       "team": "St Kilda Saints",
@@ -1287,12 +1245,6 @@
       "player": "Matthew Carroll",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Campbell Gray",
-      "injury": "Hamstring",
-      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
