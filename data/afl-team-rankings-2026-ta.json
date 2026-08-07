@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-08-07T18:53:46.395Z",
+  "generatedAt": "2026-08-07T20:42:52.370Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
@@ -188,27 +188,6 @@
     },
     {
       "rank": 8,
-      "team": "Cats",
-      "stats": {
-        "Team": "Cats",
-        "Gm": 20,
-        "K": 217.75,
-        "HB": 157.6,
-        "D": 375.4,
-        "G": 18.7,
-        "M": 92.2,
-        "T": 57.9,
-        "CL": 37.6,
-        "I50": 58.9,
-        "R50": 37.8,
-        "CP": 135.3,
-        "UP": 226.6,
-        "MG": 13.35,
-        "Rk": 8
-      }
-    },
-    {
-      "rank": 9,
       "team": "Lions",
       "stats": {
         "Team": "Lions",
@@ -225,6 +204,27 @@
         "CP": 130.4,
         "UP": 230.05,
         "MG": 13.71,
+        "Rk": 8
+      }
+    },
+    {
+      "rank": 9,
+      "team": "Cats",
+      "stats": {
+        "Team": "Cats",
+        "Gm": 20,
+        "K": 217.75,
+        "HB": 157.6,
+        "D": 375.4,
+        "G": 18.7,
+        "M": 92.2,
+        "T": 57.9,
+        "CL": 37.6,
+        "I50": 58.9,
+        "R50": 37.8,
+        "CP": 135.3,
+        "UP": 226.6,
+        "MG": 13.35,
         "Rk": 9
       }
     },
