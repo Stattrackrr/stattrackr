@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-07T02:33:05.633Z",
+  "generatedAt": "2026-08-07T05:44:12.813Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 233,
+  "injuryCount": 234,
   "injuries": [
+    {
+      "team": "Richmond Tigers",
+      "player": "Judson Clarke",
+      "injury": "ACL",
+      "returning": "Round X"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Alex Pearce",
