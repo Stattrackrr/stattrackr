@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-08-07T07:14:38.281Z",
+  "generatedAt": "2026-08-07T09:00:53.997Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 234,
+  "injuryCount": 238,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Aidan Schubert",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Finn Maginness",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Oliver Greeves",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Keidean Coleman",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Hugh McCluggage",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Bruce Reville",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Bailey Macdonald",
+      "injury": "being managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Harry Perryman",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Patrick Lipinski",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tim English",
@@ -47,12 +119,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Bailey Macdonald",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Mitch Georgiades",
       "injury": "Injury",
@@ -75,12 +141,6 @@
       "player": "Jake Soligo",
       "injury": "Soreness",
       "returning": "1 Week"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Injury",
-      "returning": "TBA"
     },
     {
       "team": "Essendon Bombers",
@@ -110,12 +170,6 @@
       "team": "North Melbourne Kangaroos",
       "player": "Aidan Corr",
       "injury": "Back",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Hugh McCluggage",
-      "injury": "Calf",
       "returning": "TBC"
     },
     {
@@ -189,12 +243,6 @@
       "player": "Joel Cochran",
       "injury": "Concussion",
       "returning": "TBA"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Glute",
-      "returning": "unlikely for Sunday's game"
     },
     {
       "team": "Collingwood Magpies",
@@ -288,12 +336,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Patrick Lipinski",
-      "injury": "Calf",
-      "returning": "2 matches"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Jamie Elliott",
       "injury": "Injury",
       "returning": "Season"
@@ -339,18 +381,6 @@
       "player": "Luke Trainor",
       "injury": "Cited for striking West Coast Eagle Jack Williams, resulting in a one-match ban.",
       "returning": "1 match"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Forearm",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Keidean Coleman",
-      "injury": "Concussion",
-      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
@@ -495,12 +525,6 @@
       "player": "Kaleb Smith",
       "injury": "Concussion",
       "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Harry Perryman",
-      "injury": "Hamstring",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
