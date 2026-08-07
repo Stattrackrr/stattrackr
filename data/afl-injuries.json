@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-06T14:01:03.112Z",
+  "generatedAt": "2026-08-07T00:01:11.481Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 226,
+  "injuryCount": 225,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Aidan Corr",
+      "injury": "Back",
+      "returning": "TBC"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
@@ -236,18 +248,6 @@
       "team": "Carlton Blues",
       "player": "Jacob Weitering",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Cody Weightman",
-      "injury": "rested for the fixture",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Aaron Naughton",
-      "injury": "rested for the fixture",
       "returning": "TBC"
     },
     {
@@ -831,12 +831,6 @@
       "player": "Karl Amon",
       "injury": "Knee",
       "returning": "before finals"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "George Wardlaw",
-      "injury": "Soft tissue",
-      "returning": "active"
     },
     {
       "team": "Brisbane Lions",
