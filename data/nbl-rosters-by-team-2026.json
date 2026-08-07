@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-06T15:25:41.978Z",
+  "generatedAt": "2026-08-07T14:23:38.274Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -354,7 +354,7 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 9,
+      "playerCount": 10,
       "players": [
         {
           "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
@@ -368,6 +368,19 @@
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Jaylon Brown",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Petkim Spor - Turkey",
+          "idSource": "unmatched"
         },
         {
           "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
@@ -1431,7 +1444,7 @@
       "teamCode": "TAS",
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "headCoach": "Scott Roth",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
@@ -1562,6 +1575,19 @@
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Nick Stoddart",
+          "team": "Tasmania JackJumpers",
+          "teamCode": "TAS",
+          "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "contracted",
+          "trackerNote": null,
+          "idSource": "unmatched"
         },
         {
           "playerId": "96a3897c-483c-4089-b824-2bb65d265828",
