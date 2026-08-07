@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-07T16:54:38.476Z",
+  "generatedAt": "2026-08-07T18:53:47.473Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 230,
+  "injuryCount": 219,
   "injuries": [
     {
       "team": "Hawthorn Hawks",
@@ -197,30 +197,6 @@
       "returning": "active"
     },
     {
-      "team": "North Melbourne Kangaroos",
-      "player": "Bailey Scott",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Jedd Busslinger",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Laitham Vandermeer",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Louis Emmett",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "Collingwood Magpies",
       "player": "Daniel McStay",
       "injury": "Knee",
@@ -299,12 +275,6 @@
       "returning": "6 Weeks"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Logan Morris",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Mitchell Hinge",
       "injury": "Soreness",
@@ -351,18 +321,6 @@
       "player": "Jacob Weitering",
       "injury": "Injury",
       "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Dylan Moore",
-      "injury": "Handed a week for striking.",
-      "returning": "1 match"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "James Sicily",
-      "injury": "Handed a week for striking.",
-      "returning": "1 match"
     },
     {
       "team": "West Coast Eagles",
@@ -497,12 +455,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Dayne Zorko",
-      "injury": "rested veteran",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Wayne Milera",
       "injury": "Hamstring",
@@ -531,12 +483,6 @@
       "player": "Jonah Brooks",
       "injury": "32-week suspension for striking during a country footy match.",
       "returning": "32 weeks"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Mitch Lewis",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -875,12 +821,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Darcy Gardiner",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Sam Powell-Pepper",
       "injury": "ACL",
@@ -914,12 +854,6 @@
       "team": "GWS Giants",
       "player": "Brent Daniels",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Ned Reeves",
-      "injury": "Injury",
       "returning": "TBC"
     },
     {
