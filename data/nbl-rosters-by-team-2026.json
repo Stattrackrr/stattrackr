@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-07T14:23:38.274Z",
+  "generatedAt": "2026-08-08T13:53:07.643Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -354,7 +354,7 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 10,
+      "playerCount": 11,
       "players": [
         {
           "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
@@ -417,6 +417,19 @@
           "position": "F",
           "jersey": "14",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp",
+          "trackerStatus": "contracted",
+          "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
+          "name": "Lloyd McVeigh",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "G",
+          "jersey": "1",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
