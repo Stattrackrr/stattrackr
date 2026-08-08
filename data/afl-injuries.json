@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-08T16:34:38.496Z",
+  "generatedAt": "2026-08-08T18:37:53.797Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 226,
+  "injuryCount": 210,
   "injuries": [
     {
       "team": "Port Adelaide Power",
@@ -15,12 +15,6 @@
       "player": "Jake Kolodjashnij",
       "injury": "Concussion",
       "returning": "active"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jason Horne-Francis",
-      "injury": "Knee",
-      "returning": "TBC"
     },
     {
       "team": "Fremantle Dockers",
@@ -101,12 +95,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Bruce Reville",
-      "injury": "omitted following Brisbane's loss to Carlton",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Bailey Macdonald",
       "injury": "being managed",
@@ -147,12 +135,6 @@
       "player": "Tim English",
       "injury": "MCL",
       "returning": "Season in doubt"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Judson Clarke",
-      "injury": "ACL",
-      "returning": "Round X"
     },
     {
       "team": "Geelong Cats",
@@ -227,39 +209,15 @@
       "returning": "Round two"
     },
     {
-      "team": "Geelong Cats",
-      "player": "James Worpel",
-      "injury": "Finger",
-      "returning": "active"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "Josh Goater",
       "injury": "Soreness",
       "returning": "1 Week"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Hamish Davis",
-      "injury": "Concussion",
-      "returning": "active"
-    },
-    {
       "team": "Collingwood Magpies",
       "player": "Daniel McStay",
       "injury": "Knee",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Errol Gulden",
-      "injury": "Shoulder",
-      "returning": "Round 16"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Callum Ah Chee",
-      "injury": "active",
       "returning": "active"
     },
     {
@@ -407,12 +365,6 @@
       "returning": "Test"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Malakai Champion",
-      "injury": "Hand",
-      "returning": "Test"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Toby Murray",
       "injury": "active",
@@ -426,12 +378,6 @@
     },
     {
       "team": "Melbourne Demons",
-      "player": "Kade Chandler",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
       "player": "Latrelle Pickett",
       "injury": "Soreness",
       "returning": "TBC"
@@ -441,12 +387,6 @@
       "player": "Rhyan Mansell",
       "injury": "Foot",
       "returning": "Round 21"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Zane Peucker",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
@@ -470,24 +410,6 @@
       "team": "Collingwood Magpies",
       "player": "Darcy Cameron",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Ben McKay",
-      "injury": "omitted due to loss of confidence",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Nik Cox",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Lachlan Blakiston",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -665,12 +587,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Essendon Bombers",
-      "player": "Jye Caldwell",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
       "injury": "Injury",
@@ -685,12 +601,6 @@
     {
       "team": "West Coast Eagles",
       "player": "Jack Hutchinson",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Daniel Turner",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -812,12 +722,6 @@
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
       "injury": "First week of his three-game ban for striking Sydney Swans defender Harry Cunningham.",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Rory Laird",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
