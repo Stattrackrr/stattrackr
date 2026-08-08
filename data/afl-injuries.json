@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-08T10:34:09.909Z",
+  "generatedAt": "2026-08-08T12:43:23.853Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 225,
+  "injuryCount": 226,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Lachie Jones",
+      "injury": "Groin",
+      "returning": "next week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jake Kolodjashnij",
+      "injury": "Concussion",
+      "returning": "active"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
@@ -49,12 +61,6 @@
     {
       "team": "Port Adelaide Power",
       "player": "Jack Watkins",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Lachie Jones",
       "injury": "Injury",
       "returning": "TBC"
     },
