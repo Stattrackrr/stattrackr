@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T17:33:45Z",
+  "generatedAt": "2026-08-08T11:26:23Z",
   "count": 71,
   "records": [
     {
@@ -2872,7 +2872,7 @@
       "gameKey": "gwsgiants|goldcoastsuns|2026-08-09",
       "finalizedAt": "2026-08-04T12:59:46Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-08-07T17:33:45Z",
+      "projectionGeneratedAt": "2026-08-08T11:26:23Z",
       "modelVersion": "afl-disp-20260807-173117",
       "homeTeam": "GWS Giants",
       "awayTeam": "Gold Coast Suns",
@@ -2881,14 +2881,36 @@
       "roundKey": "2026-R22",
       "picks": [
         {
-          "playerName": "Christian Petracca",
-          "bookmaker": "SportsBet",
-          "line": 23.5,
-          "expectedDisposals": 21.54,
+          "playerName": "John Noble",
+          "bookmaker": "PointsBet (AU)",
+          "line": 25.5,
+          "expectedDisposals": 22.22,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.0917,
-          "recommendedProb": 0.5877,
+          "recommendedEdge": 0.1563,
+          "recommendedProb": 0.6563,
           "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Harvey Thomas",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 19.42,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1188,
+          "recommendedProb": 0.6391,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Touk Miller",
+          "bookmaker": "PointsBet (AU)",
+          "line": 21.5,
+          "expectedDisposals": 23.09,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1134,
+          "recommendedProb": 0.6224,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2897,7 +2919,7 @@
       "gameKey": "westcoasteagles|collingwoodmagpies|2026-08-09",
       "finalizedAt": "2026-08-04T12:59:46Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-08-07T17:33:45Z",
+      "projectionGeneratedAt": "2026-08-08T11:26:23Z",
       "modelVersion": "afl-disp-20260807-173117",
       "homeTeam": "West Coast Eagles",
       "awayTeam": "Collingwood Magpies",
@@ -2906,25 +2928,36 @@
       "roundKey": "2026-R22",
       "picks": [
         {
+          "playerName": "Liam Baker",
+          "bookmaker": "PointsBet (AU)",
+          "line": 17.5,
+          "expectedDisposals": 19.18,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1469,
+          "recommendedProb": 0.6672,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
           "playerName": "Nick Daicos",
           "bookmaker": "SportsBet",
           "line": 34.5,
-          "expectedDisposals": 31.2,
+          "expectedDisposals": 32.03,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1452,
-          "recommendedProb": 0.6402,
-          "rank": 1,
+          "recommendedEdge": 0.1167,
+          "recommendedProb": 0.6117,
+          "rank": 2,
           "actualDisposals": null
         },
         {
           "playerName": "Tim Kelly",
           "bookmaker": "SportsBet",
           "line": 24.5,
-          "expectedDisposals": 22.21,
+          "expectedDisposals": 22.29,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1041,
-          "recommendedProb": 0.5921,
-          "rank": 2,
+          "recommendedEdge": 0.1119,
+          "recommendedProb": 0.5999,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
@@ -2933,8 +2966,8 @@
       "gameKey": "stkildasaints|carltonblues|2026-08-09",
       "finalizedAt": "2026-08-04T12:59:46Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-08-07T11:45:04Z",
-      "modelVersion": "afl-disp-20260803-183220",
+      "projectionGeneratedAt": "2026-08-08T11:26:23Z",
+      "modelVersion": "afl-disp-20260807-173117",
       "homeTeam": "St Kilda Saints",
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-09T09:20:34Z",
@@ -2942,24 +2975,24 @@
       "roundKey": "2026-R22",
       "picks": [
         {
-          "playerName": "George Hewett",
-          "bookmaker": "SportsBet",
-          "line": 24.5,
-          "expectedDisposals": 20.8,
+          "playerName": "Adam Cerra",
+          "bookmaker": "PointsBet (AU)",
+          "line": 21.5,
+          "expectedDisposals": 18.55,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1455,
-          "recommendedProb": 0.6415,
+          "recommendedEdge": 0.1502,
+          "recommendedProb": 0.6502,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Jagga Smith",
-          "bookmaker": "SportsBet",
-          "line": 26.5,
-          "expectedDisposals": 24.08,
+          "playerName": "Oliver Florent",
+          "bookmaker": "PointsBet (AU)",
+          "line": 23.5,
+          "expectedDisposals": 20.62,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1032,
-          "recommendedProb": 0.6022,
+          "recommendedEdge": 0.1484,
+          "recommendedProb": 0.6484,
           "rank": 2,
           "actualDisposals": null
         }
