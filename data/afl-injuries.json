@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-08T06:51:06.700Z",
+  "generatedAt": "2026-08-08T08:44:20.843Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 224,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Alex Pearce",
+      "injury": "rested for the trip over east",
+      "returning": "TBC"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Harrison Jones",
@@ -85,7 +91,7 @@
     {
       "team": "Brisbane Lions",
       "player": "Bruce Reville",
-      "injury": "active",
+      "injury": "omitted following Brisbane's loss to Carlton",
       "returning": "TBC"
     },
     {
@@ -135,12 +141,6 @@
       "player": "Judson Clarke",
       "injury": "ACL",
       "returning": "Round X"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Alex Pearce",
-      "injury": "Soreness",
-      "returning": "1 Week"
     },
     {
       "team": "Geelong Cats",
