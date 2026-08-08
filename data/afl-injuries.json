@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-08T20:29:50.278Z",
+  "generatedAt": "2026-08-08T22:29:22.864Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Lachlan McAndrew",
+      "injury": "returning from a rest",
+      "returning": "Available"
+    },
     {
       "team": "Carlton Blues",
       "player": "Harry McKay",
@@ -186,12 +192,6 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Lachlan McAndrew",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Jake Soligo",
       "injury": "Soreness",
       "returning": "1 Week"
@@ -302,7 +302,7 @@
       "team": "Adelaide Crows",
       "player": "Luke Nankervis",
       "injury": "Chest",
-      "returning": "Test"
+      "returning": "Available"
     },
     {
       "team": "Adelaide Crows",
@@ -368,7 +368,7 @@
       "team": "Adelaide Crows",
       "player": "James Borlase",
       "injury": "Hamstring",
-      "returning": "Test"
+      "returning": "Available"
     },
     {
       "team": "Adelaide Crows",
@@ -727,8 +727,8 @@
     {
       "team": "Adelaide Crows",
       "player": "Darcy Fogarty",
-      "injury": "First week of his three-game ban for striking Sydney Swans defender Harry Cunningham.",
-      "returning": "TBC"
+      "injury": "served three-game suspension",
+      "returning": "Available"
     },
     {
       "team": "Western Bulldogs",
