@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-08T18:37:53.797Z",
+  "generatedAt": "2026-08-08T20:29:50.278Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 210,
+  "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Malakai Champion",
+      "injury": "Hand",
+      "returning": "Test"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Lachie Jones",
@@ -201,12 +213,6 @@
       "player": "Aidan Corr",
       "injury": "Back",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Calf",
-      "returning": "Round two"
     },
     {
       "team": "North Melbourne Kangaroos",
