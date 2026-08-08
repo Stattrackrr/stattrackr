@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-08-08T04:59:36.341Z",
+  "generatedAt": "2026-08-08T06:51:06.700Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 224,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Harrison Jones",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Xavier Bamert",
+      "injury": "Illness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "William Edwards",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Rowbottom",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Brodie Grundy",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jack Watkins",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Lachie Jones",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Paddy Cross",
@@ -152,18 +194,6 @@
       "team": "Essendon Bombers",
       "player": "Nick Bryan",
       "injury": "Injury",
-      "returning": "TBA"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "William Edwards",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jack Watkins",
-      "injury": "replaced",
       "returning": "TBC"
     },
     {
@@ -344,7 +374,7 @@
       "team": "Essendon Bombers",
       "player": "Angus Clarke",
       "injury": "Concussion",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Melbourne Demons",
@@ -357,12 +387,6 @@
       "player": "Jack Silvagni",
       "injury": "Shoulder",
       "returning": "Attempting to return for Sunday's match"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Rowbottom",
-      "injury": "Arm",
-      "returning": "4 Weeks"
     },
     {
       "team": "Adelaide Crows",
