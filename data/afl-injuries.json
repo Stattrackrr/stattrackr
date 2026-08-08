@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-08T01:18:02.208Z",
+  "generatedAt": "2026-08-08T03:28:55.334Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 219,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Paddy Cross",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Hawthorn Hawks",
       "player": "Aidan Schubert",
@@ -344,7 +350,7 @@
       "team": "Melbourne Demons",
       "player": "Blake Howes",
       "injury": "Arm",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
