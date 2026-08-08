@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-08T08:44:20.843Z",
+  "generatedAt": "2026-08-08T10:34:09.909Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 224,
+  "injuryCount": 225,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jason Horne-Francis",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Alex Pearce",
@@ -37,7 +43,7 @@
     {
       "team": "Sydney Swans",
       "player": "Brodie Grundy",
-      "injury": "active",
+      "injury": "missed the game for personal reasons after the birth of his first child",
       "returning": "TBC"
     },
     {
