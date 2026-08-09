@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-09T10:36:12.104Z",
+  "generatedAt": "2026-08-09T12:46:25.568Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
     "adelaide": {
@@ -241,33 +241,33 @@
         "leaders": [
           {
             "player": "Patrick Cripps",
-            "total": 473,
+            "total": 492,
             "rate": 79
           },
           {
             "player": "Sam Walsh",
-            "total": 430,
-            "rate": 72
+            "total": 455,
+            "rate": 73
           },
           {
             "player": "Marc Pittonet",
-            "total": 381,
+            "total": 405,
             "rate": 75
           },
           {
             "player": "Jagga Smith",
-            "total": 315,
-            "rate": 53
+            "total": 334,
+            "rate": 54
           },
           {
             "player": "George Hewett",
-            "total": 303,
-            "rate": 63
+            "total": 324,
+            "rate": 64
           },
           {
             "player": "Adam Cerra",
             "total": 113,
-            "rate": 23
+            "rate": 21
           },
           {
             "player": "Liam Reidy",
@@ -277,7 +277,7 @@
           {
             "player": "Harry McKay",
             "total": 62,
-            "rate": 13
+            "rate": 12
           },
           {
             "player": "Ben Ainsworth",
@@ -287,32 +287,32 @@
           {
             "player": "Cooper Lord",
             "total": 42,
-            "rate": 20
+            "rate": 17
           }
         ],
-        "teamTotal": 2388
+        "teamTotal": 2500
       },
       "kick_ins": {
         "leaders": [
           {
             "player": "Nic Newman",
             "total": 69,
-            "rate": 32
-          },
-          {
-            "player": "Oliver Florent",
-            "total": 65,
             "rate": 30
           },
           {
+            "player": "Oliver Florent",
+            "total": 68,
+            "rate": 29
+          },
+          {
             "player": "Billy Wilson",
-            "total": 22,
-            "rate": 10
+            "total": 26,
+            "rate": 11
           },
           {
             "player": "Zac Williams",
             "total": 12,
-            "rate": 6
+            "rate": 5
           },
           {
             "player": "Adam Saad",
@@ -323,6 +323,11 @@
             "player": "Jordan Boyd",
             "total": 9,
             "rate": 4
+          },
+          {
+            "player": "Adam Cerra",
+            "total": 8,
+            "rate": 3
           },
           {
             "player": "Oliver Hollands",
@@ -338,14 +343,9 @@
             "player": "Nick Haynes",
             "total": 4,
             "rate": 2
-          },
-          {
-            "player": "Lewis Young",
-            "total": 3,
-            "rate": 1
           }
         ],
-        "teamTotal": 217
+        "teamTotal": 231
       }
     },
     "collingwood": {
@@ -1601,38 +1601,38 @@
         "leaders": [
           {
             "player": "Hugo Garcia",
-            "total": 405,
-            "rate": 67
+            "total": 415,
+            "rate": 66
           },
           {
             "player": "Tom De Koning",
-            "total": 328,
+            "total": 346,
             "rate": 63
           },
           {
             "player": "Nasiah Wanganeen-Milera",
-            "total": 284,
-            "rate": 58
-          },
-          {
-            "player": "Rowan Marshall",
-            "total": 247,
-            "rate": 45
+            "total": 287,
+            "rate": 56
           },
           {
             "player": "Max Hall",
-            "total": 246,
-            "rate": 41
+            "total": 268,
+            "rate": 42
+          },
+          {
+            "player": "Rowan Marshall",
+            "total": 257,
+            "rate": 45
           },
           {
             "player": "Marcus Windhager",
-            "total": 222,
+            "total": 232,
             "rate": 36
           },
           {
             "player": "Mattaes Phillipou",
-            "total": 175,
-            "rate": 32
+            "total": 180,
+            "rate": 31
           },
           {
             "player": "Jack Macrae",
@@ -1646,27 +1646,27 @@
           },
           {
             "player": "Darcy Wilson",
-            "total": 86,
-            "rate": 15
+            "total": 99,
+            "rate": 16
           }
         ],
-        "teamTotal": 2416
+        "teamTotal": 2528
       },
       "kick_ins": {
         "leaders": [
           {
             "player": "Jack Sinclair",
             "total": 77,
-            "rate": 32
+            "rate": 31
           },
           {
             "player": "Nasiah Wanganeen-Milera",
             "total": 68,
-            "rate": 29
+            "rate": 27
           },
           {
             "player": "Bradley Hill",
-            "total": 28,
+            "total": 29,
             "rate": 12
           },
           {
@@ -1676,8 +1676,8 @@
           },
           {
             "player": "Liam Stocker",
-            "total": 13,
-            "rate": 5
+            "total": 22,
+            "rate": 9
           },
           {
             "player": "Sam Flanders",
@@ -1705,7 +1705,7 @@
             "rate": 1
           }
         ],
-        "teamTotal": 238
+        "teamTotal": 248
       }
     },
     "sydney": {

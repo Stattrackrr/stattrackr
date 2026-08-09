@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-09T10:36:10.961Z",
+  "generatedAt": "2026-08-09T12:46:24.597Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 217,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Mason Wood",
+      "injury": "Calf",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Calf",
+      "returning": "Next Saturday"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Nasiah Wanganeen-Milera",
@@ -187,12 +199,6 @@
     {
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
       "injury": "Soreness",
       "returning": "TBC"
     },
