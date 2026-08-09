@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-08T13:52:56.842Z",
+  "generatedAt": "2026-08-09T13:55:51.150Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
@@ -53,7 +53,7 @@
         {
           "id": "40f7fa2c-ec7d-43a3-883d-254cc8441137",
           "match_slug": "perth-wildcats-v-south-east-melbourne-phoenix-men-19-09-2026",
-          "match_title": "befee10a-410c-11f0-b3f4-1b3c55488bbb36e0e11c-58ad-11f1-93d0-e78395b5c13c v South East Melbourne Phoenix men 19-09-2026",
+          "match_title": "Perth Wildcats v South East Melbourne Phoenix men 19-09-2026",
           "match_ticket_url": "https://premier.ticketek.com.au/shows/show.aspx?sh=WILDCATS27",
           "external_id": "36e0e11c-58ad-11f1-93d0-e78395b5c13c",
           "start_time_datetime": "2026-09-19T11:30:00",
@@ -73,7 +73,7 @@
         {
           "id": "40f7fa2c-ec7d-43a3-883d-254cc8441137",
           "match_slug": "perth-wildcats-v-south-east-melbourne-phoenix-men-19-09-2026",
-          "match_title": "befee10a-410c-11f0-b3f4-1b3c55488bbb36e0e11c-58ad-11f1-93d0-e78395b5c13c v South East Melbourne Phoenix men 19-09-2026",
+          "match_title": "Perth Wildcats v South East Melbourne Phoenix men 19-09-2026",
           "match_ticket_url": "https://www.axs.com/au/series/33674/s-e-melbourne-phoenix-2026-27-tickets-tickets",
           "external_id": "36e0e11c-58ad-11f1-93d0-e78395b5c13c",
           "start_time_datetime": "2026-09-19T11:30:00",
