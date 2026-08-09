@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-09T16:34:44.022Z",
+  "generatedAt": "2026-08-09T18:40:33.263Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 196,
   "injuries": [
-    {
-      "team": "St Kilda Saints",
-      "player": "Mason Wood",
-      "injury": "Calf",
-      "returning": "Season"
-    },
     {
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
@@ -17,21 +11,9 @@
       "returning": "Next Saturday"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Nasiah Wanganeen-Milera",
-      "injury": "Hamstring",
-      "returning": "Season"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Izak Rankine",
       "injury": "missed 2025 finals campaign",
-      "returning": "active"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "active",
       "returning": "active"
     },
     {
@@ -264,12 +246,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Daniel McStay",
-      "injury": "Knee",
-      "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Joel Cochran",
       "injury": "Concussion",
       "returning": "TBA"
@@ -299,12 +275,6 @@
       "returning": "Test"
     },
     {
-      "team": "Gold Coast Suns",
-      "player": "Oscar Adams",
-      "injury": "Back",
-      "returning": "Test"
-    },
-    {
       "team": "GWS Giants",
       "player": "Harrison Oliver",
       "injury": "Adductor",
@@ -327,12 +297,6 @@
       "player": "Will Lewis",
       "injury": "Calf",
       "returning": "6 Weeks"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Mitchell Hinge",
-      "injury": "Soreness",
-      "returning": "Round 22"
     },
     {
       "team": "Adelaide Crows",
@@ -371,12 +335,6 @@
       "returning": "Season"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Jacob Weitering",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Harry Schoenberg",
       "injury": "Handed a week for striking.",
@@ -401,28 +359,10 @@
       "returning": "TBC"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Jack Silvagni",
-      "injury": "Shoulder",
-      "returning": "Attempting to return for Sunday's match"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "James Borlase",
       "injury": "Hamstring",
       "returning": "Available"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Toby Murray",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Finnbar Maley",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "Melbourne Demons",
@@ -440,30 +380,6 @@
       "team": "West Coast Eagles",
       "player": "Oliver Francou",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry Dean",
-      "injury": "facing Match Review Officer scrutiny for a dangerous tackle on Brisbane’s Cam Rayner",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Dan Butler",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Darcy Cameron",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Zeke Uwland",
-      "injury": "Managed",
       "returning": "TBC"
     },
     {
@@ -545,18 +461,6 @@
       "returning": "TBA"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Ashton Moir",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Liam Reidy",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
       "team": "Brisbane Lions",
       "player": "Ty Gallop",
       "injury": "Thumb",
@@ -599,12 +503,6 @@
       "returning": "Season"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Cooper Sharman",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Noah Mraz",
       "injury": "Kidney",
@@ -621,12 +519,6 @@
       "player": "Finn Callaghan",
       "injury": "Ankle",
       "returning": "Season"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Toby Greene",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
@@ -677,12 +569,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Cody Walker",
-      "injury": "Ac joint",
-      "returning": "active"
-    },
-    {
       "team": "Collingwood Magpies",
       "player": "Bobby Hill",
       "injury": "off-field issues, contract termination",
@@ -717,12 +603,6 @@
       "player": "Joe Richards",
       "injury": "Finger",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Erone Fitzpatrick",
-      "injury": "ACL",
-      "returning": "active"
     },
     {
       "team": "Western Bulldogs",
@@ -929,12 +809,6 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Josh Lindsay",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "GWS Giants",
       "player": "Jesse Hogan",
       "injury": "Injury",
@@ -999,12 +873,6 @@
       "player": "Sam Allen",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Alix Tauru",
-      "injury": "dropped to the twos",
-      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
