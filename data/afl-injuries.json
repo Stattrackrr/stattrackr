@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-09T05:08:29.692Z",
+  "generatedAt": "2026-08-09T06:54:36.485Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 214,
   "injuries": [
+    {
+      "team": "West Coast Eagles",
+      "player": "Ryan Maric",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Sandy Brock",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harvey Johnston",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Gold Coast Suns",
       "player": "Jai Murray",
