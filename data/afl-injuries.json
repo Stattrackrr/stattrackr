@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-09T20:32:34.244Z",
+  "generatedAt": "2026-08-09T22:31:07.586Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 201,
+  "injuryCount": 204,
   "injuries": [
+    {
+      "team": "West Coast Eagles",
+      "player": "Harley Reid",
+      "injury": "Quad",
+      "returning": "active"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Mason Wood",
+      "injury": "Calf",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Nasiah Wanganeen-Milera",
+      "injury": "Hamstring",
+      "returning": "minimum three weeks. He's not going to play in the home and away season."
+    },
     {
       "team": "St Kilda Saints",
       "player": "Jack Silvagni",
@@ -38,7 +56,7 @@
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
       "injury": "Calf",
-      "returning": "Next Saturday"
+      "returning": "a chance to return to the senior side to face the Hawks"
     },
     {
       "team": "Adelaide Crows",
