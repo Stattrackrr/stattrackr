@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-09T06:54:36.485Z",
+  "generatedAt": "2026-08-09T08:43:18.118Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 214,
+  "injuryCount": 215,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Darcy Byrne-Jones",
+      "injury": "Copped a one-match ban for a bump on Errol Gulden.",
+      "returning": "Next weekend's game"
+    },
     {
       "team": "West Coast Eagles",
       "player": "Ryan Maric",
