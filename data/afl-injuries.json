@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-09T08:43:18.118Z",
+  "generatedAt": "2026-08-09T10:36:10.961Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 217,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Nasiah Wanganeen-Milera",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Izak Rankine",
+      "injury": "missed 2025 finals campaign",
+      "returning": "active"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Darcy Byrne-Jones",
@@ -51,12 +69,6 @@
       "player": "Lachlan McAndrew",
       "injury": "returning from a rest",
       "returning": "Available"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
