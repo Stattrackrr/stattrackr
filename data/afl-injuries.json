@@ -1,20 +1,44 @@
 {
-  "generatedAt": "2026-08-10T01:24:28.154Z",
+  "generatedAt": "2026-08-10T03:56:59.639Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 204,
+  "injuryCount": 190,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Mason Wood",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Sam Collins",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Toby Bedford",
+      "injury": "Back",
+      "returning": "TBA"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Jayden Laverde",
+      "injury": "Rib",
+      "returning": "TBA"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jason Horne-Francis",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
     {
       "team": "West Coast Eagles",
       "player": "Harley Reid",
       "injury": "Quad",
       "returning": "active"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Mason Wood",
-      "injury": "Calf",
-      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
@@ -27,30 +51,6 @@
       "player": "Jack Silvagni",
       "injury": "Shoulder",
       "returning": "TBA"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Ashton Moir",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Liam Reidy",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jacob Weitering",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Oscar Adams",
-      "injury": "Back",
-      "returning": "Test"
     },
     {
       "team": "Collingwood Magpies",
@@ -113,16 +113,10 @@
       "returning": "Available"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Malakai Champion",
-      "injury": "Hand",
-      "returning": "Test"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Lachie Jones",
       "injury": "Groin",
-      "returning": "next week"
+      "returning": "TBA"
     },
     {
       "team": "Geelong Cats",
@@ -293,18 +287,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Joel Cochran",
-      "injury": "Concussion",
-      "returning": "TBA"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Tew Jiath",
-      "injury": "Hamstring",
-      "returning": "Season"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "Calf",
@@ -386,12 +368,6 @@
       "team": "West Coast Eagles",
       "player": "Harry Schoenberg",
       "injury": "Handed a week for striking.",
-      "returning": "1 match"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Luke Trainor",
-      "injury": "Cited for striking West Coast Eagle Jack Williams, resulting in a one-match ban.",
       "returning": "1 match"
     },
     {
@@ -503,12 +479,6 @@
       "returning": "1 Week"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Campbell Chesser",
-      "injury": "Knee",
-      "returning": "TBA"
-    },
-    {
       "team": "Brisbane Lions",
       "player": "Ty Gallop",
       "injury": "Thumb",
@@ -531,12 +501,6 @@
       "player": "Brayden Fiorini",
       "injury": "Soreness",
       "returning": "active"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Nic Newman",
-      "injury": "Hamstring",
-      "returning": "Round 21"
     },
     {
       "team": "Essendon Bombers",
@@ -809,24 +773,6 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Tyler Brockman",
-      "injury": "Hamstring",
-      "returning": "Season"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Jamie Cripps",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Archer Reid",
-      "injury": "Knee",
-      "returning": "Season"
-    },
-    {
       "team": "The Allies",
       "player": "Ethan Matthews",
       "injury": "Foot",
@@ -917,12 +863,6 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Sam Allen",
-      "injury": "Knee",
-      "returning": "Season"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Jacob Hopper",
       "injury": "Ankle",
@@ -993,12 +933,6 @@
       "player": "Justin McInerney",
       "injury": "Hamstring",
       "returning": "Round 23 or Round 24"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Reuben Ginbey",
-      "injury": "Quad",
-      "returning": "next two months"
     },
     {
       "team": "Gold Coast Suns",
@@ -1085,12 +1019,6 @@
       "returning": "Season"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Matthew Carroll",
-      "injury": "Knee",
-      "returning": "Season"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Josh Gibcus",
       "injury": "Soreness",
@@ -1116,9 +1044,9 @@
     },
     {
       "team": "West Coast Eagles",
-      "player": "Harry Edwards",
-      "injury": "Concussion",
-      "returning": "Season"
+      "player": "Sam Allen",
+      "injury": "Foot",
+      "returning": "10-14 weeks"
     },
     {
       "team": "Essendon Bombers",
@@ -1139,10 +1067,10 @@
       "returning": "Season"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Rob Monahan",
-      "injury": "Shoulder",
-      "returning": "Season"
+      "team": "West Coast Eagles",
+      "player": "Jamie Cripps",
+      "injury": "Dropped to WAFL due to form",
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -1163,12 +1091,6 @@
       "returning": "active"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Harry O'Farrell",
-      "injury": "Knee",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Steven May",
       "injury": "Was on personal leave from the club; police had conducted a welfare check at a private residence.",
@@ -1183,8 +1105,8 @@
     {
       "team": "Carlton Blues",
       "player": "Jesse Motlop",
-      "injury": "ACL",
-      "returning": "Season"
+      "injury": "Knee",
+      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
@@ -1221,12 +1143,6 @@
       "player": "Jackson Archer",
       "injury": "ACL",
       "returning": "Season"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Noah Long",
-      "injury": "Knee",
-      "returning": "rest of the season"
     }
   ]
 }
