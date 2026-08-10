@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T11:44:21.440Z",
+  "generatedAt": "2026-08-10T17:15:48.212Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,7 +9,7 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-08-14T10:10:42Z",
       "weather": {
-        "temperatureC": 16.1,
+        "temperatureC": 16.5,
         "precipitationMm": 0,
         "windKmh": 8.4
       }
@@ -20,9 +20,9 @@
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-08-15T02:35:22Z",
       "weather": {
-        "temperatureC": 12.4,
+        "temperatureC": 13.1,
         "precipitationMm": 0,
-        "windKmh": 4
+        "windKmh": 5.1
       }
     },
     {
@@ -33,7 +33,7 @@
       "weather": {
         "temperatureC": 13.5,
         "precipitationMm": 0,
-        "windKmh": 9.2
+        "windKmh": 10.8
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-08-15T06:15:36Z",
       "weather": {
-        "temperatureC": 18.7,
-        "precipitationMm": 0.3,
-        "windKmh": 12.8
+        "temperatureC": 18.1,
+        "precipitationMm": 0.4,
+        "windKmh": 11.6
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-08-15T09:40:23Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 11.7,
         "precipitationMm": 0,
-        "windKmh": 8.2
+        "windKmh": 10.7
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-08-15T10:10:00Z",
       "weather": {
-        "temperatureC": 12.9,
+        "temperatureC": 12.8,
         "precipitationMm": 0,
-        "windKmh": 11.3
+        "windKmh": 10.2
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-08-16T03:40:00Z",
       "weather": {
-        "temperatureC": 14.5,
-        "precipitationMm": 0.2,
-        "windKmh": 12.8
+        "temperatureC": 15.1,
+        "precipitationMm": 0,
+        "windKmh": 18.3
       }
     },
     {
@@ -86,9 +86,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-16T05:15:06Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 13,
         "precipitationMm": 0,
-        "windKmh": 4
+        "windKmh": 6.6
       }
     },
     {
@@ -97,9 +97,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-08-16T06:40:51Z",
       "weather": {
-        "temperatureC": 11.6,
+        "temperatureC": 12.7,
         "precipitationMm": 0,
-        "windKmh": 4.6
+        "windKmh": 7.2
       }
     }
   ],
