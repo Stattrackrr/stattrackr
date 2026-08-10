@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-08T17:21:11Z",
-  "count": 71,
+  "generatedAt": "2026-08-10T11:46:07Z",
+  "count": 75,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -2993,6 +2993,150 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.1484,
           "recommendedProb": 0.6484,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "fremantledockers|adelaidecrows|2026-08-14",
+      "finalizedAt": "2026-08-10T11:45:05Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-10T11:46:07Z",
+      "modelVersion": "afl-disp-20260808-171915",
+      "homeTeam": "Fremantle Dockers",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-08-14T10:10:42Z",
+      "weekKey": null,
+      "roundKey": "2026-R23",
+      "picks": [
+        {
+          "playerName": "Sam Berry",
+          "bookmaker": "SportsBet",
+          "line": 21.5,
+          "expectedDisposals": 19.92,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0867,
+          "recommendedProb": 0.6036,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "James Peatling",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 19.19,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.0844,
+          "recommendedProb": 0.5773,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "northmelbournekangaroos|geelongcats|2026-08-15",
+      "finalizedAt": "2026-08-10T11:45:05Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-10T11:46:07Z",
+      "modelVersion": "afl-disp-20260808-171915",
+      "homeTeam": "North Melbourne Kangaroos",
+      "awayTeam": "Geelong Cats",
+      "commenceTime": "2026-08-15T05:45:56Z",
+      "weekKey": null,
+      "roundKey": "2026-R23",
+      "picks": [
+        {
+          "playerName": "Lawson Humphries",
+          "bookmaker": "SportsBet",
+          "line": 19.5,
+          "expectedDisposals": 16.06,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2096,
+          "recommendedProb": 0.7136,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Tanner Bruhn",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 20.7,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1001,
+          "recommendedProb": 0.6071,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "brisbanelions|goldcoastsuns|2026-08-15",
+      "finalizedAt": "2026-08-10T11:45:05Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-10T11:46:07Z",
+      "modelVersion": "afl-disp-20260808-171915",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Gold Coast Suns",
+      "commenceTime": "2026-08-15T06:15:36Z",
+      "weekKey": null,
+      "roundKey": "2026-R23",
+      "picks": [
+        {
+          "playerName": "Lachie Neale",
+          "bookmaker": "SportsBet",
+          "line": 30.5,
+          "expectedDisposals": 26.91,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2033,
+          "recommendedProb": 0.6993,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Christian Petracca",
+          "bookmaker": "SportsBet",
+          "line": 21.5,
+          "expectedDisposals": 19.22,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1608,
+          "recommendedProb": 0.6468,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "portadelaidepower|melbournedemons|2026-08-15",
+      "finalizedAt": "2026-08-10T11:45:05Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-10T11:46:07Z",
+      "modelVersion": "afl-disp-20260808-171915",
+      "homeTeam": "Port Adelaide Power",
+      "awayTeam": "Melbourne Demons",
+      "commenceTime": "2026-08-15T10:10:00Z",
+      "weekKey": null,
+      "roundKey": "2026-R23",
+      "picks": [
+        {
+          "playerName": "Tom Sparrow",
+          "bookmaker": "SportsBet",
+          "line": 24.5,
+          "expectedDisposals": 18.66,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.3236,
+          "recommendedProb": 0.8067,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jase Burgoyne",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 19.65,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2261,
+          "recommendedProb": 0.73,
           "rank": 2,
           "actualDisposals": null
         }
