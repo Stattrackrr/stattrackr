@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-10T03:56:59.639Z",
+  "generatedAt": "2026-08-10T05:28:32.123Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 190,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Jason Horne-Francis",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Mason Wood",
@@ -26,12 +32,6 @@
       "team": "GWS Giants",
       "player": "Jayden Laverde",
       "injury": "Rib",
-      "returning": "TBA"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Jason Horne-Francis",
-      "injury": "Injury",
       "returning": "TBA"
     },
     {
@@ -67,8 +67,8 @@
     {
       "team": "Port Adelaide Power",
       "player": "Darcy Byrne-Jones",
-      "injury": "Copped a one-match ban for a bump on Errol Gulden.",
-      "returning": "Next weekend's game"
+      "injury": "Accepted one-match ban for careless conduct, medium impact, high contact bump.",
+      "returning": "1 match"
     },
     {
       "team": "West Coast Eagles",
