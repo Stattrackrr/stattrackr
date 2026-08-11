@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T07:05:24.892Z",
+  "generatedAt": "2026-08-11T08:55:45.885Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 203,
@@ -50,13 +50,13 @@
       "team": "Collingwood Magpies",
       "player": "Joel Cochran",
       "injury": "Concussion",
-      "returning": "TBA"
+      "returning": "suitability for selection hinges on testing, come Thursday"
     },
     {
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
       "injury": "Glute",
-      "returning": "Test"
+      "returning": "will be assessed following main training on Thursday"
     },
     {
       "team": "Collingwood Magpies",
@@ -302,7 +302,7 @@
       "team": "Geelong Cats",
       "player": "Jake Kolodjashnij",
       "injury": "Concussion",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Fremantle Dockers",
