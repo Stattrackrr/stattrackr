@@ -1,9 +1,195 @@
 {
-  "generatedAt": "2026-08-11T01:25:28.283Z",
+  "generatedAt": "2026-08-11T03:45:43.642Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 190,
+  "injuryCount": 203,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Matthew Carroll",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Campbell Chesser",
+      "injury": "Knee",
+      "returning": "TBA"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Elijah Hollands",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Rob Monahan",
+      "injury": "Shoulder",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Jesse Motlop",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Nic Newman",
+      "injury": "Hamstring",
+      "returning": "7 Weeks"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry O'Farrell",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Joel Cochran",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Glute",
+      "returning": "Test"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jamie Elliott",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Arm",
+      "returning": "TBA"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Tew Jiath",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Patrick Lipinski",
+      "injury": "Calf",
+      "returning": "3 Weeks"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Knee",
+      "returning": "3 Weeks"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Reef McInnes",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Darcy Moore",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Harry Perryman",
+      "injury": "Hamstring",
+      "returning": "4 Weeks"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Oscar Steene",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Sam Allen",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Tyler Brockman",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Malakai Champion",
+      "injury": "Hand",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jamie Cripps",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harry Edwards",
+      "injury": "Concussion",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Oliver Francou",
+      "injury": "Knee",
+      "returning": "2 Weeks"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Reuben Ginbey",
+      "injury": "Quad",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Hutchinson",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Noah Long",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jacob Newton",
+      "injury": "Foot",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Archer Reid",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Deven Robertson",
+      "injury": "ACL",
+      "returning": "Season"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
@@ -51,12 +237,6 @@
       "player": "Jack Silvagni",
       "injury": "Shoulder",
       "returning": "TBA"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Calf",
-      "returning": "a chance to return to the senior side to face the Hawks"
     },
     {
       "team": "Adelaide Crows",
@@ -209,30 +389,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Harry Perryman",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Patrick Lipinski",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Tim English",
       "injury": "MCL",
@@ -347,24 +503,6 @@
       "returning": "Test"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Jamie Elliott",
-      "injury": "Injury",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Darcy Moore",
-      "injury": "Injury",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Reef McInnes",
-      "injury": "Injury",
-      "returning": "Season"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Harry Schoenberg",
       "injury": "Handed a week for striking.",
@@ -401,12 +539,6 @@
       "returning": "Round 21"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Oliver Francou",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Wayne Milera",
       "injury": "Hamstring",
@@ -421,12 +553,6 @@
     {
       "team": "Geelong Cats",
       "player": "Max Holmes",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
       "injury": "active",
       "returning": "active"
     },
@@ -547,12 +673,6 @@
     {
       "team": "Fremantle Dockers",
       "player": "Jaeger O'Meara",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Jack Hutchinson",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -995,18 +1115,6 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Jacob Newton",
-      "injury": "ACL",
-      "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Oscar Steene",
-      "injury": "Knee",
-      "returning": "Season"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Ollie Lord",
       "injury": "Knee",
@@ -1040,13 +1148,7 @@
       "team": "Melbourne Demons",
       "player": "Jack Viney",
       "injury": "Back",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Sam Allen",
-      "injury": "Foot",
-      "returning": "10-14 weeks"
+      "returning": "this weekend"
     },
     {
       "team": "Essendon Bombers",
@@ -1067,27 +1169,9 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Jamie Cripps",
-      "injury": "Dropped to WAFL due to form",
-      "returning": "TBC"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Sam Darcy",
       "injury": "Soreness",
-      "returning": "active"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Deven Robertson",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Elijah Hollands",
-      "injury": "Suffered a medical episode during a match, attributed to a mental health episode. Was deemed unfit to feature in the match.",
       "returning": "active"
     },
     {
@@ -1101,12 +1185,6 @@
       "player": "Leigh Ryswyk",
       "injury": "Quad",
       "returning": "Season"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jesse Motlop",
-      "injury": "Knee",
-      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
