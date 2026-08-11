@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-10T14:25:37.654Z",
+  "generatedAt": "2026-08-11T14:25:14.757Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 110,
+  "playerCount": 113,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -58,7 +58,7 @@
     {
       "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
       "name": "Anzac Rissetto",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -168,7 +168,7 @@
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
       "name": "Carlin Davison",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -194,6 +194,16 @@
       "position": "G",
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp"
+    },
+    {
+      "playerId": "0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6",
+      "name": "Cole Anthony",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "position": "G",
+      "jersey": "3",
+      "imageUrl": null
     },
     {
       "playerId": "6c3024b9-ffb8-4a9d-bb23-1e99191f98b9",
@@ -258,7 +268,7 @@
     {
       "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
       "name": "Dejan Vasiljevic",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -326,6 +336,16 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp"
     },
     {
+      "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
+      "name": "Harry Neilson",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "position": "C",
+      "jersey": "16",
+      "imageUrl": null
+    },
+    {
       "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
       "name": "Harry Rouhliadeff",
       "team": "Brisbane Bullets",
@@ -378,7 +398,7 @@
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
       "name": "Izayah Le'Afa",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -462,7 +482,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "C",
-      "jersey": null,
+      "jersey": "50",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp"
     },
     {
@@ -492,7 +512,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "F",
-      "jersey": "",
+      "jersey": "7",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp"
     },
     {
@@ -551,8 +571,8 @@
       "team": "Melbourne United",
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-      "position": null,
-      "jersey": null,
+      "position": "FC",
+      "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp"
     },
     {
@@ -568,7 +588,7 @@
     {
       "playerId": "03695de5-49b2-48ca-8cf9-d3a411b7fb98",
       "name": "Josiah-Jordan James",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": null,
@@ -628,7 +648,7 @@
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
       "name": "Kouat Noi",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -818,7 +838,7 @@
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
       "name": "Parker Jackson-Cartwright",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -838,7 +858,7 @@
     {
       "playerId": "72da23d4-1cd5-4424-83fe-714ef33f9c6d",
       "name": "Preston Le Gassick",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -848,7 +868,7 @@
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
       "name": "Reuben Te Rangi",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -908,7 +928,7 @@
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
       "name": "Sam Mennenga",
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -932,7 +952,7 @@
       "teamCode": "MEL",
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
-      "jersey": null,
+      "jersey": "13",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp"
     },
     {
@@ -1014,6 +1034,16 @@
       "position": "G",
       "jersey": "21",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp"
+    },
+    {
+      "playerId": "fd0678c3-5b7e-4550-bb6b-5849534e3769",
+      "name": "Tom Wilson",
+      "team": "Melbourne United",
+      "teamCode": "MEL",
+      "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
+      "position": "G",
+      "jersey": "12",
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp"
     },
     {
       "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",

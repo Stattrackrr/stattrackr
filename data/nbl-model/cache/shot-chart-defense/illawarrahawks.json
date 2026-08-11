@@ -66,8 +66,8 @@
       "fgm": 222,
       "fgPct": 64.16184971098265,
       "share": 25.840179238237493,
-      "rank": 4,
-      "teamsCompared": 10
+      "rank": 5,
+      "teamsCompared": 9
     },
     {
       "zone": "paint",
@@ -76,8 +76,8 @@
       "fgm": 182,
       "fgPct": 49.32249322493225,
       "share": 27.557879014189695,
-      "rank": 9,
-      "teamsCompared": 10
+      "rank": 8,
+      "teamsCompared": 9
     },
     {
       "zone": "midRange",
@@ -86,8 +86,8 @@
       "fgm": 34,
       "fgPct": 36.17021276595745,
       "share": 7.0201643017177,
-      "rank": 3,
-      "teamsCompared": 10
+      "rank": 4,
+      "teamsCompared": 9
     },
     {
       "zone": "leftCorner3",
@@ -96,8 +96,8 @@
       "fgm": 48,
       "fgPct": 40.67796610169492,
       "share": 8.812546676624347,
-      "rank": 8,
-      "teamsCompared": 10
+      "rank": 9,
+      "teamsCompared": 9
     },
     {
       "zone": "rightCorner3",
@@ -107,7 +107,7 @@
       "fgPct": 24.087591240875913,
       "share": 10.231516056758776,
       "rank": 1,
-      "teamsCompared": 10
+      "teamsCompared": 9
     },
     {
       "zone": "aboveBreak3",
@@ -116,9 +116,9 @@
       "fgm": 95,
       "fgPct": 34.54545454545455,
       "share": 20.537714712471995,
-      "rank": 8,
-      "teamsCompared": 10
+      "rank": 7,
+      "teamsCompared": 9
     }
   ],
-  "generatedAt": "2026-08-10T14:25:43.864Z"
+  "generatedAt": "2026-08-11T14:25:22.144Z"
 }

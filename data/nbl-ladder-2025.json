@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-10T14:23:44.906Z",
+  "generatedAt": "2026-08-11T14:23:33.908Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -126,10 +126,10 @@
     },
     {
       "pos": 7,
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "teamLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bcbd4822cde14f55bd5c14484730b153",
+      "teamLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
       "played": 33,
       "win": 13,
       "loss": 20,

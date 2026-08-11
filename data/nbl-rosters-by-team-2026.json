@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-10T14:25:36.600Z",
+  "generatedAt": "2026-08-11T14:25:13.882Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -713,17 +713,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6",
           "name": "Cole Anthony",
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": null,
-          "jersey": null,
+          "position": "G",
+          "jersey": "3",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Milwaukee Bucks",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
@@ -739,17 +739,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
           "name": "Harry Neilson",
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": null,
-          "jersey": null,
+          "position": "C",
+          "jersey": "16",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Sandringham Sabres - NBL1 South",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
@@ -758,7 +758,7 @@
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "C",
-          "jersey": null,
+          "jersey": "50",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",
@@ -771,7 +771,7 @@
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "F",
-          "jersey": "",
+          "jersey": "7",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Minnesota Timberwolves - NBA",
@@ -783,8 +783,8 @@
           "team": "Melbourne United",
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
-          "position": null,
-          "jersey": null,
+          "position": "FC",
+          "jersey": "2",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "New Orleans Pelicans - NBA",
@@ -849,7 +849,7 @@
           "teamCode": "MEL",
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
-          "jersey": null,
+          "jersey": "13",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
@@ -888,7 +888,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "headCoach": "Gordon Herbert",
-      "playerCount": 10,
+      "playerCount": 11,
       "players": [
         {
           "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -915,6 +915,19 @@
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Charles Bediako",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Alabama - NCAA",
+          "idSource": "unmatched"
         },
         {
           "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
@@ -1027,7 +1040,7 @@
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "headCoach": "John Rillie",
-      "playerCount": 8,
+      "playerCount": 11,
       "players": [
         {
           "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -1041,6 +1054,32 @@
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Angus Brandt",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Veltex Shizuoka - Japan",
+          "idSource": "unmatched"
+        },
+        {
+          "playerId": null,
+          "name": "Anthony Dell'Orso",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Univeristy of Arizona - NCAA",
+          "idSource": "unmatched"
         },
         {
           "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
@@ -1106,6 +1145,19 @@
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Jimmy Whitt",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Gold Coast Rollers - NBL1 North",
+          "idSource": "unmatched"
         },
         {
           "playerId": "5adef25b-648e-442b-983e-020043e7872d",

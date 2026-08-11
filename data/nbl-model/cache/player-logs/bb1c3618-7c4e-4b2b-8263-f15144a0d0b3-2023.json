@@ -1,11 +1,11 @@
 {
   "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
   "name": "Max Darling",
-  "team": "New Zealand Breakers",
+  "team": "BNZ Breakers",
   "teamCode": "NZL",
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-08-10T14:25:23.425Z",
+  "generatedAt": "2026-08-11T14:24:59.673Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 1,
   "games": [
@@ -17,7 +17,7 @@
       "opponent": "Adelaide 36ers",
       "opponentCode": "ADL",
       "isHome": true,
-      "team": "New Zealand Breakers",
+      "team": "BNZ Breakers",
       "teamCode": "NZL",
       "result": null,
       "venue": null,

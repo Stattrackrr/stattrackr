@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-10T14:25:27.076Z",
+  "generatedAt": "2026-08-11T14:25:05.868Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
@@ -87,13 +87,13 @@
     },
     {
       "id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "name": "New Zealand Breakers",
+      "name": "BNZ Breakers",
       "team_code": "NZL",
       "nextMatches": [
         {
           "id": "5c846b51-7fc1-4180-878c-6d13fd381922",
-          "match_slug": "new-zealand-breakers-v-illawarra-hawks-men-20-09-2026",
-          "match_title": "New Zealand Breakers v Illawarra Hawks men 20-09-2026",
+          "match_slug": "bnz-breakers-v-illawarra-hawks-men-20-09-2026",
+          "match_title": "BNZ Breakers v Illawarra Hawks men 20-09-2026",
           "match_ticket_url": "https://am.ticketmaster.com/nzbreakers/",
           "external_id": "3700706c-58ad-11f1-ae9e-a93048d70593",
           "start_time_datetime": "2026-09-20T05:00:00",
@@ -112,15 +112,15 @@
       "nextMatches": [
         {
           "id": "5c846b51-7fc1-4180-878c-6d13fd381922",
-          "match_slug": "new-zealand-breakers-v-illawarra-hawks-men-20-09-2026",
-          "match_title": "New Zealand Breakers v Illawarra Hawks men 20-09-2026",
+          "match_slug": "bnz-breakers-v-illawarra-hawks-men-20-09-2026",
+          "match_title": "BNZ Breakers v Illawarra Hawks men 20-09-2026",
           "match_ticket_url": "https://am.ticketmaster.com/thehawks/",
           "external_id": "3700706c-58ad-11f1-ae9e-a93048d70593",
           "start_time_datetime": "2026-09-20T05:00:00",
           "is_home": false,
           "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "opponent_name": "New Zealand Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bcbd4822cde14f55bd5c14484730b153",
+          "opponent_name": "BNZ Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
           "venue": "Spark Arena"
         }
       ]
@@ -192,15 +192,15 @@
       "nextMatches": [
         {
           "id": "0993b54a-79cd-4eda-bdbd-ef50a8ccc6c9",
-          "match_slug": "brisbane-bullets-v-new-zealand-breakers-men-22-09-2026",
-          "match_title": "Brisbane Bullets v New Zealand Breakers men 22-09-2026",
+          "match_slug": "brisbane-bullets-v-bnz-breakers-men-22-09-2026",
+          "match_title": "Brisbane Bullets v BNZ Breakers men 22-09-2026",
           "match_ticket_url": "https://www.ticketmaster.com.au/event/250064F59E9129A0",
           "external_id": "36e7aa3c-58ad-11f1-b88d-1138b8cb68ba",
           "start_time_datetime": "2026-09-22T09:30:00",
           "is_home": true,
           "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-          "opponent_name": "New Zealand Breakers",
-          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bcbd4822cde14f55bd5c14484730b153",
+          "opponent_name": "BNZ Breakers",
+          "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
           "venue": "Pat Rafter Arena *subject to change"
         }
       ]
