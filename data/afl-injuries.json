@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-11T08:55:45.885Z",
+  "generatedAt": "2026-08-11T10:53:03.961Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 203,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Jake Kolodjashnij",
+      "injury": "Withdrawn himself from selection due to concussion controversy and to assess his options moving forward.",
+      "returning": "this weekend"
+    },
     {
       "team": "Carlton Blues",
       "player": "Matthew Carroll",
@@ -297,12 +303,6 @@
       "player": "Lachie Jones",
       "injury": "Groin",
       "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jake Kolodjashnij",
-      "injury": "Concussion",
-      "returning": "TBC"
     },
     {
       "team": "Fremantle Dockers",
