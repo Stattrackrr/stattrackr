@@ -545,6 +545,8 @@ interface NblStatsChartProps {
   withWithoutMode?: 'with' | 'without';
   season?: number;
   clearTeammateFilter?: () => void;
+  /** Roster used to resolve teammate names → playerIds for with/without. */
+  rosterPlayers?: Array<{ name: string; playerId: string | null; team?: string | null }>;
   /** When provided, chart timeframe is controlled by parent (e.g. to sync Supporting stats). */
   selectedTimeframe?: NblChartTimeframe;
   onTimeframeChange?: (timeframe: NblChartTimeframe) => void;
@@ -587,6 +589,7 @@ export function NblStatsChart({
   withWithoutMode = 'with',
   season = NBL_CURRENT_SEASON_YEAR,
   clearTeammateFilter,
+  rosterPlayers = [],
   selectedStat: selectedStatProp,
   selectedTimeframe: controlledTimeframe,
   onTimeframeChange,
@@ -659,9 +662,54 @@ export function NblStatsChart({
   );
 
   useEffect(() => {
-    // Teammate with/without filter is AFL-specific; NBL keeps the prop API but does not fetch.
-    setTeammateGameKeys(new Set());
-  }, [teammateFilterName, season, resolveGameSeason]);
+    if (!teammateFilterName?.trim()) {
+      setTeammateGameKeys(new Set());
+      return;
+    }
+    let cancelled = false;
+    const want = teammateFilterName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const rosterHit =
+      rosterPlayers.find((p) => {
+        const n = String(p.name || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '');
+        return n === want || n.includes(want) || want.includes(n);
+      }) || null;
+
+    if (!rosterHit?.playerId) {
+      setTeammateGameKeys(new Set());
+      return;
+    }
+
+    fetch(
+      `/api/nbl/player-game-logs?playerId=${encodeURIComponent(rosterHit.playerId)}&years=${season},${season - 1}`
+    )
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const games = Array.isArray(json?.games) ? json.games : [];
+        const keys = new Set<string>();
+        for (const g of games as Record<string, unknown>[]) {
+          const matchId = String(g.matchId ?? g.id ?? '').trim();
+          if (matchId) {
+            keys.add(`id:${matchId}`);
+            continue;
+          }
+          const date = String(g.date ?? g.game_date ?? '').trim().slice(0, 10);
+          const opp = String(g.opponent ?? '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '');
+          if (date && opp) keys.add(`d:${date}|${opp}`);
+        }
+        setTeammateGameKeys(keys);
+      })
+      .catch(() => {
+        if (!cancelled) setTeammateGameKeys(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teammateFilterName, season, rosterPlayers]);
 
   useEffect(() => {
     if (externalLogoByTeam && Object.keys(externalLogoByTeam).length > 0) {
@@ -851,14 +899,17 @@ export function NblStatsChart({
       return withWithoutMode === 'with' ? [] : dedupedGameLogs;
     }
     return dedupedGameLogs.filter((g) => {
-      const round = String(g.round ?? '').trim();
-      const gameSeason = resolveGameSeason(g);
-      const key = round && gameSeason != null ? `${gameSeason}:${round}` : '';
+      const matchId = String(g.matchId ?? g.id ?? '').trim();
+      const date = String(g.date ?? g.game_date ?? '').trim().slice(0, 10);
+      const opp = String(g.opponent ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+      const key = matchId ? `id:${matchId}` : date && opp ? `d:${date}|${opp}` : '';
       const playedWithTeammate = !!key && teammateGameKeys.has(key);
       if (withWithoutMode === 'with') return playedWithTeammate;
       return !playedWithTeammate;
     });
-  }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, withWithoutMode, resolveGameSeason]);
+  }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, withWithoutMode]);
 
   const venueOptions = useMemo(() => {
     const fromGames = new Set<string>();

@@ -27,6 +27,67 @@ type TeamLineup = {
   } | null;
 };
 
+/** Browser-warmed headshot URLs — chips can paint opaque on first frame. */
+const warmedHeadshots = new Set<string>();
+
+/** In-memory lineup responses so revisiting a team paints immediately. */
+const lineupCache = new Map<
+  string,
+  { team: TeamLineup | null; opponent: TeamLineup | null; at: number }
+>();
+const LINEUP_CACHE_TTL_MS = 30 * 60 * 1000;
+
+function collectLineupImageUrls(...sides: Array<TeamLineup | null | undefined>): string[] {
+  const urls: string[] = [];
+  for (const side of sides) {
+    if (!side) continue;
+    for (const p of side.lineup.starters || []) {
+      const u = p.imageUrl?.trim();
+      if (u) urls.push(u);
+    }
+    for (const p of side.lineup.bench || []) {
+      const u = p.imageUrl?.trim();
+      if (u) urls.push(u);
+    }
+  }
+  return urls;
+}
+
+function preloadHeadshots(urls: string[]): Promise<void> {
+  const unique = [...new Set(urls.map((u) => u.trim()).filter(Boolean))].filter(
+    (u) => !warmedHeadshots.has(u)
+  );
+  if (!unique.length) return Promise.resolve();
+  if (typeof window === 'undefined') return Promise.resolve();
+
+  return Promise.all(
+    unique.map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+          };
+          const timer = window.setTimeout(finish, 4000);
+          const img = new window.Image();
+          img.decoding = 'async';
+          img.onload = () => {
+            warmedHeadshots.add(src);
+            window.clearTimeout(timer);
+            finish();
+          };
+          img.onerror = () => {
+            window.clearTimeout(timer);
+            finish();
+          };
+          img.src = src;
+        })
+    )
+  ).then(() => undefined);
+}
+
 function normalizeName(name: string): string {
   return (name || '')
     .toLowerCase()
@@ -89,6 +150,12 @@ function PlayerChip({
 }) {
   const badge = jersey && String(jersey).trim() ? String(jersey).trim() : '–';
   const pos = (slot || '–').toUpperCase();
+  const src = imageUrl?.trim() || null;
+  const [photoReady, setPhotoReady] = useState(() => Boolean(src && warmedHeadshots.has(src)));
+
+  useEffect(() => {
+    setPhotoReady(Boolean(src && warmedHeadshots.has(src)));
+  }, [src]);
 
   return (
     <div
@@ -100,25 +167,30 @@ function PlayerChip({
             : 'bg-white ring-1 ring-gray-200 hover:ring-gray-300'
       }`}
     >
-      <div className="relative flex-shrink-0">
-        {imageUrl ? (
+      <div className="relative flex-shrink-0 w-9 h-9">
+        <div
+          className={`absolute inset-0 rounded-full flex items-center justify-center text-xs font-bold ${
+            isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'
+          }`}
+          aria-hidden={photoReady}
+        >
+          {shortLastName(name).slice(0, 1)}
+        </div>
+        {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl}
+            src={src}
             alt=""
-            className={`w-9 h-9 rounded-full object-cover object-top ${
-              isDark ? 'bg-gray-800' : 'bg-gray-100'
+            decoding="async"
+            onLoad={() => {
+              warmedHeadshots.add(src);
+              setPhotoReady(true);
+            }}
+            className={`absolute inset-0 w-9 h-9 rounded-full object-cover object-top ${
+              photoReady ? 'opacity-100' : 'opacity-0'
             }`}
           />
-        ) : (
-          <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${
-              isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            {shortLastName(name).slice(0, 1)}
-          </div>
-        )}
+        ) : null}
         <span
           className={`absolute -bottom-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5 rounded-md text-[9px] font-bold flex items-center justify-center ${
             isDark ? 'bg-gray-950 text-white ring-1 ring-white/20' : 'bg-gray-900 text-white'
@@ -215,12 +287,28 @@ export function NblTeamSelectionsCard({
       setOtherSide(null);
       setActiveTeam(null);
       setError(null);
+      setLoading(false);
+      return;
+    }
+
+    const cacheKey = t.toLowerCase();
+    const cached = lineupCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < LINEUP_CACHE_TTL_MS) {
+      setPlayerSide(cached.team);
+      setOtherSide(cached.opponent);
+      setActiveTeam(cached.team?.team || null);
+      setError(null);
+      setLoading(false);
+      void preloadHeadshots(collectLineupImageUrls(cached.team, cached.opponent));
       return;
     }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setPlayerSide(null);
+    setOtherSide(null);
+    setActiveTeam(null);
 
     fetch(`/api/nbl/lineups?${new URLSearchParams({ team: t })}`)
       .then(async (r) => {
@@ -232,9 +320,13 @@ export function NblTeamSelectionsCard({
         if (cancelled) return;
         const team = (json.team ?? null) as TeamLineup | null;
         const opp = (json.opponent ?? null) as TeamLineup | null;
+        const urls = collectLineupImageUrls(team, opp);
+        lineupCache.set(cacheKey, { team, opponent: opp, at: Date.now() });
         setPlayerSide(team);
         setOtherSide(opp);
         setActiveTeam(team?.team || null);
+        // Warm headshots in the background — chips reveal photos as they land.
+        void preloadHeadshots(urls);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -280,7 +372,7 @@ export function NblTeamSelectionsCard({
         </h3>
 
         <div className="justify-self-center">
-          {!loading && !error && teamOptions.length > 1 ? (
+          {!error && teamOptions.length > 1 ? (
             <div className="flex gap-2">
               {teamOptions.map((opt) => {
                 const selected = active?.team === opt.team;
@@ -320,7 +412,7 @@ export function NblTeamSelectionsCard({
                 );
               })}
             </div>
-          ) : !loading && !error && active ? (
+          ) : !error && active ? (
             (() => {
               const logo = resolveTeamLogo?.(active.team) ?? null;
               return logo ? (
@@ -363,7 +455,7 @@ export function NblTeamSelectionsCard({
         </p>
       )}
 
-      {playerTeam?.trim() && loading && (
+      {playerTeam?.trim() && loading && !active && (
         <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Loading…</p>
       )}
 
@@ -371,7 +463,7 @@ export function NblTeamSelectionsCard({
         <p className={`text-xs ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
       )}
 
-      {!loading && !error && active && (
+      {!error && active && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
           <PlayerColumn
             title="Starting 5"

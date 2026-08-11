@@ -48,6 +48,8 @@ const nextConfig: NextConfig = {
     ],
     '/api/afl/injuries': ['./data/afl-injuries.json'],
     '/api/afl/injuries/route': ['./data/afl-injuries.json'],
+    '/api/nbl/injuries': ['./data/nbl-injuries.json'],
+    '/api/nbl/injuries/route': ['./data/nbl-injuries.json'],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',

@@ -27,7 +27,8 @@ import NblTeamMatchupCard from '@/app/nbl/components/NblTeamMatchupCard';
 import { NblTeamSelectionsCard } from '@/app/nbl/components/NblTeamSelectionsCard';
 import { NblInjuriesCard } from '@/app/nbl/components/NblInjuriesCard';
 import { NblLadderCard } from '@/app/nbl/components/NblLadderCard';
-import { NblRoleStatsCard } from '@/app/nbl/components/NblRoleStatsCard';
+import { NblSimilarPlayersCard } from '@/app/nbl/components/NblSimilarPlayersCard';
+import { NblPlayerVsTeamPanel } from '@/app/nbl/components/NblPlayerVsTeamPanel';
 import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -43,6 +44,7 @@ import {
   NBL_CHART_HISTORY_YEARS,
   NBL_CLUBS,
   NBL_CURRENT_SEASON_YEAR,
+  NBL_SHOT_CHART_SEASON_YEAR,
   normalizeTeamKey,
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
@@ -52,7 +54,7 @@ const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
 
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'breakdown' | 'team_matchup';
-type NblPlayerVsTab = 'comparison' | 'prediction' | 'role';
+type NblPlayerVsTab = 'comparison' | 'similar';
 
 type NblRosterPlayer = {
   playerId: string | null;
@@ -307,6 +309,9 @@ export default function NblDashboardPage() {
   }));
   const [nblTeamFilter, setNblTeamFilter] = useState<string>('All');
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
+  const [teammateFilterName, setTeammateFilterName] = useState<string | null>(null);
+  const [withWithoutMode, setWithWithoutMode] = useState<'with' | 'without'>('with');
+  const clearTeammateFilter = () => setTeammateFilterName(null);
   const [selectionHydrated, setSelectionHydrated] = useState(false);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
@@ -636,6 +641,7 @@ export default function NblDashboardPage() {
     setStatsLoadingForPlayer(true);
     setLoadingPlayerFromUrl(false);
     setChartDelayElapsed(false);
+    setTeammateFilterName(null);
   };
 
   const selectTeam = (teamName: string) => {
@@ -643,6 +649,7 @@ export default function NblDashboardPage() {
     setSelectedPlayer(null);
     setSelectedPlayerGameLogs([]);
     setStatsLoadingForPlayer(false);
+    setTeammateFilterName(null);
     setLoadingPlayerFromUrl(false);
     setSearchQuery(teamName);
     setShowSearchDropdown(false);
@@ -1305,6 +1312,11 @@ export default function NblDashboardPage() {
                     perGameFilterData={null}
                     nextOpponent={displayOpponent}
                     uiResetToken={chartUiResetToken}
+                    season={NBL_SHOT_CHART_SEASON_YEAR}
+                    teammateFilterName={teammateFilterName}
+                    withWithoutMode={withWithoutMode}
+                    clearTeammateFilter={clearTeammateFilter}
+                    rosterPlayers={rosterPlayers}
                     slotLeftOfLine={null}
                     slotRightOfControls={
                       <div className="flex items-center gap-1.5 relative">
@@ -1579,7 +1591,17 @@ export default function NblDashboardPage() {
                           nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
                         }
                       >
-                        <NblOpponentBreakdownCard isDark={!!mounted && isDark} />
+                        <NblOpponentBreakdownCard
+                          isDark={!!mounted && isDark}
+                          playerName={
+                            nblPropsMode === 'team'
+                              ? matchupLeft
+                              : selectedPlayer?.name
+                                ? String(selectedPlayer.name)
+                                : null
+                          }
+                          lastOpponent={displayOpponent}
+                        />
                       </div>
                     )}
                     {nblRightTabsVisited.has('team_matchup') && (
@@ -1588,7 +1610,12 @@ export default function NblDashboardPage() {
                           nblRightTab === 'team_matchup' ? 'flex flex-col h-full min-h-0' : 'hidden'
                         }
                       >
-                        <NblTeamMatchupCard isDark={!!mounted && isDark} />
+                        <NblTeamMatchupCard
+                          isDark={!!mounted && isDark}
+                          teamName={matchupLeft}
+                          opponentName={displayOpponent}
+                          resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                        />
                       </div>
                     )}
                   </div>
@@ -1596,7 +1623,7 @@ export default function NblDashboardPage() {
                   )}
                 </div>
 
-                {/* 4.52 Player vs Team / Prediction / Role — mobile (player mode) */}
+                {/* 4.52 Player vs Team / Similar Players — mobile (player mode) */}
                 {nblPropsMode === 'player' && (
                   <div
                     className={`lg:hidden w-full min-w-0 rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4`}
@@ -1615,35 +1642,44 @@ export default function NblDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('prediction')}
+                        onClick={() => setPlayerVsContainerTab('similar')}
                         className={`flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'prediction'
+                          playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Prediction Model
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsContainerTab('role')}
-                        className={`flex-1 px-1.5 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'role'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Role Stats
+                        Similar Players
                       </button>
                     </div>
-                    {playerVsContainerTab === 'role' ? (
-                      <NblRoleStatsCard isDark={!!mounted && isDark} />
-                    ) : playerVsContainerTab === 'prediction' ? (
-                      <div className="min-h-[180px] text-xs text-gray-500 dark:text-gray-400 py-2">
-                        Prediction model coming soon.
-                      </div>
+                    {playerVsContainerTab === 'similar' ? (
+                      <NblSimilarPlayersCard
+                        isDark={!!mounted && isDark}
+                        layout="mobile"
+                        season={NBL_SHOT_CHART_SEASON_YEAR}
+                        playerId={selectedPlayer?.playerId || null}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        opponentName={
+                          nblTeamFilter !== 'All' && nblTeamFilter
+                            ? nblTeamFilter
+                            : displayOpponent
+                        }
+                        selectedStat={mainChartStat}
+                      />
                     ) : (
-                      <div className="min-h-[180px]" />
+                      <NblPlayerVsTeamPanel
+                        isDark={!!mounted && isDark}
+                        layout="mobile"
+                        season={NBL_SHOT_CHART_SEASON_YEAR}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        playerTeam={selectedPlayer?.team || null}
+                        opponentName={
+                          nblTeamFilter !== 'All' && nblTeamFilter
+                            ? nblTeamFilter
+                            : displayOpponent
+                        }
+                        gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
+                      />
                     )}
                   </div>
                 )}
@@ -1680,7 +1716,31 @@ export default function NblDashboardPage() {
                 <div
                   className={`lg:hidden rounded-lg ${NBL_DASH_CARD_GLOW} p-3 sm:p-4 w-full min-w-0 flex flex-col max-h-[50vh] min-h-0`}
                 >
-                  <NblInjuriesCard isDark={!!mounted && isDark} />
+                  {nblPropsMode === 'player' && !selectedPlayer ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">
+                      Select a player to view
+                    </div>
+                  ) : (
+                    <NblInjuriesCard
+                      isDark={!!mounted && isDark}
+                      season={NBL_SHOT_CHART_SEASON_YEAR}
+                      playerTeam={matchupLeft}
+                      playerName={
+                        nblPropsMode === 'player'
+                          ? selectedPlayer?.name
+                            ? String(selectedPlayer.name)
+                            : null
+                          : matchupLeft
+                      }
+                      gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
+                      rosterPlayers={rosterPlayers}
+                      teammateFilterName={teammateFilterName}
+                      setTeammateFilterName={setTeammateFilterName}
+                      withWithoutMode={withWithoutMode}
+                      setWithWithoutMode={setWithWithoutMode}
+                      clearTeammateFilter={clearTeammateFilter}
+                    />
+                  )}
                 </div>
 
                 {/* 4.7 Ladder — mobile */}
@@ -1850,7 +1910,17 @@ export default function NblDashboardPage() {
                               nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
                             }
                           >
-                            <NblOpponentBreakdownCard isDark={!!mounted && isDark} />
+                            <NblOpponentBreakdownCard
+                              isDark={!!mounted && isDark}
+                              playerName={
+                                nblPropsMode === 'team'
+                                  ? matchupLeft
+                                  : selectedPlayer?.name
+                                    ? String(selectedPlayer.name)
+                                    : null
+                              }
+                              lastOpponent={displayOpponent}
+                            />
                           </div>
                         )}
                         {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
@@ -1874,7 +1944,12 @@ export default function NblDashboardPage() {
                                 : 'hidden'
                             }
                           >
-                            <NblTeamMatchupCard isDark={!!mounted && isDark} />
+                            <NblTeamMatchupCard
+                              isDark={!!mounted && isDark}
+                              teamName={matchupLeft}
+                              opponentName={displayOpponent}
+                              resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                            />
                           </div>
                         )}
                       </div>
@@ -1900,7 +1975,7 @@ export default function NblDashboardPage() {
                   </div>
                 ) : null}
 
-                {/* Player vs Team — desktop (player mode) */}
+                {/* Player vs Team / Similar Players — desktop (player mode) */}
                 {nblPropsMode === 'player' && (
                   <div
                     className={`hidden lg:block rounded-lg ${NBL_DASH_CARD_GLOW} px-1.5 xl:px-2 py-1.5 xl:py-2 w-full min-w-0 mt-0`}
@@ -1919,35 +1994,44 @@ export default function NblDashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('prediction')}
+                        onClick={() => setPlayerVsContainerTab('similar')}
                         className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'prediction'
+                          playerVsContainerTab === 'similar'
                             ? 'bg-purple-600 text-white border-purple-600'
                             : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        Prediction Model
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerVsContainerTab('role')}
-                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'role'
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                        }`}
-                      >
-                        Role Stats
+                        Similar Players
                       </button>
                     </div>
-                    {playerVsContainerTab === 'role' ? (
-                      <NblRoleStatsCard isDark={!!mounted && isDark} />
-                    ) : playerVsContainerTab === 'prediction' ? (
-                      <div className="min-h-[180px] text-xs text-gray-500 dark:text-gray-400 py-2 px-1">
-                        Prediction model coming soon.
-                      </div>
+                    {playerVsContainerTab === 'similar' ? (
+                      <NblSimilarPlayersCard
+                        isDark={!!mounted && isDark}
+                        layout="desktop"
+                        season={NBL_SHOT_CHART_SEASON_YEAR}
+                        playerId={selectedPlayer?.playerId || null}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        opponentName={
+                          nblTeamFilter !== 'All' && nblTeamFilter
+                            ? nblTeamFilter
+                            : displayOpponent
+                        }
+                        selectedStat={mainChartStat}
+                      />
                     ) : (
-                      <div className="min-h-[180px]" />
+                      <NblPlayerVsTeamPanel
+                        isDark={!!mounted && isDark}
+                        layout="desktop"
+                        season={NBL_SHOT_CHART_SEASON_YEAR}
+                        playerName={selectedPlayer?.name ? String(selectedPlayer.name) : null}
+                        playerTeam={selectedPlayer?.team || null}
+                        opponentName={
+                          nblTeamFilter !== 'All' && nblTeamFilter
+                            ? nblTeamFilter
+                            : displayOpponent
+                        }
+                        gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
+                      />
                     )}
                   </div>
                 )}
@@ -1957,7 +2041,31 @@ export default function NblDashboardPage() {
                   className={`hidden lg:block rounded-lg ${NBL_DASH_CARD_GLOW} p-2 xl:p-3 pb-12 xl:pb-14 w-full min-w-0`}
                 >
                   <div className="relative h-[320px] w-full min-w-0 flex flex-col min-h-0">
-                    <NblInjuriesCard isDark={!!mounted && isDark} />
+                    {showEmptyShell ? (
+                      <div className="h-[320px]" />
+                    ) : showStatsLoadingShell ? (
+                      <div className={`h-[320px] rounded-lg animate-pulse ${pulse}`} />
+                    ) : (
+                      <NblInjuriesCard
+                        isDark={!!mounted && isDark}
+                        season={NBL_SHOT_CHART_SEASON_YEAR}
+                        playerTeam={matchupLeft}
+                        playerName={
+                          nblPropsMode === 'player'
+                            ? selectedPlayer?.name
+                              ? String(selectedPlayer.name)
+                              : null
+                            : matchupLeft
+                        }
+                        gameLogs={selectedPlayerGameLogs as unknown as Array<Record<string, unknown>>}
+                        rosterPlayers={rosterPlayers}
+                        teammateFilterName={teammateFilterName}
+                        setTeammateFilterName={setTeammateFilterName}
+                        withWithoutMode={withWithoutMode}
+                        setWithWithoutMode={setWithWithoutMode}
+                        clearTeammateFilter={clearTeammateFilter}
+                      />
+                    )}
                   </div>
                 </div>
 

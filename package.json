@@ -34,6 +34,7 @@
     "fetch:nbl:team-stats": "npx tsx scripts/fetch-nbl-team-stats.ts",
     "fetch:nbl:league-player-stats": "npx tsx scripts/fetch-nbl-league-player-stats.ts",
     "fetch:nbl:player-game-logs": "npx tsx scripts/fetch-nbl-player-game-logs.ts",
+    "fetch:nbl:injuries": "npx tsx scripts/fetch-nbl-injuries.ts",
     "warm:nbl:shot-charts": "npx tsx scripts/warm-nbl-shot-charts.ts",
     "refresh:nbl:rosetta": "npm run fetch:nbl:schedule -- --year=2026 && npm run fetch:nbl:next-matches -- --year=2026 && npm run fetch:nbl:roster:nbl27 && npm run fetch:nbl:league-player-stats -- --year=2026",
     "refresh:nbl:rosetta:history": "npm run fetch:nbl:ladder -- --year=2025 && npm run fetch:nbl:schedule -- --year=2025 && npm run fetch:nbl:team-stats -- --year=2025 && npm run fetch:nbl:league-player-stats -- --year=2025 && npm run fetch:nbl:player-game-logs -- --year=2025 && npm run fetch:nbl:ladder -- --year=2024 && npm run fetch:nbl:schedule -- --year=2024 && npm run fetch:nbl:team-stats -- --year=2024 && npm run fetch:nbl:league-player-stats -- --year=2024 && npm run fetch:nbl:player-game-logs -- --year=2024 && npm run fetch:nbl:ladder -- --year=2023 && npm run fetch:nbl:schedule -- --year=2023 && npm run fetch:nbl:team-stats -- --year=2023 && npm run fetch:nbl:league-player-stats -- --year=2023 && npm run fetch:nbl:player-game-logs -- --year=2023",
