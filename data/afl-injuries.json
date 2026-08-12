@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-12T04:10:41.485Z",
+  "generatedAt": "2026-08-12T07:24:00.684Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 211,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Jake Kolodjashnij",
+      "injury": "made unavailable for selection in either the VFL or AFL this weekend due to ongoing controversy about an agreement related to a past concussion probe",
+      "returning": "TBC"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Murphy Reid",
@@ -135,12 +141,6 @@
       "player": "Ryan Lester",
       "injury": "Calf",
       "returning": "After missing four matches"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jake Kolodjashnij",
-      "injury": "Withdrawn himself from selection due to concussion controversy and to assess his options moving forward.",
-      "returning": "this weekend"
     },
     {
       "team": "Carlton Blues",
