@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-12T20:44:13.656Z",
+  "generatedAt": "2026-08-12T22:42:14.998Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 211,
+  "injuryCount": 212,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Jacob Weitering",
+      "injury": "Calf",
+      "returning": "active"
+    },
     {
       "team": "Geelong Cats",
       "player": "Jake Kolodjashnij",
