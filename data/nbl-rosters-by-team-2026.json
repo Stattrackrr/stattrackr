@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-11T14:25:13.882Z",
+  "generatedAt": "2026-08-12T14:25:35.017Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -354,8 +354,21 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 11,
+      "playerCount": 12,
       "players": [
+        {
+          "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
+          "name": "Brody Nunn",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "G",
+          "jersey": "2",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Tasmania JackJumpers",
+          "idSource": "rosetta"
+        },
         {
           "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
           "name": "Jack McVeigh",
@@ -370,17 +383,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "17bfb8e3-400e-428d-96a3-64eecea3b6a2",
           "name": "Jaylon Brown",
           "team": "Cairns Taipans",
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "position": null,
+          "position": "G",
           "jersey": null,
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Petkim Spor - Turkey",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
@@ -388,7 +401,7 @@
           "team": "Cairns Taipans",
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "position": "F",
+          "position": "C",
           "jersey": null,
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
           "trackerStatus": "incoming",
@@ -440,9 +453,9 @@
           "team": "Cairns Taipans",
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "position": "C",
-          "jersey": "19",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2801d51a00354fee9b3ace16e7166e65?size=800&format=webp",
+          "position": "F",
+          "jersey": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -506,7 +519,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -540,11 +553,24 @@
           "team": "Illawarra Hawks",
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
-          "position": "F",
-          "jersey": "0",
+          "position": "C",
+          "jersey": null,
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "TNT Tropang 5G - Philippines",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "39c99a6c-4190-4abb-9f27-b41f7b2470f5",
+          "name": "Fletcher MacDonald",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Illawarra Hawks - NBL1 East",
           "idSource": "rosetta"
         },
         {
@@ -606,8 +632,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
-          "jersey": "35",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ddf5b80f00c54cec9fd5002c12dc0d84?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -888,7 +914,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "headCoach": "Gordon Herbert",
-      "playerCount": 11,
+      "playerCount": 12,
       "players": [
         {
           "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -917,7 +943,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "ac574899-344f-4ec9-9b8e-f2ee16d706c8",
           "name": "Charles Bediako",
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
@@ -927,7 +953,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Alabama - NCAA",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
@@ -967,6 +993,19 @@
           "trackerStatus": "incoming",
           "trackerNote": "Hapoel Jerusalem - Israel",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Kael Robinson",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Northern Kentucky - NCAA",
+          "idSource": "unmatched"
         },
         {
           "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -1040,7 +1079,7 @@
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "headCoach": "John Rillie",
-      "playerCount": 11,
+      "playerCount": 12,
       "players": [
         {
           "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -1056,20 +1095,20 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "145dc428-1473-408f-b295-0004e66f4456",
           "name": "Angus Brandt",
           "team": "Perth Wildcats",
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "jersey": "12",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Veltex Shizuoka - Japan",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "a9125673-5d09-4a1b-aac1-b403f5bf372a",
           "name": "Anthony Dell'Orso",
           "team": "Perth Wildcats",
           "teamCode": "PER",
@@ -1079,7 +1118,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Univeristy of Arizona - NCAA",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
@@ -1147,7 +1186,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "2e2b1ed6-2547-47c2-bb52-f401924a4557",
           "name": "Jimmy Whitt",
           "team": "Perth Wildcats",
           "teamCode": "PER",
@@ -1157,7 +1196,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Gold Coast Rollers - NBL1 North",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "5adef25b-648e-442b-983e-020043e7872d",
@@ -1183,6 +1222,19 @@
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "9ffab474-7164-40a8-8b80-247393b30895",
+          "name": "Marley Sam",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Eastern Suns - NBL1 North",
           "idSource": "rosetta"
         }
       ]
@@ -1357,7 +1409,7 @@
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "headCoach": "Brian Goorjian",
-      "playerCount": 11,
+      "playerCount": 10,
       "players": [
         {
           "playerId": "9f292ecd-bd5e-413a-b8d7-8397eaa04b3e",
@@ -1407,20 +1459,7 @@
           "position": "G",
           "jersey": "6",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
-          "trackerStatus": "contracted",
-          "trackerNote": null,
-          "idSource": "rosetta"
-        },
-        {
-          "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
-          "name": "Keli Leaupepe",
-          "team": "Sydney Kings",
-          "teamCode": "SYD",
-          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "position": "F",
-          "jersey": "34",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72eeb6c960da4f8080531796fcd6cdaa?size=800&format=webp",
-          "trackerStatus": "contracted",
+          "trackerStatus": "incoming",
           "trackerNote": null,
           "idSource": "rosetta"
         },
@@ -1451,17 +1490,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
-          "name": "Matthew Dellavedova",
+          "playerId": null,
+          "name": "Matthew Dellavedova Keli Leaupepe",
           "team": "Sydney Kings",
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "position": "G",
-          "jersey": "8",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
           "trackerStatus": "contracted",
           "trackerNote": null,
-          "idSource": "rosetta"
+          "idSource": "unmatched"
         },
         {
           "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",

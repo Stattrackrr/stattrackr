@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-11T14:25:14.757Z",
+  "generatedAt": "2026-08-12T14:25:35.830Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 113,
+  "playerCount": 126,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -36,6 +36,16 @@
       "imageUrl": null
     },
     {
+      "playerId": "145dc428-1473-408f-b295-0004e66f4456",
+      "name": "Angus Brandt",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "position": null,
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp"
+    },
+    {
       "playerId": "79fe0730-aca0-4167-97cc-1ef09514cc66",
       "name": "Angus Glover",
       "team": "South East Melbourne Phoenix",
@@ -44,6 +54,16 @@
       "position": "G",
       "jersey": "5",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp"
+    },
+    {
+      "playerId": "a9125673-5d09-4a1b-aac1-b403f5bf372a",
+      "name": "Anthony Dell'Orso",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
     },
     {
       "playerId": "265433cd-8c84-4b96-a22d-ec1912b9b785",
@@ -64,16 +84,6 @@
       "position": "F",
       "jersey": null,
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp"
-    },
-    {
-      "playerId": "c18d40cc-7977-4b30-a1b8-f0fcc14e98ab",
-      "name": "Archie Woodhill",
-      "team": "Tasmania JackJumpers",
-      "teamCode": "TAS",
-      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
-      "position": "F",
-      "jersey": "15",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a4ed274ff4124404b2533f6ee447927c?size=800&format=webp"
     },
     {
       "playerId": "7ea89a63-460c-4530-a6b8-e770aced04e3",
@@ -176,6 +186,16 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp"
     },
     {
+      "playerId": "ac574899-344f-4ec9-9b8e-f2ee16d706c8",
+      "name": "Charles Bediako",
+      "team": "BNZ Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
       "playerId": "f243749f-0174-4255-b6ff-d0a9896899e8",
       "name": "Chris Goulding",
       "team": "Melbourne United",
@@ -244,6 +264,16 @@
       "position": "F",
       "jersey": "11",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp"
+    },
+    {
+      "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
+      "name": "Darius Days",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": "C",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp"
     },
     {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
@@ -324,6 +354,16 @@
       "position": "C",
       "jersey": "18",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp"
+    },
+    {
+      "playerId": "39c99a6c-4190-4abb-9f27-b41f7b2470f5",
+      "name": "Fletcher MacDonald",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
     },
     {
       "playerId": "06116392-133b-4cac-93a5-a6aefc375717",
@@ -476,6 +516,26 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp"
     },
     {
+      "playerId": "17bfb8e3-400e-428d-96a3-64eecea3b6a2",
+      "name": "Jaylon Brown",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
+      "playerId": "44c17e2b-7e6a-43b7-9421-c50c0f001071",
+      "name": "Jed Richardson",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "position": "F",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp"
+    },
+    {
       "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
       "name": "Jensen Bradtke",
       "team": "Melbourne United",
@@ -494,6 +554,16 @@
       "position": "F",
       "jersey": "24",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp"
+    },
+    {
+      "playerId": "2e2b1ed6-2547-47c2-bb52-f401924a4557",
+      "name": "Jimmy Whitt",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
     },
     {
       "playerId": "5adef25b-648e-442b-983e-020043e7872d",
@@ -541,7 +611,7 @@
       "team": "Cairns Taipans",
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-      "position": "F",
+      "position": "C",
       "jersey": null,
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp"
     },
@@ -666,6 +736,16 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp"
     },
     {
+      "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
+      "name": "Kyle Adnam",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp"
+    },
+    {
       "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
       "name": "Kyle Bowen",
       "team": "Melbourne United",
@@ -694,6 +774,26 @@
       "position": "G",
       "jersey": "2",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp"
+    },
+    {
+      "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
+      "name": "Lloyd McVeigh",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp"
+    },
+    {
+      "playerId": "23f56f6b-c7d2-434e-8929-9eada1c1a143",
+      "name": "Luca Yates",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "position": "F",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp"
     },
     {
       "playerId": "08c14dd1-935b-4e34-8e1f-97da35d055c9",
@@ -746,6 +846,16 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp"
     },
     {
+      "playerId": "9ffab474-7164-40a8-8b80-247393b30895",
+      "name": "Marley Sam",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
       "playerId": "db202f21-d605-4ca1-8901-8abbd440f105",
       "name": "Mason Peatling",
       "team": "Illawarra Hawks",
@@ -786,6 +896,16 @@
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp"
     },
     {
+      "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
+      "name": "Milton Doyle",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp"
+    },
+    {
       "playerId": "2e2291aa-36b6-4928-b348-0f5951fbc3b4",
       "name": "Mitch Norton",
       "team": "Brisbane Bullets",
@@ -814,6 +934,16 @@
       "position": "G",
       "jersey": "20",
       "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp"
+    },
+    {
+      "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
+      "name": "Nicholas Stoddart",
+      "team": "Tasmania JackJumpers",
+      "teamCode": "TAS",
+      "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ba1810cee915489ab8667b631e65a86f?size=800&format=webp"
     },
     {
       "playerId": "c9019743-60ae-4700-852e-6ae15c1cbef6",
