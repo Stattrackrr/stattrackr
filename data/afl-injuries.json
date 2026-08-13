@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-13T01:32:37.881Z",
+  "generatedAt": "2026-08-13T04:13:59.824Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 212,
+  "injuryCount": 213,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Bailey Dale",
+      "injury": "Soreness",
+      "returning": "next week"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Paul Curtis",
+      "injury": "absent from training",
+      "returning": "right to play"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Alex Neal-Bullen",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Carlton Blues",
       "player": "Jacob Weitering",
@@ -50,7 +68,7 @@
       "team": "Gold Coast Suns",
       "player": "Sam Collins",
       "injury": "Rib",
-      "returning": "Test"
+      "returning": "test to play this week"
     },
     {
       "team": "GWS Giants",
@@ -80,7 +98,7 @@
       "team": "North Melbourne Kangaroos",
       "player": "Tom Powell",
       "injury": "Groin",
-      "returning": "TBA"
+      "returning": "up for selection"
     },
     {
       "team": "Melbourne Demons",
@@ -212,7 +230,7 @@
       "team": "Collingwood Magpies",
       "player": "Jeremy Howe",
       "injury": "Arm",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -224,13 +242,13 @@
       "team": "Collingwood Magpies",
       "player": "Patrick Lipinski",
       "injury": "Calf",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
       "player": "Brayden Maynard",
       "injury": "Knee",
-      "returning": "2 Weeks"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
@@ -821,12 +839,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Bailey Dale",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Connor Rozee",
       "injury": "Injury",
@@ -843,12 +855,6 @@
       "player": "Jack Lukosius",
       "injury": "active",
       "returning": "This week"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Darcy Fogarty",
-      "injury": "served three-game suspension",
-      "returning": "Available"
     },
     {
       "team": "Western Bulldogs",
