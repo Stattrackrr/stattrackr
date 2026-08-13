@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-08-13T07:25:29.554Z",
+  "generatedAt": "2026-08-13T09:13:33.128Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 214,
+  "injuryCount": 226,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Archie Ludowyke",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Billy Dowling",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Oscar Ryan",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Reilly O'Brien",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Judd McVee",
+      "injury": "has been left out",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Darcy Fogarty",
+      "injury": "returns following a three-match suspension",
+      "returning": "Returned"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Marcus Bontempelli",
+      "injury": "resting for Sunday's game against Carlton, will miss his first game for 2026 ahead of the final home and away round.",
+      "returning": "Round 24"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Taylor Walker",
+      "injury": "being managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Sam De Koning",
+      "injury": "to miss for Geelong",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Sam Butler",
+      "injury": "omitted from the team",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Ned Reeves",
+      "injury": "omitted from the team",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Max Beattie",
+      "injury": "Ankle",
+      "returning": "active"
+    },
     {
       "team": "Carlton Blues",
       "player": "Matt Duffy",
@@ -26,13 +98,13 @@
       "team": "Adelaide Crows",
       "player": "Alex Neal-Bullen",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Carlton Blues",
       "player": "Jacob Weitering",
       "injury": "Calf",
-      "returning": "active"
+      "returning": "Returned"
     },
     {
       "team": "Geelong Cats",
@@ -74,7 +146,7 @@
       "team": "Gold Coast Suns",
       "player": "Sam Collins",
       "injury": "Rib",
-      "returning": "test to play this week"
+      "returning": "Returned"
     },
     {
       "team": "GWS Giants",
@@ -224,7 +296,7 @@
       "team": "Collingwood Magpies",
       "player": "Jordan De Goey",
       "injury": "Glute",
-      "returning": "will be assessed following main training on Thursday"
+      "returning": "Returned"
     },
     {
       "team": "Collingwood Magpies",
