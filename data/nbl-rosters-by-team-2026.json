@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-12T14:25:35.017Z",
+  "generatedAt": "2026-08-13T14:29:39.953Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -1117,7 +1117,7 @@
           "jersey": null,
           "imageUrl": null,
           "trackerStatus": "incoming",
-          "trackerNote": "Univeristy of Arizona - NCAA",
+          "trackerNote": "University of Arizona - NCAA",
           "idSource": "rosetta"
         },
         {
@@ -1244,7 +1244,7 @@
       "teamCode": "SEM",
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "headCoach": "Josh King",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -1279,7 +1279,7 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": null,
-          "jersey": null,
+          "jersey": "99",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Rostock Seawolves - Germany",
@@ -1305,7 +1305,7 @@
           "teamCode": "SEM",
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
-          "jersey": "7",
+          "jersey": "4",
           "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
@@ -1401,6 +1401,19 @@
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Yannis Morin",
+          "team": "South East Melbourne Phoenix",
+          "teamCode": "SEM",
+          "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Joventut Badalona - Spain",
+          "idSource": "unmatched"
         }
       ]
     },
