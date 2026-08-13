@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T11:45:41Z",
+  "generatedAt": "2026-08-13T11:45:03Z",
   "sampleCount": 650,
   "candidateArtifactPath": "/home/runner/work/stattrackr/stattrackr/data/afl-model/models/latest-candidate-model.json",
   "candidateFallbackToCurrent": false,
@@ -31,7 +31,7 @@
     "pass": false,
     "promoted": false,
     "freezeActive": false,
-    "freezeFailStreak": 1,
+    "freezeFailStreak": 2,
     "freezeWouldBlockLegacy": false,
     "metricGuardrailsSkipped": false,
     "promotionInfo": {
@@ -45,8 +45,8 @@
     "brierScore": 0.277753,
     "logLoss": 0.785569,
     "mae": 4.626623,
-    "avgClvLite": -0.002123,
-    "positiveClvRate": 0.164615,
+    "avgClvLite": -0.002066,
+    "positiveClvRate": 0.161538,
     "clvSampleCount": 650,
     "calibrationBins": [
       {
@@ -105,7 +105,7 @@
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260812-114348"
+    "modelVersion": "afl-disp-20260813-114355"
   },
   "current": {
     "name": "current",
@@ -114,8 +114,8 @@
     "brierScore": 0.265909,
     "logLoss": 0.742225,
     "mae": 4.481338,
-    "avgClvLite": -0.002495,
-    "positiveClvRate": 0.166154,
+    "avgClvLite": -0.002429,
+    "positiveClvRate": 0.163077,
     "clvSampleCount": 650,
     "calibrationBins": [
       {
