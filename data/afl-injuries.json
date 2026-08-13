@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-13T04:13:59.824Z",
+  "generatedAt": "2026-08-13T07:25:29.554Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 214,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Matt Duffy",
+      "injury": "departed the club to head back to Ireland to be closer to family",
+      "returning": "active"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Bailey Dale",
