@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-14T11:01:44.233Z",
+  "generatedAt": "2026-08-14T13:02:33.877Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 227,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "ruled out of wildcard final",
+      "returning": "wildcard final"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Taylor Walker",
@@ -603,12 +609,6 @@
       "player": "Scott Pendlebury",
       "injury": "Soreness",
       "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "MCL",
-      "returning": "Season in doubt"
     },
     {
       "team": "Sydney Swans",
