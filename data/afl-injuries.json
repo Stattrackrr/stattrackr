@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-14T18:52:23.541Z",
+  "generatedAt": "2026-08-14T20:36:01.053Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 217,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Nick Murray",
+      "injury": "Knee",
+      "returning": "Test"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tim English",
