@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-14T16:57:45.092Z",
+  "generatedAt": "2026-08-14T18:52:23.541Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 227,
+  "injuryCount": 217,
   "injuries": [
     {
       "team": "Western Bulldogs",
@@ -96,25 +96,7 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Archie Ludowyke",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Billy Dowling",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Oscar Ryan",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Reilly O'Brien",
       "injury": "active",
       "returning": "TBC"
     },
@@ -123,12 +105,6 @@
       "player": "Judd McVee",
       "injury": "has been left out",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Darcy Fogarty",
-      "injury": "three-match suspension",
-      "returning": "Returned"
     },
     {
       "team": "Hawthorn Hawks",
@@ -267,12 +243,6 @@
       "player": "Lachlan Smith",
       "injury": "Hamstring",
       "returning": "6 Weeks"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Sam Berry",
-      "injury": "Soreness",
-      "returning": "a week"
     },
     {
       "team": "Brisbane Lions",
@@ -467,12 +437,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Izak Rankine",
-      "injury": "missed 2025 finals campaign",
-      "returning": "active"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Darcy Byrne-Jones",
       "injury": "Accepted one-match ban for careless conduct, medium impact, high contact bump.",
@@ -512,18 +476,6 @@
       "team": "Gold Coast Suns",
       "player": "Beau Addinsall",
       "injury": "rested",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Lachlan McAndrew",
-      "injury": "returning from a rest",
-      "returning": "Available"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Alex Pearce",
-      "injury": "rested for the trip over east",
       "returning": "TBC"
     },
     {
@@ -681,12 +633,6 @@
       "player": "Jordon Butts",
       "injury": "Calf",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Nick Murray",
-      "injury": "Knee",
-      "returning": "Test"
     },
     {
       "team": "West Coast Eagles",
@@ -1203,12 +1149,6 @@
       "player": "Lachie Weller",
       "injury": "Hamstring",
       "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Christopher Scerri",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "Essendon Bombers",
