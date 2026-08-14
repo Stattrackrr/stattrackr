@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-14T12:55:58.718Z",
+  "generatedAt": "2026-08-14T14:48:15.443Z",
   "source": "footyinfo.com",
   "sourcePage": "player/{slug}/game_logs_summary?mode=averages&columns=all",
   "playerCount": 569,
@@ -459,19 +459,19 @@
     {
       "name": "Jordan Dawson",
       "team": "Adelaide",
-      "games": 18,
-      "disposals": 25.9,
-      "kicks": 17.4,
-      "handballs": 8.5,
-      "marks": 5.3,
+      "games": 19,
+      "disposals": 26,
+      "kicks": 17.3,
+      "handballs": 8.7,
+      "marks": 5.2,
       "goals": 1.2,
-      "tackles": 5.6,
-      "clearances": 4,
-      "inside_50s": 4.8,
+      "tackles": 5.7,
+      "clearances": 4.3,
+      "inside_50s": 4.9,
       "rebound_50s": 2.4,
-      "contested_possessions": 9.1,
-      "uncontested_possessions": 15.7,
-      "meters_gained": 487.6,
+      "contested_possessions": 9.4,
+      "uncontested_possessions": 15.3,
+      "meters_gained": 485.1,
       "free_kicks_for": 1.4
     },
     {
@@ -531,20 +531,20 @@
     {
       "name": "Caleb Serong",
       "team": "Fremantle",
-      "games": 18,
-      "disposals": 24.5,
-      "kicks": 13.3,
-      "handballs": 11.2,
-      "marks": 2.6,
-      "goals": 0.4,
+      "games": 19,
+      "disposals": 24.7,
+      "kicks": 13.5,
+      "handballs": 11.3,
+      "marks": 2.5,
+      "goals": 0.5,
       "tackles": 5.1,
-      "clearances": 6.2,
+      "clearances": 6.5,
       "inside_50s": 4.5,
       "rebound_50s": 1.5,
-      "contested_possessions": 11.2,
-      "uncontested_possessions": 12.8,
-      "meters_gained": 377.6,
-      "free_kicks_for": 1
+      "contested_possessions": 11.3,
+      "uncontested_possessions": 12.9,
+      "meters_gained": 385.9,
+      "free_kicks_for": 0.9
     },
     {
       "name": "Ryley Sanders",
@@ -585,19 +585,19 @@
     {
       "name": "Andrew Brayshaw",
       "team": "Fremantle",
-      "games": 21,
-      "disposals": 24.7,
-      "kicks": 11.4,
-      "handballs": 13.3,
+      "games": 22,
+      "disposals": 24.8,
+      "kicks": 11.3,
+      "handballs": 13.5,
       "marks": 3.3,
-      "goals": 0.2,
+      "goals": 0.3,
       "tackles": 6,
       "clearances": 4.1,
       "inside_50s": 4,
       "rebound_50s": 1.2,
       "contested_possessions": 8.4,
       "uncontested_possessions": 16.7,
-      "meters_gained": 381.1,
+      "meters_gained": 384.8,
       "free_kicks_for": 1.2
     },
     {
@@ -819,19 +819,19 @@
     {
       "name": "Rory Laird",
       "team": "Adelaide",
-      "games": 16,
-      "disposals": 23.6,
-      "kicks": 13.5,
-      "handballs": 10.1,
-      "marks": 6.8,
-      "goals": 0,
-      "tackles": 2.6,
+      "games": 17,
+      "disposals": 23.5,
+      "kicks": 13.3,
+      "handballs": 10.2,
+      "marks": 6.6,
+      "goals": 0.1,
+      "tackles": 2.4,
       "clearances": 1,
-      "inside_50s": 1.8,
-      "rebound_50s": 3.3,
+      "inside_50s": 1.7,
+      "rebound_50s": 3.1,
       "contested_possessions": 5.4,
       "uncontested_possessions": 16.6,
-      "meters_gained": 276,
+      "meters_gained": 271.2,
       "free_kicks_for": 0.8
     },
     {
@@ -909,19 +909,19 @@
     {
       "name": "Shai Bolton",
       "team": "Fremantle",
-      "games": 20,
-      "disposals": 22.8,
-      "kicks": 11.7,
-      "handballs": 11.1,
+      "games": 21,
+      "disposals": 23,
+      "kicks": 12.1,
+      "handballs": 10.9,
       "marks": 2.8,
       "goals": 1,
       "tackles": 3.3,
       "clearances": 4.2,
-      "inside_50s": 5.5,
+      "inside_50s": 5.9,
       "rebound_50s": 0.8,
       "contested_possessions": 8.8,
-      "uncontested_possessions": 14.7,
-      "meters_gained": 421.3,
+      "uncontested_possessions": 14.9,
+      "meters_gained": 445.5,
       "free_kicks_for": 0.7
     },
     {
@@ -1035,20 +1035,20 @@
     {
       "name": "Josh Worrell",
       "team": "Adelaide",
-      "games": 20,
-      "disposals": 21.9,
-      "kicks": 14.2,
-      "handballs": 7.8,
-      "marks": 5.8,
+      "games": 21,
+      "disposals": 21.5,
+      "kicks": 13.9,
+      "handballs": 7.6,
+      "marks": 5.6,
       "goals": 0,
       "tackles": 1.7,
       "clearances": 0.5,
-      "inside_50s": 1.4,
+      "inside_50s": 1.3,
       "rebound_50s": 5.3,
-      "contested_possessions": 6.4,
-      "uncontested_possessions": 12.2,
-      "meters_gained": 405.9,
-      "free_kicks_for": 1.2
+      "contested_possessions": 6.2,
+      "uncontested_possessions": 12,
+      "meters_gained": 399.4,
+      "free_kicks_for": 1.1
     },
     {
       "name": "Marcus Windhager",
@@ -1161,20 +1161,20 @@
     {
       "name": "Sam Berry",
       "team": "Adelaide",
-      "games": 20,
-      "disposals": 23,
-      "kicks": 11.6,
-      "handballs": 11.4,
+      "games": 21,
+      "disposals": 22.4,
+      "kicks": 11.2,
+      "handballs": 11.2,
       "marks": 2.7,
       "goals": 0.1,
-      "tackles": 7.5,
-      "clearances": 5.7,
-      "inside_50s": 3.3,
-      "rebound_50s": 1.2,
-      "contested_possessions": 12.1,
-      "uncontested_possessions": 11.9,
-      "meters_gained": 336.1,
-      "free_kicks_for": 1.2
+      "tackles": 7.3,
+      "clearances": 5.6,
+      "inside_50s": 3.2,
+      "rebound_50s": 1.1,
+      "contested_possessions": 11.8,
+      "uncontested_possessions": 11.6,
+      "meters_gained": 324.6,
+      "free_kicks_for": 1.1
     },
     {
       "name": "Kysaiah Pickett",
@@ -1323,19 +1323,19 @@
     {
       "name": "Jordan Clark",
       "team": "Fremantle",
-      "games": 21,
-      "disposals": 22,
+      "games": 22,
+      "disposals": 22.2,
       "kicks": 14.3,
-      "handballs": 7.8,
+      "handballs": 7.9,
       "marks": 4.8,
       "goals": 0.1,
-      "tackles": 2.1,
-      "clearances": 1.1,
+      "tackles": 2,
+      "clearances": 1.2,
       "inside_50s": 2.9,
       "rebound_50s": 4.7,
-      "contested_possessions": 4.5,
-      "uncontested_possessions": 14.6,
-      "meters_gained": 467.6,
+      "contested_possessions": 4.7,
+      "uncontested_possessions": 14.5,
+      "meters_gained": 475.1,
       "free_kicks_for": 0.6
     },
     {
@@ -1731,7 +1731,7 @@
       "rebound_50s": 2.1,
       "contested_possessions": 10.7,
       "uncontested_possessions": 12.9,
-      "meters_gained": 415,
+      "meters_gained": 415.1,
       "free_kicks_for": 1.1
     },
     {
@@ -1839,7 +1839,7 @@
       "rebound_50s": 5.2,
       "contested_possessions": 3.5,
       "uncontested_possessions": 12.9,
-      "meters_gained": 402.9,
+      "meters_gained": 402.6,
       "free_kicks_for": 0.5
     },
     {
@@ -2037,7 +2037,7 @@
       "rebound_50s": 4.1,
       "contested_possessions": 4.7,
       "uncontested_possessions": 12.2,
-      "meters_gained": 404.1,
+      "meters_gained": 403.8,
       "free_kicks_for": 0.9
     },
     {
@@ -2397,7 +2397,7 @@
       "rebound_50s": 0.8,
       "contested_possessions": 11.1,
       "uncontested_possessions": 7.8,
-      "meters_gained": 197.1,
+      "meters_gained": 197,
       "free_kicks_for": 1.8
     },
     {
@@ -2847,7 +2847,7 @@
       "rebound_50s": 2.1,
       "contested_possessions": 6.2,
       "uncontested_possessions": 11.7,
-      "meters_gained": 256.5,
+      "meters_gained": 256.8,
       "free_kicks_for": 0.7
     },
     {
@@ -3387,7 +3387,7 @@
       "rebound_50s": 2.4,
       "contested_possessions": 5.3,
       "uncontested_possessions": 11.3,
-      "meters_gained": 355.7,
+      "meters_gained": 356,
       "free_kicks_for": 0.4
     },
     {
@@ -3531,7 +3531,7 @@
       "rebound_50s": 3.6,
       "contested_possessions": 4.8,
       "uncontested_possessions": 7.5,
-      "meters_gained": 254.6,
+      "meters_gained": 254.5,
       "free_kicks_for": 0.6
     },
     {
@@ -3963,7 +3963,7 @@
       "rebound_50s": 1.1,
       "contested_possessions": 7.1,
       "uncontested_possessions": 9,
-      "meters_gained": 207.3,
+      "meters_gained": 207.2,
       "free_kicks_for": 1.4
     },
     {
@@ -4107,7 +4107,7 @@
       "rebound_50s": 2.5,
       "contested_possessions": 3.6,
       "uncontested_possessions": 10.8,
-      "meters_gained": 243.5,
+      "meters_gained": 243.4,
       "free_kicks_for": 0.4
     },
     {
@@ -5133,7 +5133,7 @@
       "rebound_50s": 1.9,
       "contested_possessions": 6.3,
       "uncontested_possessions": 8.7,
-      "meters_gained": 305.9,
+      "meters_gained": 305.7,
       "free_kicks_for": 0.7
     },
     {
@@ -5439,7 +5439,7 @@
       "rebound_50s": 0.1,
       "contested_possessions": 6.5,
       "uncontested_possessions": 6.2,
-      "meters_gained": 248.5,
+      "meters_gained": 248.1,
       "free_kicks_for": 0.9
     },
     {
@@ -5817,7 +5817,7 @@
       "rebound_50s": 2.7,
       "contested_possessions": 4.4,
       "uncontested_possessions": 7.6,
-      "meters_gained": 151.5,
+      "meters_gained": 151.4,
       "free_kicks_for": 0.7
     },
     {
@@ -6513,13 +6513,13 @@
       "handballs": 6,
       "marks": 2.4,
       "goals": 0.3,
-      "tackles": 4.7,
+      "tackles": 4.8,
       "clearances": 4.5,
       "inside_50s": 2.2,
       "rebound_50s": 0.9,
       "contested_possessions": 8.1,
       "uncontested_possessions": 3.9,
-      "meters_gained": 151.2,
+      "meters_gained": 151.3,
       "free_kicks_for": 1.5
     },
     {
@@ -6717,7 +6717,7 @@
       "rebound_50s": 0.1,
       "contested_possessions": 4.5,
       "uncontested_possessions": 6.6,
-      "meters_gained": 223.6,
+      "meters_gained": 223.5,
       "free_kicks_for": 1
     },
     {
@@ -7257,7 +7257,7 @@
       "rebound_50s": 1.8,
       "contested_possessions": 4.2,
       "uncontested_possessions": 6.6,
-      "meters_gained": 123.9,
+      "meters_gained": 123.8,
       "free_kicks_for": 0.8
     },
     {
@@ -8895,7 +8895,7 @@
       "rebound_50s": 1.7,
       "contested_possessions": 4.5,
       "uncontested_possessions": 4.3,
-      "meters_gained": 110.9,
+      "meters_gained": 110.7,
       "free_kicks_for": 0.5
     },
     {
@@ -9795,7 +9795,7 @@
       "rebound_50s": 0.5,
       "contested_possessions": 4,
       "uncontested_possessions": 2.7,
-      "meters_gained": 87.8,
+      "meters_gained": 87.9,
       "free_kicks_for": 1.2
     },
     {
