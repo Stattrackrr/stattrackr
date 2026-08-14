@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-14T20:36:01.053Z",
+  "generatedAt": "2026-08-14T22:24:44.020Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 219,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Alex Pearce",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Murphy Reid",
+      "injury": "Testicle",
+      "returning": "missing another week"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Nick Murray",
@@ -165,12 +177,6 @@
       "player": "Jake Kolodjashnij",
       "injury": "made unavailable for selection in either the VFL or AFL this weekend due to ongoing controversy about an agreement related to a past concussion probe",
       "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Murphy Reid",
-      "injury": "Groin",
-      "returning": "Round 23"
     },
     {
       "team": "Brisbane Lions",
