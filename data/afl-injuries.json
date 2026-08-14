@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-08-14T01:32:52.781Z",
+  "generatedAt": "2026-08-14T04:10:28.126Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 226,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Taylor Walker",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Sam Durham",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Sam De Koning",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jack Martin",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Hunter Clark",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Liam Ryan",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Marcus Bontempelli",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Archie Ludowyke",
@@ -39,24 +81,6 @@
       "player": "Darcy Fogarty",
       "injury": "returns following a three-match suspension",
       "returning": "Returned"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Marcus Bontempelli",
-      "injury": "resting for Sunday's game against Carlton, will miss his first game for 2026 ahead of the final home and away round.",
-      "returning": "Round 24"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Taylor Walker",
-      "injury": "being managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Sam De Koning",
-      "injury": "to miss for Geelong",
-      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -131,22 +155,10 @@
       "returning": "TBA"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Lachie Schultz",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
       "team": "Fremantle Dockers",
       "player": "Aiden Riddle",
       "injury": "Ankle",
       "returning": "Test"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Sam Collins",
-      "injury": "Rib",
-      "returning": "Returned"
     },
     {
       "team": "GWS Giants",
@@ -183,30 +195,6 @@
       "player": "Thomas Matthews",
       "injury": "Shoulder",
       "returning": "Season"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Lachie Jones",
-      "injury": "Adductor",
-      "returning": "Test"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Sam Lalor",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Tom De Koning",
-      "injury": "Shoulder",
-      "returning": "Test"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Liam Ryan",
-      "injury": "Shoulder",
-      "returning": "Test"
     },
     {
       "team": "West Coast Eagles",
@@ -294,12 +282,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Glute",
-      "returning": "Returned"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Jamie Elliott",
       "injury": "ACL",
       "returning": "Season"
@@ -339,12 +321,6 @@
       "player": "Darcy Moore",
       "injury": "Hamstring",
       "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Injury",
-      "returning": "TBA"
     },
     {
       "team": "Collingwood Magpies",
@@ -425,22 +401,10 @@
       "returning": "Season"
     },
     {
-      "team": "Port Adelaide Power",
-      "player": "Jason Horne-Francis",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
       "team": "St Kilda Saints",
       "player": "Mason Wood",
       "injury": "Injury",
       "returning": "TBA"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Toby Bedford",
-      "injury": "Back",
-      "returning": "Test"
     },
     {
       "team": "West Coast Eagles",
@@ -539,6 +503,12 @@
       "returning": "TBC"
     },
     {
+      "team": "Port Adelaide Power",
+      "player": "Lachie Jones",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
       "team": "Melbourne Demons",
       "player": "Paddy Cross",
       "injury": "active",
@@ -581,6 +551,18 @@
       "returning": "TBC"
     },
     {
+      "team": "Collingwood Magpies",
+      "player": "Jordan De Goey",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
       "team": "Western Bulldogs",
       "player": "Tim English",
       "injury": "MCL",
@@ -596,12 +578,6 @@
       "team": "Sydney Swans",
       "player": "Malcolm Rosas",
       "injury": "out alongside",
-      "returning": "TBC"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Aidan Corr",
-      "injury": "Back",
       "returning": "TBC"
     },
     {
@@ -666,12 +642,6 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Luke Nankervis",
-      "injury": "Chest",
-      "returning": "Available"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Nick Murray",
       "injury": "Knee",
       "returning": "Test"
@@ -687,12 +657,6 @@
       "player": "Blake Howes",
       "injury": "Arm",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "James Borlase",
-      "injury": "Hamstring",
-      "returning": "Available"
     },
     {
       "team": "Melbourne Demons",
