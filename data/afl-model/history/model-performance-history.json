@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-13T17:50:14Z",
-  "count": 193,
+  "generatedAt": "2026-08-14T11:43:54Z",
+  "count": 194,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -25014,6 +25014,162 @@
         "logLossOk": true,
         "hitRateOk": true,
         "freezeInactive": false
+      }
+    },
+    {
+      "generatedAt": "2026-08-14T11:43:54Z",
+      "sampleCount": 598,
+      "pass": false,
+      "promoted": false,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 598,
+        "hitRate": 0.503344,
+        "brierScore": 0.27848,
+        "logLoss": 0.789618,
+        "mae": 4.72992,
+        "avgClvLite": -0.002042,
+        "positiveClvRate": 0.165552,
+        "clvSampleCount": 598,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 31,
+            "avgPred": 0.0539,
+            "avgActual": 0.4516
+          },
+          {
+            "bin": 1,
+            "count": 36,
+            "avgPred": 0.1548,
+            "avgActual": 0.4444
+          },
+          {
+            "bin": 2,
+            "count": 62,
+            "avgPred": 0.2497,
+            "avgActual": 0.5484
+          },
+          {
+            "bin": 3,
+            "count": 116,
+            "avgPred": 0.3581,
+            "avgActual": 0.5
+          },
+          {
+            "bin": 4,
+            "count": 149,
+            "avgPred": 0.4507,
+            "avgActual": 0.5101
+          },
+          {
+            "bin": 5,
+            "count": 126,
+            "avgPred": 0.5436,
+            "avgActual": 0.4921
+          },
+          {
+            "bin": 6,
+            "count": 62,
+            "avgPred": 0.6364,
+            "avgActual": 0.5645
+          },
+          {
+            "bin": 7,
+            "count": 15,
+            "avgPred": 0.7165,
+            "avgActual": 0.5333
+          },
+          {
+            "bin": 8,
+            "count": 1,
+            "avgPred": 0.8123,
+            "avgActual": 0.0
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260814-114237"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 598,
+        "hitRate": 0.526756,
+        "brierScore": 0.265704,
+        "logLoss": 0.745147,
+        "mae": 4.563661,
+        "avgClvLite": -0.002458,
+        "positiveClvRate": 0.157191,
+        "clvSampleCount": 598,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 11,
+            "avgPred": 0.0453,
+            "avgActual": 0.3636
+          },
+          {
+            "bin": 1,
+            "count": 24,
+            "avgPred": 0.1587,
+            "avgActual": 0.4583
+          },
+          {
+            "bin": 2,
+            "count": 59,
+            "avgPred": 0.2567,
+            "avgActual": 0.4746
+          },
+          {
+            "bin": 3,
+            "count": 115,
+            "avgPred": 0.3591,
+            "avgActual": 0.487
+          },
+          {
+            "bin": 4,
+            "count": 181,
+            "avgPred": 0.4491,
+            "avgActual": 0.4972
+          },
+          {
+            "bin": 5,
+            "count": 123,
+            "avgPred": 0.5497,
+            "avgActual": 0.5447
+          },
+          {
+            "bin": 6,
+            "count": 69,
+            "avgPred": 0.6418,
+            "avgActual": 0.5362
+          },
+          {
+            "bin": 7,
+            "count": 13,
+            "avgPred": 0.7344,
+            "avgActual": 0.6154
+          },
+          {
+            "bin": 8,
+            "count": 3,
+            "avgPred": 0.8259,
+            "avgActual": 0.6667
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260813-174800"
+      },
+      "deltas": {
+        "brierImprovement": -0.048084,
+        "logLossChange": 0.059681,
+        "hitRateDelta": -0.023412
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": false,
+        "hitRateOk": true,
+        "freezeInactive": true
       }
     }
   ]
