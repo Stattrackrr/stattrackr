@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-13T14:29:39.953Z",
+  "generatedAt": "2026-08-14T14:20:57.172Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -21,7 +21,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "FC",
           "jersey": "14",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -34,7 +34,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -47,7 +47,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -60,7 +60,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "23",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/850f1949c3b54df4b7e2cdbbc052cbf6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/850f1949c3b54df4b7e2cdbbc052cbf6?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Bankstown Bruins - NBL1 East",
           "idSource": "rosetta"
@@ -73,7 +73,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -86,7 +86,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "C",
           "jersey": "8",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -99,7 +99,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -112,7 +112,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "12",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -125,7 +125,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "22",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -138,7 +138,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "G",
           "jersey": "0",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -151,7 +151,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "FC",
           "jersey": "31",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -164,7 +164,7 @@
           "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "position": "F",
           "jersey": "45",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -176,7 +176,7 @@
       "teamCode": "BRI",
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "headCoach": "Will Weaver",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "7ea89a63-460c-4530-a6b8-e770aced04e3",
@@ -186,10 +186,23 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a39f0e1489834312b59e9f45f207ef77?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a39f0e1489834312b59e9f45f207ef77?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Neptunas - Lithuania",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Billy McRae",
+          "team": "Brisbane Bullets",
+          "teamCode": "BRI",
+          "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Warwick Senators",
+          "idSource": "unmatched"
         },
         {
           "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
@@ -199,7 +212,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "F",
           "jersey": "",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2ed70aeeec83415f8965919c93a3fa4d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2ed70aeeec83415f8965919c93a3fa4d?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "University of Hawaii - NCAA",
           "idSource": "rosetta"
@@ -212,7 +225,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "F",
           "jersey": "15",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -225,7 +238,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": null,
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Stockton Kings - NBA G League",
           "idSource": "rosetta"
@@ -251,7 +264,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Perth Wildcats",
           "idSource": "rosetta"
@@ -264,7 +277,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": null,
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "LSU - NCAA",
           "idSource": "rosetta"
@@ -277,7 +290,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "8",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -290,7 +303,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fc92eb763ea04e13bf6a18483af9e61c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fc92eb763ea04e13bf6a18483af9e61c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Memphis Hustle - NBA G League",
           "idSource": "rosetta"
@@ -303,7 +316,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "South Adelaide - NBL1 Central",
           "idSource": "rosetta"
@@ -316,7 +329,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "26",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -329,7 +342,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "G",
           "jersey": "0",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -342,7 +355,7 @@
           "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
           "position": "FC",
           "jersey": "24",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -354,7 +367,7 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
@@ -377,7 +390,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": "9",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -403,7 +416,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "C",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -416,7 +429,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Akita Northern Happinets - B League",
           "idSource": "rosetta"
@@ -429,7 +442,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": "14",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -441,8 +454,8 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -455,7 +468,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
           "idSource": "rosetta"
@@ -468,7 +481,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "10",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fb658b67156345afadd2c724e07b1527?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fb658b67156345afadd2c724e07b1527?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Centre of Excellence - Next Star",
           "idSource": "rosetta"
@@ -481,7 +494,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -494,7 +507,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -507,9 +520,22 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "44",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Perth Wildcats",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "d027f171-6e10-444c-a837-d07ec2bfb3ff",
+          "name": "Walter Brown",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "G",
+          "jersey": "7",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "UNLV - NCAA",
           "idSource": "rosetta"
         }
       ]
@@ -542,7 +568,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "11",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -555,7 +581,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "C",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "TNT Tropang 5G - Philippines",
           "idSource": "rosetta"
@@ -581,7 +607,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "16",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -594,7 +620,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -606,8 +632,8 @@
           "teamCode": "ILL",
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
-          "jersey": "4",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -620,7 +646,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "F",
           "jersey": "22",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -633,7 +659,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -646,7 +672,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "C",
           "jersey": "13",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -659,7 +685,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "21",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -672,7 +698,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -685,7 +711,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -698,7 +724,7 @@
           "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "position": "G",
           "jersey": "6",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -720,7 +746,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "43",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -733,7 +759,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -759,7 +785,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "C",
           "jersey": "18",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -785,7 +811,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "C",
           "jersey": "50",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Brisbane Bullets",
           "idSource": "rosetta"
@@ -798,7 +824,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Minnesota Timberwolves - NBA",
           "idSource": "rosetta"
@@ -811,7 +837,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "FC",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "New Orleans Pelicans - NBA",
           "idSource": "rosetta"
@@ -824,7 +850,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "F",
           "jersey": "15",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -837,7 +863,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "GF",
           "jersey": "23",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cleveland Cavaliers - NBA",
           "idSource": "rosetta"
@@ -850,7 +876,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -863,7 +889,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "FC",
           "jersey": "21",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -876,7 +902,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "13",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
           "idSource": "rosetta"
@@ -889,7 +915,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "51",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -902,7 +928,7 @@
           "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "position": "G",
           "jersey": "12",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -914,7 +940,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "headCoach": "Gordon Herbert",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -924,7 +950,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Phoenix Hagen - Germany",
           "idSource": "rosetta"
@@ -937,7 +963,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "21",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -963,7 +989,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "34",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Adelaide 36ers",
           "idSource": "rosetta"
@@ -976,7 +1002,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "4",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -989,7 +1015,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": null,
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Hapoel Jerusalem - Israel",
           "idSource": "rosetta"
@@ -1015,7 +1041,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "12",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -1028,7 +1054,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "6",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1041,7 +1067,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f9889a7d26324a0e99462480cd49f963?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f9889a7d26324a0e99462480cd49f963?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Palm Beach Atlantic University - NCAA DII",
           "idSource": "rosetta"
@@ -1054,7 +1080,7 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1067,7 +1093,20 @@
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
           "jersey": "3",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp",
+          "trackerStatus": "contracted",
+          "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
+          "name": "Tukaha Cooper",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": "F",
+          "jersey": "34",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1079,7 +1118,7 @@
       "teamCode": "PER",
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "headCoach": "John Rillie",
-      "playerCount": 12,
+      "playerCount": 13,
       "players": [
         {
           "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -1089,7 +1128,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -1101,8 +1140,8 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": null,
-          "jersey": "12",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Veltex Shizuoka - Japan",
           "idSource": "rosetta"
@@ -1128,7 +1167,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "25",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1141,7 +1180,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1154,7 +1193,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "40",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1167,7 +1206,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "G",
           "jersey": "9",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1180,7 +1219,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "24",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1206,7 +1245,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "0",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1219,7 +1258,7 @@
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
           "jersey": "5",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1234,8 +1273,21 @@
           "jersey": null,
           "imageUrl": null,
           "trackerStatus": "incoming",
-          "trackerNote": "Eastern Suns - NBL1 North",
+          "trackerNote": "Eastern Suns - NBL1 West",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Tana Kopa",
+          "team": "Perth Wildcats",
+          "teamCode": "PER",
+          "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Keilor Thunder - NBL1 South",
+          "idSource": "unmatched"
         }
       ]
     },
@@ -1254,7 +1306,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
           "jersey": "7",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1267,7 +1319,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "5",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1280,7 +1332,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": null,
           "jersey": "99",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Rostock Seawolves - Germany",
           "idSource": "rosetta"
@@ -1293,7 +1345,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1306,7 +1358,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "4",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -1319,7 +1371,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "C",
           "jersey": "4",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1332,7 +1384,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
@@ -1345,7 +1397,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "C",
           "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1358,7 +1410,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "20",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1371,7 +1423,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "F",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1384,7 +1436,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": null,
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Budućnost - Montenegro",
           "idSource": "rosetta"
@@ -1397,7 +1449,7 @@
           "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "position": "G",
           "jersey": "",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Melbourne United",
           "idSource": "rosetta"
@@ -1422,8 +1474,21 @@
       "teamCode": "SYD",
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "headCoach": "Brian Goorjian",
-      "playerCount": 10,
+      "playerCount": 11,
       "players": [
+        {
+          "playerId": null,
+          "name": "Andrew Carr",
+          "team": "Sydney Kings",
+          "teamCode": "SYD",
+          "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Rip City Remix - NBA G League",
+          "idSource": "unmatched"
+        },
         {
           "playerId": "9f292ecd-bd5e-413a-b8d7-8397eaa04b3e",
           "name": "Harry Wessels",
@@ -1432,7 +1497,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "C",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Saint Mary's - NCAA",
           "idSource": "rosetta"
@@ -1445,7 +1510,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "14",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1458,7 +1523,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6d8c3a1746a746f5ac1914ca53ed42f5?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d8c3a1746a746f5ac1914ca53ed42f5?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Missouri - NCAA",
           "idSource": "rosetta"
@@ -1471,7 +1536,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "6",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1484,7 +1549,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "1",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1497,7 +1562,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "15",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1523,7 +1588,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1536,7 +1601,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "G",
           "jersey": "3",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1549,7 +1614,7 @@
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "F",
           "jersey": "10",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1571,7 +1636,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1584,7 +1649,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": "10",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6d3b79735e8341dabd5f1010212403e4?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d3b79735e8341dabd5f1010212403e4?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1597,7 +1662,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/739772c4bb4f4a29ab24f11b0aed5f24?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/739772c4bb4f4a29ab24f11b0aed5f24?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Marquette - NCAA",
           "idSource": "rosetta"
@@ -1610,7 +1675,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1622,8 +1687,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
-          "jersey": "31",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Noblesville Boom - G League",
           "idSource": "rosetta"
@@ -1636,7 +1701,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": "7",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1648,8 +1713,8 @@
           "teamCode": "TAS",
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
-          "jersey": "10",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
           "idSource": "rosetta"
@@ -1662,7 +1727,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": "33",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1675,7 +1740,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "F",
           "jersey": "5",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1688,7 +1753,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": "11",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1727,7 +1792,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "G",
           "jersey": null,
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/16cd685eb2394ae1bfda890a87d7b90a?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/16cd685eb2394ae1bfda890a87d7b90a?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Dubai Basketball - EuroLeague",
           "idSource": "rosetta"
@@ -1740,7 +1805,7 @@
           "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
           "position": "C",
           "jersey": "22",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"

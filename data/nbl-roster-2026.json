@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-13T14:29:40.789Z",
+  "generatedAt": "2026-08-14T14:20:58.016Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 126,
   "players": [
@@ -13,7 +13,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "F",
       "jersey": "7",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9ab43bd0ff0548c1be36d5ca4da938e6?size=800&format=webp"
     },
     {
       "playerId": "45f14944-075d-47c1-a972-2dcfc073c958",
@@ -23,7 +23,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp"
     },
     {
       "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -43,7 +43,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/35b8876a2d88463f8135bed9add7f48b?size=800&format=webp"
     },
     {
       "playerId": "79fe0730-aca0-4167-97cc-1ef09514cc66",
@@ -53,7 +53,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "G",
       "jersey": "5",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7b3fc6e955cd41b9a2279d083859624a?size=800&format=webp"
     },
     {
       "playerId": "a9125673-5d09-4a1b-aac1-b403f5bf372a",
@@ -73,7 +73,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46cb5f3faed245a791acbd61542e2f80?size=800&format=webp"
     },
     {
       "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -83,7 +83,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1cb506775c148fd9b02620ea3c3641e?size=800&format=webp"
     },
     {
       "playerId": "7ea89a63-460c-4530-a6b8-e770aced04e3",
@@ -93,7 +93,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a39f0e1489834312b59e9f45f207ef77?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a39f0e1489834312b59e9f45f207ef77?size=800&format=webp"
     },
     {
       "playerId": "75f0d755-2f57-4460-9b0f-41b0eac46e7e",
@@ -103,7 +103,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "10",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6d3b79735e8341dabd5f1010212403e4?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d3b79735e8341dabd5f1010212403e4?size=800&format=webp"
     },
     {
       "playerId": "b1a9c2de-ca6f-4332-b0e0-2a4fdbcedd06",
@@ -113,7 +113,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/739772c4bb4f4a29ab24f11b0aed5f24?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/739772c4bb4f4a29ab24f11b0aed5f24?size=800&format=webp"
     },
     {
       "playerId": "24a2f29d-6bfd-427a-9cb4-4ac0f4088083",
@@ -123,7 +123,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "FC",
       "jersey": "14",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e1c78e21ee89436c91a899251eff2792?size=800&format=webp"
     },
     {
       "playerId": "a2b82e4e-7995-4db3-bfa7-11db68c18ea1",
@@ -133,7 +133,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "G",
       "jersey": "10",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/82fe3a5845d74199a7ce7fa9ce4ec84e?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/82fe3a5845d74199a7ce7fa9ce4ec84e?size=800&format=webp"
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -143,7 +143,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "11",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ebec7e2aa2784c75b8a22c057cc8045f?size=800&format=webp"
     },
     {
       "playerId": "3ffb3584-1aba-4815-a32c-ae7779646051",
@@ -153,7 +153,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e3b51b49103948409bd5c45192979f11?size=800&format=webp"
     },
     {
       "playerId": "0b14fdbe-9516-47b3-b317-de92bffd64de",
@@ -163,7 +163,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/64f50238de694272a01393759ae84807?size=800&format=webp"
     },
     {
       "playerId": "322328f8-6ddd-422d-8a17-24a66897100d",
@@ -173,7 +173,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "F",
       "jersey": "25",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59348f6fd6a140189a6c226b4e17e38d?size=800&format=webp"
     },
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
@@ -183,7 +183,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": "21",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2bfdaa1448042ef80542d35b8431e1c?size=800&format=webp"
     },
     {
       "playerId": "ac574899-344f-4ec9-9b8e-f2ee16d706c8",
@@ -203,7 +203,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "43",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp"
     },
     {
       "playerId": "c2814f09-84a5-416d-97ef-8441c3f1186e",
@@ -213,7 +213,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "11",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp"
     },
     {
       "playerId": "0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6",
@@ -233,7 +233,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9c459fb2e0ac401697c88ed6b5c01f0f?size=800&format=webp"
     },
     {
       "playerId": "83f36c6e-d1f1-44cb-8576-78717cc826f2",
@@ -243,7 +243,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a6f060c188e54ef99a1c0a8a059413b9?size=800&format=webp"
     },
     {
       "playerId": "b151cb86-4bf1-4b47-8b0c-14c0b9f51604",
@@ -253,7 +253,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "G",
       "jersey": "11",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2c7bfabdc8a34dcfbba264de07945d30?size=800&format=webp"
     },
     {
       "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
@@ -263,7 +263,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
       "jersey": "11",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f00fc8be9f0d4f8f8ccd87efb2462d62?size=800&format=webp"
     },
     {
       "playerId": "28a843e9-a597-4c1c-8b6a-10aac0b2ae4e",
@@ -273,7 +273,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "C",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3c92600ecdf545b2996aac33f2359b14?size=800&format=webp"
     },
     {
       "playerId": "d92ec6d5-b731-476a-b4a4-10cc36211bf5",
@@ -283,7 +283,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75dc93b580f6474f8fca0bb4a24a53ad?size=800&format=webp"
     },
     {
       "playerId": "5dc2188c-e53b-4273-9573-aae63a31bd39",
@@ -293,7 +293,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "7",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/95641c8328fe4c3b9bdfa96ef57e1d74?size=800&format=webp"
     },
     {
       "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
@@ -303,7 +303,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
       "jersey": "34",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/97da8dd421ea425cbdba5ef32da3a9eb?size=800&format=webp"
     },
     {
       "playerId": "3f5c80aa-20b9-48b0-8482-9a9beafc963a",
@@ -313,7 +313,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "23",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/850f1949c3b54df4b7e2cdbbc052cbf6?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/850f1949c3b54df4b7e2cdbbc052cbf6?size=800&format=webp"
     },
     {
       "playerId": "19611d1d-9349-4e39-a3ef-0733577b56e5",
@@ -323,7 +323,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "G",
       "jersey": "3",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ff8518aa7d974e30a2f841ec3a68a825?size=800&format=webp"
     },
     {
       "playerId": "318cc011-ca3e-4a82-b1cf-fd805b05d6d4",
@@ -333,7 +333,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "G",
       "jersey": "40",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8e34c46a55f846988521f59f0598a6ce?size=800&format=webp"
     },
     {
       "playerId": "b495af94-c2ca-4bfc-b356-58f847ba4390",
@@ -343,7 +343,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "C",
       "jersey": "4",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43909f9c187a47ddbb1f1762c8e2e319?size=800&format=webp"
     },
     {
       "playerId": "02fa3a79-2bc1-4ad7-97be-44aafcb09d91",
@@ -353,7 +353,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "C",
       "jersey": "18",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp"
     },
     {
       "playerId": "39c99a6c-4190-4abb-9f27-b41f7b2470f5",
@@ -373,7 +373,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "1",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/47b0c190a14e498d86edbe89640c04f1?size=800&format=webp"
     },
     {
       "playerId": "62a66658-e332-4f12-bbbd-8f1c3c442f93",
@@ -393,7 +393,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "F",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2ed70aeeec83415f8965919c93a3fa4d?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2ed70aeeec83415f8965919c93a3fa4d?size=800&format=webp"
     },
     {
       "playerId": "9f292ecd-bd5e-413a-b8d7-8397eaa04b3e",
@@ -403,7 +403,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "C",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp"
     },
     {
       "playerId": "0a5486ee-953a-4fae-920d-4a77de1bdf03",
@@ -413,7 +413,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/1e9084f6349f4e00b1e22ecdabdabeec?size=800&format=webp"
     },
     {
       "playerId": "830330b0-c5e1-4218-ad3a-c1503bb905ad",
@@ -423,7 +423,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "C",
       "jersey": "8",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/46eaeceb13b84fee87bb0a0def9d2b77?size=800&format=webp"
     },
     {
       "playerId": "0994d5da-21ea-4720-8dad-71020a214700",
@@ -433,7 +433,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2be8eccd36ff46a2b20cc8baaf7d8de5?size=800&format=webp"
     },
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
@@ -443,7 +443,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
       "jersey": "4",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f7e799f028f7420a86d41b19b35b5631?size=800&format=webp"
     },
     {
       "playerId": "b50568ab-1745-4c99-9360-a270000b3366",
@@ -453,7 +453,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": "9",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp"
     },
     {
       "playerId": "00e61e90-d1f1-4ec8-8a72-e7b04c0e5c0b",
@@ -463,7 +463,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "F",
       "jersey": "15",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8f8b2ccdce0c428685f7681091bac2fb?size=800&format=webp"
     },
     {
       "playerId": "a1fe0dc7-5cf6-4e8e-9bbd-26c2564bf1a9",
@@ -473,7 +473,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "G",
       "jersey": "9",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5905f7c172fe4b009b335c41f6fc7a6c?size=800&format=webp"
     },
     {
       "playerId": "be414749-6d0f-4620-857d-a9b017a2c0b4",
@@ -483,7 +483,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "F",
       "jersey": "14",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8d67a58391704195868a47001f95d552?size=800&format=webp"
     },
     {
       "playerId": "509b7fe4-bf76-47ca-bb4c-4eea1ca5bdfb",
@@ -493,7 +493,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6d8c3a1746a746f5ac1914ca53ed42f5?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6d8c3a1746a746f5ac1914ca53ed42f5?size=800&format=webp"
     },
     {
       "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
@@ -503,7 +503,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "6",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp"
     },
     {
       "playerId": "a13a2ea7-3918-4cd3-93d2-a33703ce234d",
@@ -513,7 +513,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/56c721854f1c41cc85298246ba575678?size=800&format=webp"
     },
     {
       "playerId": "17bfb8e3-400e-428d-96a3-64eecea3b6a2",
@@ -533,7 +533,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b4fee71f1d8b48fe8f538ee2ab6b3232?size=800&format=webp"
     },
     {
       "playerId": "de77a2d8-245d-4564-9e53-a62608a8b416",
@@ -543,7 +543,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "C",
       "jersey": "50",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d1e634db5b224faaaedb634aeb2b0c7f?size=800&format=webp"
     },
     {
       "playerId": "4a3d7bc9-18a9-4106-a201-79643586e4c3",
@@ -553,7 +553,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "F",
       "jersey": "24",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6f3488aeedc045f69f95aa25929e2530?size=800&format=webp"
     },
     {
       "playerId": "2e2b1ed6-2547-47c2-bb52-f401924a4557",
@@ -573,7 +573,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "F",
       "jersey": "0",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/451590d91ccb47e192606590020abb56?size=800&format=webp"
     },
     {
       "playerId": "55d2550e-3e91-4863-81b8-d2958bd2dd76",
@@ -583,7 +583,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "F",
       "jersey": "7",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp"
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
@@ -593,7 +593,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "12",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9d1b5bdca184435292ede971094d4d6b?size=800&format=webp"
     },
     {
       "playerId": "1db6c57b-a7f5-43a3-aaaa-4731f2bc57f5",
@@ -603,7 +603,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
       "jersey": "16",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/cb5e6b04d2944604abb0f551f6e1923b?size=800&format=webp"
     },
     {
       "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
@@ -613,7 +613,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "C",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a97174189caa4bb7af66a3ccbd7b992e?size=800&format=webp"
     },
     {
       "playerId": "6eee41ae-b5b9-4cc9-a215-7f8e29e4c9f9",
@@ -623,7 +623,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "C",
       "jersey": "1",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d2af720101ef4ed69867952f08d7e738?size=800&format=webp"
     },
     {
       "playerId": "fdf9d29d-b00b-4db0-a69a-cc5eaa23a234",
@@ -633,7 +633,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "F",
       "jersey": "33",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/233ccfd50b6e4688b028576f802e7fc7?size=800&format=webp"
     },
     {
       "playerId": "81099730-32f6-4aea-a76e-a48cc806d8e0",
@@ -643,7 +643,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "FC",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp"
     },
     {
       "playerId": "a63a2562-0d24-4d73-8e3c-51fc9830134b",
@@ -653,7 +653,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f5907940b0e24306a6b37c0797a68d09?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f5907940b0e24306a6b37c0797a68d09?size=800&format=webp"
     },
     {
       "playerId": "03695de5-49b2-48ca-8cf9-d3a411b7fb98",
@@ -663,7 +663,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp"
     },
     {
       "playerId": "59a777fb-049b-4f99-8bb1-f53516f76953",
@@ -673,7 +673,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp"
     },
     {
       "playerId": "387c51fb-7f66-47b6-bb40-0876ae41bb29",
@@ -683,7 +683,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "22",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/26b5a01951934ea5bb6b02c636dcb2e8?size=800&format=webp"
     },
     {
       "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
@@ -693,7 +693,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "F",
       "jersey": "34",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72eeb6c960da4f8080531796fcd6cdaa?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72eeb6c960da4f8080531796fcd6cdaa?size=800&format=webp"
     },
     {
       "playerId": "be4c5c96-8667-40f8-98d0-4c1d99641bc5",
@@ -703,7 +703,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "1",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/59ba8f111c334c3f93ea1667c3bc3e1a?size=800&format=webp"
     },
     {
       "playerId": "d21a6ba4-66ef-4623-b652-53b490002170",
@@ -713,7 +713,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2eb9a014bf9a4699ba8d4872873cc7b3?size=800&format=webp"
     },
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -723,7 +723,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": "12",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b1220b73eff342508e6660bb4989d12f?size=800&format=webp"
     },
     {
       "playerId": "37613082-354f-48d0-b16d-0d9ff613f64c",
@@ -733,7 +733,7 @@
       "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
       "position": "F",
       "jersey": "5",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66449ae66836405480cc29c01c83c532?size=800&format=webp"
     },
     {
       "playerId": "f9b53b9b-9907-43d2-bf0a-d88e58abacf0",
@@ -743,7 +743,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp"
     },
     {
       "playerId": "3eed080d-4398-49ef-a990-ff5bf86c98ed",
@@ -753,7 +753,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "F",
       "jersey": "15",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp"
     },
     {
       "playerId": "872bdcab-a933-4436-874d-4d94f4e184e8",
@@ -763,7 +763,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": "14",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c07537dec0104e339290103974b97c63?size=800&format=webp"
     },
     {
       "playerId": "2337cf0e-9ee7-439d-8aec-770b3876368c",
@@ -773,7 +773,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d879cc4cade44e5aa712b827c2902e19?size=800&format=webp"
     },
     {
       "playerId": "69a0f400-cf3f-4a5a-9c5d-cfa80cd00ec3",
@@ -783,7 +783,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp"
     },
     {
       "playerId": "23f56f6b-c7d2-434e-8929-9eada1c1a143",
@@ -793,7 +793,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "F",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp"
     },
     {
       "playerId": "08c14dd1-935b-4e34-8e1f-97da35d055c9",
@@ -803,7 +803,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": "10",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fb658b67156345afadd2c724e07b1527?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fb658b67156345afadd2c724e07b1527?size=800&format=webp"
     },
     {
       "playerId": "46d53277-6741-4431-80c1-aefd8aff6cc9",
@@ -813,7 +813,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "GF",
       "jersey": "23",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp"
     },
     {
       "playerId": "0dd6e2f3-0358-4a6e-a340-fe5279db28fa",
@@ -823,7 +823,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "F",
       "jersey": "5",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/120a0442a57a4223af753a8e8fa3b126?size=800&format=webp"
     },
     {
       "playerId": "6a42971e-6638-4472-b289-98c544aaa90a",
@@ -833,7 +833,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "15",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bdc39a5c95094494be5e44ef18843bfd?size=800&format=webp"
     },
     {
       "playerId": "135b961b-2a30-4044-9d4e-52128c10a33c",
@@ -843,7 +843,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "9",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/939b60a97224405e8bc566a0f8360f41?size=800&format=webp"
     },
     {
       "playerId": "9ffab474-7164-40a8-8b80-247393b30895",
@@ -863,7 +863,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
       "jersey": "22",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/872ebee9d9a24b989fbe4cf249391e96?size=800&format=webp"
     },
     {
       "playerId": "0c6e8860-99ba-44d2-9f1a-8b6e58936bb8",
@@ -873,7 +873,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "G",
       "jersey": "0",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/af762ce997b24370808d9974913e5545?size=800&format=webp"
     },
     {
       "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
@@ -883,7 +883,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "8",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp"
     },
     {
       "playerId": "9b04b8b2-c234-4c8e-8653-d896d66267a9",
@@ -893,7 +893,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/20ddc735f39448cbb2e263235f1e8205?size=800&format=webp"
     },
     {
       "playerId": "ade09c69-e9b3-46d1-8202-2b778e96409a",
@@ -903,7 +903,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e7b0f3f129e40a09803d2c4345b9d7c?size=800&format=webp"
     },
     {
       "playerId": "2e2291aa-36b6-4928-b348-0f5951fbc3b4",
@@ -913,7 +913,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": "8",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/561142a7fd204201803fbcbd0f85cea4?size=800&format=webp"
     },
     {
       "playerId": "aeb4d203-4032-44a5-a412-584f007d6dfb",
@@ -923,7 +923,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fc92eb763ea04e13bf6a18483af9e61c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fc92eb763ea04e13bf6a18483af9e61c?size=800&format=webp"
     },
     {
       "playerId": "7f6e18b2-6494-41c7-9791-d72c632317d5",
@@ -933,7 +933,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "G",
       "jersey": "20",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aa27b55933214883a167c37888ef9da9?size=800&format=webp"
     },
     {
       "playerId": "20791487-46a5-4d75-a6a1-17d8013c251f",
@@ -943,7 +943,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ba1810cee915489ab8667b631e65a86f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ba1810cee915489ab8667b631e65a86f?size=800&format=webp"
     },
     {
       "playerId": "c9019743-60ae-4700-852e-6ae15c1cbef6",
@@ -953,7 +953,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "11",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/66f55d47051345d6941b107d54c3f646?size=800&format=webp"
     },
     {
       "playerId": "eb26560d-c56e-4409-b482-8b141421ce79",
@@ -963,7 +963,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "FC",
       "jersey": "31",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2faf49d9842942e384378cfbdeed1a1b?size=800&format=webp"
     },
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
@@ -973,7 +973,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
       "jersey": "6",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7dbf7b9311c94e95865754281375f5b0?size=800&format=webp"
     },
     {
       "playerId": "9b71131b-787a-475d-aa1b-00dc4394f5e2",
@@ -983,7 +983,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "F",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/02653b27649c4db692b5dae4ca6db3b4?size=800&format=webp"
     },
     {
       "playerId": "72da23d4-1cd5-4424-83fe-714ef33f9c6d",
@@ -993,7 +993,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
       "jersey": "1",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/f9889a7d26324a0e99462480cd49f963?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f9889a7d26324a0e99462480cd49f963?size=800&format=webp"
     },
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
@@ -1003,7 +1003,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": "7",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/03c780624e6f417e92c1e7750494247d?size=800&format=webp"
     },
     {
       "playerId": "b21f6432-c1e5-446a-b516-d1c981b77c48",
@@ -1013,7 +1013,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/62e0263dd65342d4a7e5437021354270?size=800&format=webp"
     },
     {
       "playerId": "52e3e7c5-4fa9-4fa2-b8ff-1bf1a4750537",
@@ -1023,7 +1023,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8605d5e515cf4cf78984df6a667ae519?size=800&format=webp"
     },
     {
       "playerId": "96a3897c-483c-4089-b824-2bb65d265828",
@@ -1043,7 +1043,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "C",
       "jersey": "13",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/042d270b93884995897d6390ceb59ec7?size=800&format=webp"
     },
     {
       "playerId": "f36a7c02-4846-4a7d-a778-f8910383c455",
@@ -1053,7 +1053,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": "26",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a2fbdbd0d72d45f3ad69436c55d377c6?size=800&format=webp"
     },
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
@@ -1063,7 +1063,7 @@
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
       "jersey": "3",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/43413a31fe87455785f3d851a9f769ca?size=800&format=webp"
     },
     {
       "playerId": "6f9d3d60-119f-408f-b8f9-a44978929b2e",
@@ -1073,7 +1073,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "FC",
       "jersey": "21",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp"
     },
     {
       "playerId": "43ece052-4c0c-4878-8cbe-5fe7055f648d",
@@ -1083,7 +1083,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "13",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/53e530ef8ed944cc8ff29b4eaee5cb22?size=800&format=webp"
     },
     {
       "playerId": "f4c4d041-69b8-4757-9142-f5c028a070f2",
@@ -1093,7 +1093,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72a4f60bf7c544d2a6453a14769bdc29?size=800&format=webp"
     },
     {
       "playerId": "74d07046-c14c-4b63-8f13-ad04902494a3",
@@ -1103,7 +1103,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "51",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp"
     },
     {
       "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
@@ -1113,7 +1113,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": null,
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c49adad7ecda497fa6e06b47a3aeb2fe?size=800&format=webp"
     },
     {
       "playerId": "bc5d17e5-219c-41b7-994b-1226cc144877",
@@ -1123,7 +1123,7 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": "44",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/98094174e7c346c6aba1e972725b21d1?size=800&format=webp"
     },
     {
       "playerId": "bf2ff692-c8a9-4e97-bf5e-907ee38b9af1",
@@ -1133,7 +1133,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "G",
       "jersey": "0",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp"
     },
     {
       "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
@@ -1143,7 +1143,7 @@
       "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
       "position": "G",
       "jersey": "",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/994d3841cf4749adb4ef92b1a72eae63?size=800&format=webp"
     },
     {
       "playerId": "23283d39-8a83-44ab-84ac-0bcf1c675c92",
@@ -1153,7 +1153,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": null,
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/16cd685eb2394ae1bfda890a87d7b90a?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/16cd685eb2394ae1bfda890a87d7b90a?size=800&format=webp"
     },
     {
       "playerId": "f1f3155a-4ff7-445f-9c59-f0f9a9be8a8c",
@@ -1163,7 +1163,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": "21",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/6db6e94d32ab48a8912795654a7215ad?size=800&format=webp"
     },
     {
       "playerId": "fd0678c3-5b7e-4550-bb6b-5849534e3769",
@@ -1173,7 +1173,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "12",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp"
     },
     {
       "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
@@ -1183,7 +1183,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "F",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp"
     },
     {
       "playerId": "7efc81c9-d26e-4950-97e1-1b9b03b1bacd",
@@ -1193,7 +1193,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": "1",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/2e20d8fc3871492da91c513e497997ba?size=800&format=webp"
     },
     {
       "playerId": "ac10899d-d7cc-4994-8ee6-fda299502786",
@@ -1203,7 +1203,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "G",
       "jersey": "3",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/61f980eb5de743ebbd35c59ac6c86cc9?size=800&format=webp"
     },
     {
       "playerId": "fb85d99d-86ac-46f7-b60d-ea33ae00a9fd",
@@ -1213,7 +1213,7 @@
       "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
       "position": "FC",
       "jersey": "24",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp"
     },
     {
       "playerId": "6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592",
@@ -1223,7 +1223,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": "9",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3334f9494d11405abe45b8cf421e35bc?size=800&format=webp"
     },
     {
       "playerId": "cd541bbb-db3f-4821-82e1-c3c104d99fd8",
@@ -1233,7 +1233,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "C",
       "jersey": "22",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/24b38353096147649f17404adfccb81f?size=800&format=webp"
     },
     {
       "playerId": "3af27cad-ac89-4122-842c-2772197168c5",
@@ -1243,7 +1243,7 @@
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "G",
       "jersey": "6",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/eba28794997947248d0352c9d2501d63?size=800&format=webp"
     },
     {
       "playerId": "46fc1fe9-abf7-4e72-9c80-60483ae9da5e",
@@ -1253,7 +1253,7 @@
       "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
       "position": "F",
       "jersey": "10",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp"
     },
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",
@@ -1263,7 +1263,7 @@
       "teamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
       "position": "F",
       "jersey": "45",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/0b2ad14abbe64f729661575aceb79bd1?size=800&format=webp"
     }
   ]
 }
