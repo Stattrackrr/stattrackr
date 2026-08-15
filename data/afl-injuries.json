@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-15T16:25:17.353Z",
+  "generatedAt": "2026-08-15T18:28:16.279Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 229,
+  "injuryCount": 198,
   "injuries": [
-    {
-      "team": "Port Adelaide Power",
-      "player": "Aliir Aliir",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
     {
       "team": "Adelaide Crows",
       "player": "Reilly O'Brien",
@@ -23,34 +17,10 @@
       "returning": "active"
     },
     {
-      "team": "Geelong Cats",
-      "player": "James Worpel",
-      "injury": "Hamstring",
-      "returning": "Finals campaign in jeopardy"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Harry Sheezel",
-      "injury": "Cheekbone",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Oscar Ryan",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Oliver Wiltshire",
-      "injury": "Foot",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Anthony Caminiti",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
@@ -74,18 +44,6 @@
       "team": "St Kilda Saints",
       "player": "Liam Ryan",
       "injury": "Managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Tyler Sonsie",
-      "injury": "recalled in place of",
-      "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Samson Ryan",
-      "injury": "recalled in place of",
       "returning": "TBC"
     },
     {
@@ -126,12 +84,6 @@
     },
     {
       "team": "Essendon Bombers",
-      "player": "Zak Johnson",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Essendon Bombers",
       "player": "Sam Durham",
       "injury": "Soreness",
       "returning": "TBC"
@@ -152,12 +104,6 @@
       "team": "West Coast Eagles",
       "player": "Bo Allan",
       "injury": "managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Hayden McLean",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -209,12 +155,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Max Beattie",
-      "injury": "Ankle",
-      "returning": "active"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Matt Duffy",
       "injury": "departed the club to head back to Ireland to be closer to family",
@@ -225,12 +165,6 @@
       "player": "Bailey Dale",
       "injury": "Soreness",
       "returning": "next week"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Paul Curtis",
-      "injury": "absent from training",
-      "returning": "right to play"
     },
     {
       "team": "Adelaide Crows",
@@ -329,12 +263,6 @@
       "returning": "6 Weeks"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Ryan Lester",
-      "injury": "Calf",
-      "returning": "After missing four matches"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Matthew Carroll",
       "injury": "ACL",
@@ -375,12 +303,6 @@
       "player": "Harry O'Farrell",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Joel Cochran",
-      "injury": "Concussion",
-      "returning": "suitability for selection hinges on testing, come Thursday"
     },
     {
       "team": "Collingwood Magpies",
@@ -474,12 +396,6 @@
     },
     {
       "team": "West Coast Eagles",
-      "player": "Jack Hutchinson",
-      "injury": "Hamstring",
-      "returning": "Test"
-    },
-    {
-      "team": "West Coast Eagles",
       "player": "Noah Long",
       "injury": "Knee",
       "returning": "Season"
@@ -515,42 +431,6 @@
       "returning": "1 match"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Ryan Maric",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Sandy Brock",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Harvey Johnston",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Jai Murray",
-      "injury": "rested",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Dylan Patterson",
-      "injury": "rested",
-      "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Beau Addinsall",
-      "injury": "rested",
-      "returning": "TBC"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Harrison Jones",
       "injury": "active",
@@ -571,12 +451,6 @@
     {
       "team": "Port Adelaide Power",
       "player": "Jack Watkins",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Lachie Jones",
       "injury": "Injury",
       "returning": "TBC"
     },
@@ -606,50 +480,14 @@
     },
     {
       "team": "Brisbane Lions",
-      "player": "Keidean Coleman",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Bailey Macdonald",
-      "injury": "being managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Jordan De Goey",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Dane Rampe",
       "injury": "out alongside",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Malcolm Rosas",
-      "injury": "out alongside",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mitchell Edwards",
-      "injury": "Managed",
       "returning": "TBC"
     },
     {
@@ -756,12 +594,6 @@
     },
     {
       "team": "Geelong Cats",
-      "player": "Patrick Dangerfield",
-      "injury": "Managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
       "player": "Keighton Matofai-Forbes",
       "injury": "Finger",
       "returning": "4 Weeks"
@@ -789,12 +621,6 @@
       "player": "Jed Adams",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Patrick Snell",
-      "injury": "Knee",
-      "returning": "Test"
     },
     {
       "team": "Brisbane Lions",
@@ -849,12 +675,6 @@
       "player": "Finn Callaghan",
       "injury": "Ankle",
       "returning": "Season"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Harry Cunningham",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -999,12 +819,6 @@
       "player": "Sam Powell-Pepper",
       "injury": "ACL",
       "returning": "Season"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Charlie Nicholls",
-      "injury": "Finger",
-      "returning": "Test"
     },
     {
       "team": "GWS Giants",
