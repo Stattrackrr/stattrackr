@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-15T11:16:42.256Z",
+  "generatedAt": "2026-08-15T16:47:25.443Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-08-16T03:40:34Z",
       "weather": {
-        "temperatureC": 16.6,
-        "precipitationMm": 0.2,
-        "windKmh": 13.4
+        "temperatureC": 16.7,
+        "precipitationMm": 0.1,
+        "windKmh": 13.9
       }
     },
     {
@@ -20,7 +20,7 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-16T05:15:06Z",
       "weather": {
-        "temperatureC": 12.2,
+        "temperatureC": 12.8,
         "precipitationMm": 0,
         "windKmh": 7.9
       }
@@ -31,9 +31,9 @@
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-08-16T06:40:51Z",
       "weather": {
-        "temperatureC": 12,
+        "temperatureC": 12.3,
         "precipitationMm": 0,
-        "windKmh": 6.2
+        "windKmh": 5.9
       }
     },
     {
@@ -42,9 +42,20 @@
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-08-20T09:30:24Z",
       "weather": {
-        "temperatureC": 11.7,
+        "temperatureC": 13.8,
         "precipitationMm": 0,
-        "windKmh": 7
+        "windKmh": 14.8
+      }
+    },
+    {
+      "gameId": "1917dcaae1d4ffc3559f523e82cc2bde",
+      "homeTeam": "Collingwood Magpies",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-08-21T09:40:25Z",
+      "weather": {
+        "temperatureC": 13.1,
+        "precipitationMm": 0,
+        "windKmh": 7.1
       }
     },
     {
@@ -56,6 +67,17 @@
         "temperatureC": 14.5,
         "precipitationMm": 0,
         "windKmh": 2.6
+      }
+    },
+    {
+      "gameId": "574438ee25dbb41bc8a05cf37c8253fc",
+      "homeTeam": "Melbourne Demons",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-08-22T06:15:17Z",
+      "weather": {
+        "temperatureC": 15.1,
+        "precipitationMm": 0,
+        "windKmh": 6.6
       }
     },
     {
@@ -101,7 +123,18 @@
         "precipitationMm": 0,
         "windKmh": 13
       }
+    },
+    {
+      "gameId": "6a9beb33087333993448d19b4dad4bc3",
+      "homeTeam": "West Coast Eagles",
+      "awayTeam": "Hawthorn Hawks",
+      "commenceTime": "2026-08-23T09:20:20Z",
+      "weather": {
+        "temperatureC": 14.8,
+        "precipitationMm": 0.4,
+        "windKmh": 5.6
+      }
     }
   ],
-  "count": 9
+  "count": 12
 }

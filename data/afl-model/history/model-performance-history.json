@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-15T11:17:58Z",
-  "count": 196,
+  "generatedAt": "2026-08-15T17:06:25Z",
+  "count": 197,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -25480,6 +25480,162 @@
         "sampleCountOk": true,
         "brierOk": false,
         "logLossOk": false,
+        "hitRateOk": true,
+        "freezeInactive": true
+      }
+    },
+    {
+      "generatedAt": "2026-08-15T17:06:25Z",
+      "sampleCount": 595,
+      "pass": true,
+      "promoted": true,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 595,
+        "hitRate": 0.52437,
+        "brierScore": 0.266048,
+        "logLoss": 0.745089,
+        "mae": 4.582726,
+        "avgClvLite": -0.002545,
+        "positiveClvRate": 0.147899,
+        "clvSampleCount": 595,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 11,
+            "avgPred": 0.0444,
+            "avgActual": 0.3636
+          },
+          {
+            "bin": 1,
+            "count": 27,
+            "avgPred": 0.1622,
+            "avgActual": 0.4815
+          },
+          {
+            "bin": 2,
+            "count": 57,
+            "avgPred": 0.2554,
+            "avgActual": 0.4912
+          },
+          {
+            "bin": 3,
+            "count": 115,
+            "avgPred": 0.3577,
+            "avgActual": 0.4609
+          },
+          {
+            "bin": 4,
+            "count": 178,
+            "avgPred": 0.4487,
+            "avgActual": 0.5112
+          },
+          {
+            "bin": 5,
+            "count": 129,
+            "avgPred": 0.5485,
+            "avgActual": 0.5504
+          },
+          {
+            "bin": 6,
+            "count": 61,
+            "avgPred": 0.6426,
+            "avgActual": 0.5246
+          },
+          {
+            "bin": 7,
+            "count": 14,
+            "avgPred": 0.7338,
+            "avgActual": 0.5714
+          },
+          {
+            "bin": 8,
+            "count": 3,
+            "avgPred": 0.8179,
+            "avgActual": 0.6667
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260815-170431"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 595,
+        "hitRate": 0.521008,
+        "brierScore": 0.266914,
+        "logLoss": 0.746662,
+        "mae": 4.591757,
+        "avgClvLite": -0.002651,
+        "positiveClvRate": 0.147899,
+        "clvSampleCount": 595,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 11,
+            "avgPred": 0.0456,
+            "avgActual": 0.3636
+          },
+          {
+            "bin": 1,
+            "count": 25,
+            "avgPred": 0.1586,
+            "avgActual": 0.44
+          },
+          {
+            "bin": 2,
+            "count": 63,
+            "avgPred": 0.2572,
+            "avgActual": 0.4762
+          },
+          {
+            "bin": 3,
+            "count": 104,
+            "avgPred": 0.3563,
+            "avgActual": 0.5096
+          },
+          {
+            "bin": 4,
+            "count": 187,
+            "avgPred": 0.4478,
+            "avgActual": 0.4973
+          },
+          {
+            "bin": 5,
+            "count": 126,
+            "avgPred": 0.55,
+            "avgActual": 0.5476
+          },
+          {
+            "bin": 6,
+            "count": 61,
+            "avgPred": 0.6393,
+            "avgActual": 0.5246
+          },
+          {
+            "bin": 7,
+            "count": 15,
+            "avgPred": 0.7336,
+            "avgActual": 0.5333
+          },
+          {
+            "bin": 8,
+            "count": 3,
+            "avgPred": 0.8202,
+            "avgActual": 0.6667
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260814-174121"
+      },
+      "deltas": {
+        "brierImprovement": 0.003244,
+        "logLossChange": -0.002107,
+        "hitRateDelta": 0.003362
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": true,
         "hitRateOk": true,
         "freezeInactive": true
       }
