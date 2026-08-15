@@ -1,14 +1,44 @@
 {
-  "generatedAt": "2026-08-15T08:28:58.214Z",
+  "generatedAt": "2026-08-15T10:26:36.547Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 223,
+  "injuryCount": 228,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Reilly O'Brien",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Archie Ludowyke",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "James Worpel",
+      "injury": "Hamstring",
+      "returning": "Finals campaign in jeopardy"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Harry Sheezel",
-      "injury": "Facial",
-      "returning": "in doubt for next game"
+      "injury": "Cheekbone",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Oscar Ryan",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Oliver Wiltshire",
+      "injury": "Foot",
+      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
