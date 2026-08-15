@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-14T14:20:57.172Z",
+  "generatedAt": "2026-08-15T13:38:20.510Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -367,7 +367,7 @@
       "teamCode": "CNS",
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "headCoach": "Adam Forde",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
@@ -393,6 +393,19 @@
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/23d8bc0b6fa34a41818eacf09a372e4b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
+          "name": "Jaylin Galloway",
+          "team": "Cairns Taipans",
+          "teamCode": "CNS",
+          "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+          "position": "G",
+          "jersey": "6",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Sydney Kings",
           "idSource": "rosetta"
         },
         {
@@ -1153,7 +1166,7 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": null,
-          "jersey": null,
+          "jersey": "2",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "University of Arizona - NCAA",
@@ -1231,7 +1244,7 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": null,
-          "jersey": null,
+          "jersey": "33",
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Gold Coast Rollers - NBL1 North",
@@ -1529,15 +1542,15 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": "cf991943-7063-4624-a62c-1b5970dcb6eb",
-          "name": "Jaylin Galloway",
+          "playerId": "e2f8ccd9-5be5-41e2-a04b-be70c7c2af1c",
+          "name": "Keli Leaupepe",
           "team": "Sydney Kings",
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "position": "G",
-          "jersey": "6",
-          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/f66fc4b2a5784e869d5f17c39ab83a15?size=800&format=webp",
-          "trackerStatus": "incoming",
+          "position": "F",
+          "jersey": "34",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/72eeb6c960da4f8080531796fcd6cdaa?size=800&format=webp",
+          "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
         },
@@ -1568,17 +1581,17 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
-          "name": "Matthew Dellavedova Keli Leaupepe",
+          "playerId": "83582125-9e71-4e7c-ae15-07f11333b2da",
+          "name": "Matthew Dellavedova",
           "team": "Sydney Kings",
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
-          "position": null,
-          "jersey": null,
-          "imageUrl": null,
+          "position": "G",
+          "jersey": "8",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/713a9159e6244d8898f5caf32df40fe9?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
