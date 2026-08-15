@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-15T14:24:53.369Z",
+  "generatedAt": "2026-08-15T16:25:17.353Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 228,
+  "injuryCount": 229,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Aliir Aliir",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Reilly O'Brien",
