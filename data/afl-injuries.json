@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-14T22:24:44.020Z",
+  "generatedAt": "2026-08-15T01:02:46.978Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 219,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Liam Ryan",
+      "injury": "managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Tyler Sonsie",
+      "injury": "recalled in place of",
+      "returning": "TBC"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Samson Ryan",
+      "injury": "recalled in place of",
+      "returning": "TBC"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Alex Pearce",
@@ -97,12 +115,6 @@
     {
       "team": "St Kilda Saints",
       "player": "Hunter Clark",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Liam Ryan",
       "injury": "Soreness",
       "returning": "1 Week"
     },
