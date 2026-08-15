@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-15T18:28:16.279Z",
+  "generatedAt": "2026-08-15T20:24:10.850Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 198,
+  "injuryCount": 202,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Joel Cochran",
+      "injury": "Concussion",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Charlie Nicholls",
+      "injury": "Finger",
+      "returning": "Test"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Patrick Snell",
+      "injury": "Knee",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Jack Hutchinson",
+      "injury": "Hamstring",
+      "returning": "Test"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Reilly O'Brien",
