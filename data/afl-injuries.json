@@ -1,13 +1,37 @@
 {
-  "generatedAt": "2026-08-15T01:02:46.978Z",
+  "generatedAt": "2026-08-15T02:57:25.976Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 222,
   "injuries": [
     {
       "team": "St Kilda Saints",
+      "player": "Anthony Caminiti",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Hunter Clark",
+      "injury": "Managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Mason Wood",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Nasiah Wanganeen-Milera",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
       "player": "Liam Ryan",
-      "injury": "managed",
+      "injury": "Managed",
       "returning": "TBC"
     },
     {
@@ -109,12 +133,6 @@
     {
       "team": "Geelong Cats",
       "player": "Jack Martin",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Hunter Clark",
       "injury": "Soreness",
       "returning": "1 Week"
     },
@@ -443,22 +461,10 @@
       "returning": "Season"
     },
     {
-      "team": "St Kilda Saints",
-      "player": "Mason Wood",
-      "injury": "Injury",
-      "returning": "TBA"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Harley Reid",
       "injury": "Quad",
       "returning": "active"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Nasiah Wanganeen-Milera",
-      "injury": "Hamstring",
-      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
