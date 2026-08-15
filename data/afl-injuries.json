@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-15T06:36:15.956Z",
+  "generatedAt": "2026-08-15T08:28:58.214Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 222,
+  "injuryCount": 223,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Harry Sheezel",
+      "injury": "Facial",
+      "returning": "in doubt for next game"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Anthony Caminiti",
