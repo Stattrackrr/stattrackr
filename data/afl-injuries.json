@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-16T20:23:04.451Z",
+  "generatedAt": "2026-08-16T22:22:13.710Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 193,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Marcus Bontempelli",
+      "injury": "Achilles",
+      "returning": "TBC"
+    },
     {
       "team": "Carlton Blues",
       "player": "Harry McKay",
@@ -219,12 +225,6 @@
       "player": "Sam De Koning",
       "injury": "Injury",
       "returning": "TBA"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Marcus Bontempelli",
-      "injury": "Soreness",
-      "returning": "1 Week"
     },
     {
       "team": "Adelaide Crows",
