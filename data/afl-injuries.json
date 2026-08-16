@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-16T01:06:57.252Z",
+  "generatedAt": "2026-08-16T03:04:22.467Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 203,
+  "injuryCount": 204,
   "injuries": [
+    {
+      "team": "GWS Giants",
+      "player": "Jayden Laverde",
+      "injury": "Soreness",
+      "returning": "active"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Xavier O'Halloran",
+      "injury": "Soreness",
+      "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Bo Allan",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sean Darcy",
+      "injury": "Calf",
+      "returning": "TBC"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Aliir Aliir",
@@ -137,12 +161,6 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Bo Allan",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
       "team": "Sydney Swans",
       "player": "Lewis Melican",
       "injury": "active",
@@ -237,18 +255,6 @@
       "player": "Aiden Riddle",
       "injury": "Ankle",
       "returning": "Test"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Jayden Laverde",
-      "injury": "Lung",
-      "returning": "TBA"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Xavier O'Halloran",
-      "injury": "Hamstring",
-      "returning": "2 Weeks"
     },
     {
       "team": "Hawthorn Hawks",
