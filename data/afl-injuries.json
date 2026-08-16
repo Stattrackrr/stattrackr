@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-16T03:04:22.467Z",
+  "generatedAt": "2026-08-16T05:03:02.247Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 204,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
     {
       "team": "GWS Giants",
       "player": "Jayden Laverde",
@@ -123,12 +129,6 @@
       "player": "Nick Murray",
       "injury": "Knee",
       "returning": "Test"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "ruled out of wildcard final",
-      "returning": "wildcard final"
     },
     {
       "team": "Adelaide Crows",
