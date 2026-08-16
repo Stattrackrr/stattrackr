@@ -1582,7 +1582,18 @@ export default function NblDashboardPage() {
                   <div className="relative flex-1 min-h-[280px] w-full min-w-0 flex flex-col overflow-hidden">
                     {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                       <div className={nblRightTab === 'dvp' ? 'flex-1 min-h-0 flex flex-col' : 'hidden'}>
-                        <NblDvpCard isDark={!!mounted && isDark} />
+                        <NblDvpCard
+                          isDark={!!mounted && isDark}
+                          season={NBL_SHOT_CHART_SEASON_YEAR}
+                          playerId={selectedPlayer?.playerId || null}
+                          opponentName={
+                            nblTeamFilter !== 'All' && nblTeamFilter
+                              ? nblTeamFilter
+                              : displayOpponent
+                          }
+                          selectedStat={mainChartStat}
+                          resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                        />
                       </div>
                     )}
                     {nblRightTabsVisited.has('breakdown') && (
@@ -1931,7 +1942,18 @@ export default function NblDashboardPage() {
                                 : 'hidden'
                             }
                           >
-                            <NblDvpCard isDark={!!mounted && isDark} />
+                            <NblDvpCard
+                              isDark={!!mounted && isDark}
+                              season={NBL_SHOT_CHART_SEASON_YEAR}
+                              playerId={selectedPlayer?.playerId || null}
+                              opponentName={
+                                nblTeamFilter !== 'All' && nblTeamFilter
+                                  ? nblTeamFilter
+                                  : displayOpponent
+                              }
+                              selectedStat={mainChartStat}
+                              resolveTeamLogo={(name) => resolveNblTeamLogo(name, logoByTeam)}
+                            />
                           </div>
                         )}
                         {((nblPropsMode === 'team' && nblRightTab === 'team_matchup') ||
