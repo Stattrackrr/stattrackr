@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-15T22:23:33.755Z",
+  "generatedAt": "2026-08-16T01:06:57.252Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 202,
+  "injuryCount": 203,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Aliir Aliir",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Brayden Maynard",
+      "injury": "Shoulder",
+      "returning": "Round 24"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Joel Cochran",
@@ -338,7 +350,7 @@
       "team": "Collingwood Magpies",
       "player": "Jeremy Howe",
       "injury": "Arm",
-      "returning": "TBC"
+      "returning": "Round 24"
     },
     {
       "team": "Collingwood Magpies",
@@ -350,13 +362,7 @@
       "team": "Collingwood Magpies",
       "player": "Patrick Lipinski",
       "injury": "Calf",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Brayden Maynard",
-      "injury": "Knee",
-      "returning": "TBC"
+      "returning": "Round 24"
     },
     {
       "team": "Collingwood Magpies",
