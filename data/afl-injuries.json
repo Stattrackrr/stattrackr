@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-16T18:27:58.834Z",
+  "generatedAt": "2026-08-16T20:23:04.451Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 187,
+  "injuryCount": 193,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "unavailable for the game",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jack Martin",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Harrison Oliver",
+      "injury": "Adductor",
+      "returning": "Test"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Scrimshaw",
+      "injury": "Knee",
+      "returning": "Test"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Callum Coleman-Jones",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Tom Powell",
+      "injury": "Groin",
+      "returning": "TBA"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Jacob van Rooyen",
