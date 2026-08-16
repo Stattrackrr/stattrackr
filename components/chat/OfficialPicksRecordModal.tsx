@@ -347,7 +347,12 @@ const UnitsPnlChart = memo(function UnitsPnlChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} margin={chartMargin} barCategoryGap={compactChart ? '8%' : '12%'}>
+      <BarChart
+        data={chartData}
+        margin={chartMargin}
+        barCategoryGap={compactChart ? '8%' : '12%'}
+        style={{ outline: 'none' }}
+      >
         <XAxis
           dataKey="bet"
           type="category"
@@ -390,7 +395,7 @@ const UnitsPnlChart = memo(function UnitsPnlChart({
           }}
         />
         <ReferenceLine y={0} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="3 3" />
-        <Bar dataKey="profit" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="profit" radius={[4, 4, 0, 0]} isAnimationActive={false} activeBar={false}>
           {chartData.map((entry, index) => (
             <Cell
               key={`bar-${index}`}
@@ -459,15 +464,31 @@ function RecordModalBody(props: RecordModalBodyProps) {
         />
       </div>
 
-      <div className="mb-3 rounded-xl border border-gray-200 bg-slate-50 p-2 dark:border-gray-700 dark:bg-[#0a1929] sm:mb-4 sm:p-4">
+      <div className="picks-record-chart mb-3 rounded-xl border border-gray-200 bg-slate-50 p-2 dark:border-gray-700 dark:bg-[#0a1929] sm:mb-4 sm:p-4">
         <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-white sm:mb-3 sm:text-base">Units P&L Over Time</h3>
-        <div className="h-48 w-full sm:h-56">
+        <div className="h-48 w-full outline-none sm:h-56" tabIndex={-1}>
           {chartData.length <= 1 ? (
             <p className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">No settled picks yet.</p>
           ) : (
             <UnitsPnlChart chartData={chartData} ticks={xAxisConfig.ticks} isDark={isDark} compactChart={compactChart} />
           )}
         </div>
+        <style jsx global>{`
+          .picks-record-chart .recharts-wrapper,
+          .picks-record-chart .recharts-surface,
+          .picks-record-chart .recharts-wrapper:focus,
+          .picks-record-chart .recharts-surface:focus,
+          .picks-record-chart svg,
+          .picks-record-chart svg:focus,
+          .picks-record-chart .recharts-bar-rectangle,
+          .picks-record-chart .recharts-bar-rectangle:focus,
+          .picks-record-chart .recharts-active-bar,
+          .picks-record-chart *:focus,
+          .picks-record-chart *:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+          }
+        `}</style>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-slate-50 p-2 dark:border-gray-700 dark:bg-[#0a1929] sm:p-4">
