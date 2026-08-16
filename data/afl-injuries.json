@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-16T06:38:09.622Z",
+  "generatedAt": "2026-08-16T08:30:18.350Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 206,
+  "injuryCount": 208,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Will Hayward",
+      "injury": "Ankle",
+      "returning": "active"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Jacob van Rooyen",
+      "injury": "Received a three-match suspension for a high hit on Aliir Aliir.",
+      "returning": "three-match ban"
+    },
     {
       "team": "Essendon Bombers",
       "player": "Zak Johnson",
