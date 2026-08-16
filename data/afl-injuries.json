@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-16T16:25:59.189Z",
+  "generatedAt": "2026-08-16T18:27:58.834Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 208,
+  "injuryCount": 187,
   "injuries": [
-    {
-      "team": "Carlton Blues",
-      "player": "Will Hayward",
-      "injury": "Ankle",
-      "returning": "active"
-    },
     {
       "team": "Melbourne Demons",
       "player": "Jacob van Rooyen",
@@ -179,12 +173,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Nick Coffield",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
       "team": "Sydney Swans",
       "player": "Lewis Melican",
       "injury": "active",
@@ -195,12 +183,6 @@
       "player": "Sam De Koning",
       "injury": "Injury",
       "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jack Martin",
-      "injury": "Soreness",
-      "returning": "1 Week"
     },
     {
       "team": "Western Bulldogs",
@@ -221,18 +203,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Sam Butler",
-      "injury": "omitted from the team",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Ned Reeves",
-      "injury": "omitted from the team",
-      "returning": "TBC"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Matt Duffy",
       "injury": "departed the club to head back to Ireland to be closer to family",
@@ -249,12 +219,6 @@
       "player": "Alex Neal-Bullen",
       "injury": "active",
       "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jacob Weitering",
-      "injury": "Calf",
-      "returning": "Returned"
     },
     {
       "team": "Geelong Cats",
@@ -291,12 +255,6 @@
       "player": "Robert Hansen Jr",
       "injury": "Wrist",
       "returning": "Season"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Tom Powell",
-      "injury": "Groin",
-      "returning": "up for selection"
     },
     {
       "team": "Melbourne Demons",
@@ -479,22 +437,10 @@
       "returning": "Season"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Harley Reid",
-      "injury": "Quad",
-      "returning": "active"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Darcy Byrne-Jones",
       "injury": "Accepted one-match ban for careless conduct, medium impact, high contact bump.",
       "returning": "1 match"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Harrison Jones",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
@@ -515,45 +461,9 @@
       "returning": "TBC"
     },
     {
-      "team": "Melbourne Demons",
-      "player": "Paddy Cross",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Aidan Schubert",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Finn Maginness",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Oliver Greeves",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
       "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Dane Rampe",
-      "injury": "out alongside",
-      "returning": "TBC"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Josh Goater",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -573,12 +483,6 @@
       "player": "Brandon Walker",
       "injury": "Shoulder",
       "returning": "TBC"
-    },
-    {
-      "team": "GWS Giants",
-      "player": "Harrison Oliver",
-      "injury": "Adductor",
-      "returning": "Test"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -614,12 +518,6 @@
       "team": "Melbourne Demons",
       "player": "Blake Howes",
       "injury": "Arm",
-      "returning": "TBC"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Latrelle Pickett",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
@@ -753,12 +651,6 @@
       "player": "Tom Sims",
       "injury": "Toe",
       "returning": "Season"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Callum Coleman-Jones",
-      "injury": "Ankle",
-      "returning": "Test"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -977,12 +869,6 @@
       "returning": "Season"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Julie O'Sullivan",
-      "injury": "ACL",
-      "returning": "Not available"
-    },
-    {
       "team": "St Kilda Saints",
       "player": "Jack Sinclair",
       "injury": "Soreness",
@@ -1040,12 +926,6 @@
       "team": "Adelaide Crows",
       "player": "Luke Pedlar",
       "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Scrimshaw",
-      "injury": "Knee",
       "returning": "TBC"
     },
     {
@@ -1173,12 +1053,6 @@
       "player": "Jess Bula",
       "injury": "Finger",
       "returning": "before the end of the month"
-    },
-    {
-      "team": "Melbourne Demons",
-      "player": "Jack Viney",
-      "injury": "Back",
-      "returning": "Returning this weekend (VFL)"
     },
     {
       "team": "Essendon Bombers",
