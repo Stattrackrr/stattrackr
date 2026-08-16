@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-16T05:03:02.247Z",
+  "generatedAt": "2026-08-16T06:38:09.622Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 204,
+  "injuryCount": 206,
   "injuries": [
+    {
+      "team": "Essendon Bombers",
+      "player": "Zak Johnson",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Hayden McLean",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tim English",
