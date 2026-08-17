@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-17T20:27:16.069Z",
+  "generatedAt": "2026-08-17T22:27:47.897Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
     "adelaide": {
@@ -1708,121 +1708,6 @@
         "teamTotal": 257
       }
     },
-    "west-coast": {
-      "slug": "west-coast",
-      "name": "West Coast",
-      "abbrev": "WCE",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Harley Reid",
-            "total": 528,
-            "rate": 80
-          },
-          {
-            "player": "Bailey Williams",
-            "total": 411,
-            "rate": 83
-          },
-          {
-            "player": "Tim Kelly",
-            "total": 411,
-            "rate": 73
-          },
-          {
-            "player": "Elliot Yeo",
-            "total": 390,
-            "rate": 66
-          },
-          {
-            "player": "Willem Duursma",
-            "total": 197,
-            "rate": 32
-          },
-          {
-            "player": "Matt Flynn",
-            "total": 122,
-            "rate": 74
-          },
-          {
-            "player": "Jack Graham",
-            "total": 119,
-            "rate": 33
-          },
-          {
-            "player": "Deven Robertson",
-            "total": 96,
-            "rate": 59
-          },
-          {
-            "player": "Cooper Duff-Tytler",
-            "total": 77,
-            "rate": 16
-          },
-          {
-            "player": "Brady Hough",
-            "total": 77,
-            "rate": 12
-          }
-        ],
-        "teamTotal": 2644
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Tom McCarthy",
-            "total": 99,
-            "rate": 37
-          },
-          {
-            "player": "Josh Lindsay",
-            "total": 62,
-            "rate": 23
-          },
-          {
-            "player": "Brandon Starcevich",
-            "total": 32,
-            "rate": 12
-          },
-          {
-            "player": "Liam Duggan",
-            "total": 28,
-            "rate": 10
-          },
-          {
-            "player": "Marcus Herbert",
-            "total": 25,
-            "rate": 9
-          },
-          {
-            "player": "Tylar Young",
-            "total": 7,
-            "rate": 3
-          },
-          {
-            "player": "Ryan Maric",
-            "total": 7,
-            "rate": 3
-          },
-          {
-            "player": "Liam Baker",
-            "total": 3,
-            "rate": 1
-          },
-          {
-            "player": "Harley Reid",
-            "total": 3,
-            "rate": 1
-          },
-          {
-            "player": "Willem Duursma",
-            "total": 1,
-            "rate": 0
-          }
-        ],
-        "teamTotal": 269
-      }
-    },
     "sydney": {
       "slug": "sydney",
       "name": "Sydney",
@@ -1936,6 +1821,121 @@
           }
         ],
         "teamTotal": 258
+      }
+    },
+    "west-coast": {
+      "slug": "west-coast",
+      "name": "West Coast",
+      "abbrev": "WCE",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Harley Reid",
+            "total": 528,
+            "rate": 80
+          },
+          {
+            "player": "Bailey Williams",
+            "total": 411,
+            "rate": 83
+          },
+          {
+            "player": "Tim Kelly",
+            "total": 411,
+            "rate": 73
+          },
+          {
+            "player": "Elliot Yeo",
+            "total": 390,
+            "rate": 66
+          },
+          {
+            "player": "Willem Duursma",
+            "total": 197,
+            "rate": 32
+          },
+          {
+            "player": "Matt Flynn",
+            "total": 122,
+            "rate": 74
+          },
+          {
+            "player": "Jack Graham",
+            "total": 119,
+            "rate": 33
+          },
+          {
+            "player": "Deven Robertson",
+            "total": 96,
+            "rate": 59
+          },
+          {
+            "player": "Cooper Duff-Tytler",
+            "total": 77,
+            "rate": 16
+          },
+          {
+            "player": "Brady Hough",
+            "total": 77,
+            "rate": 12
+          }
+        ],
+        "teamTotal": 2644
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Tom McCarthy",
+            "total": 99,
+            "rate": 37
+          },
+          {
+            "player": "Josh Lindsay",
+            "total": 62,
+            "rate": 23
+          },
+          {
+            "player": "Brandon Starcevich",
+            "total": 32,
+            "rate": 12
+          },
+          {
+            "player": "Liam Duggan",
+            "total": 28,
+            "rate": 10
+          },
+          {
+            "player": "Marcus Herbert",
+            "total": 25,
+            "rate": 9
+          },
+          {
+            "player": "Tylar Young",
+            "total": 7,
+            "rate": 3
+          },
+          {
+            "player": "Ryan Maric",
+            "total": 7,
+            "rate": 3
+          },
+          {
+            "player": "Liam Baker",
+            "total": 3,
+            "rate": 1
+          },
+          {
+            "player": "Harley Reid",
+            "total": 3,
+            "rate": 1
+          },
+          {
+            "player": "Willem Duursma",
+            "total": 1,
+            "rate": 0
+          }
+        ],
+        "teamTotal": 269
       }
     },
     "western-bulldogs": {
