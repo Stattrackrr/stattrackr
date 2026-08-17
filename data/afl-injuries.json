@@ -1,9 +1,75 @@
 {
-  "generatedAt": "2026-08-17T01:04:01.141Z",
+  "generatedAt": "2026-08-17T03:08:10.619Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 194,
+  "injuryCount": 198,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Will Hayward",
+      "injury": "Ankle",
+      "returning": "TBA"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Steele Sidebottom",
+      "injury": "Illness",
+      "returning": "TBA"
+    },
+    {
+      "team": "Essendon Bombers",
+      "player": "Hussien El Achkar",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Oliver Wiltshire",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "James Worpel",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Harry Sheezel",
+      "injury": "Cheekbone",
+      "returning": "TBA"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Bo Allan",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Nick Coffield",
+      "injury": "Concussion",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Laitham Vandermeer",
+      "injury": "Hamstring",
+      "returning": "TBA"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Darcy Fogarty",
+      "injury": "three-match ban for a swinging arm in a tackle",
+      "returning": "three-match ban"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Harry Cunningham",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Jack Viney",
@@ -32,18 +98,6 @@
       "team": "GWS Giants",
       "player": "Harrison Oliver",
       "injury": "Adductor",
-      "returning": "Test"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Scrimshaw",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Callum Coleman-Jones",
-      "injury": "Ankle",
       "returning": "Test"
     },
     {
@@ -89,12 +143,6 @@
       "returning": "active"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Bo Allan",
-      "injury": "active",
-      "returning": "active"
-    },
-    {
       "team": "Fremantle Dockers",
       "player": "Sean Darcy",
       "injury": "Calf",
@@ -113,21 +161,9 @@
       "returning": "Round 24"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Joel Cochran",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
       "team": "Fremantle Dockers",
       "player": "Charlie Nicholls",
       "injury": "Finger",
-      "returning": "Test"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Patrick Snell",
-      "injury": "Knee",
       "returning": "Test"
     },
     {
@@ -192,21 +228,9 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Nick Murray",
-      "injury": "Knee",
-      "returning": "Test"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "Taylor Walker",
       "injury": "Rested to avoid playing off back-to-back six-day breaks, managed for performance in September.",
       "returning": "next week"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Hussien El Achkar",
-      "injury": "managed",
-      "returning": "TBC"
     },
     {
       "team": "Essendon Bombers",
