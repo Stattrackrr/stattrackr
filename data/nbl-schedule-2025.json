@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-16T13:37:49.721Z",
+  "generatedAt": "2026-08-17T13:45:29.080Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 100,
   "games": [
@@ -1887,23 +1887,23 @@
       "matchSlug": "south-east-melbourne-phoenix-v-tasmania-jackjumpers-men-10-12-2025"
     },
     {
-      "id": "b2208500-4bef-11f0-b419-1738d9104f5f",
-      "externalId": "b2208500-4bef-11f0-b419-1738d9104f5f",
-      "startTime": "2025-12-07T05:30:00",
-      "round": "11",
+      "id": "49b83d9c-fb1d-11f0-b8d3-959f1ef770e3",
+      "externalId": "49b83d9c-fb1d-11f0-b8d3-959f1ef770e3",
+      "startTime": "2026-02-22T05:30:00",
+      "round": "IGNITE CUP FINAL",
       "status": "complete",
-      "homeTeam": "Perth Wildcats",
-      "homeTeamCode": "PER",
-      "homeTeamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
-      "homeLogo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-      "awayTeam": "Adelaide 36ers",
-      "awayTeamCode": "ADL",
-      "awayTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
-      "awayLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-      "homeScore": 94,
-      "awayScore": 95,
-      "venue": "RAC Arena",
-      "matchSlug": "perth-wildcats-v-adelaide-36ers-men-07-12-2025"
+      "homeTeam": "Adelaide 36ers",
+      "homeTeamCode": "ADL",
+      "homeTeamId": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
+      "homeLogo": "https://cdn.nbl.com.au/app_assets/ADL.png",
+      "awayTeam": "BNZ Breakers",
+      "awayTeamCode": "NZL",
+      "awayTeamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "awayLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
+      "homeScore": 107,
+      "awayScore": 111,
+      "venue": "Gold Coast Convention Centre",
+      "matchSlug": "adelaide-36ers-v-new-zealand-breakers-22-02-2026"
     }
   ]
 }
