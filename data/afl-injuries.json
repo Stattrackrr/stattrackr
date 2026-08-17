@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-16T22:22:13.710Z",
+  "generatedAt": "2026-08-17T01:04:01.141Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 193,
+  "injuryCount": 194,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Jack Viney",
+      "injury": "Achilles",
+      "returning": "Returned to VFL"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Marcus Bontempelli",
