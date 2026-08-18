@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-17T22:27:47.897Z",
+  "generatedAt": "2026-08-18T01:04:26.275Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
     "adelaide": {
@@ -1363,121 +1363,6 @@
         "teamTotal": 262
       }
     },
-    "port-adelaide": {
-      "slug": "port-adelaide",
-      "name": "Port Adelaide",
-      "abbrev": "PAD",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Jordon Sweet",
-            "total": 426,
-            "rate": 75
-          },
-          {
-            "player": "Zak Butters",
-            "total": 388,
-            "rate": 80
-          },
-          {
-            "player": "Willem Drew",
-            "total": 387,
-            "rate": 59
-          },
-          {
-            "player": "Jason Horne-Francis",
-            "total": 366,
-            "rate": 60
-          },
-          {
-            "player": "Ollie Wines",
-            "total": 284,
-            "rate": 57
-          },
-          {
-            "player": "Dante Visentini",
-            "total": 139,
-            "rate": 32
-          },
-          {
-            "player": "Jase Burgoyne",
-            "total": 111,
-            "rate": 17
-          },
-          {
-            "player": "Joe Richards",
-            "total": 106,
-            "rate": 19
-          },
-          {
-            "player": "Jack Watkins",
-            "total": 86,
-            "rate": 24
-          },
-          {
-            "player": "Miles Bergman",
-            "total": 85,
-            "rate": 19
-          }
-        ],
-        "teamTotal": 2572
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Kane Farrell",
-            "total": 52,
-            "rate": 21
-          },
-          {
-            "player": "Logan Evans",
-            "total": 48,
-            "rate": 20
-          },
-          {
-            "player": "Darcy Byrne-Jones",
-            "total": 38,
-            "rate": 16
-          },
-          {
-            "player": "Lachie Jones",
-            "total": 35,
-            "rate": 14
-          },
-          {
-            "player": "Todd Marshall",
-            "total": 18,
-            "rate": 7
-          },
-          {
-            "player": "Jase Burgoyne",
-            "total": 15,
-            "rate": 6
-          },
-          {
-            "player": "Miles Bergman",
-            "total": 8,
-            "rate": 3
-          },
-          {
-            "player": "Jackson Mead",
-            "total": 7,
-            "rate": 3
-          },
-          {
-            "player": "Aliir Aliir",
-            "total": 6,
-            "rate": 2
-          },
-          {
-            "player": "Will Lorenz",
-            "total": 5,
-            "rate": 2
-          }
-        ],
-        "teamTotal": 244
-      }
-    },
     "richmond": {
       "slug": "richmond",
       "name": "Richmond",
@@ -1591,6 +1476,121 @@
           }
         ],
         "teamTotal": 308
+      }
+    },
+    "port-adelaide": {
+      "slug": "port-adelaide",
+      "name": "Port Adelaide",
+      "abbrev": "PAD",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Jordon Sweet",
+            "total": 426,
+            "rate": 75
+          },
+          {
+            "player": "Zak Butters",
+            "total": 388,
+            "rate": 80
+          },
+          {
+            "player": "Willem Drew",
+            "total": 387,
+            "rate": 59
+          },
+          {
+            "player": "Jason Horne-Francis",
+            "total": 366,
+            "rate": 60
+          },
+          {
+            "player": "Ollie Wines",
+            "total": 284,
+            "rate": 57
+          },
+          {
+            "player": "Dante Visentini",
+            "total": 139,
+            "rate": 32
+          },
+          {
+            "player": "Jase Burgoyne",
+            "total": 111,
+            "rate": 17
+          },
+          {
+            "player": "Joe Richards",
+            "total": 106,
+            "rate": 19
+          },
+          {
+            "player": "Jack Watkins",
+            "total": 86,
+            "rate": 24
+          },
+          {
+            "player": "Miles Bergman",
+            "total": 85,
+            "rate": 19
+          }
+        ],
+        "teamTotal": 2572
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Kane Farrell",
+            "total": 52,
+            "rate": 21
+          },
+          {
+            "player": "Logan Evans",
+            "total": 48,
+            "rate": 20
+          },
+          {
+            "player": "Darcy Byrne-Jones",
+            "total": 38,
+            "rate": 16
+          },
+          {
+            "player": "Lachie Jones",
+            "total": 35,
+            "rate": 14
+          },
+          {
+            "player": "Todd Marshall",
+            "total": 18,
+            "rate": 7
+          },
+          {
+            "player": "Jase Burgoyne",
+            "total": 15,
+            "rate": 6
+          },
+          {
+            "player": "Miles Bergman",
+            "total": 8,
+            "rate": 3
+          },
+          {
+            "player": "Jackson Mead",
+            "total": 7,
+            "rate": 3
+          },
+          {
+            "player": "Aliir Aliir",
+            "total": 6,
+            "rate": 2
+          },
+          {
+            "player": "Will Lorenz",
+            "total": 5,
+            "rate": 2
+          }
+        ],
+        "teamTotal": 244
       }
     },
     "st-kilda": {
