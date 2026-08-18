@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-17T13:47:03.519Z",
+  "generatedAt": "2026-08-18T13:51:22.115Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -377,7 +377,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "2",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
           "idSource": "rosetta"
@@ -441,7 +441,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": null,
+          "jersey": "25",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Akita Northern Happinets - B League",
@@ -467,7 +467,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": null,
+          "jersey": "1",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
@@ -480,7 +480,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": null,
+          "jersey": "19",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
@@ -546,7 +546,7 @@
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
           "jersey": "7",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp",
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "UNLV - NCAA",
           "idSource": "rosetta"
@@ -558,7 +558,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 14,
+      "playerCount": 15,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -572,6 +572,19 @@
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Marlins - NBL1 North",
           "idSource": "rosetta"
+        },
+        {
+          "playerId": null,
+          "name": "Brodie McGregor",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Gold Coast Rollers - NBL1 North",
+          "idSource": "unmatched"
         },
         {
           "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
@@ -953,7 +966,7 @@
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "headCoach": "Gordon Herbert",
-      "playerCount": 13,
+      "playerCount": 14,
       "players": [
         {
           "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
@@ -1044,6 +1057,19 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Northern Kentucky - NCAA",
+          "idSource": "unmatched"
+        },
+        {
+          "playerId": null,
+          "name": "Kazlo Evans Jr.",
+          "team": "New Zealand Breakers",
+          "teamCode": "NZL",
+          "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+          "position": null,
+          "jersey": null,
+          "imageUrl": null,
+          "trackerStatus": "incoming",
+          "trackerNote": "Manawatu Jets - NZNBL",
           "idSource": "unmatched"
         },
         {
@@ -1140,7 +1166,7 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
-          "jersey": null,
+          "jersey": "27",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
@@ -1509,7 +1535,7 @@
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "C",
-          "jersey": null,
+          "jersey": "9",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Saint Mary's - NCAA",

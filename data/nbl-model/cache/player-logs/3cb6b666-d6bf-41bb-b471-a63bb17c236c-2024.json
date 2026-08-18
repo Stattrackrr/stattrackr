@@ -5,7 +5,7 @@
   "teamCode": "PER",
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-08-17T13:46:19.702Z",
+  "generatedAt": "2026-08-18T13:50:12.532Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 20,
   "games": [
@@ -137,7 +137,7 @@
       "date": "2024-10-19T06:30:00",
       "season": 2024,
       "round": null,
-      "opponent": "BNZ Breakers",
+      "opponent": "New Zealand Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "Perth Wildcats",

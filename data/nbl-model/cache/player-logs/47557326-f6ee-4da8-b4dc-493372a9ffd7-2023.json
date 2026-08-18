@@ -5,7 +5,7 @@
   "teamCode": "SEM",
   "year": 2023,
   "seasonLabel": "NBL24",
-  "generatedAt": "2026-08-17T13:46:39.364Z",
+  "generatedAt": "2026-08-18T13:50:39.343Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 16,
   "games": [
@@ -424,7 +424,7 @@
       "date": "2024-01-20T06:30:00",
       "season": 2023,
       "round": null,
-      "opponent": "BNZ Breakers",
+      "opponent": "New Zealand Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "South East Melbourne Phoenix",

@@ -5,7 +5,7 @@
   "teamCode": "ILL",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-17T13:45:59.997Z",
+  "generatedAt": "2026-08-18T13:49:53.187Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 6,
   "games": [
@@ -96,7 +96,7 @@
       "date": "2025-10-08T06:30:00",
       "season": 2025,
       "round": null,
-      "opponent": "BNZ Breakers",
+      "opponent": "New Zealand Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "Illawarra Hawks",

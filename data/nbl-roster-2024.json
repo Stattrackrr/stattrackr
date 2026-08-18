@@ -1,7 +1,7 @@
 {
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-08-17T13:46:09.636Z",
+  "generatedAt": "2026-08-18T13:50:01.719Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 139,
   "players": [
@@ -38,7 +38,7 @@
     {
       "playerId": "7b6c2af9-f79b-4cf2-9930-675821c616ef",
       "name": "Alex McNaught",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -123,7 +123,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "2",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp"
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -178,7 +178,7 @@
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
       "name": "Carlin Davison",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -218,7 +218,7 @@
     {
       "playerId": "eb537a8b-c889-42f5-86d2-f2aad3a67eb8",
       "name": "Dane Pineau",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "C",
@@ -368,7 +368,7 @@
     {
       "playerId": "214c6ab2-ddf8-4295-aae8-58dccfc01ba4",
       "name": "Grant Anticevich",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -593,12 +593,12 @@
       "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
       "position": "G",
       "jersey": "6",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/16cf0df1b78b4b5ba5f9e5ba18305a04?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4abaa69c0da14960973c40f3564bdce9?size=800&format=webp"
     },
     {
       "playerId": "fc16e0a8-a6b8-4000-b37f-d3a58d98244b",
       "name": "Jonah Bolden",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -658,7 +658,7 @@
     {
       "playerId": "3e6efa7e-229d-4762-9ba6-56889960cf97",
       "name": "Kaia Isaac",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -668,7 +668,7 @@
     {
       "playerId": "5c7ec83d-9427-4afc-a325-a753fe6abde0",
       "name": "Karim Lopez",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -928,7 +928,7 @@
     {
       "playerId": "7301fb64-344e-43a9-a166-3375acda3477",
       "name": "Matthew Mooney",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -938,7 +938,7 @@
     {
       "playerId": "bb1c3618-7c4e-4b2b-8263-f15144a0d0b3",
       "name": "Max Darling",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -968,7 +968,7 @@
     {
       "playerId": "7bb1106c-1ec4-4f82-8859-bc452687bdec",
       "name": "Mitch McCarron",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -988,7 +988,7 @@
     {
       "playerId": "3443c855-3ca4-4274-8cbf-74423c32b425",
       "name": "Mojave King",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -1058,7 +1058,7 @@
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
       "name": "Parker Jackson-Cartwright",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -1138,7 +1138,7 @@
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
       "name": "Sam Mennenga",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "C",
@@ -1158,7 +1158,7 @@
     {
       "playerId": "05180ec9-e559-40cc-8b48-198da892c37d",
       "name": "Sean Bairstow",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -1208,7 +1208,7 @@
     {
       "playerId": "79586e5b-4e92-47bd-989b-330652751f85",
       "name": "Tacko Fall",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "C",
@@ -1238,7 +1238,7 @@
     {
       "playerId": "23921024-3aaa-4f6e-8f03-3de9e1fd6769",
       "name": "Tai Wynyard",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -1373,7 +1373,7 @@
       "teamId": "0602b1bc-8dfb-488c-ac11-7895de1a7556",
       "position": "G",
       "jersey": "7",
-      "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp"
     },
     {
       "playerId": "cd541bbb-db3f-4821-82e1-c3c104d99fd8",

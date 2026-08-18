@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-17T13:45:27.178Z",
+  "generatedAt": "2026-08-18T13:49:21.914Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -126,7 +126,7 @@
     },
     {
       "pos": 7,
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "teamLogo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",

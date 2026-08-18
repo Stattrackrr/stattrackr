@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-17T13:47:04.385Z",
+  "generatedAt": "2026-08-18T13:51:23.566Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 126,
   "players": [
@@ -78,7 +78,7 @@
     {
       "playerId": "f0fcd930-bb7b-4b3d-b6df-4303cf7e412b",
       "name": "Anzac Rissetto",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -178,7 +178,7 @@
     {
       "playerId": "ef79baef-a773-4563-8463-0261d3e0ce8f",
       "name": "Carlin Davison",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -188,7 +188,7 @@
     {
       "playerId": "ac574899-344f-4ec9-9b8e-f2ee16d706c8",
       "name": "Charles Bediako",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": null,
@@ -298,7 +298,7 @@
     {
       "playerId": "84a1ebbc-7e5c-4423-9987-045086e5ba26",
       "name": "Dejan Vasiljevic",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -438,7 +438,7 @@
     {
       "playerId": "54a74f78-bff8-4cdb-99d0-ebd1cc720b47",
       "name": "Izayah Le'Afa",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -658,7 +658,7 @@
     {
       "playerId": "03695de5-49b2-48ca-8cf9-d3a411b7fb98",
       "name": "Josiah-Jordan James",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": null,
@@ -718,7 +718,7 @@
     {
       "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
       "name": "Kouat Noi",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -968,7 +968,7 @@
     {
       "playerId": "a92c343c-d4f4-4c33-839b-85902ad5a40f",
       "name": "Parker Jackson-Cartwright",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -988,7 +988,7 @@
     {
       "playerId": "72da23d4-1cd5-4424-83fe-714ef33f9c6d",
       "name": "Preston Le Gassick",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "G",
@@ -998,7 +998,7 @@
     {
       "playerId": "95352144-95bb-4154-963a-b3b90dd915a4",
       "name": "Reuben Te Rangi",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",
@@ -1058,7 +1058,7 @@
     {
       "playerId": "6096f09f-0ba7-4981-bb32-d62f287b9f96",
       "name": "Sam Mennenga",
-      "team": "BNZ Breakers",
+      "team": "New Zealand Breakers",
       "teamCode": "NZL",
       "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
       "position": "F",

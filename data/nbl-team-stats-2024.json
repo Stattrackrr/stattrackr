@@ -1,7 +1,7 @@
 {
   "year": 2024,
   "seasonLabel": "NBL25",
-  "generatedAt": "2026-08-17T13:46:07.588Z",
+  "generatedAt": "2026-08-18T13:49:59.570Z",
   "source": "rosetta.nbl.com.au",
   "teams": [
     {
@@ -19,23 +19,6 @@
       "threePct": 0.339081,
       "ftPct": 0.78421,
       "offensiveRebounds": 2.3225806451612905,
-      "results": null
-    },
-    {
-      "team": "BNZ Breakers",
-      "teamCode": "NZL",
-      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
-      "games": 29,
-      "points": 20.7931,
-      "rebounds": 10.2069,
-      "assists": 3.93103,
-      "steals": 1.51724,
-      "blocks": 0.75862,
-      "turnovers": 3.72414,
-      "fgPct": 0.436735,
-      "threePct": 0.259091,
-      "ftPct": 0.742138,
-      "offensiveRebounds": 3.206896551724138,
       "results": null
     },
     {
@@ -87,6 +70,23 @@
       "threePct": 0.360166,
       "ftPct": 0.718016,
       "offensiveRebounds": 12.324324324324325,
+      "results": null
+    },
+    {
+      "team": "New Zealand Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "games": 29,
+      "points": 20.7931,
+      "rebounds": 10.2069,
+      "assists": 3.93103,
+      "steals": 1.51724,
+      "blocks": 0.75862,
+      "turnovers": 3.72414,
+      "fgPct": 0.436735,
+      "threePct": 0.259091,
+      "ftPct": 0.742138,
+      "offensiveRebounds": 3.206896551724138,
       "results": null
     },
     {

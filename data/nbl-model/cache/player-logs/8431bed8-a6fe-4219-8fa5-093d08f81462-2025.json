@@ -5,7 +5,7 @@
   "teamCode": "TAS",
   "year": 2025,
   "seasonLabel": "NBL26",
-  "generatedAt": "2026-08-17T13:45:52.911Z",
+  "generatedAt": "2026-08-18T13:49:46.497Z",
   "source": "rosetta.nbl.com.au",
   "gameCount": 12,
   "games": [
@@ -137,7 +137,7 @@
       "date": "2025-10-17T06:30:00",
       "season": 2025,
       "round": null,
-      "opponent": "BNZ Breakers",
+      "opponent": "New Zealand Breakers",
       "opponentCode": "NZL",
       "isHome": false,
       "team": "Tasmania JackJumpers",
