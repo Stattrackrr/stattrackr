@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "oa",
-  "generatedAt": "2026-08-19T14:31:37.851Z",
+  "generatedAt": "2026-08-19T16:31:35.000Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
