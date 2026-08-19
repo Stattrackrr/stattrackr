@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-19T03:01:57.209Z",
+  "generatedAt": "2026-08-19T04:40:53.668Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 210,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Isaac Quaynor",
+      "injury": "Glute",
+      "returning": "will be another omission"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Brayden Maynard",
@@ -93,12 +99,6 @@
       "player": "Nick Haynes",
       "injury": "Ankle",
       "returning": "Test"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Isaac Quaynor",
-      "injury": "Hip",
-      "returning": "1 Week"
     },
     {
       "team": "Fremantle Dockers",
