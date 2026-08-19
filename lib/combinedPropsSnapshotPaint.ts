@@ -1,5 +1,8 @@
 import type { CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 
+/** Full combined snapshot (server). Keep in lockstep with the paint key below. */
+export const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v2';
+
 /** Browser paint payload — no per-row game logs or other dashboard-only fields. */
 export const COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_paint_v2';
 

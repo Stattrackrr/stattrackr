@@ -7,6 +7,10 @@ import { deleteNBACache } from '@/lib/nbaCache';
 import sharedCache from '@/lib/sharedCache';
 import { filterAflPropsEligibleGames, type AflPropsGameRef } from '@/lib/combinedPropsSnapshotTypes';
 import type { AflGameOdds } from '@/lib/refreshAflOdds';
+import {
+  COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
+  COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
+} from '@/lib/combinedPropsSnapshotPaint';
 
 export const AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY = 'afl_list_enriched_response_v5';
 export const AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY = 'afl_props_list_enriched_v5';
@@ -115,6 +119,8 @@ export async function clearAflEnrichedListCaches(reason?: string): Promise<void>
   await Promise.allSettled([
     sharedCache.deleteJSON(AFL_LIST_ENRICHED_RESPONSE_CACHE_KEY),
     sharedCache.deleteJSON(AFL_LIST_ENRICHED_STALE_CACHE_KEY),
+    sharedCache.deleteJSON(COMBINED_PROPS_SNAPSHOT_CACHE_KEY),
+    sharedCache.deleteJSON(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY),
     deleteNBACache(AFL_LIST_ENRICHED_SUPABASE_CACHE_KEY),
     deleteNBACache(AFL_LIST_ENRICHED_STALE_SUPABASE_CACHE_KEY),
   ]);

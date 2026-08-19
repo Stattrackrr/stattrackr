@@ -10,6 +10,10 @@ import { currentNbaSeason, TEAM_ID_TO_ABBR, ABBR_TO_TEAM_ID } from '@/lib/nbaCon
 import { PLAYER_ID_MAPPINGS } from '@/lib/playerIdMapping';
 import { queuedFetch } from '@/lib/requestQueue';
 import sharedCache from '@/lib/sharedCache';
+import {
+  COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
+  COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
+} from '@/lib/combinedPropsSnapshotPaint';
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
@@ -17,7 +21,6 @@ export const maxDuration = 300; // 5 minutes
 const ODDS_CACHE_KEY = 'all_nba_odds_v2_bdl';
 const PLAYER_PROPS_CACHE_PREFIX = 'nba-player-props';
 const CHECKPOINT_CACHE_PREFIX = 'nba-player-props-checkpoint-v2';
-const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v1';
 
 // Helper functions (simplified versions from client code)
 function parseAmericanOdds(oddsStr: string): number | null {
@@ -1316,7 +1319,10 @@ async function processPlayerPropsCore(request: NextRequest) {
     // The props page reads the combined snapshot first, so evict it after a fresh NBA ingest
     // to ensure the next page load rebuilds with the updated NBA hit rates/averages.
     try {
-      await sharedCache.clearKeysByPrefix(COMBINED_PROPS_SNAPSHOT_CACHE_KEY);
+      await Promise.allSettled([
+        sharedCache.deleteJSON(COMBINED_PROPS_SNAPSHOT_CACHE_KEY),
+        sharedCache.deleteJSON(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY),
+      ]);
     } catch (error) {
       console.warn('[Player Props Process] Failed to clear combined props snapshot cache:', error);
     }

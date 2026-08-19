@@ -15,17 +15,18 @@ import { GET as getWorldCupPlayerPropsList } from '@/app/api/world-cup/dashboard
 import { filterWorldCupListPropsByMinOdds } from '@/lib/worldCupCache';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
+  COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
 
 export type { CombinedAflGame, CombinedPlayerProp, CombinedPropsSnapshot } from '@/lib/combinedPropsSnapshotTypes';
 export {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
+  COMBINED_PROPS_SNAPSHOT_CACHE_KEY,
   slimCombinedPlayerPropForPaint,
   slimCombinedPropsSnapshotForClient,
 } from '@/lib/combinedPropsSnapshotPaint';
 
-const COMBINED_PROPS_SNAPSHOT_CACHE_KEY = 'combined_props_snapshot_v2';
 const COMBINED_PROPS_SNAPSHOT_TTL_SECONDS = 4 * 60 * 60;
 const COMBINED_PROPS_SNAPSHOT_STALE_MS = 60 * 1000;
 
@@ -358,11 +359,23 @@ export function isCombinedPropsSnapshotStale(snapshot: CombinedPropsSnapshot): b
   return !Number.isFinite(staleAt) || staleAt <= Date.now();
 }
 
-function combinedSnapshotAflStatsUsable(snapshot: CombinedPropsSnapshot): boolean {
+/**
+ * Empty AFL with live games on the slate is a failed assembly, not a cacheable "no odds" result.
+ * Caching that blanks the home /props page until TTL even after list starts returning lines.
+ */
+export function combinedSnapshotAflAssemblyReady(snapshot: CombinedPropsSnapshot): boolean {
+  const games = snapshot.afl?.games ?? [];
   const props = snapshot.afl?.props ?? [];
+  if (games.length > 0 && props.length === 0) return false;
   if (props.length === 0) return true;
-  const payload = { data: props };
-  return aflEnrichedPayloadHasUsableStats(payload);
+  return aflEnrichedPayloadHasUsableStats({ data: props });
+}
+
+export async function clearCombinedPropsSnapshotCaches(): Promise<void> {
+  await Promise.allSettled([
+    sharedCache.deleteJSON(COMBINED_PROPS_SNAPSHOT_CACHE_KEY),
+    sharedCache.deleteJSON(COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY),
+  ]);
 }
 
 /** Drop AFL props/games whose kickoff was more than one hour ago (even from cached snapshots). */
@@ -399,6 +412,7 @@ export async function buildCombinedPropsSnapshot(
   const { origin, refresh = false, debugStats = false, cronSecret, writeCache = true } = options;
   const nbaUrl = new URL('/api/nba/player-props', origin);
   const aflUrl = new URL('/api/afl/player-props/list', origin);
+  aflUrl.searchParams.set('enrich', 'true');
   const wcUrl = new URL('/api/world-cup/dashboard', origin);
   wcUrl.searchParams.set('playerPropsList', '1');
 
@@ -484,7 +498,7 @@ export async function buildCombinedPropsSnapshot(
     },
   };
 
-  if (snapshot.success && writeCache && !debugStats && combinedSnapshotAflStatsUsable(snapshot)) {
+  if (snapshot.success && writeCache && !debugStats && combinedSnapshotAflAssemblyReady(snapshot)) {
     await writeCombinedPropsSnapshotCaches(snapshot);
   }
 

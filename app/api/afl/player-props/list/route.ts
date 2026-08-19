@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   aflEnrichedPayloadHasUsableStats,
   aflEnrichedPayloadIsDegraded,
+  aflListRowHasTwoWayOdds,
   getAflStaleEnrichedPayload,
   listAflPlayerPropsFromCache,
   listAflPlayerPropsFromCacheWithGames,
@@ -185,13 +186,6 @@ async function getFantasyPositionsFromApi(
     });
   }
   return fantasyPositionsApiInFlight;
-}
-
-function hasOver(o: string) {
-  return o != null && String(o).trim() !== '' && String(o) !== 'N/A';
-}
-function hasUnder(u: string) {
-  return u != null && String(u).trim() !== '' && String(u) !== 'N/A';
 }
 
 async function pickBestEnrichedPayload(
@@ -473,7 +467,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const rows = result.props.filter((r) => hasOver(r.overOdds) && hasUnder(r.underOdds));
+    const rows = result.props.filter(aflListRowHasTwoWayOdds);
     const gamesPayload = result.games.map((g) => ({
       gameId: g.gameId,
       homeTeam: g.homeTeam,
@@ -500,6 +494,7 @@ export async function GET(request: Request) {
           propsCountEnrich === 0
             ? AFL_USER_NO_ODDS
             : `Fetched ${propsCountEnrich} stats for ${seasonEnrich} season, ${gamesCountEnrich} games`,
+        ...(propsCountEnrich === 0 ? { noAflOdds: true, message: AFL_USER_NO_ODDS } : {}),
         _meta: {
           rowsFromList: rowsWithCanonical.length,
           enrich: false,

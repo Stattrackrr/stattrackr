@@ -515,6 +515,18 @@ function decimalToAmerican(dec: number): string {
   return `${Math.round(-100 / (dec - 1))}`;
 }
 
+export function aflOddsValuePresent(value: string | null | undefined): boolean {
+  return value != null && String(value).trim() !== '' && String(value) !== 'N/A';
+}
+
+/** Props page only shows two-way over/under lines. */
+export function aflListRowHasTwoWayOdds(row: {
+  overOdds?: string;
+  underOdds?: string;
+}): boolean {
+  return aflOddsValuePresent(row.overOdds) && aflOddsValuePresent(row.underOdds);
+}
+
 export type AflListPropRow = {
   gameId: string;
   homeTeam: string;

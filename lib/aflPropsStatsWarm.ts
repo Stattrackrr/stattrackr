@@ -3,7 +3,7 @@
  * Used by /api/afl/props-stats/warm and in-process by /api/afl/odds/refresh so we never hit 401 on internal fetch.
  */
 
-import { listAflPlayerPropsFromCache } from '@/lib/aflPlayerPropsCache';
+import { listAflPlayerPropsFromCache, aflListRowHasTwoWayOdds } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
 import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
@@ -35,12 +35,6 @@ export type RunAflPropsStatsWarmResult = {
   coveragePct?: number;
   error?: string;
 };
-
-function hasBoth(r: { overOdds?: string; underOdds?: string }): boolean {
-  const o = r.overOdds != null && String(r.overOdds).trim() !== '' && String(r.overOdds) !== 'N/A';
-  const u = r.underOdds != null && String(r.underOdds).trim() !== '' && String(r.underOdds) !== 'N/A';
-  return o && u;
-}
 
 /**
  * Run the props-stats warm: load props (from list API or cache), then compute and cache L5/L10/Season/DvP for each.
@@ -198,7 +192,7 @@ export async function runAflPropsStatsWarm(
     const seen = new Set<string>();
     const toWarm: PropToWarm[] = [];
     for (const r of result.props) {
-      if (!hasBoth(r)) continue;
+      if (!aflListRowHasTwoWayOdds(r)) continue;
       const key = getAflPropStatsCacheKey(r.playerName, r.homeTeam, r.awayTeam, r.statType, r.line);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -215,7 +209,7 @@ export async function runAflPropsStatsWarm(
     }
 
     const toProcess = toWarm.slice(0, MAX_PROPS);
-    const totalRowsFromCache = result.props.filter(hasBoth).length;
+    const totalRowsFromCache = result.props.filter(aflListRowHasTwoWayOdds).length;
     console.log('[AFL props-stats/warm] Unique props to warm:', toProcess.length, '(skipped', Math.max(0, toWarm.length - MAX_PROPS), 'over limit). Rows with over/under:', totalRowsFromCache);
 
     let warmed = 0;
