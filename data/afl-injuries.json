@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T06:41:29.235Z",
+  "generatedAt": "2026-08-19T08:38:15.973Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 210,
@@ -43,14 +43,14 @@
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "Suspended Club",
-      "returning": "Season"
+      "injury": "Club sanction for failing to meet team standards",
+      "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "Suspended Club",
-      "returning": "Season"
+      "injury": "Club sanction for failing to meet team standards",
+      "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
@@ -61,14 +61,14 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "Suspended Club",
-      "returning": "Season"
+      "injury": "Club sanction for failing to meet team standards",
+      "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "Suspended Club",
-      "returning": "Season"
+      "injury": "Club sanction for failing to meet team standards",
+      "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
@@ -79,8 +79,8 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "Suspended Club",
-      "returning": "Season"
+      "injury": "Club sanction for failing to meet team standards",
+      "returning": "rest of the season"
     },
     {
       "team": "Adelaide Crows",
