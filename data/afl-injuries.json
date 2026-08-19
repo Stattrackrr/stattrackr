@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-19T08:38:15.973Z",
+  "generatedAt": "2026-08-19T10:31:17.496Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 210,
+  "injuryCount": 213,
   "injuries": [
+    {
+      "team": "Gold Coast Suns",
+      "player": "Sam Collins",
+      "injury": "Injury",
+      "returning": "active"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Wil Powell",
+      "injury": "Injury",
+      "returning": "active"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Christian Petracca",
+      "injury": "Injury",
+      "returning": "active"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Alix Tauru",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Gold Coast Suns",
+      "player": "Ben King",
+      "injury": "benched for what could be his final game",
+      "returning": "Round 24"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Jack Higgins",
+      "injury": "Injury",
+      "returning": "active"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Isaac Quaynor",
@@ -120,26 +156,8 @@
     },
     {
       "team": "Gold Coast Suns",
-      "player": "Sam Collins",
-      "injury": "Rib",
-      "returning": "Test"
-    },
-    {
-      "team": "Gold Coast Suns",
       "player": "Alex Davies",
       "injury": "Foot",
-      "returning": "Season"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Christian Petracca",
-      "injury": "Foot",
-      "returning": "Season"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Wil Powell",
-      "injury": "Shoulder",
       "returning": "Season"
     },
     {
