@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-18T13:51:03.707Z",
+  "generatedAt": "2026-08-19T13:52:05.869Z",
   "source": "rosetta.nbl.com.au",
   "teamCount": 10,
   "teams": [
@@ -21,7 +21,8 @@
           "opponent_id": "3164912c-7e74-463b-8fc3-5f7d45edfcc6",
           "opponent_name": "Adelaide 36ers",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ADL.png",
-          "venue": "John Cain Arena"
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "L268Q{xv00NI%OfRoIt600Rj~qoe"
         }
       ]
     },
@@ -41,7 +42,8 @@
           "opponent_id": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
           "opponent_name": "Melbourne United",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/MEL_white.png",
-          "venue": "John Cain Arena"
+          "venue": "John Cain Arena",
+          "opponent_logo_blurhash": "LMCtPyt90ZbL%Mj[IwWF0IWF?Oof"
         }
       ]
     },
@@ -61,7 +63,8 @@
           "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "opponent_name": "South East Melbourne Phoenix",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "RAC Arena"
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     },
@@ -81,7 +84,8 @@
           "opponent_id": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "opponent_name": "Perth Wildcats",
           "opponent_logo": "https://nxs.nbl.com.au/assets/b6393791-e4fa-4e34-a861-1c6096ab168e.png",
-          "venue": "RAC Arena"
+          "venue": "RAC Arena",
+          "opponent_logo_blurhash": "LDH_Pv_N1b?HHrkCTJD%1v?HD456"
         }
       ]
     },
@@ -101,7 +105,8 @@
           "opponent_id": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
           "opponent_name": "Illawarra Hawks",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/ILL.png",
-          "venue": "Spark Arena"
+          "venue": "Spark Arena",
+          "opponent_logo_blurhash": "L7QOWT@apv@t|MtmHrtl00pIH?o#"
         }
       ]
     },
@@ -121,7 +126,8 @@
           "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "opponent_name": "New Zealand Breakers",
           "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-          "venue": "Spark Arena"
+          "venue": "Spark Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }
       ]
     },
@@ -141,7 +147,8 @@
           "opponent_id": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "opponent_name": "Cairns Taipans",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/CNS.png",
-          "venue": "Afterpay Arena"
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }
       ]
     },
@@ -161,7 +168,8 @@
           "opponent_id": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "opponent_name": "Sydney Kings",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SYD.png",
-          "venue": "Afterpay Arena"
+          "venue": "Afterpay Arena",
+          "opponent_logo_blurhash": "LUI:9xoN9+xZoOj@obWX0ufR$wR:"
         }
       ]
     },
@@ -181,7 +189,8 @@
           "opponent_id": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
           "opponent_name": "South East Melbourne Phoenix",
           "opponent_logo": "https://cdn.nbl.com.au/app_assets/SEM.png",
-          "venue": "MyState Bank Arena"
+          "venue": "MyState Bank Arena",
+          "opponent_logo_blurhash": "LABY*iy8YtcBgxi}tMpDP$RBy6yP"
         }
       ]
     },
@@ -201,7 +210,8 @@
           "opponent_id": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "opponent_name": "New Zealand Breakers",
           "opponent_logo": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/9c43694837504a4d8ec00f739bcfff0d?size=200&format=webp",
-          "venue": "Pat Rafter Arena *subject to change"
+          "venue": "Pat Rafter Arena *subject to change",
+          "opponent_logo_blurhash": "L6PZfSi_.AyE_3t7t7R**0o#DgR4"
         }
       ]
     }

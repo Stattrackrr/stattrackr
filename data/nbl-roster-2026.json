@@ -1,9 +1,9 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-18T13:51:23.566Z",
+  "generatedAt": "2026-08-19T13:52:14.622Z",
   "source": "rosetta.nbl.com.au",
-  "playerCount": 126,
+  "playerCount": 136,
   "players": [
     {
       "playerId": "92012cd9-65dd-47f1-a51e-a6b5169bf359",
@@ -32,6 +32,16 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "position": "F",
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
+      "playerId": "378c71b4-8d3d-4161-aaa4-88c69be7309e",
+      "name": "Andrew Carr",
+      "team": "Sydney Kings",
+      "teamCode": "SYD",
+      "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
+      "position": null,
       "jersey": null,
       "imageUrl": null
     },
@@ -134,6 +144,36 @@
       "position": "G",
       "jersey": "10",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/82fe3a5845d74199a7ce7fa9ce4ec84e?size=800&format=webp"
+    },
+    {
+      "playerId": "3d576bb6-e3a0-445b-84e4-5ed6936d7ad8",
+      "name": "Billy McRae",
+      "team": "Brisbane Bullets",
+      "teamCode": "BRI",
+      "teamId": "f8185bc5-2674-4293-a2a7-aeb8c7549b30",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
+      "playerId": "fcd143b4-3573-4b51-9ead-4707f48d0f20",
+      "name": "Brodie McGregor",
+      "team": "Illawarra Hawks",
+      "teamCode": "ILL",
+      "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
+      "playerId": "e85b6d9a-6520-4af0-a83d-6a9803429c57",
+      "name": "Brody Nunn",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "position": "G",
+      "jersey": null,
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp"
     },
     {
       "playerId": "41a2b121-3fe0-4e82-b3d3-d6079ed33b8b",
@@ -666,6 +706,26 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/536eca998edd4e27b1df5504e12116fe?size=800&format=webp"
     },
     {
+      "playerId": "390eb61f-813f-4997-ae70-8e412a3ee696",
+      "name": "Kael Robinson",
+      "team": "New Zealand Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
+      "playerId": "69d6f1b5-b1f1-4370-841d-862526017262",
+      "name": "Kazlo Evans Jr",
+      "team": "New Zealand Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
       "playerId": "59a777fb-049b-4f99-8bb1-f53516f76953",
       "name": "Keanu Pinder",
       "team": "Cairns Taipans",
@@ -1136,6 +1196,16 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/9bc9441fc216481d8cc816403a0d71cc?size=800&format=webp"
     },
     {
+      "playerId": "e9ca2cad-5fce-49af-9056-d12b9f7d5df3",
+      "name": "Tana Kopa",
+      "team": "Perth Wildcats",
+      "teamCode": "PER",
+      "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
+    },
+    {
       "playerId": "a793b9cb-fb83-4554-8672-f35ccd77d6b1",
       "name": "Tanner Krebs",
       "team": "South East Melbourne Phoenix",
@@ -1186,6 +1256,16 @@
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d8e3872276834c78a71280ba38dcc837?size=800&format=webp"
     },
     {
+      "playerId": "0d441503-80f9-4a7d-a3b1-7c8ab9f5f9f5",
+      "name": "Tukaha Cooper",
+      "team": "New Zealand Breakers",
+      "teamCode": "NZL",
+      "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
+      "position": "F",
+      "jersey": null,
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp"
+    },
+    {
       "playerId": "7efc81c9-d26e-4950-97e1-1b9b03b1bacd",
       "name": "Tyler Harvey",
       "team": "Illawarra Hawks",
@@ -1214,6 +1294,16 @@
       "position": "FC",
       "jersey": "24",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ef3009bdc5314c6785ec4ad67073ed1b?size=800&format=webp"
+    },
+    {
+      "playerId": "d027f171-6e10-444c-a837-d07ec2bfb3ff",
+      "name": "Walter Brown",
+      "team": "Cairns Taipans",
+      "teamCode": "CNS",
+      "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
+      "position": null,
+      "jersey": null,
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp"
     },
     {
       "playerId": "6c6c60a2-caa9-4b1e-ba1d-6c61dccf2592",
@@ -1254,6 +1344,16 @@
       "position": "F",
       "jersey": "10",
       "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/ad2f42dc983343deba4c094f2ddf3e6c?size=800&format=webp"
+    },
+    {
+      "playerId": "5f85917c-1552-4800-b64a-48cf1023c60c",
+      "name": "Yannis Morin",
+      "team": "South East Melbourne Phoenix",
+      "teamCode": "SEM",
+      "teamId": "3bdb8ad6-7cf0-464d-b62c-eaca9145d06e",
+      "position": null,
+      "jersey": null,
+      "imageUrl": null
     },
     {
       "playerId": "46e6eb3e-6631-4361-bc61-6798faab22f8",

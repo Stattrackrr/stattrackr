@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-18T13:51:22.115Z",
+  "generatedAt": "2026-08-19T13:52:13.904Z",
   "source": "nbl.com.au roster tracker + rosetta.nbl.com.au",
   "trackerUrl": "https://nbl.com.au/news/nbl27-roster-tracker-every-signing-extension-and-departure",
   "teamCount": 10,
@@ -192,7 +192,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "3d576bb6-e3a0-445b-84e4-5ed6936d7ad8",
           "name": "Billy McRae",
           "team": "Brisbane Bullets",
           "teamCode": "BRI",
@@ -202,7 +202,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Warwick Senators",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
@@ -376,7 +376,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": "2",
+          "jersey": "5",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/b74e2f7d931a4c6d9ae6a7ab728e0892?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Tasmania JackJumpers",
@@ -441,7 +441,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": "25",
+          "jersey": null,
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/75d9ab7ea2fb4af79b066e058d88f7cb?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Akita Northern Happinets - B League",
@@ -467,7 +467,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "G",
-          "jersey": "1",
+          "jersey": null,
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/01bd884f3f8444abaefed1f7e2a5b58b?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
@@ -480,7 +480,7 @@
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
           "position": "F",
-          "jersey": "19",
+          "jersey": null,
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a1a2b04c7d57428d8672fb5fc89886d0?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Illawarra Hawks",
@@ -544,8 +544,8 @@
           "team": "Cairns Taipans",
           "teamCode": "CNS",
           "teamId": "6bf2a6e3-2626-491d-962b-48805205c06e",
-          "position": "G",
-          "jersey": "7",
+          "position": null,
+          "jersey": "22",
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a541bfc7fe7f4707a7f630ac5baadf75?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "UNLV - NCAA",
@@ -558,7 +558,7 @@
       "teamCode": "ILL",
       "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
       "headCoach": "Justin Tatum",
-      "playerCount": 15,
+      "playerCount": 16,
       "players": [
         {
           "playerId": "67357242-2244-43f0-996c-b15c64e27232",
@@ -574,7 +574,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "fcd143b4-3573-4b51-9ead-4707f48d0f20",
           "name": "Brodie McGregor",
           "team": "Illawarra Hawks",
           "teamCode": "ILL",
@@ -584,7 +584,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Gold Coast Rollers - NBL1 North",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "27ab462f-634a-4809-a40e-f102be36c282",
@@ -662,6 +662,19 @@
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/70468109041f49238b7f60d4b4f9ac3a?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
+          "idSource": "rosetta"
+        },
+        {
+          "playerId": "72703b55-4db2-4e14-b7a4-a38f31c32388",
+          "name": "Lamar Patterson",
+          "team": "Illawarra Hawks",
+          "teamCode": "ILL",
+          "teamId": "105249a3-251d-4a9d-94f4-f57b8e0854b3",
+          "position": "F",
+          "jersey": "13",
+          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/0690378dd57b49649e379f1e1679f6ce?size=800&format=webp",
+          "trackerStatus": "incoming",
+          "trackerNote": "Brisbane Bullets",
           "idSource": "rosetta"
         },
         {
@@ -1047,7 +1060,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "390eb61f-813f-4997-ae70-8e412a3ee696",
           "name": "Kael Robinson",
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
@@ -1057,11 +1070,11 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Northern Kentucky - NCAA",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
-          "playerId": null,
-          "name": "Kazlo Evans Jr.",
+          "playerId": "69d6f1b5-b1f1-4370-841d-862526017262",
+          "name": "Kazlo Evans Jr",
           "team": "New Zealand Breakers",
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
@@ -1070,7 +1083,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Manawatu Jets - NZNBL",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "52017fdb-600a-4da8-b37c-bf4b227b90ec",
@@ -1144,8 +1157,8 @@
           "teamCode": "NZL",
           "teamId": "bbae77db-317d-4c17-aa04-75d53d20ad15",
           "position": "F",
-          "jersey": "34",
-          "imageUrl": "https://images.dc.prod.cloud.atriumsports.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp",
+          "jersey": null,
+          "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fba38d022ec54ded813661845fe4290a?size=800&format=webp",
           "trackerStatus": "contracted",
           "trackerNote": null,
           "idSource": "rosetta"
@@ -1166,7 +1179,7 @@
           "teamCode": "PER",
           "teamId": "bc5327d5-322e-4796-b103-4c3b63869edb",
           "position": "F",
-          "jersey": "27",
+          "jersey": null,
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/014efbdc9eab4384af5367640a9aa669?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Cairns Taipans",
@@ -1316,7 +1329,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "e9ca2cad-5fce-49af-9056-d12b9f7d5df3",
           "name": "Tana Kopa",
           "team": "Perth Wildcats",
           "teamCode": "PER",
@@ -1326,7 +1339,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Keilor Thunder - NBL1 South",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         }
       ]
     },
@@ -1494,7 +1507,7 @@
           "idSource": "rosetta"
         },
         {
-          "playerId": null,
+          "playerId": "5f85917c-1552-4800-b64a-48cf1023c60c",
           "name": "Yannis Morin",
           "team": "South East Melbourne Phoenix",
           "teamCode": "SEM",
@@ -1504,7 +1517,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Joventut Badalona - Spain",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         }
       ]
     },
@@ -1516,7 +1529,7 @@
       "playerCount": 11,
       "players": [
         {
-          "playerId": null,
+          "playerId": "378c71b4-8d3d-4161-aaa4-88c69be7309e",
           "name": "Andrew Carr",
           "team": "Sydney Kings",
           "teamCode": "SYD",
@@ -1526,7 +1539,7 @@
           "imageUrl": null,
           "trackerStatus": "incoming",
           "trackerNote": "Rip City Remix - NBA G League",
-          "idSource": "unmatched"
+          "idSource": "rosetta"
         },
         {
           "playerId": "9f292ecd-bd5e-413a-b8d7-8397eaa04b3e",
@@ -1535,7 +1548,7 @@
           "teamCode": "SYD",
           "teamId": "39fc4268-0cdf-455f-9ca1-12e344064000",
           "position": "C",
-          "jersey": "9",
+          "jersey": null,
           "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7a14d177353d4d5cae26ceecbeee041c?size=800&format=webp",
           "trackerStatus": "incoming",
           "trackerNote": "Saint Mary's - NCAA",
