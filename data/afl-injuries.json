@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-20T08:38:45.600Z",
+  "generatedAt": "2026-08-20T10:32:44.866Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 217,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Harry Sheezel",
+      "injury": "Facial",
+      "returning": "Round 24"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "rested",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jye Amiss",
+      "injury": "given the weekend off",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Heath Chapman",
+      "injury": "given the weekend off",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sam Switkowski",
+      "injury": "given the weekend off",
+      "returning": "TBC"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Jack Higgins",
@@ -79,14 +109,14 @@
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "Club sanction for failing to meet team standards",
-      "returning": "rest of the season"
+      "injury": "club-imposed suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "Club sanction for failing to meet team standards",
-      "returning": "rest of the season"
+      "injury": "club-imposed suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
@@ -97,14 +127,14 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "Club sanction for failing to meet team standards",
-      "returning": "rest of the season"
+      "injury": "club-imposed suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "Club sanction for failing to meet team standards",
-      "returning": "rest of the season"
+      "injury": "club-imposed suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
@@ -115,8 +145,8 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "Club sanction for failing to meet team standards",
-      "returning": "rest of the season"
+      "injury": "club-imposed suspension",
+      "returning": "Season"
     },
     {
       "team": "Adelaide Crows",
@@ -182,19 +212,13 @@
       "team": "Carlton Blues",
       "player": "Will Hayward",
       "injury": "Ankle",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
       "player": "Steele Sidebottom",
       "injury": "Illness",
       "returning": "Test"
-    },
-    {
-      "team": "North Melbourne Kangaroos",
-      "player": "Harry Sheezel",
-      "injury": "Cheekbone",
-      "returning": "Season"
     },
     {
       "team": "Western Bulldogs",
