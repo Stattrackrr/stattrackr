@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-20T10:32:44.866Z",
+  "generatedAt": "2026-08-20T12:43:34.499Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 217,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Dougal Howard",
+      "injury": "retiring",
+      "returning": "Season"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Harry Sheezel",
