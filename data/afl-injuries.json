@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-20T20:28:46.423Z",
+  "generatedAt": "2026-08-20T22:29:06.903Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 215,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Tom De Koning",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Jack Silvagni",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Dougal Howard",
+      "injury": "ACL",
+      "returning": "Season"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Harry Sheezel",
@@ -121,7 +139,7 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "club-imposed suspension",
+      "injury": "suspended following alleged sexual assault",
       "returning": "Season"
     },
     {
@@ -139,7 +157,7 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "club-imposed suspension",
+      "injury": "suspended following alleged sexual assault",
       "returning": "Season"
     },
     {
