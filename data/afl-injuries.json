@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-20T06:45:25.023Z",
+  "generatedAt": "2026-08-20T08:38:45.600Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 213,
   "injuries": [
+    {
+      "team": "St Kilda Saints",
+      "player": "Jack Higgins",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Gold Coast Suns",
       "player": "Sam Collins",
@@ -26,19 +32,13 @@
       "team": "St Kilda Saints",
       "player": "Alix Tauru",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Gold Coast Suns",
       "player": "Ben King",
       "injury": "benched for what could be his final game",
       "returning": "Round 24"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Jack Higgins",
-      "injury": "Injury",
-      "returning": "TBA"
     },
     {
       "team": "Collingwood Magpies",
