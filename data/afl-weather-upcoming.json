@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T11:22:42.894Z",
+  "generatedAt": "2026-08-20T16:58:33.089Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-08-21T09:40:25Z",
       "weather": {
-        "temperatureC": 12.7,
+        "temperatureC": 13,
         "precipitationMm": 0,
-        "windKmh": 6
+        "windKmh": 5.3
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-08-22T03:15:00Z",
       "weather": {
-        "temperatureC": 14.2,
-        "precipitationMm": 0.1,
-        "windKmh": 11.4
+        "temperatureC": 14.4,
+        "precipitationMm": 0,
+        "windKmh": 11.6
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-08-22T06:15:00Z",
       "weather": {
-        "temperatureC": 14.2,
+        "temperatureC": 14.5,
         "precipitationMm": 0,
-        "windKmh": 11.3
+        "windKmh": 9.8
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-08-22T09:45:00Z",
       "weather": {
-        "temperatureC": 11.1,
+        "temperatureC": 10.6,
         "precipitationMm": 0,
-        "windKmh": 8.5
+        "windKmh": 7.7
       }
     },
     {
@@ -53,9 +53,9 @@
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-08-22T10:10:00Z",
       "weather": {
-        "temperatureC": 13.2,
+        "temperatureC": 12.3,
         "precipitationMm": 0,
-        "windKmh": 1.9
+        "windKmh": 2.5
       }
     },
     {
@@ -64,9 +64,9 @@
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-08-23T02:20:00Z",
       "weather": {
-        "temperatureC": 15.4,
+        "temperatureC": 14.3,
         "precipitationMm": 0,
-        "windKmh": 6.5
+        "windKmh": 5.6
       }
     },
     {
@@ -75,9 +75,9 @@
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-08-23T05:20:57Z",
       "weather": {
-        "temperatureC": 18,
+        "temperatureC": 17.8,
         "precipitationMm": 0,
-        "windKmh": 14.1
+        "windKmh": 11.8
       }
     },
     {
@@ -86,9 +86,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-08-23T09:20:00Z",
       "weather": {
-        "temperatureC": 15.8,
+        "temperatureC": 16.6,
         "precipitationMm": 0,
-        "windKmh": 12.9
+        "windKmh": 14.8
       }
     }
   ],
