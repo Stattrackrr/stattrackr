@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-20T16:36:30.497Z",
+  "generatedAt": "2026-08-20T18:38:09.284Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 215,
   "injuries": [
-    {
-      "team": "St Kilda Saints",
-      "player": "Dougal Howard",
-      "injury": "retiring",
-      "returning": "Season"
-    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Harry Sheezel",
@@ -69,12 +63,6 @@
       "player": "Alix Tauru",
       "injury": "active",
       "returning": "TBC"
-    },
-    {
-      "team": "Gold Coast Suns",
-      "player": "Ben King",
-      "injury": "benched for what could be his final game",
-      "returning": "Round 24"
     },
     {
       "team": "Collingwood Magpies",
@@ -350,12 +338,6 @@
       "team": "St Kilda Saints",
       "player": "Nasiah Wanganeen-Milera",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Liam Ryan",
-      "injury": "Managed",
       "returning": "TBC"
     },
     {
