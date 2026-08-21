@@ -1,7 +1,7 @@
 {
   "season": 2026,
   "type": "ta",
-  "generatedAt": "2026-08-21T12:47:15.873Z",
+  "generatedAt": "2026-08-21T14:36:47.900Z",
   "source": "footyinfo.com",
   "sourcePage": "match/{id}/preview + player/{slug}/game_logs",
   "teamCount": 18,
@@ -202,7 +202,7 @@
         "I50": 57.5,
         "R50": 39,
         "CP": 129.6,
-        "UP": 229.22,
+        "UP": 229.17,
         "MG": 14,
         "Rk": 8
       }
