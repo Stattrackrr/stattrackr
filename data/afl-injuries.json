@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-21T16:33:14.126Z",
+  "generatedAt": "2026-08-21T18:37:13.206Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 233,
+  "injuryCount": 230,
   "injuries": [
-    {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
     {
       "team": "Collingwood Magpies",
       "player": "Noah Howes",
@@ -761,12 +755,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "Calf",
@@ -867,12 +855,6 @@
       "player": "Jed Adams",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Ty Gallop",
-      "injury": "Thumb",
-      "returning": "active"
     },
     {
       "team": "Port Adelaide Power",
