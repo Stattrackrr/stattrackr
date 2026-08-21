@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-21T18:37:13.206Z",
+  "generatedAt": "2026-08-21T20:31:48.088Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 230,
+  "injuryCount": 231,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Tanner Bruhn",
+      "injury": "stood down from playing for the entire 2025 season due to charges",
+      "returning": "Season"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Noah Howes",
