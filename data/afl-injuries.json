@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T08:41:45.869Z",
+  "generatedAt": "2026-08-21T10:34:40.049Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 232,
@@ -8,13 +8,13 @@
       "team": "Collingwood Magpies",
       "player": "Noah Howes",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Brisbane Lions",
       "player": "Daniel Annable",
       "injury": "active",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
