@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-21T04:41:20.318Z",
+  "generatedAt": "2026-08-21T06:44:33.687Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 222,
+  "injuryCount": 225,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Lachie Jaques",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Louis Emmett",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Jordan Croft",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Callum Ah Chee",
@@ -63,12 +87,6 @@
       "player": "Dion Prestia",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Soreness",
-      "returning": "1 Week"
     },
     {
       "team": "St Kilda Saints",
@@ -163,14 +181,14 @@
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "club-imposed suspension",
-      "returning": "Season"
+      "injury": "for breaching club standards",
+      "returning": "remainder of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "club-imposed suspension",
-      "returning": "Season"
+      "injury": "for breaching club standards",
+      "returning": "remainder of the season"
     },
     {
       "team": "Sydney Swans",
@@ -181,14 +199,14 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "suspended following alleged sexual assault",
-      "returning": "Season"
+      "injury": "for breaching club standards",
+      "returning": "remainder of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "club-imposed suspension",
-      "returning": "Season"
+      "injury": "for breaching club standards",
+      "returning": "remainder of the season"
     },
     {
       "team": "Sydney Swans",
@@ -199,8 +217,8 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "suspended following alleged sexual assault",
-      "returning": "Season"
+      "injury": "for breaching club standards",
+      "returning": "remainder of the season"
     },
     {
       "team": "Adelaide Crows",
