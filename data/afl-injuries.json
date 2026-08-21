@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-21T10:34:40.049Z",
+  "generatedAt": "2026-08-21T12:47:17.261Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 232,
+  "injuryCount": 233,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Noah Howes",
