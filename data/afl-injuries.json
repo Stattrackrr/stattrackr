@@ -1,9 +1,75 @@
 {
-  "generatedAt": "2026-08-21T01:07:42.084Z",
+  "generatedAt": "2026-08-21T03:06:04.760Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 222,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Callum Ah Chee",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jye Amiss",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Heath Chapman",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sam Switkowski",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Mark Blicavs",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Cody Angove",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Ginnivan",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Harry Armstrong",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Nathan Broad",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Dion Prestia",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Soreness",
+      "returning": "1 Week"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Tom De Koning",
@@ -27,30 +93,6 @@
       "player": "Harry Sheezel",
       "injury": "Facial",
       "returning": "Round 24"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "rested",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Jye Amiss",
-      "injury": "given the weekend off",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Heath Chapman",
-      "injury": "given the weekend off",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sam Switkowski",
-      "injury": "given the weekend off",
-      "returning": "TBC"
     },
     {
       "team": "St Kilda Saints",
@@ -227,12 +269,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Steele Sidebottom",
-      "injury": "Illness",
-      "returning": "Test"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Nick Coffield",
       "injury": "Concussion",
@@ -317,12 +353,6 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Jack Hutchinson",
-      "injury": "Hamstring",
-      "returning": "Test"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Reilly O'Brien",
       "injury": "active",
@@ -401,12 +431,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Sam De Koning",
-      "injury": "Injury",
-      "returning": "Test"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Billy Dowling",
       "injury": "active",
@@ -416,6 +440,12 @@
       "team": "Fremantle Dockers",
       "player": "Judd McVee",
       "injury": "has been left out",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Sam De Koning",
+      "injury": "to miss for Geelong",
       "returning": "TBC"
     },
     {
@@ -546,12 +576,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Jeremy Howe",
-      "injury": "Arm",
-      "returning": "Available"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Tew Jiath",
       "injury": "Hamstring",
       "returning": "Season"
@@ -671,6 +695,12 @@
       "returning": "TBC"
     },
     {
+      "team": "Collingwood Magpies",
+      "player": "Jeremy Howe",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
       "team": "Essendon Bombers",
       "player": "Darcy Parish",
       "injury": "Calf",
@@ -729,12 +759,6 @@
       "player": "Rhyan Mansell",
       "injury": "Foot",
       "returning": "Round 21"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Wayne Milera",
-      "injury": "Hamstring",
-      "returning": "2-3 weeks"
     },
     {
       "team": "Richmond Tigers",
