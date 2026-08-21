@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-21T06:44:33.687Z",
+  "generatedAt": "2026-08-21T08:41:45.869Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 225,
+  "injuryCount": 232,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Noah Howes",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Daniel Annable",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Liam Duggan",
+      "injury": "managed for his side's final-round clash",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Willem Drew",
+      "injury": "to miss the clash with Essendon",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Nathan O'Driscoll",
+      "injury": "Hip",
+      "returning": "active"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Tom Blamires",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Calf",
+      "returning": "active"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Dan Butler",
+      "injury": "Suspended for rough conduct on Gold Coast's Mac Andrew. Graded as careless conduct, medium impact and high contact.",
+      "returning": "one match"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Lachie Jaques",
@@ -68,7 +116,7 @@
       "team": "Hawthorn Hawks",
       "player": "Jack Ginnivan",
       "injury": "Injury",
-      "returning": "TBA"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
@@ -158,7 +206,7 @@
       "team": "Port Adelaide Power",
       "player": "Jason Horne-Francis",
       "injury": "Toe",
-      "returning": "Season"
+      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
@@ -314,12 +362,6 @@
       "team": "Western Bulldogs",
       "player": "Marcus Bontempelli",
       "injury": "Achilles",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Harry McKay",
-      "injury": "unavailable for the game",
       "returning": "TBC"
     },
     {
