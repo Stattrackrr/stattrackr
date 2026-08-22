@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-22T18:28:26.446Z",
+  "generatedAt": "2026-08-22T20:23:44.890Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 213,
+  "injuryCount": 218,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sean Darcy",
+      "injury": "Calf",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Corey Wagner",
+      "injury": "Hip",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brandon Walker",
+      "injury": "Shoulder",
+      "returning": "Test"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jeremy Cameron",
+      "injury": "Shoulder",
+      "returning": "Test"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Elijah Hewett",
+      "injury": "Calf",
+      "returning": "Test"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Noah Howes",
