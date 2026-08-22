@@ -1,7 +1,7 @@
 {
   "year": 2026,
   "seasonLabel": "NBL27",
-  "generatedAt": "2026-08-21T13:53:09.033Z",
+  "generatedAt": "2026-08-22T13:40:15.084Z",
   "source": "rosetta.nbl.com.au",
   "playerCount": 136,
   "players": [
@@ -243,7 +243,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "43",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d4691cf56f1d4c958517769ca321d823?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/c000719328b34f78a93663ef491932b1?size=800&format=webp"
     },
     {
       "playerId": "c2814f09-84a5-416d-97ef-8441c3f1186e",
@@ -253,7 +253,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "11",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/04141a551b5f41e0aaa983fa1757c68c?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/228d6f5d5a454f54b83154afb52507f4?size=800&format=webp"
     },
     {
       "playerId": "0edcc8b5-60a8-4ebe-b75d-5fb3f64d40e6",
@@ -393,7 +393,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "C",
       "jersey": "18",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/bf521c7f34644f82875f20839967114d?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/5b1e5d4c1dda496d8809934b5b23f6e4?size=800&format=webp"
     },
     {
       "playerId": "39c99a6c-4190-4abb-9f27-b41f7b2470f5",
@@ -423,7 +423,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "C",
       "jersey": "16",
-      "imageUrl": null
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/fa8260d4d590450fb0bb5a5283566828?size=800&format=webp"
     },
     {
       "playerId": "2d1e9f7f-e241-4797-8b2f-70472f07f4c8",
@@ -623,7 +623,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "F",
       "jersey": "7",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/4e4ed8602e7d475eb0c13493bdff1c31?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/a26e920cd33d4f6f939143086cfd69f3?size=800&format=webp"
     },
     {
       "playerId": "71771a51-6f51-4a37-a27e-2a123e775a5c",
@@ -683,7 +683,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "FC",
       "jersey": "2",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/50e1f31d0911425d811e6853f4a1d4c0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/69acda857a5642e483d3168a03abd090?size=800&format=webp"
     },
     {
       "playerId": "a63a2562-0d24-4d73-8e3c-51fc9830134b",
@@ -813,7 +813,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "F",
       "jersey": "15",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/852edf5053214863a6991ddf234a5ea0?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7e9375354be649eea34fba355452ba25?size=800&format=webp"
     },
     {
       "playerId": "872bdcab-a933-4436-874d-4d94f4e184e8",
@@ -873,7 +873,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "GF",
       "jersey": "23",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/49ab44594ba94cf49dddddba74273535?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/8cfbc2d770b64ec9aa2bcccde4204d81?size=800&format=webp"
     },
     {
       "playerId": "0dd6e2f3-0358-4a6e-a340-fe5279db28fa",
@@ -1133,7 +1133,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "FC",
       "jersey": "21",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/52ddae9eb14d49b197a8bef6e63974b3?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/aac8db5f214d40e9809bb4c61f01882c?size=800&format=webp"
     },
     {
       "playerId": "43ece052-4c0c-4878-8cbe-5fe7055f648d",
@@ -1163,7 +1163,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "51",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/3fc67897fc0d4d719623e2e4e7a4a785?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/e799c44893ac449d889452a714ff22a7?size=800&format=webp"
     },
     {
       "playerId": "05e12749-7b66-44f8-84f7-f437fc90dfb6",
@@ -1243,7 +1243,7 @@
       "teamId": "41c8f340-4d0a-4d68-a3c7-1b31f643f803",
       "position": "G",
       "jersey": "12",
-      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/d9a340b30a7d444d97b4012346c0e942?size=800&format=webp"
+      "imageUrl": "https://images.dc.connect.sportradar.com/b1sjj/7821eeb897ff463c9251043f53456b11?size=800&format=webp"
     },
     {
       "playerId": "e11926a6-ab96-4a00-9e0f-f343b2f97655",
