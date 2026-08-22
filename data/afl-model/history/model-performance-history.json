@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-21T17:17:00Z",
-  "count": 201,
+  "generatedAt": "2026-08-22T11:18:55Z",
+  "count": 202,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -26260,6 +26260,156 @@
         "sampleCountOk": true,
         "brierOk": true,
         "logLossOk": true,
+        "hitRateOk": true,
+        "freezeInactive": true
+      }
+    },
+    {
+      "generatedAt": "2026-08-22T11:18:55Z",
+      "sampleCount": 491,
+      "pass": false,
+      "promoted": false,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 491,
+        "hitRate": 0.541752,
+        "brierScore": 0.267848,
+        "logLoss": 0.762031,
+        "mae": 4.662915,
+        "avgClvLite": -0.002049,
+        "positiveClvRate": 0.158859,
+        "clvSampleCount": 491,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 15,
+            "avgPred": 0.0522,
+            "avgActual": 0.4667
+          },
+          {
+            "bin": 1,
+            "count": 31,
+            "avgPred": 0.1577,
+            "avgActual": 0.4194
+          },
+          {
+            "bin": 2,
+            "count": 44,
+            "avgPred": 0.2506,
+            "avgActual": 0.5
+          },
+          {
+            "bin": 3,
+            "count": 112,
+            "avgPred": 0.3533,
+            "avgActual": 0.5089
+          },
+          {
+            "bin": 4,
+            "count": 131,
+            "avgPred": 0.4481,
+            "avgActual": 0.4809
+          },
+          {
+            "bin": 5,
+            "count": 100,
+            "avgPred": 0.5493,
+            "avgActual": 0.58
+          },
+          {
+            "bin": 6,
+            "count": 49,
+            "avgPred": 0.6445,
+            "avgActual": 0.6122
+          },
+          {
+            "bin": 7,
+            "count": 9,
+            "avgPred": 0.73,
+            "avgActual": 0.7778
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260822-111812"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 491,
+        "hitRate": 0.541752,
+        "brierScore": 0.263886,
+        "logLoss": 0.743742,
+        "mae": 4.623164,
+        "avgClvLite": -0.002145,
+        "positiveClvRate": 0.160896,
+        "clvSampleCount": 491,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 10,
+            "avgPred": 0.048,
+            "avgActual": 0.4
+          },
+          {
+            "bin": 1,
+            "count": 17,
+            "avgPred": 0.1609,
+            "avgActual": 0.5294
+          },
+          {
+            "bin": 2,
+            "count": 50,
+            "avgPred": 0.2588,
+            "avgActual": 0.48
+          },
+          {
+            "bin": 3,
+            "count": 96,
+            "avgPred": 0.3571,
+            "avgActual": 0.5
+          },
+          {
+            "bin": 4,
+            "count": 146,
+            "avgPred": 0.4476,
+            "avgActual": 0.4795
+          },
+          {
+            "bin": 5,
+            "count": 102,
+            "avgPred": 0.5431,
+            "avgActual": 0.5686
+          },
+          {
+            "bin": 6,
+            "count": 58,
+            "avgPred": 0.6451,
+            "avgActual": 0.6034
+          },
+          {
+            "bin": 7,
+            "count": 9,
+            "avgPred": 0.745,
+            "avgActual": 0.7778
+          },
+          {
+            "bin": 8,
+            "count": 3,
+            "avgPred": 0.8255,
+            "avgActual": 0.6667
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260821-171511"
+      },
+      "deltas": {
+        "brierImprovement": -0.015014,
+        "logLossChange": 0.024591,
+        "hitRateDelta": 0.0
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": false,
         "hitRateOk": true,
         "freezeInactive": true
       }
