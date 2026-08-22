@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-21T17:17:22Z",
-  "count": 87,
+  "generatedAt": "2026-08-22T02:34:54.684Z",
+  "count": 88,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -1345,7 +1345,7 @@
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-07-12T06:40:50Z",
-      "weekKey": null,
+      "weekKey": "2026-W28",
       "roundKey": "2026-R18",
       "picks": [
         {
@@ -1392,7 +1392,7 @@
       "homeTeam": "Geelong Cats",
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-07-16T09:30:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1439,7 +1439,7 @@
       "homeTeam": "Sydney Swans",
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-07-17T09:40:49Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1486,7 +1486,7 @@
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-07-18T03:15:21Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1533,7 +1533,7 @@
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-07-18T06:15:03Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1580,7 +1580,7 @@
       "homeTeam": "Collingwood Magpies",
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-07-18T09:35:33Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1627,7 +1627,7 @@
       "homeTeam": "West Coast Eagles",
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-07-18T10:10:56Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1674,7 +1674,7 @@
       "homeTeam": "Richmond Tigers",
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-07-19T03:10:46Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1721,7 +1721,7 @@
       "homeTeam": "Gold Coast Suns",
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-07-19T05:15:18Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1757,7 +1757,7 @@
       "homeTeam": "Essendon Bombers",
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-07-19T06:40:02Z",
-      "weekKey": null,
+      "weekKey": "2026-W29",
       "roundKey": "2026-R19",
       "picks": [
         {
@@ -1804,7 +1804,7 @@
       "homeTeam": "Adelaide Crows",
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-07-23T09:30:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -1851,7 +1851,7 @@
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-07-24T09:40:02Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -1898,7 +1898,7 @@
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-07-24T10:10:29Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -1945,7 +1945,7 @@
       "homeTeam": "Carlton Blues",
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-07-25T03:05:56Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -1981,7 +1981,7 @@
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-07-25T06:15:34Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -2017,7 +2017,7 @@
       "homeTeam": "GWS Giants",
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-07-25T06:35:15Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -2064,7 +2064,7 @@
       "homeTeam": "Western Bulldogs",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-07-25T09:40:45Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -2100,7 +2100,7 @@
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-07-26T03:10:13Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -2147,7 +2147,7 @@
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-07-26T05:15:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W30",
       "roundKey": "2026-R20",
       "picks": [
         {
@@ -2183,7 +2183,7 @@
       "homeTeam": "Collingwood Magpies",
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-07-30T09:30:41Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2230,7 +2230,7 @@
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-07-31T10:10:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2277,7 +2277,7 @@
       "homeTeam": "St Kilda Saints",
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-08-01T03:05:21Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2324,7 +2324,7 @@
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-08-01T03:35:16Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2371,7 +2371,7 @@
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-08-01T08:35:50Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2407,7 +2407,7 @@
       "homeTeam": "Carlton Blues",
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-08-01T09:40:21Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2454,7 +2454,7 @@
       "homeTeam": "Richmond Tigers",
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-08-02T03:10:58Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2501,7 +2501,7 @@
       "homeTeam": "Gold Coast Suns",
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-08-02T05:15:45Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2548,7 +2548,7 @@
       "homeTeam": "Essendon Bombers",
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-08-02T06:40:19Z",
-      "weekKey": null,
+      "weekKey": "2026-W31",
       "roundKey": "2026-R21",
       "picks": [
         {
@@ -2595,7 +2595,7 @@
       "homeTeam": "Western Bulldogs",
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-08-06T09:30:19Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2642,7 +2642,7 @@
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-08-07T09:40:33Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2689,7 +2689,7 @@
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-08-08T03:15:36Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2736,7 +2736,7 @@
       "homeTeam": "Sydney Swans",
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-08-08T06:15:04Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2783,7 +2783,7 @@
       "homeTeam": "Geelong Cats",
       "awayTeam": "Essendon Bombers",
       "commenceTime": "2026-08-08T06:35:59Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2830,7 +2830,7 @@
       "homeTeam": "Adelaide Crows",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-08-08T09:35:43Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2877,7 +2877,7 @@
       "homeTeam": "GWS Giants",
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-08-09T03:10:20Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2924,7 +2924,7 @@
       "homeTeam": "West Coast Eagles",
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-08-09T06:10:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -2971,7 +2971,7 @@
       "homeTeam": "St Kilda Saints",
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-09T09:20:34Z",
-      "weekKey": null,
+      "weekKey": "2026-W32",
       "roundKey": "2026-R22",
       "picks": [
         {
@@ -3007,7 +3007,7 @@
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-08-14T10:10:42Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3054,7 +3054,7 @@
       "homeTeam": "Richmond Tigers",
       "awayTeam": "St Kilda Saints",
       "commenceTime": "2026-08-15T02:35:22Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3101,7 +3101,7 @@
       "homeTeam": "North Melbourne Kangaroos",
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-08-15T05:45:56Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3148,7 +3148,7 @@
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Gold Coast Suns",
       "commenceTime": "2026-08-15T06:15:36Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3195,7 +3195,7 @@
       "homeTeam": "Hawthorn Hawks",
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-08-15T09:40:23Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3242,7 +3242,7 @@
       "homeTeam": "Port Adelaide Power",
       "awayTeam": "Melbourne Demons",
       "commenceTime": "2026-08-15T10:10:00Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3278,7 +3278,7 @@
       "homeTeam": "GWS Giants",
       "awayTeam": "West Coast Eagles",
       "commenceTime": "2026-08-16T03:40:34Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3325,7 +3325,7 @@
       "homeTeam": "Western Bulldogs",
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-16T05:15:06Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3372,7 +3372,7 @@
       "homeTeam": "Essendon Bombers",
       "awayTeam": "Sydney Swans",
       "commenceTime": "2026-08-16T06:40:51Z",
-      "weekKey": null,
+      "weekKey": "2026-W33",
       "roundKey": "2026-R23",
       "picks": [
         {
@@ -3419,7 +3419,7 @@
       "homeTeam": "Collingwood Magpies",
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-08-21T09:40:25Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3466,7 +3466,7 @@
       "homeTeam": "Carlton Blues",
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-08-22T03:15:48Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3513,7 +3513,7 @@
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-08-22T06:15:17Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3560,7 +3560,7 @@
       "homeTeam": "Geelong Cats",
       "awayTeam": "Richmond Tigers",
       "commenceTime": "2026-08-22T09:45:46Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3607,7 +3607,7 @@
       "homeTeam": "Adelaide Crows",
       "awayTeam": "GWS Giants",
       "commenceTime": "2026-08-22T10:10:11Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3654,7 +3654,7 @@
       "homeTeam": "Essendon Bombers",
       "awayTeam": "Port Adelaide Power",
       "commenceTime": "2026-08-23T02:20:48Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3690,7 +3690,7 @@
       "homeTeam": "Sydney Swans",
       "awayTeam": "North Melbourne Kangaroos",
       "commenceTime": "2026-08-23T05:20:57Z",
-      "weekKey": null,
+      "weekKey": "2026-W34",
       "roundKey": null,
       "picks": [
         {
@@ -3713,6 +3713,53 @@
           "recommendedEdge": 0.1633,
           "recommendedProb": 0.6633,
           "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "westcoasteagles|hawthornhawks|2026-08-23",
+      "finalizedAt": "2026-08-22T02:34:54.684Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-21T17:17:22Z",
+      "modelVersion": "afl-disp-20260821-171511",
+      "homeTeam": "West Coast Eagles",
+      "awayTeam": "Hawthorn Hawks",
+      "commenceTime": "2026-08-23T09:20:20Z",
+      "weekKey": "2026-W34",
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Jarman Impey",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 20.79,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2115,
+          "recommendedProb": 0.7035,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Tom Mccarthy",
+          "bookmaker": "SportsBet",
+          "line": 22.5,
+          "expectedDisposals": 20.03,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1097,
+          "recommendedProb": 0.6027,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Massimo D Ambrosio",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 20.15,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.014,
+          "recommendedProb": 0.523,
+          "rank": 3,
           "actualDisposals": null
         }
       ]
