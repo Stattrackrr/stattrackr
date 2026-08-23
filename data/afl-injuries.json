@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-23T01:09:29.724Z",
+  "generatedAt": "2026-08-23T10:26:51.209Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 219,
+  "injuryCount": 222,
   "injuries": [
+    {
+      "team": "GWS Giants",
+      "player": "Georgia Garnett",
+      "injury": "Shoulder",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Matthew Jefferson",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Harry Sheezel",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Aaron Naughton",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Darcy Byrne-Jones",
@@ -179,12 +203,6 @@
       "returning": "Season"
     },
     {
-      "team": "North Melbourne Kangaroos",
-      "player": "Harry Sheezel",
-      "injury": "Facial",
-      "returning": "Round 24"
-    },
-    {
       "team": "St Kilda Saints",
       "player": "Jack Higgins",
       "injury": "active",
@@ -253,14 +271,14 @@
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "for breaching club standards",
-      "returning": "remainder of the season"
+      "injury": "club-imposed ban due to alleged sexual assault scandal",
+      "returning": "remainder of the year"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "for breaching club standards",
-      "returning": "remainder of the season"
+      "injury": "club-imposed ban due to alleged sexual assault scandal",
+      "returning": "remainder of the year"
     },
     {
       "team": "Sydney Swans",
@@ -271,14 +289,14 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "for breaching club standards",
-      "returning": "remainder of the season"
+      "injury": "club-imposed ban due to alleged sexual assault scandal",
+      "returning": "remainder of the year"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "for breaching club standards",
-      "returning": "remainder of the season"
+      "injury": "club-imposed ban due to alleged sexual assault scandal",
+      "returning": "remainder of the year"
     },
     {
       "team": "Sydney Swans",
@@ -289,8 +307,8 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "for breaching club standards",
-      "returning": "remainder of the season"
+      "injury": "club-imposed ban due to alleged sexual assault scandal",
+      "returning": "remainder of the year"
     },
     {
       "team": "Adelaide Crows",
