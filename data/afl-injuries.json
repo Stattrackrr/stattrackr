@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-23T18:27:46.846Z",
+  "generatedAt": "2026-08-23T20:24:20.421Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 216,
+  "injuryCount": 217,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Tom Hanily",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Matthew Jefferson",
