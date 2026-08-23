@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-23T12:30:32.761Z",
+  "generatedAt": "2026-08-23T14:19:44.853Z",
   "source": "footyinfo.com",
   "sourcePage": "player/{slug}/game_logs_summary?mode=averages&columns=all",
   "playerCount": 569,
@@ -3081,7 +3081,7 @@
       "rebound_50s": 2.6,
       "contested_possessions": 4.8,
       "uncontested_possessions": 13.9,
-      "meters_gained": 262.2,
+      "meters_gained": 263,
       "free_kicks_for": 0
     },
     {
