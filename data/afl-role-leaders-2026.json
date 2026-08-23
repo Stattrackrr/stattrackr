@@ -1,6 +1,6 @@
 {
   "season": 2026,
-  "generatedAt": "2026-08-23T14:24:49.920Z",
+  "generatedAt": "2026-08-23T16:26:42.370Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
     "carlton": {
@@ -348,121 +348,6 @@
         "teamTotal": 276
       }
     },
-    "collingwood": {
-      "slug": "collingwood",
-      "name": "Collingwood",
-      "abbrev": "COL",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Nick Daicos",
-            "total": 499,
-            "rate": 80
-          },
-          {
-            "player": "Darcy Cameron",
-            "total": 477,
-            "rate": 72
-          },
-          {
-            "player": "Edward Allan",
-            "total": 311,
-            "rate": 54
-          },
-          {
-            "player": "Jordan De Goey",
-            "total": 297,
-            "rate": 49
-          },
-          {
-            "player": "Ned Long",
-            "total": 255,
-            "rate": 39
-          },
-          {
-            "player": "Scott Pendlebury",
-            "total": 195,
-            "rate": 42
-          },
-          {
-            "player": "Jack Crisp",
-            "total": 149,
-            "rate": 23
-          },
-          {
-            "player": "Beau McCreery",
-            "total": 138,
-            "rate": 20
-          },
-          {
-            "player": "Oscar Steene",
-            "total": 125,
-            "rate": 49
-          },
-          {
-            "player": "Angus Anderson",
-            "total": 82,
-            "rate": 18
-          }
-        ],
-        "teamTotal": 2760
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Dan Houston",
-            "total": 72,
-            "rate": 27
-          },
-          {
-            "player": "Jeremy Howe",
-            "total": 69,
-            "rate": 26
-          },
-          {
-            "player": "Josh Daicos",
-            "total": 56,
-            "rate": 21
-          },
-          {
-            "player": "Brayden Maynard",
-            "total": 28,
-            "rate": 11
-          },
-          {
-            "player": "Nick Daicos",
-            "total": 11,
-            "rate": 4
-          },
-          {
-            "player": "Isaac Quaynor",
-            "total": 9,
-            "rate": 3
-          },
-          {
-            "player": "Scott Pendlebury",
-            "total": 9,
-            "rate": 3
-          },
-          {
-            "player": "Billy Frampton",
-            "total": 2,
-            "rate": 1
-          },
-          {
-            "player": "Sam Swadling",
-            "total": 2,
-            "rate": 1
-          },
-          {
-            "player": "Steele Sidebottom",
-            "total": 2,
-            "rate": 1
-          }
-        ],
-        "teamTotal": 262
-      }
-    },
     "essendon": {
       "slug": "essendon",
       "name": "Essendon",
@@ -576,6 +461,121 @@
           }
         ],
         "teamTotal": 310
+      }
+    },
+    "collingwood": {
+      "slug": "collingwood",
+      "name": "Collingwood",
+      "abbrev": "COL",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Nick Daicos",
+            "total": 499,
+            "rate": 80
+          },
+          {
+            "player": "Darcy Cameron",
+            "total": 477,
+            "rate": 72
+          },
+          {
+            "player": "Edward Allan",
+            "total": 311,
+            "rate": 54
+          },
+          {
+            "player": "Jordan De Goey",
+            "total": 297,
+            "rate": 49
+          },
+          {
+            "player": "Ned Long",
+            "total": 255,
+            "rate": 39
+          },
+          {
+            "player": "Scott Pendlebury",
+            "total": 195,
+            "rate": 42
+          },
+          {
+            "player": "Jack Crisp",
+            "total": 149,
+            "rate": 23
+          },
+          {
+            "player": "Beau McCreery",
+            "total": 138,
+            "rate": 20
+          },
+          {
+            "player": "Oscar Steene",
+            "total": 125,
+            "rate": 49
+          },
+          {
+            "player": "Angus Anderson",
+            "total": 82,
+            "rate": 18
+          }
+        ],
+        "teamTotal": 2760
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Dan Houston",
+            "total": 72,
+            "rate": 27
+          },
+          {
+            "player": "Jeremy Howe",
+            "total": 69,
+            "rate": 26
+          },
+          {
+            "player": "Josh Daicos",
+            "total": 56,
+            "rate": 21
+          },
+          {
+            "player": "Brayden Maynard",
+            "total": 28,
+            "rate": 11
+          },
+          {
+            "player": "Nick Daicos",
+            "total": 11,
+            "rate": 4
+          },
+          {
+            "player": "Isaac Quaynor",
+            "total": 9,
+            "rate": 3
+          },
+          {
+            "player": "Scott Pendlebury",
+            "total": 9,
+            "rate": 3
+          },
+          {
+            "player": "Billy Frampton",
+            "total": 2,
+            "rate": 1
+          },
+          {
+            "player": "Sam Swadling",
+            "total": 2,
+            "rate": 1
+          },
+          {
+            "player": "Steele Sidebottom",
+            "total": 2,
+            "rate": 1
+          }
+        ],
+        "teamTotal": 262
       }
     },
     "fremantle": {
