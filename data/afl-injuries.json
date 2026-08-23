@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-23T16:26:41.279Z",
+  "generatedAt": "2026-08-23T18:27:46.846Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 222,
+  "injuryCount": 216,
   "injuries": [
-    {
-      "team": "GWS Giants",
-      "player": "Georgia Garnett",
-      "injury": "Shoulder",
-      "returning": "TBC"
-    },
     {
       "team": "Melbourne Demons",
       "player": "Matthew Jefferson",
@@ -27,12 +21,6 @@
       "player": "Aaron Naughton",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Darcy Byrne-Jones",
-      "injury": "active",
-      "returning": "Round 24"
     },
     {
       "team": "Fremantle Dockers",
@@ -282,12 +270,6 @@
     },
     {
       "team": "Sydney Swans",
-      "player": "Tom Hanily",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
-      "team": "Sydney Swans",
       "player": "Isaac Heeney",
       "injury": "breaching club standards",
       "returning": "rest of the season"
@@ -383,12 +365,6 @@
       "returning": "2 Weeks"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Harry Cunningham",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Jack Viney",
       "injury": "Achilles",
@@ -416,12 +392,6 @@
       "team": "GWS Giants",
       "player": "Jayden Laverde",
       "injury": "Soreness",
-      "returning": "active"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Bo Allan",
-      "injury": "active",
       "returning": "active"
     },
     {
@@ -709,12 +679,6 @@
     {
       "team": "Sydney Swans",
       "player": "William Edwards",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Rowbottom",
       "injury": "Injury",
       "returning": "TBC"
     },
