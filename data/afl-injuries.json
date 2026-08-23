@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-22T22:24:49.832Z",
+  "generatedAt": "2026-08-23T01:09:29.724Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 218,
+  "injuryCount": 219,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Darcy Byrne-Jones",
+      "injury": "active",
+      "returning": "Round 24"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Sean Darcy",
