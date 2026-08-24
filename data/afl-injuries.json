@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-23T22:22:59.133Z",
+  "generatedAt": "2026-08-24T01:06:16.451Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 217,
+  "injuryCount": 219,
   "injuries": [
+    {
+      "team": "West Coast Eagles",
+      "player": "Harley Reid",
+      "injury": "Sling tackle on Jai Newcombe",
+      "returning": "Start of 2027 season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Hamstring",
+      "returning": "at least two to three weeks"
+    },
     {
       "team": "Sydney Swans",
       "player": "Tom Hanily",
@@ -26,7 +38,7 @@
       "team": "Western Bulldogs",
       "player": "Aaron Naughton",
       "injury": "Ankle",
-      "returning": "TBC"
+      "returning": "Expected to play"
     },
     {
       "team": "Fremantle Dockers",
@@ -91,8 +103,8 @@
     {
       "team": "St Kilda Saints",
       "player": "Dan Butler",
-      "injury": "Suspended for rough conduct on Gold Coast's Mac Andrew. Graded as careless conduct, medium impact and high contact.",
-      "returning": "one match"
+      "injury": "Rough conduct charge on Mac Andrew",
+      "returning": "1 match"
     },
     {
       "team": "Western Bulldogs",
@@ -116,7 +128,7 @@
       "team": "Western Bulldogs",
       "player": "Tom Liberatore",
       "injury": "Knee",
-      "returning": "TBC"
+      "returning": "Season"
     },
     {
       "team": "Adelaide Crows",
@@ -290,7 +302,7 @@
       "team": "Sydney Swans",
       "player": "Hayden McLean",
       "injury": "Concussion",
-      "returning": "1 Week"
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
@@ -1148,7 +1160,7 @@
       "team": "Sydney Swans",
       "player": "Justin McInerney",
       "injury": "Hamstring",
-      "returning": "Round 23 or Round 24"
+      "returning": "unlikely to play Brisbane in the qualifying final"
     },
     {
       "team": "Gold Coast Suns",
