@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T11:23:32.223Z",
+  "generatedAt": "2026-08-24T17:02:33.989Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Collingwood Magpies",
       "commenceTime": "2026-08-28T09:40:23Z",
       "weather": {
-        "temperatureC": 13.7,
+        "temperatureC": 12.6,
         "precipitationMm": 0,
-        "windKmh": 3.1
+        "windKmh": 2.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-29T09:35:40Z",
       "weather": {
-        "temperatureC": 13,
+        "temperatureC": 11.9,
         "precipitationMm": 0,
-        "windKmh": 8.1
+        "windKmh": 6
       }
     },
     {
