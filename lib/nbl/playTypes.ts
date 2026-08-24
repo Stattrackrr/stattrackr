@@ -190,7 +190,7 @@ function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeature
   }
 
   const per36 = 36 / minutes;
-  const zones = zonesForYear(row.name, year);
+  const zones = zonesForYear(row.name, year) ?? undefined;
   const hasZones = Boolean(zones);
 
   return {
@@ -206,10 +206,10 @@ function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeature
     threeRate: fga > 0 ? threeA / fga : 0,
     ftRate: fga > 0 ? fta / fga : 0,
     twoRate: fga > 0 ? twoA / fga : 0,
-    restrictedShare: hasZones ? zoneShare(zones, ['restricted']) : null,
-    paintShare: hasZones ? zoneShare(zones, ['paint']) : null,
-    midShare: hasZones ? zoneShare(zones, ['midRange']) : null,
-    threeShare: hasZones
+    restrictedShare: zones ? zoneShare(zones, ['restricted']) : null,
+    paintShare: zones ? zoneShare(zones, ['paint']) : null,
+    midShare: zones ? zoneShare(zones, ['midRange']) : null,
+    threeShare: zones
       ? zoneShare(zones, ['leftCorner3', 'rightCorner3', 'aboveBreak3'])
       : null,
     hasZones,
