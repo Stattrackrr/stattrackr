@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-24T01:06:16.451Z",
+  "generatedAt": "2026-08-24T03:05:55.167Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 219,
+  "injuryCount": 220,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brennan Cox",
+      "injury": "Calf",
+      "returning": "post our first final"
+    },
     {
       "team": "West Coast Eagles",
       "player": "Harley Reid",
