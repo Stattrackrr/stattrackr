@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-22T17:05:54Z",
-  "count": 88,
+  "generatedAt": "2026-08-24T11:25:14Z",
+  "count": 90,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -3770,6 +3770,100 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1031,
           "recommendedProb": 0.6337,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "westernbulldogs|collingwoodmagpies|2026-08-28",
+      "finalizedAt": "2026-08-24T11:24:19Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-24T11:25:14Z",
+      "modelVersion": "afl-disp-20260822-170406",
+      "homeTeam": "Western Bulldogs",
+      "awayTeam": "Collingwood Magpies",
+      "commenceTime": "2026-08-28T09:40:23Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Connor Budarick",
+          "bookmaker": "SportsBet",
+          "line": 16.5,
+          "expectedDisposals": 21.34,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.291,
+          "recommendedProb": 0.805,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jordan De Goey",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 18.31,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.281,
+          "recommendedProb": 0.782,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Marcus Bontempelli",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 27.73,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.224,
+          "recommendedProb": 0.733,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "melbournedemons|carltonblues|2026-08-29",
+      "finalizedAt": "2026-08-24T11:24:19Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-24T11:25:14Z",
+      "modelVersion": "afl-disp-20260822-170406",
+      "homeTeam": "Melbourne Demons",
+      "awayTeam": "Carlton Blues",
+      "commenceTime": "2026-08-29T09:35:40Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Matt Cottrell",
+          "bookmaker": "SportsBet",
+          "line": 15.5,
+          "expectedDisposals": 11.88,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2164,
+          "recommendedProb": 0.7462,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Ed Langdon",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 17.21,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1993,
+          "recommendedProb": 0.6953,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jake Bowey",
+          "bookmaker": "SportsBet",
+          "line": 24.5,
+          "expectedDisposals": 26.55,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1211,
+          "recommendedProb": 0.6251,
           "rank": 3,
           "actualDisposals": null
         }
