@@ -2,16 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { NblGameFilterDataItem } from '@/app/nbl/components/NblGameFilters';
+import type { NblGameFilterDataItem } from '@/app/tennis/components/TennisGameFilters';
 import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleChart';
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
-import NblXAxisTick from '@/app/nbl/components/NblXAxisTick';
-import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
-import { NBL_CURRENT_SEASON_YEAR, resolveNblClubName, normalizeTeamKey } from '@/lib/nblTeamCanonical';
-import {
-  NBL_TEAM_QUARTER_STAT_KEYS,
-  NBL_TEAM_STAT_OPTIONS,
-} from '@/lib/nbl/teamGameLogsShared';
+import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
+import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, isUnplayedTennisMatch, tennisLastName } from '@/lib/tennis/chartStats';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -36,11 +32,6 @@ const NBL_ADVANCED_OPPONENT_RANK_FILTERS: Array<{
   { key: 'rank_blocks', label: 'Blocks', oaStatCode: 'BLK' },
   { key: 'rank_threes', label: '3PM', oaStatCode: '3PM' },
 ];
-const NBL_ADVANCED_FILTER_OPTIONS: { key: NblAdvancedFilterKey; label: string }[] = [
-  { key: 'minutes', label: 'Minutes' },
-  { key: 'dvp_rank', label: 'DVP Rank' },
-  ...NBL_ADVANCED_OPPONENT_RANK_FILTERS.map(({ key, label }) => ({ key, label })),
-];
 
 function isOpponentRankAdvancedFilter(
   key: NblAdvancedFilterKey
@@ -60,43 +51,11 @@ const CHART_STAT_TO_ADVANCED_OPPONENT_FILTER: Record<
   threeMade: 'rank_threes',
 };
 
-/** Same order as NBA `PLAYER_STAT_OPTIONS` (app/nba/research/dashboard/constants.ts), then NBL-only extras. */
-const STAT_PRIORITY = [
-  'minutes',
-  'points',
-  'rebounds',
-  'assists',
-  'pra',
-  'pr',
-  'pa',
-  'ra',
-  'threeMade',
-  'threePct',
-  'fgMade',
-  'fgAttempted',
-  'steals',
-  'blocks',
-  'offensiveRebounds',
-  'defensiveRebounds',
-  'fgPct',
-  'ftMade',
-  'ftAttempted',
-  'ftPct',
-  'turnovers',
-  'fouls',
-  // NBL extras (not on NBA player pill rail)
-  'threeAttempted',
-  'twoMade',
-  'twoAttempted',
-  'twoPct',
-  'plusMinus',
-  'efficiency',
-];
-const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'opponent', 'opponentCode', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', '__nblGameIndex']);
-/** All numeric game-log stats are shown on the main chart pills. */
-const STATS_HIDDEN = new Set<string>([]);
-const PCT_STATS = new Set(['fgPct', 'twoPct', 'threePct', 'ftPct']);
-const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024', 'season2023'] as const;
+const STAT_PRIORITY = [...TENNIS_PLAYER_STAT_PRIORITY];
+const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'tourneyDate', 'matchDate', 'opponent', 'opponentId', 'opponentCode', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', 'tour', 'tourneyId', 'tourneyName', 'tourneyLevel', 'surface', 'score', 'hand', 'ioc', 'playerId', 'playerName', 'isGrandSlam', 'isWin', 'bestOf', 'opponentRank', 'playerRank', 'opponentRankPoints', 'rankPoints', 'seed', 'entry', 'height', 'age', 'drawSize', '__nblGameIndex']);
+const STATS_HIDDEN = new Set<string>(['minutes', 'setsLost', 'breakPointsFaced', 'servePointsWon', 'totalPoints', 'secondServeAttempts']);
+const PCT_STATS = new Set(['firstServePct', 'firstServeWonPct', 'secondServeWonPct', 'servicePointsWonPct', 'returnPointsWonPct', 'breakPointsSavedPct', 'breakPointsConvertedPct']);
+const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 
 interface NblChartTooltipProps {
   active?: boolean;
@@ -406,53 +365,9 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 }
 
 function formatStatLabel(key: string): string {
-  // Labels aligned with NBA PLAYER_STAT_OPTIONS / TEAM_STAT_OPTIONS where possible.
-  const map: Record<string, string> = {
-    moneyline: 'MONEYLINE',
-    spread: 'SPREAD',
-    total_pts: 'TOTAL PTS',
-    home_total: 'HOME TOTAL',
-    away_total: 'AWAY TOTAL',
-    first_half_total: '1H TOTAL',
-    second_half_total: '2H TOTAL',
-    q1_moneyline: 'Q1 ML',
-    q1_total: 'Q1 TOTAL',
-    q2_moneyline: 'Q2 ML',
-    q2_total: 'Q2 TOTAL',
-    q3_moneyline: 'Q3 ML',
-    q3_total: 'Q3 TOTAL',
-    q4_moneyline: 'Q4 ML',
-    q4_total: 'Q4 TOTAL',
-    minutes: 'MINS',
-    points: 'PTS',
-    rebounds: 'REB',
-    assists: 'AST',
-    pra: 'PRA',
-    pr: 'PR',
-    pa: 'PA',
-    ra: 'RA',
-    threeMade: '3PM',
-    threeAttempted: '3PA',
-    threePct: '3P%',
-    fgMade: 'FGM',
-    fgAttempted: 'FGA',
-    steals: 'STL',
-    blocks: 'BLK',
-    offensiveRebounds: 'OREB',
-    defensiveRebounds: 'DREB',
-    fgPct: 'FG%',
-    ftMade: 'FTM',
-    ftAttempted: 'FTA',
-    ftPct: 'FT%',
-    turnovers: 'TO',
-    fouls: 'PF',
-    twoMade: '2PM',
-    twoAttempted: '2PA',
-    twoPct: '2P%',
-    plusMinus: '+/-',
-    efficiency: 'EFF',
-  };
-  if (map[key]) return map[key];
+  const option = TENNIS_CHART_STAT_OPTIONS.find((s) => s.key === key);
+  if (option) return option.label;
+  if (TENNIS_STAT_LABELS[key]) return TENNIS_STAT_LABELS[key];
   return key
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
@@ -504,10 +419,6 @@ function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unkno
   return n;
 }
 
-function normalizeTeamName(value: string): string {
-  return normalizeTeamKey(value);
-}
-
 function normalizeLogoUrl(url: string): string {
   const raw = String(url || '').trim();
   if (!raw) return '';
@@ -522,6 +433,8 @@ function extractVenueFromGameLog(game: Record<string, unknown>): string {
     game.location,
     game.match_venue,
     game.game_venue,
+    game.surface,
+    game.tourneyName,
   ];
   for (const value of candidates) {
     if (typeof value === 'string' && value.trim()) return value.trim();
@@ -583,9 +496,9 @@ interface NblStatsChartProps {
   /** Advanced filter toggle (inline with chart, like NBA). */
   showAdvancedFilters?: boolean;
   setShowAdvancedFilters?: (show: boolean) => void;
-  nblGameFilters?: import('@/app/nbl/components/NblGameFilters').NblGameFiltersState;
-  setNblGameFilters?: (f: import('@/app/nbl/components/NblGameFilters').NblGameFiltersState) => void;
-  perGameFilterData?: import('@/app/nbl/components/NblGameFilters').NblGameFilterDataItem[] | null;
+  nblGameFilters?: import('@/app/tennis/components/TennisGameFilters').NblGameFiltersState;
+  setNblGameFilters?: (f: import('@/app/tennis/components/TennisGameFilters').NblGameFiltersState) => void;
+  perGameFilterData?: import('@/app/tennis/components/TennisGameFilters').NblGameFilterDataItem[] | null;
   playerPositionForFilters?: string | null;
   /** Renders to the left of the "Line" label (e.g. bookmaker selector). */
   slotLeftOfLine?: React.ReactNode;
@@ -601,7 +514,7 @@ interface NblStatsChartProps {
   uiResetToken?: string | number;
 }
 
-export function NblStatsChart({
+export function TennisStatsChart({
   stats: _stats,
   gameLogs = [],
   allGameLogs = [],
@@ -613,7 +526,7 @@ export function NblStatsChart({
   apiErrorHint,
   teammateFilterName,
   withWithoutMode = 'with',
-  season = NBL_CURRENT_SEASON_YEAR,
+  season = TENNIS_CURRENT_YEAR,
   clearTeammateFilter,
   rosterPlayers = [],
   selectedStat: selectedStatProp,
@@ -679,11 +592,17 @@ export function NblStatsChart({
   }, []);
 
   const dedupedGameLogs = useMemo(
-    () => dedupeNblGames(gameLogs as Record<string, unknown>[]) as typeof gameLogs,
+    () =>
+      dedupeNblGames(
+        (gameLogs as Record<string, unknown>[]).filter((g) => !isUnplayedTennisMatch(g.score))
+      ) as typeof gameLogs,
     [gameLogs]
   );
   const dedupedAllGameLogs = useMemo(
-    () => dedupeNblGames(allGameLogs as Record<string, unknown>[]) as typeof allGameLogs,
+    () =>
+      dedupeNblGames(
+        (allGameLogs as Record<string, unknown>[]).filter((g) => !isUnplayedTennisMatch(g.score))
+      ) as typeof allGameLogs,
     [allGameLogs]
   );
 
@@ -708,7 +627,7 @@ export function NblStatsChart({
     }
 
     fetch(
-      `/api/nbl/player-game-logs?playerId=${encodeURIComponent(rosterHit.playerId)}&years=${season},${season - 1}`
+      `/api/tennis/matches?playerId=${encodeURIComponent(rosterHit.playerId)}`
     )
       .then((r) => r.json())
       .then((json) => {
@@ -750,22 +669,7 @@ export function NblStatsChart({
     const loadTeamLogos = async () => {
       try {
         const nextMap: Record<string, string> = {};
-        const res = await fetch('/api/nbl/team-logos');
-        if (!res.ok) return;
-        const json = await res.json();
-        const logos =
-          (json?.logoByTeam && typeof json.logoByTeam === 'object' ? json.logoByTeam : null) ||
-          (json?.logos && typeof json.logos === 'object' ? json.logos : {});
-        for (const [name, rawLogo] of Object.entries(logos as Record<string, unknown>)) {
-          const normalizedName = normalizeTeamName(String(name));
-          const logo = normalizeLogoUrl(String(rawLogo ?? ''));
-          if (!normalizedName || !logo) continue;
-          nextMap[normalizedName] = logo;
-        }
-
-        if (!cancelled && Object.keys(nextMap).length > 0) {
-          setChartLogoByTeam(nextMap);
-        }
+        if (!cancelled) setChartLogoByTeam(nextMap);
       } catch {
         // Leave fallback text ticks when logos are unavailable.
       }
@@ -794,9 +698,6 @@ export function NblStatsChart({
   );
 
   const availableStats = useMemo(() => {
-    if (mode === 'team') {
-      return logsForStatOptions.length ? NBL_TEAM_STAT_OPTIONS.map((s) => s.key) : [];
-    }
     const keys = new Set<string>();
     for (const row of logsForStatOptions) {
       for (const [k, v] of Object.entries(row)) {
@@ -805,36 +706,17 @@ export function NblStatsChart({
         if (num !== null) keys.add(k);
       }
     }
-    // NBA combo markets — always available when components exist (even on older caches).
-    if (keys.has('points') && keys.has('rebounds') && keys.has('assists')) keys.add('pra');
-    if (keys.has('points') && keys.has('rebounds')) keys.add('pr');
-    if (keys.has('points') && keys.has('assists')) keys.add('pa');
-    if (keys.has('rebounds') && keys.has('assists')) keys.add('ra');
-    // Rosetta omits per-game efficiency; derive classic EFF when box stats exist.
-    if (
-      keys.has('points') &&
-      keys.has('rebounds') &&
-      keys.has('assists') &&
-      keys.has('fgMade') &&
-      keys.has('fgAttempted')
-    ) {
-      keys.add('efficiency');
-    }
     const ordered: string[] = [];
     for (const k of STAT_PRIORITY) if (keys.has(k)) ordered.push(k);
     for (const k of keys) if (!ordered.includes(k)) ordered.push(k);
     return ordered;
-  }, [logsForStatOptions, mode]);
+  }, [logsForStatOptions]);
 
   const preferredDefaultStat = useMemo(() => {
     if (!availableStats.length) return '';
-    if (mode === 'team') {
-      if (availableStats.includes('moneyline')) return 'moneyline';
-      return availableStats[0];
-    }
-    if (availableStats.includes('points')) return 'points';
+    if (availableStats.includes('moneyline')) return 'moneyline';
     return availableStats[0];
-  }, [availableStats, mode]);
+  }, [availableStats]);
 
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
@@ -1022,10 +904,10 @@ export function NblStatsChart({
   }, [filteredGameLogs, splitResultFilter, splitVenueFilter, nblGameFilters]);
 
   const chartSourceLogs = useMemo(() => {
-    if (mode !== 'team' || !NBL_TEAM_QUARTER_STAT_KEYS.has(selectedStat)) {
+    if (mode !== 'team') {
       return splitFilteredGameLogs;
     }
-    return splitFilteredGameLogs.filter((g) => Boolean((g as { hasPeriodScores?: boolean }).hasPeriodScores));
+    return splitFilteredGameLogs;
   }, [mode, selectedStat, splitFilteredGameLogs]);
 
   const effectiveSeason = useCallback((g: Record<string, unknown>) => resolveGameSeason(g) ?? 0, [resolveGameSeason]);
@@ -1072,7 +954,7 @@ export function NblStatsChart({
     return {
       key,
       xKey: key,
-      tickLabel: opponent,
+      tickLabel: tennisLastName(opponent),
       round,
       opponent,
       result,
@@ -1121,15 +1003,12 @@ export function NblStatsChart({
       data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2025);
     } else if (selectedTimeframe === 'season2024') {
       data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2024);
-    } else if (selectedTimeframe === 'season2023') {
-      data = baseChartData.filter((row) => (row as { gameSeason?: number }).gameSeason === 2023);
     } else if (selectedTimeframe === 'h2h') {
       // Use upcoming opponent when provided; otherwise fall back to last game's opponent
       const targetOpponent = nextOpponent?.trim() || baseChartData[baseChartData.length - 1]?.opponent;
       if (!targetOpponent) data = baseChartData;
       else {
-        const resolveOpp = (opp: string | undefined) =>
-          opp ? (resolveNblClubName(opp) || opp.trim()) : '';
+        const resolveOpp = (opp: string | undefined) => (opp ? opp.trim() : '');
         const targetOfficial = resolveOpp(targetOpponent);
         const h2hData = baseChartData.filter((row) => {
           const rowOpp = row.opponent;
@@ -1361,7 +1240,6 @@ export function NblStatsChart({
     season2026: '2026',
     season2025: '2025',
     season2024: '2024',
-    season2023: '2023',
   };
 
   useEffect(() => {
@@ -1399,7 +1277,7 @@ export function NblStatsChart({
   }, [isDark, selectedStatLabel, selectedStat, playerPositionForFilters, perGameFilterData]);
 
   const nblXAxisTick = useMemo(() => (
-    <NblXAxisTick
+    <TennisXAxisTick
       data={chartData}
       logoByTeam={chartLogoByTeam}
       isDark={isDark}
@@ -1594,21 +1472,6 @@ export function NblStatsChart({
               </>
             )}
           </div>
-          {setShowAdvancedFilters != null && (
-            <button
-              type="button"
-              onClick={() => {
-                if (showAdvancedFilters) {
-                  setSelectedAdvancedFilter(null);
-                  resetAdvancedRanges();
-                }
-                setShowAdvancedFilters(!showAdvancedFilters);
-              }}
-              className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative ${showAdvancedFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
-            >
-              Advanced
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setShowSplitsFilters((prev) => !prev)}
@@ -1705,135 +1568,6 @@ export function NblStatsChart({
             </div>
           </div>
         </div>
-      )}
-
-      {showAdvancedFilters && (
-        <>
-          <div className="mb-1 sm:mb-2 flex items-center gap-3 flex-wrap">
-            {nblGameFilters != null && setNblGameFilters != null && (
-            <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x custom-scrollbar stats-slider-scrollbar min-w-0">
-              <div className="inline-flex flex-nowrap gap-1.5 sm:gap-1.5 md:gap-2 pb-1 pl-2">
-                {NBL_ADVANCED_FILTER_OPTIONS.map((option) => (
-                  <button
-                    key={option.key ?? 'none'}
-                    type="button"
-                    onClick={() => {
-                      const next = selectedAdvancedFilter === option.key ? null : option.key;
-                      // Switching advanced mode always starts fresh (no stale ranges).
-                      resetAdvancedRanges();
-                      if (next && isOpponentRankAdvancedFilter(next)) {
-                        const selectedOption = NBL_ADVANCED_OPPONENT_RANK_FILTERS.find((row) => row.key === next);
-                        if (selectedOption && nblGameFilters && setNblGameFilters) {
-                          setNblGameFilters({ ...nblGameFilters, opponentStat: selectedOption.oaStatCode });
-                        }
-                      }
-                      setSelectedAdvancedFilter(next);
-                    }}
-                    className={`px-3 sm:px-3 md:px-4 py-1.5 sm:py-1.5 rounded-lg text-sm sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap cursor-pointer border ${
-                      selectedAdvancedFilter === option.key
-                        ? 'bg-purple-600 text-white border-purple-400/30'
-                        : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300/40 dark:border-gray-600/30'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            )}
-            {selectedAdvancedFilter && nblGameFilters != null && setNblGameFilters != null && (() => {
-              const f = nblGameFilters;
-              const data = perGameFilterData ?? [];
-              let min = 1;
-              let max = 10;
-              let valueMin = 1;
-              let valueMax = 10;
-              let step = 1;
-              let formatValue = (v: number) => Math.round(v).toString();
-              if (selectedAdvancedFilter === 'dvp_rank') {
-                min = 1;
-                max = 10;
-                valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-                valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-              } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-                min = 1;
-                max = 10;
-                valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-                valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-              } else if (selectedAdvancedFilter === 'minutes') {
-                min = 0;
-                max = 100;
-                valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-                valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-                formatValue = (v) => Math.round(v).toString();
-              }
-              const slider = (
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNblGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNblGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNblGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              );
-              return (
-                <>
-                  <div className="hidden sm:flex flex-shrink-0 ml-2 pr-2">{slider}</div>
-                </>
-              );
-            })()}
-          </div>
-          {selectedAdvancedFilter && nblGameFilters && setNblGameFilters && (() => {
-            const f = nblGameFilters;
-            const data = perGameFilterData ?? [];
-            let min = 1;
-            let max = 10;
-            let valueMin = 1;
-            let valueMax = 10;
-            let step = 1;
-            let formatValue = (v: number) => Math.round(v).toString();
-            if (selectedAdvancedFilter === 'dvp_rank') {
-              min = 1;
-              max = 10;
-              valueMin = f.dvpRankMin != null ? Math.max(min, Math.min(max, f.dvpRankMin)) : min;
-              valueMax = f.dvpRankMax != null ? Math.max(min, Math.min(max, f.dvpRankMax)) : max;
-            } else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) {
-              min = 1;
-              max = 10;
-              valueMin = f.opponentRankMin != null ? Math.max(min, Math.min(max, f.opponentRankMin)) : min;
-              valueMax = f.opponentRankMax != null ? Math.max(min, Math.min(max, f.opponentRankMax)) : max;
-            } else if (selectedAdvancedFilter === 'minutes') {
-              min = 0;
-              max = 100;
-              valueMin = f.minutesMin != null ? Math.max(min, Math.min(max, f.minutesMin)) : min;
-              valueMax = f.minutesMax != null ? Math.max(min, Math.min(max, f.minutesMax)) : max;
-              formatValue = (v) => Math.round(v).toString();
-            }
-            return (
-              <div className="sm:hidden mb-2 flex justify-center px-4">
-                <RangeSlider
-                  min={min}
-                  max={max}
-                  valueMin={valueMin}
-                  valueMax={valueMax}
-                  onChange={(newMin, newMax) => {
-                    if (selectedAdvancedFilter === 'dvp_rank') setNblGameFilters({ ...f, dvpRankMin: newMin, dvpRankMax: newMax });
-                    else if (isOpponentRankAdvancedFilter(selectedAdvancedFilter)) setNblGameFilters({ ...f, opponentRankMin: newMin, opponentRankMax: newMax });
-                    else if (selectedAdvancedFilter === 'minutes') setNblGameFilters({ ...f, minutesMin: newMin, minutesMax: newMax });
-                  }}
-                  step={step}
-                  formatValue={formatValue}
-                />
-              </div>
-            );
-          })()}
-        </>
       )}
 
       <div className="flex-1 min-h-0 relative">

@@ -1,0 +1,80 @@
+{
+  "fetchedAt": "2026-08-24T13:06:26.558Z",
+  "years": [
+    2026,
+    2025,
+    2024
+  ],
+  "files": [
+    {
+      "file": "atp_matches_2026.csv",
+      "bytes": 300795,
+      "rows": 1449
+    },
+    {
+      "file": "wta_matches_2026.csv",
+      "bytes": 255577,
+      "rows": 1295
+    },
+    {
+      "file": "atp_matches_qual_chall_2026.csv",
+      "bytes": 1189359,
+      "rows": 5745
+    },
+    {
+      "file": "wta_matches_qual_itf_2026.csv",
+      "bytes": 1894072,
+      "rows": 8975
+    },
+    {
+      "file": "atp_matches_2025.csv",
+      "bytes": 617154,
+      "rows": 2944
+    },
+    {
+      "file": "wta_matches_2025.csv",
+      "bytes": 565244,
+      "rows": 2795
+    },
+    {
+      "file": "atp_matches_qual_chall_2025.csv",
+      "bytes": 2405489,
+      "rows": 11629
+    },
+    {
+      "file": "wta_matches_qual_itf_2025.csv",
+      "bytes": 4559889,
+      "rows": 21615
+    },
+    {
+      "file": "atp_matches_2024.csv",
+      "bytes": 650136,
+      "rows": 3076
+    },
+    {
+      "file": "wta_matches_2024.csv",
+      "bytes": 542425,
+      "rows": 2689
+    },
+    {
+      "file": "atp_matches_qual_chall_2024.csv",
+      "bytes": 2316734,
+      "rows": 11190
+    },
+    {
+      "file": "wta_matches_qual_itf_2024.csv",
+      "bytes": 7022486,
+      "rows": 38281
+    },
+    {
+      "file": "atp_rankings_current.csv",
+      "bytes": 848472,
+      "rows": 36468
+    },
+    {
+      "file": "wta_rankings_current.csv",
+      "bytes": 907801,
+      "rows": 35145
+    }
+  ]
+}
