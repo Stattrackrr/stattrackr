@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-24T20:32:04.221Z",
+  "generatedAt": "2026-08-24T22:27:45.160Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 221,
+  "injuryCount": 222,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Lachlan Carmichael",
+      "injury": "Listed as an 'Out' after a quieter game.",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Zac Taylor",
@@ -147,12 +165,6 @@
       "player": "Jordan Croft",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Knee",
-      "returning": "Season"
     },
     {
       "team": "Adelaide Crows",
@@ -416,12 +428,6 @@
       "team": "Essendon Bombers",
       "player": "Zak Johnson",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
