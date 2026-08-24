@@ -61,6 +61,7 @@ jobs:
           npm run fetch:nbl:next-matches -- --year=2026
           npm run fetch:nbl:roster:nbl27
           npm run fetch:nbl:league-player-stats -- --year=2026
+          npm run fetch:nbl:ladder -- --year=2026
 
       - name: Warm shot charts + player/defense aggregates (NBL26 / 2025)
         run: |
