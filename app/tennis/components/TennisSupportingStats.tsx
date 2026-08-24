@@ -89,7 +89,6 @@ function applyTimeframe<T extends BaseRow>(
   if (timeframe === 'season2026') return baseData.filter((row) => row.gameSeason === 2026) as T[];
   if (timeframe === 'season2025') return baseData.filter((row) => row.gameSeason === 2025) as T[];
   if (timeframe === 'season2024') return baseData.filter((row) => row.gameSeason === 2024) as T[];
-  if (timeframe === 'season2023') return baseData.filter((row) => row.gameSeason === 2023) as T[];
   if (timeframe === 'h2h') {
     const targetOpponent = nextOpponent?.trim() || baseData[baseData.length - 1]?.opponent;
     if (!targetOpponent) return baseData;
