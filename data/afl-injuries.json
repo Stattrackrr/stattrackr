@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-08-24T04:47:33.256Z",
+  "generatedAt": "2026-08-24T06:52:59.091Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 220,
+  "injuryCount": 221,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Zac Taylor",
+      "injury": "Hamstring",
+      "returning": "at least two weeks"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Jordon Butts",
+      "injury": "Achilles",
+      "returning": "within the next two weeks"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "James Peatling",
+      "injury": "Groin",
+      "returning": "TBC"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Brennan Cox",
@@ -283,25 +301,25 @@
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "breaching club standards",
+      "injury": "after an alleged incident in Melbourne",
       "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "breaching club standards",
+      "injury": "after an alleged incident in Melbourne",
       "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "breaching club standards",
+      "injury": "after an alleged incident in Melbourne",
       "returning": "rest of the season"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "breaching club standards",
+      "injury": "after an alleged incident in Melbourne",
       "returning": "rest of the season"
     },
     {
@@ -313,14 +331,8 @@
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "breaching club standards",
+      "injury": "after an alleged incident in Melbourne",
       "returning": "rest of the season"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "James Peatling",
-      "injury": "Hip",
-      "returning": "TBA"
     },
     {
       "team": "Brisbane Lions",
@@ -741,12 +753,6 @@
       "player": "Will Lewis",
       "injury": "Calf",
       "returning": "3 Weeks"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Jordon Butts",
-      "injury": "Calf",
-      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
