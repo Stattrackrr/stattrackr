@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-24T22:27:45.160Z",
+  "generatedAt": "2026-08-25T01:05:31.992Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 222,
+  "injuryCount": 223,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Jake Lever",
+      "injury": "Toe",
+      "returning": "TBC"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Tom Liberatore",
@@ -56,7 +62,7 @@
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
       "injury": "Hamstring",
-      "returning": "at least two to three weeks"
+      "returning": "2-3 weeks"
     },
     {
       "team": "Sydney Swans",
