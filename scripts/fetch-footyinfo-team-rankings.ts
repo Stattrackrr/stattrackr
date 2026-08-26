@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fetchFootyInfoPlayerGameLogs } from '../lib/afl/footyinfoPlayer';
-import { fetchFootyinfoRoundSummary } from '../lib/afl/footyinfoLeague';
+import { fetchFootyinfoMatchesCoveringPremiershipTeams } from '../lib/afl/footyinfoLeague';
 import { fetchFootyinfoJson } from '../lib/afl/footyinfoHttp';
 import { footyinfoNameToOfficial, officialToNickname } from '../lib/afl/footyinfoTeamMapping';
 import { footywireNicknameToOfficial } from '../lib/aflTeamMapping';
@@ -64,24 +64,27 @@ function addMatchStats(map: Map<string, Totals>, team: string, stats: Record<str
 }
 
 async function loadPreviews() {
-  const matches = await fetchFootyinfoRoundSummary(season, 166);
-  if (matches.length !== 9) throw new Error(`Expected 9 current AFL premiership matches; received ${matches.length}`);
-  await Promise.all(matches.map(async (match) => {
-    const response = await fetchFootyinfoJson<Preview>(`/match/${match.id}/preview`);
-    if (!response.ok || !response.data.teamStats?.stats?.length) throw new Error(`Missing team preview for match ${match.id}`);
+  const matches = await fetchFootyinfoMatchesCoveringPremiershipTeams(season, 166);
+  if (!matches.length) throw new Error('Expected AFL premiership matches for team previews; received 0');
+  for (const match of matches) {
     const sides: Array<[string, 'home' | 'away']> = [
       [official(match.home_team_full || match.home_team), 'home'],
       [official(match.away_team_full || match.away_team), 'away'],
     ];
+    if (sides.every(([team]) => previewByTeam.has(team))) continue;
+    const response = await fetchFootyinfoJson<Preview>(`/match/${match.id}/preview`);
+    if (!response.ok || !response.data.teamStats?.stats?.length) throw new Error(`Missing team preview for match ${match.id}`);
     for (const [team, side] of sides) {
-      const values = previewByTeam.get(team) || {};
+      if (previewByTeam.has(team)) continue;
+      const values: Record<string, number> = {};
       for (const row of response.data.teamStats.stats) {
         const field = previewValue[row.key];
         if (field) values[field] = Number(row[side]?.avg) || 0;
       }
       previewByTeam.set(team, values);
     }
-  }));
+  }
+  console.log(`Loaded FootyInfo team previews for ${previewByTeam.size} clubs from ${matches.length} recent premiership matches`);
 }
 
 async function loadGameTotals() {

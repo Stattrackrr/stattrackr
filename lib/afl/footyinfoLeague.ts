@@ -207,18 +207,83 @@ export type FootyinfoRoundMatch = {
   slug?: string;
 };
 
+export type FootyinfoRoundSummaryPayload = {
+  matches: FootyinfoRoundMatch[];
+  roundId: number | null;
+  roundName: string | null;
+  prevRoundId: number | null;
+};
+
+/** Current or specific FootyInfo round payload, including prev-round links. */
+export async function fetchFootyinfoRoundSummaryPayload(options: {
+  seasonYear?: number;
+  competitionId?: number;
+  roundId?: number;
+} = {}): Promise<FootyinfoRoundSummaryPayload> {
+  // FootyInfo's current-premiership feed is keyed by competition ID. Supplying
+  // season_id alone can select the current preseason competition instead.
+  const seasonId = options.seasonYear ? await resolveFootyinfoSeasonId(options.seasonYear) : null;
+  const params = new URLSearchParams();
+  if (options.competitionId) params.set('competition_id', String(options.competitionId));
+  if (options.roundId) params.set('round_id', String(options.roundId));
+  else if (!options.competitionId && seasonId) params.set('season_id', String(seasonId));
+  const path = `/round_summary${params.size ? `?${params}` : ''}`;
+  const res = await fetchFootyinfoJson<{
+    matches?: FootyinfoRoundMatch[];
+    round_id?: number;
+    round_name?: string;
+    prev_round_id?: number | null;
+  }>(path);
+  if (!res.ok) {
+    return { matches: [], roundId: null, roundName: null, prevRoundId: null };
+  }
+  return {
+    matches: Array.isArray(res.data.matches) ? res.data.matches : [],
+    roundId: Number.isFinite(Number(res.data.round_id)) ? Number(res.data.round_id) : null,
+    roundName: res.data.round_name || null,
+    prevRoundId: Number.isFinite(Number(res.data.prev_round_id)) ? Number(res.data.prev_round_id) : null,
+  };
+}
+
 /** Current FootyInfo round, used for published lineups and match links. */
 export async function fetchFootyinfoRoundSummary(
   seasonYear?: number,
-  competitionId?: number
+  competitionId?: number,
+  roundId?: number
 ): Promise<FootyinfoRoundMatch[]> {
-  // FootyInfo's current-premiership feed is keyed by competition ID. Supplying
-  // season_id alone can select the current preseason competition instead.
-  const seasonId = seasonYear ? await resolveFootyinfoSeasonId(seasonYear) : null;
-  const params = new URLSearchParams();
-  if (competitionId) params.set('competition_id', String(competitionId));
-  else if (seasonId) params.set('season_id', String(seasonId));
-  const path = `/round_summary${params.size ? `?${params}` : ''}`;
-  const res = await fetchFootyinfoJson<{ matches?: FootyinfoRoundMatch[] }>(path);
-  return res.ok && Array.isArray(res.data.matches) ? res.data.matches : [];
+  const payload = await fetchFootyinfoRoundSummaryPayload({ seasonYear, competitionId, roundId });
+  return payload.matches;
+}
+
+const AFL_PREMIERSHIP_TEAM_COUNT = 18;
+
+/**
+ * Collect premiership matches newest-first until every AFL club appears.
+ * Finals, split rounds, and remaining-week slates often have fewer than 9 games.
+ */
+export async function fetchFootyinfoMatchesCoveringPremiershipTeams(
+  seasonYear?: number,
+  competitionId = 166,
+  teamCount = AFL_PREMIERSHIP_TEAM_COUNT
+): Promise<FootyinfoRoundMatch[]> {
+  const matches: FootyinfoRoundMatch[] = [];
+  const teams = new Set<string>();
+  let roundId: number | undefined;
+  for (let hop = 0; hop < 12 && teams.size < teamCount; hop += 1) {
+    const payload = await fetchFootyinfoRoundSummaryPayload({
+      seasonYear,
+      competitionId,
+      roundId,
+    });
+    for (const match of payload.matches) {
+      matches.push(match);
+      const home = (match.home_team_full || match.home_team || '').trim();
+      const away = (match.away_team_full || match.away_team || '').trim();
+      if (home) teams.add(home);
+      if (away) teams.add(away);
+    }
+    if (!payload.prevRoundId || payload.prevRoundId === payload.roundId) break;
+    roundId = payload.prevRoundId;
+  }
+  return matches;
 }
