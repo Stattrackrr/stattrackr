@@ -107,10 +107,9 @@ function getTeamAbbr(teamId: number): string {
 export async function fetchReferee(gameId: string): Promise<RefereeData | null> {
   try {
     // Try to get from database first
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('referee_stats')
       .select('*')
       .limit(1)
@@ -197,10 +196,9 @@ export async function isNationalTVGame(
   gameDate: string
 ): Promise<boolean> {
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('national_tv_games')
       .select('home_team, away_team')
       .eq('game_date', gameDate);

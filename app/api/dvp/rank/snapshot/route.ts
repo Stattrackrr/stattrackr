@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { normalizeAbbr, NBA_TEAMS } from "@/lib/nbaAbbr";
 import { currentNbaSeason } from "@/lib/nbaConstants";
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from "@/lib/bettingpros-dvp";
@@ -85,7 +85,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const supabase = await createClient();
     const teams = Object.keys(NBA_TEAMS);
     const snapshots: Array<{
       snapshot_date: string;
@@ -195,7 +194,7 @@ export async function POST(request: NextRequest) {
     
     // Insert snapshots (using upsert to handle duplicates)
     if (snapshots.length > 0) {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('dvp_rank_snapshots')
         .upsert(snapshots, {
           onConflict: 'snapshot_date,season,position,metric,team',

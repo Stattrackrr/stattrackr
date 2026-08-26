@@ -25,10 +25,9 @@ export async function fetchCoachData(team: string): Promise<CoachData | null> {
   }
 
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('coach_tendencies')
       .select('*')
       .eq('team', team)
@@ -73,10 +72,9 @@ export async function fetchArenaData(team: string): Promise<ArenaData | null> {
   }
 
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('arena_factors')
       .select('*')
       .eq('team', team)
@@ -113,10 +111,9 @@ export async function fetchArenaData(team: string): Promise<ArenaData | null> {
  */
 export async function fetchRefereeData(refereeName: string): Promise<RefereeData | null> {
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('referee_stats')
       .select('*')
       .eq('referee_name', refereeName)
@@ -144,10 +141,9 @@ export async function fetchRefereeData(refereeName: string): Promise<RefereeData
  */
 export async function isContractYear(playerId: number): Promise<boolean> {
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('player_contracts')
       .select('contract_year')
       .eq('player_id', playerId)
@@ -169,10 +165,9 @@ export async function isContractYear(playerId: number): Promise<boolean> {
  */
 export async function getFormerTeams(playerId: number): Promise<string[]> {
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('player_former_teams')
       .select('former_team')
       .eq('player_id', playerId);

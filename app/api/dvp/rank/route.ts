@@ -5,7 +5,7 @@ import cache, { CACHE_TTL } from '@/lib/cache';
 import { getNBACache, setNBACache } from '@/lib/nbaCache';
 import { normalizeAbbr, NBA_TEAMS } from '@/lib/nbaAbbr';
 import { fetchBettingProsData, OUR_TO_BP_ABBR, OUR_TO_BP_METRIC } from '@/lib/bettingpros-dvp';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -220,7 +220,6 @@ export async function GET(req: NextRequest) {
     
     // Also create snapshot in dvp_rank_snapshots table for historical lookups
     try {
-      const supabase = await createClient();
       const snapshots = Object.entries(ranks).map(([team, rank]) => ({
         snapshot_date: today,
         season: seasonYear,
@@ -231,7 +230,7 @@ export async function GET(req: NextRequest) {
       }));
       
       if (snapshots.length > 0) {
-        const { error: snapshotError } = await supabase
+        const { error: snapshotError } = await supabaseAdmin
           .from('dvp_rank_snapshots')
           .upsert(snapshots, {
             onConflict: 'snapshot_date,season,position,metric,team',

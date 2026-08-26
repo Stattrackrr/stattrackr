@@ -129,14 +129,13 @@ export async function dynamicWeightAdjustment(
   lookbackDays: number = 30
 ): Promise<ModelWeights> {
   try {
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { supabaseAdmin } = await import('@/lib/supabaseAdmin');
     
     // Get model performance from last N days
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - lookbackDays);
     
-    const { data: performance, error } = await supabase
+    const { data: performance, error } = await supabaseAdmin
       .from('model_performance')
       .select('*')
       .gte('date', cutoffDate.toISOString().split('T')[0])
