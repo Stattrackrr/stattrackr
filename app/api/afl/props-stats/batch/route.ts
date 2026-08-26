@@ -5,7 +5,14 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-type PropInput = { playerName: string; team: string; opponent: string; statType: string; line: number };
+type PropInput = {
+  playerName: string;
+  team: string;
+  opponent: string;
+  statType: string;
+  line: number;
+  playerTeam?: string;
+};
 
 async function loadDvpMaps(origin: string): Promise<{ disposals: Map<string, { rank: number; value: number }>; goals: Map<string, { rank: number; value: number }> }> {
   const season = new Date().getFullYear();
@@ -58,7 +65,18 @@ export async function POST(request: NextRequest) {
       props.map(async (p) => {
         const key = buildAflPropStatKey(p.playerName, p.team, p.opponent, p.statType, p.line);
         const dvp = getDvpLookup(p.opponent, p.statType, dvpMaps);
-        const result = await getAflPropStats(p.playerName, p.team, p.opponent, p.statType, p.line, baseUrl, dvp, cacheOnly);
+        const result = await getAflPropStats(
+          p.playerName,
+          p.team,
+          p.opponent,
+          p.statType,
+          p.line,
+          baseUrl,
+          dvp,
+          cacheOnly,
+          undefined,
+          p.playerTeam || p.team
+        );
         if (result) stats[key] = result;
       })
     );

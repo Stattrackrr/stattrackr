@@ -5,18 +5,20 @@
  */
 
 import {
+  opponentToFootywireTeam,
   opponentToOfficialTeamName,
   rosterTeamToInjuryTeam,
   canonicalTeamForStatsKey,
   toOfficialAflTeamDisplayName,
 } from '@/lib/aflTeamMapping';
+import { footyinfoAbbrevToOfficial } from '@/lib/afl/footyinfoTeamMapping';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 import { aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import sharedCache from '@/lib/sharedCache';
 
 // Bump schema version when stats computation inputs change (e.g. season-scoped streak/L5).
-// so stale entries from older logic are not reused.
-const CACHE_PREFIX = 'afl_prop_stats_v6';
+// v7: H2H is always recorded (including 0 games) and incomplete v6 entries are not reused.
+const CACHE_PREFIX = 'afl_prop_stats_v7';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
@@ -62,7 +64,24 @@ function getStatValue(game: Record<string, unknown>, statType: string): number |
 function resolveOpponentForH2H(opp: string): string {
   const s = (opp ?? '').replace(/^vs\.?\s*/i, '').trim().replace(/\s+/g, ' ');
   if (!s) return '';
+  const fromAbbrev = footyinfoAbbrevToOfficial(s);
+  if (fromAbbrev) return fromAbbrev;
+  const official = toOfficialAflTeamDisplayName(s);
+  if (official) return official;
   return opponentToOfficialTeamName(s) ?? rosterTeamToInjuryTeam(s) ?? s;
+}
+
+function opponentsMatchForH2H(rowOpponent: string, targetOpponent: string): boolean {
+  const target = (targetOpponent ?? '').trim();
+  const row = (rowOpponent ?? '').trim();
+  if (!target || !row) return false;
+  if (row.toLowerCase() === target.toLowerCase()) return true;
+  const rowOfficial = resolveOpponentForH2H(row);
+  const targetOfficial = resolveOpponentForH2H(target);
+  if (rowOfficial && targetOfficial && rowOfficial === targetOfficial) return true;
+  const rowNick = opponentToFootywireTeam(rowOfficial || row);
+  const targetNick = opponentToFootywireTeam(targetOfficial || target);
+  return Boolean(rowNick && targetNick && rowNick.toLowerCase() === targetNick.toLowerCase());
 }
 
 /**
@@ -87,6 +106,8 @@ function cachedStatsAreUsable(cached: AflPropStatsPayload): boolean {
   if (cached.seasonAvg == null) return false;
   const hasRolling = cached.last5Avg != null || cached.last10Avg != null;
   if (!hasRolling && cached.h2hAvg == null && cached.streak == null) return false;
+  // Null means H2H was never looked up (old cache). {hits:0,total:0} means looked up, no games.
+  if (cached.h2hHitRate == null) return false;
   return true;
 }
 
@@ -117,11 +138,7 @@ export function computeAflPropStatsFromGames(
   const seasonValues = formGames.map((x) => x.value);
   // H2H: match by official name (same as dashboard) so "Kangaroos" / "North Melbourne" / "North Melbourne Kangaroos" all match, and we never match "Melbourne" when we want "North Melbourne"
   const h2hValues = gamesWithValue
-    .filter((x) => {
-      if (!propOpponentOfficial) return false;
-      const rowOppOfficial = resolveOpponentForH2H(x.opponent);
-      return rowOppOfficial !== '' && rowOppOfficial === propOpponentOfficial;
-    })
+    .filter((x) => opponentsMatchForH2H(x.opponent, opponent) || opponentsMatchForH2H(x.opponent, propOpponentOfficial))
     .slice(0, 6)
     .map((x) => x.value);
   const last5Avg = last5.length > 0 ? last5.reduce((a, b) => a + b, 0) / last5.length : null;
@@ -145,7 +162,7 @@ export function computeAflPropStatsFromGames(
     streak,
     last5HitRate: last5.length > 0 ? hit(last5) : null,
     last10HitRate: last10.length > 0 ? hit(last10) : null,
-    h2hHitRate: h2hValues.length > 0 ? hit(h2hValues) : null,
+    h2hHitRate: hit(h2hValues),
     seasonHitRate: seasonValues.length > 0 ? hit(seasonValues) : null,
   };
 }

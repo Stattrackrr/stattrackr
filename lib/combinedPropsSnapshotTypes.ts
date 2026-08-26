@@ -41,6 +41,7 @@ export type CombinedPlayerProp = {
   gameId?: string;
   homeTeam?: string;
   awayTeam?: string;
+  playerTeam?: string | null;
   wcGamesAvg?: number | null;
   wcGamesHitRate?: { hits: number; total: number } | null;
   wcGameLog?: Array<{ opponent: string; value: number; date?: string }>;

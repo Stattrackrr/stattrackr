@@ -158,6 +158,7 @@ function aggregateAflProps(listData: any): {
       gameId: row.gameId,
       homeTeam: row.homeTeam,
       awayTeam: row.awayTeam,
+      playerTeam,
       last5Avg: row.last5Avg,
       last10Avg: row.last10Avg,
       h2hAvg: row.h2hAvg,
