@@ -158,10 +158,51 @@ export async function fetchFootyinfoPlayerProfile(
   };
 }
 
+const AFL_FIRST_NAME_ALIASES: Record<string, string[]> = {
+  lachlan: ['lachie'],
+  lachie: ['lachlan'],
+  matthew: ['matt'],
+  matt: ['matthew'],
+  zachary: ['zach', 'zac'],
+  nicholas: ['nick'],
+  joshua: ['josh'],
+  thomas: ['tom'],
+  william: ['will', 'billy'],
+  patrick: ['paddy'],
+  samuel: ['sam'],
+  mitchell: ['mitch'],
+  christopher: ['chris'],
+  alexander: ['alex'],
+  benjamin: ['ben'],
+  michael: ['mick'],
+  edward: ['ed', 'eddie'],
+};
+
+function alternateAflPlayerNames(playerName: string): string[] {
+  const parts = String(playerName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [];
+  const [first, ...rest] = parts;
+  const surname = rest.join(' ');
+  return (AFL_FIRST_NAME_ALIASES[first.toLowerCase()] || []).map((alias) => `${alias} ${surname}`);
+}
+
+function uniqueSlugs(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const slug = String(value || '').trim();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(slug);
+  }
+  return out;
+}
+
 export async function resolveFootyinfoPlayerSlug(playerName: string): Promise<string | null> {
-  const overrides = getAflFootyinfoSlugOverridesForName(playerName);
-  const primary = footyinfoPlayerSlug(playerName);
-  const candidates = [...overrides, primary].filter(Boolean);
+  const names = [playerName, ...alternateAflPlayerNames(playerName)];
+  const overrides = names.flatMap((name) => getAflFootyinfoSlugOverridesForName(name));
+  const primary = names.map((name) => footyinfoPlayerSlug(name));
+  const candidates = uniqueSlugs([...overrides, ...primary]);
 
   // Cheap existence check: game_logs_summary returns 200 for valid slugs.
   for (const slug of candidates) {
@@ -171,17 +212,17 @@ export async function resolveFootyinfoPlayerSlug(playerName: string): Promise<st
     if (res.ok) return slug;
   }
 
-  const q = encodeURIComponent(playerName.trim());
-  const search = await fetchFootyinfoJson<{
-    results?: Array<{ type?: string; slug?: string; title?: string }>;
-  }>(`/search?q=${q}`);
-  if (search.ok) {
+  for (const name of names) {
+    const q = encodeURIComponent(name.trim());
+    const search = await fetchFootyinfoJson<{
+      results?: Array<{ type?: string; slug?: string; title?: string }>;
+    }>(`/search?q=${q}`);
+    if (!search.ok) continue;
     const players = (search.data.results || []).filter((r) => r.type === 'player' && r.slug);
     if (players.length === 1) return players[0].slug!;
-    const want = playerName.trim().toLowerCase();
+    const want = name.trim().toLowerCase();
     const exact = players.find((p) => String(p.title || '').toLowerCase() === want);
     if (exact?.slug) return exact.slug;
-    if (players[0]?.slug) return players[0].slug;
   }
   return null;
 }
@@ -391,41 +432,55 @@ export async function fetchFootyInfoPlayerGameLogs(
   player_name: string;
   slug: string | null;
 } | null> {
-  const candidates = [
-    ...getAflFootyinfoSlugOverridesForName(playerName),
-    footyinfoPlayerSlug(playerName),
-  ].filter(Boolean);
+  const nameVariants = uniqueSlugs([playerName, ...alternateAflPlayerNames(playerName)]);
+  const primarySlugs = nameVariants.map((name) => footyinfoPlayerSlug(name)).filter(Boolean);
+  const numberedSlugs = primarySlugs.flatMap((base) => [`${base}-1`, `${base}-2`, `${base}-3`]);
+  const candidates = uniqueSlugs([
+    ...nameVariants.flatMap((name) => getAflFootyinfoSlugOverridesForName(name)),
+    ...primarySlugs,
+    ...numberedSlugs,
+  ]);
   let slug = candidates[0] || await resolveFootyinfoPlayerSlug(playerName);
   if (!slug) return null;
 
-  const [seasonId, initialProfile] = await Promise.all([
-    resolveFootyinfoSeasonId(season),
-    fetchFootyinfoPlayerProfile(slug),
-  ]);
+  const seasonId = await resolveFootyinfoSeasonId(season);
   if (!seasonId) return null;
 
   const fetchLogs = (playerSlug: string) =>
     fetchFootyinfoJson<GameLogsPayload>(
       `/player/${encodeURIComponent(playerSlug)}/game_logs?columns=all&season_id=${seasonId}&competition_type_id=1`
     );
-  let profile = initialProfile;
-  let res = await fetchLogs(slug);
-  // Slugs are normally deterministic. Only perform the slower validation and
-  // search fallback when FootyInfo rejects the direct player request.
-  if (!res.ok) {
-    const resolvedSlug = await resolveFootyinfoPlayerSlug(playerName);
-    if (!resolvedSlug || resolvedSlug === slug) return null;
-    slug = resolvedSlug;
-    const [resolvedProfile, resolvedLogs] = await Promise.all([
-      fetchFootyinfoPlayerProfile(slug),
-      fetchLogs(slug),
-    ]);
-    profile = resolvedProfile;
-    res = resolvedLogs;
-  }
-  if (!res.ok) return null;
 
-  const rows = res.data.game_logs?.rows ?? [];
+  let profile: FootyinfoPlayerProfile | null = null;
+  let res: Awaited<ReturnType<typeof fetchLogs>> | null = null;
+  let rows: Array<Record<string, Cell>> = [];
+  for (const candidate of candidates) {
+    const next = await fetchLogs(candidate);
+    if (!next.ok) continue;
+    const nextRows = next.data.game_logs?.rows ?? [];
+    slug = candidate;
+    res = next;
+    rows = nextRows;
+    if (nextRows.length) break;
+  }
+  if ((!res || !rows.length) ) {
+    const resolvedSlug = await resolveFootyinfoPlayerSlug(playerName);
+    if (resolvedSlug && resolvedSlug !== slug) {
+      const [resolvedProfile, resolvedLogs] = await Promise.all([
+        fetchFootyinfoPlayerProfile(resolvedSlug),
+        fetchLogs(resolvedSlug),
+      ]);
+      if (resolvedLogs.ok) {
+        slug = resolvedSlug;
+        profile = resolvedProfile;
+        res = resolvedLogs;
+        rows = resolvedLogs.data.game_logs?.rows ?? [];
+      }
+    }
+  }
+  if (!res?.ok) return null;
+  profile = profile || await fetchFootyinfoPlayerProfile(slug);
+
   if (!rows.length) {
     return {
       games: [],

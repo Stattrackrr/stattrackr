@@ -55,6 +55,9 @@ function normalizeAflPlayerNameForMatchLocal(name: string): string {
     .trim();
 }
 
+/** Shared slot so current-club, former-club, and empty-team requests reuse one payload. */
+export const AFL_PLAYER_LOGS_CANONICAL_TEAM = 'any';
+
 export function buildAflPlayerLogsCacheKey(params: {
   season: number;
   playerName: string;
@@ -65,6 +68,58 @@ export function buildAflPlayerLogsCacheKey(params: {
   const team = (params.teamForRequest || 'none').trim().toLowerCase().replace(/\s+/g, ' ');
   const quarters = params.includeQuarters ? '1' : '0';
   return `${AFL_CACHE_PREFIX}:${params.season}:${team}:${player}:q${quarters}`;
+}
+
+function teamLookupVariants(teamForRequest: string | null): Array<string | null> {
+  const requested = teamForRequest?.trim() || null;
+  const variants: Array<string | null> = [];
+  if (requested && requested.toLowerCase() !== AFL_PLAYER_LOGS_CANONICAL_TEAM) variants.push(requested);
+  variants.push(AFL_PLAYER_LOGS_CANONICAL_TEAM);
+  variants.push(null);
+  const seen = new Set<string>();
+  return variants.filter((team) => {
+    const token = (team || 'none').toLowerCase();
+    if (seen.has(token)) return false;
+    seen.add(token);
+    return true;
+  });
+}
+
+export async function getAflPlayerLogsCacheForPlayer(params: {
+  season: number;
+  playerName: string;
+  teamForRequest: string | null;
+}): Promise<{ base: AflPlayerLogsCachePayload; quarters: AflPlayerLogsCachePayload | null } | null> {
+  for (const team of teamLookupVariants(params.teamForRequest)) {
+    const key = buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: false });
+    const base = await getAflPlayerLogsCache(key);
+    if (!base || !Array.isArray(base.games) || base.games.length === 0) continue;
+    const quarterKey = buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: true });
+    const quarters = await getAflPlayerLogsCache(quarterKey);
+    return { base, quarters };
+  }
+  return null;
+}
+
+export async function setAflPlayerLogsCacheForPlayer(
+  params: { season: number; playerName: string; teamForRequest: string | null },
+  payload: AflPlayerLogsCachePayload,
+  options?: { allowEmpty?: boolean; ttlSeconds?: number }
+): Promise<void> {
+  await Promise.all(
+    teamLookupVariants(params.teamForRequest).flatMap((team) => [
+      setAflPlayerLogsCache(
+        buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: false }),
+        payload,
+        options
+      ),
+      setAflPlayerLogsCache(
+        buildAflPlayerLogsCacheKey({ ...params, teamForRequest: team, includeQuarters: true }),
+        payload,
+        options
+      ),
+    ])
+  );
 }
 
 export async function getAflPlayerLogsCache(
