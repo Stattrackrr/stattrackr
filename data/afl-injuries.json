@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-26T06:48:08.432Z",
+  "generatedAt": "2026-08-26T08:44:41.377Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 147,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Riley Garcia",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Sam Switkowski",
@@ -151,8 +157,8 @@
     {
       "team": "West Coast Eagles",
       "player": "Harley Reid",
-      "injury": "for a sling tackle on Hawthorn’s Jai Newcombe",
-      "returning": "two matches"
+      "injury": "Suspended for a dangerous tackle on Jai Newcombe.",
+      "returning": "Round 3"
     },
     {
       "team": "Collingwood Magpies",
@@ -602,12 +608,6 @@
       "team": "Geelong Cats",
       "player": "Tyson Stengle",
       "injury": "off-field issues, contract termination",
-      "returning": "Season"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Riley Garcia",
-      "injury": "Hamstring",
       "returning": "Season"
     },
     {
