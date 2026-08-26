@@ -258,11 +258,12 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const tooltipStyle: React.CSSProperties = {
     backgroundColor: tooltipBg,
     border: `1px solid ${tooltipBorder}`,
-    borderRadius: '8px',
-    padding: '12px',
-    minWidth: isMobile ? '280px' : '200px',
-    maxWidth: isMobile ? '90vw' : 'none',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    borderRadius: '12px',
+    padding: '12px 14px',
+    width: isMobile ? 'min(280px, 90vw)' : '248px',
+    boxShadow: isDark
+      ? '0 12px 28px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04)'
+      : '0 12px 28px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.04)',
     zIndex: 999999,
     pointerEvents: 'none',
     position: 'fixed',
@@ -284,117 +285,145 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
           : point.value.toFixed(1)
       : '-';
 
+  const metaRows: Array<{ label: string; value: string }> = [];
+  if (point.venue) metaRows.push({ label: 'Venue', value: point.venue });
+  if (minutesVal != null) metaRows.push({ label: 'Minutes', value: String(Math.round(minutesVal)) });
+  if (dvpRank != null) {
+    const posLabel = dvpPosition && String(dvpPosition).trim() ? dvpPosition : 'position';
+    metaRows.push({ label: `DvP vs ${posLabel}`, value: `#${dvpRank}` });
+  }
+
   const tooltipContent = (
     <div style={tooltipStyle}>
-      {/* Header: Date, Opponent, and Game Result (NBA-style) */}
       <div
         style={{
-          marginBottom: '10px',
-          paddingBottom: '6px',
-          borderBottom: `1px solid ${tooltipBorder}`,
-          fontSize: '13px',
-          fontWeight: '600',
-          color: tooltipText,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          gap: 12,
+          marginBottom: 10,
         }}
       >
-        <span>
-          {(dateShort || point.opponent)
-            ? `${dateShort || ''}${dateShort && point.opponent ? ' vs ' : ''}${point.opponent ?? ''}`
-            : '-'}
-        </span>
+        <div style={{ minWidth: 0 }}>
+          {dateShort ? (
+            <div style={{ fontSize: 11, fontWeight: 500, color: labelColor, letterSpacing: '0.01em' }}>
+              {dateShort}
+            </div>
+          ) : null}
+          <div
+            style={{
+              marginTop: dateShort ? 3 : 0,
+              fontSize: 13,
+              fontWeight: 600,
+              color: tooltipText,
+              lineHeight: 1.3,
+            }}
+          >
+            {point.opponent ? `vs ${point.opponent}` : dateShort ? '' : '-'}
+          </div>
+        </div>
         {gameResultLabel && (
-          <span style={{ color: resultColor, fontWeight: '600', fontSize: '12px' }}>
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+              color: resultColor,
+              backgroundColor: isWin ? 'rgba(16, 185, 129, 0.16)' : 'rgba(239, 68, 68, 0.16)',
+              padding: '4px 8px',
+              borderRadius: 999,
+              lineHeight: 1,
+            }}
+          >
             {gameResultLabel}
           </span>
         )}
       </div>
 
-      {/* Main stat line - highlighted, like NBA hover */}
       <div
         style={{
-          marginBottom: '8px',
-          padding: '8px',
-          backgroundColor: isDark ? '#374151' : '#f3f4f6',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: '600',
-          color: tooltipText,
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: metaRows.length ? 10 : 0,
+          padding: '10px 12px',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6',
+          borderRadius: 8,
         }}
       >
-        {selectedStatLabel}: {formattedValue}
-      </div>
-
-      {point.venue && (
-        <div
+        <span
           style={{
-            marginBottom: '8px',
-            fontSize: '12px',
+            fontSize: 11,
+            fontWeight: 600,
             color: labelColor,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
           }}
         >
-          <span>Venue</span>
-          <span style={{ color: tooltipText, fontWeight: 600 }}>{point.venue}</span>
+          {selectedStatLabel}
+        </span>
+        <span
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: tooltipText,
+            fontVariantNumeric: 'tabular-nums',
+            lineHeight: 1,
+          }}
+        >
+          {formattedValue}
+        </span>
+      </div>
+
+      {metaRows.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 7,
+            fontSize: 12,
+            color: labelColor,
+          }}
+        >
+          {metaRows.map((row) => (
+            <div
+              key={row.label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 12,
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>{row.label}</span>
+              <span
+                style={{
+                  color: tooltipText,
+                  fontWeight: 600,
+                  textAlign: 'right',
+                  lineHeight: 1.3,
+                }}
+              >
+                {row.value}
+              </span>
+            </div>
+          ))}
+          {dvpRank != null && (
+            <div
+              style={{
+                fontSize: 10,
+                color: isDark ? '#c084fc' : '#7e22ce',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+              }}
+            >
+              {dvpRankSource === 'tipoff' ? 'RANK AT TIPOFF' : 'RANK FROM CURRENT'}
+            </div>
+          )}
         </div>
       )}
-
-      {/* AFL-specific extra info: DvP rank + TOG (NBA-style rows) */}
-      {(dvpRank != null || minutesVal != null) && (() => {
-        const rows: Array<{ label: string; value: string }> = [];
-        if (minutesVal != null) {
-          rows.push({ label: 'Minutes', value: String(Math.round(minutesVal)) });
-        }
-        if (dvpRank != null) {
-          const posLabel = dvpPosition && String(dvpPosition).trim() ? dvpPosition : 'position';
-          rows.push({ label: `DvP rank vs ${posLabel}`, value: `#${dvpRank}` });
-        }
-        if (!rows.length) return null;
-        return (
-          <div
-            style={{
-              marginTop: '4px',
-              fontSize: '12px',
-              color: labelColor,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 3,
-            }}
-          >
-            {rows.map((row, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span>{row.label}</span>
-                <span style={{ color: tooltipText, fontWeight: 600 }}>
-                  {row.value}
-                </span>
-              </div>
-            ))}
-            {dvpRank != null && (
-              <div
-                style={{
-                  marginTop: '2px',
-                  fontSize: '11px',
-                  color: isDark ? '#c084fc' : '#7e22ce',
-                  fontWeight: 600,
-                }}
-              >
-                {dvpRankSource === 'tipoff' ? 'RANK AT TIPOFF' : 'RANK FROM CURRENT'}
-              </div>
-            )}
-          </div>
-        );
-      })()}
     </div>
   );
 

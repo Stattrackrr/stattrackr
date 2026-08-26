@@ -21,7 +21,7 @@ import {
 } from '@/app/nbl/components/NblGameFilters';
 import { NblBoxScore } from '@/app/nbl/components/NblBoxScore';
 import { NblShotChart } from '@/app/nbl/components/NblShotChart';
-import NblDvpCard from '@/app/nbl/components/NblDvpCard';
+import NblDvpCard, { PlayTypesInfoButton } from '@/app/nbl/components/NblDvpCard';
 import NblOpponentBreakdownCard from '@/app/nbl/components/NblOpponentBreakdownCard';
 import NblTeamMatchupCard from '@/app/nbl/components/NblTeamMatchupCard';
 import { NblTeamSelectionsCard } from '@/app/nbl/components/NblTeamSelectionsCard';
@@ -49,6 +49,10 @@ import {
   resolveNblClubName,
 } from '@/lib/nblTeamCanonical';
 import { defaultNblTeamStat, isNblTeamGameStat } from '@/lib/nbl/teamGameLogsShared';
+import {
+  NBL_PLAY_TYPE_FULL_LABELS,
+  type NblPlayTypeId,
+} from '@/lib/nbl/playTypesShared';
 
 /** Basketball tipoff LIVE window (~2.5h). */
 const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
@@ -326,6 +330,7 @@ export default function NblDashboardPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<NblRosterPlayer | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [selectedPlayerGameLogs, setSelectedPlayerGameLogs] = useState<NblGameLogRow[]>([]);
+  const [playerPlayTypeLabel, setPlayerPlayTypeLabel] = useState<string | null>(null);
   const [selectedTeamGameLogs, setSelectedTeamGameLogs] = useState<Array<Record<string, unknown>>>([]);
   const [statsLoadingForPlayer, setStatsLoadingForPlayer] = useState(false);
   const [statsLoadingForTeam, setStatsLoadingForTeam] = useState(false);
@@ -757,6 +762,32 @@ export default function NblDashboardPage() {
     };
   }, [selectedPlayer?.playerId, loadingPlayerFromUrl]);
 
+  useEffect(() => {
+    if (nblPropsMode !== 'player' || !selectedPlayer?.playerId) {
+      setPlayerPlayTypeLabel(null);
+      return;
+    }
+    const playerId = selectedPlayer.playerId;
+    let cancelled = false;
+    fetch(`/api/nbl/play-types?playerId=${encodeURIComponent(playerId)}&stat=points`)
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json?.error || 'Failed to load play type');
+        return json;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const type = data?.player?.type as NblPlayTypeId | undefined;
+        setPlayerPlayTypeLabel(type ? NBL_PLAY_TYPE_FULL_LABELS[type] ?? null : null);
+      })
+      .catch(() => {
+        if (!cancelled) setPlayerPlayTypeLabel(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nblPropsMode, selectedPlayer?.playerId]);
+
   // Game Props: team score logs (schedule + cached quarter scores).
   useEffect(() => {
     if (nblPropsMode !== 'team') {
@@ -1049,6 +1080,11 @@ export default function NblDashboardPage() {
                                 Position: {selectedPlayer.position}
                               </div>
                             ) : null}
+                            {nblPropsMode === 'player' && playerPlayTypeLabel ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {playerPlayTypeLabel}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1154,6 +1190,16 @@ export default function NblDashboardPage() {
                             <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
                               {headerSubtitle}
                             </div>
+                            {nblPropsMode === 'player' && selectedPlayer?.position ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                Position: {selectedPlayer.position}
+                              </div>
+                            ) : null}
+                            {nblPropsMode === 'player' && playerPlayTypeLabel ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                {playerPlayTypeLabel}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1620,13 +1666,19 @@ export default function NblDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('dvp')}
-                          className={`relative flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`relative flex-1 overflow-visible px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
                             nblRightTab === 'dvp'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                           }`}
                         >
-                          DVP
+                          Play Types
+                          {nblRightTab === 'dvp' && (
+                            <PlayTypesInfoButton
+                              isDark={!!mounted && isDark}
+                              onAccent
+                            />
+                          )}
                         </button>
                         <button
                           type="button"
@@ -1679,9 +1731,13 @@ export default function NblDashboardPage() {
                       </>
                     )}
                   </div>
-                  <div className="relative flex-1 min-h-[280px] w-full min-w-0 flex flex-col overflow-hidden">
+                  <div
+                    className={`relative w-full min-w-0 flex flex-col ${
+                      nblRightTab === 'dvp' ? 'overflow-visible' : 'overflow-hidden flex-1 min-h-[280px]'
+                    }`}
+                  >
                     {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
-                      <div className={nblRightTab === 'dvp' ? 'flex-1 min-h-0 flex flex-col' : 'hidden'}>
+                      <div className={nblRightTab === 'dvp' ? 'w-full' : 'hidden'}>
                         <NblDvpCard
                           isDark={!!mounted && isDark}
                           season={NBL_SHOT_CHART_SEASON_YEAR}
@@ -1986,13 +2042,19 @@ export default function NblDashboardPage() {
                           <button
                             type="button"
                             onClick={() => visitRightTab('dvp')}
-                            className={`relative flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                            className={`relative flex-1 overflow-visible px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${
                               nblRightTab === 'dvp'
                                 ? 'bg-purple-600 text-white border-purple-600'
                                 : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                             }`}
                           >
-                            DVP
+                            Play Types
+                            {nblRightTab === 'dvp' && (
+                              <PlayTypesInfoButton
+                                isDark={!!mounted && isDark}
+                                onAccent
+                              />
+                            )}
                           </button>
                         )}
                         <button
@@ -2018,7 +2080,13 @@ export default function NblDashboardPage() {
                           Team Matchup
                         </button>
                       </div>
-                      <div className="relative h-[380px] xl:h-[420px] w-full min-w-0 flex flex-col min-h-0">
+                      <div
+                        className={`relative w-full min-w-0 flex flex-col min-h-0 ${
+                          nblPropsMode === 'player' && nblRightTab === 'dvp'
+                            ? 'overflow-visible'
+                            : 'overflow-hidden h-[380px] xl:h-[420px]'
+                        }`}
+                      >
                         {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||
                           (nblPropsMode === 'player' && nblRightTabsVisited.has('breakdown'))) && (
                           <div
@@ -2042,9 +2110,7 @@ export default function NblDashboardPage() {
                         {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                           <div
                             className={
-                              nblRightTab === 'dvp'
-                                ? 'flex-1 min-h-0 overflow-y-auto flex flex-col'
-                                : 'hidden'
+                              nblRightTab === 'dvp' ? 'w-full' : 'hidden'
                             }
                           >
                             <NblDvpCard

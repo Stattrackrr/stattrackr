@@ -18,6 +18,7 @@ import {
   NBL_PLAY_TYPE_STAT_LABELS,
   NBL_PLAY_TYPE_YEAR,
   normalizeNblPlayTypeStat,
+  parseNblPlayTypeStat,
   type NblPlayTypeCell,
   type NblPlayTypeId,
   type NblPlayTypeMatrixRow,
@@ -40,14 +41,18 @@ export {
   NBL_PLAY_TYPE_STAT_LABELS,
   NBL_PLAY_TYPE_YEAR,
   normalizeNblPlayTypeStat,
+  parseNblPlayTypeStat,
 } from '@/lib/nbl/playTypesShared';
 
-const MIN_GAMES_FOR_CUTS = 8;
-const MIN_MINUTES_FOR_CUTS = 12;
-const MIN_MATRIX_MINUTES = 8;
+const TAG_SCHEMA = 'v5';
+const MIN_GAMES_FOR_TAG = 8;
+const MIN_AVG_MINUTES_FOR_TAG = 15;
+const MIN_GAME_MINUTES = 10;
 const MIN_SHOTS_FOR_ZONES = 20;
-const SIGNIFICANT_GAMES = 6;
-const SIGNIFICANT_PLAYERS = 3;
+const SIGNIFICANT_GAMES = 10;
+const SIGNIFICANT_PLAYERS = 4;
+const SIGNIFICANT_MINUTES = 140;
+const MIN_BASELINE_GAMES = 3;
 
 type PosFamily = 'G' | 'F' | 'C';
 
@@ -60,8 +65,10 @@ type PlayerFeatures = {
   pts36: number;
   ast36: number;
   astPerGame: number;
-  usg36: number;
+  /** Basketball-Reference usage % from box-score possessions (minutes-weighted). */
+  usgPct: number | null;
   threeRate: number;
+  threeMade: number;
   ftRate: number;
   twoRate: number;
   restrictedShare: number | null;
@@ -112,15 +119,12 @@ function loadLeaguePlayers(year: number): NblLeaguePlayerStatRow[] {
   }
 }
 
+function playerLogsDir(): string {
+  return path.join(process.cwd(), 'data', 'nbl-model', 'cache', 'player-logs');
+}
+
 function loadPlayerGames(playerId: string, year: number): NblGameLogRow[] {
-  const file = path.join(
-    process.cwd(),
-    'data',
-    'nbl-model',
-    'cache',
-    'player-logs',
-    `${playerId}-${year}.json`
-  );
+  const file = path.join(playerLogsDir(), `${playerId}-${year}.json`);
   if (!fs.existsSync(file)) return [];
   try {
     const data = JSON.parse(fs.readFileSync(file, 'utf8')) as { games?: NblGameLogRow[] };
@@ -133,6 +137,70 @@ function loadPlayerGames(playerId: string, year: number): NblGameLogRow[] {
   } catch {
     return [];
   }
+}
+
+type TeamGameTotals = { fga: number; fta: number; tov: number; minutes: number };
+
+function teamGameKey(matchId: string, teamCode: string | null, team: string): string | null {
+  const id = String(matchId || '').trim();
+  const code = resolveNblSteTeamCode(teamCode || team);
+  if (!id || !code) return null;
+  return `${id}::${code}`;
+}
+
+const teamTotalsByYear = new Map<number, Map<string, TeamGameTotals>>();
+
+function loadYearTeamTotals(year: number): Map<string, TeamGameTotals> {
+  const cached = teamTotalsByYear.get(year);
+  if (cached) return cached;
+  const totals = new Map<string, TeamGameTotals>();
+  const dir = playerLogsDir();
+  if (!fs.existsSync(dir)) {
+    teamTotalsByYear.set(year, totals);
+    return totals;
+  }
+  const suffix = `-${year}.json`;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(suffix)) continue;
+    const games = loadPlayerGames(file.slice(0, -suffix.length), year);
+    for (const g of games) {
+      const key = teamGameKey(g.matchId, g.teamCode, g.team);
+      if (!key) continue;
+      const prev = totals.get(key) ?? { fga: 0, fta: 0, tov: 0, minutes: 0 };
+      prev.fga += num(g.fgAttempted) ?? 0;
+      prev.fta += num(g.ftAttempted) ?? 0;
+      prev.tov += num(g.turnovers) ?? 0;
+      prev.minutes += num(g.minutes) ?? 0;
+      totals.set(key, prev);
+    }
+  }
+  teamTotalsByYear.set(year, totals);
+  return totals;
+}
+
+function gameUsagePct(game: NblGameLogRow, team: TeamGameTotals | undefined): number | null {
+  const mp = num(game.minutes) ?? 0;
+  if (mp < MIN_GAME_MINUTES || !team || team.minutes <= 0) return null;
+  const playerPoss =
+    (num(game.fgAttempted) ?? 0) + 0.44 * (num(game.ftAttempted) ?? 0) + (num(game.turnovers) ?? 0);
+  const teamPoss = team.fga + 0.44 * team.fta + team.tov;
+  if (teamPoss <= 0) return null;
+  return (100 * playerPoss * (team.minutes / 5)) / (mp * teamPoss);
+}
+
+function weightedUsagePct(
+  games: NblGameLogRow[],
+  teamTotals: Map<string, TeamGameTotals>
+): number | null {
+  const rows: Array<{ value: number; minutes: number }> = [];
+  for (const g of games) {
+    const key = teamGameKey(g.matchId, g.teamCode, g.team);
+    const usg = gameUsagePct(g, key ? teamTotals.get(key) : undefined);
+    const minutes = num(g.minutes) ?? 0;
+    if (usg == null || minutes <= 0) continue;
+    rows.push({ value: usg, minutes });
+  }
+  return weightedMean(rows);
 }
 
 function zoneShare(
@@ -165,11 +233,15 @@ function zonesForYear(playerName: string, year: number) {
   return chart.zones;
 }
 
-function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeatures | null {
+function buildFeatures(
+  row: NblLeaguePlayerStatRow,
+  year: number,
+  teamTotals: Map<string, TeamGameTotals>
+): PlayerFeatures | null {
   const allPlayed = loadPlayerGames(row.playerId, year);
   if (!allPlayed.length) return null;
-  const roleGames = usableGames(allPlayed, MIN_MATRIX_MINUTES);
-  const games = roleGames.length >= 3 ? roleGames : allPlayed;
+  const games = usableGames(allPlayed, MIN_GAME_MINUTES);
+  if (games.length < 3) return null;
   const minutes = games.reduce((s, g) => s + (num(g.minutes) ?? 0), 0);
   if (minutes <= 0) return null;
   const minutesAvg = minutes / games.length;
@@ -180,6 +252,7 @@ function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeature
   let twoA = 0;
   let pts = 0;
   let ast = 0;
+  let tpm = 0;
   for (const g of games) {
     fga += num(g.fgAttempted) ?? 0;
     fta += num(g.ftAttempted) ?? 0;
@@ -187,6 +260,7 @@ function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeature
     twoA += num(g.twoAttempted) ?? 0;
     pts += num(g.points) ?? 0;
     ast += num(g.assists) ?? 0;
+    tpm += num(g.threeMade) ?? 0;
   }
 
   const per36 = 36 / minutes;
@@ -195,15 +269,16 @@ function buildFeatures(row: NblLeaguePlayerStatRow, year: number): PlayerFeature
 
   return {
     row,
-    games: roleGames.length ? roleGames : games,
+    games,
     pos: positionFamily(row.position),
     gamesUsed: games.length,
     minutes: minutesAvg,
     pts36: pts * per36,
     ast36: ast * per36,
     astPerGame: ast / games.length,
-    usg36: (fga + 0.44 * fta) * per36,
+    usgPct: weightedUsagePct(games, teamTotals),
     threeRate: fga > 0 ? threeA / fga : 0,
+    threeMade: tpm / games.length,
     ftRate: fga > 0 ? fta / fga : 0,
     twoRate: fga > 0 ? twoA / fga : 0,
     restrictedShare: zones ? zoneShare(zones, ['restricted']) : null,
@@ -223,61 +298,71 @@ function classifyPlayer(
   const threeRate = p.threeShare != null ? Math.max(p.threeRate, p.threeShare) : p.threeRate;
   const restricted = p.restrictedShare;
   const paint = p.paintShare;
-  const interior =
-    restricted != null && paint != null ? restricted + paint : p.twoRate;
+  const isGuard = p.pos === 'G';
+  const isCenter = p.pos === 'C';
   const isBig = p.pos === 'C' || p.pos === 'F';
-  const canHandle = p.pos !== 'C';
+  const stretchCut = isCenter ? 0.34 : 0.4;
+  const usageOk = p.usgPct != null && p.usgPct >= cuts.usgP45;
 
-  // Elite passers count as handlers even with low scoring usage (Delly).
+  // Ball-handlers are guards. Forwards with assists are stretch/slash/interior, not BH.
   if (
-    canHandle &&
-    p.astPerGame >= 3.8 &&
+    isGuard &&
+    p.astPerGame >= 3.6 &&
     p.ast36 >= cuts.astP80 &&
-    (p.usg36 >= cuts.usgP45 || p.ast36 >= cuts.astP80 + 1)
+    (usageOk || p.ast36 >= cuts.astP80 + 0.8)
   ) {
     return 'primary_bh';
   }
-  if (canHandle && p.astPerGame >= 2.6 && p.ast36 >= cuts.astP65) {
+  if (isGuard && p.astPerGame >= 2.5 && p.ast36 >= cuts.astP65 && threeRate < 0.62) {
     return 'secondary_bh';
   }
-  if (p.pos === 'G' && (p.threeRate >= 0.5 || (p.threeShare ?? 0) >= 0.52)) {
+  if (
+    isGuard &&
+    p.threeMade >= 1.15 &&
+    (p.threeRate >= 0.47 || (p.threeShare ?? 0) >= 0.48) &&
+    p.astPerGame < 4
+  ) {
     return 'three_shooter';
   }
-  if (isBig && (p.threeRate >= 0.3 || (p.threeShare ?? 0) >= 0.35)) {
+  if (isBig && (p.threeRate >= stretchCut || (p.threeShare ?? 0) >= stretchCut + 0.02)) {
     return 'stretch_four';
   }
   if (
     isBig &&
-    threeRate < 0.16 &&
-    (restricted != null ? restricted >= 0.58 : p.pos === 'C' && p.twoRate >= 0.78)
-  ) {
-    return 'rim_runner';
-  }
-  if (
-    isBig &&
-    threeRate < 0.28 &&
-    (paint != null ? paint >= 0.18 && interior >= 0.45 : p.twoRate >= 0.58)
+    threeRate < 0.3 &&
+    (restricted != null
+      ? restricted >= 0.42 || (paint != null && paint + restricted >= 0.48)
+      : p.twoRate >= 0.58)
   ) {
     return 'post_up';
   }
   if (
-    p.pos !== 'C' &&
-    threeRate < 0.42 &&
+    !isCenter &&
+    threeRate < 0.48 &&
     (restricted != null && paint != null
-      ? restricted + paint >= 0.45
-      : p.twoRate >= 0.52 || p.ftRate >= 0.28)
+      ? restricted + paint >= 0.38
+      : p.twoRate >= 0.48 || p.ftRate >= 0.26)
   ) {
     return 'slasher';
   }
-  return 'perimeter';
+  if (isGuard && p.threeMade >= 0.9 && (p.threeRate >= 0.44 || (p.threeShare ?? 0) >= 0.46)) {
+    return 'three_shooter';
+  }
+  return isCenter ? 'post_up' : 'slasher';
 }
 
 function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | null {
   switch (stat) {
     case 'assists':
       return num(game.assists);
+    case 'rebounds':
+      return num(game.rebounds);
     case 'threeMade':
       return num(game.threeMade);
+    case 'steals':
+      return num(game.steals);
+    case 'blocks':
+      return num(game.blocks);
     case 'pra':
       if (game.pra != null && Number.isFinite(Number(game.pra))) return Number(game.pra);
       {
@@ -287,6 +372,14 @@ function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | 
         if (pts == null || reb == null || ast == null) return null;
         return pts + reb + ast;
       }
+    case 'pr':
+      if (game.pr != null && Number.isFinite(Number(game.pr))) return Number(game.pr);
+      {
+        const pts = num(game.points);
+        const reb = num(game.rebounds);
+        if (pts == null || reb == null) return null;
+        return pts + reb;
+      }
     case 'pa':
       if (game.pa != null && Number.isFinite(Number(game.pa))) return Number(game.pa);
       {
@@ -294,6 +387,14 @@ function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | 
         const ast = num(game.assists);
         if (pts == null || ast == null) return null;
         return pts + ast;
+      }
+    case 'ra':
+      if (game.ra != null && Number.isFinite(Number(game.ra))) return Number(game.ra);
+      {
+        const reb = num(game.rebounds);
+        const ast = num(game.assists);
+        if (reb == null || ast == null) return null;
+        return reb + ast;
       }
     case 'fgMade':
       return num(game.fgMade);
@@ -303,34 +404,40 @@ function gameStatValue(game: NblGameLogRow, stat: NblPlayTypeStatKey): number | 
   }
 }
 
-function mean(values: number[]): number | null {
-  if (!values.length) return null;
-  return values.reduce((s, v) => s + v, 0) / values.length;
+function weightedMean(rows: Array<{ value: number; minutes: number }>): number | null {
+  const weight = rows.reduce((sum, row) => sum + row.minutes, 0);
+  if (weight <= 0) return null;
+  return rows.reduce((sum, row) => sum + row.value * row.minutes, 0) / weight;
 }
 
 type TaggedPlayer = PlayerFeatures & { type: NblPlayTypeId };
 
-const taggedByYear = new Map<number, TaggedPlayer[]>();
+const taggedByYear = new Map<string, TaggedPlayer[]>();
 
-function isQualifiedForCuts(p: PlayerFeatures): boolean {
-  return p.gamesUsed >= MIN_GAMES_FOR_CUTS && p.minutes >= MIN_MINUTES_FOR_CUTS;
+function isQualifiedForMatrix(p: PlayerFeatures): boolean {
+  return p.gamesUsed >= MIN_GAMES_FOR_TAG && p.minutes >= MIN_AVG_MINUTES_FOR_TAG;
 }
 
 function tagSeason(year: number): TaggedPlayer[] {
-  const cached = taggedByYear.get(year);
+  const cacheKey = `${year}:${TAG_SCHEMA}`;
+  const cached = taggedByYear.get(cacheKey);
   if (cached) return cached;
   const league = loadLeaguePlayers(year);
+  const teamTotals = loadYearTeamTotals(year);
   const features: PlayerFeatures[] = [];
   for (const row of league) {
-    const feat = buildFeatures(row, year);
+    const feat = buildFeatures(row, year, teamTotals);
     if (feat) features.push(feat);
   }
   if (!features.length) return [];
 
-  const cutPool = features.filter(isQualifiedForCuts);
+  const cutPool = features.filter(isQualifiedForMatrix);
   const pool = cutPool.length ? cutPool : features;
   const asts = pool.map((p) => p.ast36).sort((a, b) => a - b);
-  const usgs = pool.map((p) => p.usg36).sort((a, b) => a - b);
+  const usgs = pool
+    .map((p) => p.usgPct)
+    .filter((n): n is number => n != null && Number.isFinite(n))
+    .sort((a, b) => a - b);
   const cuts = {
     astP80: percentile(asts, 0.8),
     astP65: percentile(asts, 0.65),
@@ -338,12 +445,12 @@ function tagSeason(year: number): TaggedPlayer[] {
   };
 
   const tagged = features.map((p) => ({ ...p, type: classifyPlayer(p, cuts) }));
-  taggedByYear.set(year, tagged);
+  taggedByYear.set(cacheKey, tagged);
   return tagged;
 }
 
 function emptyCell(): NblPlayTypeCell {
-  return { boost: null, games: 0, players: 0, significant: false };
+  return { boost: null, games: 0, players: 0, minutes: 0, significant: false, names: [] };
 }
 
 function toPlayerRow(p: TaggedPlayer): NblPlayTypePlayerRow {
@@ -359,6 +466,79 @@ function toPlayerRow(p: TaggedPlayer): NblPlayTypePlayerRow {
     points: p.row.points != null ? round1(Number(p.row.points)) : null,
     assists: p.row.assists != null ? round1(Number(p.row.assists)) : null,
     threeRate: round1(p.threeRate * 100),
+    usgPct: p.usgPct != null ? round1(p.usgPct) : null,
+  };
+}
+
+function opponentCodeForGame(game: NblGameLogRow): string | null {
+  return resolveNblSteTeamCode(game.opponentCode || game.opponent);
+}
+
+function buildCellForOpponent(
+  group: TaggedPlayer[],
+  clubCode: string,
+  stat: NblPlayTypeStatKey
+): NblPlayTypeCell {
+  const weighted: Array<{ value: number; minutes: number; playerId: string; name: string }> = [];
+  for (const p of group) {
+    if (!isQualifiedForMatrix(p)) continue;
+    const ownCode = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
+    if (ownCode === clubCode) continue;
+
+    const usable = p.games
+      .map((g) => {
+        const value = gameStatValue(g, stat);
+        const minutes = num(g.minutes) ?? 0;
+        const opp = opponentCodeForGame(g);
+        if (value == null || minutes < MIN_GAME_MINUTES || !opp) return null;
+        return { value, minutes, opp };
+      })
+      .filter((row): row is { value: number; minutes: number; opp: string } => row != null);
+
+    const vs = usable.filter((row) => row.opp === clubCode);
+    if (!vs.length) continue;
+    const baselineRows = usable.filter((row) => row.opp !== clubCode);
+    if (baselineRows.length < MIN_BASELINE_GAMES) continue;
+    const baseline = weightedMean(baselineRows);
+    if (baseline == null) continue;
+
+    for (const row of vs) {
+      weighted.push({
+        value: row.value - baseline,
+        minutes: row.minutes,
+        playerId: p.row.playerId,
+        name: p.row.name,
+      });
+    }
+  }
+
+  if (!weighted.length) return emptyCell();
+
+  const byPlayerMinutes = new Map<string, { name: string; minutes: number }>();
+  for (const row of weighted) {
+    const prev = byPlayerMinutes.get(row.playerId);
+    byPlayerMinutes.set(row.playerId, {
+      name: row.name,
+      minutes: (prev?.minutes ?? 0) + row.minutes,
+    });
+  }
+  const names = [...byPlayerMinutes.values()]
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 3)
+    .map((row) => row.name);
+
+  const games = weighted.length;
+  const players = byPlayerMinutes.size;
+  const minutes = round1(weighted.reduce((sum, row) => sum + row.minutes, 0));
+  const boost = weightedMean(weighted);
+
+  return {
+    boost: boost != null ? round1(boost) : null,
+    games,
+    players,
+    minutes,
+    significant: games >= SIGNIFICANT_GAMES && players >= SIGNIFICANT_PLAYERS && minutes >= SIGNIFICANT_MINUTES,
+    names,
   };
 }
 
@@ -368,12 +548,13 @@ export function buildNblPlayTypesPayload(options: {
   playerId?: string | null;
 }): NblPlayTypesPayload {
   const year = NBL_PLAY_TYPE_YEAR;
-  const stat = normalizeNblPlayTypeStat(options.stat);
+  const stat = parseNblPlayTypeStat(options.stat);
   const rosterCount = loadLeaguePlayers(year).length;
   const tagged = tagSeason(year);
+  const matrixPlayers = tagged.filter(isQualifiedForMatrix);
   const byType = new Map<NblPlayTypeId, TaggedPlayer[]>();
   for (const id of NBL_PLAY_TYPE_IDS) byType.set(id, []);
-  for (const p of tagged) byType.get(p.type)?.push(p);
+  for (const p of matrixPlayers) byType.get(p.type)?.push(p);
 
   const teams = NBL_CLUBS.map((c) => ({
     code: c.code,
@@ -385,34 +566,7 @@ export function buildNblPlayTypesPayload(options: {
     const group = byType.get(type) || [];
     const cells: Record<string, NblPlayTypeCell> = {};
     for (const club of NBL_CLUBS) {
-      const diffs: number[] = [];
-      const playerIds = new Set<string>();
-      for (const p of group) {
-        const ownCode = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
-        if (ownCode === club.code) continue;
-        const seasonVals = p.games
-          .map((g) => gameStatValue(g, stat))
-          .filter((v): v is number => v != null);
-        const avg = mean(seasonVals);
-        if (avg == null) continue;
-        for (const g of p.games) {
-          const opp = resolveNblSteTeamCode(g.opponentCode || g.opponent);
-          if (opp !== club.code) continue;
-          const val = gameStatValue(g, stat);
-          if (val == null) continue;
-          diffs.push(val - avg);
-          playerIds.add(p.row.playerId);
-        }
-      }
-      const boost = mean(diffs);
-      const games = diffs.length;
-      const players = playerIds.size;
-      cells[club.code] = {
-        boost: boost != null ? round1(boost) : null,
-        games,
-        players,
-        significant: games >= SIGNIFICANT_GAMES && players >= SIGNIFICANT_PLAYERS,
-      };
+      cells[club.code] = stat ? buildCellForOpponent(group, club.code, stat) : emptyCell();
     }
     return {
       type,
@@ -430,10 +584,11 @@ export function buildNblPlayTypesPayload(options: {
     year,
     seasonLabel: nblSeasonLabel(year),
     stat,
-    statLabel: NBL_PLAY_TYPE_STAT_LABELS[stat],
+    statLabel: stat ? NBL_PLAY_TYPE_STAT_LABELS[stat] : null,
+    statSupported: stat != null,
     generatedAt: new Date().toISOString(),
     rosterCount,
-    taggedCount: tagged.length,
+    taggedCount: matrixPlayers.length,
     player: focus
       ? {
           playerId: focus.row.playerId,
@@ -445,6 +600,6 @@ export function buildNblPlayTypesPayload(options: {
       : null,
     teams,
     rows,
-    players: tagged.map(toPlayerRow).sort((a, b) => a.name.localeCompare(b.name)),
+    players: matrixPlayers.map(toPlayerRow).sort((a, b) => a.name.localeCompare(b.name)),
   };
 }

@@ -8,12 +8,10 @@ export const NBL_PLAY_TYPE_YEAR = 2025;
 export const NBL_PLAY_TYPE_IDS = [
   'primary_bh',
   'secondary_bh',
-  'perimeter',
   'three_shooter',
   'slasher',
   'post_up',
   'stretch_four',
-  'rim_runner',
 ] as const;
 
 export type NblPlayTypeId = (typeof NBL_PLAY_TYPE_IDS)[number];
@@ -21,29 +19,74 @@ export type NblPlayTypeId = (typeof NBL_PLAY_TYPE_IDS)[number];
 export const NBL_PLAY_TYPE_LABELS: Record<NblPlayTypeId, string> = {
   primary_bh: 'Primary BH',
   secondary_bh: 'Second BH',
-  perimeter: 'Perimeter',
-  three_shooter: '3PT shooter',
+  three_shooter: '3PT',
   slasher: 'Slasher',
-  post_up: 'Post-up',
-  stretch_four: 'Stretch four',
-  rim_runner: 'Rim runner',
+  post_up: 'Interior',
+  stretch_four: 'Stretch',
+};
+
+export const NBL_PLAY_TYPE_FULL_LABELS: Record<NblPlayTypeId, string> = {
+  primary_bh: 'Primary Ball Handler',
+  secondary_bh: 'Secondary Ball Handler',
+  three_shooter: '3-Point Shooter',
+  slasher: 'Slasher',
+  post_up: 'Interior',
+  stretch_four: 'Stretch',
 };
 
 export type NblPlayTypeStatKey =
   | 'points'
   | 'assists'
+  | 'rebounds'
   | 'threeMade'
   | 'pra'
+  | 'pr'
   | 'pa'
-  | 'fgMade';
+  | 'ra'
+  | 'fgMade'
+  | 'steals'
+  | 'blocks';
 
 export const NBL_PLAY_TYPE_STAT_LABELS: Record<NblPlayTypeStatKey, string> = {
   points: 'Points',
   assists: 'Assists',
+  rebounds: 'Rebounds',
   threeMade: '3PM',
   pra: 'PRA',
+  pr: 'P+R',
   pa: 'P+A',
+  ra: 'R+A',
   fgMade: 'FGM',
+  steals: 'Steals',
+  blocks: 'Blocks',
+};
+
+export const NBL_PLAY_TYPE_STAT_ALIASES: Record<string, NblPlayTypeStatKey> = {
+  pts: 'points',
+  point: 'points',
+  points: 'points',
+  ast: 'assists',
+  assist: 'assists',
+  assists: 'assists',
+  reb: 'rebounds',
+  rebound: 'rebounds',
+  rebounds: 'rebounds',
+  threes: 'threeMade',
+  threemade: 'threeMade',
+  '3pm': 'threeMade',
+  fg3m: 'threeMade',
+  pra: 'pra',
+  pr: 'pr',
+  pa: 'pa',
+  ra: 'ra',
+  fgm: 'fgMade',
+  fgmade: 'fgMade',
+  stl: 'steals',
+  steal: 'steals',
+  steals: 'steals',
+  blk: 'blocks',
+  block: 'blocks',
+  blocks: 'blocks',
 };
 
 export type NblPlayTypePlayerRow = {
@@ -58,19 +101,22 @@ export type NblPlayTypePlayerRow = {
   points: number | null;
   assists: number | null;
   threeRate: number | null;
+  usgPct: number | null;
 };
 
 export type NblPlayTypeCell = {
   boost: number | null;
   games: number;
   players: number;
+  minutes: number;
   significant: boolean;
+  names: string[];
 };
 
 export type NblPlayTypeMatrixRow = {
   type: NblPlayTypeId;
   label: string;
-  /** Unique players tagged as this type. */
+  /** Unique qualified players tagged as this type. */
   playerCount: number;
   /** Player-games in the matrix (same player can appear more than once). */
   gameCount: number;
@@ -80,8 +126,9 @@ export type NblPlayTypeMatrixRow = {
 export type NblPlayTypesPayload = {
   year: number;
   seasonLabel: string;
-  stat: NblPlayTypeStatKey;
-  statLabel: string;
+  stat: NblPlayTypeStatKey | null;
+  statLabel: string | null;
+  statSupported: boolean;
   generatedAt: string;
   rosterCount: number;
   taggedCount: number;
@@ -97,26 +144,20 @@ export type NblPlayTypesPayload = {
   players: NblPlayTypePlayerRow[];
 };
 
-export function normalizeNblPlayTypeStat(raw: string | null | undefined): NblPlayTypeStatKey {
-  const key = String(raw || 'points')
+export function nblPlayTypeStatKey(raw: string | null | undefined): string {
+  return String(raw || '')
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '');
-  const aliases: Record<string, NblPlayTypeStatKey> = {
-    pts: 'points',
-    point: 'points',
-    points: 'points',
-    ast: 'assists',
-    assist: 'assists',
-    assists: 'assists',
-    threes: 'threeMade',
-    threemade: 'threeMade',
-    '3pm': 'threeMade',
-    fg3m: 'threeMade',
-    pra: 'pra',
-    pa: 'pa',
-    fgm: 'fgMade',
-    fgmade: 'fgMade',
-  };
-  return aliases[key] || 'points';
+}
+
+export function parseNblPlayTypeStat(raw: string | null | undefined): NblPlayTypeStatKey | null {
+  const key = nblPlayTypeStatKey(raw);
+  if (!key) return 'points';
+  return NBL_PLAY_TYPE_STAT_ALIASES[key] ?? null;
+}
+
+/** Unknown stats fall back to points for callers that always need a key. */
+export function normalizeNblPlayTypeStat(raw: string | null | undefined): NblPlayTypeStatKey {
+  return parseNblPlayTypeStat(raw) ?? 'points';
 }
