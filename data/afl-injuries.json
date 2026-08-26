@@ -1,9 +1,39 @@
 {
-  "generatedAt": "2026-08-26T04:39:24.149Z",
+  "generatedAt": "2026-08-26T06:48:08.432Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 144,
+  "injuryCount": 147,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sam Switkowski",
+      "injury": "Announced retirement at the end of the season due to family reasons (expecting first child).",
+      "returning": "Season"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Kaleb Smith",
+      "injury": "Foot",
+      "returning": "Season"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Liam Fawcett",
+      "injury": "Back",
+      "returning": "Season"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Zarlie Goldsworthy",
+      "injury": "Lower leg",
+      "returning": "next few weeks"
+    },
+    {
+      "team": "GWS Giants",
+      "player": "Kaitlyn Srhoj",
+      "injury": "Foot",
+      "returning": "TBC"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Lucille Cronin",
@@ -128,7 +158,7 @@
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
       "injury": "Hamstring",
-      "returning": "Season"
+      "returning": "Ruled out of Friday night's wildcard clash"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -223,12 +253,6 @@
     {
       "team": "Fremantle Dockers",
       "player": "Heath Chapman",
-      "injury": "given the weekend off",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sam Switkowski",
       "injury": "given the weekend off",
       "returning": "TBC"
     },
@@ -531,12 +555,6 @@
       "player": "Darcy Parish",
       "injury": "playing VFL",
       "returning": "TBC"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Kaleb Smith",
-      "injury": "Concussion",
-      "returning": "active"
     },
     {
       "team": "Geelong Cats",
