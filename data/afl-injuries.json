@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-26T22:47:40.153Z",
+  "generatedAt": "2026-08-27T06:58:13.602Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 147,
+  "injuryCount": 154,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Taylor Smith",
+      "injury": "Arm",
+      "returning": "three to four weeks"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Laura Gardiner",
+      "injury": "Foot",
+      "returning": "test for Saturday's match"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Ash Van Loon",
+      "injury": "Calf",
+      "returning": "test for Saturday's match"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Holly Cooper",
+      "injury": "Elbow",
+      "returning": "test for Saturday's match"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Paddy Dow",
+      "injury": "Infection",
+      "returning": "active"
+    },
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Zane Duursma",
+      "injury": "Shoulder",
+      "returning": "Season"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "Ankle",
+      "returning": "not ruled out of playing our next game"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "James Worpel",
+      "injury": "Hamstring",
+      "returning": "1-3 weeks"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Riley Garcia",
@@ -308,7 +356,7 @@
       "team": "Carlton Blues",
       "player": "Nick Haynes",
       "injury": "Ankle",
-      "returning": "wildcard clash"
+      "returning": "TBC"
     },
     {
       "team": "Hawthorn Hawks",
@@ -561,12 +609,6 @@
       "player": "Darcy Parish",
       "injury": "playing VFL",
       "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "West Perth",
