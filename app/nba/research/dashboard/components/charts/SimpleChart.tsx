@@ -16,6 +16,12 @@ import StaticLabelList from './StaticLabelList';
 import CustomXAxisTick from './CustomXAxisTick';
 import { CHART_CONFIG } from '../../constants';
 
+const NBA_PCT_STATS = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
+
+function isChartPercentageStat(stat: string): boolean {
+  return NBA_PCT_STATS.includes(stat) || /Pct$/i.test(stat) || /_pct$/i.test(stat);
+}
+
 interface SimpleChartProps {
   isLoading?: boolean;
   chartData: Array<{ value: number | null; [key: string]: any }>;
@@ -627,9 +633,8 @@ const SimpleChart = memo(function SimpleChart({
   // Memoize this to a stable reference - only changes when selectedStat changes
   const formatChartLabel = useMemo(() => {
     return (value: any): string => {
-      const isPercentageStat = ['fg3_pct', 'fg_pct', 'ft_pct'].includes(selectedStat);
       const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
-      if (isPercentageStat) return `${numValue.toFixed(1)}%`;
+      if (isChartPercentageStat(selectedStat)) return `${numValue.toFixed(1)}%`;
       return `${numValue}`;
     };
   }, [selectedStat]);
@@ -640,7 +645,7 @@ const SimpleChart = memo(function SimpleChart({
       <StaticLabelList 
         isDark={isDark} 
         formatChartLabel={formatChartLabel} 
-        fontSizePx={12}
+        fontSizePx={isChartPercentageStat(selectedStat) ? 9 : 12}
         selectedStat={selectedStat}
         chartData={mergedChartData}
       />
@@ -814,8 +819,7 @@ const SimpleChart = memo(function SimpleChart({
     if (validEntries.length === 0) return null;
     const validValues = validEntries.map(x => x.value);
     const avg = validValues.reduce((s, v) => s + v, 0) / validValues.length;
-    const pctStats = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
-    const formatted = pctStats.includes(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
+    const formatted = isChartPercentageStat(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
     const tfLabels: Record<string, string> = {
       last5: 'L5', last10: 'L10', last15: 'L15', last20: 'L20',
       h2h: 'H2H', lastseason: 'Last Season', thisseason: 'Season'

@@ -180,7 +180,7 @@ export const TennisBoxScore = memo(function TennisBoxScore({
         <table className="min-w-full text-xs">
           <thead>
             <tr className={isDark ? 'bg-[#0a1929]' : 'bg-slate-100'}>
-              {['DATE', 'TOUR', 'OPP', 'RES', 'SCORE', 'ACE', 'DF', 'GMS', 'PTS', 'RET', '1ST%', 'BP'].map(
+              {['DATE', 'TOUR', 'OPP', 'RES', 'SCORE', 'ACE', 'DF', 'GMS', 'PTS', 'RETURN', '1ST SV%', 'BP'].map(
                 (label) => (
                   <th
                     key={label}

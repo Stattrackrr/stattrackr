@@ -19,6 +19,9 @@ function toNumericValue(v: unknown): number | null {
 export type SupportingStatKind =
   | 'minutes'
   | 'aces'
+  | 'opponentAces'
+  | 'totalAces'
+  | 'totalSets'
   | 'doubleFaults'
   | 'gamesWon'
   | 'gamesLost'
@@ -29,11 +32,13 @@ export type SupportingStatKind =
   | 'breakPointsConverted'
   | 'breakPointsSaved'
   | 'moneyline'
-  | 'spread'
-  | 'setsWon';
+  | 'spread';
 
 const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'aces', label: TENNIS_STAT_LABELS.aces },
+  { value: 'opponentAces', label: TENNIS_STAT_LABELS.opponentAces },
+  { value: 'totalAces', label: TENNIS_STAT_LABELS.totalAces },
+  { value: 'totalSets', label: TENNIS_STAT_LABELS.totalSets },
   { value: 'doubleFaults', label: TENNIS_STAT_LABELS.doubleFaults },
   { value: 'gamesWon', label: TENNIS_STAT_LABELS.gamesWon },
   { value: 'gamesLost', label: TENNIS_STAT_LABELS.gamesLost },
@@ -45,7 +50,6 @@ const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'breakPointsSaved', label: TENNIS_STAT_LABELS.breakPointsSaved },
   { value: 'moneyline', label: TENNIS_STAT_LABELS.moneyline },
   { value: 'spread', label: TENNIS_STAT_LABELS.spread },
-  { value: 'setsWon', label: TENNIS_STAT_LABELS.setsWon },
 ];
 
 const PCT_KINDS = new Set<SupportingStatKind>(['firstServePct']);
@@ -54,11 +58,17 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
   const mainKey = String(main || '');
   const preferred: SupportingStatKind[] =
     mainKey === 'aces'
-      ? ['doubleFaults', 'firstServePct', 'gamesWon', 'pointsWon']
-      : mainKey === 'doubleFaults'
+      ? ['opponentAces', 'totalAces', 'doubleFaults', 'firstServePct']
+      : mainKey === 'opponentAces'
+        ? ['aces', 'totalAces', 'doubleFaults', 'gamesLost']
+        : mainKey === 'totalAces'
+          ? ['aces', 'opponentAces', 'doubleFaults', 'gamesWon']
+          : mainKey === 'totalSets'
+            ? ['totalGames', 'spread', 'gamesWon', 'aces']
+          : mainKey === 'doubleFaults'
         ? ['aces', 'firstServePct', 'gamesWon']
         : mainKey === 'gamesWon' || mainKey === 'gamesLost' || mainKey === 'totalGames'
-          ? ['aces', 'pointsWon', 'setsWon', 'spread']
+          ? ['aces', 'pointsWon', 'totalSets', 'spread']
           : mainKey === 'moneyline' || mainKey === 'spread'
             ? ['totalGames', 'gamesWon', 'gamesLost', 'aces']
             : ['aces', 'doubleFaults', 'gamesWon', 'firstServePct', 'pointsWon'];
@@ -100,18 +110,22 @@ function applyTimeframe<T extends BaseRow>(
   return baseData;
 }
 
-type StatBag = Record<SupportingStatKind, number>;
+type StatBag = Record<SupportingStatKind, number | null>;
 
 function readGameStats(g: Record<string, unknown>): StatBag {
-  const n = (key: string) => toNumericValue(g[key]) ?? 0;
-  const toPercentValue = (v: unknown): number => {
-    const raw = toNumericValue(v) ?? 0;
+  const n = (key: string) => toNumericValue(g[key]);
+  const toPercentValue = (v: unknown): number | null => {
+    const raw = toNumericValue(v);
+    if (raw == null) return null;
     const pct = raw <= 1 ? raw * 100 : raw;
     return Math.max(0, Math.min(100, pct));
   };
   return {
-    minutes: Math.round(n('minutes')),
+    minutes: n('minutes') == null ? null : Math.round(n('minutes') as number),
     aces: n('aces'),
+    opponentAces: n('opponentAces'),
+    totalAces: n('totalAces'),
+    totalSets: n('totalSets'),
     doubleFaults: n('doubleFaults'),
     gamesWon: n('gamesWon'),
     gamesLost: n('gamesLost'),
@@ -123,7 +137,6 @@ function readGameStats(g: Record<string, unknown>): StatBag {
     breakPointsSaved: n('breakPointsSaved'),
     moneyline: n('moneyline'),
     spread: n('spread'),
-    setsWon: n('setsWon'),
   };
 }
 
@@ -180,7 +193,7 @@ export function TennisSupportingStats({
         tickLabel: opponent,
         round: String(g.round ?? ''),
         opponent,
-        value: stats[supportingStatKind] ?? 0,
+        value: stats[supportingStatKind],
         isPercent: PCT_KINDS.has(supportingStatKind),
         gameDate: String(g.date ?? ''),
         gameSeason,
@@ -201,9 +214,16 @@ export function TennisSupportingStats({
     >;
     const windowed = applyTimeframe(baseData, timeframe, season, nextOpponent);
     if (!windowed.length) return empty;
-    const n = windowed.length;
-    const avg = (key: SupportingStatKind) =>
-      windowed.reduce((sum, row) => sum + (Number((row as Record<string, unknown>)[key]) || 0), 0) / n;
+    const avg = (key: SupportingStatKind) => {
+      const values = windowed
+        .map((row) => {
+          const raw = (row as Record<string, unknown>)[key];
+          return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+        })
+        .filter((v): v is number => v != null);
+      if (!values.length) return null;
+      return values.reduce((sum, v) => sum + v, 0) / values.length;
+    };
     const next = { ...empty };
     for (const opt of supportingOptions) next[opt.value] = avg(opt.value);
     return next;
@@ -219,7 +239,7 @@ export function TennisSupportingStats({
   );
 
   const formatLabel = (value: number, isPercent: boolean) =>
-    isPercent ? `${Math.round(value)}%` : String(Math.round(value));
+    isPercent ? `${value.toFixed(1)}%` : String(Math.round(value));
 
   const formatAvg = (kind: SupportingStatKind) => {
     const v = averagesByStat[kind];
@@ -296,19 +316,20 @@ export function TennisSupportingStats({
               label={(props) => {
                 const { x, y, width, value } = props;
                 const payload = (props as { payload?: { isPercent?: boolean } }).payload;
+                if (value == null || value === '') return null;
                 const numericValue = Number(value);
+                if (!Number.isFinite(numericValue)) return null;
+                if (supportingStatKind === 'moneyline' && numericValue === 0) return null;
                 return (
                   <text
                     x={Number(x ?? 0) + Number(width ?? 0) / 2}
                     y={Number(y ?? 0) - 6}
                     textAnchor="middle"
                     fill={labelFill}
-                    fontSize={12}
+                    fontSize={payload?.isPercent ?? isPercent ? 9 : 12}
                     fontWeight={500}
                   >
-                    {Number.isFinite(numericValue)
-                      ? formatLabel(numericValue, payload?.isPercent ?? isPercent)
-                      : ''}
+                    {formatLabel(numericValue, payload?.isPercent ?? isPercent)}
                   </text>
                 );
               }}

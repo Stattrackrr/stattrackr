@@ -84,7 +84,9 @@ export default memo(function StaticLabelList({
         }
 
         // Soccer H2H: only show labels for draws (0), not wins/losses.
+        // Tennis losses use moneylineLabel '' so the 0 is hidden but the bar stays hoverable.
         if (selectedStat === 'moneyline' && !isMissingQ1) {
+          if (dataObject?.moneylineLabel === '') return null;
           if (!isZero && dataObject?.moneylineLabel == null) return null;
         }
 

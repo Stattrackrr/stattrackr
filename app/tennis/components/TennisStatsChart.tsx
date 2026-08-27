@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, isUnplayedTennisMatch, tennisLastName } from '@/lib/tennis/chartStats';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -52,8 +52,8 @@ const CHART_STAT_TO_ADVANCED_OPPONENT_FILTER: Record<
 };
 
 const STAT_PRIORITY = [...TENNIS_PLAYER_STAT_PRIORITY];
-const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'tourneyDate', 'matchDate', 'opponent', 'opponentId', 'opponentCode', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', 'tour', 'tourneyId', 'tourneyName', 'tourneyLevel', 'surface', 'score', 'hand', 'ioc', 'playerId', 'playerName', 'isGrandSlam', 'isWin', 'bestOf', 'opponentRank', 'playerRank', 'opponentRankPoints', 'rankPoints', 'seed', 'entry', 'height', 'age', 'drawSize', '__nblGameIndex']);
-const STATS_HIDDEN = new Set<string>(['minutes', 'setsLost', 'breakPointsFaced', 'servePointsWon', 'totalPoints', 'secondServeAttempts']);
+const META_SKIP = new Set(['season', 'game_number', 'matchId', 'date', 'game_date', 'tourneyDate', 'matchDate', 'opponent', 'opponentId', 'opponentCode', 'opponentIoc', 'isHome', 'team', 'teamCode', 'result', 'venue', 'round', 'tour', 'tourneyId', 'tourneyName', 'tourneyLevel', 'surface', 'score', 'hand', 'ioc', 'playerId', 'playerName', 'isGrandSlam', 'isWin', 'bestOf', 'opponentRank', 'playerRank', 'opponentRankPoints', 'rankPoints', 'seed', 'entry', 'height', 'age', 'drawSize', '__nblGameIndex']);
+const STATS_HIDDEN = new Set<string>(['minutes', 'setsLost', 'breakPointsFaced', 'servePointsWon', 'totalPoints', 'secondServeAttempts', 'firstServesIn', 'secondServesWon', 'setsWon', 'servePoints', 'serveGames']);
 const PCT_STATS = new Set(['firstServePct', 'firstServeWonPct', 'secondServeWonPct', 'servicePointsWonPct', 'returnPointsWonPct', 'breakPointsSavedPct', 'breakPointsConvertedPct']);
 const TIMEFRAME_OPTIONS = ['last5', 'last10', 'last15', 'last20', 'last50', 'h2h', 'season2026', 'season2025', 'season2024'] as const;
 
@@ -68,7 +68,7 @@ interface NblChartTooltipProps {
   perGameFilterData?: NblGameFilterDataItem[] | null;
 }
 
-function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStat, dvpPosition, perGameFilterData }: NblChartTooltipProps) {
+function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabel, selectedStat }: NblChartTooltipProps) {
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -110,7 +110,15 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
 
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload as
-    | { round?: string; opponent?: string; result?: string; value?: number; gameDate?: string; sourceGameIndex?: number | null; venue?: string; minutes?: number | null }
+    | {
+        opponent?: string;
+        result?: string;
+        value?: number | null;
+        gameDate?: string;
+        score?: string;
+        surface?: string;
+        tourneyName?: string;
+      }
     | undefined;
   if (!point) return null;
 
@@ -121,24 +129,6 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const winColor = isDark ? '#10b981' : '#059669';
   const lossColor = isDark ? '#ef4444' : '#dc2626';
 
-  // Lookup per-game DvP rank and Minutes for this game (by original game index).
-  let dvpRank: number | null = null;
-  let dvpRankSource: 'tipoff' | 'live' | null = null;
-  let minutesVal: number | null = null;
-  if (Array.isArray(perGameFilterData) && typeof point.sourceGameIndex === 'number') {
-    const match = perGameFilterData.find((row) => row.gameIndex === point.sourceGameIndex);
-    if (match) {
-      dvpRank = match.dvpRank ?? null;
-      dvpRankSource = match.dvpRankSource ?? null;
-      minutesVal = match.minutes ?? null;
-    }
-  }
-  // Fallback: minutes attached on chart row
-  if (minutesVal == null && typeof (point as { minutes?: unknown }).minutes === 'number') {
-    minutesVal = (point as { minutes: number }).minutes;
-  }
-
-  // Date formatting: day/month/year (AU-style)
   let dateShort = point.gameDate ?? '';
   if (point.gameDate) {
     const ts = Date.parse(point.gameDate);
@@ -151,77 +141,66 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
     }
   }
 
+  const isWin = Boolean(point.result && String(point.result).toLowerCase().startsWith('w'));
+  const resultColor = point.result ? (isWin ? winColor : lossColor) : labelColor;
+  const walkover = isUnplayedTennisMatch(point.score);
+  const retired = tennisScoreIsRetired(point.score);
+  const sets = parseTennisSetsFromPlayerView(point.score, isWin);
+  const playerSets = sets.filter((set) => set.playerGames > set.opponentGames).length;
+  const opponentSets = sets.filter((set) => set.opponentGames > set.playerGames).length;
+
+  let gameResultLabel: string | null = null;
+  if (walkover) {
+    gameResultLabel = isWin ? 'W W/O' : 'L W/O';
+  } else if (sets.length) {
+    gameResultLabel = `${isWin ? 'W' : 'L'} ${playerSets}-${opponentSets}${retired ? ' RET' : ''}`;
+  } else if (point.result) {
+    const raw = String(point.result).trim();
+    const lower = raw.toLowerCase();
+    if (lower.startsWith('w') || lower.includes('win')) gameResultLabel = 'W';
+    else if (lower.startsWith('l') || lower.includes('loss') || lower.includes('lost')) gameResultLabel = 'L';
+    else gameResultLabel = raw;
+  }
+
+  const surface = String(point.surface || '').trim();
+  const tourneyName = String(point.tourneyName || '').trim();
+  const metaRows: Array<{ label: string; value: string }> = [];
+  if (tourneyName) metaRows.push({ label: 'Event', value: tourneyName });
+  if (surface) metaRows.push({ label: 'Surface', value: surface });
+
+  const tooltipWidth = isMobile ? 280 : 248;
+  const tooltipHeight = 148 + (walkover || retired ? 22 : 0) + sets.length * 22 + metaRows.length * 20;
+
   const getTooltipPosition = () => {
     const currentPosition = mousePosition ?? (coordinate ? { x: coordinate.x, y: coordinate.y } : null);
     if (!currentPosition) return { left: undefined, top: undefined };
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
     if (isMobile) {
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
-      const tooltipWidth = 280;
-      const tooltipHeight = 120;
       const left = Math.max(10, (viewportWidth - tooltipWidth) / 2);
-      const top = Math.max(10, Math.min(viewportHeight * 0.4, viewportHeight - tooltipHeight - 20));
+      const top = Math.max(10, Math.min(viewportHeight * 0.32, viewportHeight - tooltipHeight - 20));
       return { left: `${left}px`, top: `${top}px` };
     }
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-    const tooltipWidth = 280;
-    const offsetX = 15;
+    const offsetX = 16;
     const offsetY = -10;
     let left = currentPosition.x + offsetX;
-    if (left + tooltipWidth > viewportWidth - 10) left = viewportWidth - tooltipWidth - 10;
-    return { left: `${left}px`, top: `${currentPosition.y + offsetY}px` };
+    if (left + tooltipWidth > viewportWidth - 10) left = Math.max(10, currentPosition.x - tooltipWidth - offsetX);
+    let top = currentPosition.y + offsetY;
+    if (top + tooltipHeight > viewportHeight - 10) top = Math.max(10, currentPosition.y - tooltipHeight - 12);
+    return { left: `${left}px`, top: `${top}px` };
   };
 
   const position = getTooltipPosition();
-  const isWin = point.result?.toLowerCase().startsWith('w');
-  const resultColor = point.result ? (isWin ? winColor : lossColor) : labelColor;
-
-  // Derive W/L by margin from result string (e.g. "Win 145-83").
-  let gameResultLabel: string | null = null;
-  if (point.result) {
-    const raw = String(point.result);
-    const lower = raw.toLowerCase();
-    // Try to parse scores like "Win 145-83" or "Loss 83-90"
-    const scoreMatch = raw.match(/(\d+)\s*[-–]\s*(\d+)/);
-    if (scoreMatch) {
-      const a = parseInt(scoreMatch[1], 10);
-      const b = parseInt(scoreMatch[2], 10);
-      if (Number.isFinite(a) && Number.isFinite(b) && a !== b) {
-        const margin = Math.abs(a - b);
-        const inferredWin = lower.includes('win') || a > b;
-        gameResultLabel = inferredWin ? `W by ${margin}` : `L by ${margin}`;
-      }
-    }
-    // Fallback if we couldn't parse scores
-    if (!gameResultLabel) {
-      if (lower.includes('won by') || lower.includes('lost by')) {
-        const cleaned = raw.trim();
-        // Normalise to W/L by N
-        const marginMatch = cleaned.match(/(\d+)\s*$/);
-        const margin = marginMatch ? parseInt(marginMatch[1], 10) : null;
-        if (!Number.isNaN(margin as number) && margin != null) {
-          gameResultLabel = lower.includes('won') ? `W by ${margin}` : `L by ${margin}`;
-        } else {
-          gameResultLabel = lower.includes('won') ? 'W' : 'L';
-        }
-      } else if (lower.includes('win')) {
-        gameResultLabel = 'W';
-      } else if (lower.includes('loss') || lower.includes('lost')) {
-        gameResultLabel = 'L';
-      } else {
-        gameResultLabel = raw;
-      }
-    }
-  }
 
   const tooltipStyle: React.CSSProperties = {
     backgroundColor: tooltipBg,
     border: `1px solid ${tooltipBorder}`,
-    borderRadius: '8px',
-    padding: '12px',
-    minWidth: isMobile ? '280px' : '200px',
-    maxWidth: isMobile ? '90vw' : 'none',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    borderRadius: '12px',
+    padding: '12px 14px',
+    width: isMobile ? 'min(280px, 90vw)' : '248px',
+    boxShadow: isDark
+      ? '0 12px 28px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04)'
+      : '0 12px 28px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.04)',
     zIndex: 999999,
     pointerEvents: 'none',
     position: 'fixed',
@@ -238,122 +217,192 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
         ? point.value >= 1
           ? 'W'
           : 'L'
-        : Number.isInteger(point.value)
-          ? String(point.value)
-          : point.value.toFixed(1)
-      : '-';
+        : PCT_STATS.has(selectedStat || '')
+          ? `${point.value.toFixed(1)}%`
+          : Number.isInteger(point.value)
+            ? String(point.value)
+            : point.value.toFixed(1)
+      : '—';
 
   const tooltipContent = (
     <div style={tooltipStyle}>
-      {/* Header: Date, Opponent, and Game Result (NBA-style) */}
       <div
         style={{
-          marginBottom: '10px',
-          paddingBottom: '6px',
-          borderBottom: `1px solid ${tooltipBorder}`,
-          fontSize: '13px',
-          fontWeight: '600',
-          color: tooltipText,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          gap: 12,
+          marginBottom: 10,
         }}
       >
-        <span>
-          {(dateShort || point.opponent)
-            ? `${dateShort || ''}${dateShort && point.opponent ? ' vs ' : ''}${point.opponent ?? ''}`
-            : '-'}
-        </span>
+        <div style={{ minWidth: 0 }}>
+          {dateShort ? (
+            <div style={{ fontSize: 11, fontWeight: 500, color: labelColor, letterSpacing: '0.01em' }}>
+              {dateShort}
+            </div>
+          ) : null}
+          <div
+            style={{
+              marginTop: dateShort ? 3 : 0,
+              fontSize: 13,
+              fontWeight: 600,
+              color: tooltipText,
+              lineHeight: 1.3,
+            }}
+          >
+            {point.opponent ? `vs ${point.opponent}` : dateShort ? '' : '-'}
+          </div>
+        </div>
         {gameResultLabel && (
-          <span style={{ color: resultColor, fontWeight: '600', fontSize: '12px' }}>
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+              color: resultColor,
+              backgroundColor: isWin ? 'rgba(16, 185, 129, 0.16)' : 'rgba(239, 68, 68, 0.16)',
+              padding: '4px 8px',
+              borderRadius: 999,
+              lineHeight: 1,
+            }}
+          >
             {gameResultLabel}
           </span>
         )}
       </div>
 
-      {/* Main stat line - highlighted, like NBA hover */}
-      <div
-        style={{
-          marginBottom: '8px',
-          padding: '8px',
-          backgroundColor: isDark ? '#374151' : '#f3f4f6',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: '600',
-          color: tooltipText,
-        }}
-      >
-        {selectedStatLabel}: {formattedValue}
-      </div>
-
-      {point.venue && (
+      {(sets.length > 0 || walkover) && (
         <div
           style={{
-            marginBottom: '8px',
-            fontSize: '12px',
-            color: labelColor,
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: 6,
+            marginBottom: 10,
+            padding: '8px 10px',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+            borderRadius: 8,
           }}
         >
-          <span>Venue</span>
-          <span style={{ color: tooltipText, fontWeight: 600 }}>{point.venue}</span>
-        </div>
-      )}
-
-      {/* AFL-specific extra info: DvP rank + TOG (NBA-style rows) */}
-      {(dvpRank != null || minutesVal != null) && (() => {
-        const rows: Array<{ label: string; value: string }> = [];
-        if (minutesVal != null) {
-          rows.push({ label: 'Minutes', value: String(Math.round(minutesVal)) });
-        }
-        if (dvpRank != null) {
-          const posLabel = dvpPosition && String(dvpPosition).trim() ? dvpPosition : 'position';
-          rows.push({ label: `DvP rank vs ${posLabel}`, value: `#${dvpRank}` });
-        }
-        if (!rows.length) return null;
-        return (
-          <div
-            style={{
-              marginTop: '4px',
-              fontSize: '12px',
-              color: labelColor,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 3,
-            }}
-          >
-            {rows.map((row, idx) => (
+          {walkover ? (
+            <div style={{ fontSize: 12, fontWeight: 600, color: tooltipText }}>Walkover</div>
+          ) : (
+            sets.map((set, idx) => (
               <div
-                key={idx}
+                key={`set-${idx}`}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  gap: 12,
+                  fontSize: 12,
                 }}
               >
-                <span>{row.label}</span>
-                <span style={{ color: tooltipText, fontWeight: 600 }}>
-                  {row.value}
+                <span style={{ color: labelColor, fontWeight: 600 }}>{`Set ${idx + 1}`}</span>
+                <span
+                  style={{
+                    color: tooltipText,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {formatTennisSetScore(set)}
                 </span>
               </div>
-            ))}
-            {dvpRank != null && (
-              <div
+            ))
+          )}
+          {retired && !walkover ? (
+            <div style={{ fontSize: 11, fontWeight: 600, color: labelColor }}>Retired</div>
+          ) : null}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: metaRows.length ? 10 : 0,
+          padding: '10px 12px',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6',
+          borderRadius: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: labelColor,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {selectedStatLabel}
+        </span>
+        <span
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: tooltipText,
+            fontVariantNumeric: 'tabular-nums',
+            lineHeight: 1,
+          }}
+        >
+          {formattedValue}
+        </span>
+      </div>
+
+      {formattedValue === '—' && (
+        <div
+          style={{
+            marginBottom: metaRows.length ? 10 : 0,
+            fontSize: 11,
+            fontWeight: 600,
+            color: labelColor,
+            lineHeight: 1.35,
+          }}
+        >
+          Serve stats not in the source for this match
+        </div>
+      )}
+
+      {metaRows.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 7,
+            fontSize: 12,
+            color: labelColor,
+          }}
+        >
+          {metaRows.map((row) => (
+            <div
+              key={row.label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 12,
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>{row.label}</span>
+              <span
                 style={{
-                  marginTop: '2px',
-                  fontSize: '11px',
-                  color: isDark ? '#c084fc' : '#7e22ce',
+                  color: tooltipText,
                   fontWeight: 600,
+                  textAlign: 'right',
+                  lineHeight: 1.3,
                 }}
               >
-                {dvpRankSource === 'tipoff' ? 'RANK AT TIPOFF' : 'RANK FROM CURRENT'}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -384,8 +433,8 @@ function toNumericValue(v: unknown): number | null {
   return null;
 }
 
-/** Rosetta shooting % is often 0–1; chart as 0–100. */
-function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unknown>): number {
+/** Rosetta shooting % is often 0–1; chart as 0–100. Missing tennis serve stats stay null (not 0). */
+function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unknown>): number | null {
   if (row && (stat === 'pr' || stat === 'pa' || stat === 'ra' || stat === 'pra')) {
     const pts = toNumericValue(row.points) ?? 0;
     const reb = toNumericValue(row.rebounds) ?? 0;
@@ -412,7 +461,9 @@ function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unkno
     const to = toNumericValue(row.turnovers) ?? 0;
     return pts + reb + ast + stl + blk - (fga - fgm) - (fta - ftm) - to;
   }
-  const n = toNumericValue(raw) ?? 0;
+  const n = toNumericValue(raw);
+  const isMoneylineStat = stat === 'moneyline' || /^q[1-4]_moneyline$/.test(stat);
+  if (n == null) return isMoneylineStat ? 0 : null;
   if (PCT_STATS.has(stat) && n <= 1) return n * 100;
   // Rosetta minutes are fractional — round to whole numbers for the chart.
   if (stat === 'minutes') return Math.round(n);
@@ -923,6 +974,8 @@ export function TennisStatsChart({
     const reb = toNumericValue(g.rebounds) ?? 0;
     const ast = toNumericValue(g.assists) ?? 0;
     const value = toChartStatValue(selectedStat, g[selectedStat], g);
+    const isMoneylineStat =
+      selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat);
     const minutesRaw = toNumericValue(g.minutes);
     const minutes = minutesRaw == null ? null : Math.round(minutesRaw);
     const key = `${gameNum}-${round}-${opponent}-${idx}`;
@@ -954,11 +1007,16 @@ export function TennisStatsChart({
     return {
       key,
       xKey: key,
-      tickLabel: tennisLastName(opponent),
+      tickLabel: tennisOpponentCode(opponent),
       round,
       opponent,
+      opponentIoc: String(g.opponentIoc || '').trim() || null,
       result,
+      score: String(g.score ?? ''),
+      surface: String(g.surface ?? '').trim() || null,
+      tourneyName: String(g.tourneyName ?? '').trim() || null,
       value,
+      moneylineLabel: isMoneylineStat && (value == null || value < 1) ? '' : undefined,
       minutes,
       stats,
       gameId: key,
@@ -1597,6 +1655,7 @@ export function TennisStatsChart({
             secondaryRankAxisMax={10}
             customTooltip={customTooltip}
             customXAxisTick={nblXAxisTick}
+            xAxisHeight={52}
             yAxisTickFormatter={(value) => String(Math.round(value))}
             preservePrimaryYAxisTicks={
               selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)
