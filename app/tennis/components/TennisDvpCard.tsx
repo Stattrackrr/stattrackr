@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { TENNIS_DVP_METRICS } from '@/lib/tennis/dvpShared';
@@ -102,7 +101,7 @@ export default function TennisDvpCard({
 }) {
   const [mounted, setMounted] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<(typeof SEASON_OPTIONS)[number]>(
-    TENNIS_CURRENT_YEAR === 2025 ? 2025 : 2026
+    SEASON_OPTIONS[0]
   );
   const [oppSel, setOppSel] = useState(String(opponentName || ''));
   const [oppOpen, setOppOpen] = useState(false);

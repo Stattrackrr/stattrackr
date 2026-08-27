@@ -433,6 +433,12 @@ function toNumericValue(v: unknown): number | null {
   return null;
 }
 
+function numericChartValues(rows: Array<{ value: number | null }>): number[] {
+  return rows
+    .map((row) => row.value)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+}
+
 /** Rosetta shooting % is often 0–1; chart as 0–100. Missing tennis serve stats stay null (not 0). */
 function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unknown>): number | null {
   if (row && (stat === 'pr' || stat === 'pa' || stat === 'ra' || stat === 'pra')) {
@@ -1156,13 +1162,14 @@ export function TennisStatsChart({
   }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
 
   const statAverage = useMemo(() => {
-    if (!chartData.length) return 0;
-    const total = chartData.reduce((sum, row) => sum + row.value, 0);
-    return total / chartData.length;
+    const values = numericChartValues(chartData);
+    if (!values.length) return 0;
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return total / values.length;
   }, [chartData]);
 
   const hasDecimalValues = useMemo(() => (
-    chartData.some((d) => Math.abs(d.value - Math.round(d.value)) > 0.001)
+    numericChartValues(chartData).some((value) => Math.abs(value - Math.round(value)) > 0.001)
   ), [chartData]);
 
   const sliderStep = hasDecimalValues ? 0.1 : 0.5;
@@ -1171,7 +1178,8 @@ export function TennisStatsChart({
   const yAxisConfig = useMemo(() => {
     if (!chartData.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
-    const values = chartData.map((d) => d.value);
+    const values = numericChartValues(chartData);
+    if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
     const isMoneylineStat =
       selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat);
