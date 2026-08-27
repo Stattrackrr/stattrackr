@@ -1,9 +1,75 @@
 {
-  "generatedAt": "2026-08-27T06:58:13.602Z",
+  "generatedAt": "2026-08-27T19:08:23.096Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 154,
+  "injuryCount": 164,
   "injuries": [
+    {
+      "team": "Collingwood Magpies",
+      "player": "Liam Puncher",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Wade Derksen",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Mia Russo",
+      "injury": "making way",
+      "returning": "TBC"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Roxanne Roux",
+      "injury": "listed as managed",
+      "returning": "TBC"
+    },
+    {
+      "team": "Melbourne Demons",
+      "player": "Christian Salem",
+      "injury": "dropped for youngster Xavier Taylor",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Grace Kelly",
+      "injury": "Hamstring",
+      "returning": "Round 3"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "India Rasheed",
+      "injury": "Shins",
+      "returning": "Round 3"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Kirsty Lamb",
+      "injury": "omitted",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Nicola Barr",
+      "injury": "dropped after its heavy loss to Geelong",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Taylor Walker",
+      "injury": "Glute",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Jordon Butts",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
     {
       "team": "Sydney Swans",
       "player": "Taylor Smith",
@@ -186,12 +252,6 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Jordon Butts",
-      "injury": "Achilles",
-      "returning": "within the next two weeks"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "James Peatling",
       "injury": "Groin",
       "returning": "TBC"
@@ -212,7 +272,7 @@
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
       "injury": "Hamstring",
-      "returning": "Ruled out of Friday night's wildcard clash"
+      "returning": "TBC"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -356,7 +416,7 @@
       "team": "Carlton Blues",
       "player": "Nick Haynes",
       "injury": "Ankle",
-      "returning": "TBC"
+      "returning": "N/A"
     },
     {
       "team": "Hawthorn Hawks",
@@ -374,7 +434,7 @@
       "team": "Melbourne Demons",
       "player": "Jack Viney",
       "injury": "Achilles",
-      "returning": "Returned to VFL"
+      "returning": "N/A"
     },
     {
       "team": "Melbourne Demons",
