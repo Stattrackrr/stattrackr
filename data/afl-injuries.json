@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-27T19:08:23.096Z",
+  "generatedAt": "2026-08-28T04:08:49.988Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 164,
+  "injuryCount": 166,
   "injuries": [
+    {
+      "team": "North Melbourne Kangaroos",
+      "player": "Brayden George",
+      "injury": "Injury",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Sam Darcy",
+      "injury": "Injury",
+      "returning": "active"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Tyler Brockman",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Daniel McStay",
+      "injury": "ACL",
+      "returning": "active"
+    },
     {
       "team": "Collingwood Magpies",
       "player": "Liam Puncher",
@@ -260,7 +284,7 @@
       "team": "Fremantle Dockers",
       "player": "Brennan Cox",
       "injury": "Calf",
-      "returning": "post our first final"
+      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
@@ -411,12 +435,6 @@
       "player": "Brayden Maynard",
       "injury": "Soreness",
       "returning": "next week"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Nick Haynes",
-      "injury": "Ankle",
-      "returning": "N/A"
     },
     {
       "team": "Hawthorn Hawks",
@@ -600,12 +618,6 @@
     },
     {
       "team": "Collingwood Magpies",
-      "player": "Patrick Lipinski",
-      "injury": "Calf",
-      "returning": "unavailable on Tuesday"
-    },
-    {
-      "team": "Collingwood Magpies",
       "player": "Reef McInnes",
       "injury": "Knee",
       "returning": "Season"
@@ -638,6 +650,12 @@
       "team": "Port Adelaide Power",
       "player": "Jack Watkins",
       "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Patrick Lipinski",
+      "injury": "Soreness",
       "returning": "TBC"
     },
     {
@@ -939,12 +957,6 @@
       "player": "Jamie Cripps",
       "injury": "Dropped to WAFL due to form",
       "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Sam Darcy",
-      "injury": "Soreness",
-      "returning": "active"
     },
     {
       "team": "West Coast Eagles",
