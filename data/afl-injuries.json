@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-28T04:08:49.988Z",
+  "generatedAt": "2026-08-28T16:35:02.034Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 166,
+  "injuryCount": 167,
   "injuries": [
+    {
+      "team": "Western Bulldogs",
+      "player": "Matthew Kennedy",
+      "injury": "Concussion",
+      "returning": "at least the next 12 days"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Knee",
+      "returning": "active"
+    },
     {
       "team": "North Melbourne Kangaroos",
       "player": "Brayden George",
@@ -247,7 +259,7 @@
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "Suspended for breaching behavioural standards",
+      "injury": "one of ‘the Pullman 5’",
       "returning": "Season"
     },
     {
@@ -263,16 +275,10 @@
       "returning": "TBC"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Zac Taylor",
       "injury": "Hamstring",
-      "returning": "at least two weeks"
+      "returning": "up to three weeks"
     },
     {
       "team": "Adelaide Crows",
