@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T01:22:26Z",
+  "generatedAt": "2026-08-28T21:22:16Z",
   "count": 90,
   "records": [
     {
@@ -3826,7 +3826,7 @@
       "gameKey": "melbournedemons|carltonblues|2026-08-29",
       "finalizedAt": "2026-08-24T11:24:19Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-08-28T01:22:26Z",
+      "projectionGeneratedAt": "2026-08-28T21:22:16Z",
       "modelVersion": "afl-disp-20260828-012029",
       "homeTeam": "Melbourne Demons",
       "awayTeam": "Carlton Blues",
@@ -3835,35 +3835,35 @@
       "roundKey": null,
       "picks": [
         {
-          "playerName": "Sam Walsh",
-          "bookmaker": "SportsBet",
-          "line": 28.5,
-          "expectedDisposals": 26.13,
-          "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1574,
-          "recommendedProb": 0.6534,
+          "playerName": "Jake Bowey",
+          "bookmaker": "PointsBet (AU)",
+          "line": 22.5,
+          "expectedDisposals": 25.58,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1814,
+          "recommendedProb": 0.6814,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Oliver Florent",
-          "bookmaker": "SportsBet",
-          "line": 24.5,
-          "expectedDisposals": 23.22,
+          "playerName": "Sam Walsh",
+          "bookmaker": "Ladbrokes",
+          "line": 28.5,
+          "expectedDisposals": 26.13,
           "recommendedSide": "UNDER",
-          "recommendedEdge": 0.1028,
-          "recommendedProb": 0.5807,
+          "recommendedEdge": 0.1581,
+          "recommendedProb": 0.6541,
           "rank": 2,
           "actualDisposals": null
         },
         {
-          "playerName": "Jake Bowey",
-          "bookmaker": "SportsBet",
-          "line": 24.5,
-          "expectedDisposals": 26.02,
+          "playerName": "Jack Viney",
+          "bookmaker": "PointsBet (AU)",
+          "line": 18.5,
+          "expectedDisposals": 20.67,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.0941,
-          "recommendedProb": 0.5931,
+          "recommendedEdge": 0.1406,
+          "recommendedProb": 0.6406,
           "rank": 3,
           "actualDisposals": null
         }

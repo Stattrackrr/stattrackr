@@ -1,22 +1,22 @@
 # AFL Disposals Model Card
 
-- Generated: 2026-08-28T01:22:15Z
-- Model: afl-disp-20260828-012029
-- Sample count: 428
-- Guardrails pass: True
-- Promoted: True
-- Candidate metrics: hit 51.87%, brier 0.270533, logloss 0.759842, clv+ 14.72%
+- Generated: 2026-08-28T21:22:07Z
+- Model: afl-disp-20260828-212111
+- Sample count: 404
+- Guardrails pass: False
+- Promoted: False
+- Candidate metrics: hit 50.99%, brier 0.279941, logloss 0.789483, clv+ 14.11%
 
 ## Confidence Buckets
-- high_0.65_plus: n=132, hit=53.79%
-- low: n=157, hit=52.23%
-- mid_0.57_0.65: n=139, hit=49.64%
+- high_0.65_plus: n=142, hit=50.0%
+- low: n=138, hit=50.0%
+- mid_0.57_0.65: n=124, hit=53.23%
 
 ## Edge Buckets
-- edge_5_8: n=70, hit=51.43%
-- edge_8_plus: n=251, hit=51.79%
-- edge_under_5: n=107, hit=52.34%
+- edge_5_8: n=58, hit=51.72%
+- edge_8_plus: n=247, hit=51.42%
+- edge_under_5: n=99, hit=49.49%
 
 ## Top Loss Types
-- Under->Over: 146
-- Over->Under: 60
+- Under->Over: 141
+- Over->Under: 57

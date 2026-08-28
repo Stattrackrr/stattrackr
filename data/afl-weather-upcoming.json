@@ -1,19 +1,8 @@
 {
-  "generatedAt": "2026-08-28T01:01:54.533Z",
+  "generatedAt": "2026-08-28T21:19:25.388Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
-    {
-      "gameId": "ef9116c39c399fb81e8a17c5ad010f77",
-      "homeTeam": "Western Bulldogs",
-      "awayTeam": "Collingwood Magpies",
-      "commenceTime": "2026-08-28T09:40:23Z",
-      "weather": {
-        "temperatureC": 12.7,
-        "precipitationMm": 0,
-        "windKmh": 1.9
-      }
-    },
     {
       "gameId": "a10cf8871dcfcc67177d303315f5c7c8",
       "homeTeam": "Melbourne Demons",
@@ -22,7 +11,7 @@
       "weather": {
         "temperatureC": 11.4,
         "precipitationMm": 0,
-        "windKmh": 6
+        "windKmh": 5.8
       }
     },
     {
@@ -31,9 +20,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-09-03T10:10:00Z",
       "weather": {
-        "temperatureC": 16.4,
-        "precipitationMm": 0,
-        "windKmh": 6.7
+        "temperatureC": 16.2,
+        "precipitationMm": 0.1,
+        "windKmh": 11.6
       }
     },
     {
@@ -42,11 +31,11 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-09-05T05:15:00Z",
       "weather": {
-        "temperatureC": 19.3,
+        "temperatureC": 23.5,
         "precipitationMm": 0,
-        "windKmh": 11.4
+        "windKmh": 11.7
       }
     }
   ],
-  "count": 4
+  "count": 3
 }
