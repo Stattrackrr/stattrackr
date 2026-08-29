@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-29T15:03:21.265Z",
+  "generatedAt": "2026-08-29T19:14:13.696Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 166,
+  "injuryCount": 155,
   "injuries": [
     {
       "team": "Carlton Blues",
@@ -95,18 +95,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Grace Kelly",
-      "injury": "Hamstring",
-      "returning": "Round 3"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "India Rasheed",
-      "injury": "Shins",
-      "returning": "Round 3"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Kirsty Lamb",
       "injury": "omitted",
@@ -135,18 +123,6 @@
       "player": "Taylor Smith",
       "injury": "Arm",
       "returning": "three to four weeks"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Laura Gardiner",
-      "injury": "Foot",
-      "returning": "test for Saturday's match"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Ash Van Loon",
-      "injury": "Calf",
-      "returning": "test for Saturday's match"
     },
     {
       "team": "Sydney Swans",
@@ -243,12 +219,6 @@
       "player": "Hugh McCluggage",
       "injury": "Calf",
       "returning": "Qualifying Final"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jagga Smith",
-      "injury": "ACL",
-      "returning": "Missed entire 2025 season"
     },
     {
       "team": "Sydney Swans",
@@ -443,12 +413,6 @@
       "returning": "next week"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Calsher Dear",
-      "injury": "Injury",
-      "returning": "active"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Nick Coffield",
       "injury": "Concussion",
@@ -456,27 +420,9 @@
     },
     {
       "team": "Melbourne Demons",
-      "player": "Jack Viney",
-      "injury": "Achilles",
-      "returning": "N/A"
-    },
-    {
-      "team": "Melbourne Demons",
       "player": "Jacob van Rooyen",
       "injury": "Received a three-match suspension for a high hit on Aliir Aliir.",
       "returning": "three-match ban"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Zak Johnson",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Hayden McLean",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
@@ -525,18 +471,6 @@
       "player": "Murphy Reid",
       "injury": "Testicle",
       "returning": "missing another week"
-    },
-    {
-      "team": "Essendon Bombers",
-      "player": "Hussien El Achkar",
-      "injury": "managed",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Lewis Melican",
-      "injury": "active",
-      "returning": "TBC"
     },
     {
       "team": "Adelaide Crows",
