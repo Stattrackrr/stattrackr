@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-29T19:14:13.696Z",
+  "generatedAt": "2026-08-29T22:20:45.710Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 155,
+  "injuryCount": 156,
   "injuries": [
+    {
+      "team": "Melbourne Demons",
+      "player": "Jack Viney",
+      "injury": "Achilles",
+      "returning": "Wildcard Final"
+    },
     {
       "team": "Carlton Blues",
       "player": "Will Hayward",
