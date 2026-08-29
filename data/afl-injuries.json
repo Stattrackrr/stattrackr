@@ -1,20 +1,44 @@
 {
-  "generatedAt": "2026-08-28T16:35:02.034Z",
+  "generatedAt": "2026-08-29T01:33:34.739Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 167,
+  "injuryCount": 166,
   "injuries": [
     {
+      "team": "Brisbane Lions",
+      "player": "Dakota Davidson",
+      "injury": "active",
+      "returning": "back"
+    },
+    {
       "team": "Western Bulldogs",
-      "player": "Matthew Kennedy",
-      "injury": "Concussion",
-      "returning": "at least the next 12 days"
+      "player": "Ed Richards",
+      "injury": "Illness",
+      "returning": "active"
+    },
+    {
+      "team": "Collingwood Magpies",
+      "player": "Scott Pendlebury",
+      "injury": "Injury",
+      "returning": "active"
     },
     {
       "team": "Western Bulldogs",
       "player": "Tim English",
-      "injury": "Knee",
-      "returning": "active"
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "South Adelaide",
+      "player": "Tom Barrett",
+      "injury": "Leg",
+      "returning": "next year"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Aaron Naughton",
+      "injury": "Ankle",
+      "returning": "Test"
     },
     {
       "team": "North Melbourne Kangaroos",
@@ -33,12 +57,6 @@
       "player": "Tyler Brockman",
       "injury": "Knee",
       "returning": "Season"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Daniel McStay",
-      "injury": "ACL",
-      "returning": "active"
     },
     {
       "team": "Collingwood Magpies",
@@ -299,22 +317,10 @@
       "returning": "Miss the first two games of next season"
     },
     {
-      "team": "Collingwood Magpies",
-      "player": "Scott Pendlebury",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
       "team": "North Melbourne Kangaroos",
       "player": "Harry Sheezel",
       "injury": "Soreness",
       "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Aaron Naughton",
-      "injury": "Ankle",
-      "returning": "Expected to play"
     },
     {
       "team": "Collingwood Magpies",
@@ -429,12 +435,6 @@
       "player": "Alix Tauru",
       "injury": "active",
       "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Isaac Quaynor",
-      "injury": "Glute",
-      "returning": "unavailable on Tuesday"
     },
     {
       "team": "Collingwood Magpies",
@@ -656,12 +656,6 @@
       "team": "Port Adelaide Power",
       "player": "Jack Watkins",
       "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Patrick Lipinski",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
