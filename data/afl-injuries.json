@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-29T01:33:34.739Z",
+  "generatedAt": "2026-08-29T08:42:15.615Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 166,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Will Hayward",
+      "injury": "active",
+      "returning": "Wildcard clash"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Dakota Davidson",
@@ -212,12 +218,6 @@
       "team": "Collingwood Magpies",
       "player": "Lucille Cronin",
       "injury": "Shoulder",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Will Hayward",
-      "injury": "Soreness",
       "returning": "TBC"
     },
     {
