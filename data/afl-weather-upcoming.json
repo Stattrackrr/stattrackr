@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T21:19:25.388Z",
+  "generatedAt": "2026-08-29T00:37:18.862Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Carlton Blues",
       "commenceTime": "2026-08-29T09:35:40Z",
       "weather": {
-        "temperatureC": 11.4,
+        "temperatureC": 11.1,
         "precipitationMm": 0,
-        "windKmh": 5.8
+        "windKmh": 4.7
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-09-03T10:10:00Z",
       "weather": {
-        "temperatureC": 16.2,
-        "precipitationMm": 0.1,
-        "windKmh": 11.6
+        "temperatureC": 15.6,
+        "precipitationMm": 0,
+        "windKmh": 15.5
       }
     },
     {

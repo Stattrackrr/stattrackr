@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-28T21:22:16Z",
+  "generatedAt": "2026-08-29T00:57:06Z",
   "count": 3456,
   "rows": [
     {
       "snapshotKey": "tom sparrow|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -17,12 +17,12 @@
       "line": 23.5,
       "overOdds": "-122",
       "underOdds": "-109",
-      "modelExpectedDisposals": 24.02,
-      "modelEdge": 0.0175
+      "modelExpectedDisposals": 23.38,
+      "modelEdge": -0.0133
     },
     {
       "snapshotKey": "ed langdon|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -35,12 +35,12 @@
       "line": 19.5,
       "overOdds": "-128",
       "underOdds": "-104",
-      "modelExpectedDisposals": 19.0,
-      "modelEdge": -0.054
+      "modelExpectedDisposals": 18.85,
+      "modelEdge": -0.0555
     },
     {
       "snapshotKey": "daniel turner|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -53,12 +53,12 @@
       "line": 14.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 14.98,
-      "modelEdge": 0.0216
+      "modelExpectedDisposals": 14.85,
+      "modelEdge": 0.02
     },
     {
       "snapshotKey": "jack steele|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -71,12 +71,12 @@
       "line": 22.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 22.96,
-      "modelEdge": 0.0188
+      "modelExpectedDisposals": 22.83,
+      "modelEdge": 0.0177
     },
     {
       "snapshotKey": "max gawn|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -89,12 +89,12 @@
       "line": 22.5,
       "overOdds": "-122",
       "underOdds": "-109",
-      "modelExpectedDisposals": 22.14,
-      "modelEdge": -0.0375
+      "modelExpectedDisposals": 21.98,
+      "modelEdge": -0.0408
     },
     {
       "snapshotKey": "patrick cripps|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -107,12 +107,12 @@
       "line": 25.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 26.68,
-      "modelEdge": 0.0614
+      "modelExpectedDisposals": 26.27,
+      "modelEdge": 0.0435
     },
     {
       "snapshotKey": "kade chandler|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -125,8 +125,8 @@
       "line": 15.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 14.82,
-      "modelEdge": -0.0441
+      "modelExpectedDisposals": 14.87,
+      "modelEdge": -0.033
     },
     {
       "snapshotKey": "kysaiah pickett|2026-08-29",
@@ -148,7 +148,7 @@
     },
     {
       "snapshotKey": "nick haynes|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -161,12 +161,12 @@
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 18.71,
-      "modelEdge": 0.0799
+      "modelExpectedDisposals": 18.39,
+      "modelEdge": 0.0652
     },
     {
       "snapshotKey": "joel fitzgerald|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -179,12 +179,12 @@
       "line": 19.5,
       "overOdds": "-111",
       "underOdds": "-118",
-      "modelExpectedDisposals": 19.41,
-      "modelEdge": -0.0022
+      "modelExpectedDisposals": 18.98,
+      "modelEdge": -0.0203
     },
     {
       "snapshotKey": "bayley fritsch|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -197,12 +197,12 @@
       "line": 12.5,
       "overOdds": "-125",
       "underOdds": "-106",
-      "modelExpectedDisposals": 13.04,
-      "modelEdge": 0.0195
+      "modelExpectedDisposals": 13.06,
+      "modelEdge": 0.0279
     },
     {
       "snapshotKey": "ben ainsworth|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -215,12 +215,12 @@
       "line": 17.5,
       "overOdds": "-104",
       "underOdds": "-128",
-      "modelExpectedDisposals": 18.28,
-      "modelEdge": 0.067
+      "modelExpectedDisposals": 17.87,
+      "modelEdge": 0.0485
     },
     {
       "snapshotKey": "sam walsh|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -233,12 +233,12 @@
       "line": 28.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 26.13,
-      "modelEdge": -0.1581
+      "modelExpectedDisposals": 24.75,
+      "modelEdge": -0.2257
     },
     {
       "snapshotKey": "lachlan cowan|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -251,12 +251,12 @@
       "line": 14.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 15.8,
-      "modelEdge": 0.0787
+      "modelExpectedDisposals": 15.77,
+      "modelEdge": 0.0844
     },
     {
       "snapshotKey": "george hewett|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -269,12 +269,12 @@
       "line": 25.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 26.48,
-      "modelEdge": 0.0547
+      "modelExpectedDisposals": 26.18,
+      "modelEdge": 0.0448
     },
     {
       "snapshotKey": "jagga smith|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -287,12 +287,12 @@
       "line": 25.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 26.3,
-      "modelEdge": 0.0432
+      "modelExpectedDisposals": 25.3,
+      "modelEdge": -0.017
     },
     {
       "snapshotKey": "harvey langford|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -306,11 +306,11 @@
       "overOdds": "-118",
       "underOdds": "-111",
       "modelExpectedDisposals": 16.64,
-      "modelEdge": 0.065
+      "modelEdge": 0.0721
     },
     {
       "snapshotKey": "jake bowey|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -323,12 +323,12 @@
       "line": 22.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 25.58,
-      "modelEdge": 0.1814
+      "modelExpectedDisposals": 25.34,
+      "modelEdge": 0.1754
     },
     {
       "snapshotKey": "matt cottrell|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -341,8 +341,8 @@
       "line": 15.5,
       "overOdds": "-101",
       "underOdds": "-132",
-      "modelExpectedDisposals": 15.7,
-      "modelEdge": 0.0366
+      "modelExpectedDisposals": 15.81,
+      "modelEdge": 0.0518
     },
     {
       "snapshotKey": "adam cerra|2026-08-29",
@@ -364,7 +364,7 @@
     },
     {
       "snapshotKey": "cooper lord|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -377,12 +377,12 @@
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.51,
-      "modelEdge": -0.0021
+      "modelExpectedDisposals": 19.37,
+      "modelEdge": -0.0033
     },
     {
       "snapshotKey": "changkuoth jiath|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -395,12 +395,12 @@
       "line": 14.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 15.01,
-      "modelEdge": 0.0262
+      "modelExpectedDisposals": 15.03,
+      "modelEdge": 0.0349
     },
     {
       "snapshotKey": "blake acres|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -413,12 +413,12 @@
       "line": 20.5,
       "overOdds": "-118",
       "underOdds": "-111",
-      "modelExpectedDisposals": 20.72,
-      "modelEdge": 0.0053
+      "modelExpectedDisposals": 20.54,
+      "modelEdge": 0.0015
     },
     {
       "snapshotKey": "oliver florent|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -431,12 +431,12 @@
       "line": 24.5,
       "overOdds": "-122",
       "underOdds": "-109",
-      "modelExpectedDisposals": 23.2,
-      "modelEdge": -0.0978
+      "modelExpectedDisposals": 23.31,
+      "modelEdge": -0.0833
     },
     {
       "snapshotKey": "trent rivers|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -449,12 +449,12 @@
       "line": 20.5,
       "overOdds": "-125",
       "underOdds": "-106",
-      "modelExpectedDisposals": 20.14,
-      "modelEdge": -0.0425
+      "modelExpectedDisposals": 20.25,
+      "modelEdge": -0.0278
     },
     {
       "snapshotKey": "koltyn tholstrup|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -467,8 +467,8 @@
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.88,
-      "modelEdge": 0.0207
+      "modelExpectedDisposals": 19.8,
+      "modelEdge": 0.0231
     },
     {
       "snapshotKey": "will hayward|2026-08-29",
@@ -490,7 +490,7 @@
     },
     {
       "snapshotKey": "billy wilson|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -503,12 +503,12 @@
       "line": 19.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 20.38,
-      "modelEdge": 0.0528
+      "modelExpectedDisposals": 20.23,
+      "modelEdge": 0.0507
     },
     {
       "snapshotKey": "jack viney|2026-08-29",
-      "capturedAt": "2026-08-28T21:22:16Z",
+      "capturedAt": "2026-08-29T00:57:06Z",
       "weekKey": "2026-W35",
       "gameDate": "2026-08-29",
       "commenceTime": "2026-08-29T09:35:40Z",
@@ -521,8 +521,8 @@
       "line": 18.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 20.67,
-      "modelEdge": 0.1406
+      "modelExpectedDisposals": 20.75,
+      "modelEdge": 0.1522
     },
     {
       "snapshotKey": "matthew kennedy|2026-08-28",
