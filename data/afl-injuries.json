@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-08-30T03:17:35.735Z",
+  "generatedAt": "2026-08-30T09:47:58.596Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 156,
+  "injuryCount": 157,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Indy Tahau",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "Melbourne Demons",
       "player": "Jack Viney",
