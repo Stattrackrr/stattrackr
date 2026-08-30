@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-08-30T14:46:39.288Z",
+  "generatedAt": "2026-08-30T19:08:00.959Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 157,
+  "injuryCount": 153,
   "injuries": [
-    {
-      "team": "Port Adelaide Power",
-      "player": "Indy Tahau",
-      "injury": "Knee",
-      "returning": "TBC"
-    },
     {
       "team": "Melbourne Demons",
       "player": "Jack Viney",
@@ -21,12 +15,6 @@
       "player": "Will Hayward",
       "injury": "active",
       "returning": "Wildcard clash"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Dakota Davidson",
-      "injury": "active",
-      "returning": "back"
     },
     {
       "team": "Western Bulldogs",
@@ -677,12 +665,6 @@
       "returning": "Season"
     },
     {
-      "team": "Oakleigh Chargers",
-      "player": "Harper McCullough",
-      "injury": "Concussion",
-      "returning": "TBC"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Connor Rozee",
       "injury": "Injury",
@@ -867,12 +849,6 @@
       "player": "Josh Smillie",
       "injury": "Soreness",
       "returning": "TBC"
-    },
-    {
-      "team": "Tasmania Devils",
-      "player": "Jess Bula",
-      "injury": "Finger",
-      "returning": "before the end of the month"
     },
     {
       "team": "West Coast Eagles",
