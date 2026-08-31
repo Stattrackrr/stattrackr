@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-31T03:16:02.635Z",
+  "generatedAt": "2026-08-31T10:31:13.950Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 167,
+  "injuryCount": 172,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Lauren Young",
+      "injury": "Knee",
+      "returning": "2025"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Patrick Cripps",
+      "injury": "Knee",
+      "returning": "Expected to play Friday night"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Nick Haynes",
+      "injury": "Ankle",
+      "returning": "Expected to play Friday night"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Will Hayward",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Izak Rankine",
+      "injury": "was suspended for last year's finals",
+      "returning": "active"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Josh Rachele",
+      "injury": "Knee",
+      "returning": "active"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Callum Ah Chee",
@@ -269,12 +305,6 @@
       "returning": "Wildcard Final"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Will Hayward",
-      "injury": "active",
-      "returning": "Wildcard clash"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Ed Richards",
       "injury": "Illness",
@@ -392,7 +422,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "not ruled out of playing our next game"
+      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
