@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-29T00:57:06Z",
-  "count": 90,
+  "generatedAt": "2026-08-31T17:54:37Z",
+  "count": 94,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -3864,6 +3864,183 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1522,
           "recommendedProb": 0.6522,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "fremantledockers|hawthornhawks|2026-09-03",
+      "finalizedAt": "2026-08-31T17:54:03Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-31T17:54:37Z",
+      "modelVersion": "afl-disp-20260829-005538",
+      "homeTeam": "Fremantle Dockers",
+      "awayTeam": "Hawthorn Hawks",
+      "commenceTime": "2026-09-03T10:10:00Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Cameron Mackenzie",
+          "bookmaker": "SportsBet",
+          "line": 18.5,
+          "expectedDisposals": 14.55,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2085,
+          "recommendedProb": 0.6844,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Caleb Serong",
+          "bookmaker": "SportsBet",
+          "line": 26.5,
+          "expectedDisposals": 22.92,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1537,
+          "recommendedProb": 0.6617,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Karl Amon",
+          "bookmaker": "SportsBet",
+          "line": 18.5,
+          "expectedDisposals": 20.28,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1295,
+          "recommendedProb": 0.6385,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "geelongcats|carltonblues|2026-09-04",
+      "finalizedAt": "2026-08-31T17:54:03Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-31T17:54:37Z",
+      "modelVersion": "afl-disp-20260829-005538",
+      "homeTeam": "Geelong Cats",
+      "awayTeam": "Carlton Blues",
+      "commenceTime": "2026-09-04T09:40:00Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Bailey Smith",
+          "bookmaker": "SportsBet",
+          "line": 32.5,
+          "expectedDisposals": 28.2,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2191,
+          "recommendedProb": 0.7071,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Max Holmes",
+          "bookmaker": "SportsBet",
+          "line": 27.5,
+          "expectedDisposals": 24.77,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1405,
+          "recommendedProb": 0.6285,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Nick Haynes",
+          "bookmaker": "SportsBet",
+          "line": 17.5,
+          "expectedDisposals": 18.32,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.0891,
+          "recommendedProb": 0.5811,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "sydneyswans|brisbanelions|2026-09-05",
+      "finalizedAt": "2026-08-31T17:54:03Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-31T17:54:37Z",
+      "modelVersion": "afl-disp-20260829-005538",
+      "homeTeam": "Sydney Swans",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-09-05T05:15:00Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Will Ashcroft",
+          "bookmaker": "SportsBet",
+          "line": 30.5,
+          "expectedDisposals": 26.18,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.208,
+          "recommendedProb": 0.701,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "James Rowbottom",
+          "bookmaker": "SportsBet",
+          "line": 19.5,
+          "expectedDisposals": 15.69,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2024,
+          "recommendedProb": 0.6904,
+          "rank": 2,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "adelaidecrows|westernbulldogs|2026-09-05",
+      "finalizedAt": "2026-08-31T17:54:03Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-08-31T17:54:37Z",
+      "modelVersion": "afl-disp-20260829-005538",
+      "homeTeam": "Adelaide Crows",
+      "awayTeam": "Western Bulldogs",
+      "commenceTime": "2026-09-05T09:35:12Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Josh Worrell",
+          "bookmaker": "SportsBet",
+          "line": 17.5,
+          "expectedDisposals": 22.82,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.3156,
+          "recommendedProb": 0.8086,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jordan Dawson",
+          "bookmaker": "SportsBet",
+          "line": 25.5,
+          "expectedDisposals": 21.46,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2014,
+          "recommendedProb": 0.7004,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Wayne Milera",
+          "bookmaker": "SportsBet",
+          "line": 23.5,
+          "expectedDisposals": 20.84,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1217,
+          "recommendedProb": 0.6257,
           "rank": 3,
           "actualDisposals": null
         }
