@@ -1,9 +1,75 @@
 {
-  "generatedAt": "2026-09-01T03:17:20.328Z",
+  "generatedAt": "2026-09-01T09:14:09.202Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 182,
+  "injuryCount": 189,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Christina Leuzzi",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Brooke Smith",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Kiera Mueller",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Alice Burke",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Ned Reeves",
+      "injury": "Throat",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Scrimshaw",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Ginnivan",
+      "injury": "Back",
+      "returning": "Expected to return for qualifying final"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sean Darcy",
+      "injury": "misses out on a spot in the team altogether",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Nick Haynes",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Will Hayward",
+      "injury": "missed the wildcard final",
+      "returning": "TBC"
+    },
+    {
+      "team": "Woodville-West Torrens",
+      "player": "Max Beattie",
+      "injury": "Ankle",
+      "returning": "active"
+    },
     {
       "team": "Carlton Blues",
       "player": "Matthew Carroll",
@@ -107,18 +173,6 @@
       "returning": "Expected to play Friday night"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Nick Haynes",
-      "injury": "Ankle",
-      "returning": "Expected to play Friday night"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Will Hayward",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Izak Rankine",
       "injury": "was suspended for last year's finals",
@@ -198,12 +252,6 @@
     },
     {
       "team": "Fremantle Dockers",
-      "player": "Sean Darcy",
-      "injury": "Calf",
-      "returning": "Test"
-    },
-    {
-      "team": "Fremantle Dockers",
       "player": "Jaeger O'Meara",
       "injury": "Ankle",
       "returning": "Test"
@@ -260,7 +308,7 @@
       "team": "Geelong Cats",
       "player": "Mark Blicavs",
       "injury": "Soreness",
-      "returning": "1 Week"
+      "returning": "Finals"
     },
     {
       "team": "Geelong Cats",
@@ -296,18 +344,12 @@
       "team": "Geelong Cats",
       "player": "Oliver Wiltshire",
       "injury": "Foot",
-      "returning": "Test"
+      "returning": "Finals"
     },
     {
       "team": "Hawthorn Hawks",
       "player": "Cody Anderson",
       "injury": "Hamstring",
-      "returning": "TBA"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Ginnivan",
-      "injury": "Injury",
       "returning": "TBA"
     },
     {
@@ -320,7 +362,7 @@
       "team": "Hawthorn Hawks",
       "player": "Conor Nash",
       "injury": "Neck",
-      "returning": "Season"
+      "returning": "rest of the season"
     },
     {
       "team": "Hawthorn Hawks",
@@ -506,7 +548,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "firming to return for an elimination final"
+      "returning": "within a week, a week and a half of playing"
     },
     {
       "team": "Geelong Cats",
