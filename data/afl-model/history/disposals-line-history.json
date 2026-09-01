@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-31T21:53:40Z",
+  "generatedAt": "2026-09-01T15:25:52Z",
   "count": 3572,
   "rows": [
     {
       "snapshotKey": "josh worrell|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -15,14 +15,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-112",
-      "underOdds": "-119",
-      "modelExpectedDisposals": 23.42,
-      "modelEdge": 0.3333
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 23.46,
+      "modelEdge": 0.3254
     },
     {
       "snapshotKey": "james rowbottom|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -36,11 +36,11 @@
       "overOdds": "-122",
       "underOdds": "-110",
       "modelExpectedDisposals": 16.01,
-      "modelEdge": -0.2012
+      "modelEdge": -0.191
     },
     {
       "snapshotKey": "jordan dawson|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -51,14 +51,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 25.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 22.31,
-      "modelEdge": -0.1778
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 22.32,
+      "modelEdge": -0.1699
     },
     {
       "snapshotKey": "lachlan bramble|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -69,14 +69,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 19.32,
-      "modelEdge": 0.1868
+      "overOdds": "-125",
+      "underOdds": "-108",
+      "modelExpectedDisposals": 19.36,
+      "modelEdge": 0.1825
     },
     {
       "snapshotKey": "will ashcroft|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -87,14 +87,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 30.5,
-      "overOdds": "-119",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 26.61,
-      "modelEdge": -0.2074
+      "overOdds": "-112",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 26.57,
+      "modelEdge": -0.1873
     },
     {
       "snapshotKey": "angus sheldrick|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -105,14 +105,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 16.68,
-      "modelEdge": -0.1995
+      "overOdds": "-123",
+      "underOdds": "-108",
+      "modelExpectedDisposals": 16.69,
+      "modelEdge": -0.1916
     },
     {
       "snapshotKey": "tom mccartin|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -123,14 +123,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-112",
-      "underOdds": "-119",
-      "modelExpectedDisposals": 15.13,
-      "modelEdge": -0.1197
+      "overOdds": "-118",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 15.16,
+      "modelEdge": -0.1171
     },
     {
       "snapshotKey": "mark keane|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -141,14 +141,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-110",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 15.34,
-      "modelEdge": 0.0812
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 15.38,
+      "modelEdge": 0.0782
     },
     {
       "snapshotKey": "tom papley|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -159,14 +159,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 13.82,
-      "modelEdge": -0.1505
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 13.85,
+      "modelEdge": -0.1478
     },
     {
       "snapshotKey": "bailey williams|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -177,14 +177,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 18.43,
-      "modelEdge": 0.1327
+      "overOdds": "-130",
+      "underOdds": "-103",
+      "modelExpectedDisposals": 18.48,
+      "modelEdge": 0.1253
     },
     {
       "snapshotKey": "bailey dale|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -195,14 +195,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 24.5,
-      "overOdds": "-118",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 24.9,
-      "modelEdge": 0.0382
+      "overOdds": "-115",
+      "underOdds": "-116",
+      "modelExpectedDisposals": 24.88,
+      "modelEdge": 0.0476
     },
     {
       "snapshotKey": "matthew roberts|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -213,14 +213,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 16.34,
-      "modelEdge": -0.0599
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 16.33,
+      "modelEdge": -0.0498
     },
     {
       "snapshotKey": "sam wicks|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -231,14 +231,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-104",
-      "underOdds": "-128",
-      "modelExpectedDisposals": 16.6,
-      "modelEdge": -0.0196
+      "overOdds": "-108",
+      "underOdds": "-123",
+      "modelExpectedDisposals": 16.63,
+      "modelEdge": -0.0175
     },
     {
       "snapshotKey": "callum mills|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -249,10 +249,10 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 24.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 22.42,
-      "modelEdge": -0.1158
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 22.45,
+      "modelEdge": -0.1123
     },
     {
       "snapshotKey": "harris andrews|2026-09-05",
@@ -274,7 +274,7 @@
     },
     {
       "snapshotKey": "jarrod berry|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -285,14 +285,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 17.92,
-      "modelEdge": -0.0909
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 17.89,
+      "modelEdge": -0.077
     },
     {
       "snapshotKey": "braeden campbell|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -303,14 +303,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 17.06,
-      "modelEdge": -0.0841
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 17.07,
+      "modelEdge": -0.0796
     },
     {
       "snapshotKey": "caiden cleary|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -321,14 +321,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-101",
-      "underOdds": "-133",
-      "modelExpectedDisposals": 14.26,
-      "modelEdge": -0.0894
+      "overOdds": "-108",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 14.31,
+      "modelEdge": -0.0903
     },
     {
       "snapshotKey": "kai lohmann|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -342,11 +342,11 @@
       "overOdds": "-110",
       "underOdds": "-122",
       "modelExpectedDisposals": 13.0,
-      "modelEdge": -0.0065
+      "modelEdge": 0.0011
     },
     {
       "snapshotKey": "levi ashcroft|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -357,14 +357,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 18.63,
-      "modelEdge": -0.0399
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 18.65,
+      "modelEdge": -0.036
     },
     {
       "snapshotKey": "ryan lester|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -375,14 +375,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 13.03,
-      "modelEdge": -0.0776
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 13.04,
+      "modelEdge": -0.0723
     },
     {
       "snapshotKey": "hugo hall kahan|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -393,14 +393,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-115",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 19.4,
-      "modelEdge": 0.0877
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 19.43,
+      "modelEdge": 0.0871
     },
     {
       "snapshotKey": "brodie grundy|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -411,14 +411,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 19.71,
-      "modelEdge": 0.0835
+      "overOdds": "-127",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 19.75,
+      "modelEdge": 0.0802
     },
     {
       "snapshotKey": "dane rampe|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -429,14 +429,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 12.3,
-      "modelEdge": -0.0616
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 12.32,
+      "modelEdge": -0.0607
     },
     {
       "snapshotKey": "rory laird|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -447,14 +447,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 23.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 21.62,
-      "modelEdge": -0.104
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 21.63,
+      "modelEdge": -0.0983
     },
     {
       "snapshotKey": "jake lloyd|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -465,14 +465,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-110",
-      "underOdds": "-122",
-      "modelExpectedDisposals": 17.01,
-      "modelEdge": -0.0665
+      "overOdds": "-112",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 17.02,
+      "modelEdge": -0.0606
     },
     {
       "snapshotKey": "jaspa fletcher|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -483,14 +483,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 19.37,
-      "modelEdge": -0.0558
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 19.38,
+      "modelEdge": -0.0517
     },
     {
       "snapshotKey": "luke nankervis|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -501,14 +501,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 15.12,
-      "modelEdge": 0.0617
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 15.14,
+      "modelEdge": 0.0629
     },
     {
       "snapshotKey": "joel freijah|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -519,14 +519,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "overOdds": "-118",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 19.5,
-      "modelEdge": 0.0153
+      "overOdds": "-127",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 19.55,
+      "modelEdge": 0.0099
     },
     {
       "snapshotKey": "darcy wilmot|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -538,9 +538,9 @@
       "bookmaker": "SportsBet",
       "line": 20.5,
       "overOdds": "-120",
-      "underOdds": "-111",
+      "underOdds": "-112",
       "modelExpectedDisposals": 20.05,
-      "modelEdge": -0.018
+      "modelEdge": -0.0099
     },
     {
       "snapshotKey": "errol gulden|2026-09-05",
@@ -562,7 +562,7 @@
     },
     {
       "snapshotKey": "lachie neale|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -573,14 +573,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 28.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 26.72,
-      "modelEdge": -0.0906
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 26.71,
+      "modelEdge": -0.0787
     },
     {
       "snapshotKey": "sam berry|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -591,14 +591,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 19.71,
-      "modelEdge": -0.0381
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 19.7,
+      "modelEdge": -0.0276
     },
     {
       "snapshotKey": "ben keays|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -609,14 +609,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 14.01,
-      "modelEdge": 0.0488
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 14.03,
+      "modelEdge": 0.0501
     },
     {
       "snapshotKey": "cooper hynes|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -627,14 +627,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 16.75,
-      "modelEdge": 0.0867
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 16.77,
+      "modelEdge": 0.0912
     },
     {
       "snapshotKey": "wayne milera|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -645,10 +645,10 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 23.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 21.25,
-      "modelEdge": -0.1149
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 21.28,
+      "modelEdge": -0.1132
     },
     {
       "snapshotKey": "izak rankine|2026-09-05",
@@ -670,7 +670,7 @@
     },
     {
       "snapshotKey": "charlie curnow|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -681,14 +681,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 10.5,
-      "overOdds": "-127",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 10.57,
-      "modelEdge": 0.0045
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 10.53,
+      "modelEdge": 0.0234
     },
     {
       "snapshotKey": "jai serong|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -699,14 +699,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 17.68,
-      "modelEdge": 0.0292
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 17.7,
+      "modelEdge": 0.0309
     },
     {
       "snapshotKey": "josh dunkley|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -717,14 +717,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 22.5,
-      "overOdds": "-125",
-      "underOdds": "-108",
+      "overOdds": "-123",
+      "underOdds": "-109",
       "modelExpectedDisposals": 22.23,
-      "modelEdge": -0.0134
+      "modelEdge": -0.0041
     },
     {
       "snapshotKey": "sam davidson|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -735,10 +735,10 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
+      "overOdds": "-115",
+      "underOdds": "-116",
       "modelExpectedDisposals": 14.04,
-      "modelEdge": -0.0079
+      "modelEdge": -0.0026
     },
     {
       "snapshotKey": "ed richards|2026-09-05",
@@ -760,7 +760,7 @@
     },
     {
       "snapshotKey": "marcus bontempelli|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -771,14 +771,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 25.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 26.19,
-      "modelEdge": 0.052
+      "overOdds": "-133",
+      "underOdds": "+100",
+      "modelExpectedDisposals": 26.25,
+      "modelEdge": 0.0426
     },
     {
       "snapshotKey": "aaron naughton|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -789,14 +789,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 11.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 11.69,
-      "modelEdge": 0.038
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 11.7,
+      "modelEdge": 0.0417
     },
     {
       "snapshotKey": "brayden cook|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -807,14 +807,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 16.82,
-      "modelEdge": 0.0974
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 16.83,
+      "modelEdge": 0.1013
     },
     {
       "snapshotKey": "cody weightman|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -825,14 +825,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 12.5,
-      "overOdds": "-123",
-      "underOdds": "-109",
-      "modelExpectedDisposals": 12.54,
-      "modelEdge": 0.0095
+      "overOdds": "-128",
+      "underOdds": "-104",
+      "modelExpectedDisposals": 12.57,
+      "modelEdge": 0.0099
     },
     {
       "snapshotKey": "timothy english|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -843,10 +843,10 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-115",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 16.06,
-      "modelEdge": 0.059
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 16.07,
+      "modelEdge": 0.0629
     },
     {
       "snapshotKey": "ryley sanders|2026-09-05",
@@ -868,7 +868,7 @@
     },
     {
       "snapshotKey": "max michalanney|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -879,14 +879,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 13.26,
-      "modelEdge": 0.0047
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 13.27,
+      "modelEdge": 0.0088
     },
     {
       "snapshotKey": "alex neal bullen|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -897,14 +897,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-119",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 16.46,
-      "modelEdge": 0.0737
+      "overOdds": "-132",
+      "underOdds": "-102",
+      "modelExpectedDisposals": 16.52,
+      "modelEdge": 0.0648
     },
     {
       "snapshotKey": "dayne zorko|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -915,14 +915,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 25.5,
-      "overOdds": "-119",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 22.96,
-      "modelEdge": -0.1384
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 22.97,
+      "modelEdge": -0.1325
     },
     {
       "snapshotKey": "zac bailey|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T05:15:00Z",
@@ -933,14 +933,14 @@
       "opponentTeam": "Sydney Swans",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 19.72,
-      "modelEdge": -0.095
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 19.73,
+      "modelEdge": -0.0882
     },
     {
       "snapshotKey": "arthur jones|2026-09-05",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-05",
       "commenceTime": "2026-09-05T09:35:12Z",
@@ -951,14 +951,14 @@
       "opponentTeam": "Western Bulldogs",
       "bookmaker": "SportsBet",
       "line": 11.5,
-      "overOdds": "-112",
-      "underOdds": "-119",
-      "modelExpectedDisposals": 11.64,
-      "modelEdge": 0.0333
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 11.65,
+      "modelEdge": 0.0383
     },
     {
       "snapshotKey": "bailey smith|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -969,14 +969,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 32.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 27.91,
-      "modelEdge": -0.25
+      "overOdds": "-116",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 27.34,
+      "modelEdge": -0.2522
     },
     {
       "snapshotKey": "shaun mannagh|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -987,14 +987,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 18.44,
-      "modelEdge": 0.0726
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 17.87,
+      "modelEdge": 0.0511
     },
     {
       "snapshotKey": "lawson humphries|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1004,15 +1004,15 @@
       "playerTeam": "Carlton Blues",
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
-      "line": 20.5,
-      "overOdds": "-102",
-      "underOdds": "-132",
-      "modelExpectedDisposals": 19.59,
-      "modelEdge": -0.0152
+      "line": 19.5,
+      "overOdds": "-127",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 18.96,
+      "modelEdge": -0.027
     },
     {
       "snapshotKey": "ollie dempsey|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1023,14 +1023,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 19.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 17.38,
-      "modelEdge": -0.1253
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 16.83,
+      "modelEdge": -0.1449
     },
     {
       "snapshotKey": "sam walsh|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1041,14 +1041,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 28.5,
-      "overOdds": "-111",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 26.61,
-      "modelEdge": -0.0943
+      "overOdds": "-120",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 26.11,
+      "modelEdge": -0.1286
     },
     {
       "snapshotKey": "billy wilson|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1059,14 +1059,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-101",
-      "underOdds": "-133",
-      "modelExpectedDisposals": 19.16,
-      "modelEdge": 0.0855
+      "overOdds": "-110",
+      "underOdds": "-122",
+      "modelExpectedDisposals": 18.67,
+      "modelEdge": 0.0456
     },
     {
       "snapshotKey": "max holmes|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1076,15 +1076,15 @@
       "playerTeam": "Carlton Blues",
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
-      "line": 27.5,
-      "overOdds": "-122",
-      "underOdds": "-110",
-      "modelExpectedDisposals": 24.86,
-      "modelEdge": -0.1517
+      "line": 26.5,
+      "overOdds": "-123",
+      "underOdds": "-108",
+      "modelExpectedDisposals": 24.1,
+      "modelEdge": -0.1315
     },
     {
       "snapshotKey": "patrick dangerfield|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1095,14 +1095,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-110",
-      "underOdds": "-122",
-      "modelExpectedDisposals": 15.17,
-      "modelEdge": 0.0079
+      "overOdds": "-108",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 14.6,
+      "modelEdge": -0.0135
     },
     {
       "snapshotKey": "nick haynes|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1113,14 +1113,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-112",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 18.78,
-      "modelEdge": 0.1103
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 18.27,
+      "modelEdge": 0.0706
     },
     {
       "snapshotKey": "tanner bruhn|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1133,12 +1133,12 @@
       "line": 22.5,
       "overOdds": "-118",
       "underOdds": "-114",
-      "modelExpectedDisposals": 21.32,
-      "modelEdge": -0.0542
+      "modelExpectedDisposals": 20.77,
+      "modelEdge": -0.0765
     },
     {
       "snapshotKey": "tom atkins|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1149,14 +1149,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-110",
-      "underOdds": "-122",
-      "modelExpectedDisposals": 17.44,
-      "modelEdge": 0.0236
+      "overOdds": "-104",
+      "underOdds": "-128",
+      "modelExpectedDisposals": 16.86,
+      "modelEdge": 0.003
     },
     {
       "snapshotKey": "zach guthrie|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1167,14 +1167,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 15.06,
-      "modelEdge": -0.0146
+      "overOdds": "-115",
+      "underOdds": "-116",
+      "modelExpectedDisposals": 14.5,
+      "modelEdge": -0.0391
     },
     {
       "snapshotKey": "adam cerra|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1185,14 +1185,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-127",
-      "underOdds": "-106",
-      "modelExpectedDisposals": 20.57,
-      "modelEdge": 0.0054
+      "overOdds": "-133",
+      "underOdds": "-101",
+      "modelExpectedDisposals": 20.06,
+      "modelEdge": -0.0295
     },
     {
       "snapshotKey": "jeremy cameron|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1203,14 +1203,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-119",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 15.06,
-      "modelEdge": 0.048
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 14.5,
+      "modelEdge": 0.0218
     },
     {
       "snapshotKey": "mark blicavs|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1221,14 +1221,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-102",
-      "underOdds": "-132",
-      "modelExpectedDisposals": 13.54,
-      "modelEdge": 0.0451
+      "overOdds": "-101",
+      "underOdds": "-133",
+      "modelExpectedDisposals": 12.99,
+      "modelEdge": 0.0175
     },
     {
       "snapshotKey": "jagga smith|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1239,14 +1239,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 25.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 24.88,
-      "modelEdge": -0.0242
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 24.35,
+      "modelEdge": -0.0561
     },
     {
       "snapshotKey": "connor o sullivan|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1259,12 +1259,12 @@
       "line": 14.5,
       "overOdds": "+103",
       "underOdds": "-137",
-      "modelExpectedDisposals": 13.02,
-      "modelEdge": -0.0474
+      "modelExpectedDisposals": 12.48,
+      "modelEdge": -0.0726
     },
     {
       "snapshotKey": "thomas stewart|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1275,14 +1275,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 19.39,
-      "modelEdge": -0.0538
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 18.86,
+      "modelEdge": -0.0813
     },
     {
       "snapshotKey": "oliver hollands|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1293,14 +1293,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-102",
-      "underOdds": "-132",
-      "modelExpectedDisposals": 14.34,
-      "modelEdge": -0.0891
+      "overOdds": "-105",
+      "underOdds": "-127",
+      "modelExpectedDisposals": 13.82,
+      "modelEdge": -0.1153
     },
     {
       "snapshotKey": "matt cottrell|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1311,14 +1311,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 15.33,
-      "modelEdge": 0.0073
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 14.8,
+      "modelEdge": -0.0255
     },
     {
       "snapshotKey": "oisin mullin|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1329,14 +1329,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 13.72,
-      "modelEdge": 0.0253
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 13.16,
+      "modelEdge": -0.0035
     },
     {
       "snapshotKey": "will hayward|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1347,14 +1347,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 15.58,
-      "modelEdge": -0.0521
+      "overOdds": "-125",
+      "underOdds": "-106",
+      "modelExpectedDisposals": 15.06,
+      "modelEdge": -0.0865
     },
     {
       "snapshotKey": "mark o connor|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1367,12 +1367,12 @@
       "line": 14.5,
       "overOdds": "-119",
       "underOdds": "-112",
-      "modelExpectedDisposals": 13.64,
-      "modelEdge": -0.0446
+      "modelExpectedDisposals": 13.09,
+      "modelEdge": -0.0714
     },
     {
       "snapshotKey": "ben ainsworth|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1383,14 +1383,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-109",
-      "underOdds": "-123",
-      "modelExpectedDisposals": 18.49,
-      "modelEdge": 0.0288
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 18.0,
+      "modelEdge": -0.012
     },
     {
       "snapshotKey": "marc pittonet|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1401,14 +1401,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-109",
-      "underOdds": "-123",
-      "modelExpectedDisposals": 14.14,
-      "modelEdge": 0.0046
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 13.64,
+      "modelEdge": -0.0363
     },
     {
       "snapshotKey": "blake acres|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1419,14 +1419,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 19.68,
-      "modelEdge": -0.0294
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 19.17,
+      "modelEdge": -0.0615
     },
     {
       "snapshotKey": "george hewett|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1437,14 +1437,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 24.5,
-      "overOdds": "-115",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 24.34,
-      "modelEdge": 0.0085
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 23.81,
+      "modelEdge": -0.02
     },
     {
       "snapshotKey": "lachlan cowan|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1455,14 +1455,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-125",
-      "underOdds": "-108",
-      "modelExpectedDisposals": 15.18,
-      "modelEdge": 0.0477
+      "overOdds": "-135",
+      "underOdds": "+101",
+      "modelExpectedDisposals": 14.68,
+      "modelEdge": 0.0068
     },
     {
       "snapshotKey": "gryan miers|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1473,14 +1473,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 18.48,
-      "modelEdge": -0.1106
+      "overOdds": "-118",
+      "underOdds": "-114",
+      "modelExpectedDisposals": 17.95,
+      "modelEdge": -0.135
     },
     {
       "snapshotKey": "cooper lord|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1491,14 +1491,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-123",
-      "underOdds": "-109",
-      "modelExpectedDisposals": 18.15,
-      "modelEdge": -0.0149
+      "overOdds": "-127",
+      "underOdds": "-105",
+      "modelExpectedDisposals": 17.63,
+      "modelEdge": -0.0456
     },
     {
       "snapshotKey": "jacob weitering|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1509,14 +1509,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-112",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 14.36,
-      "modelEdge": 0.0147
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 13.82,
+      "modelEdge": -0.018
     },
     {
       "snapshotKey": "patrick cripps|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1529,12 +1529,12 @@
       "line": 25.5,
       "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 24.89,
-      "modelEdge": -0.0133
+      "modelExpectedDisposals": 24.35,
+      "modelEdge": -0.0379
     },
     {
       "snapshotKey": "oliver florent|2026-09-04",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-04",
       "commenceTime": "2026-09-04T09:40:00Z",
@@ -1545,14 +1545,14 @@
       "opponentTeam": "Geelong Cats",
       "bookmaker": "SportsBet",
       "line": 23.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 22.98,
-      "modelEdge": -0.015
+      "overOdds": "-120",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 22.45,
+      "modelEdge": -0.0475
     },
     {
       "snapshotKey": "cameron mackenzie|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1563,14 +1563,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-128",
-      "underOdds": "-104",
-      "modelExpectedDisposals": 14.21,
-      "modelEdge": -0.2417
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 13.91,
+      "modelEdge": -0.2354
     },
     {
       "snapshotKey": "jarman impey|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1581,14 +1581,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-132",
+      "overOdds": "-130",
       "underOdds": "-102",
-      "modelExpectedDisposals": 22.58,
-      "modelEdge": 0.0582
+      "modelExpectedDisposals": 22.3,
+      "modelEdge": 0.0492
     },
     {
       "snapshotKey": "karl worner|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1601,12 +1601,12 @@
       "line": 15.5,
       "overOdds": "-108",
       "underOdds": "-125",
-      "modelExpectedDisposals": 17.59,
-      "modelEdge": 0.1606
+      "modelExpectedDisposals": 17.32,
+      "modelEdge": 0.1501
     },
     {
       "snapshotKey": "caleb serong|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1617,14 +1617,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 26.5,
-      "overOdds": "-112",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 23.06,
-      "modelEdge": -0.1646
+      "overOdds": "-115",
+      "underOdds": "-116",
+      "modelExpectedDisposals": 22.8,
+      "modelEdge": -0.1721
     },
     {
       "snapshotKey": "connor macdonald|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1635,14 +1635,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 19.03,
-      "modelEdge": 0.1111
+      "overOdds": "-111",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 18.74,
+      "modelEdge": 0.1063
     },
     {
       "snapshotKey": "hayden young|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1653,14 +1653,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 17.99,
-      "modelEdge": -0.1265
+      "overOdds": "-112",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 17.71,
+      "modelEdge": -0.1297
     },
     {
       "snapshotKey": "massimo d ambrosio|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1671,14 +1671,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-123",
-      "underOdds": "-108",
-      "modelExpectedDisposals": 17.41,
-      "modelEdge": -0.0002
+      "overOdds": "-119",
+      "underOdds": "-112",
+      "modelExpectedDisposals": 17.11,
+      "modelEdge": -0.0044
     },
     {
       "snapshotKey": "josh ward|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1689,14 +1689,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-120",
-      "underOdds": "-112",
-      "modelExpectedDisposals": 22.08,
-      "modelEdge": 0.0472
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 21.82,
+      "modelEdge": 0.0344
     },
     {
       "snapshotKey": "josh battle|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1709,12 +1709,12 @@
       "line": 18.5,
       "overOdds": "-125",
       "underOdds": "-108",
-      "modelExpectedDisposals": 18.5,
-      "modelEdge": 0.0036
+      "modelExpectedDisposals": 18.22,
+      "modelEdge": -0.0069
     },
     {
       "snapshotKey": "josh treacy|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1724,15 +1724,15 @@
       "playerTeam": "Fremantle Dockers",
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
-      "line": 12.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 10.4,
-      "modelEdge": -0.1326
+      "line": 11.5,
+      "overOdds": "-108",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 9.85,
+      "modelEdge": -0.0767
     },
     {
       "snapshotKey": "murphy reid|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1743,14 +1743,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 21.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 20.26,
-      "modelEdge": -0.0559
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 19.97,
+      "modelEdge": -0.0614
     },
     {
       "snapshotKey": "will day|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1761,14 +1761,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-127",
-      "underOdds": "-105",
-      "modelExpectedDisposals": 19.03,
-      "modelEdge": -0.0894
+      "overOdds": "-125",
+      "underOdds": "-106",
+      "modelExpectedDisposals": 18.75,
+      "modelEdge": -0.0948
     },
     {
       "snapshotKey": "shai bolton|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1779,14 +1779,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-112",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 18.54,
-      "modelEdge": -0.0952
+      "overOdds": "-106",
+      "underOdds": "-125",
+      "modelExpectedDisposals": 18.23,
+      "modelEdge": -0.0941
     },
     {
       "snapshotKey": "luke jackson|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1799,12 +1799,12 @@
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 16.71,
-      "modelEdge": -0.0343
+      "modelExpectedDisposals": 16.44,
+      "modelEdge": -0.0438
     },
     {
       "snapshotKey": "karl amon|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1815,14 +1815,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 18.33,
-      "modelEdge": -0.0005
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 18.06,
+      "modelEdge": -0.0122
     },
     {
       "snapshotKey": "jack ginnivan|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1833,14 +1833,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 17.5,
-      "overOdds": "-127",
-      "underOdds": "-106",
-      "modelExpectedDisposals": 17.55,
-      "modelEdge": 0.0038
+      "overOdds": "-122",
+      "underOdds": "-110",
+      "modelExpectedDisposals": 17.25,
+      "modelEdge": -0.0005
     },
     {
       "snapshotKey": "dylan moore|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1853,12 +1853,12 @@
       "line": 17.5,
       "overOdds": "-125",
       "underOdds": "-108",
-      "modelExpectedDisposals": 17.83,
-      "modelEdge": 0.0248
+      "modelExpectedDisposals": 17.57,
+      "modelEdge": 0.0153
     },
     {
       "snapshotKey": "james sicily|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1871,12 +1871,12 @@
       "line": 19.5,
       "overOdds": "-127",
       "underOdds": "-105",
-      "modelExpectedDisposals": 18.66,
-      "modelEdge": -0.0548
+      "modelExpectedDisposals": 18.39,
+      "modelEdge": -0.064
     },
     {
       "snapshotKey": "nick watson|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1887,14 +1887,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 12.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 12.45,
-      "modelEdge": 0.0177
+      "overOdds": "-112",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 12.17,
+      "modelEdge": 0.0086
     },
     {
       "snapshotKey": "luke ryan|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1905,14 +1905,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-112",
-      "underOdds": "-119",
-      "modelExpectedDisposals": 19.02,
-      "modelEdge": 0.056
+      "overOdds": "-115",
+      "underOdds": "-116",
+      "modelExpectedDisposals": 18.76,
+      "modelEdge": 0.0419
     },
     {
       "snapshotKey": "matt johnson|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1923,14 +1923,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-114",
+      "overOdds": "-112",
       "underOdds": "-119",
-      "modelExpectedDisposals": 17.73,
-      "modelEdge": 0.101
+      "modelExpectedDisposals": 17.45,
+      "modelEdge": 0.0912
     },
     {
       "snapshotKey": "sam switkowski|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1941,14 +1941,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 12.5,
-      "overOdds": "-112",
-      "underOdds": "-119",
-      "modelExpectedDisposals": 12.43,
-      "modelEdge": 0.0187
+      "overOdds": "-115",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 12.17,
+      "modelEdge": 0.0028
     },
     {
       "snapshotKey": "heath chapman|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1961,12 +1961,12 @@
       "line": 13.5,
       "overOdds": "-111",
       "underOdds": "-120",
-      "modelExpectedDisposals": 13.01,
-      "modelEdge": -0.0074
+      "modelExpectedDisposals": 12.73,
+      "modelEdge": -0.0174
     },
     {
       "snapshotKey": "neil erasmus|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1977,14 +1977,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 15.5,
-      "overOdds": "-112",
-      "underOdds": "-120",
-      "modelExpectedDisposals": 16.4,
-      "modelEdge": 0.0808
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 16.14,
+      "modelEdge": 0.0677
     },
     {
       "snapshotKey": "blake hardwick|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -1997,12 +1997,12 @@
       "line": 17.5,
       "overOdds": "-132",
       "underOdds": "-102",
-      "modelExpectedDisposals": 18.21,
-      "modelEdge": 0.0385
+      "modelExpectedDisposals": 17.93,
+      "modelEdge": 0.0277
     },
     {
       "snapshotKey": "harry morrison|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -2013,14 +2013,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 16.5,
-      "overOdds": "-125",
-      "underOdds": "-108",
-      "modelExpectedDisposals": 17.0,
-      "modelEdge": 0.0362
+      "overOdds": "-120",
+      "underOdds": "-111",
+      "modelExpectedDisposals": 16.71,
+      "modelEdge": 0.0307
     },
     {
       "snapshotKey": "jordan clark|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -2031,14 +2031,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 20.5,
-      "overOdds": "-115",
-      "underOdds": "-116",
-      "modelExpectedDisposals": 20.28,
-      "modelEdge": 0.0041
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 20.0,
+      "modelEdge": -0.0042
     },
     {
       "snapshotKey": "judd mcvee|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -2049,14 +2049,14 @@
       "opponentTeam": "Hawthorn Hawks",
       "bookmaker": "SportsBet",
       "line": 13.5,
-      "overOdds": "-110",
-      "underOdds": "-122",
-      "modelExpectedDisposals": 13.24,
-      "modelEdge": 0.0105
+      "overOdds": "-114",
+      "underOdds": "-118",
+      "modelExpectedDisposals": 12.99,
+      "modelEdge": -0.0055
     },
     {
       "snapshotKey": "andrew brayshaw|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -2068,13 +2068,13 @@
       "bookmaker": "SportsBet",
       "line": 24.5,
       "overOdds": "-115",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 24.26,
-      "modelEdge": 0.0061
+      "underOdds": "-116",
+      "modelExpectedDisposals": 24.0,
+      "modelEdge": -0.0041
     },
     {
       "snapshotKey": "jai newcombe|2026-09-03",
-      "capturedAt": "2026-08-31T21:53:40Z",
+      "capturedAt": "2026-09-01T15:25:52Z",
       "weekKey": "2026-W36",
       "gameDate": "2026-09-03",
       "commenceTime": "2026-09-03T10:10:00Z",
@@ -2086,9 +2086,9 @@
       "bookmaker": "SportsBet",
       "line": 23.5,
       "overOdds": "-119",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 23.68,
-      "modelEdge": 0.0243
+      "underOdds": "-112",
+      "modelExpectedDisposals": 23.41,
+      "modelEdge": 0.0137
     },
     {
       "snapshotKey": "tom sparrow|2026-08-29",
