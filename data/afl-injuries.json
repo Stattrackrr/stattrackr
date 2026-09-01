@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-01T09:14:09.202Z",
+  "generatedAt": "2026-09-01T14:35:32.218Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 189,
   "injuries": [
+    {
+      "team": "Port Adelaide Power",
+      "player": "Zak Butters",
+      "injury": "Ankle",
+      "returning": "Season"
+    },
     {
       "team": "Adelaide Crows",
       "player": "Christina Leuzzi",
@@ -104,7 +110,7 @@
       "team": "Carlton Blues",
       "player": "Nic Newman",
       "injury": "Hamstring",
-      "returning": "4 Weeks"
+      "returning": "2-3 weeks"
     },
     {
       "team": "Carlton Blues",
@@ -613,32 +619,32 @@
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "Suspended for breaching club standards.",
-      "returning": "Season"
+      "injury": "banned for breaching the club’s behavioural standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "Suspended for breaching club standards.",
-      "returning": "Season"
+      "injury": "banned for breaching the club’s behavioural standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "Suspended for breaching club standards.",
-      "returning": "Season"
+      "injury": "banned for breaching the club’s behavioural standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "Suspended for breaching club standards.",
-      "returning": "Season"
+      "injury": "banned for breaching the club’s behavioural standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "one of ‘the Pullman 5’",
-      "returning": "Season"
+      "injury": "banned for breaching the club’s behavioural standards",
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -913,12 +919,6 @@
     {
       "team": "Port Adelaide Power",
       "player": "Connor Rozee",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Port Adelaide Power",
-      "player": "Zak Butters",
       "injury": "Injury",
       "returning": "TBC"
     },
