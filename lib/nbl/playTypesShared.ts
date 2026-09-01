@@ -95,13 +95,31 @@ export type NblPlayTypePlayerRow = {
   team: string;
   teamCode: string | null;
   position: string | null;
+  imageUrl: string | null;
   type: NblPlayTypeId;
   games: number;
   minutes: number | null;
   points: number | null;
   assists: number | null;
+  statValue: number | null;
   threeRate: number | null;
   usgPct: number | null;
+};
+
+export type NblPlayTypeRoundPick = {
+  playerId: string;
+  name: string;
+  team: string;
+  teamCode: string | null;
+  imageUrl: string | null;
+  type: NblPlayTypeId;
+  typeLabel: string;
+  opponent: string;
+  opponentCode: string | null;
+  statValue: number | null;
+  pct: number | null;
+  pctLabel: 'USG' | '3P%';
+  boost: number | null;
 };
 
 export type NblPlayTypeCell = {
@@ -142,6 +160,7 @@ export type NblPlayTypesPayload = {
   teams: Array<{ code: string; name: string; shortName: string }>;
   rows: NblPlayTypeMatrixRow[];
   players: NblPlayTypePlayerRow[];
+  roundPicks: NblPlayTypeRoundPick[];
 };
 
 export function nblPlayTypeStatKey(raw: string | null | undefined): string {

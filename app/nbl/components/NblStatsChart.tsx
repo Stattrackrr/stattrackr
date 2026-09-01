@@ -1295,17 +1295,12 @@ export function NblStatsChart({
     }
 
     const maxValue = Math.max(...values);
-    const useMaxPlusOne =
-      selectedStat === 'steals' ||
-      selectedStat === 'blocks' ||
-      selectedStat === 'turnovers' ||
-      selectedStat === 'fouls';
-    const pctCap = PCT_STATS.has(selectedStat) ? Math.max(Math.ceil(maxValue / 10) * 10, 10) : null;
+    const lineHigh = Number.isFinite(lineValue) ? lineValue : 0;
+    const peak = Math.max(maxValue, lineHigh, 0);
+    const pctCap = PCT_STATS.has(selectedStat) ? Math.max(Math.ceil(peak / 10) * 10, 10) : null;
     const max = pctCap != null
       ? Math.min(100, Math.max(pctCap, 10))
-      : useMaxPlusOne
-        ? Math.max(Math.ceil(maxValue) + 1, 1)
-        : Math.max(Math.ceil(maxValue / 5) * 5, 5);
+      : Math.max(Math.ceil(peak) + 1, 1);
     const step = max / 3;
     const useDecimals = values.some((v) => Math.abs(v - Math.round(v)) > 0.001);
     const ticks: number[] = [
@@ -1319,7 +1314,7 @@ export function NblStatsChart({
       domain: [0, max] as [number, number],
       ticks,
     };
-  }, [chartData, selectedStat]);
+  }, [chartData, selectedStat, lineValue]);
 
   const selectedStatLabel = useMemo(() => formatStatLabel(selectedStat || 'stat'), [selectedStat]);
 

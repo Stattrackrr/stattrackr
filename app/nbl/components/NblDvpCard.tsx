@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NBL_PLAY_TYPE_STAT_LABELS } from '@/lib/nbl/playTypesShared';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
-import type { NblPlayTypeCell, NblPlayTypesPayload } from '@/lib/nbl/playTypesShared';
+import type { NblPlayTypeCell, NblPlayTypeRoundPick, NblPlayTypesPayload } from '@/lib/nbl/playTypesShared';
 
 const STAT_HELP = Object.values(NBL_PLAY_TYPE_STAT_LABELS).join(', ');
 
@@ -12,6 +12,31 @@ function fmtBoost(value: number | null): string {
   const rounded = Math.round(value * 10) / 10;
   if (Object.is(rounded, -0) || rounded === 0) return '0.0';
   return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}`;
+}
+
+function boostChipClasses(boost: number | null, isDark: boolean): { tone: string; wrap: string } {
+  if (boost == null || !Number.isFinite(boost)) {
+    return {
+      tone: isDark ? 'text-slate-400' : 'text-slate-500',
+      wrap: isDark ? 'bg-white/5' : 'bg-gray-100',
+    };
+  }
+  if (boost > 0.15) {
+    return {
+      tone: isDark ? 'text-emerald-300' : 'text-emerald-700',
+      wrap: isDark ? 'bg-emerald-400/15' : 'bg-emerald-50',
+    };
+  }
+  if (boost < -0.15) {
+    return {
+      tone: isDark ? 'text-red-300' : 'text-red-700',
+      wrap: isDark ? 'bg-red-400/15' : 'bg-red-50',
+    };
+  }
+  return {
+    tone: isDark ? 'text-slate-200' : 'text-slate-700',
+    wrap: isDark ? 'bg-white/5' : 'bg-gray-100',
+  };
 }
 
 function sampleAlpha(cell: NblPlayTypeCell | undefined): number {
@@ -49,6 +74,69 @@ function cellTitle(rowLabel: string, teamName: string, cell: NblPlayTypeCell | u
   if (!cell || cell.boost == null) return `${rowLabel} vs ${teamName}: no sample`;
   const names = cell.names.length ? ` · ${cell.names.join(', ')}` : '';
   return `${rowLabel} vs ${teamName}: ${fmtBoost(cell.boost)} (${cell.games} g, ${cell.players} players, ${Math.round(cell.minutes)} min)${names}`;
+}
+
+function fmtStat(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return value.toFixed(1);
+}
+
+function fmtPct(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '';
+  return `${Math.round(value)}%`;
+}
+
+function opponentShort(pick: NblPlayTypeRoundPick, teams: NblPlayTypesPayload['teams']): string {
+  if (pick.opponentCode) {
+    const hit = teams.find((t) => t.code === pick.opponentCode);
+    if (hit) return hit.code;
+  }
+  return pick.opponent.replace(/^.*\s/, '').slice(0, 8);
+}
+
+function playerInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function WeekPickAvatar({
+  name,
+  imageUrl,
+  isDark,
+}: {
+  name: string;
+  imageUrl: string | null;
+  isDark: boolean;
+}) {
+  const src = imageUrl?.trim() || null;
+  const [failed, setFailed] = useState(false);
+  const showPhoto = Boolean(src) && !failed;
+
+  return (
+    <div
+      className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-full ${
+        isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-600'
+      }`}
+    >
+      <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">
+        {playerInitials(name)}
+      </span>
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          decoding="async"
+          className={`absolute inset-0 h-full w-full object-cover object-top ${
+            showPhoto ? 'opacity-100' : 'opacity-0'
+          }`}
+          onError={() => setFailed(true)}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export function PlayTypesInfoButton({
@@ -148,6 +236,7 @@ export default function NblDvpCard({
   const [payload, setPayload] = useState<NblPlayTypesPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [weekOpen, setWeekOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,6 +298,33 @@ export default function NblDvpCard({
     });
   }, [payload?.rows, playerType]);
 
+  const weekPicks = useMemo(() => {
+    const slate = (payload?.roundPicks ?? []).filter(
+      (p) => p.opponentCode && p.boost != null && Number.isFinite(p.boost) && p.boost > 0
+    );
+    const bestByTeam = new Map<string, (typeof slate)[number]>();
+    for (const pick of slate) {
+      const teamKey = pick.teamCode || pick.team;
+      if (!teamKey) continue;
+      const existing = bestByTeam.get(teamKey);
+      if (
+        !existing ||
+        (pick.boost ?? -999) > (existing.boost ?? -999) ||
+        ((pick.boost ?? -999) === (existing.boost ?? -999) &&
+          (pick.statValue ?? 0) > (existing.statValue ?? 0))
+      ) {
+        bestByTeam.set(teamKey, pick);
+      }
+    }
+    return [...bestByTeam.values()]
+      .sort((a, b) => {
+        const boostDelta = (b.boost ?? -999) - (a.boost ?? -999);
+        if (boostDelta !== 0) return boostDelta;
+        return (b.statValue ?? 0) - (a.statValue ?? 0);
+      })
+      .slice(0, 10);
+  }, [payload?.roundPicks]);
+
   if (loading && !payload) {
     const pulse = isDark ? 'bg-slate-800' : 'bg-slate-200';
     return <div className={`h-40 w-full rounded-lg animate-pulse ${pulse}`} />;
@@ -239,7 +355,8 @@ export default function NblDvpCard({
   }
 
   return (
-    <table className={`w-full table-fixed border-collapse ${loading ? 'opacity-70' : ''}`}>
+    <div className={loading ? 'opacity-70' : ''}>
+    <table className="w-full table-fixed border-collapse">
       <thead>
         <tr>
           <th className="w-[72px] p-0" />
@@ -336,5 +453,86 @@ export default function NblDvpCard({
         })}
       </tbody>
     </table>
+
+      <div className={`mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+        <button
+          type="button"
+          aria-expanded={weekOpen}
+          onClick={() => setWeekOpen((open) => !open)}
+          className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+            weekOpen
+              ? 'bg-purple-600 text-white border-purple-600'
+              : isDark
+                ? 'bg-[#0a1929] text-gray-200 border-gray-700 hover:bg-gray-800'
+                : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+          }`}
+        >
+          <span>Best edges this week</span>
+          <svg
+            className={`w-4 h-4 shrink-0 transition-transform ${weekOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {weekOpen ? (
+          !weekPicks.length ? (
+            <div className={`text-xs py-4 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              No upcoming-game edges for this stat yet.
+            </div>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {weekPicks.map((pick) => {
+                const pctText = fmtPct(pick.pct);
+                const opp = pick.opponentCode || opponentShort(pick, teams) || '—';
+                const meta = [pick.teamCode || pick.team, pick.typeLabel, `vs ${opp}`]
+                  .filter(Boolean)
+                  .join(' · ');
+                const chip = boostChipClasses(pick.boost, isDark);
+                return (
+                  <div
+                    key={pick.playerId}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 ${
+                      pick.playerId === playerId
+                        ? isDark
+                          ? 'bg-violet-500/15 ring-1 ring-violet-400/40'
+                          : 'bg-violet-50 ring-1 ring-violet-200'
+                        : isDark
+                          ? 'bg-[#0d2137] ring-1 ring-white/10'
+                          : 'bg-white ring-1 ring-gray-200'
+                    }`}
+                  >
+                    <WeekPickAvatar name={pick.name} imageUrl={pick.imageUrl} isDark={isDark} />
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={`text-xs font-semibold truncate leading-tight ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        {pick.name}
+                      </div>
+                      <div className={`text-[10px] truncate mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {meta}
+                      </div>
+                      <div className={`text-[10px] tabular-nums mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        {fmtStat(pick.statValue)}
+                        {payload.statLabel ? ` ${payload.statLabel}` : ''}
+                        {pctText ? ` · ${pctText} ${pick.pctLabel}` : ''}
+                      </div>
+                    </div>
+                    <div className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs font-bold tabular-nums ${chip.tone} ${chip.wrap}`}>
+                      {fmtBoost(pick.boost)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : null}
+      </div>
+    </div>
   );
 }

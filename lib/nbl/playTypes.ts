@@ -7,9 +7,11 @@ import fs from 'fs';
 import path from 'path';
 import {
   NBL_CLUBS,
+  NBL_CURRENT_SEASON_YEAR,
   nblSeasonLabel,
 } from '@/lib/nblTeamCanonical';
 import { resolveNblSteTeamCode } from '@/lib/nbl/teamSteStatsShared';
+import { listNblUpcomingRoundGames } from '@/lib/nbl/nextGame';
 import { readPlayerShotChartCache } from '@/lib/nbl/nblShotChartData';
 import type { NblGameLogRow, NblLeaguePlayerStatRow } from '@/lib/nbl/rosettaTypes';
 import {
@@ -23,6 +25,7 @@ import {
   type NblPlayTypeId,
   type NblPlayTypeMatrixRow,
   type NblPlayTypePlayerRow,
+  type NblPlayTypeRoundPick,
   type NblPlayTypesPayload,
   type NblPlayTypeStatKey,
 } from '@/lib/nbl/playTypesShared';
@@ -32,6 +35,7 @@ export type {
   NblPlayTypeId,
   NblPlayTypeMatrixRow,
   NblPlayTypePlayerRow,
+  NblPlayTypeRoundPick,
   NblPlayTypesPayload,
   NblPlayTypeStatKey,
 } from '@/lib/nbl/playTypesShared';
@@ -453,21 +457,124 @@ function emptyCell(): NblPlayTypeCell {
   return { boost: null, games: 0, players: 0, minutes: 0, significant: false, names: [] };
 }
 
-function toPlayerRow(p: TaggedPlayer): NblPlayTypePlayerRow {
+function seasonStatValue(row: NblLeaguePlayerStatRow, stat: NblPlayTypeStatKey): number | null {
+  switch (stat) {
+    case 'assists':
+      return num(row.assists);
+    case 'rebounds':
+      return num(row.rebounds);
+    case 'threeMade':
+      return num(row.threeMade);
+    case 'steals':
+      return num(row.steals);
+    case 'blocks':
+      return num(row.blocks);
+    case 'pra':
+      return num(row.pra);
+    case 'pr': {
+      const pts = num(row.points);
+      const reb = num(row.rebounds);
+      return pts != null && reb != null ? pts + reb : null;
+    }
+    case 'pa': {
+      const pts = num(row.points);
+      const ast = num(row.assists);
+      return pts != null && ast != null ? pts + ast : null;
+    }
+    case 'ra': {
+      const reb = num(row.rebounds);
+      const ast = num(row.assists);
+      return reb != null && ast != null ? reb + ast : null;
+    }
+    case 'fgMade':
+      return null;
+    case 'points':
+    default:
+      return num(row.points);
+  }
+}
+
+function toPlayerRow(p: TaggedPlayer, stat: NblPlayTypeStatKey | null): NblPlayTypePlayerRow {
+  const statValue = stat ? seasonStatValue(p.row, stat) : num(p.row.points);
   return {
     playerId: p.row.playerId,
     name: p.row.name,
     team: p.row.team,
     teamCode: p.row.teamCode,
     position: p.row.position,
+    imageUrl: p.row.imageUrl ?? null,
     type: p.type,
     games: p.gamesUsed,
     minutes: round1(p.minutes),
     points: p.row.points != null ? round1(Number(p.row.points)) : null,
     assists: p.row.assists != null ? round1(Number(p.row.assists)) : null,
+    statValue: statValue != null ? round1(statValue) : null,
     threeRate: round1(p.threeRate * 100),
     usgPct: p.usgPct != null ? round1(p.usgPct) : null,
   };
+}
+
+function buildRoundPicks(
+  matrixPlayers: TaggedPlayer[],
+  rows: NblPlayTypeMatrixRow[],
+  stat: NblPlayTypeStatKey | null
+): NblPlayTypeRoundPick[] {
+  const games = listNblUpcomingRoundGames(NBL_CURRENT_SEASON_YEAR);
+  if (!games.length || !stat) return [];
+
+  const opponentByTeam = new Map<string, { opponent: string; opponentCode: string | null }>();
+  for (const game of games) {
+    const homeCode = game.homeTeamCode || resolveNblSteTeamCode(game.homeTeam);
+    const awayCode = game.awayTeamCode || resolveNblSteTeamCode(game.awayTeam);
+    if (homeCode) {
+      opponentByTeam.set(homeCode, { opponent: game.awayTeam, opponentCode: awayCode });
+    }
+    if (awayCode) {
+      opponentByTeam.set(awayCode, { opponent: game.homeTeam, opponentCode: homeCode });
+    }
+  }
+
+  const boostByTypeOpp = new Map<string, number | null>();
+  for (const row of rows) {
+    for (const [code, cell] of Object.entries(row.cells)) {
+      boostByTypeOpp.set(`${row.type}:${code}`, cell.boost);
+    }
+  }
+
+  const picks: NblPlayTypeRoundPick[] = [];
+  for (const p of matrixPlayers) {
+    const teamCode = resolveNblSteTeamCode(p.row.teamCode || p.row.team);
+    if (!teamCode) continue;
+    const matchup = opponentByTeam.get(teamCode);
+    if (!matchup) continue;
+    const useThreeRate = stat === 'threeMade' || p.type === 'three_shooter' || p.type === 'stretch_four';
+    const pct = useThreeRate ? round1(p.threeRate * 100) : p.usgPct != null ? round1(p.usgPct) : null;
+    const statValue = seasonStatValue(p.row, stat);
+    picks.push({
+      playerId: p.row.playerId,
+      name: p.row.name,
+      team: p.row.team,
+      teamCode: p.row.teamCode,
+      imageUrl: p.row.imageUrl ?? null,
+      type: p.type,
+      typeLabel: NBL_PLAY_TYPE_LABELS[p.type],
+      opponent: matchup.opponent,
+      opponentCode: matchup.opponentCode,
+      statValue: statValue != null ? round1(statValue) : null,
+      pct,
+      pctLabel: useThreeRate ? '3P%' : 'USG',
+      boost: matchup.opponentCode
+        ? (boostByTypeOpp.get(`${p.type}:${matchup.opponentCode}`) ?? null)
+        : null,
+    });
+  }
+
+  return picks.sort((a, b) => {
+    const boostA = a.boost ?? -999;
+    const boostB = b.boost ?? -999;
+    if (boostB !== boostA) return boostB - boostA;
+    return (b.statValue ?? 0) - (a.statValue ?? 0);
+  });
 }
 
 function opponentCodeForGame(game: NblGameLogRow): string | null {
@@ -600,6 +707,7 @@ export function buildNblPlayTypesPayload(options: {
       : null,
     teams,
     rows,
-    players: matrixPlayers.map(toPlayerRow).sort((a, b) => a.name.localeCompare(b.name)),
+    players: matrixPlayers.map((p) => toPlayerRow(p, stat)).sort((a, b) => a.name.localeCompare(b.name)),
+    roundPicks: buildRoundPicks(matrixPlayers, rows, stat),
   };
 }

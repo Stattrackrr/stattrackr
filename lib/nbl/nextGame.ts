@@ -4,7 +4,12 @@
 
 import fs from 'fs';
 import path from 'path';
-import { NBL_CURRENT_SEASON_YEAR, normalizeTeamKey, resolveNblClubName } from '@/lib/nblTeamCanonical';
+import {
+  NBL_CLUBS,
+  NBL_CURRENT_SEASON_YEAR,
+  normalizeTeamKey,
+  resolveNblClubName,
+} from '@/lib/nblTeamCanonical';
 
 export type NblNextGame = {
   team: string;
@@ -176,4 +181,68 @@ export function getNblNextGameForTeam(
     fromNextMatchesSnapshot(trimmed, year, nowMs) ||
     fromScheduleSnapshot(trimmed, year, nowMs)
   );
+}
+
+export type NblUpcomingRoundGame = {
+  matchId: string | null;
+  tipoff: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeTeamCode: string | null;
+  awayTeamCode: string | null;
+};
+
+function clubCodeFromName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const key = normalizeTeamKey(name);
+  const club = NBL_CLUBS.find(
+    (c) =>
+      normalizeTeamKey(c.name) === key ||
+      normalizeTeamKey(c.shortName) === key ||
+      c.code.toLowerCase() === key
+  );
+  return club?.code ?? null;
+}
+
+const ROUND_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;
+
+/** Unique upcoming fixtures in the next NBL round (clustered from each club's next tip). */
+export function listNblUpcomingRoundGames(
+  year: number = NBL_CURRENT_SEASON_YEAR,
+  nowMs: number = Date.now()
+): NblUpcomingRoundGame[] {
+  const byKey = new Map<string, NblUpcomingRoundGame>();
+  for (const club of NBL_CLUBS) {
+    const next = getNblNextGameForTeam(club.name, year, nowMs);
+    if (!next?.tipoff) continue;
+    const home = next.homeTeam || (next.isHome ? next.team : next.opponent);
+    const away = next.awayTeam || (next.isHome ? next.opponent : next.team);
+    const key =
+      next.matchId ||
+      [normalizeTeamKey(home), normalizeTeamKey(away)].filter(Boolean).sort().join('|');
+    if (!key || byKey.has(key)) continue;
+    byKey.set(key, {
+      matchId: next.matchId,
+      tipoff: next.tipoff,
+      homeTeam: home,
+      awayTeam: away,
+      homeTeamCode: next.isHome
+        ? next.teamCode || clubCodeFromName(home)
+        : next.opponentCode || clubCodeFromName(home),
+      awayTeamCode: next.isHome
+        ? next.opponentCode || clubCodeFromName(away)
+        : next.teamCode || clubCodeFromName(away),
+    });
+  }
+
+  const games = [...byKey.values()].sort(
+    (a, b) => Date.parse(a.tipoff) - Date.parse(b.tipoff)
+  );
+  if (!games.length) return [];
+  const start = Date.parse(games[0].tipoff);
+  if (!Number.isFinite(start)) return games;
+  return games.filter((game) => {
+    const t = Date.parse(game.tipoff);
+    return Number.isFinite(t) && t - start <= ROUND_WINDOW_MS;
+  });
 }
