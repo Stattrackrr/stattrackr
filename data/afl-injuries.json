@@ -1,9 +1,99 @@
 {
-  "generatedAt": "2026-08-31T23:43:08.233Z",
+  "generatedAt": "2026-09-01T03:17:20.328Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 172,
+  "injuryCount": 182,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Matthew Carroll",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Campbell Chesser",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Elijah Hollands",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Rob Monahan",
+      "injury": "Shoulder",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Jesse Motlop",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Nic Newman",
+      "injury": "Hamstring",
+      "returning": "4 Weeks"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry O'Farrell",
+      "injury": "Knee",
+      "returning": "Season"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Nick Coffield",
+      "injury": "Concussion",
+      "returning": "Test"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Sam Darcy",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Riley Garcia",
+      "injury": "Hamstring",
+      "returning": "Season"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "James Harmes",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Will Lewis",
+      "injury": "Calf",
+      "returning": "3 Weeks"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Knee",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Lachlan Smith",
+      "injury": "Hamstring",
+      "returning": "4 Weeks"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Adam Treloar",
+      "injury": "Calf",
+      "returning": "4 Weeks"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Lauren Young",
@@ -335,12 +425,6 @@
       "returning": "active"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Sam Darcy",
-      "injury": "Injury",
-      "returning": "active"
-    },
-    {
       "team": "West Coast Eagles",
       "player": "Tyler Brockman",
       "injury": "Knee",
@@ -422,19 +506,13 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "TBC"
+      "returning": "firming to return for an elimination final"
     },
     {
       "team": "Geelong Cats",
       "player": "James Worpel",
       "injury": "Hamstring",
       "returning": "1-3 weeks"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Riley Garcia",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
@@ -488,30 +566,30 @@
       "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
       "injury": "Calf",
-      "returning": "1 Week"
+      "returning": "Saturday's qualifying final"
     },
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "Suspended for breaching behavioural standards",
+      "injury": "Suspended for breaching club standards.",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "Suspended for breaching behavioural standards",
+      "injury": "Suspended for breaching club standards.",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "Suspended for breaching behavioural standards",
+      "injury": "Suspended for breaching club standards.",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "Suspended for breaching behavioural standards",
+      "injury": "Suspended for breaching club standards.",
       "returning": "Season"
     },
     {
@@ -519,12 +597,6 @@
       "player": "Nick Blakey",
       "injury": "one of ‘the Pullman 5’",
       "returning": "Season"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
@@ -989,12 +1061,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Carlton Blues",
-      "player": "Elijah Hollands",
-      "injury": "Suffered a medical episode during a match, attributed to a mental health episode. Was deemed unfit to feature in the match.",
-      "returning": "active"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Steven May",
       "injury": "Was on personal leave from the club; police had conducted a welfare check at a private residence.",
@@ -1005,12 +1071,6 @@
       "player": "Leigh Ryswyk",
       "injury": "Quad",
       "returning": "Season"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Jesse Motlop",
-      "injury": "Knee",
-      "returning": "TBC"
     },
     {
       "team": "GWS Giants",
