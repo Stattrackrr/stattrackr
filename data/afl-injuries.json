@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-09-02T19:19:31.053Z",
+  "generatedAt": "2026-09-02T22:23:35.706Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 185,
+  "injuryCount": 187,
   "injuries": [
+    {
+      "team": "Calder Cannons",
+      "player": "Blake Justice",
+      "injury": "Soreness",
+      "returning": "active"
+    },
+    {
+      "team": "Glenelg",
+      "player": "Gabriel Patterson",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sean Darcy",
+      "injury": "Calf",
+      "returning": "active"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Tobyn Murray",
@@ -141,12 +159,6 @@
       "player": "Jack Ginnivan",
       "injury": "Back",
       "returning": "This Round"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sean Darcy",
-      "injury": "misses out on a spot in the team altogether",
-      "returning": "TBC"
     },
     {
       "team": "Carlton Blues",
