@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-01T15:22:44.231Z",
+  "generatedAt": "2026-09-02T14:56:30.192Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Hawthorn Hawks",
       "commenceTime": "2026-09-03T10:10:00Z",
       "weather": {
-        "temperatureC": 16.4,
-        "precipitationMm": 0.2,
-        "windKmh": 19.1
+        "temperatureC": 16.5,
+        "precipitationMm": 0,
+        "windKmh": 17.4
       }
     },
     {
@@ -21,8 +21,8 @@
       "commenceTime": "2026-09-04T09:40:00Z",
       "weather": {
         "temperatureC": 13.7,
-        "precipitationMm": 0.2,
-        "windKmh": 13.4
+        "precipitationMm": 0.1,
+        "windKmh": 13.5
       }
     },
     {
@@ -31,9 +31,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-09-05T05:15:00Z",
       "weather": {
-        "temperatureC": 27.2,
+        "temperatureC": 29.2,
         "precipitationMm": 0,
-        "windKmh": 29.6
+        "windKmh": 29.4
       }
     },
     {
@@ -42,9 +42,9 @@
       "awayTeam": "Western Bulldogs",
       "commenceTime": "2026-09-05T09:35:12Z",
       "weather": {
-        "temperatureC": 13.4,
+        "temperatureC": 13.6,
         "precipitationMm": 0,
-        "windKmh": 18.1
+        "windKmh": 25
       }
     }
   ],
