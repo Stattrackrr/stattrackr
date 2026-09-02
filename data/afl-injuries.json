@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-02T02:36:31.842Z",
+  "generatedAt": "2026-09-02T08:26:41.768Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 179,
+  "injuryCount": 180,
   "injuries": [
+    {
+      "team": "Carlton Blues",
+      "player": "Cooper Lord",
+      "injury": "Knee",
+      "returning": "active"
+    },
     {
       "team": "Geelong Cats",
       "player": "Rhys Stanley",
