@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-09-01T22:27:08.396Z",
+  "generatedAt": "2026-09-02T02:36:31.842Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 190,
+  "injuryCount": 179,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Rhys Stanley",
+      "injury": "Knee",
+      "returning": "3 Weeks"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Ned Reeves",
+      "injury": "Injury",
+      "returning": "TBA"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Ned Bowman",
+      "injury": "Hamstring",
+      "returning": "TBA"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Oskar Baker",
+      "injury": "Hamstring",
+      "returning": "4 Weeks"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Matthew Kennedy",
+      "injury": "Concussion",
+      "returning": "1 Week"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Joel Amartey",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Justin McInerney",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
     {
       "team": "Hawthorn Hawks",
       "player": "Will Day",
@@ -42,12 +84,6 @@
     },
     {
       "team": "Hawthorn Hawks",
-      "player": "Ned Reeves",
-      "injury": "Throat",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
       "player": "Jack Scrimshaw",
       "injury": "Knee",
       "returning": "TBC"
@@ -56,7 +92,7 @@
       "team": "Hawthorn Hawks",
       "player": "Jack Ginnivan",
       "injury": "Back",
-      "returning": "Expected to return for qualifying final"
+      "returning": "Test"
     },
     {
       "team": "Fremantle Dockers",
@@ -126,12 +162,6 @@
     },
     {
       "team": "Western Bulldogs",
-      "player": "Nick Coffield",
-      "injury": "Concussion",
-      "returning": "Test"
-    },
-    {
-      "team": "Western Bulldogs",
       "player": "Sam Darcy",
       "injury": "ACL",
       "returning": "Season"
@@ -152,7 +182,7 @@
       "team": "Western Bulldogs",
       "player": "Will Lewis",
       "injury": "Calf",
-      "returning": "3 Weeks"
+      "returning": "Test"
     },
     {
       "team": "Western Bulldogs",
@@ -170,7 +200,7 @@
       "team": "Western Bulldogs",
       "player": "Adam Treloar",
       "injury": "Calf",
-      "returning": "4 Weeks"
+      "returning": "2 Weeks"
     },
     {
       "team": "Port Adelaide Power",
@@ -198,33 +228,15 @@
     },
     {
       "team": "Adelaide Crows",
-      "player": "Callum Ah Chee",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Hugh Bond",
-      "injury": "Hamstring",
-      "returning": "Test"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Jordon Butts",
-      "injury": "Calf",
-      "returning": "2 Weeks"
-    },
-    {
-      "team": "Adelaide Crows",
       "player": "James Peatling",
       "injury": "Hip",
-      "returning": "TBA"
+      "returning": "2 Weeks"
     },
     {
       "team": "Adelaide Crows",
       "player": "Luke Pedlar",
       "injury": "Hamstring",
-      "returning": "3 Weeks"
+      "returning": "2 Weeks"
     },
     {
       "team": "Brisbane Lions",
@@ -252,30 +264,6 @@
     },
     {
       "team": "Fremantle Dockers",
-      "player": "Jye Amiss",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Heath Chapman",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Jaeger O'Meara",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Murphy Reid",
-      "injury": "Groin",
-      "returning": "Finals Week Two"
-    },
-    {
-      "team": "Fremantle Dockers",
       "player": "Aiden Riddle",
       "injury": "Ankle",
       "returning": "Test"
@@ -287,46 +275,10 @@
       "returning": "TBA"
     },
     {
-      "team": "Fremantle Dockers",
-      "player": "Sam Switkowski",
-      "injury": "Soreness",
-      "returning": "1 Week"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Josh Treacy",
-      "injury": "Injury",
-      "returning": "TBA"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Corey Wagner",
-      "injury": "Hip",
-      "returning": "Test"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Brandon Walker",
-      "injury": "Shoulder",
-      "returning": "Test"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Harley Barker",
       "injury": "ACL",
       "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Mark Blicavs",
-      "injury": "Soreness",
-      "returning": "Finals"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Jeremy Cameron",
-      "injury": "Shoulder",
-      "returning": "Test"
     },
     {
       "team": "Geelong Cats",
@@ -336,51 +288,21 @@
     },
     {
       "team": "Geelong Cats",
-      "player": "Jack Henry",
-      "injury": "Ankle",
-      "returning": "TBA"
-    },
-    {
-      "team": "Geelong Cats",
       "player": "Jake Kolodjashnij",
       "injury": "active",
       "returning": "active"
     },
     {
-      "team": "Geelong Cats",
-      "player": "Keighton Matofai-Forbes",
-      "injury": "Finger",
-      "returning": "3 Weeks"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Oliver Wiltshire",
-      "injury": "Foot",
-      "returning": "Finals"
-    },
-    {
       "team": "Hawthorn Hawks",
       "player": "Cody Anderson",
       "injury": "Hamstring",
-      "returning": "TBA"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Noah Mraz",
-      "injury": "Kidney",
-      "returning": "1 Week"
+      "returning": "3 Weeks"
     },
     {
       "team": "Hawthorn Hawks",
       "player": "Conor Nash",
       "injury": "Neck",
       "returning": "rest of the season"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Flynn Perez",
-      "injury": "Groin",
-      "returning": "1 Week"
     },
     {
       "team": "Sydney Swans",
@@ -390,27 +312,15 @@
     },
     {
       "team": "Sydney Swans",
-      "player": "Joel Amartey",
-      "injury": "Achilles",
-      "returning": "2 Weeks"
-    },
-    {
-      "team": "Sydney Swans",
       "player": "Noah Chamberlain",
       "injury": "Hamstring",
-      "returning": "4 Weeks"
+      "returning": "2 Weeks"
     },
     {
       "team": "Sydney Swans",
       "player": "William Edwards",
       "injury": "Leg",
       "returning": "Season"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Tom Hanily",
-      "injury": "Ankle",
-      "returning": "Test"
     },
     {
       "team": "Sydney Swans",
@@ -428,19 +338,31 @@
       "team": "Sydney Swans",
       "player": "Peter Ladhams",
       "injury": "Groin",
-      "returning": "TBA"
+      "returning": "Season"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Justin McInerney",
-      "injury": "Hamstring",
-      "returning": "3 Weeks"
+      "team": "Fremantle Dockers",
+      "player": "Jye Amiss",
+      "injury": "Ankle",
+      "returning": "Returning for qualifying final"
     },
     {
-      "team": "Sydney Swans",
-      "player": "Hayden McLean",
-      "injury": "Concussion",
-      "returning": "1 Week"
+      "team": "Fremantle Dockers",
+      "player": "Murphy Reid",
+      "injury": "managed due to some concern, missed Round 24",
+      "returning": "Returning for qualifying final"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sam Switkowski",
+      "injury": "managed",
+      "returning": "Finals Week Two"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Heath Chapman",
+      "injury": "managed",
+      "returning": "Finals Week Two"
     },
     {
       "team": "Melbourne Demons",
@@ -533,6 +455,12 @@
       "returning": "TBC"
     },
     {
+      "team": "Adelaide Crows",
+      "player": "Jordon Butts",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
       "team": "Sydney Swans",
       "player": "Taylor Smith",
       "injury": "Arm",
@@ -560,7 +488,7 @@
       "team": "Geelong Cats",
       "player": "Max Holmes",
       "injury": "Ankle",
-      "returning": "within a week, a week and a half of playing"
+      "returning": "pushing for a return"
     },
     {
       "team": "Geelong Cats",
@@ -617,40 +545,34 @@
       "returning": "Returned"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Hugh McCluggage",
-      "injury": "Calf",
-      "returning": "Saturday's qualifying final"
-    },
-    {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "banned for breaching the club’s behavioural standards",
-      "returning": "TBC"
+      "injury": "club suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "banned for breaching the club’s behavioural standards",
-      "returning": "TBC"
+      "injury": "club suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "banned for breaching the club’s behavioural standards",
-      "returning": "TBC"
+      "injury": "club suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "banned for breaching the club’s behavioural standards",
-      "returning": "TBC"
+      "injury": "club suspension",
+      "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "banned for breaching the club’s behavioural standards",
-      "returning": "TBC"
+      "injury": "club suspension",
+      "returning": "Season"
     },
     {
       "team": "Western Bulldogs",
@@ -851,6 +773,12 @@
       "returning": "TBC"
     },
     {
+      "team": "Brisbane Lions",
+      "player": "Hugh McCluggage",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
       "team": "Collingwood Magpies",
       "player": "Harry Perryman",
       "injury": "Soreness",
@@ -909,6 +837,12 @@
       "player": "Brayden Fiorini",
       "injury": "Soreness",
       "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Jaeger O'Meara",
+      "injury": "Injury",
+      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
