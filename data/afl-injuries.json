@@ -1,9 +1,51 @@
 {
-  "generatedAt": "2026-09-02T08:26:41.768Z",
+  "generatedAt": "2026-09-02T14:09:49.939Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 180,
+  "injuryCount": 185,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Tobyn Murray",
+      "injury": "omitted from the side",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Bailey Banfield",
+      "injury": "omitted from the side",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Christopher Scerri",
+      "injury": "omitted from the side",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Judd McVee",
+      "injury": "omitted from the side",
+      "returning": "TBC"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Dalton",
+      "injury": "unlucky Hawk to drop out of the side",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brennan Cox",
+      "injury": "Soreness",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Murphy Reid",
+      "injury": "Groin",
+      "returning": "Returned"
+    },
     {
       "team": "Carlton Blues",
       "player": "Cooper Lord",
@@ -98,7 +140,7 @@
       "team": "Hawthorn Hawks",
       "player": "Jack Ginnivan",
       "injury": "Back",
-      "returning": "Test"
+      "returning": "This Round"
     },
     {
       "team": "Fremantle Dockers",
@@ -354,12 +396,6 @@
     },
     {
       "team": "Fremantle Dockers",
-      "player": "Murphy Reid",
-      "injury": "managed due to some concern, missed Round 24",
-      "returning": "Returning for qualifying final"
-    },
-    {
-      "team": "Fremantle Dockers",
       "player": "Sam Switkowski",
       "injury": "managed",
       "returning": "Finals Week Two"
@@ -591,12 +627,6 @@
       "player": "Zac Taylor",
       "injury": "Hamstring",
       "returning": "up to three weeks"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Brennan Cox",
-      "injury": "Calf",
-      "returning": "TBC"
     },
     {
       "team": "West Coast Eagles",
