@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-02T14:59:59Z",
-  "count": 215,
+  "generatedAt": "2026-09-03T14:54:59Z",
+  "count": 216,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -28450,6 +28450,156 @@
         "sampleCountOk": true,
         "brierOk": true,
         "logLossOk": true,
+        "hitRateOk": true,
+        "freezeInactive": true
+      }
+    },
+    {
+      "generatedAt": "2026-09-03T14:54:59Z",
+      "sampleCount": 290,
+      "pass": false,
+      "promoted": false,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 290,
+        "hitRate": 0.506897,
+        "brierScore": 0.28512,
+        "logLoss": 0.809748,
+        "mae": 4.891389,
+        "avgClvLite": -0.002921,
+        "positiveClvRate": 0.106897,
+        "clvSampleCount": 290,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 18,
+            "avgPred": 0.0655,
+            "avgActual": 0.5556
+          },
+          {
+            "bin": 1,
+            "count": 19,
+            "avgPred": 0.1576,
+            "avgActual": 0.3684
+          },
+          {
+            "bin": 2,
+            "count": 38,
+            "avgPred": 0.2551,
+            "avgActual": 0.6579
+          },
+          {
+            "bin": 3,
+            "count": 66,
+            "avgPred": 0.3625,
+            "avgActual": 0.4242
+          },
+          {
+            "bin": 4,
+            "count": 73,
+            "avgPred": 0.4518,
+            "avgActual": 0.5205
+          },
+          {
+            "bin": 5,
+            "count": 51,
+            "avgPred": 0.5414,
+            "avgActual": 0.5098
+          },
+          {
+            "bin": 6,
+            "count": 20,
+            "avgPred": 0.6467,
+            "avgActual": 0.6
+          },
+          {
+            "bin": 7,
+            "count": 5,
+            "avgPred": 0.7208,
+            "avgActual": 0.6
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260903-145342"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 290,
+        "hitRate": 0.489655,
+        "brierScore": 0.281644,
+        "logLoss": 0.785883,
+        "mae": 4.917722,
+        "avgClvLite": -0.002257,
+        "positiveClvRate": 0.131034,
+        "clvSampleCount": 290,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 8,
+            "avgPred": 0.0677,
+            "avgActual": 0.625
+          },
+          {
+            "bin": 1,
+            "count": 20,
+            "avgPred": 0.1598,
+            "avgActual": 0.55
+          },
+          {
+            "bin": 2,
+            "count": 34,
+            "avgPred": 0.2525,
+            "avgActual": 0.4118
+          },
+          {
+            "bin": 3,
+            "count": 75,
+            "avgPred": 0.3453,
+            "avgActual": 0.52
+          },
+          {
+            "bin": 4,
+            "count": 76,
+            "avgPred": 0.4423,
+            "avgActual": 0.5395
+          },
+          {
+            "bin": 5,
+            "count": 48,
+            "avgPred": 0.5428,
+            "avgActual": 0.4583
+          },
+          {
+            "bin": 6,
+            "count": 21,
+            "avgPred": 0.6425,
+            "avgActual": 0.4762
+          },
+          {
+            "bin": 7,
+            "count": 7,
+            "avgPred": 0.7333,
+            "avgActual": 0.8571
+          },
+          {
+            "bin": 8,
+            "count": 1,
+            "avgPred": 0.8598,
+            "avgActual": 1.0
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260902-145824"
+      },
+      "deltas": {
+        "brierImprovement": -0.012342,
+        "logLossChange": 0.030367,
+        "hitRateDelta": 0.017242
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": false,
         "hitRateOk": true,
         "freezeInactive": true
       }
