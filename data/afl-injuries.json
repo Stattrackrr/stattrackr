@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-03T08:38:00.468Z",
+  "generatedAt": "2026-09-03T14:12:48.300Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 187,
+  "injuryCount": 194,
   "injuries": [
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Mitch Lewis",
+      "injury": "Shoulder",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brandon Walker",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
+    {
+      "team": "St Kilda Saints",
+      "player": "Molly McDonald",
+      "injury": "Foot",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Indi Strom",
+      "injury": "active",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Sam De Koning",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Ty Gallop",
+      "injury": "make way for returning co-captain",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Joel Amartey",
+      "injury": "left out of its 23 for Saturday's qualifying final",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jack Martin",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Calder Cannons",
       "player": "Blake Justice",
@@ -99,12 +147,6 @@
       "player": "Matthew Kennedy",
       "injury": "Concussion",
       "returning": "1 Week"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Joel Amartey",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
