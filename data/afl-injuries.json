@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-03T19:10:44.851Z",
+  "generatedAt": "2026-09-03T22:19:29.243Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 185,
+  "injuryCount": 186,
   "injuries": [
+    {
+      "team": "Brisbane Lions",
+      "player": "Hugh McCluggage",
+      "injury": "Soft tissue",
+      "returning": "available for this qualifying final"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Jack Ginnivan",
+      "injury": "Back",
+      "returning": "Test"
+    },
     {
       "team": "St Kilda Saints",
       "player": "Molly McDonald",
@@ -805,12 +817,6 @@
     {
       "team": "Port Adelaide Power",
       "player": "Jack Watkins",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Hugh McCluggage",
       "injury": "Injury",
       "returning": "TBC"
     },
