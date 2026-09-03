@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-09-03T14:12:48.300Z",
+  "generatedAt": "2026-09-03T19:10:44.851Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 194,
+  "injuryCount": 185,
   "injuries": [
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Mitch Lewis",
-      "injury": "Shoulder",
-      "returning": "active"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Brandon Walker",
-      "injury": "Ankle",
-      "returning": "TBC"
-    },
     {
       "team": "St Kilda Saints",
       "player": "Molly McDonald",
@@ -107,12 +95,6 @@
       "returning": "active"
     },
     {
-      "team": "Fremantle Dockers",
-      "player": "Murphy Reid",
-      "injury": "Groin",
-      "returning": "Returned"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Cooper Lord",
       "injury": "Knee",
@@ -155,12 +137,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Will Day",
-      "injury": "Injury",
-      "returning": "active"
-    },
-    {
       "team": "Port Adelaide Power",
       "player": "Zak Butters",
       "injury": "Ankle",
@@ -197,12 +173,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Ginnivan",
-      "injury": "Back",
-      "returning": "This Round"
-    },
-    {
       "team": "Carlton Blues",
       "player": "Nick Haynes",
       "injury": "Soreness",
@@ -213,12 +183,6 @@
       "player": "Will Hayward",
       "injury": "missed the wildcard final",
       "returning": "TBC"
-    },
-    {
-      "team": "Woodville-West Torrens",
-      "player": "Max Beattie",
-      "injury": "Ankle",
-      "returning": "active"
     },
     {
       "team": "Carlton Blues",
@@ -441,24 +405,6 @@
       "player": "Peter Ladhams",
       "injury": "Groin",
       "returning": "Season"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Jye Amiss",
-      "injury": "Ankle",
-      "returning": "Returning for qualifying final"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sam Switkowski",
-      "injury": "managed",
-      "returning": "Finals Week Two"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Heath Chapman",
-      "injury": "managed",
-      "returning": "Finals Week Two"
     },
     {
       "team": "Melbourne Demons",
