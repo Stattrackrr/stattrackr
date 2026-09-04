@@ -1,20 +1,14 @@
 {
-  "generatedAt": "2026-09-03T22:19:29.243Z",
+  "generatedAt": "2026-09-04T02:40:49.957Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 186,
+  "injuryCount": 184,
   "injuries": [
     {
       "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
       "injury": "Soft tissue",
       "returning": "available for this qualifying final"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Ginnivan",
-      "injury": "Back",
-      "returning": "Test"
     },
     {
       "team": "St Kilda Saints",
@@ -255,12 +249,6 @@
       "player": "James Harmes",
       "injury": "active",
       "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Will Lewis",
-      "injury": "Calf",
-      "returning": "Test"
     },
     {
       "team": "Western Bulldogs",
@@ -537,12 +525,6 @@
       "player": "Zane Duursma",
       "injury": "Shoulder",
       "returning": "Season"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "Ankle",
-      "returning": "pushing for a return"
     },
     {
       "team": "Geelong Cats",
@@ -861,6 +843,12 @@
       "player": "Darcy Parish",
       "injury": "playing VFL",
       "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "active",
+      "returning": "active"
     },
     {
       "team": "West Perth",
