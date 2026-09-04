@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-04T14:05:10.489Z",
+  "generatedAt": "2026-09-04T17:28:48.772Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 184,
+  "injuryCount": 180,
   "injuries": [
     {
       "team": "Brisbane Lions",
@@ -98,12 +98,6 @@
       "team": "Fremantle Dockers",
       "player": "Brennan Cox",
       "injury": "Soreness",
-      "returning": "active"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Cooper Lord",
-      "injury": "Knee",
       "returning": "active"
     },
     {
@@ -273,12 +267,6 @@
       "player": "Lauren Young",
       "injury": "Knee",
       "returning": "2025"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Patrick Cripps",
-      "injury": "Knee",
-      "returning": "Expected to play Friday night"
     },
     {
       "team": "Adelaide Crows",
@@ -451,12 +439,6 @@
     {
       "team": "Collingwood Magpies",
       "player": "Liam Puncher",
-      "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Carlton Blues",
-      "player": "Wade Derksen",
       "injury": "active",
       "returning": "TBC"
     },
@@ -843,12 +825,6 @@
       "player": "Darcy Parish",
       "injury": "playing VFL",
       "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Max Holmes",
-      "injury": "active",
-      "returning": "active"
     },
     {
       "team": "West Perth",
