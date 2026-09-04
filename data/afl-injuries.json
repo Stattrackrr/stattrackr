@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-04T20:18:25.416Z",
+  "generatedAt": "2026-09-04T23:46:32.854Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 180,
+  "injuryCount": 185,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Jeremy Cameron",
+      "injury": "Arm",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Max Holmes",
+      "injury": "Syndesmosis",
+      "returning": "active"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Izak Rankine",
+      "injury": "Soreness",
+      "returning": "active"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tim English",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Marcus Bontempelli",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Tom Liberatore",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Rory Lobb",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "James O'Donnell",
+      "injury": "Hamstring",
+      "returning": "TBC"
+    },
     {
       "team": "Brisbane Lions",
       "player": "Hugh McCluggage",
@@ -246,12 +294,6 @@
     },
     {
       "team": "Western Bulldogs",
-      "player": "Tom Liberatore",
-      "injury": "Knee",
-      "returning": "TBA"
-    },
-    {
-      "team": "Western Bulldogs",
       "player": "Lachlan Smith",
       "injury": "Hamstring",
       "returning": "4 Weeks"
@@ -267,12 +309,6 @@
       "player": "Lauren Young",
       "injury": "Knee",
       "returning": "2025"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Izak Rankine",
-      "injury": "was suspended for last year's finals",
-      "returning": "active"
     },
     {
       "team": "Adelaide Crows",
@@ -411,12 +447,6 @@
       "player": "Scott Pendlebury",
       "injury": "Injury",
       "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "South Adelaide",
