@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-09-05T14:33:20.935Z",
+  "generatedAt": "2026-09-05T17:59:55.885Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 187,
+  "injuryCount": 166,
   "injuries": [
-    {
-      "team": "Sydney Swans",
-      "player": "Callum Mills",
-      "injury": "ACL",
-      "returning": "miss most, and potentially all, of the 2027 season"
-    },
     {
       "team": "Western Bulldogs",
       "player": "Michael Sellwood",
@@ -41,52 +35,10 @@
       "returning": "active"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Izak Rankine",
-      "injury": "Soreness",
-      "returning": "active"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Tim English",
-      "injury": "Knee",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Marcus Bontempelli",
-      "injury": "Knee",
-      "returning": "TBC"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Tom Liberatore",
       "injury": "Concussion",
       "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Rory Lobb",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "James O'Donnell",
-      "injury": "Hamstring",
-      "returning": "TBC"
-    },
-    {
-      "team": "Brisbane Lions",
-      "player": "Hugh McCluggage",
-      "injury": "Soft tissue",
-      "returning": "available for this qualifying final"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Molly McDonald",
-      "injury": "Foot",
-      "returning": "active"
     },
     {
       "team": "Fremantle Dockers",
@@ -128,36 +80,6 @@
       "team": "Glenelg",
       "player": "Gabriel Patterson",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Sean Darcy",
-      "injury": "Calf",
-      "returning": "active"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Tobyn Murray",
-      "injury": "omitted from the side",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Bailey Banfield",
-      "injury": "omitted from the side",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Christopher Scerri",
-      "injury": "omitted from the side",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Judd McVee",
-      "injury": "omitted from the side",
       "returning": "TBC"
     },
     {
@@ -323,18 +245,6 @@
       "returning": "2 Weeks"
     },
     {
-      "team": "Port Adelaide Power",
-      "player": "Lauren Young",
-      "injury": "Knee",
-      "returning": "2025"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Josh Rachele",
-      "injury": "Knee",
-      "returning": "active"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "James Peatling",
       "injury": "Hip",
@@ -455,12 +365,6 @@
       "returning": "Wildcard Final"
     },
     {
-      "team": "Western Bulldogs",
-      "player": "Ed Richards",
-      "injury": "Illness",
-      "returning": "active"
-    },
-    {
       "team": "Collingwood Magpies",
       "player": "Scott Pendlebury",
       "injury": "Injury",
@@ -509,24 +413,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Port Adelaide Power",
-      "player": "Kirsty Lamb",
-      "injury": "omitted",
-      "returning": "TBC"
-    },
-    {
-      "team": "St Kilda Saints",
-      "player": "Nicola Barr",
-      "injury": "dropped after its heavy loss to Geelong",
-      "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Taylor Walker",
-      "injury": "Glute",
-      "returning": "TBC"
-    },
-    {
       "team": "Adelaide Crows",
       "player": "Jordon Butts",
       "injury": "Ankle",
@@ -537,12 +423,6 @@
       "player": "Taylor Smith",
       "injury": "Arm",
       "returning": "three to four weeks"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Holly Cooper",
-      "injury": "Elbow",
-      "returning": "test for Saturday's match"
     },
     {
       "team": "St Kilda Saints",
@@ -885,12 +765,6 @@
       "player": "Brayden Fiorini",
       "injury": "Soreness",
       "returning": "active"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Jaeger O'Meara",
-      "injury": "Injury",
-      "returning": "TBC"
     },
     {
       "team": "Collingwood Magpies",
