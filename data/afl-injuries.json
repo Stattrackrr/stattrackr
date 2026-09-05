@@ -1,13 +1,31 @@
 {
-  "generatedAt": "2026-09-05T08:08:02.828Z",
+  "generatedAt": "2026-09-05T11:53:24.582Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 186,
+  "injuryCount": 187,
   "injuries": [
     {
       "team": "Sydney Swans",
       "player": "Callum Mills",
-      "injury": "Knee",
+      "injury": "ACL",
+      "returning": "miss most, and potentially all, of the 2027 season"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Michael Sellwood",
+      "injury": "Concussion",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Zac Taylor",
+      "injury": "Injury",
+      "returning": "TBC"
+    },
+    {
+      "team": "Western Bulldogs",
+      "player": "Matthew Kennedy",
+      "injury": "Injury",
       "returning": "TBC"
     },
     {
@@ -177,12 +195,6 @@
       "player": "Oskar Baker",
       "injury": "Hamstring",
       "returning": "4 Weeks"
-    },
-    {
-      "team": "Western Bulldogs",
-      "player": "Matthew Kennedy",
-      "injury": "Concussion",
-      "returning": "1 Week"
     },
     {
       "team": "Sydney Swans",
@@ -613,32 +625,26 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "club suspension",
-      "returning": "Season"
+      "injury": "suspended for a breach of club standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "club suspension",
-      "returning": "Season"
+      "injury": "suspended for a breach of club standards",
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "club suspension",
-      "returning": "Season"
+      "injury": "suspended for a breach of club standards",
+      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
       "player": "Lachlan Carmichael",
       "injury": "Listed as an 'Out' after a quieter game.",
       "returning": "TBC"
-    },
-    {
-      "team": "Adelaide Crows",
-      "player": "Zac Taylor",
-      "injury": "Hamstring",
-      "returning": "up to three weeks"
     },
     {
       "team": "West Coast Eagles",
