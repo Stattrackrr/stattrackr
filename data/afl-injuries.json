@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-05T02:41:11.554Z",
+  "generatedAt": "2026-09-05T08:08:02.828Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 185,
+  "injuryCount": 186,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Callum Mills",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
