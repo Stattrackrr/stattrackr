@@ -1,9 +1,27 @@
 {
-  "generatedAt": "2026-09-05T21:59:29.205Z",
+  "generatedAt": "2026-09-05T23:37:20.651Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 166,
+  "injuryCount": 169,
   "injuries": [
+    {
+      "team": "West Adelaide",
+      "player": "James Williams",
+      "injury": "Shin",
+      "returning": "Season"
+    },
+    {
+      "team": "Sandringham Dragons",
+      "player": "Arki Butler",
+      "injury": "Collarbone",
+      "returning": "in a fortnight"
+    },
+    {
+      "team": "Sandringham Dragons",
+      "player": "Gus Teixeira",
+      "injury": "Calf",
+      "returning": "in a fortnight"
+    },
     {
       "team": "Western Bulldogs",
       "player": "Michael Sellwood",
