@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-06T22:02:34.918Z",
+  "generatedAt": "2026-09-06T23:32:08.213Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 169,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Callum Mills",
+      "injury": "Knee",
+      "returning": "scans on Monday"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Brandon Walker",
@@ -45,12 +51,6 @@
       "player": "Harry McKay",
       "injury": "Ankle",
       "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Callum Mills",
-      "injury": "ACL",
-      "returning": "Season"
     },
     {
       "team": "West Adelaide",
