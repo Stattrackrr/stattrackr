@@ -15,6 +15,7 @@ export const TENNIS_PLAYER_STAT_PRIORITY = [
   'opponentAces',
   'totalAces',
   'totalSets',
+  'dominanceRatio',
   'doubleFaults',
   'pointsWon',
   'returnPointsWon',
@@ -123,6 +124,25 @@ export function tennisTourLabel(opts: {
   return tour || 'Tennis';
 }
 
+/** Return points won % / serve points lost %. Both inputs are 0–100. */
+export function tennisDominanceRatio(
+  returnPointsWonPct: number | null | undefined,
+  servicePointsWonPct: number | null | undefined
+): number | null {
+  const rpw =
+    typeof returnPointsWonPct === 'number' && Number.isFinite(returnPointsWonPct)
+      ? returnPointsWonPct
+      : null;
+  const spw =
+    typeof servicePointsWonPct === 'number' && Number.isFinite(servicePointsWonPct)
+      ? servicePointsWonPct
+      : null;
+  if (rpw == null || spw == null) return null;
+  const lost = 100 - spw;
+  if (lost <= 0) return null;
+  return rpw / lost;
+}
+
 export function defaultTennisGameStat(stat: string | null | undefined): string {
   if (isTennisChartStat(stat)) return stat as string;
   return 'moneyline';
@@ -133,6 +153,7 @@ export const TENNIS_STAT_LABELS: Record<string, string> = {
   opponentAces: 'OPP ACES',
   totalAces: 'TOTAL ACES',
   totalSets: 'TOTAL SETS',
+  dominanceRatio: 'DR',
   doubleFaults: 'DF',
   gamesWon: 'GAMES WON',
   gamesLost: 'OPP GAMES WON',

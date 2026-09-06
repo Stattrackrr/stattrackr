@@ -11,8 +11,8 @@ import { MobileBottomNavigation } from '@/app/nba/research/dashboard/components/
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { TennisStatsChart, type NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
 import TennisDvpCard from '@/app/tennis/components/TennisDvpCard';
-import TennisOpponentBreakdownCard from '@/app/tennis/components/TennisOpponentBreakdownCard';
 import TennisTeamMatchupCard from '@/app/tennis/components/TennisTeamMatchupCard';
+import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAveragesCard';
 import {
   TennisSupportingStats,
   defaultSupportingStatForMain,
@@ -45,7 +45,7 @@ import { tennisFlagUrl } from '@/lib/tennis/flags';
 const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
 
 type NblPropsMode = 'player' | 'team';
-type NblRightTab = 'dvp' | 'breakdown' | 'team_matchup';
+type NblRightTab = 'dvp' | 'team_matchup';
 
 type NblRosterPlayer = {
   playerId: string | null;
@@ -275,7 +275,7 @@ function readInitialNblSelection(): {
       selectedPlayer: persistedPlayer,
       selectedTeam: tennisTeamParam,
       nblPropsMode: 'team',
-      nblRightTab: 'breakdown',
+      nblRightTab: 'team_matchup',
       searchQuery: persistedPlayer?.name || tennisTeamParam,
       mainChartStat: defaultTennisGameStat(stat),
       chartTimeframe:
@@ -293,12 +293,13 @@ function readInitialNblSelection(): {
     persisted.nblPropsMode === 'team' || persisted.nblPropsMode === 'player'
       ? persisted.nblPropsMode
       : 'player';
-  const rightTab =
-    persisted.nblRightTab === 'breakdown' ||
-    persisted.nblRightTab === 'team_matchup' ||
-    persisted.nblRightTab === 'dvp'
-      ? persisted.nblRightTab
-      : 'dvp';
+  const persistedTab = String(persisted.nblRightTab || '');
+  const rightTab: NblRightTab =
+    persistedTab === 'team_matchup' || persistedTab === 'dvp'
+      ? persistedTab
+      : persistedTab === 'breakdown'
+        ? 'team_matchup'
+        : 'dvp';
   const tf =
     typeof persisted.chartTimeframe === 'string' &&
     (NBL_CHART_TIMEFRAMES as readonly string[]).includes(persisted.chartTimeframe)
@@ -495,11 +496,11 @@ export default function TennisDashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Game Props has no DVP tab — fall back to Opponent Breakdown.
+  // Game Props has no DVP tab — fall back to Player Matchup.
   useEffect(() => {
     if (nblPropsMode === 'team' && nblRightTab === 'dvp') {
-      setNblRightTab('breakdown');
-      setNblRightTabsVisited((prev) => new Set(prev).add('breakdown'));
+      setNblRightTab('team_matchup');
+      setNblRightTabsVisited((prev) => new Set(prev).add('team_matchup'));
     }
   }, [nblPropsMode, nblRightTab]);
 
@@ -1466,68 +1467,29 @@ export default function TennisDashboardPage() {
                     <>
                       <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
                         {nblPropsMode === 'player' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => visitRightTab('dvp')}
-                              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                                nblRightTab === 'dvp'
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              DVP
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => visitRightTab('breakdown')}
-                              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                                nblRightTab === 'breakdown'
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              Opponent Breakdown
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => visitRightTab('team_matchup')}
-                              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                                nblRightTab === 'team_matchup'
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              Team Matchup
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => visitRightTab('dvp')}
+                            className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                              nblRightTab === 'dvp'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            DVP
+                          </button>
                         )}
-                        {nblPropsMode === 'team' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => visitRightTab('breakdown')}
-                              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                                nblRightTab === 'breakdown'
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              Opponent Breakdown
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => visitRightTab('team_matchup')}
-                              className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
-                                nblRightTab === 'team_matchup'
-                                  ? 'bg-purple-600 text-white border-purple-600'
-                                  : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              Team Matchup
-                            </button>
-                          </>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => visitRightTab('team_matchup')}
+                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            nblRightTab === 'team_matchup'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Player Matchup
+                        </button>
                       </div>
                       <div
                         className={`relative w-full min-w-0 flex flex-col ${
@@ -1544,19 +1506,6 @@ export default function TennisDashboardPage() {
                             />
                           </div>
                         )}
-                        {nblRightTabsVisited.has('breakdown') && (
-                          <div
-                            className={
-                              nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                            }
-                          >
-                            <TennisOpponentBreakdownCard
-                              isDark={!!mounted && isDark}
-                              playerName={matchupLeft}
-                              lastOpponent={displayOpponent}
-                            />
-                          </div>
-                        )}
                         {nblRightTabsVisited.has('team_matchup') && (
                           <div
                             className={
@@ -1567,6 +1516,7 @@ export default function TennisDashboardPage() {
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
                               opponentName={displayOpponent}
+                              tour={dvpTour}
                             />
                           </div>
                         )}
@@ -1612,10 +1562,23 @@ export default function TennisDashboardPage() {
                   <div className="min-h-[320px]" />
                 </div>
 
-                {/* 5. Shot chart — mobile */}
+                {/* 5. Advanced Averages — mobile */}
                 {nblPropsMode === 'player' ? (
                   <div className="lg:hidden w-full min-w-0">
-                    <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px]`} />
+                    <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px] p-2`}>
+                      {showEmptyShell ? (
+                        <div className="min-h-[360px]" />
+                      ) : showStatsLoadingShell ? (
+                        <div className="min-h-[360px]" />
+                      ) : (
+                        <TennisAdvancedAveragesCard
+                          isDark={!!mounted && isDark}
+                          playerName={matchupLeft}
+                          opponentName={displayOpponent}
+                          tour={dvpTour}
+                        />
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -1633,7 +1596,7 @@ export default function TennisDashboardPage() {
                   <div className="h-[96px]" />
                 </div>
 
-                {/* DVP | Opponent Breakdown | Team Matchup — desktop */}
+                {/* DVP | Player Matchup — desktop */}
                 <div className={`hidden lg:block rounded-lg ${TENNIS_DASH_CARD_GLOW} p-1.5 xl:p-2 w-full min-w-0`}>
                   {showEmptyShell ? (
                     <div className="h-[420px]" />
@@ -1677,17 +1640,6 @@ export default function TennisDashboardPage() {
                         )}
                         <button
                           type="button"
-                          onClick={() => visitRightTab('breakdown')}
-                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
-                            nblRightTab === 'breakdown'
-                              ? 'bg-purple-600 text-white border-purple-600'
-                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          Opponent Breakdown
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => visitRightTab('team_matchup')}
                           className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
                             nblRightTab === 'team_matchup'
@@ -1695,7 +1647,7 @@ export default function TennisDashboardPage() {
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
                           }`}
                         >
-                          Team Matchup
+                          Player Matchup
                         </button>
                       </div>
                       <div
@@ -1705,20 +1657,6 @@ export default function TennisDashboardPage() {
                             : 'overflow-hidden h-[380px] xl:h-[420px]'
                         }`}
                       >
-                        {((nblPropsMode === 'team' && nblRightTab === 'breakdown') ||
-                          (nblPropsMode === 'player' && nblRightTabsVisited.has('breakdown'))) && (
-                          <div
-                            className={
-                              nblRightTab === 'breakdown' ? 'flex flex-col h-full min-h-0' : 'hidden'
-                            }
-                          >
-                            <TennisOpponentBreakdownCard
-                              isDark={!!mounted && isDark}
-                              playerName={matchupLeft}
-                              lastOpponent={displayOpponent}
-                            />
-                          </div>
-                        )}
                         {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                           <div
                             className={
@@ -1747,6 +1685,7 @@ export default function TennisDashboardPage() {
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
                               opponentName={displayOpponent}
+                              tour={dvpTour}
                             />
                           </div>
                         )}
@@ -1755,10 +1694,23 @@ export default function TennisDashboardPage() {
                   )}
                 </div>
 
-                {/* Shot Chart — desktop */}
+                {/* Advanced Averages — desktop */}
                 {nblPropsMode === 'player' ? (
                   <div className="hidden lg:block w-full min-w-0">
-                    <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} h-[380px]`} />
+                    <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px] p-1.5 xl:p-2`}>
+                      {showEmptyShell ? (
+                        <div className="h-[360px]" />
+                      ) : showStatsLoadingShell ? (
+                        <div className="h-[360px]" />
+                      ) : (
+                        <TennisAdvancedAveragesCard
+                          isDark={!!mounted && isDark}
+                          playerName={matchupLeft}
+                          opponentName={displayOpponent}
+                          tour={dvpTour}
+                        />
+                      )}
+                    </div>
                   </div>
                 ) : null}
 

@@ -7,7 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
-import { isUnplayedTennisMatch } from '@/lib/tennis/chartStats';
+import { isUnplayedTennisMatch, tennisDominanceRatio } from '@/lib/tennis/chartStats';
 import {
   TENNIS_DVP_METRICS,
   TENNIS_DVP_MIN_MATCHES,
@@ -82,6 +82,7 @@ export type TennisMatchRow = {
   setsWon: number | null;
   setsLost: number | null;
   totalSets: number | null;
+  dominanceRatio: number | null;
   aces: number | null;
   opponentAces: number | null;
   totalAces: number | null;
@@ -107,6 +108,7 @@ export type TennisMatchRow = {
   servePointsWon: number | null;
   totalPoints: number | null;
   hand: string | null;
+  opponentHand: string | null;
   ioc: string | null;
 };
 
@@ -499,6 +501,10 @@ function perspective(
     setsWon,
     setsLost,
     totalSets: setsWon != null && setsLost != null ? setsWon + setsLost : null,
+    dominanceRatio: tennisDominanceRatio(
+      pct(returnPointsWon, oppReturnPointsFaced),
+      pct(serveWon, mine.svpt)
+    ),
     aces: mine.ace,
     opponentAces: opp.ace,
     totalAces: mine.ace != null && opp.ace != null ? mine.ace + opp.ace : null,
@@ -524,6 +530,7 @@ function perspective(
     servePointsWon: serveWon,
     totalPoints,
     hand: col(headers, row, `${p}_hand`) || null,
+    opponentHand: col(headers, row, `${o}_hand`) || null,
     ioc: col(headers, row, `${p}_ioc`) || null,
   };
 }

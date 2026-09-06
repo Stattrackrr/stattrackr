@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisDominanceRatio, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -219,6 +219,8 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
           : 'L'
         : PCT_STATS.has(selectedStat || '')
           ? `${point.value.toFixed(1)}%`
+          : selectedStat === 'dominanceRatio'
+            ? point.value.toFixed(2)
           : Number.isInteger(point.value)
             ? String(point.value)
             : point.value.toFixed(1)
@@ -451,6 +453,16 @@ function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unkno
     if (stat === 'pr') return pts + reb;
     if (stat === 'pa') return pts + ast;
     if (stat === 'ra') return reb + ast;
+  }
+  if (row && stat === 'dominanceRatio') {
+    const existing = toNumericValue(raw);
+    if (existing != null) return existing;
+    const rpw = toNumericValue(row.returnPointsWonPct);
+    const spw = toNumericValue(row.servicePointsWonPct);
+    const rpwPct = rpw == null ? null : rpw <= 1 ? rpw * 100 : rpw;
+    const spwPct = spw == null ? null : spw <= 1 ? spw * 100 : spw;
+    const dr = tennisDominanceRatio(rpwPct, spwPct);
+    return dr == null ? null : Math.round(dr * 100) / 100;
   }
   if (row && stat === 'efficiency') {
     const existing = toNumericValue(raw);
@@ -761,6 +773,9 @@ export function TennisStatsChart({
         if (META_SKIP.has(k) || STATS_HIDDEN.has(k)) continue;
         const num = toNumericValue(v);
         if (num !== null) keys.add(k);
+      }
+      if (toChartStatValue('dominanceRatio', row.dominanceRatio, row) != null) {
+        keys.add('dominanceRatio');
       }
     }
     const ordered: string[] = [];
@@ -1211,6 +1226,12 @@ export function TennisStatsChart({
     }
 
     const maxValue = Math.max(...values);
+    if (selectedStat === 'dominanceRatio') {
+      const max = Math.max(2, Math.ceil(maxValue * 2) / 2);
+      const ticks: number[] = [];
+      for (let t = 0; t <= max + 1e-9; t += 0.5) ticks.push(Math.round(t * 10) / 10);
+      return { domain: [0, max] as [number, number], ticks };
+    }
     const useMaxPlusOne =
       selectedStat === 'steals' ||
       selectedStat === 'blocks' ||
@@ -1664,7 +1685,9 @@ export function TennisStatsChart({
             customTooltip={customTooltip}
             customXAxisTick={nblXAxisTick}
             xAxisHeight={52}
-            yAxisTickFormatter={(value) => String(Math.round(value))}
+            yAxisTickFormatter={(value) =>
+              selectedStat === 'dominanceRatio' ? Number(value).toFixed(1) : String(Math.round(value))
+            }
             preservePrimaryYAxisTicks={
               selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)
             }

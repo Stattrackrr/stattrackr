@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
-import { TENNIS_STAT_LABELS } from '@/lib/tennis/chartStats';
+import { TENNIS_STAT_LABELS, tennisDominanceRatio } from '@/lib/tennis/chartStats';
 
 function toNumericValue(v: unknown): number | null {
   if (v == null) return null;
@@ -22,6 +22,7 @@ export type SupportingStatKind =
   | 'opponentAces'
   | 'totalAces'
   | 'totalSets'
+  | 'dominanceRatio'
   | 'doubleFaults'
   | 'gamesWon'
   | 'gamesLost'
@@ -39,6 +40,7 @@ const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
   { value: 'opponentAces', label: TENNIS_STAT_LABELS.opponentAces },
   { value: 'totalAces', label: TENNIS_STAT_LABELS.totalAces },
   { value: 'totalSets', label: TENNIS_STAT_LABELS.totalSets },
+  { value: 'dominanceRatio', label: TENNIS_STAT_LABELS.dominanceRatio },
   { value: 'doubleFaults', label: TENNIS_STAT_LABELS.doubleFaults },
   { value: 'gamesWon', label: TENNIS_STAT_LABELS.gamesWon },
   { value: 'gamesLost', label: TENNIS_STAT_LABELS.gamesLost },
@@ -65,6 +67,8 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
           ? ['aces', 'opponentAces', 'doubleFaults', 'gamesWon']
           : mainKey === 'totalSets'
             ? ['totalGames', 'spread', 'gamesWon', 'aces']
+          : mainKey === 'dominanceRatio'
+            ? ['returnPointsWon', 'firstServePct', 'aces', 'totalSets']
           : mainKey === 'doubleFaults'
         ? ['aces', 'firstServePct', 'gamesWon']
         : mainKey === 'gamesWon' || mainKey === 'gamesLost' || mainKey === 'totalGames'
@@ -126,6 +130,15 @@ function readGameStats(g: Record<string, unknown>): StatBag {
     opponentAces: n('opponentAces'),
     totalAces: n('totalAces'),
     totalSets: n('totalSets'),
+    dominanceRatio: (() => {
+      const existing = n('dominanceRatio');
+      if (existing != null) return existing;
+      const rpw = n('returnPointsWonPct');
+      const spw = n('servicePointsWonPct');
+      const rpwPct = rpw == null ? null : rpw <= 1 ? rpw * 100 : rpw;
+      const spwPct = spw == null ? null : spw <= 1 ? spw * 100 : spw;
+      return tennisDominanceRatio(rpwPct, spwPct);
+    })(),
     doubleFaults: n('doubleFaults'),
     gamesWon: n('gamesWon'),
     gamesLost: n('gamesLost'),
