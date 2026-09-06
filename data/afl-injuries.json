@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-06T02:38:06.862Z",
+  "generatedAt": "2026-09-06T08:25:15.947Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 169,
+  "injuryCount": 172,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Nick Blakey",
+      "injury": "stood down for their part in the Pullman Hotel investigation",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Jordon",
+      "injury": "stood down for their part in the Pullman Hotel investigation",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Riley Bice",
+      "injury": "stood down for their part in the Pullman Hotel investigation",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Isaac Heeney",
+      "injury": "stood down for their part in the Pullman Hotel investigation",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Chad Warner",
+      "injury": "stood down for their part in the Pullman Hotel investigation",
+      "returning": "active"
+    },
+    {
+      "team": "Carlton Blues",
+      "player": "Harry McKay",
+      "injury": "Ankle",
+      "returning": "active"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Mim Strom",
+      "injury": "Shoulder",
+      "returning": "TBC"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Callum Mills",
+      "injury": "ACL",
+      "returning": "Season"
+    },
     {
       "team": "West Adelaide",
       "player": "James Williams",
@@ -507,36 +555,6 @@
       "player": "Tyson Sruk",
       "injury": "Foot",
       "returning": "Returned"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Jordon",
-      "injury": "club suspension",
-      "returning": "Season"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Riley Bice",
-      "injury": "club suspension",
-      "returning": "Season"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Isaac Heeney",
-      "injury": "suspended for a breach of club standards",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Chad Warner",
-      "injury": "suspended for a breach of club standards",
-      "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Nick Blakey",
-      "injury": "suspended for a breach of club standards",
-      "returning": "TBC"
     },
     {
       "team": "Western Bulldogs",
