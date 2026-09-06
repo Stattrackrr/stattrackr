@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-06T16:48:31.186Z",
+  "generatedAt": "2026-09-06T20:00:52.138Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 172,
+  "injuryCount": 168,
   "injuries": [
     {
       "team": "Sydney Swans",
@@ -39,12 +39,6 @@
       "player": "Harry McKay",
       "injury": "Ankle",
       "returning": "active"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Mim Strom",
-      "injury": "Shoulder",
-      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
@@ -461,18 +455,6 @@
       "returning": "TBC"
     },
     {
-      "team": "West Coast Eagles",
-      "player": "Mia Russo",
-      "injury": "making way",
-      "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Roxanne Roux",
-      "injury": "listed as managed",
-      "returning": "TBC"
-    },
-    {
       "team": "Melbourne Demons",
       "player": "Christian Salem",
       "injury": "dropped for youngster Xavier Taylor",
@@ -530,12 +512,6 @@
       "team": "GWS Giants",
       "player": "Kaitlyn Srhoj",
       "injury": "Foot",
-      "returning": "TBC"
-    },
-    {
-      "team": "Collingwood Magpies",
-      "player": "Lucille Cronin",
-      "injury": "Shoulder",
       "returning": "TBC"
     },
     {
