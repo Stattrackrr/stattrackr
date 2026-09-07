@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-04T19:22:52Z",
-  "count": 94,
+  "generatedAt": "2026-09-07T16:18:51Z",
+  "count": 96,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -4052,6 +4052,100 @@
           "recommendedSide": "UNDER",
           "recommendedEdge": 0.209,
           "recommendedProb": 0.6939,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "fremantledockers|geelongcats|2026-09-11",
+      "finalizedAt": "2026-09-07T16:18:28Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-09-07T16:18:51Z",
+      "modelVersion": "afl-disp-20260904-192119",
+      "homeTeam": "Fremantle Dockers",
+      "awayTeam": "Geelong Cats",
+      "commenceTime": "2026-09-11T10:10:09Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Bailey Smith",
+          "bookmaker": "SportsBet",
+          "line": 30.5,
+          "expectedDisposals": 25.93,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2399,
+          "recommendedProb": 0.7309,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Shaun Mannagh",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 16.11,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2366,
+          "recommendedProb": 0.7296,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Patrick Dangerfield",
+          "bookmaker": "SportsBet",
+          "line": 15.5,
+          "expectedDisposals": 17.88,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1646,
+          "recommendedProb": 0.6576,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "brisbanelions|adelaidecrows|2026-09-12",
+      "finalizedAt": "2026-09-07T16:18:28Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-09-07T16:18:51Z",
+      "modelVersion": "afl-disp-20260904-192119",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-09-12T09:35:18Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Jordan Dawson",
+          "bookmaker": "SportsBet",
+          "line": 26.5,
+          "expectedDisposals": 21.31,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2644,
+          "recommendedProb": 0.7654,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Will Ashcroft",
+          "bookmaker": "SportsBet",
+          "line": 29.5,
+          "expectedDisposals": 25.61,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2101,
+          "recommendedProb": 0.6981,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Josh Worrell",
+          "bookmaker": "SportsBet",
+          "line": 19.5,
+          "expectedDisposals": 21.41,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1403,
+          "recommendedProb": 0.6443,
           "rank": 3,
           "actualDisposals": null
         }

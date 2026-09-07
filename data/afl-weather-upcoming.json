@@ -1,41 +1,30 @@
 {
-  "generatedAt": "2026-09-04T19:02:32.068Z",
+  "generatedAt": "2026-09-07T16:16:16.154Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
     {
-      "gameId": "ca792e093602b7f8d532b4ec70e6d12c",
-      "homeTeam": "Sydney Swans",
-      "awayTeam": "Brisbane Lions",
-      "commenceTime": "2026-09-05T05:15:00Z",
-      "weather": {
-        "temperatureC": 30.7,
-        "precipitationMm": 0,
-        "windKmh": 28.2
-      }
-    },
-    {
-      "gameId": "406e90b059532962e596058dd4fd45db",
-      "homeTeam": "Adelaide Crows",
-      "awayTeam": "Western Bulldogs",
-      "commenceTime": "2026-09-05T09:35:12Z",
-      "weather": {
-        "temperatureC": 13.4,
-        "precipitationMm": 0.1,
-        "windKmh": 29.2
-      }
-    },
-    {
       "gameId": "e7e06a821e70efe5c91cd38371d33977",
       "homeTeam": "Fremantle Dockers",
       "awayTeam": "Geelong Cats",
-      "commenceTime": "2026-09-11T09:40:09Z",
+      "commenceTime": "2026-09-11T10:10:09Z",
       "weather": {
-        "temperatureC": 18.2,
+        "temperatureC": 18.7,
         "precipitationMm": 0,
-        "windKmh": 7.1
+        "windKmh": 13.4
+      }
+    },
+    {
+      "gameId": "d6423c4e7b6a9968552efdff870c5e2e",
+      "homeTeam": "Brisbane Lions",
+      "awayTeam": "Adelaide Crows",
+      "commenceTime": "2026-09-12T09:35:18Z",
+      "weather": {
+        "temperatureC": 17.6,
+        "precipitationMm": 0.1,
+        "windKmh": 6.5
       }
     }
   ],
-  "count": 3
+  "count": 2
 }
