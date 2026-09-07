@@ -2,42 +2,23 @@ import type { NextConfig } from "next";
 
 const chromiumBinTrace = ['./node_modules/@sparticuz/chromium/bin/**/*'] as const;
 
+const AFL_DISPOSALS_HISTORY_TRACE_FILES = [
+  './data/afl-model/history/**/*',
+  './data/afl-model/latest-disposals-projections.json',
+] as const;
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   // Vercel file tracing omits @sparticuz/chromium/bin/*.br unless explicitly included
   outputFileTracingIncludes: {
     '/api/soccer/player-stats-batch': [...chromiumBinTrace],
     '/api/soccer/player-props-test': [...chromiumBinTrace],
-    '/api/afl/model/disposals/top-picks': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
-    '/api/afl/model/disposals/top-picks/route': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
-    '/api/afl/model/disposals/history': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
-    '/api/afl/model/disposals/history/route': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
-    '/api/afl/model/disposals/history/all': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
-    '/api/afl/model/disposals/history/all/route': [
-      './data/afl-model/history/**/*',
-      './data/afl-model/latest-disposals-projections.json',
-      './data/afl-model/projections/disposals-projections-*.json',
-    ],
+    '/api/afl/model/disposals/top-picks': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
+    '/api/afl/model/disposals/top-picks/route': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
+    '/api/afl/model/disposals/history': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
+    '/api/afl/model/disposals/history/route': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
+    '/api/afl/model/disposals/history/all': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
+    '/api/afl/model/disposals/history/all/route': [...AFL_DISPOSALS_HISTORY_TRACE_FILES],
     '/api/afl/footywire-team-selections': [
       './data/afl-team-selections-snapshot.html',
       './data/afl-team-selections-snapshot.json',

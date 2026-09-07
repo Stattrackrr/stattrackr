@@ -113,29 +113,11 @@ function readProjectionPayload(filePath: string): AflDisposalsProjectionPayload 
 }
 
 function readProjectionPayloads(): AflDisposalsProjectionPayload[] {
-  const baseDir = path.join(process.cwd(), 'data', 'afl-model');
-  const out: AflDisposalsProjectionPayload[] = [];
-
-  const latestPath = path.join(baseDir, 'latest-disposals-projections.json');
+  // Only the latest snapshot is traced into the serverless function. Scanning
+  // data/afl-model/projections would pull ~240MB of archives and exceed Vercel's 250MB limit.
+  const latestPath = path.join(process.cwd(), 'data', 'afl-model', 'latest-disposals-projections.json');
   const latest = readProjectionPayload(latestPath);
-  if (latest) out.push(latest);
-
-  const projectionsDir = path.join(baseDir, 'projections');
-  if (!fs.existsSync(projectionsDir)) return out;
-  let files: string[] = [];
-  try {
-    files = fs.readdirSync(projectionsDir)
-      .filter((name) => /^disposals-projections-.*\.json$/i.test(name))
-      .sort()
-      .reverse(); // newest first
-  } catch {
-    return out;
-  }
-  for (const name of files) {
-    const payload = readProjectionPayload(path.join(projectionsDir, name));
-    if (payload) out.push(payload);
-  }
-  return out;
+  return latest ? [latest] : [];
 }
 
 function buildProjectionMap(): Map<string, NonNullable<AflDisposalsProjectionPayload['rows']>[number]> {
