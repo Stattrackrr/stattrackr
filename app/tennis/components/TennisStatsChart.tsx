@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisDominanceRatio, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -303,7 +303,12 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
                 <span style={{ color: labelColor, fontWeight: 600 }}>{`Set ${idx + 1}`}</span>
                 <span
                   style={{
-                    color: tooltipText,
+                    color:
+                      set.playerGames > set.opponentGames
+                        ? winColor
+                        : set.opponentGames > set.playerGames
+                          ? lossColor
+                          : tooltipText,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
                     letterSpacing: '0.02em',
@@ -663,14 +668,14 @@ export function TennisStatsChart({
   const dedupedGameLogs = useMemo(
     () =>
       dedupeNblGames(
-        (gameLogs as Record<string, unknown>[]).filter((g) => !isUnplayedTennisMatch(g.score))
+        tennisMatchesPlayed(gameLogs as Record<string, unknown>[])
       ) as typeof gameLogs,
     [gameLogs]
   );
   const dedupedAllGameLogs = useMemo(
     () =>
       dedupeNblGames(
-        (allGameLogs as Record<string, unknown>[]).filter((g) => !isUnplayedTennisMatch(g.score))
+        tennisMatchesPlayed(allGameLogs as Record<string, unknown>[])
       ) as typeof allGameLogs,
     [allGameLogs]
   );

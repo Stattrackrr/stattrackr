@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadTennisRankings, type TennisTour } from '@/lib/tennis/sackmann';
+import { loadTennisRankings, type TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();

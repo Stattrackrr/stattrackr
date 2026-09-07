@@ -19,7 +19,7 @@ import {
   tourForPlayer,
   type TennisMatchRow,
   type TennisTour,
-} from '@/lib/tennis/sackmann';
+} from '@/lib/tennis/data';
 
 export {
   TENNIS_MATCHUP_STATS,
@@ -112,7 +112,7 @@ function statValues(rows: TennisMatchRow[], key: TennisMatchupStatKey): number[]
   return rows.map((row) => num(row[key])).filter((v): v is number => v != null);
 }
 
-/** Recent same-format matches that actually have this stat (Sackmann often lags slam box scores). */
+/** Recent same-format matches that actually have this stat. */
 function recentWithStat(
   rows: TennisMatchRow[],
   key: TennisMatchupStatKey,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { buildTennisAdvancedAverages } from '@/lib/tennis/advancedAverages';
-import type { TennisTour } from '@/lib/tennis/sackmann';
+import type { TennisTour } from '@/lib/tennis/types';
 
 export async function GET(request: NextRequest) {
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();

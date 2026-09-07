@@ -19,7 +19,8 @@ import {
   tourForPlayer,
   type TennisMatchRow,
   type TennisTour,
-} from '@/lib/tennis/sackmann';
+} from '@/lib/tennis/data';
+import { tennisHandForName } from '@/lib/tennis/hands';
 
 function num(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -239,7 +240,11 @@ function buildSide(
     playerName: resolved.id ? null : name,
     tour,
   }).filter((row) => matchesBestOf(row, bestOf) && matchesVsRank(row, vsRank));
-  const sample = windowRows(filtered, windowN, year);
+  const sample = windowRows(filtered, windowN, year).map((row) => ({
+    ...row,
+    hand: row.hand || tennisHandForName(row.playerName),
+    opponentHand: row.opponentHand || tennisHandForName(row.opponent),
+  }));
   return {
     name: resolved.name || name,
     hand: resolved.hand,

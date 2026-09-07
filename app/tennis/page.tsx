@@ -172,7 +172,30 @@ function asTennisPlayer(raw: unknown): NblRosterPlayer | null {
   if (!raw || typeof raw !== 'object') return null;
   const player = raw as NblRosterPlayer;
   if (!isTennisPlayer(player)) return null;
-  return { ...player, imageUrl: null };
+  return { ...player, imageUrl: player.imageUrl || null };
+}
+
+function TennisPlayerAvatar({
+  name,
+  imageUrl,
+  sizeClass,
+}: {
+  name?: string | null;
+  imageUrl?: string | null;
+  sizeClass: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (imageUrl && !failed) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name || ''}
+        className={`${sizeClass} rounded-full object-cover flex-shrink-0 bg-gray-200 dark:bg-gray-700`}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return <span className={`${sizeClass} rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0`} />;
 }
 
 function nblPlayerLogsCacheKey(playerId: string): string {
@@ -562,7 +585,7 @@ export default function TennisDashboardPage() {
     const tennisPlayer = asTennisPlayer(selectedPlayer);
     const tennisTeam = isTennisTourName(selectedTeam) ? selectedTeam : tennisPlayer?.team || null;
     const payload: PersistedNblPageState = {
-      selectedPlayer: tennisPlayer ? { ...tennisPlayer, imageUrl: null } : tennisPlayer,
+      selectedPlayer: tennisPlayer,
       selectedTeam: tennisTeam,
       nblPropsMode,
       nblTeamFilter,
@@ -666,7 +689,7 @@ export default function TennisDashboardPage() {
 
   const selectPlayer = (player: NblRosterPlayer) => {
     const tour = tennisPlayerTour(player);
-    setSelectedPlayer({ ...player, imageUrl: null, tour: tour || player.tour, team: tour || player.team });
+    setSelectedPlayer({ ...player, tour: tour || player.tour, team: tour || player.team });
     setSelectedTeam(tour || player.team || null);
     if (tour) setNblTeamFilter(tour);
     setSearchQuery(player.name);
@@ -783,7 +806,7 @@ export default function TennisDashboardPage() {
     };
   }, [nblPropsMode, selectedTeam, selectedPlayer?.playerId, selectedPlayer?.name]);
 
-  // Last completed opponent (Sackmann has no upcoming schedule).
+  // Last completed opponent (match cache has no upcoming schedule).
   useEffect(() => {
     const logs =
       nblPropsMode === 'team' ? selectedPlayerGameLogs : selectedPlayerGameLogs;
@@ -911,7 +934,11 @@ export default function TennisDashboardPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 min-w-0">
                           {nblPropsMode === 'player' && selectedPlayer ? (
-                            <span className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                            <TennisPlayerAvatar
+                              name={selectedPlayer.name}
+                              imageUrl={selectedPlayer.imageUrl}
+                              sizeClass="w-10 h-10"
+                            />
                           ) : null}
                           <div className="min-w-0">
                             <div className="flex items-baseline gap-3 mb-1">
@@ -1005,7 +1032,11 @@ export default function TennisDashboardPage() {
                       <div className="w-full min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           {nblPropsMode === 'player' && selectedPlayer ? (
-                            <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                            <TennisPlayerAvatar
+                              name={selectedPlayer.name}
+                              imageUrl={selectedPlayer.imageUrl}
+                              sizeClass="w-8 h-8"
+                            />
                           ) : null}
                           <div className="flex-shrink-0 min-w-0">
                             <div className="flex items-baseline gap-2 mb-0.5">
@@ -1129,7 +1160,11 @@ export default function TennisDashboardPage() {
                                         : 'hover:bg-gray-50 text-gray-900'
                                     }`}
                                   >
-                                    <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                                    <TennisPlayerAvatar
+                                      name={player.name}
+                                      imageUrl={player.imageUrl}
+                                      sizeClass="w-8 h-8"
+                                    />
                                     <span className="min-w-0 flex-1">
                                       <span className="font-medium block truncate">{player.name}</span>
                                       <span
@@ -1179,7 +1214,11 @@ export default function TennisDashboardPage() {
                                       : 'hover:bg-gray-50 text-gray-900'
                                   }`}
                                 >
-                                  <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                                  <TennisPlayerAvatar
+                                    name={player.name}
+                                    imageUrl={player.imageUrl}
+                                    sizeClass="w-8 h-8"
+                                  />
                                   <span className="min-w-0 flex-1">
                                     <span className="font-medium block truncate">{player.name}</span>
                                     <span

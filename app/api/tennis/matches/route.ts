@@ -3,7 +3,7 @@ import {
   loadPlayerMatches,
   tourForPlayer,
   type TennisTour,
-} from '@/lib/tennis/sackmann';
+} from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
   const playerId = request.nextUrl.searchParams.get('playerId');

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadTennisPlayers, type TennisTour } from '@/lib/tennis/sackmann';
+import { loadTennisPlayers, type TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
   const q = (request.nextUrl.searchParams.get('q') || '').trim().toLowerCase();
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       position: null,
       jersey: p.rank != null ? String(p.rank) : null,
       gender: p.tour === 'WTA' ? 'W' : 'M',
-      imageUrl: null,
+      imageUrl: p.imageUrl || null,
     })),
   });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { tennisDvpProfile, type TennisTour } from '@/lib/tennis/sackmann';
+import { tennisDvpProfile, type TennisTour } from '@/lib/tennis/data';
 
 export async function GET(request: NextRequest) {
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();

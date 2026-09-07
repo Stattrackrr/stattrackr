@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect, useMemo, useState } from 'react';
-import { isUnplayedTennisMatch, tennisLastName, tennisTourLabel } from '@/lib/tennis/chartStats';
+import { tennisLastName, tennisMatchesPlayed, tennisTourLabel } from '@/lib/tennis/chartStats';
 
 const GAMES_PER_PAGE = 10;
 
@@ -66,7 +66,7 @@ export const TennisBoxScore = memo(function TennisBoxScore({
   }, [selectedPlayer?.name, gameLogs]);
 
   const displayGames = useMemo(() => {
-    const rows = [...(gameLogs || [])].filter((g) => !isUnplayedTennisMatch(g.score));
+    const rows = tennisMatchesPlayed([...(gameLogs || [])]);
     rows.sort((a, b) => {
       const dateA = a.date ? new Date(String(a.date)).getTime() : 0;
       const dateB = b.date ? new Date(String(b.date)).getTime() : 0;
