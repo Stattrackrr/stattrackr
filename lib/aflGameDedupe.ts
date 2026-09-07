@@ -1,17 +1,54 @@
 import { opponentToOfficialTeamName } from '@/lib/aflTeamMapping';
 
-/** Canonical round label for dedupe keys (R14, SF, PF, etc.). */
+function roundText(round: unknown): string {
+  return String(round ?? '').trim().toUpperCase();
+}
+
+function finalsWeekNumber(text: string): number | null {
+  const match = text.match(/\bFW\s*(\d+)\b/);
+  if (!match) return null;
+  const week = parseInt(match[1], 10);
+  return Number.isFinite(week) ? week : null;
+}
+
+function regularRoundNumber(text: string): number | null {
+  const named = text.match(/\bR(?:OUND)?\s*(\d+)\b/);
+  if (named) return parseInt(named[1], 10);
+  const bare = text.match(/^(\d+)$/);
+  if (bare) return parseInt(bare[1], 10);
+  return null;
+}
+
+/** Canonical round label for dedupe keys (R14, FW1, SF, PF, etc.). */
 export function normalizeAflRoundForDedupe(round: unknown): string {
-  const text = String(round ?? '').trim().toUpperCase();
+  const text = roundText(round);
   if (!text) return '';
-  const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
-  if (match) return `R${parseInt(match[1], 10)}`;
+  const fw = finalsWeekNumber(text);
+  if (fw != null) return `FW${fw}`;
   if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 'GF';
   if (/\b(PF|PRELIM)\b/.test(text)) return 'PF';
   if (/\b(SF|SEMI)\b/.test(text)) return 'SF';
   if (/\b(QF|QUAL)\b/.test(text)) return 'QF';
   if (/\b(EF|ELIM)\b/.test(text)) return 'EF';
+  const regular = regularRoundNumber(text);
+  if (regular != null) return `R${regular}`;
   return text;
+}
+
+/** Sort key so finals weeks sit after R24 instead of colliding with R1. */
+export function parseAflRoundIndex(round: unknown): number {
+  const text = roundText(round);
+  if (!text) return Number.POSITIVE_INFINITY;
+  const fw = finalsWeekNumber(text);
+  if (fw != null) return 24 + fw;
+  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 29;
+  if (/\b(PF|PRELIM)\b/.test(text)) return 28;
+  if (/\b(SF|SEMI)\b/.test(text)) return 27;
+  if (/\b(QF|QUAL)\b/.test(text)) return 26;
+  if (/\b(EF|ELIM)\b/.test(text)) return 25;
+  const regular = regularRoundNumber(text);
+  if (regular != null) return regular;
+  return Number.POSITIVE_INFINITY;
 }
 
 function normalizeOpponentForDedupe(opponent: unknown): string {

@@ -30,7 +30,7 @@ function toneClass(tone: AdvAvgTone, isDark: boolean): string {
   return isDark ? 'text-gray-200' : 'text-gray-800';
 }
 
-function FilterSelect<T extends string>({
+function FilterSelect<T extends string | number>({
   value,
   options,
   isDark,
@@ -43,8 +43,11 @@ function FilterSelect<T extends string>({
 }) {
   return (
     <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as T)}
+      value={String(value)}
+      onChange={(e) => {
+        const next = options.find((option) => String(option.id) === e.target.value);
+        if (next) onChange(next.id);
+      }}
       className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${
         isDark
           ? 'border-gray-700 bg-[#071422] text-gray-300'
@@ -52,7 +55,7 @@ function FilterSelect<T extends string>({
       }`}
     >
       {options.map((option) => (
-        <option key={option.id} value={option.id}>
+        <option key={String(option.id)} value={String(option.id)}>
           {option.label}
         </option>
       ))}

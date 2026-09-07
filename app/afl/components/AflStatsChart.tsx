@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import AflXAxisTick from '@/app/afl/components/AflXAxisTick';
 import RangeSlider from '@/app/nba/research/dashboard/components/charts/RangeSlider';
-import { dedupeAflGames, resolveAflGameSeason } from '@/lib/aflGameDedupe';
+import { dedupeAflGames, parseAflRoundIndex, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 type AflAdvancedFilterKey =
@@ -545,19 +545,7 @@ function getGameOutcome(resultRaw: unknown): 'wins' | 'losses' | null {
 }
 
 function parseRoundIndex(round: unknown): number {
-  const text = String(round ?? '').trim().toUpperCase();
-  if (!text) return Number.POSITIVE_INFINITY;
-  const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
-  if (match) return parseInt(match[1], 10);
-
-  // Finals ordering after regular rounds so "last X" includes recent finals.
-  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 29;
-  if (/\b(PF|PRELIM)\b/.test(text)) return 28;
-  if (/\b(SF|SEMI)\b/.test(text)) return 27;
-  if (/\b(QF|QUAL)\b/.test(text)) return 26;
-  if (/\b(EF|ELIM)\b/.test(text)) return 25;
-
-  return Number.POSITIVE_INFINITY;
+  return parseAflRoundIndex(round);
 }
 
 export type AflChartTimeframe = (typeof TIMEFRAME_OPTIONS)[number];

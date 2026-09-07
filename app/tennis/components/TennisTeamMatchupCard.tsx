@@ -149,7 +149,7 @@ export default function TennisTeamMatchupCard({
   const noData =
     Boolean(payload) &&
     hasPlayers &&
-    payload.rows.every((r) => r.playerValue == null && r.opponentValue == null);
+    (payload?.rows.every((r) => r.playerValue == null && r.opponentValue == null) ?? false);
 
   const renderSide = (opts: {
     label: string;

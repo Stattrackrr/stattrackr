@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { AflChartTimeframe } from '@/app/afl/components/AflStatsChart';
+import { parseAflRoundIndex } from '@/lib/aflGameDedupe';
 import { opponentToOfficialTeamName, rosterTeamToInjuryTeam } from '@/lib/aflTeamMapping';
 
 function toNumericValue(v: unknown): number | null {
@@ -19,19 +20,7 @@ function toNumericValue(v: unknown): number | null {
 type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string; gameSeason?: number };
 
 function parseRoundIndex(round: unknown): number {
-  const text = String(round ?? '').trim().toUpperCase();
-  if (!text) return Number.POSITIVE_INFINITY;
-  const match = text.match(/(?:ROUND|R)?\s*(\d+)/);
-  if (match) return parseInt(match[1], 10);
-
-  // Finals ordering after regular rounds so "last X" includes recent finals.
-  if (/\b(GF|GRAND\s*FINAL)\b/.test(text)) return 29;
-  if (/\b(PF|PRELIM)\b/.test(text)) return 28;
-  if (/\b(SF|SEMI)\b/.test(text)) return 27;
-  if (/\b(QF|QUAL)\b/.test(text)) return 26;
-  if (/\b(EF|ELIM)\b/.test(text)) return 25;
-
-  return Number.POSITIVE_INFINITY;
+  return parseAflRoundIndex(round);
 }
 
 /** Apply same timeframe filter as AflStatsChart so bars match the main chart. */

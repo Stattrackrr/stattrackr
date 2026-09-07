@@ -27,7 +27,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { fetchProfileProStatusWithRetries } from '@/lib/profileSubscriptionGate';
+import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search } from 'lucide-react';
@@ -341,10 +341,10 @@ export default function TennisDashboardPage() {
   const [mounted, setMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
-  const [isPro, setIsPro] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { userEmail, username, avatarUrl, isPro, setUsername, setAvatarUrl } = useViewerProfile({
+    loginRedirect: '/login',
+    requireAuth: false,
+  });
 
   // SSR-safe defaults only — restore from localStorage/URL after mount (avoids hydration mismatch).
   const [nblPropsMode, setNblPropsMode] = useState<NblPropsMode>('player');
@@ -430,36 +430,6 @@ export default function TennisDashboardPage() {
     setNblGameFilters(restored.nblGameFilters);
     if (restored.searchQuery) setSearchQuery(restored.searchQuery);
     setSelectionHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user;
-        if (!user || cancelled) return;
-        setUserEmail(user.email ?? null);
-        const { profile: p, isPro: pro } = await fetchProfileProStatusWithRetries(supabase, user);
-        if (cancelled) return;
-        setUsername(
-          p?.full_name ||
-            p?.username ||
-            user.user_metadata?.username ||
-            user.user_metadata?.full_name ||
-            null
-        );
-        setAvatarUrl(
-          p?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null
-        );
-        setIsPro(pro);
-      } catch {
-        /* ignore — shell still renders for logged-out */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
