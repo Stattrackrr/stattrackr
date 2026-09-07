@@ -1,8 +1,123 @@
 {
   "season": 2026,
-  "generatedAt": "2026-09-07T02:34:39.445Z",
+  "generatedAt": "2026-09-07T08:59:03.187Z",
   "source": "footyinfo.com/fantasy-tools",
   "teams": {
+    "adelaide": {
+      "slug": "adelaide",
+      "name": "Adelaide",
+      "abbrev": "ADE",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Lachlan McAndrew",
+            "total": 533,
+            "rate": 76
+          },
+          {
+            "player": "Sam Berry",
+            "total": 458,
+            "rate": 69
+          },
+          {
+            "player": "Jordan Dawson",
+            "total": 438,
+            "rate": 69
+          },
+          {
+            "player": "Izak Rankine",
+            "total": 370,
+            "rate": 61
+          },
+          {
+            "player": "James Peatling",
+            "total": 330,
+            "rate": 56
+          },
+          {
+            "player": "Jake Soligo",
+            "total": 176,
+            "rate": 29
+          },
+          {
+            "player": "Josh Rachele",
+            "total": 172,
+            "rate": 24
+          },
+          {
+            "player": "Daniel Curtin",
+            "total": 95,
+            "rate": 18
+          },
+          {
+            "player": "Toby Murray",
+            "total": 89,
+            "rate": 22
+          },
+          {
+            "player": "Riley Thilthorpe",
+            "total": 75,
+            "rate": 12
+          }
+        ],
+        "teamTotal": 2872
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Wayne Milera",
+            "total": 79,
+            "rate": 27
+          },
+          {
+            "player": "Josh Worrell",
+            "total": 77,
+            "rate": 27
+          },
+          {
+            "player": "Mark Keane",
+            "total": 39,
+            "rate": 13
+          },
+          {
+            "player": "Hugo Hall-Kahan",
+            "total": 31,
+            "rate": 11
+          },
+          {
+            "player": "Rory Laird",
+            "total": 15,
+            "rate": 5
+          },
+          {
+            "player": "Nick Murray",
+            "total": 14,
+            "rate": 5
+          },
+          {
+            "player": "Jordan Dawson",
+            "total": 9,
+            "rate": 3
+          },
+          {
+            "player": "Chayce Jones",
+            "total": 5,
+            "rate": 2
+          },
+          {
+            "player": "Max Michalanney",
+            "total": 5,
+            "rate": 2
+          },
+          {
+            "player": "Luke Nankervis",
+            "total": 4,
+            "rate": 1
+          }
+        ],
+        "teamTotal": 290
+      }
+    },
     "brisbane": {
       "slug": "brisbane",
       "name": "Brisbane",
@@ -231,121 +346,6 @@
           }
         ],
         "teamTotal": 287
-      }
-    },
-    "adelaide": {
-      "slug": "adelaide",
-      "name": "Adelaide",
-      "abbrev": "ADE",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Lachlan McAndrew",
-            "total": 533,
-            "rate": 76
-          },
-          {
-            "player": "Sam Berry",
-            "total": 458,
-            "rate": 69
-          },
-          {
-            "player": "Jordan Dawson",
-            "total": 438,
-            "rate": 69
-          },
-          {
-            "player": "Izak Rankine",
-            "total": 370,
-            "rate": 61
-          },
-          {
-            "player": "James Peatling",
-            "total": 330,
-            "rate": 56
-          },
-          {
-            "player": "Jake Soligo",
-            "total": 176,
-            "rate": 29
-          },
-          {
-            "player": "Josh Rachele",
-            "total": 172,
-            "rate": 24
-          },
-          {
-            "player": "Daniel Curtin",
-            "total": 95,
-            "rate": 18
-          },
-          {
-            "player": "Toby Murray",
-            "total": 89,
-            "rate": 22
-          },
-          {
-            "player": "Riley Thilthorpe",
-            "total": 75,
-            "rate": 12
-          }
-        ],
-        "teamTotal": 2872
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Wayne Milera",
-            "total": 79,
-            "rate": 27
-          },
-          {
-            "player": "Josh Worrell",
-            "total": 77,
-            "rate": 27
-          },
-          {
-            "player": "Mark Keane",
-            "total": 39,
-            "rate": 13
-          },
-          {
-            "player": "Hugo Hall-Kahan",
-            "total": 31,
-            "rate": 11
-          },
-          {
-            "player": "Rory Laird",
-            "total": 15,
-            "rate": 5
-          },
-          {
-            "player": "Nick Murray",
-            "total": 14,
-            "rate": 5
-          },
-          {
-            "player": "Jordan Dawson",
-            "total": 9,
-            "rate": 3
-          },
-          {
-            "player": "Chayce Jones",
-            "total": 5,
-            "rate": 2
-          },
-          {
-            "player": "Max Michalanney",
-            "total": 5,
-            "rate": 2
-          },
-          {
-            "player": "Luke Nankervis",
-            "total": 4,
-            "rate": 1
-          }
-        ],
-        "teamTotal": 290
       }
     },
     "collingwood": {
@@ -798,6 +798,111 @@
         "teamTotal": 264
       }
     },
+    "gws": {
+      "slug": "gws",
+      "name": "GWS",
+      "abbrev": "GWS",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Clayton Oliver",
+            "total": 515,
+            "rate": 75
+          },
+          {
+            "player": "Finn Callaghan",
+            "total": 371,
+            "rate": 68
+          },
+          {
+            "player": "Kieren Briggs",
+            "total": 346,
+            "rate": 64
+          },
+          {
+            "player": "Toby Greene",
+            "total": 209,
+            "rate": 33
+          },
+          {
+            "player": "Nicholas Madden",
+            "total": 176,
+            "rate": 65
+          },
+          {
+            "player": "Toby Bedford",
+            "total": 161,
+            "rate": 35
+          },
+          {
+            "player": "Brent Daniels",
+            "total": 147,
+            "rate": 48
+          },
+          {
+            "player": "Stephen Coniglio",
+            "total": 144,
+            "rate": 23
+          },
+          {
+            "player": "Harry Rowston",
+            "total": 140,
+            "rate": 40
+          },
+          {
+            "player": "Xavier O'Halloran",
+            "total": 112,
+            "rate": 28
+          }
+        ],
+        "teamTotal": 2748
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Lachie Whitfield",
+            "total": 120,
+            "rate": 46
+          },
+          {
+            "player": "Lachie Ash",
+            "total": 77,
+            "rate": 30
+          },
+          {
+            "player": "Harry Himmelberg",
+            "total": 37,
+            "rate": 14
+          },
+          {
+            "player": "Connor Idun",
+            "total": 20,
+            "rate": 8
+          },
+          {
+            "player": "Finn Callaghan",
+            "total": 4,
+            "rate": 2
+          },
+          {
+            "player": "Jack Buckley",
+            "total": 1,
+            "rate": 0
+          },
+          {
+            "player": "Jayden Laverde",
+            "total": 1,
+            "rate": 0
+          },
+          {
+            "player": "Joe Fonti",
+            "total": 1,
+            "rate": 0
+          }
+        ],
+        "teamTotal": 261
+      }
+    },
     "gold-coast": {
       "slug": "gold-coast",
       "name": "Gold Coast",
@@ -913,109 +1018,119 @@
         "teamTotal": 285
       }
     },
-    "gws": {
-      "slug": "gws",
-      "name": "GWS",
-      "abbrev": "GWS",
+    "hawthorn": {
+      "slug": "hawthorn",
+      "name": "Hawthorn",
+      "abbrev": "HAW",
       "cba": {
         "leaders": [
           {
-            "player": "Clayton Oliver",
-            "total": 515,
-            "rate": 75
+            "player": "Jai Newcombe",
+            "total": 577,
+            "rate": 79
           },
           {
-            "player": "Finn Callaghan",
-            "total": 371,
+            "player": "Lloyd Meek",
+            "total": 427,
+            "rate": 58
+          },
+          {
+            "player": "Josh Ward",
+            "total": 394,
+            "rate": 54
+          },
+          {
+            "player": "Cam Mackenzie",
+            "total": 346,
+            "rate": 52
+          },
+          {
+            "player": "Ned Reeves",
+            "total": 230,
+            "rate": 52
+          },
+          {
+            "player": "Conor Nash",
+            "total": 224,
             "rate": 68
           },
           {
-            "player": "Kieren Briggs",
-            "total": 346,
-            "rate": 64
+            "player": "Connor Macdonald",
+            "total": 202,
+            "rate": 27
           },
           {
-            "player": "Toby Greene",
-            "total": 209,
-            "rate": 33
+            "player": "Will Day",
+            "total": 198,
+            "rate": 59
           },
           {
-            "player": "Nicholas Madden",
-            "total": 176,
-            "rate": 65
+            "player": "Nick Watson",
+            "total": 113,
+            "rate": 17
           },
           {
-            "player": "Toby Bedford",
-            "total": 161,
-            "rate": 35
-          },
-          {
-            "player": "Brent Daniels",
-            "total": 147,
-            "rate": 48
-          },
-          {
-            "player": "Stephen Coniglio",
-            "total": 144,
-            "rate": 23
-          },
-          {
-            "player": "Harry Rowston",
-            "total": 140,
-            "rate": 40
-          },
-          {
-            "player": "Xavier O'Halloran",
-            "total": 112,
-            "rate": 28
+            "player": "Mabior Chol",
+            "total": 67,
+            "rate": 11
           }
         ],
-        "teamTotal": 2748
+        "teamTotal": 2936
       },
       "kick_ins": {
         "leaders": [
           {
-            "player": "Lachie Whitfield",
-            "total": 120,
-            "rate": 46
+            "player": "Karl Amon",
+            "total": 60,
+            "rate": 25
           },
           {
-            "player": "Lachie Ash",
-            "total": 77,
-            "rate": 30
+            "player": "James Sicily",
+            "total": 50,
+            "rate": 21
           },
           {
-            "player": "Harry Himmelberg",
-            "total": 37,
-            "rate": 14
+            "player": "Josh Battle",
+            "total": 46,
+            "rate": 19
           },
           {
-            "player": "Connor Idun",
-            "total": 20,
-            "rate": 8
+            "player": "Blake Hardwick",
+            "total": 41,
+            "rate": 17
           },
           {
-            "player": "Finn Callaghan",
-            "total": 4,
+            "player": "Jarman Impey",
+            "total": 31,
+            "rate": 13
+          },
+          {
+            "player": "Jack Scrimshaw",
+            "total": 6,
             "rate": 2
           },
           {
-            "player": "Jack Buckley",
+            "player": "Josh Weddle",
+            "total": 2,
+            "rate": 1
+          },
+          {
+            "player": "Bailey Macdonald",
+            "total": 2,
+            "rate": 1
+          },
+          {
+            "player": "Jack Ginnivan",
             "total": 1,
             "rate": 0
           },
           {
-            "player": "Jayden Laverde",
-            "total": 1,
-            "rate": 0
-          },
-          {
-            "player": "Joe Fonti",
+            "player": "Harry Morrison",
             "total": 1,
             "rate": 0
           }
         ],
-        "teamTotal": 261
+        "teamTotal": 243
       }
     },
     "melbourne": {
@@ -1131,121 +1246,6 @@
           }
         ],
         "teamTotal": 258
-      }
-    },
-    "hawthorn": {
-      "slug": "hawthorn",
-      "name": "Hawthorn",
-      "abbrev": "HAW",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Jai Newcombe",
-            "total": 577,
-            "rate": 79
-          },
-          {
-            "player": "Lloyd Meek",
-            "total": 427,
-            "rate": 58
-          },
-          {
-            "player": "Josh Ward",
-            "total": 394,
-            "rate": 54
-          },
-          {
-            "player": "Cam Mackenzie",
-            "total": 346,
-            "rate": 52
-          },
-          {
-            "player": "Ned Reeves",
-            "total": 230,
-            "rate": 52
-          },
-          {
-            "player": "Conor Nash",
-            "total": 224,
-            "rate": 68
-          },
-          {
-            "player": "Connor Macdonald",
-            "total": 202,
-            "rate": 27
-          },
-          {
-            "player": "Will Day",
-            "total": 198,
-            "rate": 59
-          },
-          {
-            "player": "Nick Watson",
-            "total": 113,
-            "rate": 17
-          },
-          {
-            "player": "Mabior Chol",
-            "total": 67,
-            "rate": 11
-          }
-        ],
-        "teamTotal": 2936
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Karl Amon",
-            "total": 60,
-            "rate": 25
-          },
-          {
-            "player": "James Sicily",
-            "total": 50,
-            "rate": 21
-          },
-          {
-            "player": "Josh Battle",
-            "total": 46,
-            "rate": 19
-          },
-          {
-            "player": "Blake Hardwick",
-            "total": 41,
-            "rate": 17
-          },
-          {
-            "player": "Jarman Impey",
-            "total": 31,
-            "rate": 13
-          },
-          {
-            "player": "Jack Scrimshaw",
-            "total": 6,
-            "rate": 2
-          },
-          {
-            "player": "Josh Weddle",
-            "total": 2,
-            "rate": 1
-          },
-          {
-            "player": "Bailey Macdonald",
-            "total": 2,
-            "rate": 1
-          },
-          {
-            "player": "Jack Ginnivan",
-            "total": 1,
-            "rate": 0
-          },
-          {
-            "player": "Harry Morrison",
-            "total": 1,
-            "rate": 0
-          }
-        ],
-        "teamTotal": 243
       }
     },
     "north-melbourne": {
@@ -1708,121 +1708,6 @@
         "teamTotal": 321
       }
     },
-    "west-coast": {
-      "slug": "west-coast",
-      "name": "West Coast",
-      "abbrev": "WCE",
-      "cba": {
-        "leaders": [
-          {
-            "player": "Harley Reid",
-            "total": 548,
-            "rate": 80
-          },
-          {
-            "player": "Bailey Williams",
-            "total": 431,
-            "rate": 83
-          },
-          {
-            "player": "Tim Kelly",
-            "total": 426,
-            "rate": 73
-          },
-          {
-            "player": "Elliot Yeo",
-            "total": 412,
-            "rate": 67
-          },
-          {
-            "player": "Willem Duursma",
-            "total": 197,
-            "rate": 31
-          },
-          {
-            "player": "Jack Graham",
-            "total": 137,
-            "rate": 36
-          },
-          {
-            "player": "Matt Flynn",
-            "total": 122,
-            "rate": 74
-          },
-          {
-            "player": "Deven Robertson",
-            "total": 96,
-            "rate": 59
-          },
-          {
-            "player": "Cooper Duff-Tytler",
-            "total": 82,
-            "rate": 16
-          },
-          {
-            "player": "Brady Hough",
-            "total": 77,
-            "rate": 11
-          }
-        ],
-        "teamTotal": 2744
-      },
-      "kick_ins": {
-        "leaders": [
-          {
-            "player": "Tom McCarthy",
-            "total": 103,
-            "rate": 37
-          },
-          {
-            "player": "Josh Lindsay",
-            "total": 62,
-            "rate": 22
-          },
-          {
-            "player": "Brandon Starcevich",
-            "total": 33,
-            "rate": 12
-          },
-          {
-            "player": "Liam Duggan",
-            "total": 28,
-            "rate": 10
-          },
-          {
-            "player": "Marcus Herbert",
-            "total": 26,
-            "rate": 9
-          },
-          {
-            "player": "Tylar Young",
-            "total": 8,
-            "rate": 3
-          },
-          {
-            "player": "Ryan Maric",
-            "total": 7,
-            "rate": 3
-          },
-          {
-            "player": "Willem Duursma",
-            "total": 4,
-            "rate": 1
-          },
-          {
-            "player": "Liam Baker",
-            "total": 3,
-            "rate": 1
-          },
-          {
-            "player": "Harley Reid",
-            "total": 3,
-            "rate": 1
-          }
-        ],
-        "teamTotal": 279
-      }
-    },
     "sydney": {
       "slug": "sydney",
       "name": "Sydney",
@@ -1936,6 +1821,121 @@
           }
         ],
         "teamTotal": 278
+      }
+    },
+    "west-coast": {
+      "slug": "west-coast",
+      "name": "West Coast",
+      "abbrev": "WCE",
+      "cba": {
+        "leaders": [
+          {
+            "player": "Harley Reid",
+            "total": 548,
+            "rate": 80
+          },
+          {
+            "player": "Bailey Williams",
+            "total": 431,
+            "rate": 83
+          },
+          {
+            "player": "Tim Kelly",
+            "total": 426,
+            "rate": 73
+          },
+          {
+            "player": "Elliot Yeo",
+            "total": 412,
+            "rate": 67
+          },
+          {
+            "player": "Willem Duursma",
+            "total": 197,
+            "rate": 31
+          },
+          {
+            "player": "Jack Graham",
+            "total": 137,
+            "rate": 36
+          },
+          {
+            "player": "Matt Flynn",
+            "total": 122,
+            "rate": 74
+          },
+          {
+            "player": "Deven Robertson",
+            "total": 96,
+            "rate": 59
+          },
+          {
+            "player": "Cooper Duff-Tytler",
+            "total": 82,
+            "rate": 16
+          },
+          {
+            "player": "Brady Hough",
+            "total": 77,
+            "rate": 11
+          }
+        ],
+        "teamTotal": 2744
+      },
+      "kick_ins": {
+        "leaders": [
+          {
+            "player": "Tom McCarthy",
+            "total": 103,
+            "rate": 37
+          },
+          {
+            "player": "Josh Lindsay",
+            "total": 62,
+            "rate": 22
+          },
+          {
+            "player": "Brandon Starcevich",
+            "total": 33,
+            "rate": 12
+          },
+          {
+            "player": "Liam Duggan",
+            "total": 28,
+            "rate": 10
+          },
+          {
+            "player": "Marcus Herbert",
+            "total": 26,
+            "rate": 9
+          },
+          {
+            "player": "Tylar Young",
+            "total": 8,
+            "rate": 3
+          },
+          {
+            "player": "Ryan Maric",
+            "total": 7,
+            "rate": 3
+          },
+          {
+            "player": "Willem Duursma",
+            "total": 4,
+            "rate": 1
+          },
+          {
+            "player": "Liam Baker",
+            "total": 3,
+            "rate": 1
+          },
+          {
+            "player": "Harley Reid",
+            "total": 3,
+            "rate": 1
+          }
+        ],
+        "teamTotal": 279
       }
     },
     "western-bulldogs": {

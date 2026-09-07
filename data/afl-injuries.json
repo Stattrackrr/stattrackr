@@ -1,9 +1,63 @@
 {
-  "generatedAt": "2026-09-07T02:34:38.229Z",
+  "generatedAt": "2026-09-07T08:59:02.003Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 153,
+  "injuryCount": 154,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Isaac Heeney",
+      "injury": "Banned from being selected; serving club-imposed bans.",
+      "returning": "Season"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Chad Warner",
+      "injury": "Banned from being selected; serving club-imposed bans.",
+      "returning": "Season"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Nick Blakey",
+      "injury": "Banned from being selected; serving club-imposed bans.",
+      "returning": "Season"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Joel Amartey",
+      "injury": "Achilles",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Justin McInerney",
+      "injury": "Hamstring",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "James Jordon",
+      "injury": "Won’t play again this season (contextually linked to club-imposed bans).",
+      "returning": "Season"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "Riley Bice",
+      "injury": "Won’t play again this season (contextually linked to club-imposed bans).",
+      "returning": "Season"
+    },
+    {
+      "team": "Woodville-West Torrens",
+      "player": "James Rowe",
+      "injury": "Handed a two-game ban for a dangerous tackle on ex-teammate Patrick Parnell.",
+      "returning": "2 weeks"
+    },
+    {
+      "team": "Richmond Tigers",
+      "player": "Josh Gibcus",
+      "injury": "ACL",
+      "returning": "day one of pre-season"
+    },
     {
       "team": "Port Adelaide Power",
       "player": "Mitch Georgiades",
@@ -27,36 +81,6 @@
       "player": "Brandon Walker",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Nick Blakey",
-      "injury": "stood down for their part in the Pullman Hotel investigation",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "James Jordon",
-      "injury": "stood down for their part in the Pullman Hotel investigation",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Riley Bice",
-      "injury": "stood down for their part in the Pullman Hotel investigation",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Isaac Heeney",
-      "injury": "stood down for their part in the Pullman Hotel investigation",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Chad Warner",
-      "injury": "stood down for their part in the Pullman Hotel investigation",
-      "returning": "active"
     },
     {
       "team": "Carlton Blues",
@@ -104,7 +128,7 @@
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
       "injury": "Arm",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
@@ -134,12 +158,6 @@
       "team": "Brisbane Lions",
       "player": "Ty Gallop",
       "injury": "make way for returning co-captain",
-      "returning": "active"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Joel Amartey",
-      "injury": "left out of its 23 for Saturday's qualifying final",
       "returning": "active"
     },
     {
@@ -177,12 +195,6 @@
       "player": "Rhys Stanley",
       "injury": "Knee",
       "returning": "3 Weeks"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Justin McInerney",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "Port Adelaide Power",
@@ -825,12 +837,6 @@
       "player": "Blake Thredgold",
       "injury": "Lisfranc",
       "returning": "Season"
-    },
-    {
-      "team": "Richmond Tigers",
-      "player": "Josh Gibcus",
-      "injury": "Soreness",
-      "returning": "TBC"
     },
     {
       "team": "Richmond Tigers",
