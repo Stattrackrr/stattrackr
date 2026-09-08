@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T20:03:13.902Z",
+  "generatedAt": "2026-09-08T14:52:31.248Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Geelong Cats",
       "commenceTime": "2026-09-11T10:10:09Z",
       "weather": {
-        "temperatureC": 20.7,
+        "temperatureC": 19.5,
         "precipitationMm": 0,
-        "windKmh": 0.2
+        "windKmh": 2.2
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-09-12T09:35:18Z",
       "weather": {
-        "temperatureC": 17,
-        "precipitationMm": 0.1,
-        "windKmh": 4
+        "temperatureC": 17.1,
+        "precipitationMm": 0,
+        "windKmh": 4.5
       }
     }
   ],
