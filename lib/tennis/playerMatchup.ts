@@ -160,7 +160,6 @@ export function buildTennisPlayerMatchup(opts: {
   const year =
     opts.year && Number.isFinite(opts.year) && opts.year >= 2000 ? opts.year : TENNIS_CURRENT_YEAR;
   const windowN = Math.max(0, Number(opts.window ?? 0) || 0);
-  const bestOf: TennisMatchupBestOf = Number(opts.bestOf) >= 5 ? 5 : 3;
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
   const tour =
@@ -168,6 +167,7 @@ export function buildTennisPlayerMatchup(opts: {
     tourForPlayer(null, playerName) ||
     tourForPlayer(null, opponentName) ||
     'ATP';
+  const bestOf: TennisMatchupBestOf = tour === 'WTA' || !(Number(opts.bestOf) >= 5) ? 3 : 5;
 
   const resolvedPlayer = resolvePlayer(playerName, tour);
   const resolvedOpponent = resolvePlayer(opponentName, tour);

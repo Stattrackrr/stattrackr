@@ -15,9 +15,11 @@ import {
   loadApiTennisMatches,
   loadApiTennisPlayers,
   loadApiTennisRankings,
+  tennisBestOf,
   tennisCacheMtime,
 } from '@/lib/tennis/apiTennis';
 import { withTennisHands } from '@/lib/tennis/hands';
+import { tennisRankHistoryMtime, withTennisMatchDayRanks } from '@/lib/tennis/rankHistory';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
@@ -55,7 +57,7 @@ type DataRuntime = {
 
 function dataRuntime(): DataRuntime {
   const g = globalThis as typeof globalThis & { __tennisData?: DataRuntime };
-  const generation = tennisCacheMtime();
+  const generation = tennisCacheMtime() + tennisRankHistoryMtime();
   if (!g.__tennisData || g.__tennisData.generation !== generation) {
     g.__tennisData = {
       generation,
@@ -71,7 +73,7 @@ function dataRuntime(): DataRuntime {
 }
 
 function matchesKey(years: readonly number[]): string {
-  return [...years].join(',');
+  return `rk:${[...years].join(',')}`;
 }
 
 function indexMatches(key: string, matches: TennisMatchRow[]) {
@@ -102,7 +104,13 @@ export function loadTennisMatches(years?: readonly number[]): TennisMatchRow[] {
     runtime.matches.set(key, []);
     return [];
   }
-  const matches = tennisMatchesPlayed(api.map((row) => withTennisHands(row)));
+  const matches = tennisMatchesPlayed(
+    api.map((row) => {
+      const bestOf = tennisBestOf(row.tour, row.isGrandSlam);
+      const next = row.bestOf === bestOf ? row : { ...row, bestOf };
+      return withTennisMatchDayRanks(withTennisHands(next));
+    })
+  );
   runtime.matches.set(key, matches);
   indexMatches(key, matches);
   return matches;

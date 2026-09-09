@@ -13,6 +13,9 @@ import { TennisStatsChart, type NblChartTimeframe } from '@/app/tennis/component
 import TennisDvpCard from '@/app/tennis/components/TennisDvpCard';
 import TennisTeamMatchupCard from '@/app/tennis/components/TennisTeamMatchupCard';
 import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAveragesCard';
+import { TennisPlayerFormCard } from '@/app/tennis/components/TennisPlayerFormCard';
+import { TennisSimilarPlayersCard } from '@/app/tennis/components/TennisSimilarPlayersCard';
+import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
 import {
   TennisSupportingStats,
   defaultSupportingStatForMain,
@@ -46,6 +49,7 @@ const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
 
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'team_matchup';
+type TennisFormContainerTab = 'overview' | 'form' | 'similar';
 
 type NblRosterPlayer = {
   playerId: string | null;
@@ -111,8 +115,8 @@ function TennisAbbrevFlag({
     </span>
   );
 }
-const NBL_PAGE_STATE_KEY = 'tennisPageState:v2';
-const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v7';
+const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
+const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v8';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [
@@ -133,6 +137,7 @@ type PersistedNblPageState = {
   nblPropsMode: NblPropsMode;
   nblTeamFilter?: string;
   nblRightTab: NblRightTab;
+  playerVsContainerTab?: TennisFormContainerTab;
   chartTimeframe: NblChartTimeframe;
   mainChartStat?: string;
   nblGameFilters?: NblGameFiltersState | null;
@@ -175,6 +180,26 @@ function asTennisPlayer(raw: unknown): NblRosterPlayer | null {
   return { ...player, imageUrl: player.imageUrl || null };
 }
 
+function TennisAnonymousHeadshot({ sizeClass }: { sizeClass: string }) {
+  return (
+    <span
+      className={`${sizeClass} relative overflow-hidden rounded-full flex-shrink-0 bg-gray-200 dark:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10`}
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 40 40"
+        className="absolute inset-0 h-full w-full text-gray-400 dark:text-gray-500"
+      >
+        <circle cx="20" cy="14.5" r="8" fill="currentColor" />
+        <path
+          d="M6 38c0-8.5 6.3-13.5 14-13.5S34 29.5 34 38"
+          fill="currentColor"
+        />
+      </svg>
+    </span>
+  );
+}
+
 function TennisPlayerAvatar({
   name,
   imageUrl,
@@ -185,17 +210,25 @@ function TennisPlayerAvatar({
   sizeClass: string;
 }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [imageUrl]);
   if (imageUrl && !failed) {
     return (
-      <img
-        src={imageUrl}
-        alt={name || ''}
-        className={`${sizeClass} rounded-full object-cover flex-shrink-0 bg-gray-200 dark:bg-gray-700`}
-        onError={() => setFailed(true)}
-      />
+      <span
+        className={`${sizeClass} relative overflow-hidden rounded-full flex-shrink-0 bg-gray-200 dark:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10`}
+      >
+        <img
+          src={imageUrl}
+          alt={name || ''}
+          className="absolute inset-0 h-full w-full object-cover"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      </span>
     );
   }
-  return <span className={`${sizeClass} rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0`} />;
+  return <TennisAnonymousHeadshot sizeClass={sizeClass} />;
 }
 
 function nblPlayerLogsCacheKey(playerId: string): string {
@@ -375,6 +408,7 @@ export default function TennisDashboardPage() {
   const [nblRightTabsVisited, setNblRightTabsVisited] = useState<Set<NblRightTab>>(
     () => new Set(['dvp'])
   );
+  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<TennisFormContainerTab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [rosterPlayers, setRosterPlayers] = useState<NblRosterPlayer[]>([]);
@@ -447,6 +481,10 @@ export default function TennisDashboardPage() {
     setNblPropsMode(restored.nblPropsMode);
     setNblRightTab(restored.nblRightTab);
     setNblRightTabsVisited(new Set([restored.nblRightTab]));
+    const persistedTab = readPersistedNblPageState()?.playerVsContainerTab;
+    if (persistedTab === 'overview' || persistedTab === 'form' || persistedTab === 'similar') {
+      setPlayerVsContainerTab(persistedTab);
+    }
     setNblTeamFilter(restored.nblTeamFilter);
     setChartTimeframe(restored.chartTimeframe);
     setMainChartStat(restored.mainChartStat);
@@ -590,6 +628,7 @@ export default function TennisDashboardPage() {
       nblPropsMode,
       nblTeamFilter,
       nblRightTab,
+      playerVsContainerTab,
       chartTimeframe,
       mainChartStat,
       nblGameFilters,
@@ -605,6 +644,7 @@ export default function TennisDashboardPage() {
     nblPropsMode,
     nblTeamFilter,
     nblRightTab,
+    playerVsContainerTab,
     chartTimeframe,
     mainChartStat,
     nblGameFilters,
@@ -1534,12 +1574,76 @@ export default function TennisDashboardPage() {
                   )}
                 </div>
 
-                {/* 4.52 Player vs Team / Similar Players — mobile */}
+                {/* 4.52 AI Overview / Player Form / Similar Players — mobile */}
                 {nblPropsMode === 'player' && (
                   <div
                     className={`lg:hidden w-full min-w-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4`}
                   >
-                    <div className="min-h-[160px]" />
+                    <div className="flex gap-1.5 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('overview')}
+                        className={`flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'overview'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        AI Overview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('form')}
+                        className={`flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'form'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Player Form
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('similar')}
+                        className={`flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'similar'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Similar Players
+                      </button>
+                    </div>
+                    <div className={playerVsContainerTab === 'overview' ? '' : 'hidden'}>
+                      <TennisAskPanel
+                        isDark={!!mounted && isDark}
+                        layout="mobile"
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        tour={dvpTour}
+                        isGrandSlam={Boolean(lastLog?.isGrandSlam)}
+                      />
+                    </div>
+                    {playerVsContainerTab === 'similar' ? (
+                      <TennisSimilarPlayersCard
+                        isDark={!!mounted && isDark}
+                        layout="mobile"
+                        playerId={selectedPlayer?.playerId || null}
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        selectedStat={mainChartStat}
+                        tour={dvpTour}
+                        players={rosterPlayers}
+                      />
+                    ) : playerVsContainerTab === 'form' ? (
+                      <TennisPlayerFormCard
+                        isDark={!!mounted && isDark}
+                        layout="mobile"
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        tour={dvpTour}
+                      />
+                    ) : null}
                   </div>
                 )}
 
@@ -1723,12 +1827,76 @@ export default function TennisDashboardPage() {
                   </div>
                 ) : null}
 
-                {/* Player vs Team / Similar Players — desktop */}
+                {/* AI Overview / Player Form / Similar Players — desktop */}
                 {nblPropsMode === 'player' && (
                   <div
                     className={`hidden lg:block rounded-lg ${TENNIS_DASH_CARD_GLOW} px-1.5 xl:px-2 py-1.5 xl:py-2 w-full min-w-0 mt-0`}
                   >
-                    <div className="min-h-[180px]" />
+                    <div className="flex gap-1 xl:gap-1.5 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('overview')}
+                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'overview'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        AI Overview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('form')}
+                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'form'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Player Form
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerVsContainerTab('similar')}
+                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          playerVsContainerTab === 'similar'
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        Similar Players
+                      </button>
+                    </div>
+                    <div className={playerVsContainerTab === 'overview' ? '' : 'hidden'}>
+                      <TennisAskPanel
+                        isDark={!!mounted && isDark}
+                        layout="desktop"
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        tour={dvpTour}
+                        isGrandSlam={Boolean(lastLog?.isGrandSlam)}
+                      />
+                    </div>
+                    {playerVsContainerTab === 'similar' ? (
+                      <TennisSimilarPlayersCard
+                        isDark={!!mounted && isDark}
+                        layout="desktop"
+                        playerId={selectedPlayer?.playerId || null}
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        selectedStat={mainChartStat}
+                        tour={dvpTour}
+                        players={rosterPlayers}
+                      />
+                    ) : playerVsContainerTab === 'form' ? (
+                      <TennisPlayerFormCard
+                        isDark={!!mounted && isDark}
+                        layout="desktop"
+                        playerName={matchupLeft}
+                        opponentName={displayOpponent}
+                        tour={dvpTour}
+                      />
+                    ) : null}
                   </div>
                 )}
 

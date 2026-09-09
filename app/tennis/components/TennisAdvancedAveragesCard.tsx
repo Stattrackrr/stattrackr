@@ -85,6 +85,7 @@ export default function TennisAdvancedAveragesCard({
   const player = String(playerName || '').trim();
   const opponent = String(opponentName || '').trim();
   const tourKey = tour === 'WTA' ? 'WTA' : 'ATP';
+  const averagesBestOf: AdvAvgBestOf = tourKey === 'WTA' ? 'all' : bestOf;
 
   useEffect(() => {
     if (!player) {
@@ -101,7 +102,7 @@ export default function TennisAdvancedAveragesCard({
       tour: tourKey,
       year: String(TENNIS_CURRENT_YEAR),
       window: String(windowN),
-      bestOf,
+      bestOf: averagesBestOf,
       vsRank,
     });
     if (opponent) qs.set('opponent', opponent);
@@ -125,7 +126,7 @@ export default function TennisAdvancedAveragesCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, tourKey, windowN, bestOf, vsRank]);
+  }, [player, opponent, tourKey, windowN, averagesBestOf, vsRank]);
 
   useEffect(() => {
     if (!opponent) setSide('player');
@@ -148,7 +149,9 @@ export default function TennisAdvancedAveragesCard({
         <div className="flex items-center gap-1.5">
           <FilterSelect value={vsRank} options={ADV_AVG_VS_RANKS} isDark={isDark} onChange={setVsRank} />
           <FilterSelect value={windowN} options={ADV_AVG_WINDOWS} isDark={isDark} onChange={setWindowN} />
-          <FilterSelect value={bestOf} options={ADV_AVG_BEST_OF} isDark={isDark} onChange={setBestOf} />
+          {tourKey === 'WTA' ? null : (
+            <FilterSelect value={averagesBestOf} options={ADV_AVG_BEST_OF} isDark={isDark} onChange={setBestOf} />
+          )}
         </div>
       </div>
 

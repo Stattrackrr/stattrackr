@@ -7,6 +7,11 @@ const AFL_DISPOSALS_HISTORY_TRACE_FILES = [
   './data/afl-model/latest-disposals-projections.json',
 ] as const;
 
+const TENNIS_RUNTIME_DATA = [
+  './data/tennis/rank-history.json',
+  './data/tennis/espn-hands.json',
+] as const;
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   // Vercel file tracing omits @sparticuz/chromium/bin/*.br unless explicitly included
@@ -31,6 +36,16 @@ const nextConfig: NextConfig = {
     '/api/afl/injuries/route': ['./data/afl-injuries.json'],
     '/api/nbl/injuries': ['./data/nbl-injuries.json'],
     '/api/nbl/injuries/route': ['./data/nbl-injuries.json'],
+    '/api/tennis/matches': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/matches/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/advanced-averages': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/advanced-averages/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/player-matchup': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/player-matchup/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/dvp': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/dvp/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/players': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/players/route': [...TENNIS_RUNTIME_DATA],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',

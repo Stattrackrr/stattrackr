@@ -420,6 +420,18 @@ type CombinedPropsSnapshotResponse = {
   };
 };
 
+function propsFilterButtonClass(open: boolean, isDark: boolean): string {
+  const base = 'relative flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border w-full transition-colors';
+  if (open) {
+    return `${base} ${isDark ? 'bg-[#0d1728] border-white/20 text-slate-100' : 'bg-gray-50 border-gray-400 text-gray-800'}`;
+  }
+  return `${base} ${
+    isDark
+      ? 'bg-[#0d1728] border-white/10 text-slate-300 hover:border-white/20 hover:bg-[#111e32]'
+      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+  }`;
+}
+
 // Tipoff Countdown Component
 function TipoffCountdown({
   game,
@@ -7863,15 +7875,15 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
             >
           <div className={`h-full pb-12 lg:pr-0 px-2 lg:px-1 ${shellDark ? 'bg-[#050d1a]' : ''}`} style={{ paddingTop: 0, boxSizing: 'border-box' }}>
             {/* Sport filter: default combined (none selected); click active sport again to return to combined */}
-            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1.5 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${shellDark ? 'bg-gradient-to-r from-[#0b1730] to-[#171433] lg:bg-none lg:bg-[#050d1a] border-[#352f57] lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`flex gap-2 mb-3 lg:mb-2 lg:gap-3 p-1 lg:p-0 rounded-2xl lg:rounded-none border lg:border-0 ${shellDark ? 'bg-[#050d1a] border-white/10 lg:border-transparent' : 'bg-gray-50 border-gray-200'}`}>
               {NBA_PUBLIC_ENABLED && (
                 <button
                   type="button"
                   onClick={() => toggleSportSelection('nba')}
-                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border transition-colors duration-200 flex items-center justify-center ${
                     propsSport === 'nba'
-                      ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                      : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      ? shellDark ? 'bg-[#0d1728] text-white border-white/25' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : shellDark ? 'bg-[#0d1728] text-gray-300 border-white/10 hover:border-white/20 hover:bg-[#111e32]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                   }`}
                   aria-label="NBA"
                 >
@@ -7888,10 +7900,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               <button
                 type="button"
                 onClick={() => toggleSportSelection('afl')}
-                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border transition-colors duration-200 flex items-center justify-center ${
                   propsSport === 'afl'
-                    ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                    : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    ? shellDark ? 'bg-[#0d1728] text-white border-white/25' : 'bg-purple-100 text-purple-800 border-purple-300'
+                    : shellDark ? 'bg-[#0d1728] text-gray-300 border-white/10 hover:border-white/20 hover:bg-[#111e32]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
                 aria-label="AFL"
               >
@@ -7908,10 +7920,10 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                 <button
                   type="button"
                   onClick={() => toggleSportSelection('world-cup')}
-                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border shadow-sm transition-all duration-200 flex items-center justify-center ${
+                  className={`flex-1 sm:flex-none px-4 py-2.5 lg:min-w-[180px] lg:px-8 lg:py-3 rounded-xl lg:rounded-lg text-sm font-semibold border transition-colors duration-200 flex items-center justify-center ${
                     propsSport === 'world-cup'
-                      ? mounted && isDark ? 'bg-gradient-to-br from-purple-500 to-purple-700 text-white border-purple-400 shadow-[0_0_20px_rgba(124,58,237,0.35)]' : 'bg-purple-100 text-purple-800 border-purple-300'
-                      : mounted && isDark ? 'bg-[#111b33] text-gray-300 border-[#3c3560] hover:bg-[#1a2542]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      ? shellDark ? 'bg-[#0d1728] text-white border-white/25' : 'bg-purple-100 text-purple-800 border-purple-300'
+                      : shellDark ? 'bg-[#0d1728] text-gray-300 border-white/10 hover:border-white/20 hover:bg-[#111e32]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                   }`}
                   aria-label="World Cup"
                 >
@@ -7936,11 +7948,11 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for a player..."
-                    className={`px-4 py-3.5 pl-12 rounded-xl border shadow-sm ${
-                      mounted && isDark 
-                        ? 'bg-[#111b33] border-[#463e6b] text-white placeholder-gray-400' 
+                    className={`px-4 py-3 pl-12 rounded-xl border ${
+                      shellDark 
+                        ? 'bg-[#0d1728] border-white/10 text-white placeholder-slate-500' 
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500/80 focus:border-purple-500`}
+                    } focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20`}
                     style={{ boxSizing: 'border-box', width: '100%' }}
                   />
                   <svg
@@ -7971,15 +7983,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       setBookmakerDropdownOpen(false);
                       setPropTypeDropdownOpen(false);
                     }}
-                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      gamesDropdownOpen
-                        ? mounted && isDark
-                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
-                          : 'bg-gray-50 border-gray-400 text-gray-800'
-                        : mounted && isDark
-                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={propsFilterButtonClass(gamesDropdownOpen, shellDark)}
                   >
                     <span className="text-sm font-medium whitespace-nowrap">
                       Games
@@ -8243,15 +8247,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       setBookmakerDropdownOpen(false);
                       setGamesDropdownOpen(false);
                     }}
-                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      propTypeDropdownOpen
-                        ? mounted && isDark
-                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
-                          : 'bg-gray-50 border-gray-400 text-gray-800'
-                        : mounted && isDark
-                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={propsFilterButtonClass(propTypeDropdownOpen, shellDark)}
                   >
                     <span className="text-sm font-medium whitespace-nowrap">
                       Prop Types
@@ -8435,15 +8431,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       setGamesDropdownOpen(false);
                     }}
                     ref={bookmakerButtonRef}
-                    className={`relative flex items-center justify-between gap-2 px-4 py-3 rounded-lg border transition-all w-full ${
-                      bookmakerDropdownOpen
-                        ? mounted && isDark
-                          ? 'bg-[#0a1929] border-gray-600 text-gray-200'
-                          : 'bg-gray-50 border-gray-400 text-gray-800'
-                        : mounted && isDark
-                        ? 'bg-[#0a1929] border-gray-700 text-gray-300 hover:bg-[#0d1f35]'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={propsFilterButtonClass(bookmakerDropdownOpen, shellDark)}
                   >
                     <span className="text-sm font-medium whitespace-nowrap">
                       Bookmakers
@@ -8582,14 +8570,8 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
               style={{ boxSizing: 'border-box', width: '100%', overflow: 'visible', paddingTop: 0, marginTop: 0 }}
             >
               <div className={`rounded-2xl lg:rounded-lg w-full pr-0 lg:pr-2 border lg:border-transparent ${
-                shellDark ? 'bg-[#050d1a] border-[#3b3560]' : 'bg-white border-gray-200'
-              } shadow-[0_10px_30px_rgba(0,0,0,0.12)]`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
-                <h2 className={`text-[1.75rem] lg:text-2xl text-center lg:text-left font-extrabold tracking-tight mb-3 ${
-                  shellDark ? 'text-white' : 'text-gray-900'
-                }`} style={{ marginTop: 0, paddingTop: 0 }}>
-                  Top Player Props
-                </h2>
-                
+                shellDark ? 'bg-[#050d1a] border-white/5' : 'bg-white border-gray-200'
+              }`} style={{ boxSizing: 'border-box', width: '100%', paddingTop: 0, marginTop: 0, paddingLeft: '0.6rem', paddingRight: '0.6rem' }}>
                 {!propsTableHasRows && !secondaryPropsPaintRows ? (
                     isPropsLoadingSkeleton ? (
                       <>

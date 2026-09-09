@@ -41,6 +41,8 @@ export default function TennisTeamMatchupCard({
   const player = String(teamName || '').trim();
   const opponent = String(opponentName || '').trim();
   const tourKey = tour === 'WTA' ? 'WTA' : 'ATP';
+  const wtaTour = tourKey === 'WTA';
+  const matchupBestOf: TennisMatchupBestOf = wtaTour ? 3 : bestOf;
 
   useEffect(() => {
     if (!player || !opponent) {
@@ -58,7 +60,7 @@ export default function TennisTeamMatchupCard({
       tour: tourKey,
       year: String(TENNIS_CURRENT_YEAR),
       window: String(windowN),
-      bestOf: String(bestOf),
+      bestOf: String(matchupBestOf),
     });
     fetch(`/api/tennis/player-matchup?${qs.toString()}`)
       .then(async (r) => {
@@ -80,7 +82,7 @@ export default function TennisTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, tourKey, windowN, bestOf]);
+  }, [player, opponent, tourKey, windowN, matchupBestOf]);
 
   const playerLabel = payload?.player.name || player || 'Selected player';
   const opponentLabel = payload?.opponent.name || opponent || 'Opponent';
@@ -218,33 +220,35 @@ export default function TennisTeamMatchupCard({
       <div className="mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Player Matchup</h3>
         <div className="flex items-center justify-center gap-0.5">
-          {BEST_OF.map((option, idx) => {
-            const active = bestOf === option.id;
-            return (
-              <span key={option.id} className="flex items-center">
-                {idx > 0 ? (
-                  <span className={`px-0.5 text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
-                    /
+          {wtaTour
+            ? null
+            : BEST_OF.map((option, idx) => {
+                const active = bestOf === option.id;
+                return (
+                  <span key={option.id} className="flex items-center">
+                    {idx > 0 ? (
+                      <span className={`px-0.5 text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
+                        /
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setBestOf(option.id)}
+                      className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors ${
+                        active
+                          ? isDark
+                            ? 'text-gray-300 underline decoration-gray-500 underline-offset-2'
+                            : 'text-gray-700 underline decoration-gray-400 underline-offset-2'
+                          : isDark
+                            ? 'text-gray-600 hover:text-gray-400'
+                            : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
                   </span>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setBestOf(option.id)}
-                  className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors ${
-                    active
-                      ? isDark
-                        ? 'text-gray-300 underline decoration-gray-500 underline-offset-2'
-                        : 'text-gray-700 underline decoration-gray-400 underline-offset-2'
-                      : isDark
-                        ? 'text-gray-600 hover:text-gray-400'
-                        : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              </span>
-            );
-          })}
+                );
+              })}
         </div>
         <div className="flex items-center justify-end gap-0.5">
           {WINDOWS.map((option, idx) => {
@@ -367,7 +371,7 @@ export default function TennisTeamMatchupCard({
           </div>
         ) : noData ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            No best-of-{bestOf} matches available yet.
+            {wtaTour ? 'No matches available yet.' : `No best-of-${matchupBestOf} matches available yet.`}
           </div>
         ) : (
           <div className="space-y-2">

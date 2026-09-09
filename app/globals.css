@@ -190,6 +190,27 @@ html.dark body {
   }
 }
 
+@keyframes stAskLogoPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.35));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 28px rgba(168, 85, 247, 0.85));
+  }
+}
+
+.st-ask-logo {
+  animation: stAskLogoPulse 2.6s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.st-ask-logo-glow {
+  animation: stSplashGlow 2.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 @keyframes stSplashBreathe {
   0%, 100% {
     transform: scale(1);
@@ -272,7 +293,9 @@ html.dark body {
   .st-splash-breathe,
   .st-splash-glow,
   .st-splash-title,
-  .st-splash-dot {
+  .st-splash-dot,
+  .st-ask-logo,
+  .st-ask-logo-glow {
     animation: none !important;
   }
 

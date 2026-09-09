@@ -1,12 +1,12 @@
 /**
- * Local tennis headshot cache (ESPN first, API-Tennis fallback).
+ * Local tennis headshot cache (ATP/WTA official first, then ESPN, then API-Tennis).
  * Downloaded by scripts/cache-tennis-headshots.ts.
  */
 
 import fs from 'fs';
 import path from 'path';
 
-export type TennisHeadshotSource = 'espn' | 'api-tennis';
+export type TennisHeadshotSource = 'atp' | 'wta' | 'espn' | 'api-tennis' | 'wikipedia';
 
 export type TennisHeadshotEntry = {
   name?: string;
@@ -16,11 +16,13 @@ export type TennisHeadshotEntry = {
   ok: boolean;
   source?: TennisHeadshotSource;
   espnId?: string;
+  atpId?: string;
+  wtaId?: string;
 };
 
 export type TennisHeadshotsIndex = {
   generatedAt: string;
-  source: 'espn' | 'api-tennis' | 'mixed';
+  source: 'atp' | 'wta' | 'espn' | 'api-tennis' | 'wikipedia' | 'mixed';
   byPlayerId: Record<string, TennisHeadshotEntry>;
   missing: string[];
 };
@@ -28,11 +30,12 @@ export type TennisHeadshotsIndex = {
 type HeadshotRuntime = {
   index: TennisHeadshotsIndex | null | undefined;
   localIds: Set<string> | null;
+  mtime: number;
 };
 
 function headshotRuntime(): HeadshotRuntime {
   const g = globalThis as typeof globalThis & { __tennisHeadshots?: HeadshotRuntime };
-  if (!g.__tennisHeadshots) g.__tennisHeadshots = { index: undefined, localIds: null };
+  if (!g.__tennisHeadshots) g.__tennisHeadshots = { index: undefined, localIds: null, mtime: 0 };
   return g.__tennisHeadshots;
 }
 
@@ -54,8 +57,11 @@ export function tennisHeadshotFilePath(playerId: string): string {
 
 export function loadTennisHeadshotsIndex(): TennisHeadshotsIndex | null {
   const runtime = headshotRuntime();
-  if (runtime.index !== undefined) return runtime.index;
   const file = tennisHeadshotsIndexPath();
+  const mtime = fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
+  if (runtime.index !== undefined && runtime.mtime === mtime) return runtime.index;
+  runtime.localIds = null;
+  runtime.mtime = mtime;
   if (!fs.existsSync(file)) {
     runtime.index = null;
     return null;
@@ -89,8 +95,14 @@ export function resolveTennisHeadshotUrl(
 ): string | null {
   const id = String(playerId || '').trim();
   if (!id) return String(remote || '').trim() || null;
-  if (localHeadshotIds().has(id)) return tennisHeadshotPublicPath(id);
+  if (localHeadshotIds().has(id)) {
+    const stamp = loadTennisHeadshotsIndex()?.generatedAt || '1';
+    return `${tennisHeadshotPublicPath(id)}?v=${encodeURIComponent(stamp).slice(0, 24)}`;
+  }
   const fromIndex = loadTennisHeadshotsIndex()?.byPlayerId?.[id];
+  if (fromIndex && fromIndex.ok === false) {
+    return String(remote || '').trim() || null;
+  }
   const url = String(fromIndex?.remoteUrl || remote || '').trim();
   return url || null;
 }

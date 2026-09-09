@@ -185,6 +185,12 @@ export function isApiGrandSlam(name: string | null | undefined): boolean {
   );
 }
 
+/** WTA singles is always best of 3, including slams. ATP slams are best of 5. */
+export function tennisBestOf(tour: TennisTour | null | undefined, isGrandSlam: boolean): 3 | 5 {
+  if (tour === 'WTA') return 3;
+  return isGrandSlam ? 5 : 3;
+}
+
 export function inferApiSurface(name: string | null | undefined): string {
   const n = String(name || '').toLowerCase();
   if (
@@ -362,7 +368,7 @@ export function mapApiFixtureToRows(
   const stats = Array.isArray(fx.statistics) ? fx.statistics : [];
   const preview = formatScoreFromSets(scores, true, retired);
   if (preview.gamesWon + preview.gamesLost <= 0) return [];
-  const bestOf = slam || scores.length > 3 ? 5 : 3;
+  const bestOf = tennisBestOf(tour, slam);
   const date = String(fx.event_date || '').slice(0, 10) || null;
   const eventKey = String(fx.event_key ?? '');
 

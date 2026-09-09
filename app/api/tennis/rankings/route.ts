@@ -4,7 +4,10 @@ import { loadTennisRankings, type TennisTour } from '@/lib/tennis/data';
 export async function GET(request: NextRequest) {
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
-  const teams = loadTennisRankings(tour).map((row) => ({
+  const limitRaw = Number(request.nextUrl.searchParams.get('limit'));
+  const limit =
+    Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(200, Math.floor(limitRaw)) : 50;
+  const teams = loadTennisRankings(tour, { limit }).map((row) => ({
     pos: row.pos,
     team: row.name,
     teamCode: row.ioc,

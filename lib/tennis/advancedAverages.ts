@@ -21,6 +21,7 @@ import {
   type TennisTour,
 } from '@/lib/tennis/data';
 import { tennisHandForName } from '@/lib/tennis/hands';
+import { hasTennisRankHistory, tennisRankOnDate } from '@/lib/tennis/rankHistory';
 
 function num(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
@@ -77,10 +78,17 @@ function matchesBestOf(row: TennisMatchRow, bestOf: AdvAvgBestOf): boolean {
   return !Number.isFinite(n) || n < 5;
 }
 
+function opponentRankOnMatchDay(row: TennisMatchRow): number | null {
+  const fromHistory = tennisRankOnDate(row.opponentId, row.date);
+  if (fromHistory?.rank) return fromHistory.rank;
+  if (hasTennisRankHistory()) return null;
+  return num(row.opponentRank);
+}
+
 function matchesVsRank(row: TennisMatchRow, vsRank: AdvAvgVsRank): boolean {
   if (vsRank === 'all') return true;
   const cap = Number(vsRank);
-  const rank = num(row.opponentRank);
+  const rank = opponentRankOnMatchDay(row);
   return rank != null && rank > 0 && rank <= cap;
 }
 
@@ -268,8 +276,6 @@ export function buildTennisAdvancedAverages(opts: {
   const windowN = ([5, 10, 15, 20, 0] as const).includes(windowRaw as AdvAvgWindow)
     ? (windowRaw as AdvAvgWindow)
     : 15;
-  const bestOf: AdvAvgBestOf =
-    opts.bestOf === '3' || opts.bestOf === '5' ? opts.bestOf : 'all';
   const vsRank: AdvAvgVsRank =
     opts.vsRank === '10' || opts.vsRank === '20' || opts.vsRank === '50' || opts.vsRank === '100'
       ? opts.vsRank
@@ -281,6 +287,14 @@ export function buildTennisAdvancedAverages(opts: {
     tourForPlayer(null, playerName) ||
     tourForPlayer(null, opponentName) ||
     'ATP';
+  const bestOf: AdvAvgBestOf =
+    tour === 'WTA'
+      ? opts.bestOf === '3'
+        ? '3'
+        : 'all'
+      : opts.bestOf === '3' || opts.bestOf === '5'
+        ? opts.bestOf
+        : 'all';
 
   return {
     tour,
