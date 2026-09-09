@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T14:55:07Z",
+  "generatedAt": "2026-09-09T15:09:16Z",
   "sampleCount": 270,
   "candidateArtifactPath": "/home/runner/work/stattrackr/stattrackr/data/afl-model/models/latest-candidate-model.json",
   "candidateFallbackToCurrent": false,
@@ -31,7 +31,7 @@
     "pass": false,
     "promoted": false,
     "freezeActive": false,
-    "freezeFailStreak": 0,
+    "freezeFailStreak": 1,
     "freezeWouldBlockLegacy": false,
     "metricGuardrailsSkipped": false,
     "promotionInfo": {
@@ -45,7 +45,7 @@
     "brierScore": 0.287517,
     "logLoss": 0.817952,
     "mae": 4.929175,
-    "avgClvLite": -0.002252,
+    "avgClvLite": -0.002443,
     "positiveClvRate": 0.151852,
     "clvSampleCount": 270,
     "calibrationBins": [
@@ -99,7 +99,7 @@
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260908-145418"
+    "modelVersion": "afl-disp-20260909-150743"
   },
   "current": {
     "name": "current",
@@ -108,8 +108,8 @@
     "brierScore": 0.286652,
     "logLoss": 0.794643,
     "mae": 4.997185,
-    "avgClvLite": -0.001751,
-    "positiveClvRate": 0.177778,
+    "avgClvLite": -0.002011,
+    "positiveClvRate": 0.174074,
     "clvSampleCount": 270,
     "calibrationBins": [
       {
@@ -352,9 +352,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.5,
+        "marketPOverOpen": 0.488,
         "marketPOverLatest": 0.5,
-        "clvLite": 0.0
+        "clvLite": -0.012
       },
       {
         "snapshotKey": "jarman impey|2026-W25",
@@ -432,9 +432,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.496,
+        "marketPOverOpen": 0.491,
         "marketPOverLatest": 0.5,
-        "clvLite": -0.004
+        "clvLite": -0.009
       },
       {
         "snapshotKey": "ryley sanders|2026-W25",
@@ -512,9 +512,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.509,
+        "marketPOverOpen": 0.5,
         "marketPOverLatest": 0.512,
-        "clvLite": -0.003
+        "clvLite": -0.012
       },
       {
         "snapshotKey": "ed langdon|2026-W25",
@@ -592,9 +592,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.491,
+        "marketPOverOpen": 0.5,
         "marketPOverLatest": 0.508,
-        "clvLite": -0.017
+        "clvLite": -0.008
       },
       {
         "snapshotKey": "rory laird|2026-W26",
@@ -1474,9 +1474,9 @@
           "dfs_role_unclassified": 1.0
         },
         "marketPOver": 0.5,
-        "marketPOverOpen": 0.509,
+        "marketPOverOpen": 0.5151,
         "marketPOverLatest": 0.514,
-        "clvLite": -0.005
+        "clvLite": 0.0011
       }
     ]
   }

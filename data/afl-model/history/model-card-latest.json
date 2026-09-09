@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-08T14:55:07Z",
-  "modelVersion": "afl-disp-20260908-145418",
+  "generatedAt": "2026-09-09T15:09:16Z",
+  "modelVersion": "afl-disp-20260909-150743",
   "sampleCount": 270,
   "guardrailsPass": false,
   "promoted": false,
@@ -11,7 +11,7 @@
     "brierScore": 0.287517,
     "logLoss": 0.817952,
     "mae": 4.929175,
-    "avgClvLite": -0.002252,
+    "avgClvLite": -0.002443,
     "positiveClvRate": 0.151852,
     "clvSampleCount": 270,
     "calibrationBins": [
@@ -65,7 +65,7 @@
       }
     ],
     "calibrationMethod": "identity",
-    "modelVersion": "afl-disp-20260908-145418"
+    "modelVersion": "afl-disp-20260909-150743"
   },
   "currentMetrics": {
     "name": "current",
@@ -74,8 +74,8 @@
     "brierScore": 0.286652,
     "logLoss": 0.794643,
     "mae": 4.997185,
-    "avgClvLite": -0.001751,
-    "positiveClvRate": 0.177778,
+    "avgClvLite": -0.002011,
+    "positiveClvRate": 0.174074,
     "clvSampleCount": 270,
     "calibrationBins": [
       {
