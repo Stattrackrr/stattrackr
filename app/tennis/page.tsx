@@ -16,6 +16,16 @@ import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAv
 import { TennisPlayerFormCard } from '@/app/tennis/components/TennisPlayerFormCard';
 import { TennisSimilarPlayersCard } from '@/app/tennis/components/TennisSimilarPlayersCard';
 import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
+import { TennisLineSelector } from '@/app/tennis/components/TennisLineSelector';
+import {
+  isTennisOuStat,
+  tennisBestOuPick,
+  tennisLineMatches,
+  tennisMainLineForStat,
+  tennisOuLinesForStat,
+  tennisParseLineNumber,
+  type TennisBookRow,
+} from '@/lib/tennis/oddsTypes';
 import {
   TennisSupportingStats,
   defaultSupportingStatForMain,
@@ -28,7 +38,7 @@ import {
 import { TENNIS_DASH_CARD_GLOW } from '@/app/tennis/components/tennisDashCardGlow';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useViewerProfile } from '@/hooks/useViewerProfile';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
@@ -44,8 +54,8 @@ import {
 } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 
-/** Basketball tipoff LIVE window (~2.5h). */
-const NBL_MATCH_DURATION_MS = 2.5 * 60 * 60 * 1000;
+/** Tennis match LIVE window (~5-set length). */
+const NBL_MATCH_DURATION_MS = 6 * 60 * 60 * 1000;
 
 type NblPropsMode = 'player' | 'team';
 type NblRightTab = 'dvp' | 'team_matchup';
@@ -118,6 +128,58 @@ function TennisAbbrevFlag({
 const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
 const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v8';
 const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 60 * 5;
+const tennisNextGameClientCache = new Map<
+  string,
+  { savedAt: number; payload: TennisNextGameClient }
+>();
+const tennisNextGameInflight = new Set<string>();
+
+type TennisNextGameClient = {
+  opponent: string | null;
+  opponentIoc: string | null;
+  opponentLogo: string | null;
+  tipoff: string | null;
+  live: boolean;
+  isGrandSlam: boolean;
+};
+
+function parseTennisNextGameClient(data: Record<string, unknown> | null | undefined): TennisNextGameClient {
+  const tip = data?.next_game_tipoff ? String(data.next_game_tipoff) : null;
+  return {
+    opponent: String(data?.next_opponent || '').trim() || null,
+    opponentIoc: data?.next_opponent_ioc ? String(data.next_opponent_ioc) : null,
+    opponentLogo: data?.opponent_logo ? String(data.opponent_logo) : null,
+    tipoff: tip,
+    live: Boolean(data?.live),
+    isGrandSlam: Boolean(data?.isGrandSlam),
+  };
+}
+
+function readTennisNextGameClient(playerId: string | null | undefined): TennisNextGameClient | null {
+  const id = String(playerId || '').trim();
+  if (!id) return null;
+  const hit = tennisNextGameClientCache.get(id);
+  if (!hit) return null;
+  if (Date.now() - hit.savedAt > TENNIS_NEXT_GAME_CLIENT_TTL_MS) {
+    tennisNextGameClientCache.delete(id);
+    return null;
+  }
+  return hit.payload;
+}
+
+function writeTennisNextGameClient(playerId: string, payload: TennisNextGameClient) {
+  tennisNextGameClientCache.set(playerId, { savedAt: Date.now(), payload });
+}
+
+const EMPTY_TENNIS_NEXT_GAME: TennisNextGameClient = {
+  opponent: null,
+  opponentIoc: null,
+  opponentLogo: null,
+  tipoff: null,
+  live: false,
+  isGrandSlam: false,
+};
 const CHART_DISPLAY_DELAY_MS = 120;
 const NBL_CHART_TIMEFRAMES: readonly NblChartTimeframe[] = [
   'last5',
@@ -433,14 +495,27 @@ export default function TennisDashboardPage() {
   const [teamFilterDropdownOpen, setTeamFilterDropdownOpen] = useState(false);
   const [selectionHydrated, setSelectionHydrated] = useState(false);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
+  const [nextGamePlayerId, setNextGamePlayerId] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [nextGameOpponentLogo, setNextGameOpponentLogo] = useState<string | null>(null);
+  const [nextGameOpponentIoc, setNextGameOpponentIoc] = useState<string | null>(null);
+  const [nextGameIsGrandSlam, setNextGameIsGrandSlam] = useState(false);
+  const [nextGameLive, setNextGameLive] = useState(false);
+  const selectedPlayerIdRef = useRef<string | null>(null);
   const [countdown, setCountdown] = useState<{
     hours: number;
     minutes: number;
     seconds: number;
   } | null>(null);
   const [isGameInProgress, setIsGameInProgress] = useState(false);
+  const [tennisOddsBooks, setTennisOddsBooks] = useState<TennisBookRow[]>([]);
+  const [selectedTennisBookIndex, setSelectedTennisBookIndex] = useState(0);
+  const [tennisOddsHomeTeam, setTennisOddsHomeTeam] = useState('');
+  const [tennisOddsAwayTeam, setTennisOddsAwayTeam] = useState('');
+  const [tennisOddsLoading, setTennisOddsLoading] = useState(false);
+  const [tennisGameLineValue, setTennisGameLineValue] = useState<number | null>(null);
+  const ignoreNextTransientLineRef = useRef(false);
+  const lastOddsMatchupKeyRef = useRef<string | null>(null);
 
   const [showJournalDropdown, setShowJournalDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -459,6 +534,48 @@ export default function TennisDashboardPage() {
   } = useDashboardStyles({ sidebarOpen });
 
   useCountdownTimer({ nextGameTipoff, isGameInProgress, setCountdown });
+
+  const applyUpcoming = useCallback((playerId: string, payload: TennisNextGameClient) => {
+    writeTennisNextGameClient(playerId, payload);
+    setNextGamePlayerId(playerId);
+    setNextGameOpponent(payload.opponent);
+    setNextGameOpponentIoc(payload.opponentIoc);
+    setNextGameOpponentLogo(payload.opponentLogo);
+    setNextGameIsGrandSlam(payload.isGrandSlam);
+    setNextGameLive(payload.live);
+    const tipRaw = payload.tipoff ? new Date(payload.tipoff) : null;
+    setNextGameTipoff(tipRaw && !Number.isNaN(tipRaw.getTime()) ? tipRaw : null);
+    setIsGameInProgress(payload.live);
+  }, []);
+
+  const prefetchNextGame = useCallback(
+    async (playerId: string, tour: 'ATP' | 'WTA' | null) => {
+      const id = String(playerId || '').trim();
+      if (!id || readTennisNextGameClient(id) || tennisNextGameInflight.has(id)) return;
+      tennisNextGameInflight.add(id);
+      try {
+        const qs = new URLSearchParams({ playerId: id });
+        if (tour) qs.set('tour', tour);
+        const res = await fetch(`/api/tennis/next-game?${qs.toString()}`, { cache: 'no-store' });
+        const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+        if (!res.ok || !data) return;
+        const payload = parseTennisNextGameClient(data);
+        writeTennisNextGameClient(id, payload);
+        if (selectedPlayerIdRef.current === id) applyUpcoming(id, payload);
+      } catch {
+        /* keep waiting for the selected-player fetch */
+      } finally {
+        tennisNextGameInflight.delete(id);
+      }
+    },
+    [applyUpcoming]
+  );
+
+  selectedPlayerIdRef.current = String(selectedPlayer?.playerId || '').trim() || null;
+
+  useEffect(() => {
+    fetch('/api/tennis/next-game?warm=1', { cache: 'no-store' }).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -661,8 +778,13 @@ export default function TennisDashboardPage() {
       url.searchParams.set('mode', 'player');
       url.searchParams.set('name', String(tennisPlayer.name ?? ''));
       url.searchParams.set('team', String(tennisPlayer.team ?? tennisPlayer.tour ?? '').trim());
+      const upcomingForPlayer = nextGamePlayerId === String(tennisPlayer.playerId || '').trim();
       const nextOpp =
-        nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
+        upcomingForPlayer &&
+        nextGameOpponent &&
+        nextGameOpponent !== '' &&
+        nextGameOpponent !== '—' &&
+        nextGameOpponent !== 'NA'
           ? nextGameOpponent
           : null;
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
@@ -682,8 +804,13 @@ export default function TennisDashboardPage() {
       if (mainChartStat) url.searchParams.set('stat', mainChartStat);
       else url.searchParams.delete('stat');
       url.searchParams.set('tf', chartTimeframe);
+      const upcomingForPlayer = nextGamePlayerId === String(tennisPlayer.playerId || '').trim();
       const nextOpp =
-        nextGameOpponent && nextGameOpponent !== '' && nextGameOpponent !== '—'
+        upcomingForPlayer &&
+        nextGameOpponent &&
+        nextGameOpponent !== '' &&
+        nextGameOpponent !== '—' &&
+        nextGameOpponent !== 'NA'
           ? nextGameOpponent
           : null;
       if (nextOpp) url.searchParams.set('opponent', nextOpp);
@@ -707,6 +834,8 @@ export default function TennisDashboardPage() {
     selectedPlayer?.team,
     selectedTeam,
     nextGameOpponent,
+    nextGamePlayerId,
+    selectedPlayer?.playerId,
     mainChartStat,
     chartTimeframe,
     selectionHydrated,
@@ -738,7 +867,24 @@ export default function TennisDashboardPage() {
     setStatsLoadingForPlayer(true);
     setLoadingPlayerFromUrl(false);
     setChartDelayElapsed(false);
+    setTennisOddsBooks([]);
+    setSelectedTennisBookIndex(0);
+    setTennisOddsHomeTeam('');
+    setTennisOddsAwayTeam('');
+    setTennisGameLineValue(null);
+    lastOddsMatchupKeyRef.current = null;
+    const playerId = String(player.playerId || '').trim();
+    const cached = readTennisNextGameClient(playerId);
+    if (playerId && cached) applyUpcoming(playerId, cached);
   };
+
+  useEffect(() => {
+    if (!showSearchDropdown) return;
+    for (const player of filteredPlayers.slice(0, 12)) {
+      const id = String(player.playerId || '').trim();
+      if (id) void prefetchNextGame(id, tennisPlayerTour(player));
+    }
+  }, [showSearchDropdown, filteredPlayers, prefetchNextGame]);
 
   // Load game logs whenever a player is selected (cache-first soft remount, then network).
   useEffect(() => {
@@ -846,20 +992,54 @@ export default function TennisDashboardPage() {
     };
   }, [nblPropsMode, selectedTeam, selectedPlayer?.playerId, selectedPlayer?.name]);
 
-  // Last completed opponent (match cache has no upcoming schedule).
+  // Upcoming fixture from API-Tennis. Apply a client cache immediately; never flash NA.
   useEffect(() => {
-    const logs =
-      nblPropsMode === 'team' ? selectedPlayerGameLogs : selectedPlayerGameLogs;
-    const last = logs.length ? (logs[logs.length - 1] as { opponent?: string }) : null;
-    const opponent = last?.opponent ? String(last.opponent) : null;
-    setNextGameOpponent(opponent);
-    setNextGameTipoff(null);
-    setNextGameOpponentLogo(null);
-    setIsGameInProgress(false);
-  }, [nblPropsMode, selectedPlayerGameLogs, selectedTeamGameLogs]);
+    const playerId = String(selectedPlayer?.playerId || '').trim();
+    const clearUpcoming = () => {
+      setNextGamePlayerId(null);
+      setNextGameOpponent(null);
+      setNextGameTipoff(null);
+      setNextGameOpponentLogo(null);
+      setNextGameOpponentIoc(null);
+      setNextGameIsGrandSlam(false);
+      setNextGameLive(false);
+      setIsGameInProgress(false);
+    };
+    if (!playerId) {
+      clearUpcoming();
+      return;
+    }
+    const cached = readTennisNextGameClient(playerId);
+    if (cached) applyUpcoming(playerId, cached);
+    let cancelled = false;
+    (async () => {
+      try {
+        const tour = tennisPlayerTour(selectedPlayer);
+        const qs = new URLSearchParams({ playerId });
+        if (tour) qs.set('tour', tour);
+        const res = await fetch(`/api/tennis/next-game?${qs.toString()}`, { cache: 'no-store' });
+        const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+        if (cancelled) return;
+        if (!res.ok || !data) {
+          if (!readTennisNextGameClient(playerId)) applyUpcoming(playerId, EMPTY_TENNIS_NEXT_GAME);
+          return;
+        }
+        applyUpcoming(playerId, parseTennisNextGameClient(data));
+      } catch {
+        if (!cancelled && !readTennisNextGameClient(playerId)) applyUpcoming(playerId, EMPTY_TENNIS_NEXT_GAME);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPlayer?.playerId, selectedPlayer?.tour, selectedPlayer?.team, applyUpcoming]);
 
-  // Mark tipoff LIVE for ~2.5h after start.
+  // Mark tipoff LIVE for the tennis match window, or when the fixture is already in progress.
   useEffect(() => {
+    if (nextGameLive) {
+      setIsGameInProgress(true);
+      return;
+    }
     if (!nextGameTipoff) {
       setIsGameInProgress(false);
       return;
@@ -872,12 +1052,114 @@ export default function TennisDashboardPage() {
     tick();
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
-  }, [nextGameTipoff]);
+  }, [nextGameTipoff, nextGameLive]);
 
   // Reset supporting to the first context-relevant pill when main chart stat changes.
   useEffect(() => {
     setSupportingStatKind(defaultSupportingStatForMain(mainChartStat));
   }, [mainChartStat]);
+
+  // Load API-Tennis match odds once the upcoming opponent is resolved for this player.
+  useEffect(() => {
+    const playerId = String(selectedPlayer?.playerId || '').trim();
+    const upcomingReady = Boolean(playerId) && nextGamePlayerId === playerId;
+    const opponent = upcomingReady ? String(nextGameOpponent || '').trim() : '';
+    if (!playerId) {
+      setTennisOddsLoading(false);
+      return;
+    }
+    if (!upcomingReady) {
+      setTennisOddsLoading(true);
+      return;
+    }
+    if (!opponent) {
+      setTennisOddsBooks([]);
+      setTennisOddsHomeTeam('');
+      setTennisOddsAwayTeam('');
+      setTennisOddsLoading(false);
+      setTennisGameLineValue(null);
+      return;
+    }
+    let cancelled = false;
+    setTennisOddsLoading(true);
+    fetch(`/api/tennis/odds?playerId=${encodeURIComponent(playerId)}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data: { success?: boolean; data?: TennisBookRow[]; homeTeam?: string; awayTeam?: string }) => {
+        if (cancelled) return;
+        const books = data?.success && Array.isArray(data.data) ? data.data : [];
+        setTennisOddsBooks(books);
+        setTennisOddsHomeTeam(data?.homeTeam || selectedPlayer?.name || '');
+        setTennisOddsAwayTeam(data?.awayTeam || opponent);
+        setSelectedTennisBookIndex((i) => (i >= books.length ? 0 : i));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTennisOddsBooks([]);
+        setTennisOddsHomeTeam('');
+        setTennisOddsAwayTeam('');
+      })
+      .finally(() => {
+        if (!cancelled) setTennisOddsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPlayer?.playerId, selectedPlayer?.name, nextGamePlayerId, nextGameOpponent]);
+
+  useEffect(() => {
+    if (!tennisOddsBooks.length) return;
+    const matchupKey = `${selectedPlayer?.playerId || ''}|${nextGameOpponent || ''}`;
+    if (lastOddsMatchupKeyRef.current === matchupKey) return;
+    lastOddsMatchupKeyRef.current = matchupKey;
+    const hasH2H = (b: TennisBookRow) => b.H2H?.home !== 'N/A' && b.H2H?.away !== 'N/A';
+    const preferred = ['pointsbet', 'bet365', 'unibet'];
+    let idx = -1;
+    for (const needle of preferred) {
+      idx = tennisOddsBooks.findIndex(
+        (b) => String(b.name || '').toLowerCase().includes(needle) && hasH2H(b)
+      );
+      if (idx >= 0) break;
+    }
+    if (idx < 0) idx = tennisOddsBooks.findIndex(hasH2H);
+    setSelectedTennisBookIndex(idx >= 0 ? idx : 0);
+  }, [tennisOddsBooks, selectedPlayer?.playerId, nextGameOpponent]);
+
+  useEffect(() => {
+    const tol = 0.01;
+    const onTransientLine = (e: Event) => {
+      if (ignoreNextTransientLineRef.current) {
+        ignoreNextTransientLineRef.current = false;
+        return;
+      }
+      const value = (e as CustomEvent<{ value: number }>).detail?.value;
+      if (value == null || !Number.isFinite(value)) return;
+      if (!tennisOddsBooks.length || !isTennisOuStat(mainChartStat)) return;
+      setTennisGameLineValue((prev) =>
+        prev != null && Number.isFinite(prev) && Math.abs(prev - value) < tol ? prev : value
+      );
+      const idx = tennisOddsBooks.findIndex((book) =>
+        tennisOuLinesForStat(book, mainChartStat).some((row) => tennisLineMatches(row.line, value, tol))
+      );
+      if (idx >= 0 && idx !== selectedTennisBookIndex) setSelectedTennisBookIndex(idx);
+    };
+    window.addEventListener('transient-line', onTransientLine);
+    return () => window.removeEventListener('transient-line', onTransientLine);
+  }, [mainChartStat, tennisOddsBooks, selectedTennisBookIndex]);
+
+  useEffect(() => {
+    if (!tennisOddsBooks.length) return;
+    if (!isTennisOuStat(mainChartStat)) return;
+    const best = tennisBestOuPick(tennisOddsBooks, mainChartStat);
+    const n = tennisParseLineNumber(best?.line.line);
+    if (best) {
+      setSelectedTennisBookIndex((prev) => {
+        if (prev !== best.bookIndex) ignoreNextTransientLineRef.current = true;
+        return best.bookIndex;
+      });
+    }
+    if (n != null) setTennisGameLineValue(n);
+    else setTennisGameLineValue(0.5);
+  }, [mainChartStat, tennisOddsBooks]);
 
   const chartGameLogsForPlayer = useMemo(() => {
     const base = selectedPlayerGameLogs.filter((g) => tennisMatchPassesTourFilter(g, nblTeamFilter));
@@ -896,26 +1178,33 @@ export default function TennisDashboardPage() {
         ioc?: string | null;
       })
     : null;
+  const lastCompletedOpponent = lastLog?.opponent ? String(lastLog.opponent).trim() : null;
+  const selectedPlayerId = String(selectedPlayer?.playerId || '').trim();
+  const upcomingReady = Boolean(selectedPlayerId) && nextGamePlayerId === selectedPlayerId;
+  const displayOpponent =
+    upcomingReady && nextGameOpponent ? String(nextGameOpponent).trim() : null;
+  const showUpcomingNA = Boolean(selectedPlayer) && upcomingReady && !displayOpponent;
+  const statsOpponent = displayOpponent || lastCompletedOpponent;
+  const upcomingIsGrandSlam = Boolean(displayOpponent && nextGameIsGrandSlam);
   const headerTitle = selectedPlayer?.name || 'Select a Player';
   const headerSubtitle = selectedPlayer
     ? nblPropsMode === 'team'
       ? `${tennisTourLabel({
           tour: lastLog?.tour || selectedPlayer.team,
-          isGrandSlam: Boolean(lastLog?.isGrandSlam),
+          isGrandSlam: upcomingIsGrandSlam || Boolean(lastLog?.isGrandSlam),
         })} · Game props`
       : tennisTourLabel({
           tour: lastLog?.tour || selectedPlayer.team,
-          isGrandSlam: Boolean(lastLog?.isGrandSlam),
+          isGrandSlam: upcomingIsGrandSlam || Boolean(!displayOpponent && lastLog?.isGrandSlam),
         })
     : nblPropsMode === 'team'
       ? 'Search for a player below'
       : 'Search for a player below';
   const matchupLeft = selectedPlayer?.name ? String(selectedPlayer.name).trim() : null;
   const matchupLeftIoc = selectedPlayer?.ioc || lastLog?.ioc || null;
-  const displayOpponent = nextGameOpponent ? String(nextGameOpponent).trim() : null;
-  const matchupOpponentIoc = lastLog?.opponentIoc || null;
+  const matchupOpponentIoc = displayOpponent ? nextGameOpponentIoc || lastLog?.opponentIoc || null : null;
   const matchupLeftAbbrev = matchupLeft || '';
-  const displayOpponentAbbrev = displayOpponent || '—';
+  const displayOpponentAbbrev = displayOpponent || 'NA';
 
   const dvpTour = tennisPlayerTour(selectedPlayer) || (nblTeamFilter === 'WTA' ? 'WTA' : 'ATP');
 
@@ -1050,8 +1339,12 @@ export default function TennisDashboardPage() {
                                   textClassName="font-bold text-gray-900 dark:text-white text-xs xl:text-sm"
                                 />
                               ) : (
-                                <span className="text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0">
-                                  —
+                                <span
+                                  className={`text-gray-400 dark:text-gray-500 text-xs xl:text-sm font-medium flex-shrink-0 ${
+                                    showUpcomingNA ? '' : 'invisible'
+                                  }`}
+                                >
+                                  NA
                                 </span>
                               )}
                             </div>
@@ -1130,7 +1423,9 @@ export default function TennisDashboardPage() {
                                 textClassName="text-xs font-semibold text-gray-900 dark:text-white"
                               />
                             ) : (
-                              <span className="text-gray-400 text-xs">—</span>
+                              <span className={`text-gray-400 text-xs ${showUpcomingNA ? '' : 'invisible'}`}>
+                                NA
+                              </span>
                             )}
                           </div>
                         ) : (
@@ -1345,7 +1640,7 @@ export default function TennisDashboardPage() {
                     nblGameFilters={nblPropsMode === 'player' ? nblGameFilters : undefined}
                     setNblGameFilters={nblPropsMode === 'player' ? setNblGameFilters : undefined}
                     perGameFilterData={null}
-                    nextOpponent={nextGameOpponent}
+                    nextOpponent={statsOpponent}
                     gamePropsTeam={nblPropsMode === 'team' ? selectedTeam : null}
                     uiResetToken={chartUiResetToken}
                     season={TENNIS_CURRENT_YEAR}
@@ -1353,7 +1648,44 @@ export default function TennisDashboardPage() {
                     withWithoutMode="with"
                     clearTeammateFilter={() => undefined}
                     rosterPlayers={rosterPlayers}
-                    slotLeftOfLine={null}
+                    slotLeftOfLine={
+                      tennisOddsLoading ? (
+                        <div className={`h-8 w-[100px] sm:w-[110px] md:w-[120px] rounded-lg animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                      ) : (
+                        <TennisLineSelector
+                          books={tennisOddsBooks}
+                          selectedStat={mainChartStat}
+                          selectedBookIndex={selectedTennisBookIndex}
+                          onSelectBookIndex={setSelectedTennisBookIndex}
+                          oddsFormat={oddsFormat}
+                          isDark={!!mounted && isDark}
+                          homeTeam={tennisOddsHomeTeam || selectedPlayer?.name || ''}
+                          awayTeam={tennisOddsAwayTeam || displayOpponent || ''}
+                          disabled={!selectedPlayer}
+                          currentLineValue={isTennisOuStat(mainChartStat) ? tennisGameLineValue ?? undefined : undefined}
+                          onSelectLineValue={
+                            isTennisOuStat(mainChartStat)
+                              ? (lineValue: number) => {
+                                  ignoreNextTransientLineRef.current = true;
+                                  setTennisGameLineValue(lineValue);
+                                }
+                              : undefined
+                          }
+                        />
+                      )
+                    }
+                    externalLineValue={(() => {
+                      if (isTennisOuStat(mainChartStat)) {
+                        if (tennisGameLineValue != null && Number.isFinite(tennisGameLineValue)) {
+                          return tennisGameLineValue;
+                        }
+                        const book = tennisOddsBooks[selectedTennisBookIndex];
+                        const n = tennisParseLineNumber(tennisMainLineForStat(book, mainChartStat)?.line);
+                        return n ?? 0.5;
+                      }
+                      if (mainChartStat === 'moneyline') return 0.5;
+                      return undefined;
+                    })()}
                     slotRightOfControls={
                       <div className="flex items-center gap-1.5 relative">
                         <div className="relative">
@@ -1478,7 +1810,7 @@ export default function TennisDashboardPage() {
                           gameLogs={chartGameLogsForPlayer as unknown as Array<Record<string, unknown>>}
                           timeframe={chartTimeframe}
                           season={TENNIS_CURRENT_YEAR}
-                          nextOpponent={nextGameOpponent}
+                          nextOpponent={statsOpponent}
                           mainChartStat={mainChartStat}
                           supportingStatKind={supportingStatKind}
                           onSupportingStatKindChange={setSupportingStatKind}
@@ -1550,7 +1882,7 @@ export default function TennisDashboardPage() {
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
-                              opponentName={displayOpponent}
+                              opponentName={statsOpponent}
                               tour={dvpTour}
                             />
                           </div>
@@ -1564,7 +1896,7 @@ export default function TennisDashboardPage() {
                             <TennisTeamMatchupCard
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
-                              opponentName={displayOpponent}
+                              opponentName={statsOpponent}
                               tour={dvpTour}
                             />
                           </div>
@@ -1621,7 +1953,7 @@ export default function TennisDashboardPage() {
                         playerName={matchupLeft}
                         opponentName={displayOpponent}
                         tour={dvpTour}
-                        isGrandSlam={Boolean(lastLog?.isGrandSlam)}
+                        isGrandSlam={nextGameIsGrandSlam}
                       />
                     </div>
                     {playerVsContainerTab === 'similar' ? (
@@ -1630,7 +1962,7 @@ export default function TennisDashboardPage() {
                         layout="mobile"
                         playerId={selectedPlayer?.playerId || null}
                         playerName={matchupLeft}
-                        opponentName={displayOpponent}
+                        opponentName={statsOpponent}
                         selectedStat={mainChartStat}
                         tour={dvpTour}
                         players={rosterPlayers}
@@ -1640,7 +1972,7 @@ export default function TennisDashboardPage() {
                         isDark={!!mounted && isDark}
                         layout="mobile"
                         playerName={matchupLeft}
-                        opponentName={displayOpponent}
+                        opponentName={statsOpponent}
                         tour={dvpTour}
                       />
                     ) : null}
@@ -1687,7 +2019,7 @@ export default function TennisDashboardPage() {
                         <TennisAdvancedAveragesCard
                           isDark={!!mounted && isDark}
                           playerName={matchupLeft}
-                          opponentName={displayOpponent}
+                          opponentName={statsOpponent}
                           tour={dvpTour}
                         />
                       )}
@@ -1779,7 +2111,7 @@ export default function TennisDashboardPage() {
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
-                              opponentName={displayOpponent}
+                              opponentName={statsOpponent}
                               tour={dvpTour}
                             />
                           </div>
@@ -1797,7 +2129,7 @@ export default function TennisDashboardPage() {
                             <TennisTeamMatchupCard
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
-                              opponentName={displayOpponent}
+                              opponentName={statsOpponent}
                               tour={dvpTour}
                             />
                           </div>
@@ -1819,7 +2151,7 @@ export default function TennisDashboardPage() {
                         <TennisAdvancedAveragesCard
                           isDark={!!mounted && isDark}
                           playerName={matchupLeft}
-                          opponentName={displayOpponent}
+                          opponentName={statsOpponent}
                           tour={dvpTour}
                         />
                       )}
@@ -1874,7 +2206,7 @@ export default function TennisDashboardPage() {
                         playerName={matchupLeft}
                         opponentName={displayOpponent}
                         tour={dvpTour}
-                        isGrandSlam={Boolean(lastLog?.isGrandSlam)}
+                        isGrandSlam={nextGameIsGrandSlam}
                       />
                     </div>
                     {playerVsContainerTab === 'similar' ? (
@@ -1883,7 +2215,7 @@ export default function TennisDashboardPage() {
                         layout="desktop"
                         playerId={selectedPlayer?.playerId || null}
                         playerName={matchupLeft}
-                        opponentName={displayOpponent}
+                        opponentName={statsOpponent}
                         selectedStat={mainChartStat}
                         tour={dvpTour}
                         players={rosterPlayers}
@@ -1893,7 +2225,7 @@ export default function TennisDashboardPage() {
                         isDark={!!mounted && isDark}
                         layout="desktop"
                         playerName={matchupLeft}
-                        opponentName={displayOpponent}
+                        opponentName={statsOpponent}
                         tour={dvpTour}
                       />
                     ) : null}

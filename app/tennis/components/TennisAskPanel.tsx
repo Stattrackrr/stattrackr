@@ -151,7 +151,9 @@ export function TennisAskPanel({
             <div className={`mt-3 text-[13px] ${muted}`}>
               {player && opponent
                 ? `${playerLast} vs ${oppLast}`
-                : 'Select an opponent to ask about this match'}
+                : player
+                  ? 'No upcoming match. AI is disabled until a fixture is scheduled.'
+                  : 'Select a player to ask about this match'}
             </div>
 
             {player && opponent ? (
@@ -224,7 +226,9 @@ export function TennisAskPanel({
           onChange={(e) => setQuestion(e.target.value)}
           disabled={!player || !opponent || loading}
           maxLength={500}
-          placeholder={opponent ? 'Ask a match question' : 'Select an opponent first'}
+          placeholder={
+            opponent ? 'Ask a match question' : player ? 'No upcoming match' : 'Select a player first'
+          }
           className={`min-w-0 flex-1 rounded-full border px-4 py-2.5 text-sm ${
             isDark
               ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-gray-500'

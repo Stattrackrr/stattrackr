@@ -46,6 +46,8 @@ const nextConfig: NextConfig = {
     '/api/tennis/dvp/route': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/players': [...TENNIS_RUNTIME_DATA],
     '/api/tennis/players/route': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/next-game': [...TENNIS_RUNTIME_DATA],
+    '/api/tennis/next-game/route': [...TENNIS_RUNTIME_DATA],
     '/api/afl/cron/league-player-stats': [
       './data/afl-league-player-stats-2026.json',
       './data/afl-league-player-stats-2025.json',

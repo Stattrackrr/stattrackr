@@ -295,7 +295,242 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: '/images/unibet.jpg',
     color: '#43B649',
   },
+  '1xbet': {
+    name: '1xBet',
+    logo: '1X',
+    logoUrl: getLogoUrl('1xbet.com'),
+    color: '#1A73E8',
+  },
+  'onexbet': {
+    name: '1xBet',
+    logo: '1X',
+    logoUrl: getLogoUrl('1xbet.com'),
+    color: '#1A73E8',
+  },
+  'pointsbetau': {
+    name: 'PointsBet',
+    logo: 'PB',
+    logoUrl: '/images/pointsbet.png',
+    color: '#EE3124',
+  },
+  'betr_au': {
+    name: 'Betr',
+    logo: 'BETR',
+    logoUrl: '/images/betr.png',
+    color: '#6B7280',
+  },
+  'leovegas': {
+    name: 'LeoVegas',
+    logo: 'LV',
+    logoUrl: getLogoUrl('leovegas.com'),
+    color: '#FF0046',
+  },
+  'casumo': {
+    name: 'Casumo',
+    logo: 'CA',
+    logoUrl: getLogoUrl('casumo.com'),
+    color: '#6B21A8',
+  },
+  'hardrockbet': {
+    name: 'Hard Rock Bet',
+    logo: 'HR',
+    logoUrl: getLogoUrl('hardrock.bet'),
+    color: '#C8102E',
+  },
+  'espnbet': {
+    name: 'theScore Bet',
+    logo: 'TS',
+    logoUrl: getLogoUrl('espnbet.com'),
+    color: '#000000',
+  },
+  'betano': {
+    name: 'Betano',
+    logo: 'BN',
+    logoUrl: getLogoUrl('betano.com'),
+    color: '#00A651',
+  },
+  'superbet': {
+    name: 'Superbet',
+    logo: 'SB',
+    logoUrl: getLogoUrl('superbet.com'),
+    color: '#E30613',
+  },
+  'marathon': {
+    name: 'Marathon',
+    logo: 'MB',
+    logoUrl: getLogoUrl('marathonbet.com'),
+    color: '#0B1F3A',
+  },
+  'pncl': {
+    name: 'Pinnacle',
+    logo: 'PN',
+    logoUrl: getLogoUrl('pinnacle.com'),
+    color: '#1D1D1B',
+  },
+  'pinnacle': {
+    name: 'Pinnacle',
+    logo: 'PN',
+    logoUrl: getLogoUrl('pinnacle.com'),
+    color: '#1D1D1B',
+  },
+  '888sport': {
+    name: '888Sport',
+    logo: '888',
+    logoUrl: getLogoUrl('888sport.com'),
+    color: '#FF6600',
+  },
+  'betvictor': {
+    name: 'BetVictor',
+    logo: 'BV',
+    logoUrl: getLogoUrl('betvictor.com'),
+    color: '#D4AF37',
+  },
+  'sbo': {
+    name: 'SBOBET',
+    logo: 'SBO',
+    logoUrl: getLogoUrl('sbobet.com'),
+    color: '#C8102E',
+  },
 };
+
+export type BookmakerRegion = 'us' | 'au' | 'uk' | 'other';
+
+const US_BOOK_KEYS = new Set([
+  'betonlineag',
+  'betonline.ag',
+  'betonline',
+  'betmgm',
+  'betrivers',
+  'betrivers sportsbook',
+  'betus',
+  'bovada',
+  'williamhill_us',
+  'caesars',
+  'draftkings',
+  'fanatics',
+  'fanatics sportsbook',
+  'fanatics betting and gaming',
+  'fanduel',
+  'lowvig',
+  'lowvig.ag',
+  'mybookieag',
+  'mybookie.ag',
+  'ballybet',
+  'betanysports',
+  'betparx',
+  'espnbet',
+  'fliff',
+  'hardrockbet',
+  'hardrockbet_az',
+  'hardrockbet_fl',
+  'hardrockbet_oh',
+  'rebet',
+  'foxbet',
+  'pick6',
+  'prizepicks',
+  'underdog',
+  'underdog fantasy',
+  'dabble_us_dfs',
+  'pointsbetus',
+]);
+
+const AU_BOOK_KEYS = new Set([
+  'betfair_ex_au',
+  'betr_au',
+  'betr',
+  'betright',
+  'bet right',
+  'bet365_au',
+  'bet365 au',
+  'dabble_au',
+  'dabble au',
+  'dabble',
+  'ladbrokes_au',
+  'ladbrokes',
+  'neds',
+  'playup',
+  'pointsbetau',
+  'pointsbet (au)',
+  'sportsbet',
+  'tab',
+  'tabtouch',
+  'unibet',
+  'unibet_au',
+  'unibet au',
+]);
+
+const UK_BOOK_KEYS = new Set([
+  'sport888',
+  '888sport',
+  'betano_uk',
+  'betfair_ex_uk',
+  'betfair_sb_uk',
+  'betfred_uk',
+  'betvictor',
+  'betway',
+  'boylesports',
+  'casumo',
+  'coral',
+  'grosvenor',
+  'ladbrokes_uk',
+  'leovegas',
+  'livescorebet',
+  'matchbook',
+  'paddypower',
+  'skybet',
+  'smarkets',
+  'unibet_uk',
+  'virginbet',
+  'williamhill',
+]);
+
+function normalizeBookKey(key: string): string {
+  return key.toLowerCase().trim().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+}
+
+function compactBookKey(key: string): string {
+  return key.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+}
+
+/** Odds API / display-name region. `unibet` without a suffix is AU on The Odds API. */
+export function getBookmakerRegion(key: string): BookmakerRegion {
+  const raw = key.toLowerCase().trim();
+  const spaced = normalizeBookKey(key);
+  const compact = compactBookKey(key);
+
+  if (US_BOOK_KEYS.has(raw) || US_BOOK_KEYS.has(spaced) || US_BOOK_KEYS.has(compact)) return 'us';
+  if (AU_BOOK_KEYS.has(raw) || AU_BOOK_KEYS.has(spaced) || AU_BOOK_KEYS.has(compact)) return 'au';
+  if (UK_BOOK_KEYS.has(raw) || UK_BOOK_KEYS.has(spaced) || UK_BOOK_KEYS.has(compact)) return 'uk';
+
+  if (/(?:^|[\s_(])au(?:$|[\s)]|_)/.test(raw) || compact.endsWith('au')) return 'au';
+  if (/(?:^|[\s_(])uk(?:$|[\s)]|_)/.test(raw) || compact.endsWith('uk')) return 'uk';
+  if (/(?:^|[\s_(])us(?:$|[\s)]|_)/.test(raw) || compact.endsWith('us')) return 'us';
+
+  if (
+    compact.includes('sportsbet') ||
+    compact.includes('pointsbet') ||
+    compact === 'neds' ||
+    compact.includes('ladbrokes') ||
+    compact === 'tab' ||
+    compact.includes('tabtouch') ||
+    compact.includes('playup')
+  ) {
+    return 'au';
+  }
+  if (
+    compact.includes('draftkings') ||
+    compact.includes('fanduel') ||
+    compact.includes('betmgm') ||
+    compact.includes('caesars') ||
+    compact.includes('bovada') ||
+    compact.includes('fanatics') ||
+    compact.includes('hardrock')
+  ) {
+    return 'us';
+  }
+
+  return 'other';
+}
 
 export function getBookmakerInfo(key: string) {
   const normalizedKey = key.toLowerCase().trim();
