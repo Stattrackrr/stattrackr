@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-10T19:01:10.318Z",
+  "generatedAt": "2026-09-10T22:20:27.865Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 161,
+  "injuryCount": 163,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Hayden McLean",
+      "injury": "Concussion",
+      "returning": "active"
+    },
+    {
+      "team": "Sydney Swans",
+      "player": "William Green",
+      "injury": "active",
+      "returning": "active"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Brandon Walker",
@@ -61,19 +73,19 @@
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
-      "injury": "Banned from being selected; serving club-imposed bans.",
+      "injury": "club-imposed",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Chad Warner",
-      "injury": "Banned from being selected; serving club-imposed bans.",
+      "injury": "club-imposed",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Nick Blakey",
-      "injury": "Banned from being selected; serving club-imposed bans.",
+      "injury": "club-imposed",
       "returning": "Season"
     },
     {
@@ -91,13 +103,13 @@
     {
       "team": "Sydney Swans",
       "player": "James Jordon",
-      "injury": "Won’t play again this season (contextually linked to club-imposed bans).",
+      "injury": "club-imposed",
       "returning": "Season"
     },
     {
       "team": "Sydney Swans",
       "player": "Riley Bice",
-      "injury": "Won’t play again this season (contextually linked to club-imposed bans).",
+      "injury": "club-imposed",
       "returning": "Season"
     },
     {
