@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-10T02:50:33.820Z",
+  "generatedAt": "2026-09-10T08:43:01.712Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 154,
+  "injuryCount": 161,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Tom Stewart",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "George Stevens",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Nathan O'Driscoll",
+      "injury": "dropped for its semi-final clash",
+      "returning": "TBC"
+    },
+    {
+      "team": "Adelaide Crows",
+      "player": "Isaac Cumming",
+      "injury": "active",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Jack Pickett",
+      "injury": "ACL",
+      "returning": "Season"
+    },
+    {
+      "team": "Brisbane Lions",
+      "player": "Noah Answerth",
+      "injury": "Ankle",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Sean Darcy",
+      "injury": "Knee",
+      "returning": "Test"
+    },
+    {
+      "team": "Fremantle Dockers",
+      "player": "Aiden Riddle",
+      "injury": "Foot",
+      "returning": "1 Week"
+    },
     {
       "team": "Sydney Swans",
       "player": "Isaac Heeney",
@@ -194,7 +242,7 @@
       "team": "Geelong Cats",
       "player": "Rhys Stanley",
       "injury": "Knee",
-      "returning": "3 Weeks"
+      "returning": "Test"
     },
     {
       "team": "Port Adelaide Power",
@@ -248,13 +296,13 @@
       "team": "Adelaide Crows",
       "player": "James Peatling",
       "injury": "Hip",
-      "returning": "2 Weeks"
+      "returning": "1 Week"
     },
     {
       "team": "Adelaide Crows",
       "player": "Luke Pedlar",
       "injury": "Hamstring",
-      "returning": "2 Weeks"
+      "returning": "1 Week"
     },
     {
       "team": "Brisbane Lions",
@@ -282,12 +330,6 @@
     },
     {
       "team": "Fremantle Dockers",
-      "player": "Aiden Riddle",
-      "injury": "Ankle",
-      "returning": "Test"
-    },
-    {
-      "team": "Fremantle Dockers",
       "player": "Sam Sturt",
       "injury": "Hamstring",
       "returning": "TBA"
@@ -302,7 +344,7 @@
       "team": "Geelong Cats",
       "player": "Toby Conway",
       "injury": "Foot",
-      "returning": "Season"
+      "returning": "TBA"
     },
     {
       "team": "Geelong Cats",
