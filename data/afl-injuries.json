@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-10T08:43:01.712Z",
+  "generatedAt": "2026-09-10T14:09:05.465Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 161,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Brandon Walker",
+      "injury": "Soreness",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Tom Stewart",
@@ -123,12 +129,6 @@
       "player": "Callum Mills",
       "injury": "Knee",
       "returning": "scans on Monday"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Brandon Walker",
-      "injury": "Ankle",
-      "returning": "TBC"
     },
     {
       "team": "Carlton Blues",
