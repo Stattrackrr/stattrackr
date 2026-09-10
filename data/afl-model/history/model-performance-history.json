@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-09T15:09:16Z",
-  "count": 223,
+  "generatedAt": "2026-09-10T14:50:06Z",
+  "count": 224,
   "rows": [
     {
       "generatedAt": "2026-04-04T15:38:00Z",
@@ -29669,6 +29669,156 @@
         "brierImprovement": -0.003018,
         "logLossChange": 0.029333,
         "hitRateDelta": 0.029629
+      },
+      "checks": {
+        "sampleCountOk": true,
+        "brierOk": false,
+        "logLossOk": false,
+        "hitRateOk": true,
+        "freezeInactive": true
+      }
+    },
+    {
+      "generatedAt": "2026-09-10T14:50:06Z",
+      "sampleCount": 250,
+      "pass": false,
+      "promoted": false,
+      "candidate": {
+        "name": "candidate",
+        "sampleCount": 250,
+        "hitRate": 0.508,
+        "brierScore": 0.290933,
+        "logLoss": 0.826009,
+        "mae": 4.855393,
+        "avgClvLite": -0.002482,
+        "positiveClvRate": 0.124,
+        "clvSampleCount": 250,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 15,
+            "avgPred": 0.0684,
+            "avgActual": 0.6
+          },
+          {
+            "bin": 1,
+            "count": 17,
+            "avgPred": 0.1568,
+            "avgActual": 0.4118
+          },
+          {
+            "bin": 2,
+            "count": 36,
+            "avgPred": 0.2583,
+            "avgActual": 0.6944
+          },
+          {
+            "bin": 3,
+            "count": 61,
+            "avgPred": 0.3638,
+            "avgActual": 0.4262
+          },
+          {
+            "bin": 4,
+            "count": 60,
+            "avgPred": 0.4531,
+            "avgActual": 0.4833
+          },
+          {
+            "bin": 5,
+            "count": 43,
+            "avgPred": 0.5433,
+            "avgActual": 0.5349
+          },
+          {
+            "bin": 6,
+            "count": 14,
+            "avgPred": 0.6325,
+            "avgActual": 0.6429
+          },
+          {
+            "bin": 7,
+            "count": 4,
+            "avgPred": 0.7213,
+            "avgActual": 0.5
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260910-144906"
+      },
+      "current": {
+        "name": "current",
+        "sampleCount": 250,
+        "hitRate": 0.464,
+        "brierScore": 0.292094,
+        "logLoss": 0.808931,
+        "mae": 4.95348,
+        "avgClvLite": -0.00199,
+        "positiveClvRate": 0.148,
+        "clvSampleCount": 250,
+        "calibrationBins": [
+          {
+            "bin": 0,
+            "count": 5,
+            "avgPred": 0.0595,
+            "avgActual": 0.8
+          },
+          {
+            "bin": 1,
+            "count": 16,
+            "avgPred": 0.1613,
+            "avgActual": 0.5625
+          },
+          {
+            "bin": 2,
+            "count": 32,
+            "avgPred": 0.2525,
+            "avgActual": 0.5625
+          },
+          {
+            "bin": 3,
+            "count": 56,
+            "avgPred": 0.3604,
+            "avgActual": 0.5179
+          },
+          {
+            "bin": 4,
+            "count": 59,
+            "avgPred": 0.4441,
+            "avgActual": 0.5254
+          },
+          {
+            "bin": 5,
+            "count": 53,
+            "avgPred": 0.5409,
+            "avgActual": 0.4528
+          },
+          {
+            "bin": 6,
+            "count": 23,
+            "avgPred": 0.6397,
+            "avgActual": 0.4783
+          },
+          {
+            "bin": 7,
+            "count": 5,
+            "avgPred": 0.7361,
+            "avgActual": 0.6
+          },
+          {
+            "bin": 8,
+            "count": 1,
+            "avgPred": 0.8415,
+            "avgActual": 1.0
+          }
+        ],
+        "calibrationMethod": "identity",
+        "modelVersion": "afl-disp-20260907-202255"
+      },
+      "deltas": {
+        "brierImprovement": 0.003975,
+        "logLossChange": 0.021112,
+        "hitRateDelta": 0.044
       },
       "checks": {
         "sampleCountOk": true,
