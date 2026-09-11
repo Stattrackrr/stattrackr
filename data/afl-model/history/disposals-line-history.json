@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-09-10T19:31:17Z",
+  "generatedAt": "2026-09-11T14:52:21Z",
   "count": 3669,
   "rows": [
     {
       "snapshotKey": "jordan dawson|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -17,12 +17,12 @@
       "line": 26.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 25.35,
-      "modelEdge": -0.0745
+      "modelExpectedDisposals": 29.36,
+      "modelEdge": 0.1343
     },
     {
       "snapshotKey": "sam berry|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -35,12 +35,12 @@
       "line": 19.5,
       "overOdds": "-118",
       "underOdds": "-111",
-      "modelExpectedDisposals": 20.76,
-      "modelEdge": 0.0732
+      "modelExpectedDisposals": 21.86,
+      "modelEdge": 0.0894
     },
     {
       "snapshotKey": "wayne milera|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -49,16 +49,16 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Brisbane Lions",
       "opponentTeam": "Adelaide Crows",
-      "bookmaker": "Ladbrokes",
-      "line": 22.5,
-      "overOdds": "-114",
-      "underOdds": "-118",
-      "modelExpectedDisposals": 22.93,
-      "modelEdge": 0.0321
+      "bookmaker": "PointsBet (AU)",
+      "line": 21.5,
+      "overOdds": "-130",
+      "underOdds": "+100",
+      "modelExpectedDisposals": 24.52,
+      "modelEdge": 0.1053
     },
     {
       "snapshotKey": "will ashcroft|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -67,16 +67,16 @@
       "awayTeam": "Adelaide Crows",
       "playerTeam": "Brisbane Lions",
       "opponentTeam": "Adelaide Crows",
-      "bookmaker": "Ladbrokes",
-      "line": 29.5,
-      "overOdds": "-120",
-      "underOdds": "-111",
-      "modelExpectedDisposals": 26.22,
-      "modelEdge": -0.2011
+      "bookmaker": "PointsBet (AU)",
+      "line": 28.5,
+      "overOdds": "-115",
+      "underOdds": "-115",
+      "modelExpectedDisposals": 29.3,
+      "modelEdge": 0.0126
     },
     {
       "snapshotKey": "jarrod berry|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -89,12 +89,12 @@
       "line": 19.5,
       "overOdds": "-111",
       "underOdds": "-118",
-      "modelExpectedDisposals": 18.26,
-      "modelEdge": -0.0721
+      "modelExpectedDisposals": 18.86,
+      "modelEdge": -0.0668
     },
     {
       "snapshotKey": "jake soligo|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -107,12 +107,12 @@
       "line": 16.5,
       "overOdds": "-111",
       "underOdds": "-118",
-      "modelExpectedDisposals": 17.51,
-      "modelEdge": 0.0718
+      "modelExpectedDisposals": 17.45,
+      "modelEdge": 0.0272
     },
     {
       "snapshotKey": "josh worrell|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -125,12 +125,12 @@
       "line": 19.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 19.19,
-      "modelEdge": -0.0267
+      "modelExpectedDisposals": 21.7,
+      "modelEdge": 0.0896
     },
     {
       "snapshotKey": "harris andrews|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -143,12 +143,12 @@
       "line": 14.5,
       "overOdds": "-109",
       "underOdds": "-122",
-      "modelExpectedDisposals": 13.65,
-      "modelEdge": -0.047
+      "modelExpectedDisposals": 14.16,
+      "modelEdge": -0.0458
     },
     {
       "snapshotKey": "hugo hall kahan|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -161,12 +161,12 @@
       "line": 17.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 19.55,
-      "modelEdge": 0.1557
+      "modelExpectedDisposals": 19.16,
+      "modelEdge": 0.0822
     },
     {
       "snapshotKey": "zac bailey|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -179,26 +179,26 @@
       "line": 22.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 20.94,
-      "modelEdge": -0.1083
+      "modelExpectedDisposals": 22.43,
+      "modelEdge": -0.0471
     },
     {
       "snapshotKey": "josh dunkley|2026-09-12",
-      "capturedAt": "2026-09-09T15:09:26Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
       "playerName": "Josh Dunkley",
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Adelaide Crows",
-      "playerTeam": "Adelaide Crows",
-      "opponentTeam": "Brisbane Lions",
-      "bookmaker": "SportsBet",
+      "playerTeam": "Brisbane Lions",
+      "opponentTeam": "Adelaide Crows",
+      "bookmaker": "Ladbrokes",
       "line": 22.5,
-      "overOdds": "-132",
-      "underOdds": "-102",
-      "modelExpectedDisposals": 22.56,
-      "modelEdge": -0.0359
+      "overOdds": "-110",
+      "underOdds": "-120",
+      "modelExpectedDisposals": 23.95,
+      "modelEdge": 0.063
     },
     {
       "snapshotKey": "isaac cumming|2026-09-12",
@@ -220,7 +220,7 @@
     },
     {
       "snapshotKey": "darcy wilmot|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -233,12 +233,12 @@
       "line": 19.5,
       "overOdds": "-110",
       "underOdds": "-120",
-      "modelExpectedDisposals": 19.2,
-      "modelEdge": -0.0096
+      "modelExpectedDisposals": 20.48,
+      "modelEdge": 0.0338
     },
     {
       "snapshotKey": "dayne zorko|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -251,12 +251,12 @@
       "line": 24.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 23.83,
-      "modelEdge": -0.0487
+      "modelExpectedDisposals": 24.92,
+      "modelEdge": -0.0179
     },
     {
       "snapshotKey": "rory laird|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -269,8 +269,8 @@
       "line": 20.5,
       "overOdds": "-118",
       "underOdds": "-111",
-      "modelExpectedDisposals": 20.49,
-      "modelEdge": -0.0041
+      "modelExpectedDisposals": 21.67,
+      "modelEdge": 0.0336
     },
     {
       "snapshotKey": "izak rankine|2026-09-12",
@@ -292,7 +292,7 @@
     },
     {
       "snapshotKey": "hugh mccluggage|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -303,14 +303,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 18.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 18.93,
-      "modelEdge": 0.0247
+      "overOdds": "-125",
+      "underOdds": "-106",
+      "modelExpectedDisposals": 20.27,
+      "modelEdge": 0.0463
     },
     {
       "snapshotKey": "levi ashcroft|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -323,12 +323,12 @@
       "line": 18.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 19.12,
-      "modelEdge": 0.0358
+      "modelExpectedDisposals": 20.05,
+      "modelEdge": 0.0527
     },
     {
       "snapshotKey": "lachie neale|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -341,12 +341,12 @@
       "line": 28.5,
       "overOdds": "-120",
       "underOdds": "-111",
-      "modelExpectedDisposals": 28.93,
-      "modelEdge": 0.0206
+      "modelExpectedDisposals": 28.88,
+      "modelEdge": -0.0208
     },
     {
       "snapshotKey": "riley thilthorpe|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -357,14 +357,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 11.5,
-      "overOdds": "-133",
-      "underOdds": "+100",
-      "modelExpectedDisposals": 12.76,
-      "modelEdge": 0.0677
+      "overOdds": "-132",
+      "underOdds": "-102",
+      "modelExpectedDisposals": 13.83,
+      "modelEdge": 0.0946
     },
     {
       "snapshotKey": "logan morris|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -375,14 +375,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 11.5,
-      "overOdds": "-118",
-      "underOdds": "-114",
-      "modelExpectedDisposals": 12.15,
-      "modelEdge": 0.0451
+      "overOdds": "-112",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 13.51,
+      "modelEdge": 0.0996
     },
     {
       "snapshotKey": "jaspa fletcher|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -395,12 +395,12 @@
       "line": 18.5,
       "overOdds": "-120",
       "underOdds": "-110",
-      "modelExpectedDisposals": 19.25,
-      "modelEdge": 0.0441
+      "modelExpectedDisposals": 21.38,
+      "modelEdge": 0.1261
     },
     {
       "snapshotKey": "brayden cook|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -413,12 +413,12 @@
       "line": 15.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 16.46,
-      "modelEdge": 0.0631
+      "modelExpectedDisposals": 16.75,
+      "modelEdge": 0.0387
     },
     {
       "snapshotKey": "alex neal bullen|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -431,8 +431,8 @@
       "line": 15.5,
       "overOdds": "-118",
       "underOdds": "-111",
-      "modelExpectedDisposals": 17.16,
-      "modelEdge": 0.1076
+      "modelExpectedDisposals": 16.59,
+      "modelEdge": 0.0283
     },
     {
       "snapshotKey": "kai lohmann|2026-09-12",
@@ -454,7 +454,7 @@
     },
     {
       "snapshotKey": "mark keane|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -465,14 +465,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-125",
-      "underOdds": "-108",
-      "modelExpectedDisposals": 15.96,
-      "modelEdge": 0.0859
+      "overOdds": "-123",
+      "underOdds": "-109",
+      "modelExpectedDisposals": 16.71,
+      "modelEdge": 0.088
     },
     {
       "snapshotKey": "luke nankervis|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -483,14 +483,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 14.5,
-      "overOdds": "-116",
-      "underOdds": "-115",
-      "modelExpectedDisposals": 15.87,
-      "modelEdge": 0.0936
+      "overOdds": "-114",
+      "underOdds": "-119",
+      "modelExpectedDisposals": 16.45,
+      "modelEdge": 0.0893
     },
     {
       "snapshotKey": "ben keays|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -501,14 +501,14 @@
       "opponentTeam": "Adelaide Crows",
       "bookmaker": "SportsBet",
       "line": 12.5,
-      "overOdds": "-133",
-      "underOdds": "+100",
-      "modelExpectedDisposals": 13.48,
-      "modelEdge": 0.0425
+      "overOdds": "-135",
+      "underOdds": "+101",
+      "modelExpectedDisposals": 14.43,
+      "modelEdge": 0.0568
     },
     {
       "snapshotKey": "daniel curtin|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -521,12 +521,12 @@
       "line": 16.5,
       "overOdds": "-115",
       "underOdds": "-115",
-      "modelExpectedDisposals": 17.05,
-      "modelEdge": 0.0369
+      "modelExpectedDisposals": 17.09,
+      "modelEdge": 0.0
     },
     {
       "snapshotKey": "ryan lester|2026-09-12",
-      "capturedAt": "2026-09-10T19:31:17Z",
+      "capturedAt": "2026-09-11T14:52:21Z",
       "weekKey": "2026-W37",
       "gameDate": "2026-09-12",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -539,8 +539,8 @@
       "line": 14.5,
       "overOdds": "-122",
       "underOdds": "-109",
-      "modelExpectedDisposals": 14.57,
-      "modelEdge": -0.0037
+      "modelExpectedDisposals": 15.91,
+      "modelEdge": 0.0425
     },
     {
       "snapshotKey": "shaun mannagh|2026-09-11",
