@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T14:50:03.572Z",
+  "generatedAt": "2026-09-11T19:13:53.556Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-09-12T09:35:18Z",
       "weather": {
-        "temperatureC": 17.1,
+        "temperatureC": 16.8,
         "precipitationMm": 0,
-        "windKmh": 5.4
+        "windKmh": 3.1
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-09-18T09:35:13Z",
       "weather": {
-        "temperatureC": 20.8,
+        "temperatureC": 16.1,
         "precipitationMm": 0,
-        "windKmh": 5.5
+        "windKmh": 9.1
       }
     },
     {
@@ -31,7 +31,7 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-09-19T07:30:00Z",
       "weather": {
-        "temperatureC": 19.2,
+        "temperatureC": 20.7,
         "precipitationMm": 0,
         "windKmh": 11.5
       }

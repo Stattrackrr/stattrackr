@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T14:52:21Z",
+  "generatedAt": "2026-09-11T19:33:09Z",
   "count": 96,
   "records": [
     {
@@ -4108,8 +4108,8 @@
       "gameKey": "brisbanelions|adelaidecrows|2026-09-12",
       "finalizedAt": "2026-09-07T16:18:28Z",
       "windowHours": 2,
-      "projectionGeneratedAt": "2026-09-11T14:52:21Z",
-      "modelVersion": "afl-disp-20260911-145147",
+      "projectionGeneratedAt": "2026-09-11T19:33:09Z",
+      "modelVersion": "afl-disp-20260911-193225",
       "homeTeam": "Brisbane Lions",
       "awayTeam": "Adelaide Crows",
       "commenceTime": "2026-09-12T09:35:18Z",
@@ -4117,35 +4117,35 @@
       "roundKey": null,
       "picks": [
         {
-          "playerName": "Jordan Dawson",
-          "bookmaker": "PointsBet (AU)",
-          "line": 26.5,
-          "expectedDisposals": 29.36,
-          "recommendedSide": "OVER",
-          "recommendedEdge": 0.1343,
-          "recommendedProb": 0.6343,
+          "playerName": "Will Ashcroft",
+          "bookmaker": "SportsBet",
+          "line": 29.5,
+          "expectedDisposals": 26.14,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.2078,
+          "recommendedProb": 0.6958,
           "rank": 1,
           "actualDisposals": null
         },
         {
-          "playerName": "Jaspa Fletcher",
+          "playerName": "Hugo Hall Kahan",
           "bookmaker": "Neds",
-          "line": 18.5,
-          "expectedDisposals": 21.38,
+          "line": 17.5,
+          "expectedDisposals": 19.61,
           "recommendedSide": "OVER",
-          "recommendedEdge": 0.1261,
-          "recommendedProb": 0.6362,
+          "recommendedEdge": 0.1593,
+          "recommendedProb": 0.6593,
           "rank": 2,
           "actualDisposals": null
         },
         {
-          "playerName": "Jarrod Berry",
+          "playerName": "Kai Lohmann",
           "bookmaker": "SportsBet",
-          "line": 19.5,
-          "expectedDisposals": 18.87,
-          "recommendedSide": "UNDER",
-          "recommendedEdge": 0.0689,
-          "recommendedProb": 0.5729,
+          "line": 12.5,
+          "expectedDisposals": 13.79,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1161,
+          "recommendedProb": 0.5863,
           "rank": 3,
           "actualDisposals": null
         }
