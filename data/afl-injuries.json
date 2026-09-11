@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-11T02:44:30.045Z",
+  "generatedAt": "2026-09-11T08:38:13.222Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 163,
+  "injuryCount": 164,
   "injuries": [
+    {
+      "team": "Richmond Tigers",
+      "player": "Ben Miller",
+      "injury": "active",
+      "returning": "TBC"
+    },
     {
       "team": "Sydney Swans",
       "player": "Hayden McLean",
