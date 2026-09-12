@@ -1,15 +1,9 @@
 {
-  "generatedAt": "2026-09-12T16:50:23.118Z",
+  "generatedAt": "2026-09-12T20:10:26.698Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 163,
+  "injuryCount": 159,
   "injuries": [
-    {
-      "team": "Adelaide Crows",
-      "player": "Riley Thilthorpe",
-      "injury": "Knee",
-      "returning": "active"
-    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
@@ -185,12 +179,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Adelaide Crows",
-      "player": "Zac Taylor",
-      "injury": "Injury",
-      "returning": "TBC"
-    },
-    {
       "team": "Western Bulldogs",
       "player": "Matthew Kennedy",
       "injury": "Injury",
@@ -215,12 +203,6 @@
       "returning": "TBC"
     },
     {
-      "team": "Brisbane Lions",
-      "player": "Ty Gallop",
-      "injury": "make way for returning co-captain",
-      "returning": "active"
-    },
-    {
       "team": "Geelong Cats",
       "player": "Jack Martin",
       "injury": "active",
@@ -236,12 +218,6 @@
       "team": "Glenelg",
       "player": "Gabriel Patterson",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Hawthorn Hawks",
-      "player": "Jack Dalton",
-      "injury": "unlucky Hawk to drop out of the side",
       "returning": "TBC"
     },
     {
