@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-12T08:25:46.487Z",
+  "generatedAt": "2026-09-12T13:25:51.376Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 162,
+  "injuryCount": 163,
   "injuries": [
+    {
+      "team": "Adelaide Crows",
+      "player": "Riley Thilthorpe",
+      "injury": "Knee",
+      "returning": "active"
+    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
