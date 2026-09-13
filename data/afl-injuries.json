@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-13T18:37:47.151Z",
+  "generatedAt": "2026-09-13T22:10:13.348Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 153,
+  "injuryCount": 155,
   "injuries": [
+    {
+      "team": "Sandringham Dragons",
+      "player": "Gus Teixeira",
+      "injury": "Calf",
+      "returning": "Returned"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Rhys Stanley",
+      "injury": "Knee",
+      "returning": "Test"
+    },
     {
       "team": "Fremantle Dockers",
       "player": "Nathan O'Driscoll",
