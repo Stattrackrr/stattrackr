@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-13T08:51:02.413Z",
+  "generatedAt": "2026-09-13T14:09:37.704Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
   "injuryCount": 160,
   "injuries": [
+    {
+      "team": "Fremantle Dockers",
+      "player": "Nathan O'Driscoll",
+      "injury": "Ankle",
+      "returning": "TBC"
+    },
     {
       "team": "Sydney Swans",
       "player": "Sofia Hurley",
@@ -44,12 +50,6 @@
       "team": "Geelong Cats",
       "player": "George Stevens",
       "injury": "active",
-      "returning": "TBC"
-    },
-    {
-      "team": "Fremantle Dockers",
-      "player": "Nathan O'Driscoll",
-      "injury": "dropped for its semi-final clash",
       "returning": "TBC"
     },
     {
