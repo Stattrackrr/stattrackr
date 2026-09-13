@@ -1,9 +1,15 @@
 {
-  "generatedAt": "2026-09-13T02:51:17.469Z",
+  "generatedAt": "2026-09-13T08:51:02.413Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 159,
+  "injuryCount": 160,
   "injuries": [
+    {
+      "team": "Sydney Swans",
+      "player": "Sofia Hurley",
+      "injury": "Ankle",
+      "returning": "active"
+    },
     {
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
