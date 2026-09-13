@@ -1,20 +1,14 @@
 {
-  "generatedAt": "2026-09-13T14:09:37.704Z",
+  "generatedAt": "2026-09-13T18:37:47.151Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 160,
+  "injuryCount": 153,
   "injuries": [
     {
       "team": "Fremantle Dockers",
       "player": "Nathan O'Driscoll",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Sofia Hurley",
-      "injury": "Ankle",
-      "returning": "active"
     },
     {
       "team": "Geelong Cats",
@@ -44,12 +38,6 @@
       "team": "Fremantle Dockers",
       "player": "Brandon Walker",
       "injury": "Soreness",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "George Stevens",
-      "injury": "active",
       "returning": "TBC"
     },
     {
@@ -125,12 +113,6 @@
       "returning": "Season"
     },
     {
-      "team": "Woodville-West Torrens",
-      "player": "James Rowe",
-      "injury": "Handed a two-game ban for a dangerous tackle on ex-teammate Patrick Parnell.",
-      "returning": "2 weeks"
-    },
-    {
       "team": "Richmond Tigers",
       "player": "Josh Gibcus",
       "injury": "ACL",
@@ -165,18 +147,6 @@
       "player": "James Williams",
       "injury": "Shin",
       "returning": "Season"
-    },
-    {
-      "team": "Sandringham Dragons",
-      "player": "Arki Butler",
-      "injury": "Collarbone",
-      "returning": "in a fortnight"
-    },
-    {
-      "team": "Sandringham Dragons",
-      "player": "Gus Teixeira",
-      "injury": "Calf",
-      "returning": "in a fortnight"
     },
     {
       "team": "Western Bulldogs",
@@ -231,12 +201,6 @@
       "player": "Brennan Cox",
       "injury": "Soreness",
       "returning": "active"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Rhys Stanley",
-      "injury": "Knee",
-      "returning": "Test"
     },
     {
       "team": "Port Adelaide Power",
@@ -399,12 +363,6 @@
       "player": "Jordon Butts",
       "injury": "Ankle",
       "returning": "TBC"
-    },
-    {
-      "team": "Sydney Swans",
-      "player": "Taylor Smith",
-      "injury": "Arm",
-      "returning": "three to four weeks"
     },
     {
       "team": "St Kilda Saints",
