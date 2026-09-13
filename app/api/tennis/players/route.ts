@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadTennisPlayers, type TennisTour } from '@/lib/tennis/data';
+import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 
 export async function GET(request: NextRequest) {
+  await hydrateTennisMatchOverlay();
   const q = (request.nextUrl.searchParams.get('q') || '').trim().toLowerCase();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour = tourParam === 'ATP' || tourParam === 'WTA' ? (tourParam as TennisTour) : null;

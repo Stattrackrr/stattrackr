@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
+import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import { buildTennisPlayerMatchup } from '@/lib/tennis/playerMatchup';
 import type { TennisTour } from '@/lib/tennis/types';
 
 export async function GET(request: NextRequest) {
+  await hydrateTennisMatchOverlay();
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();
   const opponent = String(request.nextUrl.searchParams.get('opponent') || '').trim();
   if (!player || !opponent) {

@@ -36,6 +36,7 @@
     "fetch:nbl:team-game-logs": "npx tsx scripts/fetch-nbl-team-game-logs.ts",
     "fetch:nbl:injuries": "npx tsx scripts/fetch-nbl-injuries.ts",
     "fetch:tennis:api": "npx tsx scripts/fetch-api-tennis.ts",
+    "fetch:tennis:api:incremental": "npx tsx scripts/fetch-api-tennis.ts --incremental",
     "fetch:tennis:api:repair": "npx tsx scripts/fetch-api-tennis.ts --repair",
     "cache:tennis:headshots": "npx tsx scripts/cache-tennis-headshots.ts",
     "cache:tennis:hands": "npx tsx scripts/cache-tennis-hands.ts",

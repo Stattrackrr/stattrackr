@@ -18,6 +18,7 @@ import {
   tennisBestOf,
   tennisCacheMtime,
 } from '@/lib/tennis/apiTennis';
+import { tennisOverlayGeneration } from '@/lib/tennis/ingest';
 import { withTennisHands } from '@/lib/tennis/hands';
 import { tennisRankHistoryMtime, withTennisMatchDayRanks } from '@/lib/tennis/rankHistory';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
@@ -57,7 +58,7 @@ type DataRuntime = {
 
 function dataRuntime(): DataRuntime {
   const g = globalThis as typeof globalThis & { __tennisData?: DataRuntime };
-  const generation = tennisCacheMtime() + tennisRankHistoryMtime();
+  const generation = tennisCacheMtime() + tennisRankHistoryMtime() + tennisOverlayGeneration();
   if (!g.__tennisData || g.__tennisData.generation !== generation) {
     g.__tennisData = {
       generation,

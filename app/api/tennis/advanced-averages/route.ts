@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { buildTennisAdvancedAverages } from '@/lib/tennis/advancedAverages';
+import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import type { TennisTour } from '@/lib/tennis/types';
 
 export async function GET(request: NextRequest) {
+  await hydrateTennisMatchOverlay();
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();
   if (!player) {
     return NextResponse.json({ success: false, error: 'player is required' }, { status: 400 });

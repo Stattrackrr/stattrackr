@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisDvpProfile, type TennisTour } from '@/lib/tennis/data';
+import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 
 export async function GET(request: NextRequest) {
+  await hydrateTennisMatchOverlay();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
   const yearRaw = Number(request.nextUrl.searchParams.get('year'));

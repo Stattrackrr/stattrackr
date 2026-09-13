@@ -127,7 +127,7 @@ function TennisAbbrevFlag({
 }
 const NBL_PAGE_STATE_KEY = 'tennisPageState:v4';
 const NBL_PLAYER_LOGS_CACHE_PREFIX = 'tennisPlayerLogsCache:v8';
-const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const NBL_PLAYER_LOGS_CACHE_TTL_MS = 1000 * 60 * 30; // 30 minutes; network always revalidates
 const TENNIS_NEXT_GAME_CLIENT_TTL_MS = 1000 * 60 * 5;
 const tennisNextGameClientCache = new Map<
   string,
@@ -207,9 +207,16 @@ type PersistedNblPageState = {
 
 type CachedNblPlayerLogs = {
   createdAt: number;
+  fetchedAt?: string | null;
   years: number[];
   games: Array<Record<string, unknown>>;
 };
+
+function tennisLogFingerprint(games: Array<Record<string, unknown>>): string {
+  return games
+    .map((row) => String(row.matchId || row.date || ''))
+    .join('|');
+}
 
 function normalizeNblPlayerNameForMatch(name: string): string {
   return String(name || '')
@@ -897,28 +904,32 @@ export default function TennisDashboardPage() {
     }
     const playerId = selectedPlayer.playerId;
     const cacheKey = nblPlayerLogsCacheKey(playerId);
+    let cachedLogs: CachedNblPlayerLogs | null = null;
     try {
       const raw = localStorage.getItem(cacheKey);
       if (raw) {
         const parsed = JSON.parse(raw) as CachedNblPlayerLogs;
-        const fresh =
-          Number.isFinite(parsed?.createdAt) &&
-          Date.now() - Number(parsed.createdAt) <= NBL_PLAYER_LOGS_CACHE_TTL_MS;
         const yearsMatch =
           Array.isArray(parsed.years) &&
           parsed.years.join(',') === TENNIS_HISTORY_YEARS.join(',');
-        if (fresh && yearsMatch && Array.isArray(parsed.games)) {
+        if (yearsMatch && Array.isArray(parsed.games)) {
+          cachedLogs = parsed;
           setSelectedPlayerGameLogs(tennisMatchesPlayed(parsed.games));
-          setStatsLoadingForPlayer(false);
-          return;
+          const fresh =
+            Number.isFinite(parsed?.createdAt) &&
+            Date.now() - Number(parsed.createdAt) <= NBL_PLAYER_LOGS_CACHE_TTL_MS;
+          setStatsLoadingForPlayer(!fresh);
+        } else {
+          setStatsLoadingForPlayer(true);
         }
+      } else {
+        setStatsLoadingForPlayer(true);
       }
     } catch {
-      /* ignore malformed cache */
+      setStatsLoadingForPlayer(true);
     }
 
     let cancelled = false;
-    setStatsLoadingForPlayer(true);
     (async () => {
       try {
         const res = await fetch(
@@ -931,10 +942,17 @@ export default function TennisDashboardPage() {
         const games = tennisMatchesPlayed(
           Array.isArray(data.games) ? (data.games as Array<Record<string, unknown>>) : []
         );
-        setSelectedPlayerGameLogs(games);
+        const fetchedAt = data?.fetchedAt ? String(data.fetchedAt) : null;
+        const cacheChanged =
+          !cachedLogs ||
+          (fetchedAt && cachedLogs.fetchedAt !== fetchedAt) ||
+          cachedLogs.games.length !== games.length ||
+          tennisLogFingerprint(cachedLogs.games) !== tennisLogFingerprint(games);
+        if (cacheChanged) setSelectedPlayerGameLogs(games);
         try {
           const payload: CachedNblPlayerLogs = {
             createdAt: Date.now(),
+            fetchedAt,
             years: [...TENNIS_HISTORY_YEARS],
             games,
           };
@@ -944,7 +962,6 @@ export default function TennisDashboardPage() {
         }
       } catch {
         if (!cancelled) {
-          // Keep already-painted logs on error (soft remount / cache path).
           setSelectedPlayerGameLogs((prev) => prev);
         }
       } finally {

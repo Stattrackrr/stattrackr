@@ -534,16 +534,96 @@ export function mapApiFixtureToRows(
   });
 }
 
+type TennisOverlaySnapshot = {
+  fetchedAt?: string;
+  matches?: TennisMatchRow[];
+  players?: ApiTennisPlayer[];
+  standings?: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
+};
+
+type OverlayGetter = () => TennisOverlaySnapshot | null;
+
 type ApiRuntime = {
   file: ApiTennisCache | null;
+  merged: ApiTennisCache | null;
   players: ApiTennisPlayer[] | null;
-  mtime: number;
+  diskMtime: number;
+  overlayAt: string;
+  overlayGetter: OverlayGetter;
 };
 
 function apiRuntime(): ApiRuntime {
   const g = globalThis as typeof globalThis & { __tennisApi?: ApiRuntime };
-  if (!g.__tennisApi) g.__tennisApi = { file: null, players: null, mtime: 0 };
+  if (!g.__tennisApi) {
+    g.__tennisApi = {
+      file: null,
+      merged: null,
+      players: null,
+      diskMtime: 0,
+      overlayAt: '',
+      overlayGetter: () => null,
+    };
+  }
   return g.__tennisApi;
+}
+
+export function registerTennisOverlayGetter(fn: OverlayGetter) {
+  apiRuntime().overlayGetter = fn;
+  apiRuntime().merged = null;
+  apiRuntime().players = null;
+}
+
+function readApiTennisDiskCache(): { cache: ApiTennisCache | null; mtime: number } {
+  const runtime = apiRuntime();
+  const file = apiTennisCachePath();
+  if (!fs.existsSync(file)) return { cache: null, mtime: 0 };
+  const mtime = fs.statSync(file).mtimeMs;
+  if (runtime.file && runtime.diskMtime === mtime) return { cache: runtime.file, mtime };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as ApiTennisCache;
+    if (!parsed?.matches?.length) return { cache: null, mtime };
+    runtime.file = parsed;
+    runtime.diskMtime = mtime;
+    runtime.merged = null;
+    runtime.players = null;
+    return { cache: parsed, mtime };
+  } catch {
+    return { cache: null, mtime };
+  }
+}
+
+function mergeDiskWithOverlay(
+  disk: ApiTennisCache | null,
+  overlay: TennisOverlaySnapshot | null
+): ApiTennisCache | null {
+  if (!disk && !overlay?.matches?.length && !overlay?.players?.length) return null;
+  const byId = new Map<string, TennisMatchRow>();
+  for (const row of disk?.matches || []) {
+    if (row?.matchId) byId.set(row.matchId, row);
+  }
+  for (const row of overlay?.matches || []) {
+    if (row?.matchId) byId.set(row.matchId, row);
+  }
+  const playersById = new Map<string, ApiTennisPlayer>();
+  for (const player of disk?.players || []) {
+    if (player?.playerId) playersById.set(player.playerId, player);
+  }
+  for (const player of overlay?.players || []) {
+    if (!player?.playerId) continue;
+    const prev = playersById.get(player.playerId);
+    playersById.set(player.playerId, prev ? { ...prev, ...player, imageUrl: player.imageUrl || prev.imageUrl } : player);
+  }
+  const standings = {
+    ATP: overlay?.standings?.ATP?.length ? overlay.standings.ATP : disk?.standings?.ATP || [],
+    WTA: overlay?.standings?.WTA?.length ? overlay.standings.WTA : disk?.standings?.WTA || [],
+  };
+  return {
+    fetchedAt: overlay?.fetchedAt || disk?.fetchedAt || new Date().toISOString(),
+    source: 'api-tennis',
+    matches: [...byId.values()],
+    players: [...playersById.values()],
+    standings,
+  };
 }
 
 export function tennisCacheMtime(): number {
@@ -555,22 +635,20 @@ export function tennisCacheMtime(): number {
   }
 }
 
-export function loadApiTennisCache(): ApiTennisCache | null {
+export function loadApiTennisCache(opts?: { diskOnly?: boolean }): ApiTennisCache | null {
   const runtime = apiRuntime();
-  const file = apiTennisCachePath();
-  if (!fs.existsSync(file)) return null;
-  const mtime = fs.statSync(file).mtimeMs;
-  if (runtime.file && runtime.mtime === mtime) return runtime.file;
-  try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as ApiTennisCache;
-    if (!parsed?.matches?.length) return null;
-    runtime.file = parsed;
-    runtime.mtime = mtime;
-    runtime.players = null;
-    return parsed;
-  } catch {
-    return null;
+  const { cache: disk, mtime } = readApiTennisDiskCache();
+  if (opts?.diskOnly) return disk;
+  const overlay = runtime.overlayGetter();
+  const overlayAt = overlay?.fetchedAt || '';
+  if (runtime.merged && runtime.diskMtime === mtime && runtime.overlayAt === overlayAt) {
+    return runtime.merged;
   }
+  const merged = mergeDiskWithOverlay(disk, overlay);
+  runtime.merged = merged;
+  runtime.overlayAt = overlayAt;
+  runtime.players = null;
+  return merged;
 }
 
 export function loadApiTennisMatches(years?: readonly number[]): TennisMatchRow[] | null {

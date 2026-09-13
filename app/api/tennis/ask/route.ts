@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { answerTennisAsk, tennisAskConfigured, type TennisAskMessage } from '@/lib/tennis/askAnswer';
+import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
 import type { TennisTour } from '@/lib/tennis/types';
 
@@ -43,6 +44,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  await hydrateTennisMatchOverlay();
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
     player?: unknown;

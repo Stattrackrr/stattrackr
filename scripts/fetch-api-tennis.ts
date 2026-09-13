@@ -17,6 +17,11 @@ import {
   type ApiTennisPlayer,
   type ApiTennisStanding,
 } from '../lib/tennis/apiTennis';
+import {
+  applyIncrementalTennisFetch,
+  fetchTennisIncrementalWindow,
+  saveTennisMatchOverlay,
+} from '../lib/tennis/ingest';
 import { tennisHeadshotsIndexPath, type TennisHeadshotsIndex } from '../lib/tennis/headshots';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '../lib/tennis/types';
 
@@ -230,9 +235,39 @@ async function repairBreakPointFractions() {
   );
 }
 
+async function incrementalFetch() {
+  process.env.API_TENNIS_KEY = KEY;
+  const prevPath = apiTennisCachePath();
+  let prev: ApiTennisCache | null = null;
+  if (fs.existsSync(prevPath)) {
+    prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')) as ApiTennisCache;
+  }
+  console.log('[api-tennis] incremental fetch: last 16 days ATP + WTA singles');
+  const incoming = await fetchTennisIncrementalWindow();
+  const fetchedAt = new Date().toISOString();
+  const { cache, added, updated } = applyIncrementalTennisFetch(prev, incoming, fetchedAt);
+  fs.mkdirSync(apiTennisDir(), { recursive: true });
+  fs.writeFileSync(prevPath, JSON.stringify(cache));
+  const mb = (fs.statSync(prevPath).size / (1024 * 1024)).toFixed(1);
+  await saveTennisMatchOverlay({
+    fetchedAt,
+    source: 'api-tennis-incremental',
+    matches: incoming.matches,
+    players: incoming.players,
+    standings: incoming.standings,
+  });
+  console.log(
+    `[api-tennis] incremental wrote ${prevPath} (${mb} MB) fixtures=${incoming.fixtureCount} incomingRows=${incoming.matches.length} added=${added} updated=${updated} totalRows=${cache.matches.length}`
+  );
+}
+
 async function main() {
   if (process.argv.includes('--repair')) {
     await repairBreakPointFractions();
+    return;
+  }
+  if (process.argv.includes('--incremental')) {
+    await incrementalFetch();
     return;
   }
 
