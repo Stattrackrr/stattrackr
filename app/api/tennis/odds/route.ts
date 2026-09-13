@@ -6,16 +6,17 @@ export const runtime = 'nodejs';
 
 /**
  * GET /api/tennis/odds?playerId=...
- * Cache-first API-Tennis get_odds merged with The Odds API books for the player's upcoming singles match.
+ * Reads the stored match snapshot. The Odds API is refreshed on cron, not per request.
  * Books are oriented so H2H.home / Spread.line are the selected player.
  */
 export async function GET(request: NextRequest) {
   try {
     const playerId = request.nextUrl.searchParams.get('playerId');
-    if (!String(playerId || '').trim()) {
+    const playerName = request.nextUrl.searchParams.get('player') || request.nextUrl.searchParams.get('name');
+    if (!String(playerId || '').trim() && !String(playerName || '').trim()) {
       return NextResponse.json({ success: false, error: 'playerId is required', data: [] }, { status: 400 });
     }
-    const odds = await getTennisMatchOddsForPlayer({ playerId });
+    const odds = await getTennisMatchOddsForPlayer({ playerId, playerName });
     if (!odds) {
       return NextResponse.json({
         success: true,

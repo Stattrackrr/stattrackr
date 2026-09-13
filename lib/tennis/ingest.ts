@@ -270,6 +270,7 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
   players: ApiTennisPlayer[];
   standings: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
   fixtureCount: number;
+  fixtures: ApiTennisFixture[];
 }> {
   const { start, stop } = ingestWindow(now);
   const [atpStandingsJson, wtaStandingsJson, atpFixturesJson, wtaFixturesJson] = await Promise.all([
@@ -308,10 +309,12 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
 
   const matches: TennisMatchRow[] = [];
   const seen = new Set<string>();
+  const allFixtures: ApiTennisFixture[] = [];
   let fixtureCount = 0;
 
   for (const { tour, fixtures } of tours) {
     fixtureCount += fixtures.length;
+    allFixtures.push(...fixtures);
     for (const fx of fixtures) {
       const firstId = String(fx.first_player_key ?? '');
       const secondId = String(fx.second_player_key ?? '');
@@ -375,6 +378,7 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
       WTA: wtaStandings.map((row) => toRanking(row, 'WTA')),
     },
     fixtureCount,
+    fixtures: allFixtures,
   };
 }
 
@@ -402,7 +406,7 @@ export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promi
   rememberOverlay(overlay);
 }
 
-export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult> {
+export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & { fixtures: ApiTennisFixture[] }> {
   if (!apiKey()) {
     throw new Error('API_TENNIS_KEY is not configured');
   }
@@ -429,6 +433,7 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult> {
     updated: applied.updated,
     overlayRows: overlay.matches.length,
     warmedUpcoming: false,
+    fixtures: incoming.fixtures,
   };
 }
 

@@ -46,6 +46,7 @@ function normName(name: string | null | undefined): string {
 }
 
 function matchesBestOf(row: TennisMatchRow, bestOf: TennisMatchupBestOf): boolean {
+  if (bestOf === 'all') return true;
   const n = Number(row.bestOf);
   if (!Number.isFinite(n)) return bestOf === 3;
   return bestOf === 5 ? n >= 5 : n < 5;
@@ -167,7 +168,9 @@ export function buildTennisPlayerMatchup(opts: {
     tourForPlayer(null, playerName) ||
     tourForPlayer(null, opponentName) ||
     'ATP';
-  const bestOf: TennisMatchupBestOf = tour === 'WTA' || !(Number(opts.bestOf) >= 5) ? 3 : 5;
+  const bestOfN = Number(opts.bestOf);
+  const bestOf: TennisMatchupBestOf =
+    tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
 
   const resolvedPlayer = resolvePlayer(playerName, tour);
   const resolvedOpponent = resolvePlayer(opponentName, tour);

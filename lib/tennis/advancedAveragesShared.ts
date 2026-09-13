@@ -7,13 +7,13 @@ export const ADV_AVG_WINDOWS = [
 ] as const;
 
 export const ADV_AVG_BEST_OF = [
-  { id: 'all', label: 'Best Of' },
+  { id: 'all', label: 'All' },
   { id: '3', label: 'BO3' },
   { id: '5', label: 'BO5' },
 ] as const;
 
 export const ADV_AVG_VS_RANKS = [
-  { id: 'all', label: 'VS Rank' },
+  { id: 'all', label: 'vs All' },
   { id: '10', label: 'Top 10' },
   { id: '20', label: 'Top 20' },
   { id: '50', label: 'Top 50' },

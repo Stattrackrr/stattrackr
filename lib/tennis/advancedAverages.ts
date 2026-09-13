@@ -1,4 +1,4 @@
-import { tennisDominanceRatio } from '@/lib/tennis/chartStats';
+import { tennisDominanceRatio, tennisLastName } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import {
   ADV_AVG_COLUMNS,
@@ -97,6 +97,17 @@ function windowRows(rows: TennisMatchRow[], windowN: AdvAvgWindow, year: number)
   if (windowN > 0) return sorted.slice(-windowN);
   const season = sorted.filter((row) => row.season === year);
   return season.length ? season : sorted.slice(-20);
+}
+
+function isH2hMatch(row: TennisMatchRow, h2hName: string, h2hId: string | null): boolean {
+  if (h2hId && row.opponentId && String(row.opponentId) === String(h2hId)) return true;
+  const key = normName(h2hName);
+  if (key && normName(row.opponent) === key) return true;
+  const last = tennisLastName(h2hName).toLowerCase();
+  const rowLast = tennisLastName(row.opponent).toLowerCase();
+  const init = key.replace(/[^a-z]/g, '')[0] || '';
+  const rowInit = normName(row.opponent).replace(/[^a-z]/g, '')[0] || '';
+  return Boolean(last && rowLast && last === rowLast && init && init === rowInit);
 }
 
 function holdPct(row: TennisMatchRow): number | null {
@@ -208,18 +219,42 @@ function summarize(rows: TennisMatchRow[]): Record<AdvAvgColKey, AdvAvgCell> {
   };
 }
 
-function splitRows(rows: TennisMatchRow[], h2hName: string | null): AdvAvgTableRow[] {
-  const h2hKey = normName(h2hName);
+function buildSide(
+  name: string,
+  tour: TennisTour,
+  year: number,
+  windowN: AdvAvgWindow,
+  bestOf: AdvAvgBestOf,
+  vsRank: AdvAvgVsRank,
+  h2hName: string | null
+): AdvAvgSide {
+  const resolved = resolvePlayer(name, tour);
+  const h2hResolved = h2hName ? resolvePlayer(h2hName, tour) : null;
+  const pool = loadPlayerMatches({
+    playerId: resolved.id,
+    playerName: resolved.id ? null : name,
+    tour,
+  })
+    .filter((row) => matchesBestOf(row, bestOf) && matchesVsRank(row, vsRank))
+    .map((row) => ({
+      ...row,
+      hand: row.hand || tennisHandForName(row.playerName),
+      opponentHand: row.opponentHand || tennisHandForName(row.opponent),
+    }));
+  const all = windowRows(pool, windowN, year);
   const buckets: Record<string, TennisMatchRow[]> = {
-    all: rows,
-    hard: rows.filter((row) => normalizeSurface(row.surface) === 'hard'),
-    clay: rows.filter((row) => normalizeSurface(row.surface) === 'clay'),
-    grass: rows.filter((row) => normalizeSurface(row.surface) === 'grass'),
-    righties: rows.filter((row) => normalizeHand(row.opponentHand) === 'R'),
-    lefties: rows.filter((row) => normalizeHand(row.opponentHand) === 'L'),
-    h2h: h2hKey ? rows.filter((row) => normName(row.opponent) === h2hKey) : [],
+    all,
+    hard: all.filter((row) => normalizeSurface(row.surface) === 'hard'),
+    clay: all.filter((row) => normalizeSurface(row.surface) === 'clay'),
+    grass: all.filter((row) => normalizeSurface(row.surface) === 'grass'),
+    righties: all.filter((row) => normalizeHand(row.opponentHand) === 'R'),
+    lefties: all.filter((row) => normalizeHand(row.opponentHand) === 'L'),
+    h2h:
+      h2hName
+        ? all.filter((row) => isH2hMatch(row, h2hName, h2hResolved?.id ?? null))
+        : [],
   };
-  return ADV_AVG_ROWS.map((row) => {
+  const rows = ADV_AVG_ROWS.map((row) => {
     const sample = buckets[row.key] || [];
     const losses = sample.filter((m) => !m.isWin).length;
     const wins = sample.filter((m) => m.isWin).length;
@@ -231,33 +266,11 @@ function splitRows(rows: TennisMatchRow[], h2hName: string | null): AdvAvgTableR
       cells: summarize(sample),
     };
   });
-}
-
-function buildSide(
-  name: string,
-  tour: TennisTour,
-  year: number,
-  windowN: AdvAvgWindow,
-  bestOf: AdvAvgBestOf,
-  vsRank: AdvAvgVsRank,
-  h2hName: string | null
-): AdvAvgSide {
-  const resolved = resolvePlayer(name, tour);
-  const filtered = loadPlayerMatches({
-    playerId: resolved.id,
-    playerName: resolved.id ? null : name,
-    tour,
-  }).filter((row) => matchesBestOf(row, bestOf) && matchesVsRank(row, vsRank));
-  const sample = windowRows(filtered, windowN, year).map((row) => ({
-    ...row,
-    hand: row.hand || tennisHandForName(row.playerName),
-    opponentHand: row.opponentHand || tennisHandForName(row.opponent),
-  }));
   return {
     name: resolved.name || name,
     hand: resolved.hand,
-    matches: sample.length,
-    rows: splitRows(sample, h2hName),
+    matches: buckets.all.length,
+    rows,
   };
 }
 

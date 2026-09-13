@@ -6,15 +6,51 @@
 import { americanToDecimal, decimalToAmerican } from '@/lib/currencyUtils';
 import { getBookmakerInfo, getBookmakerRegion } from '@/lib/bookmakers';
 import sharedCache from '@/lib/sharedCache';
-import { getOddsApiTennisMatch, tennisNamesMatch } from '@/lib/tennis/oddsApi';
-import { getTennisNextGame } from '@/lib/tennis/nextGame';
-import type { TennisBookRow, TennisMatchOdds, TennisOuLine } from '@/lib/tennis/oddsTypes';
+import {
+  getOddsApiTennisMatch,
+  readOddsApiTennisCatalog,
+  refreshOddsApiTennisCatalog,
+  tennisNamesMatch,
+  type OddsApiTennisMatch,
+} from '@/lib/tennis/oddsApi';
+import { getTennisNextGame, listUniqueUpcomingTennisGames, type TennisNextGame } from '@/lib/tennis/nextGame';
+import {
+  filterTennisOuLines,
+  type TennisBookRow,
+  type TennisMatchOdds,
+  type TennisOuLine,
+} from '@/lib/tennis/oddsTypes';
 
 export type { TennisBookRow, TennisMatchOdds } from '@/lib/tennis/oddsTypes';
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 const ODDS_CACHE_TTL_SECONDS = 5 * 60;
+const SNAPSHOT_TTL_SECONDS = 24 * 60 * 60;
+const MIN_REFRESH_MS = 90 * 60 * 1000;
+const MAX_SNAPSHOT_MATCHES = 30;
+const REFRESH_META_KEY = 'tennis_odds_refresh_meta_v1';
 const EMPTY_OU = { line: 'N/A', over: 'N/A', under: 'N/A' };
+
+type TennisOddsSnapshot = {
+  matchId: string;
+  homeName: string;
+  awayName: string;
+  bookmakers: TennisBookRow[];
+  fetchedAt: string;
+  oddsApiEventId?: string;
+};
+
+type TennisOddsRefreshMeta = {
+  fetchedAt: string;
+  upcoming: number;
+  snapshots: number;
+  oddsApiSports: number;
+  oddsApiEvents: number;
+};
+
+export type TennisOddsRefreshResult = TennisOddsRefreshMeta & {
+  skipped: boolean;
+};
 
 type DecimalByBook = Record<string, string>;
 type NestedByLine = Record<string, DecimalByBook>;
@@ -25,6 +61,10 @@ function apiKey(): string {
 
 function cacheKey(matchId: string): string {
   return `tennis_match_odds_v1_${matchId}`;
+}
+
+function snapshotKey(matchId: string): string {
+  return `tennis_odds_snapshot_v1_${matchId}`;
 }
 
 function oddsRuntime(): { inflight: Map<string, Promise<Record<string, unknown> | null>> } {
@@ -218,11 +258,18 @@ function parseMatchMarkets(raw: Record<string, unknown>): TennisBookRow[] {
 
   const rows: TennisBookRow[] = [];
   for (const name of names) {
-    const spreadLines = collectAllLines(gamesAh.over, gamesAh.under, name);
-    const totalLines = collectAllLines(totals.over, totals.under, name);
-    const gamesWonLines = collectAllLines(homeGames.over, homeGames.under, name);
-    const gamesLostLines = collectAllLines(awayGames.over, awayGames.under, name);
-    const totalSetsLines = collectAllLines(setTotals.over, setTotals.under, name);
+    const spreadLines = filterTennisOuLines('spread', collectAllLines(gamesAh.over, gamesAh.under, name));
+    const rawMatchTotals = collectAllLines(totals.over, totals.under, name);
+    const totalLines = filterTennisOuLines('totalGames', rawMatchTotals);
+    const gamesWonLines = filterTennisOuLines('gamesWon', collectAllLines(homeGames.over, homeGames.under, name));
+    const gamesLostLines = filterTennisOuLines('gamesLost', collectAllLines(awayGames.over, awayGames.under, name));
+    const totalSetsLines = filterTennisOuLines(
+      'totalSets',
+      [
+        ...collectAllLines(setTotals.over, setTotals.under, name),
+        ...filterTennisOuLines('totalSets', rawMatchTotals),
+      ]
+    );
     rows.push({
       name,
       region: getBookmakerRegion(name),
@@ -267,13 +314,19 @@ function orientBooksForPlayer(books: TennisBookRow[], playerIsHome: boolean): Te
   }));
 }
 
-async function fetchRawOdds(matchId: string): Promise<Record<string, unknown> | null> {
+async function fetchRawOdds(
+  matchId: string,
+  opts?: { force?: boolean }
+): Promise<Record<string, unknown> | null> {
   const runtime = oddsRuntime();
-  const inflight = runtime.inflight.get(matchId);
+  const inflightKey = opts?.force ? `${matchId}:force` : matchId;
+  const inflight = runtime.inflight.get(inflightKey);
   if (inflight) return inflight;
   const pending = (async () => {
-    const cached = await sharedCache.getJSON<Record<string, unknown>>(cacheKey(matchId));
-    if (cached && typeof cached === 'object') return cached;
+    if (!opts?.force) {
+      const cached = await sharedCache.getJSON<Record<string, unknown>>(cacheKey(matchId));
+      if (cached && typeof cached === 'object') return cached;
+    }
     const json = await apiTennisCall({ method: 'get_odds', match_key: matchId });
     const result = json?.result;
     const raw =
@@ -284,11 +337,11 @@ async function fetchRawOdds(matchId: string): Promise<Record<string, unknown> | 
     await sharedCache.setJSON(cacheKey(matchId), raw, ODDS_CACHE_TTL_SECONDS);
     return raw;
   })();
-  runtime.inflight.set(matchId, pending);
+  runtime.inflight.set(inflightKey, pending);
   try {
     return await pending;
   } finally {
-    runtime.inflight.delete(matchId);
+    runtime.inflight.delete(inflightKey);
   }
 }
 
@@ -324,11 +377,11 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
       byKey.set(key, { ...row, name: displayName(row.name), region: regionOf(row) });
       continue;
     }
-    const spreadLines = mergeOuLineLists(prev.SpreadLines, row.SpreadLines);
-    const totalLines = mergeOuLineLists(prev.TotalLines, row.TotalLines);
-    const gamesWonLines = mergeOuLineLists(prev.GamesWonLines, row.GamesWonLines);
-    const gamesLostLines = mergeOuLineLists(prev.GamesLostLines, row.GamesLostLines);
-    const totalSetsLines = mergeOuLineLists(prev.TotalSetsLines, row.TotalSetsLines);
+    const spreadLines = filterTennisOuLines('spread', mergeOuLineLists(prev.SpreadLines, row.SpreadLines));
+    const totalLines = filterTennisOuLines('totalGames', mergeOuLineLists(prev.TotalLines, row.TotalLines));
+    const gamesWonLines = filterTennisOuLines('gamesWon', mergeOuLineLists(prev.GamesWonLines, row.GamesWonLines));
+    const gamesLostLines = filterTennisOuLines('gamesLost', mergeOuLineLists(prev.GamesLostLines, row.GamesLostLines));
+    const totalSetsLines = filterTennisOuLines('totalSets', mergeOuLineLists(prev.TotalSetsLines, row.TotalSetsLines));
     byKey.set(key, {
       name: prev.name,
       region: prev.region ?? regionOf(row),
@@ -351,31 +404,142 @@ function mergeBookRows(primary: TennisBookRow[], extra: TennisBookRow[]): Tennis
   return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function mergeSources(
+  raw: Record<string, unknown> | null,
+  oddsApi: OddsApiTennisMatch | null,
+  next: TennisNextGame
+): TennisBookRow[] {
+  let books = raw ? parseMatchMarkets(raw) : [];
+  if (oddsApi?.books?.length) {
+    const oddsHomeIsTennisHome = tennisNamesMatch(oddsApi.homeTeam, next.homeName);
+    books = mergeBookRows(books, orientBooksForPlayer(oddsApi.books, oddsHomeIsTennisHome));
+  }
+  return books;
+}
+
+function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): TennisMatchOdds {
+  const playerIsHome = Boolean(next.playerIsHome);
+  return {
+    matchId: snapshot.matchId,
+    homeTeam: playerIsHome ? next.homeName : next.awayName,
+    awayTeam: playerIsHome ? next.awayName : next.homeName,
+    bookmakers: orientBooksForPlayer(snapshot.bookmakers, playerIsHome),
+  };
+}
+
+async function writeSnapshot(
+  next: TennisNextGame,
+  books: TennisBookRow[],
+  oddsApiEventId?: string
+): Promise<TennisOddsSnapshot> {
+  const snapshot: TennisOddsSnapshot = {
+    matchId: String(next.matchId),
+    homeName: next.homeName,
+    awayName: next.awayName,
+    bookmakers: books,
+    fetchedAt: new Date().toISOString(),
+    oddsApiEventId,
+  };
+  await sharedCache.setJSON(snapshotKey(snapshot.matchId), snapshot, SNAPSHOT_TTL_SECONDS);
+  return snapshot;
+}
+
+function pickRefreshTargets(games: TennisNextGame[]): TennisNextGame[] {
+  const live = games.filter((game) => game.live);
+  const rest = games.filter((game) => !game.live);
+  return [...live, ...rest].slice(0, MAX_SNAPSHOT_MATCHES);
+}
+
+function refreshInflightRuntime(): {
+  inflight: Promise<TennisOddsRefreshResult> | null;
+} {
+  const g = globalThis as typeof globalThis & {
+    __tennisOddsRefresh?: { inflight: Promise<TennisOddsRefreshResult> | null };
+  };
+  if (!g.__tennisOddsRefresh) g.__tennisOddsRefresh = { inflight: null };
+  return g.__tennisOddsRefresh;
+}
+
+export async function refreshTennisOddsSnapshots(opts?: {
+  force?: boolean;
+}): Promise<TennisOddsRefreshResult> {
+  const runtime = refreshInflightRuntime();
+  if (runtime.inflight) return runtime.inflight;
+  runtime.inflight = (async () => {
+    const previous = await sharedCache.getJSON<TennisOddsRefreshMeta>(REFRESH_META_KEY);
+    const ageMs = previous?.fetchedAt ? Date.now() - Date.parse(previous.fetchedAt) : Number.POSITIVE_INFINITY;
+    if (!opts?.force && Number.isFinite(ageMs) && ageMs < MIN_REFRESH_MS && previous) {
+      return { ...previous, skipped: true };
+    }
+    const upcoming = await listUniqueUpcomingTennisGames();
+    const catalog = await refreshOddsApiTennisCatalog({ upcoming, force: true });
+    const targets = pickRefreshTargets(upcoming);
+    let snapshots = 0;
+    for (let i = 0; i < targets.length; i += 4) {
+      const batch = targets.slice(i, i + 4);
+      await Promise.all(
+        batch.map(async (game) => {
+          const matchId = String(game.matchId || '').trim();
+          if (!matchId) return;
+          const [raw, oddsApi] = await Promise.all([
+            fetchRawOdds(matchId, { force: true }),
+            getOddsApiTennisMatch({ homeName: game.homeName, awayName: game.awayName }),
+          ]);
+          const books = mergeSources(raw, oddsApi, game);
+          if (!books.length) return;
+          await writeSnapshot(game, books, oddsApi?.eventId);
+          snapshots += 1;
+        })
+      );
+    }
+    const meta: TennisOddsRefreshMeta = {
+      fetchedAt: new Date().toISOString(),
+      upcoming: upcoming.length,
+      snapshots,
+      oddsApiSports: catalog?.sports.length ?? 0,
+      oddsApiEvents: catalog?.matches.length ?? 0,
+    };
+    await sharedCache.setJSON(REFRESH_META_KEY, meta, SNAPSHOT_TTL_SECONDS);
+    return { ...meta, skipped: false };
+  })();
+  try {
+    return await runtime.inflight;
+  } finally {
+    runtime.inflight = null;
+  }
+}
+
 export async function getTennisMatchOddsForPlayer(opts: {
   playerId?: string | null;
+  playerName?: string | null;
 }): Promise<TennisMatchOdds | null> {
   const playerId = String(opts.playerId || '').trim();
-  if (!playerId || !apiKey()) return null;
-  const next = await getTennisNextGame({ playerId });
+  const playerName = String(opts.playerName || '').trim();
+  if ((!playerId && !playerName) || !apiKey()) return null;
+  const next = await getTennisNextGame({ playerId, playerName });
   const matchId = String(next?.matchId || '').trim();
   if (!next || !matchId) return null;
+  const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(matchId));
+  if (snapshot?.bookmakers?.length && snapshot.oddsApiEventId) {
+    return presentSnapshot(snapshot, next);
+  }
+  if (!(await readOddsApiTennisCatalog())) {
+    await refreshOddsApiTennisCatalog({ upcoming: [next] });
+  }
+  if (snapshot?.bookmakers?.length) {
+    const extra = await getOddsApiTennisMatch({ homeName: next.homeName, awayName: next.awayName });
+    if (!extra?.books?.length) return presentSnapshot(snapshot, next);
+    const books = mergeSources(null, extra, next);
+    const stored = await writeSnapshot(next, mergeBookRows(snapshot.bookmakers, books), extra.eventId);
+    return presentSnapshot(stored, next);
+  }
   const [raw, oddsApi] = await Promise.all([
     fetchRawOdds(matchId),
     getOddsApiTennisMatch({ homeName: next.homeName, awayName: next.awayName }),
   ]);
-  let books = raw ? parseMatchMarkets(raw) : [];
-  if (oddsApi?.books?.length) {
-    const oddsHomeIsTennisHome = tennisNamesMatch(oddsApi.homeTeam, next.homeName);
-    const oddsBooks = orientBooksForPlayer(oddsApi.books, oddsHomeIsTennisHome);
-    books = mergeBookRows(books, oddsBooks);
-  }
-  const playerIsHome = Boolean(next.playerIsHome);
-  books = orientBooksForPlayer(books, playerIsHome);
-  return {
-    matchId,
-    homeTeam: playerIsHome ? next.homeName : next.awayName,
-    awayTeam: playerIsHome ? next.awayName : next.homeName,
-    bookmakers: books,
-  };
+  const books = mergeSources(raw, oddsApi, next);
+  if (!books.length) return null;
+  const stored = await writeSnapshot(next, books, oddsApi?.eventId);
+  return presentSnapshot(stored, next);
 }
 

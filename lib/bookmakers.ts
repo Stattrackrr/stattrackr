@@ -391,6 +391,120 @@ export const BOOKMAKER_INFO: Record<string, { name: string; logo: string; logoUr
     logoUrl: getLogoUrl('sbobet.com'),
     color: '#C8102E',
   },
+  'williamhill_us': {
+    name: 'Caesars',
+    logo: 'CZR',
+    logoUrl: '/images/caesars.jpg',
+    color: '#002855',
+  },
+  'fliff': {
+    name: 'Fliff',
+    logo: 'FL',
+    logoUrl: getLogoUrl('getfliff.com'),
+    color: '#6D28D9',
+  },
+  'playup': {
+    name: 'PlayUp',
+    logo: 'PU',
+    logoUrl: getLogoUrl('playup.com.au'),
+    color: '#E11D48',
+  },
+  'tabtouch': {
+    name: 'TABtouch',
+    logo: 'TT',
+    logoUrl: getLogoUrl('tabtouch.mobi'),
+    color: '#00843D',
+  },
+  'grosvenor': {
+    name: 'Grosvenor',
+    logo: 'GR',
+    logoUrl: getLogoUrl('grosvenorcasinos.com'),
+    color: '#0F172A',
+  },
+  'coral': {
+    name: 'Coral',
+    logo: 'CR',
+    logoUrl: getLogoUrl('coral.co.uk'),
+    color: '#0B3D0B',
+  },
+  'paddypower': {
+    name: 'Paddy Power',
+    logo: 'PP',
+    logoUrl: getLogoUrl('paddypower.com'),
+    color: '#00A651',
+  },
+  'skybet': {
+    name: 'Sky Bet',
+    logo: 'SB',
+    logoUrl: getLogoUrl('skybet.com'),
+    color: '#DC052D',
+  },
+  'matchbook': {
+    name: 'Matchbook',
+    logo: 'MB',
+    logoUrl: getLogoUrl('matchbook.com'),
+    color: '#111827',
+  },
+  'smarkets': {
+    name: 'Smarkets',
+    logo: 'SM',
+    logoUrl: getLogoUrl('smarkets.com'),
+    color: '#2563EB',
+  },
+  'betfred_uk': {
+    name: 'Betfred',
+    logo: 'BF',
+    logoUrl: getLogoUrl('betfred.com'),
+    color: '#0066B3',
+  },
+  'boylesports': {
+    name: 'BoyleSports',
+    logo: 'BS',
+    logoUrl: getLogoUrl('boylesports.com'),
+    color: '#0072CE',
+  },
+  'livescorebet': {
+    name: 'LiveScore Bet',
+    logo: 'LS',
+    logoUrl: getLogoUrl('livescorebet.com'),
+    color: '#E30613',
+  },
+  'betsson': {
+    name: 'Betsson',
+    logo: 'BS',
+    logoUrl: getLogoUrl('betsson.com'),
+    color: '#F97316',
+  },
+  'nordicbet': {
+    name: 'NordicBet',
+    logo: 'NB',
+    logoUrl: getLogoUrl('nordicbet.com'),
+    color: '#0EA5E9',
+  },
+  '10bet': {
+    name: '10Bet',
+    logo: '10',
+    logoUrl: getLogoUrl('10bet.com'),
+    color: '#111827',
+  },
+  '188bet': {
+    name: '188Bet',
+    logo: '188',
+    logoUrl: getLogoUrl('188bet.com'),
+    color: '#C8102E',
+  },
+  'dafabet': {
+    name: 'Dafabet',
+    logo: 'DF',
+    logoUrl: getLogoUrl('dafabet.com'),
+    color: '#D4A017',
+  },
+  'bwin': {
+    name: 'bwin',
+    logo: 'BW',
+    logoUrl: getLogoUrl('bwin.com'),
+    color: '#FFB800',
+  },
 };
 
 export type BookmakerRegion = 'us' | 'au' | 'uk' | 'other';
@@ -492,6 +606,130 @@ function compactBookKey(key: string): string {
   return key.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 }
 
+/** Official site used for favicon fallback when a local asset is missing. */
+const BOOK_DOMAINS: Record<string, string> = {
+  '10bet': '10bet.com',
+  '12bet': '12bet.com',
+  '188bet': '188bet.com',
+  '1xbet': '1xbet.com',
+  '22bet': '22bet.com',
+  '888sport': '888sport.com',
+  bet365: 'bet365.com',
+  betano: 'betano.com',
+  betanysports: 'betanysports.eu',
+  betanything: 'betanysports.eu',
+  betclic: 'betclic.com',
+  betfair: 'betfair.com',
+  betfred: 'betfred.com',
+  betmgm: 'betmgm.com',
+  betonline: 'betonline.ag',
+  betonlineag: 'betonline.ag',
+  betparx: 'betparx.com',
+  betr: 'betr.com.au',
+  betright: 'betright.com.au',
+  betrivers: 'betrivers.com',
+  betsson: 'betsson.com',
+  betus: 'betus.com',
+  betvictor: 'betvictor.com',
+  betway: 'betway.com',
+  bet365nl: 'bet365.com',
+  bovada: 'bovada.lv',
+  boylesports: 'boylesports.com',
+  bwin: 'bwin.com',
+  caesars: 'caesars.com',
+  casumo: 'casumo.com',
+  coolbet: 'coolbet.com',
+  coral: 'coral.co.uk',
+  dabble: 'dabble.com',
+  dafabet: 'dafabet.com',
+  draftkings: 'draftkings.com',
+  espnbet: 'espnbet.com',
+  everygame: 'everygame.eu',
+  fanatics: 'fanatics.com',
+  fanduel: 'fanduel.com',
+  fliff: 'getfliff.com',
+  foxbet: 'foxbet.com',
+  grosvenor: 'grosvenorcasinos.com',
+  gtbets: 'gtbets.ag',
+  hardrockbet: 'hardrock.bet',
+  interwetten: 'interwetten.com',
+  kalshi: 'kalshi.com',
+  ladbrokes: 'ladbrokes.com.au',
+  leovegas: 'leovegas.com',
+  livescorebet: 'livescorebet.com',
+  lowvig: 'lowvig.ag',
+  marathon: 'marathonbet.com',
+  marathonbet: 'marathonbet.com',
+  matchbook: 'matchbook.com',
+  mybookie: 'mybookie.ag',
+  mybookieag: 'mybookie.ag',
+  neds: 'neds.com.au',
+  nordicbet: 'nordicbet.com',
+  novig: 'novig.com',
+  onexbet: '1xbet.com',
+  paddypower: 'paddypower.com',
+  pinnacle: 'pinnacle.com',
+  playup: 'playup.com.au',
+  pncl: 'pinnacle.com',
+  pointsbet: 'pointsbet.com',
+  pointsbetau: 'pointsbet.com.au',
+  polymarket: 'polymarket.com',
+  prizepicks: 'prizepicks.com',
+  rebet: 'rebet.com',
+  sbo: 'sbobet.com',
+  sbobet: 'sbobet.com',
+  skybet: 'skybet.com',
+  smarkets: 'smarkets.com',
+  sport888: '888sport.com',
+  sportsbet: 'sportsbet.com.au',
+  superbet: 'superbet.com',
+  tab: 'tab.com.au',
+  tabtouch: 'tabtouch.mobi',
+  tipico: 'tipico.com',
+  underdog: 'underdogfantasy.com',
+  unibet: 'unibet.com',
+  virginbet: 'virginbet.com',
+  williamhill: 'williamhill.com',
+  williamhillus: 'caesars.com',
+  winamax: 'winamax.fr',
+};
+
+function prettyBookName(key: string): string {
+  return String(key || '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function bookInitials(name: string): string {
+  const words = prettyBookName(name).split(' ').filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return prettyBookName(name).slice(0, 2).toUpperCase() || 'BK';
+}
+
+function guessBookDomain(key: string): string {
+  const compact = compactBookKey(key);
+  if (BOOK_DOMAINS[compact]) return BOOK_DOMAINS[compact];
+  const stripped = compact.replace(/(au|uk|us|eu|nl|fr|se|it|de|ca|ag)$/g, '');
+  if (stripped && BOOK_DOMAINS[stripped]) return BOOK_DOMAINS[stripped];
+  const host = String(key || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '');
+  if (/^[a-z0-9-]+\.[a-z]{2,}$/i.test(host)) return host;
+  return `${stripped || compact || 'bookmaker'}.com`;
+}
+
+export function bookmakerLogoCandidates(key: string, preferred?: string | null): string[] {
+  const urls: string[] = [];
+  if (preferred) urls.push(preferred);
+  const domain = guessBookDomain(key);
+  urls.push(getLogoUrl(domain));
+  urls.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
+  return [...new Set(urls.filter(Boolean))];
+}
+
 /** Odds API / display-name region. `unibet` without a suffix is AU on The Odds API. */
 export function getBookmakerRegion(key: string): BookmakerRegion {
   const raw = key.toLowerCase().trim();
@@ -533,29 +771,31 @@ export function getBookmakerRegion(key: string): BookmakerRegion {
 }
 
 export function getBookmakerInfo(key: string) {
-  const normalizedKey = key.toLowerCase().trim();
-  
-  // Try exact match first
-  if (BOOKMAKER_INFO[normalizedKey]) {
-    return BOOKMAKER_INFO[normalizedKey];
-  }
-  
-  // Try partial matches for common variations
-  for (const [bookKey, bookInfo] of Object.entries(BOOKMAKER_INFO)) {
-    if (normalizedKey.includes(bookKey) || bookKey.includes(normalizedKey)) {
-      return bookInfo;
-    }
-    // Also check if the name matches
-    if (bookInfo.name.toLowerCase().includes(normalizedKey) || 
-        normalizedKey.includes(bookInfo.name.toLowerCase())) {
-      return bookInfo;
-    }
-  }
-  
-  // Fallback
+  const raw = String(key || '').trim();
+  const normalizedKey = raw.toLowerCase();
+  const spaced = normalizeBookKey(raw);
+  const compact = compactBookKey(raw);
+
+  const found =
+    BOOKMAKER_INFO[normalizedKey] ||
+    BOOKMAKER_INFO[spaced] ||
+    Object.entries(BOOKMAKER_INFO).find(([bookKey, info]) => {
+      return compactBookKey(bookKey) === compact || compactBookKey(info.name) === compact;
+    })?.[1] ||
+    Object.entries(BOOKMAKER_INFO).find(([bookKey]) => {
+      const bookCompact = compactBookKey(bookKey);
+      return bookCompact.length >= 4 && (compact.includes(bookCompact) || bookCompact.includes(compact));
+    })?.[1];
+
+  const name = found?.name || prettyBookName(raw) || raw;
+  const logo = found?.logo || bookInitials(name);
+  const color = found?.color || '#6B7280';
+  const logoUrls = bookmakerLogoCandidates(raw, found?.logoUrl);
   return {
-    name: key,
-    logo: '🎲',
-    color: '#6B7280',
+    name,
+    logo,
+    color,
+    logoUrl: logoUrls[0] || getLogoUrl(guessBookDomain(raw)),
+    logoUrls,
   };
 }

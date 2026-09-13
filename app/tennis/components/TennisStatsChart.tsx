@@ -785,7 +785,6 @@ export function TennisStatsChart({
     }
     const ordered: string[] = [];
     for (const k of STAT_PRIORITY) if (keys.has(k)) ordered.push(k);
-    for (const k of keys) if (!ordered.includes(k)) ordered.push(k);
     return ordered;
   }, [logsForStatOptions]);
 

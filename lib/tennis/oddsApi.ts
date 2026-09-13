@@ -6,10 +6,15 @@
 import { americanToDecimal, decimalToAmerican } from '@/lib/currencyUtils';
 import { getBookmakerRegion } from '@/lib/bookmakers';
 import sharedCache from '@/lib/sharedCache';
-import type { TennisBookRow, TennisOuLine } from '@/lib/tennis/oddsTypes';
+import { filterTennisOuLines, type TennisBookRow, type TennisOuLine } from '@/lib/tennis/oddsTypes';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 const CACHE_TTL_SECONDS = 5 * 60;
+const CATALOG_TTL_SECONDS = 24 * 60 * 60;
+const CATALOG_KEY = 'tennis_odds_api_catalog_v1';
+const CATALOG_META_KEY = 'tennis_odds_api_catalog_meta_v1';
+const CATALOG_RETRY_MS = 30 * 60 * 1000;
+const MAX_SPORTS_PER_REFRESH = 4;
 const EMPTY_OU: TennisOuLine = { line: 'N/A', over: 'N/A', under: 'N/A' };
 
 const FEATURED_MARKETS = [
@@ -18,10 +23,9 @@ const FEATURED_MARKETS = [
   'totals',
   'alternate_spreads',
   'alternate_totals',
-  'team_totals',
-  'alternate_team_totals',
-  'alternate_set_totals',
 ].join(',');
+
+const FALLBACK_MARKETS = ['h2h,spreads,totals', 'h2h'];
 
 const REGIONS = 'us,uk,au';
 
@@ -70,18 +74,14 @@ export type OddsApiTennisMatch = {
   books: TennisBookRow[];
 };
 
+export type OddsApiTennisCatalog = {
+  fetchedAt: string;
+  sports: string[];
+  matches: OddsApiTennisMatch[];
+};
+
 function oddsApiKey(): string {
   return String(process.env.ODDS_API_KEY || '').trim();
-}
-
-function oddsRuntime(): {
-  inflight: Map<string, Promise<OddsApiTennisMatch | null>>;
-} {
-  const g = globalThis as typeof globalThis & {
-    __tennisOddsApiInflight?: { inflight: Map<string, Promise<OddsApiTennisMatch | null>> };
-  };
-  if (!g.__tennisOddsApiInflight) g.__tennisOddsApiInflight = { inflight: new Map() };
-  return g.__tennisOddsApiInflight;
 }
 
 function emptyOu(): TennisOuLine {
@@ -224,11 +224,15 @@ function parseBooks(event: OddsEventOdds): TennisBookRow[] {
       if (tennisNamesMatch(outcome.name, homeName)) homeH2H = price;
       else if (tennisNamesMatch(outcome.name, awayName)) awayH2H = price;
     }
-    const spreadLines = collectSpreads(markets, homeName, awayName);
-    const totalLines = collectOuByPoint(markets, new Set(['totals', 'alternate_totals']));
-    const gamesWonLines = collectPlayerTotals(markets, homeName);
-    const gamesLostLines = collectPlayerTotals(markets, awayName);
-    const totalSetsLines = collectOuByPoint(markets, new Set(['alternate_set_totals']));
+    const spreadLines = filterTennisOuLines('spread', collectSpreads(markets, homeName, awayName));
+    const rawTotals = collectOuByPoint(markets, new Set(['totals', 'alternate_totals']));
+    const totalLines = filterTennisOuLines('totalGames', rawTotals);
+    const gamesWonLines = filterTennisOuLines('gamesWon', collectPlayerTotals(markets, homeName));
+    const gamesLostLines = filterTennisOuLines('gamesLost', collectPlayerTotals(markets, awayName));
+    const totalSetsLines = filterTennisOuLines('totalSets', [
+      ...collectOuByPoint(markets, new Set(['alternate_set_totals'])),
+      ...filterTennisOuLines('totalSets', rawTotals),
+    ]);
     if (
       homeH2H === 'N/A' &&
       awayH2H === 'N/A' &&
@@ -293,50 +297,86 @@ async function listActiveTennisSports(): Promise<OddsSport[]> {
 async function listSportEvents(sportKey: string): Promise<OddsEventMeta[]> {
   const cacheId = `tennis_odds_api_events_v1_${sportKey}`;
   const cached = await sharedCache.getJSON<OddsEventMeta[]>(cacheId);
-  if (Array.isArray(cached)) return cached;
+  if (Array.isArray(cached) && cached.length) return cached;
   const { json } = await oddsApiGet<OddsEventMeta[]>(`/sports/${encodeURIComponent(sportKey)}/events`);
   const events = Array.isArray(json) ? json : [];
-  await sharedCache.setJSON(cacheId, events, CACHE_TTL_SECONDS);
+  if (events.length) await sharedCache.setJSON(cacheId, events, CACHE_TTL_SECONDS);
   return events;
 }
 
-function eventMatchesPlayers(event: OddsEventMeta, homeName: string, awayName: string): boolean {
-  const eventHome = String(event.home_team || '');
-  const eventAway = String(event.away_team || '');
+function eventMatchesPlayers(
+  event: { home_team?: string; away_team?: string; homeTeam?: string; awayTeam?: string },
+  homeName: string,
+  awayName: string
+): boolean {
+  const eventHome = String(event.home_team || event.homeTeam || '');
+  const eventAway = String(event.away_team || event.awayTeam || '');
   const sameWay = tennisNamesMatch(eventHome, homeName) && tennisNamesMatch(eventAway, awayName);
   const flipped = tennisNamesMatch(eventHome, awayName) && tennisNamesMatch(eventAway, homeName);
   return sameWay || flipped;
 }
 
-async function findTennisEvent(homeName: string, awayName: string): Promise<OddsEventMeta | null> {
-  const sports = await listActiveTennisSports();
-  const needle = `${normalizeName(homeName)} ${normalizeName(awayName)} ${lastNameToken(homeName)} ${lastNameToken(awayName)}`;
-  const ranked = [...sports].sort((a, b) => {
-    const aHit = needle.includes(String(a.key || '').replace(/tennis_|_/g, '')) ? 0 : 1;
-    const bHit = needle.includes(String(b.key || '').replace(/tennis_|_/g, '')) ? 0 : 1;
-    return aHit - bHit;
+function rankSportsForUpcoming(
+  sports: OddsSport[],
+  upcoming: Array<{ homeName: string; awayName: string; tournamentName?: string | null; tour?: string | null }>
+): OddsSport[] {
+  const needles = upcoming
+    .flatMap((game) => [
+      normalizeName(String(game.tournamentName || '')),
+      String(game.tour || '').toLowerCase(),
+    ])
+    .filter(Boolean);
+  return [...sports].sort((a, b) => {
+    const aKey = String(a.key || '').replace(/tennis_|_/g, '');
+    const bKey = String(b.key || '').replace(/tennis_|_/g, '');
+    const aTitle = normalizeName(String(a.title || ''));
+    const bTitle = normalizeName(String(b.title || ''));
+    const aScore = needles.reduce((sum, needle) => {
+      if (!needle) return sum;
+      return sum + (aKey.includes(needle) || needle.includes(aKey) || aTitle.includes(needle) ? 2 : 0);
+    }, 0);
+    const bScore = needles.reduce((sum, needle) => {
+      if (!needle) return sum;
+      return sum + (bKey.includes(needle) || needle.includes(bKey) || bTitle.includes(needle) ? 2 : 0);
+    }, 0);
+    return bScore - aScore;
   });
-  for (const sport of ranked) {
-    const key = String(sport.key || '').trim();
-    if (!key) continue;
-    const events = await listSportEvents(key);
-    const hit = events.find((event) => eventMatchesPlayers(event, homeName, awayName));
-    if (hit?.id && hit.sport_key) return hit;
-  }
-  return null;
 }
 
-async function fetchEventOdds(sportKey: string, eventId: string): Promise<OddsEventOdds | null> {
-  const cacheId = `tennis_odds_api_event_odds_v1_${sportKey}_${eventId}`;
-  const cached = await sharedCache.getJSON<OddsEventOdds>(cacheId);
-  if (cached && typeof cached === 'object') return cached;
-  const path =
-    `/sports/${encodeURIComponent(sportKey)}/events/${encodeURIComponent(eventId)}/odds` +
-    `?regions=${REGIONS}&oddsFormat=decimal&markets=${encodeURIComponent(FEATURED_MARKETS)}`;
-  const { json } = await oddsApiGet<OddsEventOdds>(path);
-  if (!json || typeof json !== 'object') return null;
-  await sharedCache.setJSON(cacheId, json, CACHE_TTL_SECONDS);
-  return json;
+function matchFromEvent(sportKey: string, event: OddsEventOdds): OddsApiTennisMatch | null {
+  const eventId = String(event.id || '').trim();
+  const homeTeam = String(event.home_team || '').trim();
+  const awayTeam = String(event.away_team || '').trim();
+  if (!eventId || !homeTeam || !awayTeam) return null;
+  return {
+    eventId,
+    sportKey: String(event.sport_key || sportKey).trim(),
+    homeTeam,
+    awayTeam,
+    books: parseBooks(event),
+  };
+}
+
+async function fetchSportOdds(sportKey: string): Promise<OddsEventOdds[]> {
+  const marketSets = [FEATURED_MARKETS, ...FALLBACK_MARKETS];
+  for (const markets of marketSets) {
+    const path =
+      `/sports/${encodeURIComponent(sportKey)}/odds` +
+      `?regions=${REGIONS}&oddsFormat=decimal&markets=${encodeURIComponent(markets)}`;
+    const { json, status } = await oddsApiGet<OddsEventOdds[]>(path);
+    if (Array.isArray(json) && json.some((event) => Array.isArray(event.bookmakers) && event.bookmakers.length)) {
+      return json;
+    }
+    if (status === 401 || status === 422) continue;
+    if (status && status !== 404) break;
+  }
+  return [];
+}
+
+export async function readOddsApiTennisCatalog(): Promise<OddsApiTennisCatalog | null> {
+  const cached = await sharedCache.getJSON<OddsApiTennisCatalog>(CATALOG_KEY);
+  if (cached && Array.isArray(cached.matches) && cached.matches.length) return cached;
+  return null;
 }
 
 export async function getOddsApiTennisMatch(opts: {
@@ -345,34 +385,76 @@ export async function getOddsApiTennisMatch(opts: {
 }): Promise<OddsApiTennisMatch | null> {
   const homeName = String(opts.homeName || '').trim();
   const awayName = String(opts.awayName || '').trim();
-  if (!homeName || !awayName || !oddsApiKey()) return null;
-  const lookupKey = `tennis_odds_api_lookup_v1_${normalizeName(homeName)}_${normalizeName(awayName)}`;
-  const runtime = oddsRuntime();
-  const inflight = runtime.inflight.get(lookupKey);
-  if (inflight) return inflight;
-  const pending = (async () => {
-    try {
-      const event = await findTennisEvent(homeName, awayName);
-      const sportKey = String(event?.sport_key || '').trim();
-      const eventId = String(event?.id || '').trim();
-      if (!event || !sportKey || !eventId) return null;
-      const raw = await fetchEventOdds(sportKey, eventId);
-      if (!raw) return null;
-      return {
-        eventId,
-        sportKey,
-        homeTeam: String(raw.home_team || event.home_team || '').trim(),
-        awayTeam: String(raw.away_team || event.away_team || '').trim(),
-        books: parseBooks(raw),
-      };
-    } catch {
-      return null;
+  if (!homeName || !awayName) return null;
+  const catalog = await readOddsApiTennisCatalog();
+  if (!catalog) return null;
+  return catalog.matches.find((match) => eventMatchesPlayers(match, homeName, awayName)) ?? null;
+}
+
+function catalogRefreshRuntime(): {
+  inflight: Promise<OddsApiTennisCatalog | null> | null;
+} {
+  const g = globalThis as typeof globalThis & {
+    __tennisOddsApiCatalogRefresh?: { inflight: Promise<OddsApiTennisCatalog | null> | null };
+  };
+  if (!g.__tennisOddsApiCatalogRefresh) g.__tennisOddsApiCatalogRefresh = { inflight: null };
+  return g.__tennisOddsApiCatalogRefresh;
+}
+
+export async function refreshOddsApiTennisCatalog(opts?: {
+  upcoming?: Array<{ homeName: string; awayName: string; tournamentName?: string | null; tour?: string | null }>;
+  force?: boolean;
+}): Promise<OddsApiTennisCatalog | null> {
+  const existing = await readOddsApiTennisCatalog();
+  if (existing && !opts?.force) return existing;
+  const runtime = catalogRefreshRuntime();
+  if (runtime.inflight) return runtime.inflight;
+  runtime.inflight = (async () => {
+    if (!oddsApiKey()) return existing;
+    if (!opts?.force) {
+      const meta = await sharedCache.getJSON<{ lastAttemptAt?: string }>(CATALOG_META_KEY);
+      const ageMs = meta?.lastAttemptAt ? Date.now() - Date.parse(meta.lastAttemptAt) : Number.POSITIVE_INFINITY;
+      if (Number.isFinite(ageMs) && ageMs < CATALOG_RETRY_MS) return existing;
     }
+    await sharedCache.setJSON(CATALOG_META_KEY, { lastAttemptAt: new Date().toISOString() }, CATALOG_TTL_SECONDS);
+    const upcoming = opts?.upcoming ?? [];
+    const sports = await listActiveTennisSports();
+    const wanted: string[] = [];
+    const ranked = upcoming.length ? rankSportsForUpcoming(sports, upcoming) : sports;
+    for (const sport of ranked) {
+      if (wanted.length >= MAX_SPORTS_PER_REFRESH) break;
+      const key = String(sport.key || '').trim();
+      if (!key) continue;
+      if (!upcoming.length) {
+        if (key.startsWith('tennis_atp_') || key.startsWith('tennis_wta_')) wanted.push(key);
+        continue;
+      }
+      const events = await listSportEvents(key);
+      const hit = events.some((event) =>
+        upcoming.some((game) => eventMatchesPlayers(event, game.homeName, game.awayName))
+      );
+      if (hit) wanted.push(key);
+    }
+    const matches: OddsApiTennisMatch[] = [];
+    for (const sportKey of wanted) {
+      const events = await fetchSportOdds(sportKey);
+      for (const event of events) {
+        const match = matchFromEvent(sportKey, event);
+        if (match?.books.length) matches.push(match);
+      }
+    }
+    if (!matches.length) return readOddsApiTennisCatalog();
+    const catalog: OddsApiTennisCatalog = {
+      fetchedAt: new Date().toISOString(),
+      sports: wanted,
+      matches,
+    };
+    await sharedCache.setJSON(CATALOG_KEY, catalog, CATALOG_TTL_SECONDS);
+    return catalog;
   })();
-  runtime.inflight.set(lookupKey, pending);
   try {
-    return await pending;
+    return await runtime.inflight;
   } finally {
-    runtime.inflight.delete(lookupKey);
+    runtime.inflight = null;
   }
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useEffect, useMemo, useState } from 'react';
-import { tennisLastName, tennisMatchesPlayed, tennisTourLabel } from '@/lib/tennis/chartStats';
+import { tennisLastName, tennisMatchesPlayed } from '@/lib/tennis/chartStats';
+import { tennisFlagUrl } from '@/lib/tennis/flags';
 
 const GAMES_PER_PAGE = 10;
 
@@ -47,6 +48,121 @@ function formatPct(v: number | null | undefined): string {
   return `${pct.toFixed(0)}%`;
 }
 
+function rate(v: number | null): number | null {
+  if (v == null || !Number.isFinite(v) || v <= 0) return null;
+  return v <= 1 ? v : v / 100;
+}
+
+function bpReturnChances(game: Record<string, unknown>): number | null {
+  const won = toNum(game.breakPointsConverted);
+  const pct = rate(toNum(game.breakPointsConvertedPct));
+  if (won == null || pct == null || pct <= 0) return null;
+  return Math.round(won / pct);
+}
+
+function bpGivenUp(game: Record<string, unknown>): number | null {
+  const faced = toNum(game.breakPointsFaced);
+  const saved = toNum(game.breakPointsSaved);
+  if (faced == null || saved == null) return null;
+  return Math.max(0, faced - saved);
+}
+
+const COLUMNS: Array<{
+  key: string;
+  label: string;
+  title?: string;
+  group: string;
+  align?: 'left' | 'center';
+  sticky?: 'date' | 'opp';
+  emphasize?: boolean;
+  value: (game: Record<string, unknown>) => string;
+}> = [
+  {
+    key: 'date',
+    label: 'Date',
+    group: 'match',
+    align: 'left',
+    sticky: 'date',
+    value: (game) => formatDate(game.date ? String(game.date) : null, game.round ? String(game.round) : null),
+  },
+  {
+    key: 'opponent',
+    label: 'Opponent',
+    group: 'match',
+    align: 'left',
+    sticky: 'opp',
+    value: (game) => tennisLastName(String(game.opponent ?? '')) || '—',
+  },
+  { key: 'games', label: 'Games', group: 'games', value: (game) => formatStat(toNum(game.totalGames)) },
+  { key: 'gamesWon', label: 'Games Won', group: 'games', value: (game) => formatStat(toNum(game.gamesWon)) },
+  { key: 'gamesLost', label: 'Games Lost', group: 'games', value: (game) => formatStat(toNum(game.gamesLost)) },
+  {
+    key: 'fp',
+    label: 'FP',
+    title: 'First serve points won',
+    group: 'games',
+    value: (game) => formatStat(toNum(game.firstServesWon)),
+  },
+  { key: 'bpWon', label: 'BP Won', group: 'break', value: (game) => formatStat(toNum(game.breakPointsConverted)) },
+  {
+    key: 'bpRet',
+    label: 'BP Ret',
+    title: 'Break-point chances on return',
+    group: 'break',
+    value: (game) => formatStat(bpReturnChances(game)),
+  },
+  { key: 'bpWpct', label: 'BP W%', group: 'break', value: (game) => formatPct(toNum(game.breakPointsConvertedPct)) },
+  { key: 'aces', label: 'Aces', group: 'attack', value: (game) => formatStat(toNum(game.aces)) },
+  { key: 'df', label: 'DF', group: 'attack', value: (game) => formatStat(toNum(game.doubleFaults)) },
+  {
+    key: 'points',
+    label: 'POINTS',
+    group: 'attack',
+    emphasize: true,
+    value: (game) => formatStat(toNum(game.pointsWon)),
+  },
+  { key: 'dr', label: 'DR', group: 'attack', value: (game) => formatStat(toNum(game.dominanceRatio), 2) },
+  { key: 'setsWon', label: 'Sets Won', group: 'sets', value: (game) => formatStat(toNum(game.setsWon)) },
+  { key: 'setsLost', label: 'Sets Lost', group: 'sets', value: (game) => formatStat(toNum(game.setsLost)) },
+  { key: 'totalSets', label: 'Total Sets', group: 'sets', value: (game) => formatStat(toNum(game.totalSets)) },
+  { key: 'acesAllowed', label: 'Aces Allowed', group: 'defend', value: (game) => formatStat(toNum(game.opponentAces)) },
+  {
+    key: 'bpServed',
+    label: 'BP Served',
+    title: 'Break points faced on serve',
+    group: 'defend',
+    value: (game) => formatStat(toNum(game.breakPointsFaced)),
+  },
+  { key: 'bpSaved', label: 'BP Saved', group: 'defend', value: (game) => formatStat(toNum(game.breakPointsSaved)) },
+  { key: 'bpGivenUp', label: 'BP Given Up', group: 'defend', value: (game) => formatStat(bpGivenUp(game)) },
+  { key: 'firstPct', label: '1st Srv %', group: 'pct', value: (game) => formatPct(toNum(game.firstServePct)) },
+  { key: 'secondPct', label: '2nd Srv %', group: 'pct', value: (game) => formatPct(toNum(game.secondServeWonPct)) },
+  { key: 'retPts', label: 'Ret Pts Won', group: 'pct', value: (game) => formatStat(toNum(game.returnPointsWon)) },
+  { key: 'retPtsPct', label: 'Ret Pts W%', group: 'pct', value: (game) => formatPct(toNum(game.returnPointsWonPct)) },
+];
+
+const GROUPS: Array<{ id: string; label: string }> = [
+  { id: 'match', label: '' },
+  { id: 'games', label: 'Games' },
+  { id: 'break', label: 'Break points' },
+  { id: 'attack', label: 'Attack' },
+  { id: 'sets', label: 'Sets' },
+  { id: 'defend', label: 'On serve' },
+  { id: 'pct', label: 'Percentages' },
+];
+
+function stickyClass(sticky?: 'date' | 'opp'): string {
+  if (sticky === 'date') return 'sticky left-0 z-20 min-w-[4.5rem]';
+  if (sticky === 'opp') return 'sticky left-[4.5rem] z-20 min-w-[7.5rem]';
+  return '';
+}
+
+function groupStart(key: string): boolean {
+  const idx = COLUMNS.findIndex((col) => col.key === key);
+  if (idx <= 0) return false;
+  return COLUMNS[idx].group !== COLUMNS[idx - 1].group;
+}
+
 export const TennisBoxScore = memo(function TennisBoxScore({
   gameLogs,
   isDark,
@@ -85,77 +201,38 @@ export const TennisBoxScore = memo(function TennisBoxScore({
   const rangeStart = totalGames ? startIndex + 1 : 0;
   const rangeEnd = totalGames ? endIndex : 0;
 
-  const shellClass =
-    'bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-2 xl:p-3 pb-4 xl:pb-5 border border-gray-200 dark:border-gray-700';
+  const headBg = isDark ? 'bg-[#0a1929]' : 'bg-white';
+  const rowBg = (odd: boolean, win: boolean) => {
+    if (win && odd) return isDark ? 'bg-emerald-950/25' : 'bg-emerald-50/70';
+    if (win) return isDark ? 'bg-emerald-950/15' : 'bg-emerald-50/40';
+    if (odd) return isDark ? 'bg-[#0f1e2d]' : 'bg-slate-50';
+    return isDark ? 'bg-[#0a1929]' : 'bg-white';
+  };
+  const split = isDark ? 'border-l border-white/10' : 'border-l border-gray-200';
 
-  if (!selectedPlayer) {
-    return (
-      <div className={shellClass}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Game Log</h3>
-        <div className="flex items-center justify-center py-6">
-          <div className="text-center text-gray-500 dark:text-gray-400 text-sm">
-            Select a player to view their recent match logs
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className={shellClass}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Game Log</h3>
-        <div className="overflow-x-auto">
-          <div className="min-w-full animate-pulse">
-            <div className={`${isDark ? 'bg-[#0a1929]' : 'bg-slate-100'} h-10 mb-2 rounded`} />
-            {[...Array(5)].map((_, idx) => (
-              <div
-                key={idx}
-                className={`${isDark ? 'border-slate-700' : 'border-slate-200'} border-b h-12 mb-1`}
-              >
-                <div className="flex gap-2 h-full items-center px-2">
-                  <div className={`h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'} rounded flex-1`} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!displayGames.length) {
-    return (
-      <div className={shellClass}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Game Log</h3>
-        <div className="flex items-center justify-center py-6">
-          <div className="text-center text-gray-500 dark:text-gray-400 text-sm">
-            No match logs found for this player
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={shellClass}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Game Log</h3>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Matches {rangeStart}-{rangeEnd} of {totalGames}
+  const header = (
+    <div className="mb-2 flex items-center justify-between gap-3 px-0.5">
+      <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Game Log</h3>
+      {totalGames > 0 ? (
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] tabular-nums ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            {rangeStart}–{rangeEnd} of {totalGames}
           </span>
-          <div className="flex items-center gap-1">
+          <div className={`flex overflow-hidden rounded-md border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               type="button"
               onClick={() => setCurrentPage((p) => p - 1)}
               disabled={!canGoPrevious}
-              className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                !canGoPrevious ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              className={`px-1.5 py-1 transition-colors ${
+                !canGoPrevious
+                  ? 'cursor-not-allowed opacity-35'
+                  : isDark
+                    ? 'hover:bg-white/5'
+                    : 'hover:bg-gray-100'
               }`}
               aria-label="Previous page"
             >
-              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -163,96 +240,164 @@ export const TennisBoxScore = memo(function TennisBoxScore({
               type="button"
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={!canGoNext}
-              className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                !canGoNext ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              className={`border-l px-1.5 py-1 transition-colors ${
+                isDark ? 'border-gray-700' : 'border-gray-200'
+              } ${
+                !canGoNext
+                  ? 'cursor-not-allowed opacity-35'
+                  : isDark
+                    ? 'hover:bg-white/5'
+                    : 'hover:bg-gray-100'
               }`}
               aria-label="Next page"
             >
-              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
         </div>
-      </div>
+      ) : null}
+    </div>
+  );
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs">
-          <thead>
-            <tr className={isDark ? 'bg-[#0a1929]' : 'bg-slate-100'}>
-              {['DATE', 'TOUR', 'OPP', 'RES', 'SCORE', 'ACE', 'DF', 'GMS', 'PTS', 'RETURN', '1ST SV%', 'BP'].map(
-                (label) => (
+  if (!selectedPlayer) {
+    return (
+      <div>
+        {header}
+        <div className={`py-8 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          Select a player to view their recent match logs
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div>
+        {header}
+        <div className="animate-pulse space-y-1.5">
+          <div className={`h-8 rounded ${isDark ? 'bg-white/5' : 'bg-gray-100'}`} />
+          {[0, 1, 2, 3, 4].map((idx) => (
+            <div key={idx} className={`h-8 rounded ${isDark ? 'bg-white/[0.04]' : 'bg-gray-50'}`} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!displayGames.length) {
+    return (
+      <div>
+        {header}
+        <div className={`py-8 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          No match logs found for this player
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {header}
+      <div className={`relative overflow-hidden rounded-lg border ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="min-w-max w-full border-separate border-spacing-0 text-[11px]">
+            <thead>
+              <tr>
+                {GROUPS.map((group) => {
+                  const span = COLUMNS.filter((col) => col.group === group.id).length;
+                  const first = COLUMNS.find((col) => col.group === group.id);
+                  return (
+                    <th
+                      key={group.id}
+                      colSpan={span}
+                      className={`sticky top-0 z-30 px-2 py-1 text-left text-[9px] font-semibold uppercase tracking-[0.14em] ${
+                        isDark ? 'bg-[#10233a] text-gray-500' : 'bg-gray-50 text-gray-400'
+                      } ${first && groupStart(first.key) ? split : ''}`}
+                    >
+                      {group.label || '\u00a0'}
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr className={headBg}>
+                {COLUMNS.map((col) => (
                   <th
-                    key={label}
-                    className={`py-2 px-2 font-semibold text-gray-700 dark:text-gray-300 ${
-                      label === 'DATE' || label === 'TOUR' || label === 'OPP' || label === 'SCORE'
-                        ? 'text-left'
-                        : 'text-center'
-                    }`}
+                    key={col.key}
+                    title={col.title}
+                    className={`whitespace-nowrap px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    } ${col.align === 'left' ? 'text-left' : 'text-center'} ${stickyClass(col.sticky)} ${
+                      col.sticky ? `shadow-[1px_0_3px_-2px_rgba(0,0,0,0.28)] ${headBg}` : ''
+                    } ${groupStart(col.key) ? split : ''}`}
                   >
-                    {label}
+                    {col.label}
                   </th>
-                )
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {currentGames.map((game, index) => {
-              const result = String(game.result ?? '');
-              const win = result.toUpperCase().startsWith('W');
-              return (
-                <tr
-                  key={`${String(game.matchId ?? '')}-${String(game.date ?? index)}`}
-                  className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}
-                >
-                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                    {formatDate(game.date ? String(game.date) : null, game.round ? String(game.round) : null)}
-                  </td>
-                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                    {tennisTourLabel({
-                      tour: game.tour ? String(game.tour) : null,
-                      isGrandSlam: Boolean(game.isGrandSlam),
-                    })}
-                  </td>
-                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                    {tennisLastName(String(game.opponent ?? ''))}
-                  </td>
-                  <td
-                    className={`py-2 px-2 text-center font-semibold ${
-                      win ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                    }`}
-                  >
-                    {result || '—'}
-                  </td>
-                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                    {String(game.score ?? '—')}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatStat(toNum(game.aces))}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatStat(toNum(game.doubleFaults))}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatStat(toNum(game.gamesWon))}
-                  </td>
-                  <td className="py-2 px-2 text-center font-semibold text-gray-900 dark:text-white">
-                    {formatStat(toNum(game.pointsWon))}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatStat(toNum(game.returnPointsWon))}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatPct(toNum(game.firstServePct))}
-                  </td>
-                  <td className="py-2 px-2 text-center text-gray-900 dark:text-gray-100">
-                    {formatStat(toNum(game.breakPointsConverted))}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {currentGames.map((game, index) => {
+                const win = String(game.result ?? '').toUpperCase().startsWith('W');
+                const bg = rowBg(index % 2 === 1, win);
+                const flag = tennisFlagUrl(typeof game.opponentIoc === 'string' ? game.opponentIoc : null);
+                return (
+                  <tr key={`${String(game.matchId ?? '')}-${String(game.date ?? index)}`}>
+                    {COLUMNS.map((col) => (
+                      <td
+                        key={col.key}
+                        className={`whitespace-nowrap px-2 py-1.5 ${
+                          col.align === 'left' ? 'text-left' : 'text-center tabular-nums'
+                        } ${
+                          col.emphasize
+                            ? isDark
+                              ? 'font-semibold text-white'
+                              : 'font-semibold text-gray-900'
+                            : isDark
+                              ? 'text-gray-200'
+                              : 'text-gray-800'
+                        } ${stickyClass(col.sticky)} ${
+                          col.sticky ? `shadow-[1px_0_3px_-2px_rgba(0,0,0,0.28)] ${bg}` : bg
+                        } ${groupStart(col.key) ? split : ''}`}
+                      >
+                        {col.key === 'opponent' ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex h-4 min-w-[1.1rem] items-center justify-center rounded px-1 text-[9px] font-bold ${
+                                win
+                                  ? 'bg-emerald-500/15 text-emerald-500'
+                                  : 'bg-rose-500/15 text-rose-500'
+                              }`}
+                            >
+                              {win ? 'W' : 'L'}
+                            </span>
+                            {flag ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={flag}
+                                alt=""
+                                className="h-3 w-[16px] rounded-[2px] object-cover ring-1 ring-black/15"
+                              />
+                            ) : null}
+                            <span className="font-medium">{col.value(game)}</span>
+                          </span>
+                        ) : (
+                          col.value(game)
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div
+          className={`pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l ${
+            isDark ? 'from-[#0a1929]' : 'from-white'
+          }`}
+        />
       </div>
     </div>
   );

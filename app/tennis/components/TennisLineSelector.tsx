@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { americanToDecimal } from '@/lib/currencyUtils';
+import BookmakerLogo from '@/app/components/BookmakerLogo';
 import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/lib/bookmakers';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import {
@@ -173,24 +174,11 @@ export function TennisLineSelector({
             <div className={`h-4 w-16 rounded animate-pulse flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
           ) : bookmakerInfo && selectedBook ? (
             <>
-              {bookmakerInfo.logoUrl ? (
-                <img
-                  src={bookmakerInfo.logoUrl}
-                  alt={bookmakerInfo.name}
-                  className="w-6 h-6 sm:w-7 sm:h-7 rounded object-contain flex-shrink-0"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <span
-                className={`text-xs font-semibold text-white px-1.5 py-0.5 rounded flex-shrink-0 items-center justify-center min-w-[1.25rem] h-5 ${!bookmakerInfo.logoUrl ? 'flex' : 'hidden'}`}
-                style={{ backgroundColor: bookmakerInfo.color }}
-              >
-                {bookmakerInfo.logo}
-              </span>
+              <BookmakerLogo
+                bookKey={selectedBook.name}
+                alt={bookmakerInfo.name}
+                className="w-6 h-6 sm:w-7 sm:h-7 rounded object-contain flex-shrink-0"
+              />
               <div className="flex flex-col items-start gap-0.5 min-w-0">
                 {isMoneyline ? (
                   <>
@@ -257,7 +245,6 @@ export function TennisLineSelector({
                       const isSelected =
                         item.bookIndex === selectedBookIndex &&
                         tennisLineMatches(d.line, currentLineValue ?? tennisParseLineNumber(displayOu?.line));
-                      const info = getBookmakerInfo(book.name);
                       return (
                         <button
                           key={`${book.name}-${item.bookIndex}-${d.line}`}
@@ -275,33 +262,7 @@ export function TennisLineSelector({
                           }`}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {info.logoUrl ? (
-                              <>
-                                <img
-                                  src={info.logoUrl}
-                                  alt=""
-                                  className="w-5 h-5 rounded object-contain flex-shrink-0"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }}
-                                />
-                                <span
-                                  className="w-5 h-5 rounded flex-shrink-0 hidden items-center justify-center text-[10px] font-semibold text-white"
-                                  style={{ backgroundColor: info.color }}
-                                >
-                                  {info.logo}
-                                </span>
-                              </>
-                            ) : (
-                              <span
-                                className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-semibold text-white"
-                                style={{ backgroundColor: info.color }}
-                              >
-                                {info.logo}
-                              </span>
-                            )}
+                            <BookmakerLogo bookKey={book.name} className="w-5 h-5 rounded object-contain flex-shrink-0" />
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="font-semibold text-sm text-gray-900 dark:text-white">{d.line}</span>
                               <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{book.name}</span>
@@ -331,7 +292,6 @@ export function TennisLineSelector({
                     {group.items.map(({ book, bookIndex }) => {
                       const d = book.H2H;
                       const isSelected = bookIndex === selectedBookIndex;
-                      const info = getBookmakerInfo(book.name);
                       return (
                         <button
                           key={`${book.name}-${bookIndex}`}
@@ -347,33 +307,7 @@ export function TennisLineSelector({
                           }`}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {info.logoUrl ? (
-                              <>
-                                <img
-                                  src={info.logoUrl}
-                                  alt=""
-                                  className="w-5 h-5 rounded object-contain flex-shrink-0"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                                    if (fallback) fallback.style.display = 'flex';
-                                  }}
-                                />
-                                <span
-                                  className="w-5 h-5 rounded flex-shrink-0 hidden items-center justify-center text-[10px] font-semibold text-white"
-                                  style={{ backgroundColor: info.color }}
-                                >
-                                  {info.logo}
-                                </span>
-                              </>
-                            ) : (
-                              <span
-                                className="w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-semibold text-white"
-                                style={{ backgroundColor: info.color }}
-                              >
-                                {info.logo}
-                              </span>
-                            )}
+                            <BookmakerLogo bookKey={book.name} className="w-5 h-5 rounded object-contain flex-shrink-0" />
                             <div className="flex flex-col items-start gap-0.5 min-w-0">
                               <span className="font-semibold text-sm text-gray-900 dark:text-white">ML</span>
                               <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{book.name}</span>

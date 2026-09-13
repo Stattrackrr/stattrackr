@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { answerTennisAsk, tennisAskConfigured, type TennisAskMessage } from '@/lib/tennis/askAnswer';
+import { buildTennisAskBrief, buildTennisAskSuggestions } from '@/lib/tennis/askBrief';
+import { inferBestOfFromOdds, summarizeTennisAskOdds } from '@/lib/tennis/askOdds';
+import { tennisBestOf } from '@/lib/tennis/apiTennis';
 import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
+import { getTennisMatchOddsForPlayer } from '@/lib/tennis/odds';
 import type { TennisTour } from '@/lib/tennis/types';
 
 function parseTour(value: unknown): TennisTour | null {
@@ -39,8 +43,33 @@ function analysisResponse(
   });
 }
 
-export async function GET() {
-  return NextResponse.json({ success: true, configured: tennisAskConfigured() });
+export async function GET(request: NextRequest) {
+  const player = String(request.nextUrl.searchParams.get('player') || '').trim();
+  const opponent = String(request.nextUrl.searchParams.get('opponent') || '').trim();
+  if (!player || !opponent) {
+    return NextResponse.json({ success: true, configured: tennisAskConfigured(), suggestions: [] });
+  }
+  await hydrateTennisMatchOverlay();
+  const tour = parseTour(request.nextUrl.searchParams.get('tour'));
+  const isGrandSlam = request.nextUrl.searchParams.get('isGrandSlam') === '1';
+  const declared = tennisBestOf(tour, isGrandSlam);
+  const odds = await getTennisMatchOddsForPlayer({ playerName: player });
+  const bestOf = inferBestOfFromOdds(declared, odds);
+  const market = summarizeTennisAskOdds(odds, bestOf);
+  const brief = buildTennisAskBrief({
+    playerName: player,
+    opponentName: opponent,
+    tour,
+    isGrandSlam: isGrandSlam || bestOf === 5,
+  });
+  return NextResponse.json({
+    success: true,
+    configured: tennisAskConfigured(),
+    suggestions: buildTennisAskSuggestions(brief, {
+      isGrandSlam: isGrandSlam || bestOf === 5,
+      listedTotalLine: market.listedTotalLine,
+    }),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -65,11 +94,19 @@ export async function POST(request: NextRequest) {
   if (question.length > 500) {
     return NextResponse.json({ success: false, error: 'Ask a short tennis question.' }, { status: 400 });
   }
+  const tour = parseTour(body?.tour);
+  const isGrandSlam = body?.isGrandSlam === true;
+  const declared = tennisBestOf(tour, isGrandSlam);
+  const odds = await getTennisMatchOddsForPlayer({ playerName: player });
+  const bestOf = inferBestOfFromOdds(declared, odds);
+  const market = summarizeTennisAskOdds(odds, bestOf);
   const analysis = buildTennisMatchAnalysis({
     playerName: player,
     opponentName: opponent,
-    tour: parseTour(body?.tour),
-    isGrandSlam: body?.isGrandSlam === true,
+    tour,
+    isGrandSlam: isGrandSlam || bestOf === 5,
+    listedTotalLine: market.listedTotalLine,
+    marketOdds: market,
   });
   if (!analysis) {
     return NextResponse.json({ success: false, error: 'Not enough match logs for this matchup.' }, { status: 404 });

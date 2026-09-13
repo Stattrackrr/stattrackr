@@ -61,6 +61,36 @@ function lineIsHalfPoint(line: string | null | undefined): boolean {
   return Math.abs(Math.abs(n) % 1 - 0.5) < 0.01;
 }
 
+/** Drop set totals (1.5) and point totals (210.5) from the wrong tennis market. */
+export function tennisOuLinePlausible(stat: string, line: string | number | null | undefined): boolean {
+  const n = parseFloat(String(line ?? '').replace(/[^0-9.+-]/g, ''));
+  if (!Number.isFinite(n)) return false;
+  if (stat === 'totalGames') return n >= 14.5 && n <= 79.5;
+  if (stat === 'gamesWon' || stat === 'gamesLost') return n >= 5.5 && n <= 45.5;
+  if (stat === 'totalSets') return n >= 1.5 && n <= 4.5;
+  if (stat === 'spread') return Math.abs(n) >= 0.5 && Math.abs(n) <= 20;
+  return true;
+}
+
+export function filterTennisOuLines(stat: string, lines: TennisOuLine[]): TennisOuLine[] {
+  const byLine = new Map<number, TennisOuLine>();
+  for (const row of lines) {
+    if (!tennisOuLinePlausible(stat, row.line)) continue;
+    const n = parseFloat(String(row.line).replace(/[^0-9.+-]/g, ''));
+    const prev = byLine.get(n);
+    if (!prev) {
+      byLine.set(n, { line: String(n), over: row.over, under: row.under });
+      continue;
+    }
+    byLine.set(n, {
+      line: String(n),
+      over: prev.over !== 'N/A' ? prev.over : row.over,
+      under: prev.under !== 'N/A' ? prev.under : row.under,
+    });
+  }
+  return [...byLine.values()].sort((a, b) => Number.parseFloat(a.line) - Number.parseFloat(b.line));
+}
+
 /** Keep a .5 line only when every posted over/under price is in 1.65–2.50 decimal. */
 export function tennisOuLineInSelectorBand(line: TennisOuLine | undefined): boolean {
   if (!line || !lineIsHalfPoint(line.line)) return false;
@@ -83,7 +113,7 @@ function rawLinesForStat(book: TennisBookRow, stat: string): TennisOuLine[] {
 
 export function tennisOuLinesForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
   if (!book) return [];
-  return rawLinesForStat(book, stat).filter(tennisOuLineInSelectorBand);
+  return filterTennisOuLines(stat, rawLinesForStat(book, stat)).filter(tennisOuLineInSelectorBand);
 }
 
 /** Smaller is closer to a true two-way main. One-sided prices rank after any two-way. */

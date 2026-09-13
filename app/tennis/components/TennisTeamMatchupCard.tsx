@@ -15,7 +15,7 @@ const WINDOWS = [
   { id: 10, label: 'L10' },
   { id: SEASON_WINDOW, label: String(TENNIS_CURRENT_YEAR) },
 ] as const;
-const BEST_OF: Array<{ id: TennisMatchupBestOf; label: string }> = [
+const BEST_OF: Array<{ id: 3 | 5; label: string }> = [
   { id: 3, label: 'BO3' },
   { id: 5, label: 'BO5' },
 ];
@@ -33,7 +33,7 @@ export default function TennisTeamMatchupCard({
   tour?: 'ATP' | 'WTA' | null;
 }) {
   const [windowN, setWindowN] = useState<number>(SEASON_WINDOW);
-  const [bestOf, setBestOf] = useState<TennisMatchupBestOf>(3);
+  const [bestOf, setBestOf] = useState<TennisMatchupBestOf>('all');
   const [payload, setPayload] = useState<TennisPlayerMatchupPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export default function TennisTeamMatchupCard({
   const opponent = String(opponentName || '').trim();
   const tourKey = tour === 'WTA' ? 'WTA' : 'ATP';
   const wtaTour = tourKey === 'WTA';
-  const matchupBestOf: TennisMatchupBestOf = wtaTour ? 3 : bestOf;
+  const matchupBestOf: TennisMatchupBestOf = wtaTour ? 'all' : bestOf;
 
   useEffect(() => {
     if (!player || !opponent) {
@@ -233,7 +233,7 @@ export default function TennisTeamMatchupCard({
                     ) : null}
                     <button
                       type="button"
-                      onClick={() => setBestOf(option.id)}
+                      onClick={() => setBestOf((prev) => (prev === option.id ? 'all' : option.id))}
                       className={`px-0.5 text-[10px] font-medium tracking-wide transition-colors ${
                         active
                           ? isDark
@@ -371,7 +371,9 @@ export default function TennisTeamMatchupCard({
           </div>
         ) : noData ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            {wtaTour ? 'No matches available yet.' : `No best-of-${matchupBestOf} matches available yet.`}
+            {wtaTour || matchupBestOf === 'all'
+              ? 'No matches available yet.'
+              : `No best-of-${matchupBestOf} matches available yet.`}
           </div>
         ) : (
           <div className="space-y-2">

@@ -29,11 +29,6 @@ export const TENNIS_PLAYER_STAT_PRIORITY = [
   'breakPointsSaved',
   'breakPointsSavedPct',
   'firstServesWon',
-  'winners',
-  'unforcedErrors',
-  'netPointsWon',
-  'firstServeSpeed',
-  'secondServeSpeed',
 ] as const;
 
 const CHART_KEYS = new Set<string>(TENNIS_CHART_STAT_OPTIONS.map((s) => s.key));
@@ -242,6 +237,39 @@ export function tennisTourLabel(opts: {
   if (tour === 'WTA') return 'WTA';
   if (tour === 'ATP') return 'ATP';
   return tour || 'Tennis';
+}
+
+export function tennisEventPlaceLabel(name: string | null | undefined): string {
+  let value = String(name || '').replace(/\s+/g, ' ').trim();
+  if (!value) return '';
+  value = value.replace(/^(ATP|WTA)\s+/i, '');
+  value = value.replace(/\s+(Men|Women|Gentlemen|Ladies)(?:'s)?(?:\s+Singles)?$/i, '');
+  value = value.replace(/\s+Singles$/i, '');
+  value = value.replace(/\s+\d{4}$/, '');
+  value = value.replace(/\bU\.S\.\s*Open\b/i, 'US Open');
+  return value.trim();
+}
+
+export function tennisRoundLabel(round: string | null | undefined): string {
+  const raw = String(round || '').trim();
+  if (!raw) return '';
+  const key = raw.toUpperCase();
+  const named: Record<string, string> = {
+    F: 'Final',
+    SF: 'Semifinal',
+    QF: 'Quarterfinal',
+    R16: 'R16',
+    R32: 'R32',
+    R64: 'R64',
+    R128: 'R128',
+    RR: 'Round Robin',
+    BR: 'Bronze',
+  };
+  if (named[key]) return named[key];
+  if (/\bfinal\b/i.test(raw) && !/semi|quarter/i.test(raw)) return 'Final';
+  if (/semi/i.test(raw)) return 'Semifinal';
+  if (/quarter/i.test(raw)) return 'Quarterfinal';
+  return raw;
 }
 
 /** Return points won % / serve points lost %. Both inputs are 0–100. */

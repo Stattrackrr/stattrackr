@@ -9,6 +9,7 @@ import {
   type TennisMatchRow,
   type TennisTour,
 } from '@/lib/tennis/data';
+import { buildTennisAskEdge, defaultTennisTotalsLine } from '@/lib/tennis/askOdds';
 import type {
   TennisAnalystDriver,
   TennisAnalystEdge,
@@ -274,6 +275,21 @@ function bo3Games(rows: TennisMatchRow[]): number {
   return mean(values) ?? 22;
 }
 
+function formatGames(rows: TennisMatchRow[], bestOf: 3 | 5): number {
+  if (bestOf !== 5) return bo3Games(rows);
+  const slam = rows.filter((row) => Number(row.bestOf) >= 5).slice(-15);
+  const values = slam.map((row) => num(row.totalGames)).filter((v): v is number => v != null);
+  if (values.length >= 4) return mean(values) ?? 38;
+  return Math.max(36, bo3Games(rows) * 1.75);
+}
+
+function h2hAvg(rows: TennisMatchRow[], test: (row: TennisMatchRow) => boolean): number | null {
+  return roundMaybe(
+    mean(rows.filter(test).map((row) => num(row.totalGames)).filter((v): v is number => v != null)),
+    1
+  );
+}
+
 function pickStats(player: TennisAnalystPlayer): TennisAnalystStats {
   return player.surface?.stats.matches && player.surface.stats.matches >= 6 ? player.surface.stats : player.l15;
 }
@@ -349,6 +365,8 @@ export function buildTennisMatchAnalysis(opts: {
   opponentName: string;
   tour?: TennisTour | null;
   isGrandSlam?: boolean;
+  listedTotalLine?: number | null;
+  marketOdds?: TennisMatchAnalysis['marketOdds'];
 }): TennisMatchAnalysis | null {
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
@@ -439,9 +457,9 @@ export function buildTennisMatchAnalysis(opts: {
 
   const drivers = buildDrivers(player, opponent, a, b, winner);
 
-  let expectedTotal = 0.5 * (bo3Games(playerRows) + bo3Games(oppRows));
-  if ((a.holdPct ?? 80) >= 84 && (b.holdPct ?? 80) >= 84) expectedTotal += 0.8;
-  if ((a.holdPct ?? 80) <= 74 && (b.holdPct ?? 80) <= 74) expectedTotal -= 0.8;
+  let expectedTotal = 0.5 * (formatGames(playerRows, bestOf) + formatGames(oppRows, bestOf));
+  if ((a.holdPct ?? 80) >= 84 && (b.holdPct ?? 80) >= 84) expectedTotal += bestOf === 5 ? 2.4 : 0.8;
+  if ((a.holdPct ?? 80) <= 74 && (b.holdPct ?? 80) <= 74) expectedTotal -= bestOf === 5 ? 2 : 0.8;
 
   const matchMargin = (2 * playerWin - 1) * (bestOf === 5 ? 6 : 4.2);
   const statMargin = (((a.gameWinPct ?? 50) - (b.gameWinPct ?? 50)) / 100) * expectedTotal;
@@ -465,8 +483,12 @@ export function buildTennisMatchAnalysis(opts: {
   const opponentCover55Pct = round(pOppMinus55 * 100, 1);
   const expectedWinnerMargin = round(winnerSide === 'player' ? margin : -margin, 1);
 
-  const totalsLine = tour === 'WTA' ? 21.5 : 22.5;
-  const pOver = 1 - ncdf((totalsLine - expectedTotal) / 6.4);
+  const totalsLine =
+    opts.listedTotalLine != null && Number.isFinite(opts.listedTotalLine)
+      ? Number(opts.listedTotalLine)
+      : defaultTennisTotalsLine(tour, bestOf);
+  const totalsSd = bestOf === 5 ? 9.2 : 6.4;
+  const pOver = 1 - ncdf((totalsLine - expectedTotal) / totalsSd);
 
   const acesA = 0.58 * (a.aces ?? 5) + 0.42 * (b.acesAllowed ?? 5);
   const acesB = 0.58 * (b.aces ?? 5) + 0.42 * (a.acesAllowed ?? 5);
@@ -520,7 +542,7 @@ export function buildTennisMatchAnalysis(opts: {
     totalsLeanOver ? pOver : 1 - pOver,
     String(totalsLine),
     0.5,
-    `Projected ${round(expectedTotal, 1)} BO3 games. ${player.last} L15 ${fmtNum(player.l15.totalGames)}, ${opponent.last} ${fmtNum(
+    `Projected ${round(expectedTotal, 1)} best-of-${bestOf} games vs listed ${totalsLine}. ${player.last} L15 ${fmtNum(player.l15.totalGames)}, ${opponent.last} ${fmtNum(
       opponent.l15.totalGames
     )}.`
   );
@@ -563,6 +585,8 @@ export function buildTennisMatchAnalysis(opts: {
         mean(h2hRows.map((row) => num(row.totalGames)).filter((v): v is number => v != null)),
         1
       ),
+      avgGamesBo3: h2hAvg(h2hRows, (row) => Number(row.bestOf) < 5),
+      avgGamesBo5: h2hAvg(h2hRows, (row) => Number(row.bestOf) >= 5),
       recent: h2hRows
         .slice(-5)
         .reverse()
@@ -592,10 +616,13 @@ export function buildTennisMatchAnalysis(opts: {
       opponentCover55Pct,
       winnerCover15Pct: winnerSide === 'player' ? playerCover15Pct : opponentCover15Pct,
       winnerCover25Pct: winnerSide === 'player' ? playerCover25Pct : opponentCover25Pct,
+      expectedTotalGames: round(expectedTotal, 1),
+      totalsLine,
+      totalsOverPct: round(pOver * 100, 1),
     },
     edges: ranked,
     bestEdge: ranked[0] || ml,
-    marketOdds: null,
+    marketOdds: opts.marketOdds ?? null,
   };
 }
 
@@ -622,6 +649,7 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       breakPct: side.l15.breakPct,
       aces: side.l15.aces,
       acesAllowed: side.l15.acesAllowed,
+      df: side.l15.df,
       spw: side.l15.spw,
       rpw: side.l15.rpw,
       bpConv: side.l15.bpConv,
@@ -631,6 +659,9 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       secondServeWonPct: side.l15.secondServeWonPct,
       totalGames: side.l15.totalGames,
       gamesWon: side.l15.gamesWon,
+      gamesLost: side.l15.gamesLost,
+      over215: side.l15.over215,
+      over225: side.l15.over225,
     },
     surface: side.surface
       ? {
@@ -643,23 +674,43 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       : null,
   });
   const totalsEdge = analysis.edges.find((row) => row.id === 'totals');
-  const acesEdge = analysis.edges.find((row) => row.id === 'aces');
+  const projPlayerAces =
+    0.58 * (analysis.player.l15.aces ?? 5) + 0.42 * (analysis.opponent.l15.acesAllowed ?? 5);
+  const projOppAces =
+    0.58 * (analysis.opponent.l15.aces ?? 5) + 0.42 * (analysis.player.l15.acesAllowed ?? 5);
   return {
     match: `${analysis.player.name} versus ${analysis.opponent.name}`,
     tour: analysis.tour,
     surface: analysis.surface,
+    format: {
+      bestOf: analysis.bestOf,
+      label: analysis.bestOf === 5 ? 'Best of 5 Grand Slam' : 'Best of 3',
+      note:
+        analysis.bestOf === 5
+          ? 'ATP slam. Do not use 21.5 or 22.5 — those are BO3 lines.'
+          : 'Best of 3. 21.5 / 22.5 is the usual totals range.',
+    },
     player: slim(analysis.player),
     opponent: slim(analysis.opponent),
     h2h: {
       matches: analysis.h2h.matches,
       record: winLossWords(analysis.h2h.record),
       avgGames: analysis.h2h.avgGames,
+      avgGamesBo3: analysis.h2h.avgGamesBo3,
+      avgGamesBo5: analysis.h2h.avgGamesBo5,
+      note:
+        analysis.bestOf === 5
+          ? 'H2H game averages are often from BO3 meetings. Do not compare them to tonight’s BO5 total.'
+          : null,
     },
     model: {
       winner: analysis.model.winner,
       playerWinPct: analysis.model.playerWinPct,
       opponentWinPct: analysis.model.opponentWinPct,
       expectedWinnerMargin: analysis.model.expectedWinnerMargin,
+      expectedTotalGames: analysis.model.expectedTotalGames,
+      totalsLine: analysis.model.totalsLine,
+      totalsOverPct: analysis.model.totalsOverPct,
       playerCover15Pct: analysis.model.playerCover15Pct,
       playerCover25Pct: analysis.model.playerCover25Pct,
       playerCover35Pct: analysis.model.playerCover35Pct,
@@ -671,13 +722,41 @@ export function compactTennisAnalysis(analysis: TennisMatchAnalysis) {
       winnerCover15Pct: analysis.model.winnerCover15Pct,
       winnerCover25Pct: analysis.model.winnerCover25Pct,
     },
-    totals: totalsEdge
-      ? { selection: totalsEdge.selection, probability: totalsEdge.probability, line: totalsEdge.line }
-      : null,
-    aces: acesEdge
-      ? { selection: acesEdge.selection, probability: acesEdge.probability, line: acesEdge.line }
-      : null,
-    marketOdds: null,
+    totals: {
+      listedBookLine: analysis.marketOdds?.listedTotalLine ?? analysis.model.totalsLine,
+      pickemLine: analysis.marketOdds?.pickemTotalLine ?? null,
+      modelProjection: analysis.model.expectedTotalGames,
+      modelOverPct: analysis.model.totalsOverPct,
+      selection: totalsEdge?.selection ?? null,
+      books: analysis.marketOdds?.totals ?? [],
+      note:
+        analysis.bestOf === 5
+          ? 'Use listedBookLine for this match. Never quote 22.5 in a best of 5.'
+          : 'Use listedBookLine if present, otherwise the model BO3 line.',
+    },
+    aces: {
+      listedPlayerAceLine: null,
+      listedMatchAceLine: null,
+      modelDefaultMatchTotal: analysis.tour === 'WTA' ? 5.5 : 11.5,
+      note:
+        'modelDefaultMatchTotal is BOTH players added together. It is not a book line and not this player ace line. The tennis chart has no ace market.',
+      projectedPlayerAces: Math.round(projPlayerAces * 10) / 10,
+      projectedOpponentAces: Math.round(projOppAces * 10) / 10,
+      projectedMatchAces: Math.round((projPlayerAces + projOppAces) * 10) / 10,
+      playerL15Aces: analysis.player.l15.aces,
+      opponentAcesAllowedL15: analysis.opponent.l15.acesAllowed,
+    },
+    marketOdds: {
+      moneyline: analysis.marketOdds?.moneyline ?? [],
+      totals: analysis.marketOdds?.totals ?? [],
+      totalsAtListed: analysis.marketOdds?.totalsAtListed ?? [],
+    },
+    value: buildTennisAskEdge(analysis.marketOdds, {
+      playerWinPct: analysis.model.playerWinPct,
+      opponentWinPct: analysis.model.opponentWinPct,
+      totalsOverPct: analysis.model.totalsOverPct,
+      totalsLine: analysis.model.totalsLine,
+    }),
   };
 }
 

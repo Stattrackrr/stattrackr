@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Send } from 'lucide-react';
 import { StatTrackrLogo } from '@/components/StatTrackrLogo';
 import { tennisLastName } from '@/lib/tennis/chartStats';
@@ -69,6 +69,7 @@ export function TennisAskPanel({
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const player = String(playerName || '').trim();
   const opponent = String(opponentName || '').trim();
@@ -82,21 +83,38 @@ export function TennisAskPanel({
     ? 'border-white/10 bg-white/[0.03] text-gray-200 hover:border-purple-500/70 hover:bg-purple-500/10'
     : 'border-gray-200 bg-white text-gray-800 hover:border-purple-400 hover:bg-purple-50';
 
-  const suggestions = useMemo(() => {
-    if (!player || !opponent) return [];
-    const fiveSet = tourKey === 'ATP' && isGrandSlam;
-    return [
-      `Should I back ${playerLast} on the moneyline?`,
-      `Will ${playerLast} win in straight sets?`,
-      `Will ${playerLast} win by ${fiveSet ? '5.5' : '1.5'} games?`,
-    ];
-  }, [player, opponent, playerLast, tourKey, isGrandSlam]);
-
   useEffect(() => {
     setMessages([]);
     setError(null);
     setQuestion('');
+    setSuggestions([]);
   }, [player, opponent]);
+
+  useEffect(() => {
+    if (!player || !opponent) return;
+    let cancelled = false;
+    const params = new URLSearchParams({
+      player,
+      opponent,
+      tour: tourKey,
+      isGrandSlam: isGrandSlam ? '1' : '0',
+    });
+    fetch(`/api/tennis/ask?${params.toString()}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        const next = Array.isArray(json?.suggestions)
+          ? json.suggestions.map((row: unknown) => String(row || '').trim()).filter(Boolean)
+          : [];
+        setSuggestions(next.slice(0, 3));
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [player, opponent, tourKey, isGrandSlam]);
 
   useEffect(() => {
     if (idle) return;
@@ -205,7 +223,7 @@ export function TennisAskPanel({
             {loading ? (
               <div className={`inline-flex items-center gap-2 text-xs ${muted}`}>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Reading the match model
+                Digging through the match stats
               </div>
             ) : null}
             {error ? <div className="text-xs text-red-500">{error}</div> : null}
@@ -227,7 +245,11 @@ export function TennisAskPanel({
           disabled={!player || !opponent || loading}
           maxLength={500}
           placeholder={
-            opponent ? 'Ask a match question' : player ? 'No upcoming match' : 'Select a player first'
+            opponent
+              ? 'Ask about aces, the game total, or the moneyline'
+              : player
+                ? 'No upcoming match'
+                : 'Select a player first'
           }
           className={`min-w-0 flex-1 rounded-full border px-4 py-2.5 text-sm ${
             isDark

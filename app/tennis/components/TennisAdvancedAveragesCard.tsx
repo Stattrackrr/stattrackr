@@ -17,8 +17,7 @@ import {
 } from '@/lib/tennis/advancedAveragesShared';
 
 function handLabel(hand: 'R' | 'L' | null | undefined): string {
-  if (hand === 'R') return 'Righty';
-  if (hand === 'L') return 'Lefty';
+  if (hand === 'R' || hand === 'L') return hand;
   return '';
 }
 
@@ -140,6 +139,7 @@ export default function TennisAdvancedAveragesCard({
 
   const playerTab = payload?.player.name || player || 'Player';
   const opponentTab = payload?.opponent?.name || opponent;
+  const playerHand = handLabel(payload?.player.hand ?? null);
   const opponentHand = handLabel(payload?.opponent?.hand ?? null);
 
   return (
@@ -175,6 +175,7 @@ export default function TennisAdvancedAveragesCard({
             }`}
           >
             {playerTab}
+            {playerHand ? ` (${playerHand})` : ''}
           </button>
           {opponentTab ? (
             <button
@@ -217,7 +218,13 @@ export default function TennisAdvancedAveragesCard({
           <table className="w-full min-w-[760px] border-separate border-spacing-0 text-[11px]">
             <thead>
               <tr className={isDark ? 'text-gray-500' : 'text-gray-400'}>
-                <th className="sticky left-0 z-10 bg-inherit px-2 py-1.5 text-left font-medium">Totals</th>
+                <th
+                  className={`sticky left-0 z-20 min-w-[88px] px-2 py-1.5 text-left font-medium whitespace-nowrap shadow-[1px_0_3px_-2px_rgba(0,0,0,0.28)] ${
+                    isDark ? 'bg-[#0a1929]' : 'bg-white'
+                  }`}
+                >
+                  Totals
+                </th>
                 {ADV_AVG_COLUMNS.map((col) => (
                   <th key={col.key} className="px-2 py-1.5 text-right font-medium whitespace-nowrap">
                     {col.label}
@@ -226,23 +233,32 @@ export default function TennisAdvancedAveragesCard({
               </tr>
             </thead>
             <tbody>
-              {(active?.rows || []).map((row) => (
-                <tr
-                  key={row.key}
-                  className={
-                    row.highlight
-                      ? isDark
-                        ? 'bg-rose-950/35'
-                        : 'bg-rose-50'
-                      : isDark
-                        ? 'odd:bg-white/[0.02]'
-                        : 'odd:bg-gray-50/80'
-                  }
-                >
+              {(active?.rows || []).map((row, idx) => {
+                const striped = !row.highlight && idx % 2 === 1;
+                const rowBg = row.highlight
+                  ? isDark
+                    ? 'bg-rose-950/35'
+                    : 'bg-rose-50'
+                  : striped
+                    ? isDark
+                      ? 'bg-white/[0.02]'
+                      : 'bg-gray-50/80'
+                    : '';
+                const stickyBg = row.highlight
+                  ? isDark
+                    ? 'bg-[#1c1218] text-gray-200'
+                    : 'bg-rose-50 text-gray-800'
+                  : striped
+                    ? isDark
+                      ? 'bg-[#0f1e2d] text-gray-200'
+                      : 'bg-gray-50 text-gray-800'
+                    : isDark
+                      ? 'bg-[#0a1929] text-gray-200'
+                      : 'bg-white text-gray-800';
+                return (
+                <tr key={row.key} className={rowBg}>
                   <td
-                    className={`sticky left-0 z-10 px-2 py-1.5 font-medium ${
-                      isDark ? 'bg-[#0a1929] text-gray-200' : 'bg-white text-gray-800'
-                    }`}
+                    className={`sticky left-0 z-10 min-w-[88px] px-2 py-1.5 font-medium whitespace-nowrap shadow-[1px_0_3px_-2px_rgba(0,0,0,0.28)] ${stickyBg}`}
                   >
                     {row.label}
                   </td>
@@ -258,7 +274,8 @@ export default function TennisAdvancedAveragesCard({
                     );
                   })}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/refresh-tennis-cache",
       "schedule": "0 */8 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-tennis-odds",
+      "schedule": "0 */2 * * *"
     }
   ],
   "functions": {
@@ -81,6 +85,9 @@
       "maxDuration": 300
     },
     "app/api/cron/refresh-tennis-cache/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/cron/refresh-tennis-odds/route.ts": {
       "maxDuration": 120
     },
     "app/api/soccer/player-stats-batch/route.ts": {

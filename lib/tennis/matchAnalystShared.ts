@@ -68,6 +68,8 @@ export type TennisMatchAnalysis = {
     record: string;
     surfaceRecord: string | null;
     avgGames: number | null;
+    avgGamesBo3: number | null;
+    avgGamesBo5: number | null;
     recent: Array<{ date: string | null; winner: string; score: string }>;
   };
   model: {
@@ -90,8 +92,19 @@ export type TennisMatchAnalysis = {
     opponentCover55Pct: number;
     winnerCover15Pct: number;
     winnerCover25Pct: number;
+    expectedTotalGames: number;
+    totalsLine: number;
+    totalsOverPct: number;
   };
   edges: TennisAnalystEdge[];
   bestEdge: TennisAnalystEdge;
-  marketOdds: null;
+  marketOdds: {
+    listedTotalLine: number | null;
+    pickemTotalLine: number | null;
+    formatMin: number;
+    formatMax: number;
+    totals: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
+    totalsAtListed: Array<{ book: string; line: number | null; over: number | null; under: number | null }>;
+    moneyline: Array<{ book: string; player: number | null; opponent: number | null }>;
+  } | null;
 };

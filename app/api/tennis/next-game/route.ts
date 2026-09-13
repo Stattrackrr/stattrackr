@@ -21,6 +21,7 @@ function nextGameJson(
     isGrandSlam: Boolean(next?.isGrandSlam),
     tour: next?.tour ?? tour,
     tournament: next?.tournamentName ?? null,
+    round: next?.round ?? null,
     status: next?.status ?? null,
   };
 }

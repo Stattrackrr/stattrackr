@@ -111,7 +111,7 @@ export type TennisMatchupRow = {
   opponentRank: number | null;
 };
 
-export type TennisMatchupBestOf = 3 | 5;
+export type TennisMatchupBestOf = 3 | 5 | 'all';
 
 export type TennisPlayerMatchupPayload = {
   tour: 'ATP' | 'WTA';
