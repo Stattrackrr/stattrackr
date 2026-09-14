@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T19:33:09Z",
-  "count": 96,
+  "generatedAt": "2026-09-14T16:48:49Z",
+  "count": 98,
   "records": [
     {
       "gameKey": "essendon|melbourne|2026-06-13",
@@ -4146,6 +4146,100 @@
           "recommendedSide": "OVER",
           "recommendedEdge": 0.1161,
           "recommendedProb": 0.5863,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "sydneyswans|fremantledockers|2026-09-18",
+      "finalizedAt": "2026-09-14T16:48:38Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-09-14T16:48:49Z",
+      "modelVersion": "afl-disp-20260914-164744",
+      "homeTeam": "Sydney Swans",
+      "awayTeam": "Fremantle Dockers",
+      "commenceTime": "2026-09-18T09:40:13Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Brodie Grundy",
+          "bookmaker": "SportsBet",
+          "line": 16.5,
+          "expectedDisposals": 20.76,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1641,
+          "recommendedProb": 0.6939,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Matt Johnson",
+          "bookmaker": "SportsBet",
+          "line": 15.5,
+          "expectedDisposals": 18.31,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1286,
+          "recommendedProb": 0.6326,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jake Lloyd",
+          "bookmaker": "SportsBet",
+          "line": 20.5,
+          "expectedDisposals": 19.36,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.1165,
+          "recommendedProb": 0.5996,
+          "rank": 3,
+          "actualDisposals": null
+        }
+      ]
+    },
+    {
+      "gameKey": "hawthornhawks|brisbanelions|2026-09-19",
+      "finalizedAt": "2026-09-14T16:48:38Z",
+      "windowHours": 2,
+      "projectionGeneratedAt": "2026-09-14T16:48:49Z",
+      "modelVersion": "afl-disp-20260914-164744",
+      "homeTeam": "Hawthorn Hawks",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-09-19T07:15:50Z",
+      "weekKey": null,
+      "roundKey": null,
+      "picks": [
+        {
+          "playerName": "Cameron Mackenzie",
+          "bookmaker": "SportsBet",
+          "line": 18.5,
+          "expectedDisposals": 13.78,
+          "recommendedSide": "UNDER",
+          "recommendedEdge": 0.287,
+          "recommendedProb": 0.779,
+          "rank": 1,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Jaspa Fletcher",
+          "bookmaker": "SportsBet",
+          "line": 17.5,
+          "expectedDisposals": 21.15,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1645,
+          "recommendedProb": 0.6765,
+          "rank": 2,
+          "actualDisposals": null
+        },
+        {
+          "playerName": "Charlie Cameron",
+          "bookmaker": "SportsBet",
+          "line": 10.5,
+          "expectedDisposals": 13.2,
+          "recommendedSide": "OVER",
+          "recommendedEdge": 0.1478,
+          "recommendedProb": 0.6388,
           "rank": 3,
           "actualDisposals": null
         }

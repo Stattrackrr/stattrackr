@@ -1,41 +1,30 @@
 {
-  "generatedAt": "2026-09-11T19:13:53.556Z",
+  "generatedAt": "2026-09-14T16:45:59.442Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
     {
-      "gameId": "d6423c4e7b6a9968552efdff870c5e2e",
-      "homeTeam": "Brisbane Lions",
-      "awayTeam": "Adelaide Crows",
-      "commenceTime": "2026-09-12T09:35:18Z",
-      "weather": {
-        "temperatureC": 16.8,
-        "precipitationMm": 0,
-        "windKmh": 3.1
-      }
-    },
-    {
       "gameId": "3b95ccf3f8a511ed13321e72d5893a6d",
       "homeTeam": "Sydney Swans",
       "awayTeam": "Fremantle Dockers",
-      "commenceTime": "2026-09-18T09:35:13Z",
+      "commenceTime": "2026-09-18T09:40:13Z",
       "weather": {
-        "temperatureC": 16.1,
+        "temperatureC": 17,
         "precipitationMm": 0,
-        "windKmh": 9.1
+        "windKmh": 9.2
       }
     },
     {
-      "gameId": "bd1c8d043576b96fe7a8d79769da27a6",
-      "homeTeam": "Sydney Swans",
-      "awayTeam": "Fremantle Dockers",
-      "commenceTime": "2026-09-19T07:30:00Z",
+      "gameId": "de582cb49e795fcbe6644bf6a178f8da",
+      "homeTeam": "Hawthorn Hawks",
+      "awayTeam": "Brisbane Lions",
+      "commenceTime": "2026-09-19T07:15:50Z",
       "weather": {
-        "temperatureC": 20.7,
+        "temperatureC": 24.6,
         "precipitationMm": 0,
-        "windKmh": 11.5
+        "windKmh": 8.4
       }
     }
   ],
-  "count": 3
+  "count": 2
 }
