@@ -1,20 +1,38 @@
 {
-  "generatedAt": "2026-09-14T03:06:42.423Z",
+  "generatedAt": "2026-09-14T09:36:43.803Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 155,
+  "injuryCount": 157,
   "injuries": [
+    {
+      "team": "Geelong Cats",
+      "player": "Bailey Smith",
+      "injury": "Shoulder",
+      "returning": "TBC"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Rhys Stanley",
+      "injury": "Pec",
+      "returning": "VFL Grand Final"
+    },
+    {
+      "team": "Hawthorn Hawks",
+      "player": "Sam Butler",
+      "injury": "Handed a two-match suspension in the VFL for a high bump on Essendon's Harry Jones. Can reduce to one match with an early plea.",
+      "returning": "1-2 matches"
+    },
+    {
+      "team": "West Coast Eagles",
+      "player": "Harley Reid",
+      "injury": "Shoulder",
+      "returning": "ready for pre-season"
+    },
     {
       "team": "Sandringham Dragons",
       "player": "Gus Teixeira",
       "injury": "Calf",
       "returning": "Returned"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Rhys Stanley",
-      "injury": "Knee",
-      "returning": "Test"
     },
     {
       "team": "Fremantle Dockers",
@@ -447,12 +465,6 @@
       "player": "Lachlan Carmichael",
       "injury": "Listed as an 'Out' after a quieter game.",
       "returning": "TBC"
-    },
-    {
-      "team": "West Coast Eagles",
-      "player": "Harley Reid",
-      "injury": "Two-match ban for rough conduct (sling tackle on Jai Newcombe)",
-      "returning": "Miss the first two games of next season"
     },
     {
       "team": "North Melbourne Kangaroos",
