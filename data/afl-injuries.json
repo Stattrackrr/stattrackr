@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-14T16:17:42.105Z",
+  "generatedAt": "2026-09-14T21:28:51.521Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 157,
+  "injuryCount": 159,
   "injuries": [
+    {
+      "team": "Southport",
+      "player": "Jacob Dawson",
+      "injury": "Ineligible for J.J. Liston Trophy",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Melbourne",
+      "player": "Ben Hobbs",
+      "injury": "Ineligible for J.J. Liston Trophy",
+      "returning": "TBC"
+    },
     {
       "team": "Geelong Cats",
       "player": "Bailey Smith",
