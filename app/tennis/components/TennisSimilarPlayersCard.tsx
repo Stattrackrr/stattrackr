@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
+import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 import type {
   TennisSimilarMatchStats,
   TennisSimilarPlayersPayload,
@@ -173,11 +174,14 @@ export function TennisSimilarPlayersCard({
             <div className="flex items-start gap-2 min-w-0">
               {row.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={row.imageUrl}
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover shrink-0 bg-gray-200 dark:bg-gray-700"
-                />
+                <span className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-200 dark:bg-gray-700">
+                  <img
+                    src={row.imageUrl}
+                    alt=""
+                    className="w-8 h-8 object-cover"
+                    style={tennisComAvatarImgStyle(row.imageUrl)}
+                  />
+                </span>
               ) : (
                 <div className="w-8 h-8 rounded-full shrink-0 bg-gray-200 dark:bg-gray-700" />
               )}

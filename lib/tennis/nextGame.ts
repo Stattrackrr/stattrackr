@@ -1,30 +1,30 @@
 import sharedCache from '@/lib/sharedCache';
-import {
-  API_TENNIS_EVENT,
-  isApiGrandSlam,
-  parseApiRound,
-  tourFromEventType,
-  type ApiTennisFixture,
-} from '@/lib/tennis/apiTennis';
+import { tennisLastName } from '@/lib/tennis/chartStats';
+import { API_TENNIS_SINGLES_EVENTS, isApiGrandSlam, parseApiRound, tourFromEventType, type ApiTennisFixture } from '@/lib/tennis/apiTennis';
 import { loadTennisPlayers } from '@/lib/tennis/data';
+import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisTour } from '@/lib/tennis/types';
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 2 * 60 * 1000;
 const LOOKAHEAD_DAYS = 21;
-export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v1';
-export const TENNIS_UPCOMING_TTL_SECONDS = 12 * 60 * 60;
+export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v4';
+export const TENNIS_UPCOMING_TTL_SECONDS = 20 * 60;
+const FETCH_TIMEOUT_MS = 5000;
 
 export type TennisNextGame = {
   opponent: string;
   opponentId: string | null;
   opponentIoc: string | null;
+  opponentRank: number | null;
   opponentLogo: string | null;
   tipoff: string | null;
   live: boolean;
   isGrandSlam: boolean;
   tour: TennisTour | null;
   tournamentName: string | null;
+  tournamentKey: string | null;
+  surface: string | null;
   round: string | null;
   matchId: string | null;
   status: string | null;
@@ -50,9 +50,9 @@ type UpcomingRuntime = {
 };
 
 function upcomingRuntime(): UpcomingRuntime {
-  const g = globalThis as typeof globalThis & { __tennisUpcoming?: UpcomingRuntime };
-  if (!g.__tennisUpcoming) g.__tennisUpcoming = { window: null, inflight: null };
-  return g.__tennisUpcoming;
+  const g = globalThis as typeof globalThis & { __tennisUpcomingV4?: UpcomingRuntime };
+  if (!g.__tennisUpcomingV4) g.__tennisUpcomingV4 = { window: null, inflight: null };
+  return g.__tennisUpcomingV4;
 }
 
 function apiKey(): string {
@@ -88,6 +88,16 @@ function namesEqual(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
+function namesMatch(a: string, b: string): boolean {
+  if (namesEqual(a, b)) return true;
+  const lastA = tennisLastName(a).toLowerCase();
+  const lastB = tennisLastName(b).toLowerCase();
+  if (!lastA || lastA !== lastB) return false;
+  const initA = a.trim().replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase();
+  const initB = b.trim().replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase();
+  return Boolean(initA && initA === initB);
+}
+
 function nameKey(name: string): string {
   return `name:${name.trim().toLowerCase()}`;
 }
@@ -120,7 +130,8 @@ function fixturePhase(
     s.includes('live') ||
     s.includes('progress') ||
     s.includes('playing');
-  if (setOrLive) return started ? 'live' : 'scheduled';
+  // Order-of-play "not before" times stay in the future after a match starts.
+  if (setOrLive) return 'live';
   if (!s || s === 'not started' || s === 'scheduled' || s === 'ns') {
     return started ? 'live' : 'scheduled';
   }
@@ -131,16 +142,21 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
   const key = apiKey();
   if (!key) return null;
   const qs = new URLSearchParams({ APIkey: key, timezone: 'UTC', ...params });
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const res = await fetch(`${API_BASE}?${qs.toString()}`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    });
-    if (res.status === 429 || res.status >= 500) {
-      await new Promise((resolve) => setTimeout(resolve, attempt * 700));
-      continue;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}?${qs.toString()}`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+        continue;
+      }
+      return await res.json();
+    } catch {
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 250));
     }
-    return res.json();
   }
   return null;
 }
@@ -148,6 +164,7 @@ async function apiTennisCall(params: Record<string, string>): Promise<any> {
 function officialPlayer(playerId: string | null, fallback: string): {
   name: string;
   ioc: string | null;
+  rank: number | null;
   imageUrl: string | null;
 } {
   const id = String(playerId || '').trim();
@@ -160,6 +177,7 @@ function officialPlayer(playerId: string | null, fallback: string): {
   return {
     name: player?.name || fallback.trim(),
     ioc: player?.ioc ?? null,
+    rank: player?.rank ?? null,
     imageUrl: player?.imageUrl ?? null,
   };
 }
@@ -177,10 +195,10 @@ function toNextGame(
   const wantName = String(who.playerName || '').trim();
   const playerIsFirst =
     Boolean(wantId && firstId && firstId === wantId) ||
-    Boolean(wantName && namesEqual(firstName, wantName));
+    Boolean(wantName && namesMatch(firstName, wantName));
   const playerIsSecond =
     Boolean(wantId && secondId && secondId === wantId) ||
-    Boolean(wantName && namesEqual(secondName, wantName));
+    Boolean(wantName && namesMatch(secondName, wantName));
   if (!playerIsFirst && !playerIsSecond) return null;
   const opponentId = playerIsFirst ? secondId || null : firstId || null;
   const opponentRaw = playerIsFirst ? secondName : firstName;
@@ -197,17 +215,21 @@ function toNextGame(
   }
   if (phase === 'skip' || phase === 'finished') return null;
   const tournamentName = String(fx.tournament_name || '').trim() || null;
+  const tournamentKey = fx.tournament_key != null ? String(fx.tournament_key) : null;
   const round = parseApiRound(fx.tournament_round) || null;
   return {
     opponent: resolved.name,
     opponentId,
     opponentIoc: resolved.ioc,
+    opponentRank: resolved.rank,
     opponentLogo: resolved.imageUrl || opponentLogo,
     tipoff: tipoff ? tipoff.toISOString() : fx.event_date || null,
     live: phase === 'live',
     isGrandSlam: isApiGrandSlam(tournamentName),
     tour: tourFromEventType(fx.event_type_type),
     tournamentName,
+    tournamentKey,
+    surface: lookupTennisSurface(tournamentName, tournamentKey),
     round,
     matchId: fx.event_key != null ? String(fx.event_key) : null,
     status: fx.event_status ? String(fx.event_status) : null,
@@ -254,20 +276,31 @@ function indexUpcoming(fixtures: ApiTennisFixture[]): Map<string, TennisNextGame
   return byPlayerId;
 }
 
-function rememberWindow(byPlayerId: Map<string, TennisNextGame>) {
-  upcomingRuntime().window = { fetchedAt: Date.now(), byPlayerId };
+function rememberWindow(byPlayerId: Map<string, TennisNextGame>, fetchedAt = Date.now()) {
+  upcomingRuntime().window = { fetchedAt, byPlayerId };
 }
 
-function storeFromJSON(stored: TennisUpcomingStore | null): Map<string, TennisNextGame> | null {
+function isFresh(fetchedAt: number): boolean {
+  return Number.isFinite(fetchedAt) && Date.now() - fetchedAt < CACHE_TTL_MS;
+}
+
+function storeFromJSON(
+  stored: TennisUpcomingStore | null
+): { fetchedAt: number; byPlayerId: Map<string, TennisNextGame> } | null {
   if (!stored?.games?.length) return null;
   const byPlayerId = new Map<string, TennisNextGame>();
   for (const row of stored.games) {
     if (row?.playerId && row.game) byPlayerId.set(row.playerId, row.game);
   }
-  return byPlayerId.size ? byPlayerId : null;
+  if (!byPlayerId.size) return null;
+  const fetchedAt = Date.parse(String(stored.fetchedAt || '')) || 0;
+  return { fetchedAt, byPlayerId };
 }
 
-async function readUpcomingFromRedis(): Promise<Map<string, TennisNextGame> | null> {
+async function readUpcomingFromRedis(): Promise<{
+  fetchedAt: number;
+  byPlayerId: Map<string, TennisNextGame>;
+} | null> {
   const stored = await sharedCache.getJSON<TennisUpcomingStore>(TENNIS_UPCOMING_CACHE_KEY);
   return storeFromJSON(stored);
 }
@@ -296,49 +329,77 @@ async function fetchUpcomingLive(): Promise<Map<string, TennisNextGame>> {
   const now = new Date();
   const start = ymd(new Date(now.getTime() - 24 * 60 * 60 * 1000));
   const stop = ymd(new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000));
-  const [atp, wta] = await Promise.all([
-    apiTennisCall({
-      method: 'get_fixtures',
-      date_start: start,
-      date_stop: stop,
-      event_type_key: API_TENNIS_EVENT.ATP_SINGLES,
-    }),
-    apiTennisCall({
-      method: 'get_fixtures',
-      date_start: start,
-      date_stop: stop,
-      event_type_key: API_TENNIS_EVENT.WTA_SINGLES,
-    }),
-  ]);
-  const fixtures = [
-    ...((Array.isArray(atp?.result) ? atp.result : []) as ApiTennisFixture[]),
-    ...((Array.isArray(wta?.result) ? wta.result : []) as ApiTennisFixture[]),
-  ].filter(isSingles);
+  const eventKeys = API_TENNIS_SINGLES_EVENTS.map((event) => event.eventType);
+  const batches = await Promise.all(
+    eventKeys.map((event_type_key) =>
+      apiTennisCall({
+        method: 'get_fixtures',
+        date_start: start,
+        date_stop: stop,
+        event_type_key,
+      })
+    )
+  );
+  const fixtures = batches.flatMap((batch) =>
+    ((Array.isArray(batch?.result) ? batch.result : []) as ApiTennisFixture[])
+  ).filter(isSingles);
   return indexUpcoming(fixtures);
 }
 
-async function loadUpcomingByPlayer(): Promise<Map<string, TennisNextGame>> {
+function withSurface(game: TennisNextGame): TennisNextGame {
+  const surface = lookupTennisSurface(game.tournamentName, game.tournamentKey);
+  if (game.surface === surface && game.tournamentKey != null) return game;
+  return { ...game, surface, tournamentKey: game.tournamentKey ?? null };
+}
+
+async function loadUpcomingByPlayer(opts?: {
+  waitForFresh?: boolean;
+}): Promise<Map<string, TennisNextGame>> {
   const runtime = upcomingRuntime();
-  if (runtime.window && Date.now() - runtime.window.fetchedAt < CACHE_TTL_MS && runtime.window.byPlayerId.size) {
+  if (runtime.window && isFresh(runtime.window.fetchedAt) && runtime.window.byPlayerId.size) {
     return runtime.window.byPlayerId;
   }
-  if (runtime.inflight) return runtime.inflight;
-  runtime.inflight = (async () => {
-    const live = await fetchUpcomingLive();
-    if (live.size) {
-      await writeUpcomingToRedis(live);
-      rememberWindow(live);
-      return live;
+  if (runtime.inflight) {
+    if (opts?.waitForFresh) return runtime.inflight;
+    if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
+    return runtime.inflight;
+  }
+
+  const cached = runtime.window?.byPlayerId.size
+    ? { fetchedAt: runtime.window.fetchedAt, byPlayerId: runtime.window.byPlayerId }
+    : await readUpcomingFromRedis();
+
+  const refresh = async () => {
+    try {
+      const live = await fetchUpcomingLive();
+      if (live.size) {
+        await writeUpcomingToRedis(live);
+        rememberWindow(live);
+        return live;
+      }
+    } catch (err) {
+      console.warn('[tennis-next-game] live fetch failed', err);
     }
-    const redis = await readUpcomingFromRedis();
-    if (redis) {
-      rememberWindow(redis);
-      return redis;
+    if (cached?.byPlayerId.size) {
+      rememberWindow(cached.byPlayerId, cached.fetchedAt);
+      return cached.byPlayerId;
     }
     if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
     rememberWindow(new Map());
     return new Map();
-  })();
+  };
+
+  if (cached?.byPlayerId.size) {
+    rememberWindow(cached.byPlayerId, cached.fetchedAt);
+    if (isFresh(cached.fetchedAt)) return cached.byPlayerId;
+    runtime.inflight = refresh().finally(() => {
+      runtime.inflight = null;
+    });
+    if (opts?.waitForFresh) return runtime.inflight;
+    return cached.byPlayerId;
+  }
+
+  runtime.inflight = refresh();
   try {
     return await runtime.inflight;
   } finally {
@@ -346,22 +407,60 @@ async function loadUpcomingByPlayer(): Promise<Map<string, TennisNextGame>> {
   }
 }
 
-export async function warmTennisUpcomingFixtures(): Promise<number> {
-  const byPlayerId = await loadUpcomingByPlayer();
+export async function warmTennisUpcomingFixtures(opts?: { force?: boolean }): Promise<number> {
+  if (opts?.force) {
+    const runtime = upcomingRuntime();
+    if (runtime.inflight) {
+      const live = await runtime.inflight;
+      return live.size;
+    }
+    runtime.inflight = (async () => {
+      const live = await fetchUpcomingLive();
+      if (live.size) {
+        await writeUpcomingToRedis(live);
+        rememberWindow(live);
+        return live;
+      }
+      if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
+      const redis = await readUpcomingFromRedis();
+      if (redis?.byPlayerId.size) {
+        rememberWindow(redis.byPlayerId, redis.fetchedAt);
+        return redis.byPlayerId;
+      }
+      rememberWindow(new Map());
+      return new Map();
+    })().finally(() => {
+      runtime.inflight = null;
+    });
+    const byPlayerId = await runtime.inflight;
+    return byPlayerId.size;
+  }
+  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
   return byPlayerId.size;
 }
 
-export async function listUniqueUpcomingTennisGames(): Promise<TennisNextGame[]> {
-  const runtime = upcomingRuntime();
-  let byPlayerId = runtime.window?.byPlayerId;
-  if (!byPlayerId?.size) {
-    const redis = await readUpcomingFromRedis();
-    if (redis) {
-      rememberWindow(redis);
-      byPlayerId = redis;
-    }
+export function tennisCommenceTimeForMatch(
+  upcoming: TennisNextGame[],
+  opts: { matchId?: string | null; homeName?: string | null; awayName?: string | null }
+): string | null {
+  const matchId = String(opts.matchId || '').trim();
+  const home = String(opts.homeName || '').trim();
+  const away = String(opts.awayName || '').trim();
+  const named = (game: TennisNextGame) =>
+    (namesMatch(game.homeName, home) && namesMatch(game.awayName, away)) ||
+    (namesMatch(game.homeName, away) && namesMatch(game.awayName, home));
+  const hit =
+    (matchId ? upcoming.find((game) => String(game.matchId || '').trim() === matchId) : null) ||
+    (home && away ? upcoming.find(named) : null);
+  if (!hit) return null;
+  if (hit.live) {
+    const tipMs = hit.tipoff ? Date.parse(hit.tipoff) : Number.NaN;
+    if (!Number.isFinite(tipMs) || tipMs > Date.now()) return new Date().toISOString();
   }
-  if (!byPlayerId?.size) byPlayerId = await loadUpcomingByPlayer();
+  return hit.tipoff || null;
+}
+
+function uniqueUpcomingFromMap(byPlayerId: Map<string, TennisNextGame>): TennisNextGame[] {
   const byMatch = new Map<string, TennisNextGame>();
   for (const game of byPlayerId.values()) {
     const id = String(game.matchId || '').trim();
@@ -374,6 +473,13 @@ export async function listUniqueUpcomingTennisGames(): Promise<TennisNextGame[]>
   });
 }
 
+export async function listUniqueUpcomingTennisGames(opts?: {
+  waitForFresh?: boolean;
+}): Promise<TennisNextGame[]> {
+  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: opts?.waitForFresh });
+  return uniqueUpcomingFromMap(byPlayerId);
+}
+
 export async function getTennisNextGame(opts: {
   playerId?: string | null;
   playerName?: string | null;
@@ -382,15 +488,18 @@ export async function getTennisNextGame(opts: {
   const playerId = String(opts.playerId || '').trim();
   const playerName = String(opts.playerName || '').trim();
   if (!playerId && !playerName) return null;
-  const byPlayerId = await loadUpcomingByPlayer();
-  if (playerId && byPlayerId.has(playerId)) return byPlayerId.get(playerId) ?? null;
-  if (playerName && byPlayerId.has(nameKey(playerName))) return byPlayerId.get(nameKey(playerName)) ?? null;
+  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: true });
+  const found =
+    (playerId && byPlayerId.get(playerId)) ||
+    (playerName && byPlayerId.get(nameKey(playerName))) ||
+    null;
+  if (found) return withSurface(found);
   if (playerName) {
-    const key = playerName.toLowerCase();
     for (const next of byPlayerId.values()) {
-      if (namesEqual(next.homeName, key) || namesEqual(next.awayName, key)) {
-        return next;
-      }
+      const onThisSide =
+        namesMatch(next.homeName, playerName) || namesMatch(next.awayName, playerName);
+      if (!onThisSide || namesMatch(next.opponent, playerName)) continue;
+      return withSurface(next);
     }
   }
   return null;

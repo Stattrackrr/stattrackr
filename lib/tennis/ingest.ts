@@ -1,14 +1,14 @@
 /**
- * Incremental tennis match ingest: last 16 days of finished ATP/WTA singles
+ * Incremental tennis match ingest: last 16 days of finished ATP/WTA/Challenger/ITF singles
  * merged onto the disk cache + a sharedCache overlay (AFL-style replace-on-success).
  */
 
 import sharedCache from '@/lib/sharedCache';
 import {
-  API_TENNIS_EVENT,
+  API_TENNIS_SINGLES_EVENTS,
   countryToIoc,
+  ingestApiFixtures,
   loadApiTennisCache,
-  mapApiFixtureToRows,
   registerTennisOverlayGetter,
   type ApiPlayerInfo,
   type ApiTennisCache,
@@ -273,21 +273,17 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
   fixtures: ApiTennisFixture[];
 }> {
   const { start, stop } = ingestWindow(now);
-  const [atpStandingsJson, wtaStandingsJson, atpFixturesJson, wtaFixturesJson] = await Promise.all([
+  const [atpStandingsJson, wtaStandingsJson, ...fixtureBatches] = await Promise.all([
     apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
     apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
-    apiTennisCall({
-      method: 'get_fixtures',
-      date_start: start,
-      date_stop: stop,
-      event_type_key: API_TENNIS_EVENT.ATP_SINGLES,
-    }),
-    apiTennisCall({
-      method: 'get_fixtures',
-      date_start: start,
-      date_stop: stop,
-      event_type_key: API_TENNIS_EVENT.WTA_SINGLES,
-    }),
+    ...API_TENNIS_SINGLES_EVENTS.map((event) =>
+      apiTennisCall({
+        method: 'get_fixtures',
+        date_start: start,
+        date_stop: stop,
+        event_type_key: event.eventType,
+      })
+    ),
   ]);
 
   const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
@@ -296,16 +292,14 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
   for (const row of atpStandings) players.set(String(row.player_key), standingToPlayer(row, 'ATP'));
   for (const row of wtaStandings) players.set(String(row.player_key), standingToPlayer(row, 'WTA'));
 
-  const tours: Array<{ tour: TennisTour; fixtures: ApiTennisFixture[] }> = [
-    {
-      tour: 'ATP',
-      fixtures: (Array.isArray(atpFixturesJson?.result) ? atpFixturesJson.result : []) as ApiTennisFixture[],
-    },
-    {
-      tour: 'WTA',
-      fixtures: (Array.isArray(wtaFixturesJson?.result) ? wtaFixturesJson.result : []) as ApiTennisFixture[],
-    },
-  ];
+  const tours: Array<{ tour: TennisTour; fixtures: ApiTennisFixture[] }> = API_TENNIS_SINGLES_EVENTS.map(
+    (event, index) => ({
+      tour: event.tour,
+      fixtures: (Array.isArray(fixtureBatches[index]?.result)
+        ? fixtureBatches[index].result
+        : []) as ApiTennisFixture[],
+    })
+  );
 
   const matches: TennisMatchRow[] = [];
   const seen = new Set<string>();
@@ -315,45 +309,7 @@ export async function fetchTennisIncrementalWindow(now = new Date()): Promise<{
   for (const { tour, fixtures } of tours) {
     fixtureCount += fixtures.length;
     allFixtures.push(...fixtures);
-    for (const fx of fixtures) {
-      const firstId = String(fx.first_player_key ?? '');
-      const secondId = String(fx.second_player_key ?? '');
-      if (firstId && fx.event_first_player_logo) {
-        const existing = players.get(firstId);
-        if (existing && !existing.imageUrl) existing.imageUrl = fx.event_first_player_logo;
-        if (!existing) {
-          players.set(firstId, {
-            playerId: firstId,
-            name: String(fx.event_first_player || firstId),
-            tour,
-            ioc: null,
-            rank: null,
-            rankPoints: null,
-            imageUrl: fx.event_first_player_logo || null,
-          });
-        }
-      }
-      if (secondId && fx.event_second_player_logo) {
-        const existing = players.get(secondId);
-        if (existing && !existing.imageUrl) existing.imageUrl = fx.event_second_player_logo;
-        if (!existing) {
-          players.set(secondId, {
-            playerId: secondId,
-            name: String(fx.event_second_player || secondId),
-            tour,
-            ioc: null,
-            rank: null,
-            rankPoints: null,
-            imageUrl: fx.event_second_player_logo || null,
-          });
-        }
-      }
-      for (const row of mapApiFixtureToRows(fx, players)) {
-        if (seen.has(row.matchId)) continue;
-        seen.add(row.matchId);
-        matches.push(row);
-      }
-    }
+    matches.push(...ingestApiFixtures(fixtures, players, tour, seen));
   }
 
   const playerList: ApiTennisPlayer[] = [...players.values()]

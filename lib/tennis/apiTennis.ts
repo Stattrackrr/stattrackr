@@ -9,11 +9,38 @@ import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from 
 import { tennisDominanceRatio } from '@/lib/tennis/chartStats';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import { tennisHandForName } from '@/lib/tennis/hands';
+import { lookupTennisSurface, tennisSurfacesMtime } from '@/lib/tennis/surfaces';
 
 export const API_TENNIS_EVENT = {
   ATP_SINGLES: '265',
   WTA_SINGLES: '266',
+  CHALLENGER_MEN_SINGLES: '281',
+  /** Challenger Women Singles. 274 is Teams Mix — do not use that key. */
+  CHALLENGER_WOMEN_SINGLES: '272',
+  ITF_MEN_SINGLES: '270',
+  ITF_WOMEN_SINGLES: '271',
 } as const;
+
+export type TennisSinglesEvent = {
+  tour: TennisTour;
+  eventType: string;
+  label: string;
+};
+
+/** ATP/WTA tour + Challenger + ITF singles. Doubles/exhibitions/juniors stay out. */
+export const API_TENNIS_SINGLES_EVENTS: TennisSinglesEvent[] = [
+  { tour: 'ATP', eventType: API_TENNIS_EVENT.ATP_SINGLES, label: 'ATP' },
+  { tour: 'WTA', eventType: API_TENNIS_EVENT.WTA_SINGLES, label: 'WTA' },
+  { tour: 'ATP', eventType: API_TENNIS_EVENT.CHALLENGER_MEN_SINGLES, label: 'CHALLENGER_MEN' },
+  { tour: 'WTA', eventType: API_TENNIS_EVENT.CHALLENGER_WOMEN_SINGLES, label: 'CHALLENGER_WOMEN' },
+  { tour: 'ATP', eventType: API_TENNIS_EVENT.ITF_MEN_SINGLES, label: 'ITF_MEN' },
+  { tour: 'WTA', eventType: API_TENNIS_EVENT.ITF_WOMEN_SINGLES, label: 'ITF_WOMEN' },
+];
+
+export const API_TENNIS_LOWER_SINGLES_EVENTS = API_TENNIS_SINGLES_EVENTS.filter(
+  (row) =>
+    row.eventType !== API_TENNIS_EVENT.ATP_SINGLES && row.eventType !== API_TENNIS_EVENT.WTA_SINGLES
+);
 
 export type ApiTennisStanding = {
   place: number;
@@ -153,6 +180,35 @@ export function apiTennisCachePath(): string {
   return path.join(apiTennisDir(), 'cache.json');
 }
 
+export function apiTennisRosterPath(): string {
+  return path.join(apiTennisDir(), 'roster.json');
+}
+
+export type ApiTennisRoster = {
+  fetchedAt: string;
+  source: string;
+  players: ApiTennisPlayer[];
+  standings: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
+};
+
+export function writeApiTennisRoster(input: {
+  fetchedAt?: string;
+  players?: ApiTennisPlayer[] | null;
+  standings?: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] } | null;
+}): void {
+  const roster: ApiTennisRoster = {
+    fetchedAt: input.fetchedAt || new Date().toISOString(),
+    source: 'api-tennis',
+    players: input.players || [],
+    standings: {
+      ATP: input.standings?.ATP || [],
+      WTA: input.standings?.WTA || [],
+    },
+  };
+  fs.mkdirSync(apiTennisDir(), { recursive: true });
+  fs.writeFileSync(apiTennisRosterPath(), JSON.stringify(roster));
+}
+
 export function countryToIoc(country: string | null | undefined): string | null {
   const key = String(country || '').trim().toLowerCase();
   if (!key || key === 'world') return null;
@@ -161,8 +217,11 @@ export function countryToIoc(country: string | null | undefined): string | null 
 
 export function tourFromEventType(eventType: string | null | undefined): TennisTour | null {
   const t = String(eventType || '').toLowerCase();
-  if (t.includes('wta')) return 'WTA';
-  if (t.includes('atp')) return 'ATP';
+  if (!t || t.includes('double')) return null;
+  if (t.includes('wta') || t.includes('women') || t.includes('girl')) return 'WTA';
+  if (t.includes('atp') || t.includes('challenger') || t.includes('itf') || t.includes('men') || t.includes('boy')) {
+    return 'ATP';
+  }
   return null;
 }
 
@@ -191,23 +250,11 @@ export function tennisBestOf(tour: TennisTour | null | undefined, isGrandSlam: b
   return isGrandSlam ? 5 : 3;
 }
 
-export function inferApiSurface(name: string | null | undefined): string {
-  const n = String(name || '').toLowerCase();
-  if (
-    /wimbledon|halle|queen'?s club|eastbourne|hertogenbosch|mallorca|newport|\bberlin\b|nottingham|bad homburg|'s-hertogenbosch/.test(
-      n
-    )
-  ) {
-    return 'Grass';
-  }
-  if (
-    /roland garros|french open|monte.?carlo|barcelona|madrid|rome|hamburg|bastad|geneva|lyon|estoril|buenos aires|rio de janeiro|santiago|houston|charleston|istanbul|rabat|strasbourg|palermo|lausanne|gstaad|kitzbuhel|umag|bucharest|budapest|prague|marrakech|umea/.test(
-      n
-    )
-  ) {
-    return 'Clay';
-  }
-  return 'Hard';
+export function inferApiSurface(
+  name: string | null | undefined,
+  tournamentKey?: string | number | null
+): string {
+  return lookupTennisSurface(name, tournamentKey);
 }
 
 function toNum(v: unknown): number | null {
@@ -362,7 +409,7 @@ export function mapApiFixtureToRows(
   const season = toNum(fx.tournament_season) || Number(String(fx.event_date || '').slice(0, 4)) || 0;
   const tourneyName = String(fx.tournament_name || '').trim() || 'Unknown';
   const slam = isApiGrandSlam(tourneyName);
-  const surface = inferApiSurface(tourneyName);
+  const surface = inferApiSurface(tourneyName, fx.tournament_key);
   const round = parseApiRound(fx.tournament_round);
   const scores = Array.isArray(fx.scores) ? fx.scores : [];
   const stats = Array.isArray(fx.statistics) ? fx.statistics : [];
@@ -534,6 +581,57 @@ export function mapApiFixtureToRows(
   });
 }
 
+export function ingestApiFixtures(
+  fixtures: ApiTennisFixture[],
+  players: Map<string, ApiPlayerInfo>,
+  tour: TennisTour,
+  seen: Set<string>
+): TennisMatchRow[] {
+  const matches: TennisMatchRow[] = [];
+  for (const fx of fixtures) {
+    const firstId = String(fx.first_player_key ?? '');
+    const secondId = String(fx.second_player_key ?? '');
+    if (firstId && fx.event_first_player) {
+      const existing = players.get(firstId);
+      if (existing) {
+        if (!existing.imageUrl && fx.event_first_player_logo) existing.imageUrl = fx.event_first_player_logo;
+      } else {
+        players.set(firstId, {
+          playerId: firstId,
+          name: String(fx.event_first_player || firstId),
+          tour,
+          ioc: null,
+          rank: null,
+          rankPoints: null,
+          imageUrl: fx.event_first_player_logo || null,
+        });
+      }
+    }
+    if (secondId && fx.event_second_player) {
+      const existing = players.get(secondId);
+      if (existing) {
+        if (!existing.imageUrl && fx.event_second_player_logo) existing.imageUrl = fx.event_second_player_logo;
+      } else {
+        players.set(secondId, {
+          playerId: secondId,
+          name: String(fx.event_second_player || secondId),
+          tour,
+          ioc: null,
+          rank: null,
+          rankPoints: null,
+          imageUrl: fx.event_second_player_logo || null,
+        });
+      }
+    }
+    for (const row of mapApiFixtureToRows(fx, players)) {
+      if (seen.has(row.matchId)) continue;
+      seen.add(row.matchId);
+      matches.push(row);
+    }
+  }
+  return matches;
+}
+
 type TennisOverlaySnapshot = {
   fetchedAt?: string;
   matches?: TennisMatchRow[];
@@ -547,7 +645,11 @@ type ApiRuntime = {
   file: ApiTennisCache | null;
   merged: ApiTennisCache | null;
   players: ApiTennisPlayer[] | null;
+  roster: ApiTennisRoster | null;
+  rosterDiskMtime: number;
+  rosterOverlayAt: string;
   diskMtime: number;
+  surfacesMtime: number;
   overlayAt: string;
   overlayGetter: OverlayGetter;
 };
@@ -559,7 +661,11 @@ function apiRuntime(): ApiRuntime {
       file: null,
       merged: null,
       players: null,
+      roster: null,
+      rosterDiskMtime: 0,
+      rosterOverlayAt: '',
       diskMtime: 0,
+      surfacesMtime: 0,
       overlayAt: '',
       overlayGetter: () => null,
     };
@@ -571,6 +677,7 @@ export function registerTennisOverlayGetter(fn: OverlayGetter) {
   apiRuntime().overlayGetter = fn;
   apiRuntime().merged = null;
   apiRuntime().players = null;
+  apiRuntime().roster = null;
 }
 
 function readApiTennisDiskCache(): { cache: ApiTennisCache | null; mtime: number } {
@@ -586,6 +693,11 @@ function readApiTennisDiskCache(): { cache: ApiTennisCache | null; mtime: number
     runtime.diskMtime = mtime;
     runtime.merged = null;
     runtime.players = null;
+    try {
+      if (!fs.existsSync(apiTennisRosterPath())) writeApiTennisRoster(parsed);
+    } catch {
+      /* roster sidecar is optional */
+    }
     return { cache: parsed, mtime };
   } catch {
     return { cache: null, mtime };
@@ -628,11 +740,13 @@ function mergeDiskWithOverlay(
 
 export function tennisCacheMtime(): number {
   const file = apiTennisCachePath();
+  let n = tennisSurfacesMtime();
   try {
-    return fs.statSync(file).mtimeMs;
+    n += fs.statSync(file).mtimeMs;
   } catch {
-    return 0;
+    /* cache file optional */
   }
+  return n;
 }
 
 export function loadApiTennisCache(opts?: { diskOnly?: boolean }): ApiTennisCache | null {
@@ -641,12 +755,122 @@ export function loadApiTennisCache(opts?: { diskOnly?: boolean }): ApiTennisCach
   if (opts?.diskOnly) return disk;
   const overlay = runtime.overlayGetter();
   const overlayAt = overlay?.fetchedAt || '';
-  if (runtime.merged && runtime.diskMtime === mtime && runtime.overlayAt === overlayAt) {
+  const surfacesMtime = tennisSurfacesMtime();
+  if (
+    runtime.merged &&
+    runtime.diskMtime === mtime &&
+    runtime.overlayAt === overlayAt &&
+    runtime.surfacesMtime === surfacesMtime
+  ) {
     return runtime.merged;
   }
   const merged = mergeDiskWithOverlay(disk, overlay);
   runtime.merged = merged;
   runtime.overlayAt = overlayAt;
+  runtime.surfacesMtime = surfacesMtime;
+  runtime.players = null;
+  return merged;
+}
+
+function extractRosterFromCacheText(raw: string): ApiTennisRoster | null {
+  const i = raw.lastIndexOf(',"players":');
+  if (i < 0) return null;
+  try {
+    const parsed = JSON.parse(`{${raw.slice(i + 1)}`) as {
+      players?: ApiTennisPlayer[];
+      standings?: { ATP: TennisRankingRow[]; WTA: TennisRankingRow[] };
+    };
+    const fetchedAt = raw.match(/"fetchedAt":"([^"]+)"/)?.[1] || new Date().toISOString();
+    return {
+      fetchedAt,
+      source: 'api-tennis',
+      players: parsed.players || [],
+      standings: {
+        ATP: parsed.standings?.ATP || [],
+        WTA: parsed.standings?.WTA || [],
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readApiTennisDiskRoster(): { roster: ApiTennisRoster | null; mtime: number } {
+  const file = apiTennisRosterPath();
+  try {
+    if (fs.existsSync(file)) {
+      const mtime = fs.statSync(file).mtimeMs;
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as ApiTennisRoster;
+      if (parsed?.players || parsed?.standings) return { roster: parsed, mtime };
+    }
+  } catch {
+    /* ignore corrupt sidecar */
+  }
+  const cacheFile = apiTennisCachePath();
+  try {
+    if (!fs.existsSync(cacheFile)) return { roster: null, mtime: 0 };
+    const raw = fs.readFileSync(cacheFile, 'utf8');
+    const extracted = extractRosterFromCacheText(raw);
+    if (extracted) {
+      writeApiTennisRoster(extracted);
+      return { roster: extracted, mtime: fs.statSync(apiTennisRosterPath()).mtimeMs };
+    }
+  } catch {
+    /* fall through to full cache parse */
+  }
+  const disk = loadApiTennisCache({ diskOnly: true });
+  if (!disk) return { roster: null, mtime: 0 };
+  writeApiTennisRoster(disk);
+  try {
+    return { roster: disk, mtime: fs.statSync(apiTennisRosterPath()).mtimeMs };
+  } catch {
+    return { roster: disk, mtime: Date.now() };
+  }
+}
+
+function mergeRosterWithOverlay(
+  disk: ApiTennisRoster,
+  overlay: TennisOverlaySnapshot | null
+): ApiTennisRoster {
+  if (!overlay?.players?.length && !overlay?.standings?.ATP?.length && !overlay?.standings?.WTA?.length) {
+    return disk;
+  }
+  const playersById = new Map<string, ApiTennisPlayer>();
+  for (const player of disk.players || []) {
+    if (player?.playerId) playersById.set(player.playerId, player);
+  }
+  for (const player of overlay.players || []) {
+    if (!player?.playerId) continue;
+    const prev = playersById.get(player.playerId);
+    playersById.set(
+      player.playerId,
+      prev ? { ...prev, ...player, imageUrl: player.imageUrl || prev.imageUrl } : player
+    );
+  }
+  return {
+    fetchedAt: overlay.fetchedAt || disk.fetchedAt,
+    source: disk.source,
+    players: [...playersById.values()],
+    standings: {
+      ATP: overlay.standings?.ATP?.length ? overlay.standings.ATP : disk.standings?.ATP || [],
+      WTA: overlay.standings?.WTA?.length ? overlay.standings.WTA : disk.standings?.WTA || [],
+    },
+  };
+}
+
+export function loadApiTennisRoster(): ApiTennisRoster | null {
+  const runtime = apiRuntime();
+  const overlay = runtime.overlayGetter();
+  const overlayAt = overlay?.fetchedAt || '';
+  const { roster: disk, mtime } = readApiTennisDiskRoster();
+  if (!disk) return null;
+  if (runtime.roster && runtime.rosterDiskMtime === mtime && runtime.rosterOverlayAt === overlayAt) {
+    return runtime.roster;
+  }
+  const merged = mergeRosterWithOverlay(disk, overlay);
+  runtime.roster = merged;
+  runtime.rosterDiskMtime = mtime;
+  runtime.rosterOverlayAt = overlayAt;
   runtime.players = null;
   return merged;
 }
@@ -662,42 +886,17 @@ export function loadApiTennisMatches(years?: readonly number[]): TennisMatchRow[
 export function loadApiTennisPlayers(): ApiTennisPlayer[] | null {
   const runtime = apiRuntime();
   if (runtime.players) return runtime.players;
-  const cache = loadApiTennisCache();
-  if (!cache?.matches?.length && !cache?.players?.length) return null;
-  const byId = new Map<string, ApiTennisPlayer>();
-  for (const p of cache.players || []) {
-    byId.set(p.playerId, {
-      ...p,
-      hand: tennisHandForName(p.name) || p.hand,
-      imageUrl: resolveTennisHeadshotUrl(p.playerId, p.imageUrl),
-    });
-  }
-  for (const row of cache.matches || []) {
-    const existing = byId.get(row.playerId);
-    if (!existing) {
-      byId.set(row.playerId, {
-        playerId: row.playerId,
-        name: row.playerName,
-        tour: row.tour,
-        ioc: row.ioc,
-        hand: tennisHandForName(row.playerName) || row.hand,
-        height: row.height,
-        rank: row.playerRank,
-        rankPoints: row.rankPoints,
-        imageUrl: resolveTennisHeadshotUrl(row.playerId, null),
-      });
-      continue;
-    }
-    if (existing.rank == null && row.playerRank != null) existing.rank = row.playerRank;
-    if (!existing.ioc && row.ioc) existing.ioc = row.ioc;
-    if (!existing.hand) existing.hand = tennisHandForName(existing.name) || row.hand;
-  }
-  runtime.players = [...byId.values()];
+  const roster = loadApiTennisRoster();
+  if (!roster?.players?.length) return null;
+  runtime.players = roster.players.map((p) => ({
+    ...p,
+    hand: tennisHandForName(p.name) || p.hand,
+    imageUrl: resolveTennisHeadshotUrl(p.playerId, p.imageUrl),
+  }));
   return runtime.players;
 }
 
 export function loadApiTennisRankings(tour: TennisTour): TennisRankingRow[] | null {
-  const cache = loadApiTennisCache();
-  const rows = cache?.standings?.[tour];
+  const rows = loadApiTennisRoster()?.standings?.[tour];
   return rows?.length ? rows : null;
 }

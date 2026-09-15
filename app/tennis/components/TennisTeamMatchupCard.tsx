@@ -71,10 +71,10 @@ export default function TennisTeamMatchupCard({
       .then((data) => {
         if (!cancelled) setPayload(data);
       })
-      .catch((err: Error) => {
+      .catch(() => {
         if (cancelled) return;
         setPayload(null);
-        setError(err.message || 'Failed to load player matchup');
+        setError('Error');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -364,7 +364,7 @@ export default function TennisTeamMatchupCard({
             ))}
           </div>
         ) : error ? (
-          <div className="text-sm text-red-600 dark:text-red-400 py-4">{error}</div>
+          <div className="text-sm text-red-600 dark:text-red-400 py-4">Error</div>
         ) : !hasPlayers ? (
           <div className={`text-sm py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Pick an opponent to compare.

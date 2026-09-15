@@ -3,6 +3,8 @@ import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import {
   ADV_AVG_COLUMNS,
   ADV_AVG_ROWS,
+  ADV_AVG_VS_RANKS,
+  matchTennisOppRank,
   type AdvAvgBestOf,
   type AdvAvgCell,
   type AdvAvgColKey,
@@ -86,10 +88,7 @@ function opponentRankOnMatchDay(row: TennisMatchRow): number | null {
 }
 
 function matchesVsRank(row: TennisMatchRow, vsRank: AdvAvgVsRank): boolean {
-  if (vsRank === 'all') return true;
-  const cap = Number(vsRank);
-  const rank = opponentRankOnMatchDay(row);
-  return rank != null && rank > 0 && rank <= cap;
+  return matchTennisOppRank(opponentRankOnMatchDay(row), vsRank);
 }
 
 function windowRows(rows: TennisMatchRow[], windowN: AdvAvgWindow, year: number): TennisMatchRow[] {
@@ -289,10 +288,9 @@ export function buildTennisAdvancedAverages(opts: {
   const windowN = ([5, 10, 15, 20, 0] as const).includes(windowRaw as AdvAvgWindow)
     ? (windowRaw as AdvAvgWindow)
     : 15;
-  const vsRank: AdvAvgVsRank =
-    opts.vsRank === '10' || opts.vsRank === '20' || opts.vsRank === '50' || opts.vsRank === '100'
-      ? opts.vsRank
-      : 'all';
+  const vsRank: AdvAvgVsRank = ADV_AVG_VS_RANKS.some((option) => option.id === opts.vsRank)
+    ? (opts.vsRank as AdvAvgVsRank)
+    : 'all';
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim();
   const tour =

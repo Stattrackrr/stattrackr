@@ -12,6 +12,7 @@ import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
 import { GET as getWorldCupPlayerPropsList } from '@/app/api/world-cup/dashboard/route';
+import { GET as getTennisPlayerPropsList } from '@/app/api/tennis/player-props/list/route';
 import { filterWorldCupListPropsByMinOdds } from '@/lib/worldCupCache';
 import {
   COMBINED_PROPS_PAINT_SNAPSHOT_CACHE_KEY,
@@ -87,6 +88,20 @@ function aggregateAflProps(listData: any): {
     seasonHitRate?: { hits: number; total: number } | null;
     dvpRating?: number | null;
     dvpStatValue?: number | null;
+    dvpFieldSize?: number | null;
+    headshotUrl?: string | null;
+    opponentName?: string | null;
+    playerId?: string | null;
+    homeTeamCode?: string | null;
+    awayTeamCode?: string | null;
+    homeTeamLogo?: string | null;
+    awayTeamLogo?: string | null;
+    playerIoc?: string | null;
+    playerRank?: number | null;
+    opponentIoc?: string | null;
+    opponentRank?: number | null;
+    tournamentName?: string | null;
+    surface?: string | null;
   }>();
 
   for (const row of rows) {
@@ -124,6 +139,20 @@ function aggregateAflProps(listData: any): {
       seasonHitRate: row.seasonHitRate,
       dvpRating: row.dvpRating,
       dvpStatValue: row.dvpStatValue,
+      dvpFieldSize: row.dvpFieldSize,
+      headshotUrl: row.headshotUrl ?? null,
+      opponentName: typeof row.opponent === 'string' ? row.opponent : null,
+      playerId: row.playerId != null ? String(row.playerId) : null,
+      homeTeamCode: row.homeTeamCode ?? null,
+      awayTeamCode: row.awayTeamCode ?? null,
+      homeTeamLogo: row.homeTeamLogo ?? null,
+      awayTeamLogo: row.awayTeamLogo ?? null,
+      playerIoc: row.playerIoc ?? null,
+      playerRank: row.playerRank ?? null,
+      opponentIoc: row.opponentIoc ?? null,
+      opponentRank: row.opponentRank ?? null,
+      tournamentName: row.tournamentName ?? null,
+      surface: row.surface ?? null,
     });
   }
 
@@ -132,14 +161,19 @@ function aggregateAflProps(listData: any): {
     const homeNorm = toOfficialAflTeamDisplayName(row.homeTeam || '');
     const awayNorm = toOfficialAflTeamDisplayName(row.awayTeam || '');
     const playerNorm = playerTeam ? toOfficialAflTeamDisplayName(playerTeam) : null;
-    const team = playerNorm || homeNorm;
-    const opponent = playerNorm
-      ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
-      : awayNorm;
+    const tennisTour = playerTeam === 'ATP' || playerTeam === 'WTA';
+    const playerKey = String(row.playerName || '').trim().toLowerCase();
+    const homeKey = String(row.homeTeam || '').trim().toLowerCase();
+    const team = tennisTour ? playerTeam! : (playerNorm || homeNorm);
+    const opponent = tennisTour
+      ? String(row.opponentName || '').trim() || (playerKey && playerKey === homeKey ? awayNorm : homeNorm)
+      : playerNorm
+        ? (playerNorm === homeNorm ? awayNorm : playerNorm === awayNorm ? homeNorm : awayNorm)
+        : awayNorm;
 
     return {
       playerName: row.playerName,
-      playerId: '',
+      playerId: tennisTour ? String(row.playerId || '') : '',
       team,
       opponent,
       statType: row.statType,
@@ -158,7 +192,17 @@ function aggregateAflProps(listData: any): {
       gameId: row.gameId,
       homeTeam: row.homeTeam,
       awayTeam: row.awayTeam,
+      homeTeamCode: row.homeTeamCode ?? null,
+      awayTeamCode: row.awayTeamCode ?? null,
+      homeTeamLogo: row.homeTeamLogo ?? null,
+      awayTeamLogo: row.awayTeamLogo ?? null,
       playerTeam,
+      playerIoc: row.playerIoc ?? null,
+      playerRank: row.playerRank ?? null,
+      opponentIoc: row.opponentIoc ?? null,
+      opponentRank: row.opponentRank ?? null,
+      tournamentName: row.tournamentName ?? null,
+      surface: row.surface ?? null,
       last5Avg: row.last5Avg,
       last10Avg: row.last10Avg,
       h2hAvg: row.h2hAvg,
@@ -170,6 +214,8 @@ function aggregateAflProps(listData: any): {
       seasonHitRate: row.seasonHitRate,
       dvpRating: row.dvpRating,
       dvpStatValue: row.dvpStatValue,
+      dvpFieldSize: row.dvpFieldSize,
+      headshotUrl: row.headshotUrl ?? null,
     };
   });
 
@@ -416,10 +462,12 @@ export async function buildCombinedPropsSnapshot(
   aflUrl.searchParams.set('enrich', 'true');
   const wcUrl = new URL('/api/world-cup/dashboard', origin);
   wcUrl.searchParams.set('playerPropsList', '1');
+  const tennisUrl = new URL('/api/tennis/player-props/list', origin);
 
   if (refresh) {
     nbaUrl.searchParams.set('refresh', '1');
     aflUrl.searchParams.set('refresh', '1');
+    tennisUrl.searchParams.set('refresh', '1');
   }
   if (debugStats) {
     aflUrl.searchParams.set('debugStats', '1');
@@ -445,26 +493,29 @@ export async function buildCombinedPropsSnapshot(
           ingestMessage: 'World Cup props are not available.',
         })
       );
-  const [nbaResponse, aflResponse, wcResponse] = await Promise.all([
+  const [nbaResponse, aflResponse, wcResponse, tennisResponse] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
     wcPromise,
+    getTennisPlayerPropsList(new NextRequest(tennisUrl, { headers })),
   ]);
 
-  const [nbaPayload, aflPayload, wcPayload] = await Promise.all([
+  const [nbaPayload, aflPayload, wcPayload, tennisPayload] = await Promise.all([
     nbaResponse.json().catch(() => null),
     aflResponse.json().catch(() => null),
     wcResponse.json().catch(() => null),
+    tennisResponse.json().catch(() => null),
   ]);
 
   const aflAggregated = aggregateAflProps(aflPayload);
   const worldCupAggregated = aggregateWorldCupProps(wcPayload);
+  const tennisAggregated = aggregateAflProps(tennisPayload);
   const now = Date.now();
   // Degrade gracefully: the combined slate is usable as long as at least one
   // sport responded. A sport that's out of season (e.g. NBA odds cache empty →
   // 503) should not blank out the other sport's props.
   const snapshot: CombinedPropsSnapshot = {
-    success: nbaResponse.ok || aflResponse.ok || wcResponse.ok,
+    success: nbaResponse.ok || aflResponse.ok || wcResponse.ok || tennisResponse.ok,
     snapshotVersion: 1,
     generatedAt: new Date(now).toISOString(),
     staleAt: new Date(now + COMBINED_PROPS_SNAPSHOT_STALE_MS).toISOString(),
@@ -496,6 +547,16 @@ export async function buildCombinedPropsSnapshot(
       noWorldCupOdds: worldCupAggregated.noWorldCupOdds,
       games: worldCupAggregated.games,
       props: worldCupAggregated.props,
+    },
+    tennis: {
+      ok: tennisResponse.ok,
+      status: tennisResponse.status,
+      lastUpdated: tennisAggregated.lastUpdated,
+      nextUpdate: tennisAggregated.nextUpdate,
+      ingestMessage: tennisPayload?.ingestMessage ?? tennisAggregated.ingestMessage,
+      noTennisOdds: Boolean(tennisPayload?.noTennisOdds) || tennisAggregated.props.length === 0,
+      games: tennisAggregated.games,
+      props: tennisAggregated.props,
     },
   };
 

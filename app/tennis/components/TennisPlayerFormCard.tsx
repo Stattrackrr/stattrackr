@@ -121,10 +121,10 @@ export function TennisPlayerFormCard({
       .then((data) => {
         if (!cancelled) setPayload(data);
       })
-      .catch((err: Error) => {
+      .catch(() => {
         if (cancelled) return;
         setPayload(null);
-        setError(err.message || 'Failed to load form');
+        setError('Error');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -170,7 +170,7 @@ export function TennisPlayerFormCard({
   }
 
   if (error) {
-    return <div className="py-4 text-sm text-red-600 dark:text-red-400">{error}</div>;
+    return <div className="py-4 text-sm text-red-600 dark:text-red-400">Error</div>;
   }
 
   if (!payload || !payload.recent.length) {

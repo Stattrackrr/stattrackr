@@ -8,6 +8,11 @@ import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
+import {
+  TENNIS_OPP_RANK_FILTERS,
+  matchTennisOppRank,
+  type TennisOppRankFilter,
+} from '@/lib/tennis/advancedAveragesShared';
 
 type NblAdvancedFilterKey =
   | 'dvp_rank'
@@ -19,7 +24,22 @@ type NblAdvancedFilterKey =
   | 'rank_blocks'
   | 'rank_threes'
   | null;
-type NblSplitResultFilter = 'all' | 'wins' | 'losses';
+type ChartSurfaceFilter = 'all' | 'hard' | 'clay' | 'grass';
+type ChartBestOfFilter = 'all' | '3' | '5';
+type ChartOppRankFilter = TennisOppRankFilter;
+
+const CHART_SURFACE_FILTERS: Array<{ id: ChartSurfaceFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'hard', label: 'Hard' },
+  { id: 'clay', label: 'Clay' },
+  { id: 'grass', label: 'Grass' },
+];
+const CHART_BEST_OF_FILTERS: Array<{ id: ChartBestOfFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: '3', label: 'BO3' },
+  { id: '5', label: 'BO5' },
+];
+const CHART_OPP_RANK_FILTERS = TENNIS_OPP_RANK_FILTERS;
 const NBL_ADVANCED_OPPONENT_RANK_FILTERS: Array<{
   key: Exclude<NblAdvancedFilterKey, 'dvp_rank' | 'minutes' | null>;
   label: string;
@@ -112,6 +132,7 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
   const point = payload[0]?.payload as
     | {
         opponent?: string;
+        opponentRank?: number | null;
         result?: string;
         value?: number | null;
         gameDate?: string;
@@ -246,13 +267,32 @@ function NblChartTooltip({ active, payload, coordinate, isDark, selectedStatLabe
           <div
             style={{
               marginTop: dateShort ? 3 : 0,
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 6,
+              minWidth: 0,
               fontSize: 13,
               fontWeight: 600,
               color: tooltipText,
               lineHeight: 1.3,
             }}
           >
-            {point.opponent ? `vs ${point.opponent}` : dateShort ? '' : '-'}
+            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {point.opponent ? `vs ${point.opponent}` : dateShort ? '' : '-'}
+            </span>
+            {typeof point.opponentRank === 'number' && point.opponentRank > 0 ? (
+              <span
+                style={{
+                  flexShrink: 0,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: labelColor,
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                #{point.opponentRank}
+              </span>
+            ) : null}
           </div>
         </div>
         {gameResultLabel && (
@@ -518,12 +558,103 @@ function extractVenueFromGameLog(game: Record<string, unknown>): string {
   return '';
 }
 
-function getGameOutcome(resultRaw: unknown): 'wins' | 'losses' | null {
-  const result = String(resultRaw ?? '').trim().toLowerCase();
-  if (!result) return null;
-  if (result.startsWith('w') || result.includes('win') || result.includes('won')) return 'wins';
-  if (result.startsWith('l') || result.includes('loss') || result.includes('lost')) return 'losses';
+function chartSurfaceKey(raw: unknown): ChartSurfaceFilter | null {
+  const key = String(raw ?? '').trim().toLowerCase();
+  if (!key) return null;
+  if (key.includes('hard')) return 'hard';
+  if (key.includes('clay')) return 'clay';
+  if (key.includes('grass')) return 'grass';
   return null;
+}
+
+function matchChartBestOf(raw: unknown, filter: ChartBestOfFilter): boolean {
+  if (filter === 'all') return true;
+  const n = Number(raw);
+  if (filter === '5') return Number.isFinite(n) && n >= 5;
+  return Number.isFinite(n) ? n < 5 : true;
+}
+
+function matchChartOppRank(raw: unknown, filter: ChartOppRankFilter): boolean {
+  return matchTennisOppRank(raw, filter);
+}
+
+function chartOpponentRank(raw: unknown): number | null {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
+function ChartMiniDropdown<T extends string>({
+  value,
+  options,
+  onChange,
+  widthClass = 'w-20',
+  idleLabel,
+}: {
+  value: T;
+  options: ReadonlyArray<{ id: T; label: string }>;
+  onChange: (value: T) => void;
+  widthClass?: string;
+  idleLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((option) => option.id === value) ?? options[0];
+  const isIdle = value === 'all' || value === options[0]?.id;
+  const buttonLabel = isIdle ? idleLabel : selected.label;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`${widthClass} px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border rounded-xl text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 ${
+          !isIdle
+            ? 'border-purple-300 dark:border-purple-600 bg-purple-100 dark:bg-purple-900/30'
+            : 'border-gray-300 dark:border-gray-600'
+        }`}
+      >
+        <span className="truncate">{buttonLabel}</span>
+        <svg className="w-3 h-3 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open ? (
+        <>
+          <div className={`absolute top-full left-0 mt-1 ${widthClass} min-w-full bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto`}>
+            {options.map((option) => {
+              const optionLabel = option.id === 'all' ? (isIdle ? idleLabel : 'All') : option.label;
+              return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  onChange(option.id);
+                  setOpen(false);
+                }}
+                className={`w-full px-2 py-1.5 text-xs font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
+                  value === option.id
+                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                    : 'text-gray-900 dark:text-white'
+                }`}
+              >
+                {optionLabel}
+              </button>
+              );
+            })}
+          </div>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function parseRoundIndex(round: unknown): number {
@@ -586,6 +717,8 @@ interface NblStatsChartProps {
   gamePropsTeam?: string | null;
   /** Increment/change to force-close chart UI controls (splits/advanced) on context changes. */
   uiResetToken?: string | number;
+  /** ATP shows Format (BO3/BO5); WTA hides it. */
+  tour?: 'ATP' | 'WTA' | null;
 }
 
 export function TennisStatsChart({
@@ -619,6 +752,7 @@ export function TennisStatsChart({
   nextOpponent = null,
   gamePropsTeam = null,
   uiResetToken,
+  tour = null,
 }: NblStatsChartProps) {
   const [chartLogoByTeam, setChartLogoByTeam] = useState<Record<string, string>>({});
   const [teammateGameKeys, setTeammateGameKeys] = useState<Set<string>>(new Set());
@@ -797,12 +931,11 @@ export function TennisStatsChart({
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
   const [lineValue, setLineValue] = useState(0);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
-  const [showSplitsFilters, setShowSplitsFilters] = useState(false);
-  const [splitResultFilter, setSplitResultFilter] = useState<NblSplitResultFilter>('all');
-  const [splitVenueFilter, setSplitVenueFilter] = useState<string>('all');
+  const [surfaceFilter, setSurfaceFilter] = useState<ChartSurfaceFilter>('all');
+  const [bestOfFilter, setBestOfFilter] = useState<ChartBestOfFilter>('all');
+  const [oppRankFilter, setOppRankFilter] = useState<ChartOppRankFilter>('all');
   const timeframeDropdownRef = useRef<HTMLDivElement>(null);
-  const venueDropdownRef = useRef<HTMLDivElement>(null);
-  const [isVenueDropdownOpen, setIsVenueDropdownOpen] = useState(false);
+  const showBestOfFilter = tour !== 'WTA';
   const lineSyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoSyncedStatRef = useRef<string | null>(null);
 
@@ -902,54 +1035,10 @@ export function TennisStatsChart({
     });
   }, [dedupedGameLogs, teammateFilterName, teammateGameKeys, withWithoutMode]);
 
-  const venueOptions = useMemo(() => {
-    const fromGames = new Set<string>();
-    let hasRealVenue = false;
-    for (const game of filteredGameLogs) {
-      const raw = (game as Record<string, unknown>).venue;
-      if (typeof raw === 'string' && raw.trim()) {
-        fromGames.add(raw.trim());
-        hasRealVenue = true;
-      }
-    }
-    if (hasRealVenue) return Array.from(fromGames).sort();
-    // No venue strings — use Home/Away pseudo-venues
-    return ['Home', 'Away'];
-  }, [filteredGameLogs]);
-  const venueCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const game of filteredGameLogs) {
-      if (splitResultFilter !== 'all') {
-        const outcome = getGameOutcome((game as Record<string, unknown>).result);
-        if (outcome !== splitResultFilter) continue;
-      }
-      const venue = extractVenueFromGameLog(game as Record<string, unknown>);
-      if (!venue) continue;
-      counts.set(venue, (counts.get(venue) ?? 0) + 1);
-    }
-    return counts;
-  }, [filteredGameLogs, splitResultFilter]);
-  const visibleVenueOptions = useMemo(
-    () => venueOptions.filter((venue) => (venueCounts.get(venue) ?? 0) > 0),
-    [venueOptions, venueCounts]
-  );
-  const totalVenueGames = useMemo(
-    () => Array.from(venueCounts.values()).reduce((sum, n) => sum + n, 0),
-    [venueCounts]
-  );
-
   useEffect(() => {
-    if (splitVenueFilter === 'all') return;
-    if (!(visibleVenueOptions as readonly string[]).includes(splitVenueFilter)) {
-      setSplitVenueFilter('all');
-    }
-  }, [splitVenueFilter, visibleVenueOptions]);
-
-  useEffect(() => {
-    setShowSplitsFilters(false);
-    setIsVenueDropdownOpen(false);
-    setSplitResultFilter('all');
-    setSplitVenueFilter('all');
+    setSurfaceFilter('all');
+    setBestOfFilter('all');
+    setOppRankFilter('all');
     setIsTimeframeDropdownOpen(false);
     setSelectedAdvancedFilter(null);
     if (showAdvancedFilters && setShowAdvancedFilters) {
@@ -957,6 +1046,10 @@ export function TennisStatsChart({
     }
     resetAdvancedRanges();
   }, [uiResetToken]);
+
+  useEffect(() => {
+    if (!showBestOfFilter && bestOfFilter !== 'all') setBestOfFilter('all');
+  }, [showBestOfFilter, bestOfFilter]);
 
   const splitFilteredGameLogs = useMemo(() => {
     const filtered = filteredGameLogs.filter((g) => {
@@ -966,18 +1059,13 @@ export function TennisStatsChart({
         if (nblGameFilters.minutesMin != null && (mins == null || mins < nblGameFilters.minutesMin)) return false;
         if (nblGameFilters.minutesMax != null && (mins == null || mins > nblGameFilters.minutesMax)) return false;
       }
-      if (splitResultFilter !== 'all') {
-        const outcome = getGameOutcome(g.result);
-        if (outcome !== splitResultFilter) return false;
-      }
-      if (splitVenueFilter !== 'all') {
-        const venue = extractVenueFromGameLog(g as Record<string, unknown>);
-        if (venue !== splitVenueFilter) return false;
-      }
+      if (surfaceFilter !== 'all' && chartSurfaceKey(g.surface) !== surfaceFilter) return false;
+      if (showBestOfFilter && !matchChartBestOf(g.bestOf, bestOfFilter)) return false;
+      if (!matchChartOppRank(g.opponentRank, oppRankFilter)) return false;
       return true;
     });
     return dedupeNblGames(filtered as Record<string, unknown>[]) as typeof filteredGameLogs;
-  }, [filteredGameLogs, splitResultFilter, splitVenueFilter, nblGameFilters]);
+  }, [filteredGameLogs, nblGameFilters, surfaceFilter, showBestOfFilter, bestOfFilter, oppRankFilter]);
 
   const chartSourceLogs = useMemo(() => {
     if (mode !== 'team') {
@@ -1035,6 +1123,7 @@ export function TennisStatsChart({
       tickLabel: tennisOpponentCode(opponent),
       round,
       opponent,
+      opponentRank: chartOpponentRank(g.opponentRank),
       opponentIoc: String(g.opponentIoc || '').trim() || null,
       result,
       score: String(g.score ?? ''),
@@ -1193,11 +1282,16 @@ export function TennisStatsChart({
 
   const sliderStep = hasDecimalValues ? 0.1 : 0.5;
 
+  const isFilterEmpty =
+    selectedTimeframe !== 'h2h' &&
+    (chartData.length === 0 || (dedupedGameLogs.length === 0 && hasActiveAdvancedRangeFilter));
+
   // Y-axis: defaults to positive-only stats; spread uses symmetric negative/positive domain like NBA team mode.
   const yAxisConfig = useMemo(() => {
-    if (!chartData.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
-
-    const values = numericChartValues(chartData);
+    const axisRows = chartData.length
+      ? chartData
+      : filteredGameLogs.map((g, idx) => gameToChartRow(g as Record<string, unknown>, idx));
+    const values = numericChartValues(axisRows);
     if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 3, 7, 10] };
 
     const isMoneylineStat =
@@ -1260,7 +1354,26 @@ export function TennisStatsChart({
       domain: [0, max] as [number, number],
       ticks,
     };
-  }, [chartData, selectedStat]);
+  }, [chartData, selectedStat, filteredGameLogs, gameToChartRow]);
+
+  const placeholderChartData = useMemo(() => {
+    const [min, max] = yAxisConfig.domain;
+    const span = Math.max(0.01, max - min);
+    const heights = [0.52, 0.78, 0.38, 0.86, 0.58, 0.46, 0.70, 0.42, 0.64, 0.55];
+    return heights.map((h, i) => ({
+      key: `empty-${i}`,
+      xKey: `empty-${i}`,
+      tickLabel: '',
+      opponent: '',
+      opponentIoc: null,
+      value: min + span * h * 0.88,
+      gameDate: '',
+      gameId: `empty-${i}`,
+      stats: { pts: 0, reb: 0, ast: 0 },
+    }));
+  }, [yAxisConfig.domain]);
+
+  const emptyFilterTooltip = useCallback(() => null, []);
 
   const selectedStatLabel = useMemo(() => formatStatLabel(selectedStat || 'stat'), [selectedStat]);
 
@@ -1337,9 +1450,6 @@ export function TennisStatsChart({
     const handleClickOutside = (e: MouseEvent) => {
       if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(e.target as Node)) {
         setIsTimeframeDropdownOpen(false);
-      }
-      if (venueDropdownRef.current && !venueDropdownRef.current.contains(e.target as Node)) {
-        setIsVenueDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -1483,15 +1593,15 @@ export function TennisStatsChart({
         </div>
       </div>
 
-      {/* One row: Line input + Timeframe dropdown next to each other */}
+      {/* One row: Line input + Timeframe + Surface / Format / Opp rank */}
       <div
         className={`space-y-2 sm:space-y-3 md:space-y-4 ${
-          showAdvancedFilters || showSplitsFilters
+          showAdvancedFilters
             ? 'mb-1 sm:mb-2 md:mb-2 lg:mb-3'
             : 'mb-2 sm:mb-3 md:mb-4 lg:mb-6'
         }`}
       >
-        <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1">
+        <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 pl-0 sm:pl-0 ml-0 sm:ml-1 w-full">
           {slotLeftOfLine}
           <input
             id="betting-line-input"
@@ -1563,13 +1673,31 @@ export function TennisStatsChart({
               </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setShowSplitsFilters((prev) => !prev)}
-            className={`w-20 px-2 py-1.5 h-[32px] bg-white dark:bg-[#0a1929] border border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 text-center flex items-center justify-center flex-shrink-0 relative lg:ml-auto ${showSplitsFilters ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600 shadow-[0_0_15px_rgba(139,92,246,0.5)] dark:shadow-[0_0_15px_rgba(139,92,246,0.7)]' : ''}`}
-          >
-            Splits
-          </button>
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2 md:gap-3 ml-auto">
+            <ChartMiniDropdown
+              value={surfaceFilter}
+              options={CHART_SURFACE_FILTERS}
+              onChange={setSurfaceFilter}
+              widthClass="w-[4.75rem]"
+              idleLabel="Surface"
+            />
+            {showBestOfFilter ? (
+              <ChartMiniDropdown
+                value={bestOfFilter}
+                options={CHART_BEST_OF_FILTERS}
+                onChange={setBestOfFilter}
+                widthClass="w-[4.75rem]"
+                idleLabel="Format"
+              />
+            ) : null}
+            <ChartMiniDropdown
+              value={oppRankFilter}
+              options={CHART_OPP_RANK_FILTERS}
+              onChange={setOppRankFilter}
+              widthClass="w-[6.5rem]"
+              idleLabel="Opp rank"
+            />
+          </div>
           {slotRightOfControls != null && (
             <div className="flex items-center flex-shrink-0">
               {slotRightOfControls}
@@ -1578,140 +1706,72 @@ export function TennisStatsChart({
         </div>
       </div>
 
-      {showSplitsFilters && (
-        <div className="mb-2 px-2 lg:-mt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Result</span>
-            {([
-              { key: 'all', label: 'All' },
-              { key: 'wins', label: 'Wins' },
-              { key: 'losses', label: 'Losses' },
-            ] as const).map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setSplitResultFilter(option.key)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  splitResultFilter === option.key
-                    ? 'bg-purple-600 text-white border-purple-400/30'
-                    : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-
-            <div className="flex items-center gap-1.5 w-full lg:w-auto lg:ml-auto">
-              <div className="relative" ref={venueDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsVenueDropdownOpen((prev) => !prev)}
-                  className="w-32 sm:w-36 md:w-40 lg:w-40 px-2 py-1.5 sm:px-2 sm:py-1.5 md:px-3 md:py-2 bg-white dark:bg-gray-900 dark:border-gray-700 border border-gray-300 rounded-xl text-xs sm:text-xs md:text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <span className="truncate">
-                    {splitVenueFilter === 'all'
-                      ? `All venues (${totalVenueGames})`
-                      : `${splitVenueFilter} (${venueCounts.get(splitVenueFilter) ?? 0})`}
-                  </span>
-                  <svg className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isVenueDropdownOpen && (
-                  <>
-                    <div className="absolute top-full right-0 mt-1 w-44 sm:w-48 md:w-52 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSplitVenueFilter('all');
-                          setIsVenueDropdownOpen(false);
-                        }}
-                        className={`w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 first:rounded-t-lg ${
-                          splitVenueFilter === 'all'
-                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                            : 'text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {`All venues (${totalVenueGames})`}
-                      </button>
-                      {visibleVenueOptions.map((venue, index) => (
-                        <button
-                          key={venue}
-                          type="button"
-                          onClick={() => {
-                            setSplitVenueFilter(venue);
-                            setIsVenueDropdownOpen(false);
-                          }}
-                          className={`w-full px-2 py-1.5 sm:px-2.5 sm:py-2 text-xs sm:text-sm font-medium text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                            splitVenueFilter === venue
-                              ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                              : 'text-gray-900 dark:text-white'
-                          } ${index === visibleVenueOptions.length - 1 ? 'rounded-b-lg' : ''}`}
-                        >
-                          {`${venue} (${venueCounts.get(venue) ?? 0})`}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsVenueDropdownOpen(false)} aria-hidden />
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 min-h-0 relative">
         {chartData.length === 0 && selectedTimeframe === 'h2h' ? (
           <div className="h-full w-full flex items-center justify-center p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">No recent H2H found</p>
           </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-full w-full flex items-center justify-center p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
-          </div>
-        ) : dedupedGameLogs.length === 0 && hasActiveAdvancedRangeFilter ? (
-          <div className="h-full w-full flex items-center justify-center p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">No stats match selected filters</p>
-          </div>
         ) : (
-          <SimpleChart
-            key={`nbl-chart-${showAdvancedFilters ? 'advanced' : 'base'}-${selectedAdvancedFilter ?? 'none'}`}
-            chartData={chartData}
-            yAxisConfig={yAxisConfig}
-            isDark={isDark}
-            bettingLine={lineValue}
-            selectedStat={selectedStat}
-            selectedTimeframe={selectedTimeframe}
-            secondAxisData={showAdvancedFilters ? secondAxisData : null}
-            selectedFilterForAxis={showAdvancedFilters ? selectedAdvancedFilter : null}
-            secondaryRankAxisMax={10}
-            customTooltip={customTooltip}
-            customXAxisTick={nblXAxisTick}
-            xAxisHeight={52}
-            yAxisTickFormatter={(value) =>
-              selectedStat === 'dominanceRatio' ? Number(value).toFixed(1) : String(Math.round(value))
-            }
-            preservePrimaryYAxisTicks={
-              selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)
-            }
-            disableBarAnimation={false}
-            barAnimationDuration={180}
-            chartAnimationKey={`${mode}-${selectedStat}-${selectedTimeframe}-${chartData.map((row) => row.xKey).join('|')}`}
-            teammateFilterName={teammateFilterName}
-            withWithoutMode={withWithoutMode}
-            clearTeammateFilter={clearTeammateFilter}
-            centerAverageOverlay={true}
-            averageOverlayLowerOnMobile={true}
-            averageOverlayLower={showAdvancedFilters}
-            averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
-            desktopChartLeftInset={24}
-            desktopChartRightInset={showAdvancedFilters ? 2 : 8}
-            desktopChartRightInsetWithSecondAxis={showAdvancedFilters ? 28 : 64}
-            desktopChartRightMargin={showAdvancedFilters ? 2 : 8}
-            desktopChartRightMarginWithSecondAxis={showAdvancedFilters ? 0 : 4}
-            yAxisWidth={26}
-          />
+          <div className="h-full w-full relative isolate">
+            <SimpleChart
+              key={`nbl-chart-${showAdvancedFilters ? 'advanced' : 'base'}-${selectedAdvancedFilter ?? 'none'}-${isFilterEmpty ? 'empty' : 'data'}`}
+              chartData={isFilterEmpty ? placeholderChartData : chartData}
+              yAxisConfig={yAxisConfig}
+              isDark={isDark}
+              bettingLine={lineValue}
+              selectedStat={selectedStat}
+              selectedTimeframe={selectedTimeframe}
+              secondAxisData={isFilterEmpty || !showAdvancedFilters ? null : secondAxisData}
+              selectedFilterForAxis={isFilterEmpty || !showAdvancedFilters ? null : selectedAdvancedFilter}
+              secondaryRankAxisMax={10}
+              customTooltip={isFilterEmpty ? emptyFilterTooltip : customTooltip}
+              customXAxisTick={nblXAxisTick}
+              xAxisHeight={52}
+              yAxisTickFormatter={(value) =>
+                selectedStat === 'dominanceRatio' ? Number(value).toFixed(1) : String(Math.round(value))
+              }
+              preservePrimaryYAxisTicks={
+                selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)
+              }
+              disableBarAnimation={false}
+              barAnimationDuration={isFilterEmpty ? 320 : 180}
+              chartAnimationKey={
+                isFilterEmpty
+                  ? `empty-${selectedStat}-${selectedTimeframe}-${surfaceFilter}-${bestOfFilter}-${oppRankFilter}`
+                  : `${mode}-${selectedStat}-${selectedTimeframe}-${chartData.map((row) => row.xKey).join('|')}`
+              }
+              teammateFilterName={isFilterEmpty ? null : teammateFilterName}
+              withWithoutMode={withWithoutMode}
+              clearTeammateFilter={clearTeammateFilter}
+              centerAverageOverlay={true}
+              averageOverlayLowerOnMobile={true}
+              averageOverlayLower={showAdvancedFilters}
+              averageOverlayLowerExtra={showAdvancedFilters && !selectedAdvancedFilter}
+              desktopChartLeftInset={24}
+              desktopChartRightInset={showAdvancedFilters ? 2 : 8}
+              desktopChartRightInsetWithSecondAxis={showAdvancedFilters ? 28 : 64}
+              desktopChartRightMargin={showAdvancedFilters ? 2 : 8}
+              desktopChartRightMarginWithSecondAxis={showAdvancedFilters ? 0 : 4}
+              yAxisWidth={26}
+              forceGreyBars={isFilterEmpty}
+              hideBarValueLabels={isFilterEmpty}
+              hideAverageOverlay={isFilterEmpty}
+              hideBettingLineOverlay={isFilterEmpty}
+            />
+            {isFilterEmpty ? (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[200]">
+                <p
+                  className={`text-sm font-medium px-3 py-1 rounded-md ${
+                    isDark
+                      ? 'text-gray-200 bg-[#0a1929]/80'
+                      : 'text-gray-700 bg-white/80'
+                  }`}
+                >
+                  Please adjust filters
+                </p>
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
     </div>

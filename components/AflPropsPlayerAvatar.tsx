@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
 
 type Size = 'md' | 'sm';
 
@@ -27,6 +28,7 @@ export function AflPropsPlayerAvatar({
   const dim = size === 'md' ? 'w-12 h-12 text-sm' : 'w-10 h-10 text-xs';
   const borderColor = mounted && isDark ? '#4b5563' : '#e5e7eb';
   const textColor = mounted && isDark ? '#a78bfa' : '#9333ea';
+  const tennisComZoom = tennisComAvatarImgStyle(headshotUrl);
 
   return (
     <div
@@ -38,7 +40,8 @@ export function AflPropsPlayerAvatar({
         <img
           src={headshotUrl!}
           alt=""
-          className="w-full h-full object-cover object-top"
+          className={`w-full h-full object-cover ${tennisComZoom ? '' : 'object-top'}`}
+          style={tennisComZoom}
           loading="eager"
           fetchPriority="auto"
           decoding="async"

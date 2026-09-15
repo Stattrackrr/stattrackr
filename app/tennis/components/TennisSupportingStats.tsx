@@ -36,9 +36,9 @@ export type SupportingStatKind =
   | 'spread';
 
 const ALL_TOGGLE_OPTIONS: { value: SupportingStatKind; label: string }[] = [
+  { value: 'totalAces', label: TENNIS_STAT_LABELS.totalAces },
   { value: 'aces', label: TENNIS_STAT_LABELS.aces },
   { value: 'opponentAces', label: TENNIS_STAT_LABELS.opponentAces },
-  { value: 'totalAces', label: TENNIS_STAT_LABELS.totalAces },
   { value: 'totalSets', label: TENNIS_STAT_LABELS.totalSets },
   { value: 'dominanceRatio', label: TENNIS_STAT_LABELS.dominanceRatio },
   { value: 'doubleFaults', label: TENNIS_STAT_LABELS.doubleFaults },
@@ -60,22 +60,22 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
   const mainKey = String(main || '');
   const preferred: SupportingStatKind[] =
     mainKey === 'aces'
-      ? ['opponentAces', 'totalAces', 'doubleFaults', 'firstServePct']
+      ? ['totalAces', 'opponentAces', 'doubleFaults', 'firstServePct']
       : mainKey === 'opponentAces'
-        ? ['aces', 'totalAces', 'doubleFaults', 'gamesLost']
+        ? ['totalAces', 'aces', 'doubleFaults', 'gamesLost']
         : mainKey === 'totalAces'
           ? ['aces', 'opponentAces', 'doubleFaults', 'gamesWon']
           : mainKey === 'totalSets'
-            ? ['totalGames', 'spread', 'gamesWon', 'aces']
+            ? ['totalGames', 'spread', 'gamesWon', 'totalAces']
           : mainKey === 'dominanceRatio'
-            ? ['returnPointsWon', 'firstServePct', 'aces', 'totalSets']
+            ? ['returnPointsWon', 'firstServePct', 'totalAces', 'totalSets']
           : mainKey === 'doubleFaults'
-        ? ['aces', 'firstServePct', 'gamesWon']
+        ? ['totalAces', 'firstServePct', 'gamesWon']
         : mainKey === 'gamesWon' || mainKey === 'gamesLost' || mainKey === 'totalGames'
-          ? ['aces', 'pointsWon', 'totalSets', 'spread']
+          ? ['totalAces', 'pointsWon', 'totalSets', 'spread']
           : mainKey === 'moneyline' || mainKey === 'spread'
-            ? ['totalGames', 'gamesWon', 'gamesLost', 'aces']
-            : ['aces', 'doubleFaults', 'gamesWon', 'firstServePct', 'pointsWon'];
+            ? ['totalGames', 'gamesWon', 'gamesLost', 'totalAces']
+            : ['totalAces', 'doubleFaults', 'gamesWon', 'firstServePct', 'pointsWon'];
   const seen = new Set<SupportingStatKind>();
   const ordered: SupportingStatKind[] = [];
   for (const key of preferred) {
@@ -88,7 +88,7 @@ function supportingOptionsForMain(main?: string): { value: SupportingStatKind; l
 }
 
 export function defaultSupportingStatForMain(mainChartStat?: string): SupportingStatKind {
-  return supportingOptionsForMain(mainChartStat)[0]?.value ?? 'aces';
+  return supportingOptionsForMain(mainChartStat)[0]?.value ?? 'totalAces';
 }
 
 type BaseRow = { xKey: string; opponent: string; key: string; tickLabel: string; round: string; gameSeason?: number };

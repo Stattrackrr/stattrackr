@@ -35,5 +35,8 @@ export function slimCombinedPropsSnapshotForClient(
     nba: { ...snapshot.nba, props: mapProps(snapshot.nba.props) },
     afl: { ...snapshot.afl, props: mapProps(snapshot.afl.props) },
     worldCup: { ...snapshot.worldCup, props: mapProps(snapshot.worldCup.props) },
+    tennis: snapshot.tennis
+      ? { ...snapshot.tennis, props: mapProps(snapshot.tennis.props) }
+      : snapshot.tennis,
   };
 }

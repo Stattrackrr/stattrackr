@@ -12,12 +12,47 @@ export const ADV_AVG_BEST_OF = [
   { id: '5', label: 'BO5' },
 ] as const;
 
+export const TENNIS_OPP_RANK_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'top10', label: 'Top 10' },
+  { id: '11-25', label: '11-25' },
+  { id: '26-50', label: '26-50' },
+  { id: '51-100', label: '51-100' },
+  { id: '101-250', label: '101-250' },
+  { id: '251-500', label: '251-500' },
+  { id: '500+', label: '500+' },
+] as const;
+
+export type TennisOppRankFilter = (typeof TENNIS_OPP_RANK_FILTERS)[number]['id'];
+
+const OPP_RANK_RANGE: Record<Exclude<TennisOppRankFilter, 'all'>, { min: number; max: number }> = {
+  top10: { min: 1, max: 10 },
+  '11-25': { min: 11, max: 25 },
+  '26-50': { min: 26, max: 50 },
+  '51-100': { min: 51, max: 100 },
+  '101-250': { min: 101, max: 250 },
+  '251-500': { min: 251, max: 500 },
+  '500+': { min: 501, max: Number.POSITIVE_INFINITY },
+};
+
+export function matchTennisOppRank(raw: unknown, filter: TennisOppRankFilter): boolean {
+  if (filter === 'all') return true;
+  const rank = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(rank) || rank <= 0) return false;
+  const range = OPP_RANK_RANGE[filter];
+  if (!range) return true;
+  return rank >= range.min && rank <= range.max;
+}
+
 export const ADV_AVG_VS_RANKS = [
   { id: 'all', label: 'vs All' },
-  { id: '10', label: 'Top 10' },
-  { id: '20', label: 'Top 20' },
-  { id: '50', label: 'Top 50' },
-  { id: '100', label: 'Top 100' },
+  { id: 'top10', label: 'Top 10' },
+  { id: '11-25', label: '11-25' },
+  { id: '26-50', label: '26-50' },
+  { id: '51-100', label: '51-100' },
+  { id: '101-250', label: '101-250' },
+  { id: '251-500', label: '251-500' },
+  { id: '500+', label: '500+' },
 ] as const;
 
 export const ADV_AVG_COLUMNS = [

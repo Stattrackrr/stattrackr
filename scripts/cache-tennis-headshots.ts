@@ -5,8 +5,9 @@
  * Active = currently ranked OR played in the current season (same set as currentOnly roster).
  * Prefer official ATP/WTA square headshots, then ESPN, then API-Tennis logos.
  * ATP images are scraped from atptour.com (opens a Chrome window; Cloudflare
- * blocks headless fetches). WTA images come from wtafiles.blob.core.windows.net.
- * Files land in public/images/tennis/headshots/{id}.jpg
+ * blocks headless fetches). WTA prefers tennis.com studio portraits, then the
+ * blob .png cutout, then the player-page Torso PNG.
+ * Files land in public/images/tennis/headshots/{id}.jpg or .png
  *
  * Usage:
  *   npx tsx scripts/cache-tennis-headshots.ts
@@ -75,8 +76,10 @@ const CONCURRENCY = Math.max(1, Number(argValue('concurrency')) || 4);
 const LIMIT = Math.max(0, Number(argValue('limit')) || 0);
 const ATP_HEADSHOT = (id: string) =>
   `https://www.atptour.com/-/media/alias/player-headshot/${id.toLowerCase()}`;
-const WTA_HEADSHOT = (id: string) =>
+const WTA_HEADSHOT_JPG = (id: string) =>
   `https://wtafiles.blob.core.windows.net/images/headshots/${id}.jpg`;
+const WTA_HEADSHOT_PNG = (id: string) =>
+  `https://wtafiles.blob.core.windows.net/images/headshots/${id}.png`;
 const CHROME_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -235,6 +238,23 @@ function looksLikeImage(buf: Buffer): boolean {
   return false;
 }
 
+function looksLikePng(buf: Buffer): boolean {
+  return buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+}
+
+function fileLooksLikePng(file: string): boolean {
+  if (!fs.existsSync(file)) return false;
+  const fd = fs.openSync(file, 'r');
+  const buf = Buffer.alloc(8);
+  fs.readSync(fd, buf, 0, 8, 0);
+  fs.closeSync(fd);
+  return looksLikePng(buf);
+}
+
+function hasStudioWtaHeadshot(playerId: string): boolean {
+  return fileLooksLikePng(tennisHeadshotFilePath(playerId, 'png'));
+}
+
 async function downloadImage(url: string, dest: string): Promise<boolean> {
   const espn = /espncdn\.com/i.test(url);
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -295,15 +315,23 @@ function markEntry(
   player: ApiTennisPlayer,
   remoteUrl: string | null,
   ok: boolean,
-  extra?: { source?: TennisHeadshotSource; espnId?: string | null; atpId?: string | null; wtaId?: string | null }
+  extra?: {
+    source?: TennisHeadshotSource;
+    espnId?: string | null;
+    atpId?: string | null;
+    wtaId?: string | null;
+    ext?: 'jpg' | 'png';
+  }
 ) {
   const prev = index.byPlayerId[player.playerId];
+  const ext = extra?.ext || prev?.ext || 'jpg';
   index.byPlayerId[player.playerId] = {
     name: player.name,
     tour: player.tour,
     remoteUrl,
-    file: ok ? tennisHeadshotPublicPath(player.playerId) : prev?.file || null,
+    file: ok ? tennisHeadshotPublicPath(player.playerId, ext) : prev?.file || null,
     ok,
+    ext,
     source: extra?.source || prev?.source,
     espnId: extra?.espnId || prev?.espnId,
     atpId: extra?.atpId || prev?.atpId,
@@ -488,7 +516,7 @@ async function scrapeAtpHeadshots(
       if (buf) {
         fs.mkdirSync(tennisHeadshotsPublicDir(), { recursive: true });
         fs.writeFileSync(tennisHeadshotFilePath(player.playerId), buf);
-        markEntry(index, player, ATP_HEADSHOT(atpId), true, { source: 'atp', atpId });
+        markEntry(index, player, ATP_HEADSHOT(atpId), true, { source: 'atp', atpId, ext: 'jpg' });
         ok += 1;
       } else {
         miss += 1;
@@ -552,26 +580,172 @@ async function searchWtaPlayerId(name: string): Promise<string | null> {
   return null;
 }
 
-async function downloadWtaHeadshot(wtaId: string, dest: string): Promise<boolean> {
-  const url = WTA_HEADSHOT(wtaId);
+function wtaPlayerSlug(name: string): string {
+  return (
+    String(name || 'player')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'player'
+  );
+}
+
+function tennisComSlugCandidates(name: string): string[] {
+  const parts = foldTennisName(name).split(' ').filter(Boolean);
+  const out: string[] = [];
+  const push = (tokens: string[]) => {
+    const slug = tokens.filter(Boolean).join('-');
+    if (slug && !out.includes(slug)) out.push(slug);
+  };
+  push(parts);
+  if (parts.length >= 3) {
+    push([parts[parts.length - 1], ...parts.slice(0, -1)]);
+    push([...parts.slice(1), parts[0]]);
+  }
+  return out;
+}
+
+function tennisComPageMatches(html: string, name: string): boolean {
+  const title = String(html.match(/<title>([^<]+)/i)?.[1] || '')
+    .replace(/&amp;/g, '&')
+    .replace(/\s*\|\s*Tennis\.com.*$/i, '');
+  const page = foldTennisName(title);
+  const want = foldTennisName(name);
+  if (!page || !want) return false;
+  if (page.includes(want) || want.includes(page)) return true;
+  const tokens = want.split(' ').filter((t) => t.length > 1);
+  if (tokens.length < 2) return page.includes(tokens[0] || '');
+  return tokens.every((t) => page.includes(t));
+}
+
+async function fetchTennisComHeadshot(name: string): Promise<{ url: string; buf: Buffer } | null> {
+  for (const slug of tennisComSlugCandidates(name)) {
+    const pageUrl = `https://www.tennis.com/players-rankings/${slug}`;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await fetch(pageUrl, {
+          headers: {
+            Accept: 'text/html,application/xhtml+xml',
+            'User-Agent': CHROME_UA,
+            Referer: 'https://www.tennis.com/players-rankings',
+          },
+          redirect: 'follow',
+        });
+        if (res.status === 429 || res.status >= 500) {
+          await sleep(attempt * 900);
+          continue;
+        }
+        if (!res.ok) break;
+        const html = await res.text();
+        if (!tennisComPageMatches(html, name)) break;
+        const playerMatch = html.match(
+          /https:\/\/media\.prod\.tennis\.com\/v1\/tcf\/images\/players\/[0-9a-f-]+\/[^"'?\s>]+\.png/i
+        );
+        const headshotMatch = html.match(
+          /https:\/\/media\.prod\.tennis\.com\/v1\/tcf\/images\/headshots\/[0-9a-f-]+\.png/i
+        );
+        const raw = playerMatch?.[0] || headshotMatch?.[0];
+        if (!raw) break;
+        const imgUrl = `${raw.split('?')[0]}?w=750&fm=png`;
+        const buf = await fetchWtaImageBytes(imgUrl);
+        if (buf && looksLikePng(buf) && buf.length > 8_000) return { url: imgUrl, buf };
+        break;
+      } catch {
+        await sleep(attempt * 400);
+      }
+    }
+  }
+  return null;
+}
+
+async function fetchWtaTorsoPng(
+  wtaId: string,
+  name: string
+): Promise<{ url: string; buf: Buffer } | null> {
+  const pageUrl = `https://www.wtatennis.com/players/${wtaId}/${wtaPlayerSlug(name)}`;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch(url, { headers: { Accept: 'image/jpeg,image/*,*/*;q=0.8' } });
+      const res = await fetch(pageUrl, {
+        headers: {
+          Accept: 'text/html,application/xhtml+xml',
+          'User-Agent': CHROME_UA,
+          Referer: 'https://www.wtatennis.com/rankings/singles',
+        },
+      });
       if (res.status === 429 || res.status >= 500) {
-        await sleep(attempt * 700);
+        await sleep(attempt * 900);
         continue;
       }
-      if (!res.ok) return false;
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (!looksLikeImage(buf)) return false;
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, buf);
-      return true;
+      if (!res.ok) return null;
+      const html = await res.text();
+      const match = html.match(
+        /https:\/\/photoresources\.wtatennis\.com\/photo-resources\/[^"'\\\s>]+\-Torso_[^"'\\\s>]+\.png/i
+      );
+      if (!match) return null;
+      const torsoUrl = `${match[0].split('?')[0]}?width=790&height=740`;
+      const buf = await fetchWtaImageBytes(torsoUrl);
+      if (buf && looksLikePng(buf) && buf.length > 20_000) return { url: torsoUrl, buf };
+      return null;
     } catch {
       await sleep(attempt * 400);
     }
   }
-  return false;
+  return null;
+}
+
+async function fetchWtaImageBytes(url: string): Promise<Buffer | null> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: 'image/png,image/jpeg,image/*,*/*;q=0.8',
+          'User-Agent': CHROME_UA,
+        },
+      });
+      if (res.status === 429 || res.status >= 500) {
+        await sleep(attempt * 700);
+        continue;
+      }
+      if (!res.ok) return null;
+      const buf = Buffer.from(await res.arrayBuffer());
+      return looksLikeImage(buf) ? buf : null;
+    } catch {
+      await sleep(attempt * 400);
+    }
+  }
+  return null;
+}
+
+async function downloadWtaHeadshot(
+  playerId: string,
+  wtaId: string,
+  name: string
+): Promise<{ url: string; ext: 'jpg' | 'png' } | null> {
+  const pngBuf = await fetchWtaImageBytes(WTA_HEADSHOT_PNG(wtaId));
+  if (pngBuf && looksLikePng(pngBuf)) {
+    const dest = tennisHeadshotFilePath(playerId, 'png');
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, pngBuf);
+    const jpg = tennisHeadshotFilePath(playerId, 'jpg');
+    if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
+    return { url: WTA_HEADSHOT_PNG(wtaId), ext: 'png' };
+  }
+  const torso = await fetchWtaTorsoPng(wtaId, name);
+  if (torso) {
+    const dest = tennisHeadshotFilePath(playerId, 'png');
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, torso.buf);
+    const jpg = tennisHeadshotFilePath(playerId, 'jpg');
+    if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
+    return { url: torso.url, ext: 'png' };
+  }
+  const jpgBuf = pngBuf || (await fetchWtaImageBytes(WTA_HEADSHOT_JPG(wtaId)));
+  if (!jpgBuf) return null;
+  const dest = tennisHeadshotFilePath(playerId, 'jpg');
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, jpgBuf);
+  return { url: WTA_HEADSHOT_JPG(wtaId), ext: 'jpg' };
 }
 
 async function scrapeWtaHeadshots(
@@ -586,29 +760,45 @@ async function scrapeWtaHeadshots(
     return na - nb;
   });
   let list = ranked.filter((p) => {
+    if (REFRESH) return true;
     const entry = index.byPlayerId[p.playerId];
-    if (!REFRESH && entry?.source === 'wta' && fs.existsSync(tennisHeadshotFilePath(p.playerId))) return false;
-    return true;
+    if (entry?.source === 'tennis-com' && hasStudioWtaHeadshot(p.playerId)) return false;
+    return Boolean(String(p.name || '').trim());
   });
   if (LIMIT) list = list.slice(0, LIMIT);
 
-  console.log(`[tennis-headshots] WTA looking up ${list.length} official headshots (concurrency=${Math.min(CONCURRENCY, 6)})`);
+  console.log(`[tennis-headshots] WTA looking up ${list.length} tennis.com headshots (concurrency=${Math.min(CONCURRENCY, 5)})`);
   let ok = 0;
   let miss = 0;
-  await mapPool(list, Math.min(CONCURRENCY, 6), async (player) => {
-    const dest = tennisHeadshotFilePath(player.playerId);
-    let wtaId = String(index.byPlayerId[player.playerId]?.wtaId || '').trim();
-    if (!wtaId) wtaId = (await searchWtaPlayerId(player.name)) || '';
-    if (!wtaId) {
-      miss += 1;
-      return;
-    }
-    if (await downloadWtaHeadshot(wtaId, dest)) {
-      markEntry(index, player, WTA_HEADSHOT(wtaId), true, { source: 'wta', wtaId });
+  await mapPool(list, Math.min(CONCURRENCY, 5), async (player) => {
+    const fromCom = await fetchTennisComHeadshot(player.name);
+    if (fromCom) {
+      const dest = tennisHeadshotFilePath(player.playerId, 'png');
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, fromCom.buf);
+      const jpg = tennisHeadshotFilePath(player.playerId, 'jpg');
+      if (fs.existsSync(jpg)) fs.unlinkSync(jpg);
+      markEntry(index, player, fromCom.url, true, {
+        source: 'tennis-com',
+        wtaId: index.byPlayerId[player.playerId]?.wtaId,
+        ext: 'png',
+      });
       ok += 1;
     } else {
-      markEntry(index, player, WTA_HEADSHOT(wtaId), false, { source: undefined, wtaId });
-      miss += 1;
+      let wtaId = String(index.byPlayerId[player.playerId]?.wtaId || '').trim();
+      if (!wtaId) wtaId = (await searchWtaPlayerId(player.name)) || '';
+      if (!wtaId) {
+        miss += 1;
+        return;
+      }
+      const saved = await downloadWtaHeadshot(player.playerId, wtaId, player.name);
+      if (saved) {
+        markEntry(index, player, saved.url, true, { source: 'wta', wtaId, ext: saved.ext });
+        ok += 1;
+      } else {
+        markEntry(index, player, WTA_HEADSHOT_JPG(wtaId), false, { source: undefined, wtaId });
+        miss += 1;
+      }
     }
     if ((ok + miss) % 25 === 0) {
       saveIndex(index);
@@ -630,16 +820,24 @@ async function main() {
   const index = loadIndex();
   fs.mkdirSync(tennisHeadshotsPublicDir(), { recursive: true });
   for (const file of fs.readdirSync(tennisHeadshotsPublicDir())) {
-    const id = file.replace(/\.jpg$/i, '');
-    if (!id || id === file) continue;
+    const match = file.match(/^(.+)\.(jpg|jpeg|png)$/i);
+    if (!match) continue;
+    const id = match[1];
+    const ext = match[2].toLowerCase() === 'png' ? 'png' : 'jpg';
     const existing = index.byPlayerId[id];
-    if (existing?.ok && existing.file) continue;
+    if (existing?.ok && existing.file && existing.ext === 'png') continue;
+    if (existing?.ok && existing.file && ext === 'jpg' && existing.ext === 'png') continue;
     index.byPlayerId[id] = {
       name: existing?.name,
       tour: existing?.tour,
       remoteUrl: existing?.remoteUrl || null,
-      file: tennisHeadshotPublicPath(id),
+      file: tennisHeadshotPublicPath(id, ext),
       ok: true,
+      ext,
+      source: existing?.source,
+      espnId: existing?.espnId,
+      atpId: existing?.atpId,
+      wtaId: existing?.wtaId,
     };
   }
 
@@ -668,13 +866,8 @@ async function main() {
   }
 
   const wtaPlayers = players.filter((p) => String(p.tour || '').toUpperCase() === 'WTA');
-  const needWta = wtaPlayers.filter((p) => {
-    const entry = index.byPlayerId[p.playerId];
-    if (!REFRESH && entry?.source === 'wta' && fs.existsSync(tennisHeadshotFilePath(p.playerId))) return false;
-    return true;
-  });
-  console.log(`[tennis-headshots] WTA players=${wtaPlayers.length} needRefresh=${needWta.length}`);
-  if (!ATP_ONLY && needWta.length) {
+  console.log(`[tennis-headshots] WTA players=${wtaPlayers.length}`);
+  if (!ATP_ONLY) {
     const wta = await scrapeWtaHeadshots(wtaPlayers, index);
     saveIndex(index);
     console.log(`[tennis-headshots] WTA done hit=${wta.ok} miss=${wta.miss}`);
@@ -690,7 +883,7 @@ async function main() {
   }
 
   const wantEspn = players.filter((p) => {
-    if (index.byPlayerId[p.playerId]?.source === 'atp' || index.byPlayerId[p.playerId]?.source === 'wta') return false;
+    if (index.byPlayerId[p.playerId]?.source === 'atp' || index.byPlayerId[p.playerId]?.source === 'wta' || index.byPlayerId[p.playerId]?.source === 'tennis-com') return false;
     const espnId = espnIdForName(p.name);
     if (!espnId) return false;
     const entry = index.byPlayerId[p.playerId];
@@ -722,7 +915,7 @@ async function main() {
 
   const needLookup = players.filter((p) => {
     const src = index.byPlayerId[p.playerId]?.source;
-    if (src === 'atp' || src === 'wta' || src === 'espn') return false;
+    if (src === 'atp' || src === 'wta' || src === 'tennis-com' || src === 'espn') return false;
     if (!REFRESH && fs.existsSync(tennisHeadshotFilePath(p.playerId))) return false;
     return REFRESH || !knownRemoteUrl(p, index);
   });
@@ -730,7 +923,7 @@ async function main() {
   for (const player of players) {
     if (needLookupIds.has(player.playerId)) continue;
     const src = index.byPlayerId[player.playerId]?.source;
-    if (src === 'atp' || src === 'wta' || src === 'espn') continue;
+    if (src === 'atp' || src === 'wta' || src === 'tennis-com' || src === 'espn') continue;
     const dest = tennisHeadshotFilePath(player.playerId);
     markEntry(index, player, knownRemoteUrl(player, index), !REFRESH && fs.existsSync(dest), {
       source: fs.existsSync(dest) ? 'api-tennis' : undefined,
@@ -757,7 +950,7 @@ async function main() {
 
   const toDownload = players.filter((p) => {
     const src = index.byPlayerId[p.playerId]?.source;
-    if (src === 'atp' || src === 'wta' || src === 'espn') return false;
+    if (src === 'atp' || src === 'wta' || src === 'tennis-com' || src === 'espn') return false;
     const dest = tennisHeadshotFilePath(p.playerId);
     if (!REFRESH && fs.existsSync(dest)) return false;
     return candidateUrls(p, index).length > 0;
@@ -788,12 +981,18 @@ async function main() {
   });
 
   for (const player of players) {
-    const dest = tennisHeadshotFilePath(player.playerId);
+    const png = tennisHeadshotFilePath(player.playerId, 'png');
+    const jpg = tennisHeadshotFilePath(player.playerId, 'jpg');
     const entry = index.byPlayerId[player.playerId];
     if (!entry) continue;
-    if (fs.existsSync(dest)) {
+    if (fs.existsSync(png)) {
       entry.ok = true;
-      entry.file = tennisHeadshotPublicPath(player.playerId);
+      entry.ext = 'png';
+      entry.file = tennisHeadshotPublicPath(player.playerId, 'png');
+    } else if (fs.existsSync(jpg)) {
+      entry.ok = true;
+      entry.ext = entry.ext === 'png' ? 'jpg' : entry.ext || 'jpg';
+      entry.file = tennisHeadshotPublicPath(player.playerId, 'jpg');
     }
   }
   refreshMissing(index, players);

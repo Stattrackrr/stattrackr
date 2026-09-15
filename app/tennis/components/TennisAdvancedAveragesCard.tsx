@@ -107,17 +107,23 @@ export default function TennisAdvancedAveragesCard({
     if (opponent) qs.set('opponent', opponent);
     fetch(`/api/tennis/advanced-averages?${qs.toString()}`)
       .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json?.error || 'Failed to load averages');
-        return json as TennisAdvancedAveragesPayload;
+        const text = await r.text();
+        let json: TennisAdvancedAveragesPayload | null = null;
+        try {
+          json = text ? (JSON.parse(text) as TennisAdvancedAveragesPayload) : null;
+        } catch {
+          throw new Error('Error');
+        }
+        if (!r.ok || !json) throw new Error('Error');
+        return json;
       })
       .then((data) => {
         if (!cancelled) setPayload(data);
       })
-      .catch((err: Error) => {
+      .catch(() => {
         if (cancelled) return;
         setPayload(null);
-        setError(err.message || 'Failed to load averages');
+        setError('Error');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -213,7 +219,7 @@ export default function TennisAdvancedAveragesCard({
             ))}
           </div>
         ) : error ? (
-          <div className="py-4 text-sm text-red-600 dark:text-red-400">{error}</div>
+          <div className="py-4 text-sm text-red-600 dark:text-red-400">Error</div>
         ) : (
           <table className="w-full min-w-[760px] border-separate border-spacing-0 text-[11px]">
             <thead>

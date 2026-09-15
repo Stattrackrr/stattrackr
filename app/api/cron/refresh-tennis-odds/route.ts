@@ -4,7 +4,7 @@ import { refreshTennisOddsSnapshots } from '@/lib/tennis/odds';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 /**
  * Pull The Odds API once per active tennis sport, merge with API-Tennis get_odds,

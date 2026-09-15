@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadApiTennisCache } from '@/lib/tennis/apiTennis';
+import { loadApiTennisRoster } from '@/lib/tennis/apiTennis';
 import {
   loadPlayerMatches,
   tourForPlayer,
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     tour: tour || games[0]?.tour || null,
     year: games.at(-1)?.season ?? null,
-    fetchedAt: loadApiTennisCache()?.fetchedAt ?? null,
+    fetchedAt: loadApiTennisRoster()?.fetchedAt ?? null,
     games,
   });
 }

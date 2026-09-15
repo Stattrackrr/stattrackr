@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export type TennisHeadshotSource = 'atp' | 'wta' | 'espn' | 'api-tennis' | 'wikipedia';
+export type TennisHeadshotSource = 'atp' | 'wta' | 'tennis-com' | 'espn' | 'api-tennis' | 'wikipedia';
 
 export type TennisHeadshotEntry = {
   name?: string;
@@ -18,11 +18,12 @@ export type TennisHeadshotEntry = {
   espnId?: string;
   atpId?: string;
   wtaId?: string;
+  ext?: 'jpg' | 'png';
 };
 
 export type TennisHeadshotsIndex = {
   generatedAt: string;
-  source: 'atp' | 'wta' | 'espn' | 'api-tennis' | 'wikipedia' | 'mixed';
+  source: 'atp' | 'wta' | 'tennis-com' | 'espn' | 'api-tennis' | 'wikipedia' | 'mixed';
   byPlayerId: Record<string, TennisHeadshotEntry>;
   missing: string[];
 };
@@ -47,12 +48,12 @@ export function tennisHeadshotsIndexPath(): string {
   return path.join(process.cwd(), 'data', 'tennis', 'api-tennis', 'headshots.json');
 }
 
-export function tennisHeadshotPublicPath(playerId: string): string {
-  return `/images/tennis/headshots/${playerId}.jpg`;
+export function tennisHeadshotPublicPath(playerId: string, ext: 'jpg' | 'png' = 'jpg'): string {
+  return `/images/tennis/headshots/${playerId}.${ext}`;
 }
 
-export function tennisHeadshotFilePath(playerId: string): string {
-  return path.join(tennisHeadshotsPublicDir(), `${playerId}.jpg`);
+export function tennisHeadshotFilePath(playerId: string, ext: 'jpg' | 'png' = 'jpg'): string {
+  return path.join(tennisHeadshotsPublicDir(), `${playerId}.${ext}`);
 }
 
 export function loadTennisHeadshotsIndex(): TennisHeadshotsIndex | null {
@@ -96,8 +97,18 @@ export function resolveTennisHeadshotUrl(
   const id = String(playerId || '').trim();
   if (!id) return String(remote || '').trim() || null;
   if (localHeadshotIds().has(id)) {
-    const stamp = loadTennisHeadshotsIndex()?.generatedAt || '1';
-    return `${tennisHeadshotPublicPath(id)}?v=${encodeURIComponent(stamp).slice(0, 24)}`;
+    const index = loadTennisHeadshotsIndex();
+    const entry = index?.byPlayerId?.[id];
+    const publicPath =
+      String(entry?.file || '').trim() ||
+      tennisHeadshotPublicPath(id, entry?.ext === 'png' ? 'png' : 'jpg');
+    const stamp = index?.generatedAt || '1';
+    const qs = new URLSearchParams({ v: encodeURIComponent(stamp).slice(0, 24) });
+    const remoteUrl = String(entry?.remoteUrl || '');
+    if (entry?.source === 'tennis-com' && /\/tcf\/images\/players\//i.test(remoteUrl)) {
+      qs.set('crop', 'wide');
+    }
+    return `${publicPath}?${qs.toString()}`;
   }
   const fromIndex = loadTennisHeadshotsIndex()?.byPlayerId?.[id];
   if (fromIndex && fromIndex.ok === false) {

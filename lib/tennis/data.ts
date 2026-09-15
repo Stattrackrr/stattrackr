@@ -15,12 +15,14 @@ import {
   loadApiTennisMatches,
   loadApiTennisPlayers,
   loadApiTennisRankings,
+  loadApiTennisRoster,
   tennisBestOf,
   tennisCacheMtime,
 } from '@/lib/tennis/apiTennis';
 import { tennisOverlayGeneration } from '@/lib/tennis/ingest';
 import { withTennisHands } from '@/lib/tennis/hands';
 import { tennisRankHistoryMtime, withTennisMatchDayRanks } from '@/lib/tennis/rankHistory';
+import { applyTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
@@ -46,6 +48,24 @@ function roundSortValue(round: string | null | undefined): number {
   return ROUND_SORT[String(round || '').toUpperCase().trim()] ?? 0;
 }
 
+function prepareMatchRows(rows: TennisMatchRow[]): TennisMatchRow[] {
+  return tennisMatchesPlayed(
+    rows.map((row) => {
+      const bestOf = tennisBestOf(row.tour, row.isGrandSlam);
+      const next = row.bestOf === bestOf ? row : { ...row, bestOf };
+      return withTennisMatchDayRanks(withTennisHands(applyTennisSurface(next)));
+    })
+  );
+}
+
+type CachedTourDvp = {
+  allowed: Map<string, DvpBucket>;
+  own: Map<string, DvpBucket>;
+  ranked: TennisRankingRow[];
+  rankedById: Map<string, TennisRankingRow>;
+  activeIds: Set<string>;
+};
+
 type DataRuntime = {
   generation: number;
   matches: Map<string, TennisMatchRow[]>;
@@ -54,6 +74,7 @@ type DataRuntime = {
   allPlayers: TennisPlayer[] | null;
   currentPlayers: TennisPlayer[] | null;
   currentSeasonIds: Set<string> | null;
+  dvpTours: Map<string, CachedTourDvp>;
 };
 
 function dataRuntime(): DataRuntime {
@@ -68,7 +89,10 @@ function dataRuntime(): DataRuntime {
       allPlayers: null,
       currentPlayers: null,
       currentSeasonIds: null,
+      dvpTours: new Map(),
     };
+  } else if (!g.__tennisData.dvpTours) {
+    g.__tennisData.dvpTours = new Map();
   }
   return g.__tennisData;
 }
@@ -105,13 +129,7 @@ export function loadTennisMatches(years?: readonly number[]): TennisMatchRow[] {
     runtime.matches.set(key, []);
     return [];
   }
-  const matches = tennisMatchesPlayed(
-    api.map((row) => {
-      const bestOf = tennisBestOf(row.tour, row.isGrandSlam);
-      const next = row.bestOf === bestOf ? row : { ...row, bestOf };
-      return withTennisMatchDayRanks(withTennisHands(next));
-    })
-  );
+  const matches = prepareMatchRows(api);
   runtime.matches.set(key, matches);
   indexMatches(key, matches);
   return matches;
@@ -121,9 +139,9 @@ function currentSeasonPlayerIds(): Set<string> {
   const runtime = dataRuntime();
   if (runtime.currentSeasonIds) return runtime.currentSeasonIds;
   const ids = new Set<string>();
-  for (const row of loadApiTennisCache()?.matches || []) {
-    if (row.season === TENNIS_CURRENT_YEAR) ids.add(row.playerId);
-  }
+  const roster = loadApiTennisRoster();
+  for (const row of roster?.standings?.ATP || []) ids.add(row.playerId);
+  for (const row of roster?.standings?.WTA || []) ids.add(row.playerId);
   runtime.currentSeasonIds = ids;
   return ids;
 }
@@ -145,15 +163,8 @@ export function loadTennisPlayers(opts?: { currentOnly?: boolean }): TennisPlaye
   if (!apiPlayers?.length) return [];
   if (!runtime.allPlayers) runtime.allPlayers = sortPlayers(apiPlayers);
   if (!opts?.currentOnly) return runtime.allPlayers;
-  const ranked = new Set(
-    [...(loadApiTennisRankings('ATP') || []), ...(loadApiTennisRankings('WTA') || [])].map(
-      (row) => row.playerId
-    )
-  );
-  const played = currentSeasonPlayerIds();
-  runtime.currentPlayers = runtime.allPlayers.filter(
-    (p) => ranked.has(p.playerId) || played.has(p.playerId)
-  );
+  const ranked = currentSeasonPlayerIds();
+  runtime.currentPlayers = runtime.allPlayers.filter((p) => ranked.has(p.playerId));
   return runtime.currentPlayers;
 }
 
@@ -178,26 +189,41 @@ export function loadPlayerMatches(opts: {
   tour?: TennisTour | null;
 }): TennisMatchRow[] {
   const yearList = TENNIS_HISTORY_YEARS;
-  const key = matchesKey(yearList);
-  const matches = loadTennisMatches(yearList);
-  const runtime = dataRuntime();
+  const wantedYears = new Set(yearList);
   const id = String(opts.playerId || '').trim();
   const name = String(opts.playerName || '').trim().toLowerCase();
-  let rows: TennisMatchRow[] | undefined;
-  if (id) rows = runtime.byPlayerId.get(key)?.get(id);
-  if (!rows?.length && name) rows = runtime.byPlayerName.get(key)?.get(name);
-  if (!rows?.length && name) {
-    const last = tennisLastName(name).toLowerCase();
-    const initial = name.replace(/[^a-z]/g, '')[0] || '';
-    rows = matches.filter(
-      (row) =>
-        last &&
+  const key = matchesKey(yearList);
+  const runtime = dataRuntime();
+  if (runtime.matches.has(key)) {
+    let rows: TennisMatchRow[] | undefined;
+    if (id) rows = runtime.byPlayerId.get(key)?.get(id);
+    if (!rows?.length && name) rows = runtime.byPlayerName.get(key)?.get(name);
+    let out = rows ? [...rows] : [];
+    if (opts.tour) out = out.filter((row) => row.tour === opts.tour);
+    out.sort(
+      (a, b) =>
+        String(a.date || '').localeCompare(String(b.date || '')) ||
+        roundSortValue(a.round) - roundSortValue(b.round) ||
+        a.matchId.localeCompare(b.matchId)
+    );
+    return out;
+  }
+
+  const api = loadApiTennisCache()?.matches || [];
+  const last = name ? tennisLastName(name).toLowerCase() : '';
+  const initial = name.replace(/[^a-z]/g, '')[0] || '';
+  const raw = api.filter((row) => {
+    if (!wantedYears.has(row.season)) return false;
+    if (id && row.playerId === id) return true;
+    if (name && row.playerName.toLowerCase() === name) return true;
+    return Boolean(
+      last &&
         initial &&
         tennisLastName(row.playerName).toLowerCase() === last &&
         row.playerName.toLowerCase().replace(/[^a-z]/g, '').startsWith(initial)
     );
-  }
-  let out = rows ? [...rows] : [];
+  });
+  let out = prepareMatchRows(raw);
   if (opts.tour) out = out.filter((row) => row.tour === opts.tour);
   out.sort(
     (a, b) =>
@@ -371,32 +397,42 @@ export function tennisDvpProfile(opts: {
   tour: TennisTour;
   year: number;
   opponentName?: string | null;
+  opponentId?: string | null;
 }): TennisDvpProfile {
   const tour = opts.tour;
   const year = opts.year;
-  const ranked = loadTennisRankings(tour, { limit: 200 });
-  const rankedById = new Map(ranked.map((p) => [p.playerId, p]));
-  const matches = loadTennisMatches().filter((row) => row.tour === tour && row.season === year);
-
-  const allowed = new Map<string, DvpBucket>();
-  const own = new Map<string, DvpBucket>();
-  for (const row of matches) {
-    const date = row.date || '';
-    const vs = touchDvpBucket(allowed, row.opponentId, row.opponent, row.opponentIoc, date);
-    const me = touchDvpBucket(own, row.playerId, row.playerName, row.ioc, date);
-    for (const metric of TENNIS_DVP_METRICS) {
-      const bucket = metric.source === 'own' ? me : vs;
-      addDvpValue(bucket, metric.key, row[metric.key as keyof TennisMatchRow]);
+  const runtime = dataRuntime();
+  const cacheKey = `${tour}|${year}`;
+  let index = runtime.dvpTours.get(cacheKey);
+  if (!index) {
+    const ranked = loadTennisRankings(tour, { limit: 200 });
+    const rankedById = new Map(ranked.map((p) => [p.playerId, p]));
+    const matches = loadTennisMatches().filter((row) => row.tour === tour && row.season === year);
+    const allowed = new Map<string, DvpBucket>();
+    const own = new Map<string, DvpBucket>();
+    for (const row of matches) {
+      const date = row.date || '';
+      const vs = touchDvpBucket(allowed, row.opponentId, row.opponent, row.opponentIoc, date);
+      const me = touchDvpBucket(own, row.playerId, row.playerName, row.ioc, date);
+      for (const metric of TENNIS_DVP_METRICS) {
+        const bucket = metric.source === 'own' ? me : vs;
+        addDvpValue(bucket, metric.key, row[metric.key as keyof TennisMatchRow]);
+      }
     }
+    const activeIds = new Set<string>();
+    for (const p of ranked) {
+      const sample = allowed.get(p.playerId)?.matches || own.get(p.playerId)?.matches || 0;
+      if (sample >= TENNIS_DVP_MIN_MATCHES) activeIds.add(p.playerId);
+    }
+    index = { allowed, own, ranked, rankedById, activeIds };
+    runtime.dvpTours.set(cacheKey, index);
   }
+  const { allowed, own, ranked, rankedById } = index;
+  const activeIds = new Set(index.activeIds);
 
-  const activeIds = new Set<string>();
-  for (const p of ranked) {
-    const sample = allowed.get(p.playerId)?.matches || own.get(p.playerId)?.matches || 0;
-    if (sample >= TENNIS_DVP_MIN_MATCHES) activeIds.add(p.playerId);
-  }
-
-  const opponentId = findDvpPlayerId(String(opts.opponentName || ''), allowed, ranked);
+  const opponentId =
+    String(opts.opponentId || '').trim() ||
+    findDvpPlayerId(String(opts.opponentName || ''), allowed, ranked);
   if (opponentId) activeIds.add(opponentId);
 
   const opponents: TennisDvpOpponent[] = [...activeIds]

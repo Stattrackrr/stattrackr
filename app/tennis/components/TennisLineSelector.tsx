@@ -7,9 +7,11 @@ import { getBookmakerInfo, getBookmakerRegion, type BookmakerRegion } from '@/li
 import { tennisLastName } from '@/lib/tennis/chartStats';
 import {
   isTennisOuStat,
+  tennisH2hMeetsMinOdds,
   tennisLineMatches,
   tennisMainLineForStat,
   tennisOuEvenness,
+  tennisOuLineIsMain,
   tennisOuLinesForStat,
   tennisParseLineNumber,
   type TennisBookRow,
@@ -118,18 +120,12 @@ export function TennisLineSelector({
     currentLineValue != null && Number.isFinite(currentLineValue)
       ? ouLines.find((row) => tennisLineMatches(row.line, currentLineValue)) ?? mainOu ?? ouLines[0]
       : mainOu ?? ouLines[0];
-  const data = isMoneyline ? selectedBook?.H2H : displayOu;
   const bookmakerInfo = selectedBook ? getBookmakerInfo(selectedBook.name) : null;
   const displayHomeTeam = tennisLastName(homeTeam) || homeTeam;
   const displayAwayTeam = tennisLastName(awayTeam) || awayTeam;
 
   const hasDisplayableOdds = isMoneyline
-    ? Boolean(
-        books.length &&
-          data &&
-          (data as { home?: string }).home !== 'N/A' &&
-          (data as { away?: string }).away !== 'N/A'
-      )
+    ? Boolean(books.length && tennisH2hMeetsMinOdds(selectedBook?.H2H))
     : Boolean(displayOu && (displayOu.over !== 'N/A' || displayOu.under !== 'N/A'));
 
   const selectedBookLineMismatch =
@@ -144,11 +140,14 @@ export function TennisLineSelector({
     ? books.flatMap((book, bookIndex) =>
         tennisOuLinesForStat(book, selectedStat).map((d) => ({ bookIndex, d }))
       ).sort((a, b) => {
+        const aMain = tennisOuLineIsMain(books[a.bookIndex], selectedStat, a.d);
+        const bMain = tennisOuLineIsMain(books[b.bookIndex], selectedStat, b.d);
+        if (aMain !== bMain) return aMain ? -1 : 1;
         const even = tennisOuEvenness(a.d) - tennisOuEvenness(b.d);
         if (even !== 0) return even;
         const na = parseFloat(a.d.line);
         const nb = parseFloat(b.d.line);
-        if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+        if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return nb - na;
         return a.bookIndex - b.bookIndex;
       })
     : [];
@@ -157,7 +156,7 @@ export function TennisLineSelector({
     ? []
     : books
         .map((book, bookIndex) => ({ book, bookIndex }))
-        .filter(({ book }) => book.H2H && (book.H2H.home !== 'N/A' || book.H2H.away !== 'N/A'));
+        .filter(({ book }) => tennisH2hMeetsMinOdds(book.H2H));
   const moneylineGroups = groupByRegion(moneylineItems, (item) => item.book);
   const ouGroups = groupByRegion(ouDropdownItems, (item) => books[item.bookIndex]);
 
@@ -231,7 +230,9 @@ export function TennisLineSelector({
               <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">Select line</div>
             </div>
             <div className="p-2">
-              {books.length === 0 || (!isMoneyline && ouDropdownItems.length === 0) ? (
+              {books.length === 0 ||
+              (!isMoneyline && ouDropdownItems.length === 0) ||
+              (isMoneyline && moneylineItems.length === 0) ? (
                 <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
                   No odds available
                 </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/cronAuth';
 import { refreshTennisMatchOverlay } from '@/lib/tennis/ingest';
-import { publishTennisUpcomingFixtures, warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
+import { warmTennisUpcomingFixtures } from '@/lib/tennis/nextGame';
 import { refreshTennisOddsSnapshots } from '@/lib/tennis/odds';
 
 export const dynamic = 'force-dynamic';
@@ -10,27 +10,20 @@ export const maxDuration = 120;
 
 /**
  * Incremental tennis ingest: last 16 days of finished ATP/WTA singles + standings.
- * Writes sharedCache overlay and keeps scheduled fixtures for next-opponent lookup.
+ * Writes sharedCache overlay and re-pulls live fixture start times for next-opponent lookup.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);
   if (!auth.authorized) return auth.response;
   try {
-    const { fixtures, ...result } = await refreshTennisMatchOverlay();
+    const { fixtures: _fixtures, ...result } = await refreshTennisMatchOverlay();
     let upcomingPlayers = 0;
+    let warmedUpcoming = false;
     try {
-      upcomingPlayers = await publishTennisUpcomingFixtures(fixtures);
+      upcomingPlayers = await warmTennisUpcomingFixtures({ force: true });
+      warmedUpcoming = upcomingPlayers > 0;
     } catch {
-      upcomingPlayers = 0;
-    }
-    let warmedUpcoming = upcomingPlayers > 0;
-    if (!warmedUpcoming) {
-      try {
-        upcomingPlayers = await warmTennisUpcomingFixtures();
-        warmedUpcoming = upcomingPlayers > 0;
-      } catch {
-        warmedUpcoming = false;
-      }
+      warmedUpcoming = false;
     }
     let odds = null;
     try {

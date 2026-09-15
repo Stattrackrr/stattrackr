@@ -139,19 +139,25 @@ export default function TennisDvpCard({
     if (oppSel) params.set('opponent', oppSel);
     fetch(`/api/tennis/dvp?${params}`)
       .then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json?.error || 'Failed to load DVP');
-        return json as DvpPayload;
+        const text = await r.text();
+        let json: DvpPayload | null = null;
+        try {
+          json = text ? (JSON.parse(text) as DvpPayload) : null;
+        } catch {
+          throw new Error('Error');
+        }
+        if (!r.ok || !json) throw new Error('Error');
+        return json;
       })
       .then((data) => {
         if (cancelled) return;
         setPayload(data);
         setError(null);
       })
-      .catch((e: Error) => {
+      .catch(() => {
         if (cancelled) return;
         setPayload(null);
-        setError(e.message);
+        setError('Error');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -294,7 +300,7 @@ export default function TennisDvpCard({
         </div>
 
         {error ? (
-          <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error loading DvP stats: {error}</div>
+          <div className="px-3 py-3 text-xs text-red-500 dark:text-red-400">Error</div>
         ) : loading && !hasData ? (
           <div
             className="overflow-y-scroll overscroll-contain custom-scrollbar flex-1 min-h-0 pr-1 pb-2"

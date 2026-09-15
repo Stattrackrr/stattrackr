@@ -330,14 +330,12 @@ export default function LeftSidebar({
     },
     {
       name: "ATP",
-      href: "/tennis",
-      comingSoon: true,
+      href: "/props?sport=atp",
       logo: <SportLogo sport="atp" />,
     },
     {
       name: "WTA",
-      href: "/tennis",
-      comingSoon: true,
+      href: "/props?sport=wta",
       logo: <SportLogo sport="wta" />,
     },
     // Other sports coming soon

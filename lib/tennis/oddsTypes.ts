@@ -7,6 +7,8 @@ export type TennisBookRegion = BookmakerRegion;
 /** Decimal prices shown in the tennis line selector. */
 export const TENNIS_SELECTOR_MIN_DECIMAL = 1.65;
 export const TENNIS_SELECTOR_MAX_DECIMAL = 2.5;
+/** Moneyline floor so heavy-favorite chalk like 1.05 is not the displayed price. */
+export const TENNIS_MONEYLINE_MIN_DECIMAL = 1.3;
 
 export interface TennisBookRow {
   name: string;
@@ -55,6 +57,58 @@ function decimalInSelectorBand(dec: number | null): boolean {
   return dec >= TENNIS_SELECTOR_MIN_DECIMAL && dec <= TENNIS_SELECTOR_MAX_DECIMAL;
 }
 
+export function tennisH2hMeetsMinOdds(h2h: { home?: string; away?: string } | undefined): boolean {
+  if (!h2h) return false;
+  const home = decimalFromAmericanStr(h2h.home);
+  const away = decimalFromAmericanStr(h2h.away);
+  if (home == null && away == null) return false;
+  if (home != null && home < TENNIS_MONEYLINE_MIN_DECIMAL) return false;
+  if (away != null && away < TENNIS_MONEYLINE_MIN_DECIMAL) return false;
+  return true;
+}
+
+export function tennisMoneylinePriceMeetsMin(odds: string | undefined): boolean {
+  const dec = decimalFromAmericanStr(odds);
+  return dec != null && dec >= TENNIS_MONEYLINE_MIN_DECIMAL;
+}
+
+export function tennisH2hEvenness(h2h: { home?: string; away?: string } | undefined): number {
+  if (!h2h) return Number.POSITIVE_INFINITY;
+  const home = decimalFromAmericanStr(h2h.home);
+  const away = decimalFromAmericanStr(h2h.away);
+  if (home != null && away != null) return Math.abs(home - away);
+  const only = home ?? away;
+  if (only == null) return Number.POSITIVE_INFINITY;
+  return 10 + Math.abs(only - 1.9);
+}
+
+const PREFERRED_TENNIS_BOOKS = ['pointsbet', 'bet365', 'unibet'];
+
+function preferredBookRank(name: string | undefined): number {
+  const hit = PREFERRED_TENNIS_BOOKS.findIndex((needle) =>
+    String(name || '').toLowerCase().includes(needle)
+  );
+  return hit >= 0 ? hit : 99;
+}
+
+export function tennisBestMoneylinePick(books: TennisBookRow[] | undefined): number | undefined {
+  if (!books?.length) return undefined;
+  let best: { bookIndex: number; even: number; preferred: number } | undefined;
+  books.forEach((book, bookIndex) => {
+    if (!tennisH2hMeetsMinOdds(book.H2H)) return;
+    const even = tennisH2hEvenness(book.H2H);
+    const preferred = preferredBookRank(book.name);
+    if (
+      !best ||
+      even < best.even - 0.001 ||
+      (Math.abs(even - best.even) < 0.001 && preferred < best.preferred)
+    ) {
+      best = { bookIndex, even, preferred };
+    }
+  });
+  return best?.bookIndex;
+}
+
 function lineIsHalfPoint(line: string | null | undefined): boolean {
   const n = parseFloat(String(line ?? '').replace(/[^0-9.+-]/g, ''));
   if (!Number.isFinite(n)) return false;
@@ -70,6 +124,12 @@ export function tennisOuLinePlausible(stat: string, line: string | number | null
   if (stat === 'totalSets') return n >= 1.5 && n <= 4.5;
   if (stat === 'spread') return Math.abs(n) >= 0.5 && Math.abs(n) <= 20;
   return true;
+}
+
+/** Same rule as the tennis chart: spread over/cover is value <= line (won by more than the handicap). */
+export function tennisValueHitsOver(stat: string, value: number, line: number): boolean {
+  if (stat === 'spread') return value <= line;
+  return value > line;
 }
 
 export function filterTennisOuLines(stat: string, lines: TennisOuLine[]): TennisOuLine[] {
@@ -113,7 +173,83 @@ function rawLinesForStat(book: TennisBookRow, stat: string): TennisOuLine[] {
 
 export function tennisOuLinesForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine[] {
   if (!book) return [];
-  return filterTennisOuLines(stat, rawLinesForStat(book, stat)).filter(tennisOuLineInSelectorBand);
+  const posted = filterTennisOuLines(stat, rawLinesForStat(book, stat)).filter(tennisOuLineInSelectorBand);
+  return dropMisleadingPlayerTotalAlts(stat, posted, book);
+}
+
+function ouLineNumber(line: TennisOuLine): number {
+  return parseFloat(String(line.line).replace(/[^0-9.+-]/g, ''));
+}
+
+function spreadAbsLines(book: TennisBookRow): Set<number> {
+  const out = new Set<number>();
+  const add = (row: TennisOuLine | undefined) => {
+    if (!row || row.line === 'N/A') return;
+    const n = Math.abs(ouLineNumber(row));
+    if (Number.isFinite(n) && n >= 0.5) out.add(n);
+  };
+  add(book.Spread);
+  for (const row of book.SpreadLines || []) add(row);
+  return out;
+}
+
+/**
+ * Same-market totals must get harder to overlay as the line rises.
+ * 8.5 O 1.95 next to 10.5 O 1.86 is a different market (usually set games) glued on.
+ */
+function dropInvertedTotalAlts(lines: TennisOuLine[]): TennisOuLine[] {
+  if (lines.length < 2) return lines;
+  const main = [...lines].sort((a, b) => tennisOuEvenness(a) - tennisOuEvenness(b))[0];
+  if (!main) return lines;
+  const mainN = ouLineNumber(main);
+  const mainOver = decimalFromAmericanStr(main.over);
+  const mainUnder = decimalFromAmericanStr(main.under);
+  if (mainOver == null) return lines;
+  return lines.filter((row) => {
+    const n = ouLineNumber(row);
+    if (Math.abs(n - mainN) < 0.01) return true;
+    const over = decimalFromAmericanStr(row.over);
+    const under = decimalFromAmericanStr(row.under);
+    if (over == null) return true;
+    if (n < mainN && over > mainOver + 0.02) return false;
+    if (n > mainN && over < mainOver - 0.02) return false;
+    if (under != null && mainUnder != null) {
+      if (n < mainN && under < mainUnder - 0.02) return false;
+      if (n > mainN && under > mainUnder + 0.02) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Player match-game totals sit around 9–20. 6.5/7.5/8.5 next to a 9.5+ ladder are
+ * set totals or handicaps — and their juice will not move like a real alt ladder.
+ */
+function dropMisleadingPlayerTotalAlts(
+  stat: string,
+  lines: TennisOuLine[],
+  book: TennisBookRow
+): TennisOuLine[] {
+  if (stat !== 'gamesWon' && stat !== 'gamesLost') return lines;
+  const spreadAbs = spreadAbsLines(book);
+  const withoutSpread = spreadAbs.size
+    ? lines.filter((row) => !spreadAbs.has(Math.abs(ouLineNumber(row))))
+    : lines;
+  const pool = withoutSpread.length ? withoutSpread : lines;
+  if (!pool.length) return pool;
+  const nums = pool.map(ouLineNumber).filter(Number.isFinite);
+  const max = Math.max(...nums);
+  const matchLike = Number.isFinite(max) && max >= 9.5 ? pool.filter((row) => ouLineNumber(row) >= 9.5) : pool;
+  const ranked = matchLike.length ? matchLike : pool;
+  return dropInvertedTotalAlts(ranked);
+}
+
+function medianLineNumber(lines: TennisOuLine[]): number {
+  const nums = lines.map(ouLineNumber).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!nums.length) return 0;
+  const mid = Math.floor(nums.length / 2);
+  if (nums.length % 2) return nums[mid]!;
+  return (nums[mid - 1]! + nums[mid]!) / 2;
 }
 
 /** Smaller is closer to a true two-way main. One-sided prices rank after any two-way. */
@@ -127,17 +263,32 @@ export function tennisOuEvenness(line: TennisOuLine | undefined): number {
   return 10 + Math.abs(only - 1.9);
 }
 
-function compareOuLinesEvenFirst(a: TennisOuLine, b: TennisOuLine): number {
-  const even = tennisOuEvenness(a) - tennisOuEvenness(b);
-  if (even !== 0) return even;
-  return (parseFloat(a.line) || 0) - (parseFloat(b.line) || 0);
-}
-
 export function tennisMainLineForStat(book: TennisBookRow | undefined, stat: string): TennisOuLine | undefined {
   if (!book) return undefined;
   const lines = tennisOuLinesForStat(book, stat);
   if (!lines.length) return undefined;
-  return [...lines].sort(compareOuLinesEvenFirst)[0];
+  const median = medianLineNumber(lines);
+  const nearMedian = lines.filter((row) => Math.abs(ouLineNumber(row) - median) <= 2);
+  const pool = nearMedian.length ? nearMedian : lines;
+  return [...pool].sort((a, b) => {
+    const even = tennisOuEvenness(a) - tennisOuEvenness(b);
+    if (Math.abs(even) > 0.03) return even;
+    return Math.abs(ouLineNumber(a) - median) - Math.abs(ouLineNumber(b) - median);
+  })[0];
+}
+
+export function tennisOuLineIsMain(
+  book: TennisBookRow | undefined,
+  stat: string,
+  line: TennisOuLine | string | number | null | undefined
+): boolean {
+  const main = tennisMainLineForStat(book, stat);
+  if (!main) return false;
+  const n =
+    typeof line === 'object' && line
+      ? tennisParseLineNumber(line.line)
+      : tennisParseLineNumber(line == null ? null : String(line));
+  return tennisLineMatches(main.line, n);
 }
 
 export function tennisBestOuPick(
@@ -145,20 +296,18 @@ export function tennisBestOuPick(
   stat: string
 ): { bookIndex: number; line: TennisOuLine } | undefined {
   if (!books?.length) return undefined;
-  const preferred = ['pointsbet', 'bet365', 'unibet'];
   let best: { bookIndex: number; line: TennisOuLine; even: number; preferred: number } | undefined;
   books.forEach((book, bookIndex) => {
-    const prefHit = preferred.findIndex((needle) => String(book.name || '').toLowerCase().includes(needle));
-    const prefRank = prefHit >= 0 ? prefHit : 99;
-    for (const line of tennisOuLinesForStat(book, stat)) {
-      const even = tennisOuEvenness(line);
-      if (
-        !best ||
-        even < best.even - 0.001 ||
-        (Math.abs(even - best.even) < 0.001 && prefRank < best.preferred)
-      ) {
-        best = { bookIndex, line, even, preferred: prefRank };
-      }
+    const line = tennisMainLineForStat(book, stat);
+    if (!line) return;
+    const prefRank = preferredBookRank(book.name);
+    const even = tennisOuEvenness(line);
+    if (
+      !best ||
+      even < best.even - 0.001 ||
+      (Math.abs(even - best.even) < 0.001 && prefRank < best.preferred)
+    ) {
+      best = { bookIndex, line, even, preferred: prefRank };
     }
   });
   return best ? { bookIndex: best.bookIndex, line: best.line } : undefined;

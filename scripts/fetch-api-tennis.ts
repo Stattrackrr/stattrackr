@@ -1,16 +1,23 @@
 #!/usr/bin/env tsx
 /**
- * Pull ATP/WTA singles match stats from API-Tennis into data/tennis/api-tennis/cache.json.
- * Usage: npx tsx scripts/fetch-api-tennis.ts
+ * Pull ATP/WTA/Challenger/ITF singles from API-Tennis into data/tennis/api-tennis/cache.json.
+ * Usage:
+ *   npx tsx scripts/fetch-api-tennis.ts
+ *   npx tsx scripts/fetch-api-tennis.ts --incremental
+ *   npx tsx scripts/fetch-api-tennis.ts --backfill-lower
  */
 import fs from 'fs';
 import path from 'path';
 import {
   API_TENNIS_EVENT,
+  API_TENNIS_SINGLES_EVENTS,
+  API_TENNIS_LOWER_SINGLES_EVENTS,
   apiTennisCachePath,
   apiTennisDir,
   countryToIoc,
+  ingestApiFixtures,
   mapApiFixtureToRows,
+  writeApiTennisRoster,
   type ApiPlayerInfo,
   type ApiTennisCache,
   type ApiTennisFixture,
@@ -20,6 +27,7 @@ import {
 import {
   applyIncrementalTennisFetch,
   fetchTennisIncrementalWindow,
+  mergeTennisMatchRows,
   saveTennisMatchOverlay,
 } from '../lib/tennis/ingest';
 import { tennisHeadshotsIndexPath, type TennisHeadshotsIndex } from '../lib/tennis/headshots';
@@ -224,6 +232,7 @@ async function repairBreakPointFractions() {
   cache.matches = [...byId.values()];
   cache.fetchedAt = new Date().toISOString();
   fs.writeFileSync(prevPath, JSON.stringify(cache));
+  writeApiTennisRoster(cache);
   const mb = (fs.statSync(prevPath).size / (1024 * 1024)).toFixed(1);
   const stillHoles = cache.matches.filter(
     (row) =>
@@ -248,6 +257,7 @@ async function incrementalFetch() {
   const { cache, added, updated } = applyIncrementalTennisFetch(prev, incoming, fetchedAt);
   fs.mkdirSync(apiTennisDir(), { recursive: true });
   fs.writeFileSync(prevPath, JSON.stringify(cache));
+  writeApiTennisRoster(cache);
   const mb = (fs.statSync(prevPath).size / (1024 * 1024)).toFixed(1);
   await saveTennisMatchOverlay({
     fetchedAt,
@@ -261,6 +271,88 @@ async function incrementalFetch() {
   );
 }
 
+async function backfillLowerTours() {
+  const prevPath = apiTennisCachePath();
+  if (!fs.existsSync(prevPath)) {
+    throw new Error('Missing cache.json — run a full fetch first');
+  }
+  const prev = JSON.parse(fs.readFileSync(prevPath, 'utf8')) as ApiTennisCache;
+  const today = new Date();
+  const ranges = monthRanges(2024, today);
+  console.log(
+    `[api-tennis] backfill Challenger + ITF singles ${ranges[0]?.start} .. ${ranges.at(-1)?.stop}`
+  );
+  console.log(
+    `[api-tennis] ${ranges.length} months × ${API_TENNIS_LOWER_SINGLES_EVENTS.length} tours = ${ranges.length * API_TENNIS_LOWER_SINGLES_EVENTS.length} fixture calls`
+  );
+
+  const players = new Map<string, ApiPlayerInfo>();
+  for (const player of prev.players || []) {
+    players.set(player.playerId, {
+      playerId: player.playerId,
+      name: player.name,
+      tour: player.tour,
+      ioc: player.ioc ?? null,
+      rank: player.rank ?? null,
+      rankPoints: player.rankPoints ?? null,
+      imageUrl: player.imageUrl ?? null,
+    });
+  }
+
+  const extra: TennisMatchRow[] = [];
+  const seen = new Set((prev.matches || []).map((row) => row.matchId));
+  let fixtureCount = 0;
+
+  for (const event of API_TENNIS_LOWER_SINGLES_EVENTS) {
+    for (const range of ranges) {
+      const json = await apiCall({
+        method: 'get_fixtures',
+        date_start: range.start,
+        date_stop: range.stop,
+        event_type_key: event.eventType,
+      });
+      const fixtures = (Array.isArray(json?.result) ? json.result : []) as ApiTennisFixture[];
+      fixtureCount += fixtures.length;
+      const before = extra.length;
+      extra.push(...ingestApiFixtures(fixtures, players, event.tour, seen));
+      console.log(
+        `[api-tennis] ${event.label} ${range.label}: fixtures=${fixtures.length} newRows=${extra.length - before}`
+      );
+      await sleep(120);
+    }
+  }
+
+  seedExistingLogos(players);
+  const merged = mergeTennisMatchRows(prev.matches || [], extra);
+  const playerList: ApiTennisPlayer[] = [...players.values()]
+    .map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      tour: p.tour,
+      ioc: p.ioc,
+      hand: null,
+      height: null,
+      rank: p.rank,
+      rankPoints: p.rankPoints,
+      imageUrl: p.imageUrl,
+    }))
+    .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.name.localeCompare(b.name));
+
+  const cache: ApiTennisCache = {
+    fetchedAt: new Date().toISOString(),
+    source: 'api-tennis',
+    matches: merged.matches,
+    players: playerList,
+    standings: prev.standings,
+  };
+  fs.writeFileSync(prevPath, JSON.stringify(cache));
+  writeApiTennisRoster(cache);
+  const mb = (fs.statSync(prevPath).size / (1024 * 1024)).toFixed(1);
+  console.log(
+    `[api-tennis] backfill wrote ${prevPath} (${mb} MB) fixtures=${fixtureCount} added=${merged.added} updated=${merged.updated} totalRows=${cache.matches.length}`
+  );
+}
+
 async function main() {
   if (process.argv.includes('--repair')) {
     await repairBreakPointFractions();
@@ -270,11 +362,19 @@ async function main() {
     await incrementalFetch();
     return;
   }
+  if (process.argv.includes('--backfill-lower')) {
+    await backfillLowerTours();
+    return;
+  }
 
   const today = new Date();
   const ranges = monthRanges(2024, today);
-  console.log(`[api-tennis] fetching ATP + WTA singles ${ranges[0]?.start} .. ${ranges.at(-1)?.stop}`);
-  console.log(`[api-tennis] ${ranges.length} months × 2 tours = ${ranges.length * 2} fixture calls`);
+  console.log(
+    `[api-tennis] fetching ATP/WTA/Challenger/ITF singles ${ranges[0]?.start} .. ${ranges.at(-1)?.stop}`
+  );
+  console.log(
+    `[api-tennis] ${ranges.length} months × ${API_TENNIS_SINGLES_EVENTS.length} tours = ${ranges.length * API_TENNIS_SINGLES_EVENTS.length} fixture calls`
+  );
 
   const atpStandingsJson = await apiCall({ method: 'get_standings', event_type: 'ATP' });
   const wtaStandingsJson = await apiCall({ method: 'get_standings', event_type: 'WTA' });
@@ -286,68 +386,28 @@ async function main() {
   for (const row of atpStandings) players.set(String(row.player_key), standingToPlayer(row, 'ATP'));
   for (const row of wtaStandings) players.set(String(row.player_key), standingToPlayer(row, 'WTA'));
 
-  const tours: Array<{ tour: TennisTour; eventType: string }> = [
-    { tour: 'ATP', eventType: API_TENNIS_EVENT.ATP_SINGLES },
-    { tour: 'WTA', eventType: API_TENNIS_EVENT.WTA_SINGLES },
-  ];
+  const tours = API_TENNIS_SINGLES_EVENTS;
 
   const matches: TennisMatchRow[] = [];
   const seen = new Set<string>();
   let fixtureCount = 0;
   let mapped = 0;
 
-  for (const { tour, eventType } of tours) {
+  for (const event of tours) {
     for (const range of ranges) {
       const json = await apiCall({
         method: 'get_fixtures',
         date_start: range.start,
         date_stop: range.stop,
-        event_type_key: eventType,
+        event_type_key: event.eventType,
       });
       const fixtures = (Array.isArray(json?.result) ? json.result : []) as ApiTennisFixture[];
       fixtureCount += fixtures.length;
-      for (const fx of fixtures) {
-        const firstId = String(fx.first_player_key ?? '');
-        const secondId = String(fx.second_player_key ?? '');
-        if (firstId && fx.event_first_player_logo) {
-          const existing = players.get(firstId);
-          if (existing && !existing.imageUrl) existing.imageUrl = fx.event_first_player_logo;
-          if (!existing) {
-            players.set(firstId, {
-              playerId: firstId,
-              name: String(fx.event_first_player || firstId),
-              tour,
-              ioc: null,
-              rank: null,
-              rankPoints: null,
-              imageUrl: fx.event_first_player_logo || null,
-            });
-          }
-        }
-        if (secondId && fx.event_second_player_logo) {
-          const existing = players.get(secondId);
-          if (existing && !existing.imageUrl) existing.imageUrl = fx.event_second_player_logo;
-          if (!existing) {
-            players.set(secondId, {
-              playerId: secondId,
-              name: String(fx.event_second_player || secondId),
-              tour,
-              ioc: null,
-              rank: null,
-              rankPoints: null,
-              imageUrl: fx.event_second_player_logo || null,
-            });
-          }
-        }
-        for (const row of mapApiFixtureToRows(fx, players)) {
-          if (seen.has(row.matchId)) continue;
-          seen.add(row.matchId);
-          matches.push(row);
-          mapped += 1;
-        }
-      }
+      const rows = ingestApiFixtures(fixtures, players, event.tour, seen);
+      matches.push(...rows);
+      mapped += rows.length;
       console.log(
-        `[api-tennis] ${tour} ${range.label}: fixtures=${fixtures.length} rows=${mapped}`
+        `[api-tennis] ${event.label} ${range.label}: fixtures=${fixtures.length} rows=${mapped}`
       );
       await sleep(120);
     }
@@ -383,6 +443,7 @@ async function main() {
   fs.mkdirSync(apiTennisDir(), { recursive: true });
   const out = apiTennisCachePath();
   fs.writeFileSync(out, JSON.stringify(cache));
+  writeApiTennisRoster(cache);
   const mb = (fs.statSync(out).size / (1024 * 1024)).toFixed(1);
   const withAces = matches.filter((m) => m.aces != null).length;
   console.log(

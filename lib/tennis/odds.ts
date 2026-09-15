@@ -11,9 +11,16 @@ import {
   readOddsApiTennisCatalog,
   refreshOddsApiTennisCatalog,
   tennisNamesMatch,
+  tennisTourFromOdds,
   type OddsApiTennisMatch,
 } from '@/lib/tennis/oddsApi';
-import { getTennisNextGame, listUniqueUpcomingTennisGames, type TennisNextGame } from '@/lib/tennis/nextGame';
+import {
+  getTennisNextGame,
+  listUniqueUpcomingTennisGames,
+  tennisCommenceTimeForMatch,
+  warmTennisUpcomingFixtures,
+  type TennisNextGame,
+} from '@/lib/tennis/nextGame';
 import {
   filterTennisOuLines,
   type TennisBookRow,
@@ -26,18 +33,34 @@ export type { TennisBookRow, TennisMatchOdds } from '@/lib/tennis/oddsTypes';
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 const ODDS_CACHE_TTL_SECONDS = 5 * 60;
 const SNAPSHOT_TTL_SECONDS = 24 * 60 * 60;
-const MIN_REFRESH_MS = 90 * 60 * 1000;
-const MAX_SNAPSHOT_MATCHES = 30;
-const REFRESH_META_KEY = 'tennis_odds_refresh_meta_v1';
+const MIN_REFRESH_MS = 25 * 60 * 1000;
+const MAX_SNAPSHOT_MATCHES = 80;
+const REFRESH_META_KEY = 'tennis_odds_refresh_meta_v2';
+const ODDS_INDEX_KEY = 'tennis_odds_index_v1';
 const EMPTY_OU = { line: 'N/A', over: 'N/A', under: 'N/A' };
 
-type TennisOddsSnapshot = {
+export type TennisOddsSnapshot = {
   matchId: string;
   homeName: string;
   awayName: string;
   bookmakers: TennisBookRow[];
   fetchedAt: string;
   oddsApiEventId?: string;
+  commenceTime?: string | null;
+  tour?: string | null;
+  tournamentName?: string | null;
+  sportKey?: string | null;
+};
+
+export type TennisOddsIndexMatch = {
+  matchId: string;
+  homeName: string;
+  awayName: string;
+  commenceTime?: string | null;
+  tour?: string | null;
+  tournamentName?: string | null;
+  oddsApiEventId?: string;
+  sportKey?: string | null;
 };
 
 type TennisOddsRefreshMeta = {
@@ -46,6 +69,7 @@ type TennisOddsRefreshMeta = {
   snapshots: number;
   oddsApiSports: number;
   oddsApiEvents: number;
+  matchIds?: string[];
 };
 
 export type TennisOddsRefreshResult = TennisOddsRefreshMeta & {
@@ -430,7 +454,7 @@ function presentSnapshot(snapshot: TennisOddsSnapshot, next: TennisNextGame): Te
 async function writeSnapshot(
   next: TennisNextGame,
   books: TennisBookRow[],
-  oddsApiEventId?: string
+  extra?: { oddsApiEventId?: string; sportKey?: string | null }
 ): Promise<TennisOddsSnapshot> {
   const snapshot: TennisOddsSnapshot = {
     matchId: String(next.matchId),
@@ -438,10 +462,58 @@ async function writeSnapshot(
     awayName: next.awayName,
     bookmakers: books,
     fetchedAt: new Date().toISOString(),
-    oddsApiEventId,
+    oddsApiEventId: extra?.oddsApiEventId,
+    commenceTime: next.tipoff,
+    tour: next.tour,
+    tournamentName: next.tournamentName,
+    sportKey: extra?.sportKey ?? null,
   };
   await sharedCache.setJSON(snapshotKey(snapshot.matchId), snapshot, SNAPSHOT_TTL_SECONDS);
   return snapshot;
+}
+
+export async function readTennisOddsSnapshot(matchId: string): Promise<TennisOddsSnapshot | null> {
+  const id = String(matchId || '').trim();
+  if (!id) return null;
+  const snapshot = await sharedCache.getJSON<TennisOddsSnapshot>(snapshotKey(id));
+  return snapshot?.bookmakers?.length ? snapshot : null;
+}
+
+export async function listTennisOddsIndex(): Promise<TennisOddsIndexMatch[]> {
+  const index = await sharedCache.getJSON<{ matches?: TennisOddsIndexMatch[] }>(ODDS_INDEX_KEY);
+  return Array.isArray(index?.matches) ? index.matches : [];
+}
+
+async function writeOddsIndex(matches: TennisOddsIndexMatch[]): Promise<void> {
+  await sharedCache.setJSON(
+    ODDS_INDEX_KEY,
+    { fetchedAt: new Date().toISOString(), matches },
+    SNAPSHOT_TTL_SECONDS
+  );
+}
+
+function catalogMatchAsNextGame(match: OddsApiTennisMatch): TennisNextGame {
+  const tour = tennisTourFromOdds(match.sportKey, match.sportTitle);
+  return {
+    opponent: match.awayTeam,
+    opponentId: null,
+    opponentIoc: null,
+    opponentRank: null,
+    opponentLogo: null,
+    tipoff: match.commenceTime || null,
+    live: false,
+    isGrandSlam: /_open$|_french_open|_wimbledon|_us_open|_australian_open/i.test(String(match.sportKey || '')),
+    tour,
+    tournamentName: match.sportTitle || null,
+    tournamentKey: match.sportKey || null,
+    surface: null,
+    round: null,
+    matchId: `odds:${match.eventId}`,
+    status: null,
+    playerIsHome: true,
+    homeName: match.homeTeam,
+    awayName: match.awayTeam,
+  };
 }
 
 function pickRefreshTargets(games: TennisNextGame[]): TennisNextGame[] {
@@ -460,6 +532,40 @@ function refreshInflightRuntime(): {
   return g.__tennisOddsRefresh;
 }
 
+export async function syncTennisCommenceTimesFromUpcoming(): Promise<{ updated: number }> {
+  const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
+  const index = await listTennisOddsIndex();
+  if (!upcoming.length || !index.length) return { updated: 0 };
+  let updated = 0;
+  const nextIndex = index.map((row) => {
+    const tip = tennisCommenceTimeForMatch(upcoming, {
+      matchId: row.matchId,
+      homeName: row.homeName,
+      awayName: row.awayName,
+    });
+    if (tip && tip !== row.commenceTime) {
+      updated += 1;
+      return { ...row, commenceTime: tip };
+    }
+    return row;
+  });
+  if (updated) await writeOddsIndex(nextIndex);
+  await Promise.all(
+    nextIndex.map(async (row) => {
+      const tip = tennisCommenceTimeForMatch(upcoming, {
+        matchId: row.matchId,
+        homeName: row.homeName,
+        awayName: row.awayName,
+      });
+      if (!tip) return;
+      const snap = await readTennisOddsSnapshot(row.matchId);
+      if (!snap || snap.commenceTime === tip) return;
+      await sharedCache.setJSON(snapshotKey(row.matchId), { ...snap, commenceTime: tip }, SNAPSHOT_TTL_SECONDS);
+    })
+  );
+  return { updated };
+}
+
 export async function refreshTennisOddsSnapshots(opts?: {
   force?: boolean;
 }): Promise<TennisOddsRefreshResult> {
@@ -469,9 +575,16 @@ export async function refreshTennisOddsSnapshots(opts?: {
     const previous = await sharedCache.getJSON<TennisOddsRefreshMeta>(REFRESH_META_KEY);
     const ageMs = previous?.fetchedAt ? Date.now() - Date.parse(previous.fetchedAt) : Number.POSITIVE_INFINITY;
     if (!opts?.force && Number.isFinite(ageMs) && ageMs < MIN_REFRESH_MS && previous) {
+      try {
+        await warmTennisUpcomingFixtures({ force: true });
+        await syncTennisCommenceTimesFromUpcoming();
+      } catch {
+        /* keep serving odds; times refresh on the upcoming cron */
+      }
       return { ...previous, skipped: true };
     }
-    const upcoming = await listUniqueUpcomingTennisGames();
+    await warmTennisUpcomingFixtures({ force: true });
+    const upcoming = await listUniqueUpcomingTennisGames({ waitForFresh: false });
     const catalog = await refreshOddsApiTennisCatalog({ upcoming, force: true });
     const targets = pickRefreshTargets(upcoming);
     let snapshots = 0;
@@ -487,17 +600,83 @@ export async function refreshTennisOddsSnapshots(opts?: {
           ]);
           const books = mergeSources(raw, oddsApi, game);
           if (!books.length) return;
-          await writeSnapshot(game, books, oddsApi?.eventId);
+          await writeSnapshot(game, books, {
+            oddsApiEventId: oddsApi?.eventId,
+            sportKey: oddsApi?.sportKey,
+          });
           snapshots += 1;
         })
       );
     }
+    const catalogOnly = (catalog?.matches ?? []).filter(
+      (match) =>
+        !upcoming.some(
+          (game) =>
+            (tennisNamesMatch(match.homeTeam, game.homeName) &&
+              tennisNamesMatch(match.awayTeam, game.awayName)) ||
+            (tennisNamesMatch(match.homeTeam, game.awayName) &&
+              tennisNamesMatch(match.awayTeam, game.homeName))
+        )
+    );
+    for (const match of catalogOnly) {
+      if (!match.books?.length) continue;
+      const next = catalogMatchAsNextGame(match);
+      await writeSnapshot(next, match.books, {
+        oddsApiEventId: match.eventId,
+        sportKey: match.sportKey,
+      });
+      snapshots += 1;
+    }
+    const indexMatches: TennisOddsIndexMatch[] = [];
+    const seen = new Set<string>();
+    for (const game of targets) {
+      const matchId = String(game.matchId || '').trim();
+      if (!matchId || seen.has(matchId)) continue;
+      seen.add(matchId);
+      indexMatches.push({
+        matchId,
+        homeName: game.homeName,
+        awayName: game.awayName,
+        commenceTime: game.tipoff,
+        tour: game.tour,
+        tournamentName: game.tournamentName,
+      });
+    }
+    for (const match of catalogOnly) {
+      const matchId = `odds:${match.eventId}`;
+      if (seen.has(matchId)) continue;
+      seen.add(matchId);
+      indexMatches.push({
+        matchId,
+        homeName: match.homeTeam,
+        awayName: match.awayTeam,
+        commenceTime: match.commenceTime,
+        tour: tennisTourFromOdds(match.sportKey, match.sportTitle),
+        tournamentName: match.sportTitle || null,
+        oddsApiEventId: match.eventId,
+        sportKey: match.sportKey,
+      });
+    }
+    await writeOddsIndex(indexMatches);
+    await Promise.all([
+      sharedCache.deleteJSON('tennis_player_props_list_v4'),
+      sharedCache.deleteJSON('tennis_player_props_list_v5'),
+      sharedCache.deleteJSON('tennis_player_props_list_v6'),
+      sharedCache.deleteJSON('tennis_player_props_list_v7'),
+      sharedCache.deleteJSON('tennis_player_props_list_v8'),
+      sharedCache.deleteJSON('tennis_player_props_list_v9'),
+      sharedCache.deleteJSON('tennis_player_props_list_v10'),
+      sharedCache.deleteJSON('tennis_player_props_list_v11'),
+      sharedCache.deleteJSON('tennis_player_props_list_v12'),
+      sharedCache.deleteJSON('tennis_player_props_list_v13'),
+    ]).catch(() => undefined);
     const meta: TennisOddsRefreshMeta = {
       fetchedAt: new Date().toISOString(),
       upcoming: upcoming.length,
       snapshots,
       oddsApiSports: catalog?.sports.length ?? 0,
       oddsApiEvents: catalog?.matches.length ?? 0,
+      matchIds: indexMatches.map((row) => row.matchId),
     };
     await sharedCache.setJSON(REFRESH_META_KEY, meta, SNAPSHOT_TTL_SECONDS);
     return { ...meta, skipped: false };
@@ -530,7 +709,10 @@ export async function getTennisMatchOddsForPlayer(opts: {
     const extra = await getOddsApiTennisMatch({ homeName: next.homeName, awayName: next.awayName });
     if (!extra?.books?.length) return presentSnapshot(snapshot, next);
     const books = mergeSources(null, extra, next);
-    const stored = await writeSnapshot(next, mergeBookRows(snapshot.bookmakers, books), extra.eventId);
+    const stored = await writeSnapshot(next, mergeBookRows(snapshot.bookmakers, books), {
+      oddsApiEventId: extra.eventId,
+      sportKey: extra.sportKey,
+    });
     return presentSnapshot(stored, next);
   }
   const [raw, oddsApi] = await Promise.all([
@@ -539,7 +721,10 @@ export async function getTennisMatchOddsForPlayer(opts: {
   ]);
   const books = mergeSources(raw, oddsApi, next);
   if (!books.length) return null;
-  const stored = await writeSnapshot(next, books, oddsApi?.eventId);
+  const stored = await writeSnapshot(next, books, {
+    oddsApiEventId: oddsApi?.eventId,
+    sportKey: oddsApi?.sportKey,
+  });
   return presentSnapshot(stored, next);
 }
 
