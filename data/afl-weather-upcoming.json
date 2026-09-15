@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-14T20:22:41.363Z",
+  "generatedAt": "2026-09-15T15:26:26.724Z",
   "source": "open-meteo.com",
   "gameSource": "props-list-fallback",
   "games": [
@@ -9,9 +9,9 @@
       "awayTeam": "Fremantle Dockers",
       "commenceTime": "2026-09-18T09:40:13Z",
       "weather": {
-        "temperatureC": 17.3,
+        "temperatureC": 16.5,
         "precipitationMm": 0,
-        "windKmh": 7
+        "windKmh": 9.9
       }
     },
     {
@@ -20,9 +20,9 @@
       "awayTeam": "Brisbane Lions",
       "commenceTime": "2026-09-19T07:15:50Z",
       "weather": {
-        "temperatureC": 24.7,
+        "temperatureC": 24.1,
         "precipitationMm": 0,
-        "windKmh": 8.9
+        "windKmh": 7.2
       }
     }
   ],
