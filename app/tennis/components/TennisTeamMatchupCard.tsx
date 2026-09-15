@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { tennisLastName, tennisOpponentCode } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
+import type { TennisDvpStage } from '@/lib/tennis/dvpShared';
+import { TennisTournamentRankInfoButton } from '@/app/tennis/components/TennisTournamentRankInfoButton';
 import type {
   TennisMatchupBestOf,
   TennisPlayerMatchupPayload,
@@ -24,11 +26,21 @@ export default function TennisTeamMatchupCard({
   isDark = false,
   teamName = null,
   opponentName = null,
+  playerId = null,
+  opponentId = null,
+  tournamentName = null,
+  tournamentKey = null,
+  stage = 'main',
   tour = 'ATP',
 }: {
   isDark?: boolean;
   teamName?: string | null;
   opponentName?: string | null;
+  playerId?: string | null;
+  opponentId?: string | null;
+  tournamentName?: string | null;
+  tournamentKey?: string | null;
+  stage?: TennisDvpStage;
   resolveTeamLogo?: (teamName: string) => string | null;
   tour?: 'ATP' | 'WTA' | null;
 }) {
@@ -62,6 +74,11 @@ export default function TennisTeamMatchupCard({
       window: String(windowN),
       bestOf: String(matchupBestOf),
     });
+    if (playerId) qs.set('playerId', playerId);
+    if (opponentId) qs.set('opponentId', opponentId);
+    if (tournamentName) qs.set('tournament', tournamentName);
+    if (tournamentKey) qs.set('tournamentKey', tournamentKey);
+    if (stage) qs.set('stage', stage);
     fetch(`/api/tennis/player-matchup?${qs.toString()}`)
       .then(async (r) => {
         const json = await r.json();
@@ -82,7 +99,7 @@ export default function TennisTeamMatchupCard({
     return () => {
       cancelled = true;
     };
-  }, [player, opponent, tourKey, windowN, matchupBestOf]);
+  }, [player, opponent, playerId, opponentId, tournamentName, tournamentKey, stage, tourKey, windowN, matchupBestOf]);
 
   const playerLabel = payload?.player.name || player || 'Selected player';
   const opponentLabel = payload?.opponent.name || opponent || 'Opponent';
@@ -90,7 +107,7 @@ export default function TennisTeamMatchupCard({
   const oppAbbr = tennisOpponentCode(opponentLabel);
   const playerFlag = tennisFlagUrl(payload?.player.ioc);
   const oppFlag = tennisFlagUrl(payload?.opponent.ioc);
-  const rankedSize = payload ? Math.max(payload.fieldSize || 0, 10) : 10;
+  const rankedSize = payload?.fieldSize || 0;
   const playerMatches = payload?.player.matches || 0;
   const oppMatches = payload?.opponent.matches || 0;
   const playerTotal = payload?.player.totalMatches || 0;
@@ -217,8 +234,16 @@ export default function TennisTeamMatchupCard({
 
   return (
     <div className="w-full min-w-0 h-full flex flex-col px-1.5 py-1">
-      <div className="mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Player Matchup</h3>
+      <div className="relative z-20 mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Player Matchup</h3>
+          <TennisTournamentRankInfoButton
+            isDark={isDark}
+            label="How Player Matchup ranks work"
+            title="Tournament ranks"
+            text={"Player Matchup is calculated every tournament. Each rank is against everyone in that event, just like DVP, not the whole ATP or WTA tour.\nLower ranked players and tournaments can be missing stats, which means these numbers could be less reliable.\nL5, L10, and Season change the averages for every player in that event, not just one player."}
+          />
+        </div>
         <div className="flex items-center justify-center gap-0.5">
           {wtaTour
             ? null

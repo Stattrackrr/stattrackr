@@ -1,4 +1,4 @@
-import type { PropsSportMode } from '@/lib/nbaConstants';
+import { propsPathForSport, WC_PROPS_RETURN_SPORT_KEY, type PropsSportMode } from '@/lib/nbaConstants';
 
 /** In-tab memory snapshot — survives Next.js client navigations without re-fetching props lists. */
 export type PropsPageWarmSnapshot = {
@@ -20,6 +20,7 @@ export type PropsPageWarmSnapshot = {
 };
 
 const PROPS_BACK_NAV_WARM_KEY = 'props_back_nav_warm_v1';
+const PROPS_RETURN_SPORT_KEY = 'props_return_sport';
 const WARM_TTL_MS = 30 * 60 * 1000;
 
 type SnapshotGetter = () => PropsPageWarmSnapshot | null;
@@ -44,6 +45,61 @@ export function bindPropsPageSnapshotGetter(fn: SnapshotGetter): () => void {
   };
 }
 
+function parseStoredPropsSport(raw: string | null | undefined): PropsSportMode | null {
+  const value = String(raw || '').trim();
+  if (
+    value === 'combined' ||
+    value === 'nba' ||
+    value === 'afl' ||
+    value === 'world-cup' ||
+    value === 'atp' ||
+    value === 'wta'
+  ) {
+    return value;
+  }
+  if (value === 'all') return 'combined';
+  return null;
+}
+
+function rememberPropsReturnSport(mode: PropsSportMode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(PROPS_RETURN_SPORT_KEY, mode);
+    sessionStorage.setItem(WC_PROPS_RETURN_SPORT_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
+/** Dashboard "Back to Player Props" — restores All vs the sport tab you left from. */
+export function consumePropsReturnPath(fallback: PropsSportMode): string {
+  let mode = fallback;
+  if (typeof window !== 'undefined') {
+    try {
+      const stored =
+        parseStoredPropsSport(sessionStorage.getItem(PROPS_RETURN_SPORT_KEY)) ??
+        parseStoredPropsSport(sessionStorage.getItem(WC_PROPS_RETURN_SPORT_KEY));
+      if (stored) mode = stored;
+      sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
+      sessionStorage.removeItem(WC_PROPS_RETURN_SPORT_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  return propsPathForSport(mode);
+}
+
+/** Drop an unused return-sport token (browser back already landed on /props). */
+export function clearPropsReturnSport(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(PROPS_RETURN_SPORT_KEY);
+    sessionStorage.removeItem(WC_PROPS_RETURN_SPORT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function markPropsBackNavWarm(): void {
   warmReturnPending = true;
   if (typeof window === 'undefined') return;
@@ -57,6 +113,7 @@ function markPropsBackNavWarm(): void {
 /** Call immediately before leaving /props for a player dashboard. */
 export function snapshotPropsPageBeforeLeave(): void {
   const snap = getter?.();
+  if (snap) rememberPropsReturnSport(snap.propsSport);
   if (!snap) return;
   if (
     snap.playerProps.length === 0 &&

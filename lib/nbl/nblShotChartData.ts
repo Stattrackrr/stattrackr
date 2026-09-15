@@ -18,6 +18,7 @@ import {
   aggregateZoneStats,
   classifyNblShotZone,
   emptyZoneStats,
+  type NblShotZoneId,
   type NblZoneStat,
 } from '@/lib/nbl/nblShotZones';
 import {
@@ -65,7 +66,55 @@ export function normalizeNblShotPlayerKey(name: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\b(jr|sr|ii|iii|iv|jnr)\b/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
+}
+
+const GIVEN_NAME_ALIASES: Record<string, string[]> = {
+  will: ['william'],
+  william: ['will'],
+  nick: ['nicholas'],
+  nicholas: ['nick'],
+  johny: ['johnny', 'john'],
+  johnny: ['johny', 'john'],
+  dan: ['daniel'],
+  daniel: ['dan'],
+  joe: ['joseph'],
+  joseph: ['joe'],
+  chris: ['christopher'],
+  christopher: ['chris'],
+  josh: ['joshua'],
+  joshua: ['josh'],
+  sam: ['samuel'],
+  samuel: ['sam'],
+  matt: ['matthew'],
+  matthew: ['matt'],
+  alex: ['alexander'],
+  alexander: ['alex'],
+  tony: ['anthony'],
+  anthony: ['tony'],
+  mike: ['michael'],
+  michael: ['mike'],
+  tom: ['thomas'],
+  thomas: ['tom'],
+};
+
+export function nblShotPlayerAliasKeys(name: string): string[] {
+  const full = normalizeNblShotPlayerKey(name);
+  if (!full) return [];
+  const parts = full.split(' ').filter(Boolean);
+  const keys = new Set<string>([full]);
+  if (parts.length >= 2) {
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    keys.add(`${first} ${last}`);
+    for (const alt of GIVEN_NAME_ALIASES[first] || []) {
+      keys.add(`${alt} ${last}`);
+      keys.add([alt, ...parts.slice(1)].join(' '));
+    }
+  }
+  return [...keys];
 }
 
 function teamsMatch(a: string | null | undefined, b: string | null | undefined): boolean {
@@ -76,13 +125,17 @@ function teamsMatch(a: string | null | undefined, b: string | null | undefined):
   return normalizeTeamKey(a) === normalizeTeamKey(b);
 }
 
-/** Exact match, or one name contains the other (handles "Swaka Lo Buluk" vs "Wani Swaka Lo Buluk"). */
+/** Exact, alias (Will/William), or long-name contains (Swaka Lo Buluk). */
 export function nblShotPlayerNamesMatch(a: string, b: string): boolean {
   const ka = normalizeNblShotPlayerKey(a);
   const kb = normalizeNblShotPlayerKey(b);
   if (!ka || !kb) return false;
   if (ka === kb) return true;
-  if (ka.length >= 8 && kb.length >= 8 && (ka.includes(kb) || kb.includes(ka))) return true;
+  const aKeys = new Set(nblShotPlayerAliasKeys(a));
+  for (const key of nblShotPlayerAliasKeys(b)) {
+    if (aKeys.has(key)) return true;
+  }
+  if (ka.length >= 10 && kb.length >= 10 && (ka.includes(kb) || kb.includes(ka))) return true;
   return false;
 }
 
@@ -272,6 +325,119 @@ export function writeShotChartManifest(manifest: NblShotChartManifest): void {
   writeJson(shotChartManifestPath(manifest.years), manifest);
 }
 
+type FixtureShotBundle = {
+  displayName: string;
+  team: string | null;
+  fixtures: Set<string>;
+  shots: Array<{ zone: NblShotZoneId | null; made: boolean }>;
+};
+
+function listCachedFixtures(): NblMatchShotChart[] {
+  if (!fs.existsSync(FIXTURE_CACHE_DIR)) return [];
+  const out: NblMatchShotChart[] = [];
+  for (const file of fs.readdirSync(FIXTURE_CACHE_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const chart = readCachedShotChart(file.replace(/\.json$/, ''));
+    if (chart?.shots?.length) out.push(chart);
+  }
+  return out;
+}
+
+function listPlayerShotChartCaches(): NblPlayerShotChartResult[] {
+  if (!fs.existsSync(PLAYER_CACHE_DIR)) return [];
+  const out: NblPlayerShotChartResult[] = [];
+  for (const file of fs.readdirSync(PLAYER_CACHE_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const cached = readJson<NblPlayerShotChartResult>(path.join(PLAYER_CACHE_DIR, file));
+    if (!cached || cached.mode !== 'player' || !Array.isArray(cached.zones)) continue;
+    out.push({ ...cached, fromCache: true });
+  }
+  return out;
+}
+
+/**
+ * Rebuild player aggregates from every cached fixture (all teams / years on disk).
+ * Writes one file per shooter, then copies onto roster spellings that alias-match.
+ */
+export function rebuildPlayerShotChartAggregatesFromFixtures(options?: {
+  rosterNames?: string[];
+  years?: number[];
+}): { playersWritten: number; withShots: number } {
+  const years = options?.years?.length ? options.years : [...NBL_SHOT_CHART_CACHE_YEARS];
+  const byKey = new Map<string, FixtureShotBundle>();
+
+  for (const chart of listCachedFixtures()) {
+    for (const shot of chart.shots) {
+      const name = String(shot.name || '').trim();
+      const key = normalizeNblShotPlayerKey(name);
+      if (!key) continue;
+      let bundle = byKey.get(key);
+      if (!bundle) {
+        bundle = {
+          displayName: name,
+          team: shot.teamName ?? null,
+          fixtures: new Set(),
+          shots: [],
+        };
+        byKey.set(key, bundle);
+      }
+      bundle.fixtures.add(chart.fixtureId);
+      bundle.shots.push({ zone: shot.zone, made: shot.made });
+    }
+  }
+
+  let playersWritten = 0;
+  let withShots = 0;
+  const generatedAt = new Date().toISOString();
+
+  for (const bundle of byKey.values()) {
+    const result: NblPlayerShotChartResult = {
+      mode: 'player',
+      playerName: bundle.displayName,
+      team: bundle.team ? resolveNblClubName(bundle.team) || bundle.team : null,
+      years,
+      gamesUsed: bundle.fixtures.size,
+      fixturesFetched: 0,
+      fixturesCached: bundle.fixtures.size,
+      shotCount: bundle.shots.length,
+      zones: aggregateZoneStats(bundle.shots),
+      generatedAt,
+    };
+    writePlayerShotChartCache(result);
+    playersWritten += 1;
+    if (result.shotCount > 0) withShots += 1;
+  }
+
+  for (const rosterName of options?.rosterNames || []) {
+    const name = String(rosterName || '').trim();
+    if (!name) continue;
+    const existing = readPlayerShotChartCache(name);
+    if (existing && existing.shotCount > 0) continue;
+    let best: FixtureShotBundle | null = null;
+    for (const bundle of byKey.values()) {
+      if (!nblShotPlayerNamesMatch(bundle.displayName, name)) continue;
+      if (!best || bundle.shots.length > best.shots.length) best = bundle;
+    }
+    if (!best || best.shots.length === 0) continue;
+    writePlayerShotChartCache({
+      mode: 'player',
+      playerName: name,
+      team: best.team ? resolveNblClubName(best.team) || best.team : null,
+      years,
+      gamesUsed: best.fixtures.size,
+      fixturesFetched: 0,
+      fixturesCached: best.fixtures.size,
+      shotCount: best.shots.length,
+      zones: aggregateZoneStats(best.shots),
+      generatedAt,
+    });
+    playersWritten += 1;
+    withShots += 1;
+  }
+
+  return { playersWritten, withShots };
+}
+
 export async function buildPlayerShotChart(options: {
   playerName: string;
   team?: string | null;
@@ -453,15 +619,25 @@ export function loadPlayerShotChartForApi(
   playerName: string,
   team?: string | null
 ): NblPlayerShotChartResult | null {
-  const cached = readPlayerShotChartCache(playerName);
-  if (!cached) return null;
-  if (team) {
-    const want = resolveNblClubName(team) || team;
-    if (cached.team && !teamsMatch(cached.team, want)) {
-      // Still return cache — player may have switched clubs; zones are historical.
+  void team;
+  const exact = readPlayerShotChartCache(playerName);
+  if (exact && exact.shotCount > 0) return exact;
+
+  for (const key of nblShotPlayerAliasKeys(playerName)) {
+    const aliased = readJson<NblPlayerShotChartResult>(playerCachePath(key));
+    if (aliased && aliased.mode === 'player' && (aliased.shotCount || 0) > 0) {
+      return { ...aliased, fromCache: true };
     }
   }
-  return cached;
+
+  for (const cached of listPlayerShotChartCaches()) {
+    if ((cached.shotCount || 0) <= 0) continue;
+    if (nblShotPlayerNamesMatch(cached.playerName, playerName)) {
+      return cached;
+    }
+  }
+
+  return exact;
 }
 
 /** Dashboard-safe: prebuilt defense aggregate only. */

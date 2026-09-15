@@ -1,4 +1,4 @@
-import { tennisDominanceRatio, tennisLastName } from '@/lib/tennis/chartStats';
+import { tennisDominanceRatio, tennisLastName, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import {
   ADV_AVG_COLUMNS,
@@ -75,9 +75,8 @@ function normalizeSurface(surface: string | null | undefined): 'hard' | 'clay' |
 
 function matchesBestOf(row: TennisMatchRow, bestOf: AdvAvgBestOf): boolean {
   if (bestOf === 'all') return true;
-  const n = Number(row.bestOf);
-  if (bestOf === '5') return Number.isFinite(n) && n >= 5;
-  return !Number.isFinite(n) || n < 5;
+  const actual = resolveTennisMatchBestOf(row);
+  return bestOf === '5' ? actual === 5 : actual === 3;
 }
 
 function opponentRankOnMatchDay(row: TennisMatchRow): number | null {
@@ -287,7 +286,7 @@ export function buildTennisAdvancedAverages(opts: {
   const windowRaw = Number(opts.window);
   const windowN = ([5, 10, 15, 20, 0] as const).includes(windowRaw as AdvAvgWindow)
     ? (windowRaw as AdvAvgWindow)
-    : 15;
+    : 0;
   const vsRank: AdvAvgVsRank = ADV_AVG_VS_RANKS.some((option) => option.id === opts.vsRank)
     ? (opts.vsRank as AdvAvgVsRank)
     : 'all';

@@ -1,4 +1,6 @@
 /** Leading chart pills — remaining player stats follow this order. */
+import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
+
 export const TENNIS_CHART_STAT_OPTIONS = [
   { key: 'moneyline', label: 'MONEYLINE' },
   { key: 'spread', label: 'SPREAD' },
@@ -250,6 +252,16 @@ export function tennisEventPlaceLabel(name: string | null | undefined): string {
   return value.trim();
 }
 
+/** City / venue token with ITF/ATP level prefixes removed, so W35 Reus ≠ W35 Shenyang. */
+export function tennisEventPlaceCore(name: string | null | undefined): string {
+  return tennisEventPlaceLabel(name)
+    .toLowerCase()
+    .replace(/\b(w15|w25|w35|w50|w75|w100|m15|m25|itf|challenger|atp|wta)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function tennisRoundLabel(round: string | null | undefined): string {
   const raw = String(round || '').trim();
   if (!raw) return '';
@@ -259,17 +271,89 @@ export function tennisRoundLabel(round: string | null | undefined): string {
     SF: 'Semifinal',
     QF: 'Quarterfinal',
     R16: 'R16',
-    R32: 'R32',
+    R32: 'R16',
     R64: 'R64',
     R128: 'R128',
     RR: 'Round Robin',
     BR: 'Bronze',
+    Q1: 'Qualifying',
+    Q2: 'Qualifying',
+    Q3: 'Qualifying',
+    'Q-SF': 'Qualifying SF',
+    'Q-F': 'Qualifying Final',
   };
   if (named[key]) return named[key];
+  if (/qualif/i.test(raw)) {
+    if (/semi/i.test(raw)) return 'Qualifying SF';
+    if (/final/i.test(raw)) return 'Qualifying Final';
+    return 'Qualifying';
+  }
   if (/\bfinal\b/i.test(raw) && !/semi|quarter/i.test(raw)) return 'Final';
   if (/semi/i.test(raw)) return 'Semifinal';
   if (/quarter/i.test(raw)) return 'Quarterfinal';
   return raw;
+}
+
+function setsFromResultLabel(result: unknown): { won: number; lost: number } | null {
+  const m = String(result ?? '').match(/\b(\d+)\s*-\s*(\d+)\b/);
+  if (!m) return null;
+  const won = Number(m[1]);
+  const lost = Number(m[2]);
+  if (!Number.isFinite(won) || !Number.isFinite(lost)) return null;
+  return { won, lost };
+}
+
+function inferBestOfFromPlayedSets(
+  setsWon: unknown,
+  setsLost: unknown,
+  score: unknown,
+  result?: unknown
+): 3 | 5 | null {
+  if (tennisScoreIsRetired(score)) return null;
+  let won = Number(setsWon);
+  let lost = Number(setsLost);
+  if (!Number.isFinite(won) || !Number.isFinite(lost) || won + lost <= 0) {
+    const fromResult = setsFromResultLabel(result);
+    if (fromResult && fromResult.won + fromResult.lost > 0) {
+      won = fromResult.won;
+      lost = fromResult.lost;
+    } else {
+      const sets = parseTennisSetsFromPlayerView(score, true);
+      if (!sets.length) return null;
+      won = sets.filter((set) => set.playerGames > set.opponentGames).length;
+      lost = sets.filter((set) => set.opponentGames > set.playerGames).length;
+    }
+  }
+  const winnerSets = Math.max(won, lost);
+  const loserSets = Math.min(won, lost);
+  if (winnerSets >= 3) return 5;
+  if (winnerSets === 2 && loserSets <= 1) return 3;
+  return null;
+}
+
+/**
+ * Actual match format. Slam name is last resort — ATP slam qualifying and
+ * completed 2-set matches are best of 3 even at the US Open / AO / RG / Wimbledon.
+ */
+export function resolveTennisMatchBestOf(opts: {
+  tour?: string | null;
+  isGrandSlam?: boolean;
+  bestOf?: unknown;
+  round?: string | null;
+  tournamentName?: string | null;
+  score?: unknown;
+  setsWon?: unknown;
+  setsLost?: unknown;
+  result?: unknown;
+}): 3 | 5 {
+  if (String(opts.tour || '').toUpperCase() === 'WTA') return 3;
+  if (isTennisQualifyingLabel(opts.round, opts.tournamentName)) return 3;
+  const played = inferBestOfFromPlayedSets(opts.setsWon, opts.setsLost, opts.score, opts.result);
+  if (played) return played;
+  const stored = Number(opts.bestOf);
+  if (Number.isFinite(stored) && stored >= 5) return 5;
+  if (stored === 3) return 3;
+  return opts.isGrandSlam ? 5 : 3;
 }
 
 /** Return points won % / serve points lost %. Both inputs are 0–100. */

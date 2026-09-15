@@ -5,8 +5,14 @@ import { fetchFootyinfoInjuries } from '../lib/afl/footyinfoLeague';
 
 async function main() {
   const rows = await fetchFootyinfoInjuries();
-  if (!rows.length) throw new Error('FootyInfo returned no injuries');
   const file = path.join(process.cwd(), 'data', 'afl-injuries.json');
+  if (!rows.length) {
+    if (fs.existsSync(file)) {
+      console.warn('FootyInfo returned no injuries; keeping existing snapshot');
+      return;
+    }
+    throw new Error('FootyInfo returned no injuries');
+  }
   const payload = {
     generatedAt: new Date().toISOString(),
     source: 'footyinfo.com',

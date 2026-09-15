@@ -23,7 +23,7 @@ import {
 import { getAflPropStats, getAflPropStatsCacheKey, type AflPropStatsDebug } from '@/lib/aflPropStatsCache';
 import { filterAflPropsEligibleGames, getAflOddsCache, refreshAflOddsData, setAflOddsCache, type AflGameOdds } from '@/lib/refreshAflOdds';
 import sharedCache, { getSharedCacheBackend } from '@/lib/sharedCache';
-import { getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
+import { getAflPlayerTeamMapFromFiles, lookupAflPlayerTeamFromMaps } from '@/lib/aflPlayerTeamResolver';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON, type DvpMaps } from '@/lib/aflDvpLookup';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
@@ -551,9 +551,9 @@ export async function GET(request: Request) {
     for (const [nameKey, t] of playerTeamMap.entries()) addTeamCandidate(nameKey, t);
     for (const [nameKey, t] of fantasyTeamMap.entries()) addTeamCandidate(nameKey, t);
     const resolvePlayerTeam = (name: string, homeTeam?: string, awayTeam?: string) => {
+      const fromMaps = lookupAflPlayerTeamFromMaps(name, playerTeamMap, fantasyTeamMap);
+      if (fromMaps) return fromMaps;
       const normalized = normalizeAflPlayerNameForMatch(name);
-      const fromExact = playerTeamMap.get(normalized) ?? fantasyTeamMap.get(normalized);
-      if (fromExact) return fromExact;
       const loose = normalizeNameLoose(name);
       const fromLoose = teamByLooseName.get(loose);
       if (fromLoose) return fromLoose;

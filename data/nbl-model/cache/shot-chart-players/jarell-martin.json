@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Jarell Martin",
+  "team": "Adelaide 36ers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 12,
+  "fixturesFetched": 0,
+  "fixturesCached": 12,
+  "shotCount": 83,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 21,
+      "fgm": 12,
+      "fgPct": 57.14285714285714,
+      "share": 25.301204819277107
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 15,
+      "fgm": 12,
+      "fgPct": 80,
+      "share": 18.072289156626507
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 9,
+      "fgm": 3,
+      "fgPct": 33.33333333333333,
+      "share": 10.843373493975903
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 3,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 3.614457831325301
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 22,
+      "fgm": 6,
+      "fgPct": 27.27272727272727,
+      "share": 26.506024096385545
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 13,
+      "fgm": 3,
+      "fgPct": 23.076923076923077,
+      "share": 15.66265060240964
+    }
+  ],
+  "generatedAt": "2026-09-14T12:36:45.952Z"
+}

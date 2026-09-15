@@ -5,8 +5,9 @@ import {
   tennisScoreIsRetired,
 } from '@/lib/tennis/chartStats';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { buildTennisAdvancedAverages } from '@/lib/tennis/advancedAverages';
 import { loadPlayerMatches, tennisDvpProfile } from '@/lib/tennis/data';
+import { buildTennisAdvancedAverages } from '@/lib/tennis/advancedAverages';
+import { peekLiveTennisEventIndex, tennisLiveEventPlayerIds, tennisLiveEventStage } from '@/lib/tennis/nextGame';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { buildTennisPlayerForm } from '@/lib/tennis/playerForm';
 import { buildTennisPlayerMatchup } from '@/lib/tennis/playerMatchup';
@@ -171,6 +172,7 @@ export function buildTennisAskBrief(opts: {
   opponentName?: string | null;
   tour?: TennisTour | null;
   isGrandSlam?: boolean;
+  tournamentName?: string | null;
 }): TennisAskBrief {
   const playerName = String(opts.playerName || '').trim();
   const opponentName = String(opts.opponentName || '').trim() || null;
@@ -197,8 +199,24 @@ export function buildTennisAskBrief(opts: {
         bestOf: tour === 'WTA' || !opts.isGrandSlam ? 3 : 5,
       })
     : null;
+  const live = peekLiveTennisEventIndex();
+  const stage = live
+    ? tennisLiveEventStage(live, { tournamentName: opts.tournamentName || null })
+    : 'main';
   const dvp = opponentName
-    ? tennisDvpProfile({ tour, year: TENNIS_CURRENT_YEAR, opponentName })
+    ? tennisDvpProfile({
+        tour,
+        year: TENNIS_CURRENT_YEAR,
+        opponentName,
+        tournamentName: opts.tournamentName || null,
+        window: 'last10',
+        stage,
+        extraPlayerIds: live
+          ? tennisLiveEventPlayerIds(live, null, opts.tournamentName || null, stage)
+          : [],
+        liveTournamentKeys: live?.keys,
+        liveTournamentNames: live?.names,
+      })
     : null;
 
   const playerAvg = cellMap(averages.player);

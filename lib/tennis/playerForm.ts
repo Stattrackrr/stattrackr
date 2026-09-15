@@ -3,7 +3,7 @@
  * Opponent quality uses that opponent's other-match averages, not this match's scoreline.
  */
 
-import { tennisLastName } from '@/lib/tennis/chartStats';
+import { tennisLastName, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { tennisCacheMtime } from '@/lib/tennis/apiTennis';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import {
@@ -511,14 +511,14 @@ export function buildTennisPlayerForm(opts: {
     {
       id: 'bo3',
       label: 'Best of 3',
-      hint: 'Tour / 500 / 250',
-      test: (row) => Number(row.bestOf) < 5,
+      hint: 'Tour / 500 / 250 / qualifying',
+      test: (row) => resolveTennisMatchBestOf(row) === 3,
     },
     {
       id: 'bo5',
       label: 'Best of 5',
-      hint: 'Grand Slam',
-      test: (row) => Number(row.bestOf) >= 5,
+      hint: 'Grand Slam main draw',
+      test: (row) => resolveTennisMatchBestOf(row) === 5,
     },
     {
       id: 'after_loss',

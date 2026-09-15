@@ -48,9 +48,14 @@ async function main() {
     process.exit(1);
   }
 
+  const outPath = path.join(process.cwd(), 'data', `afl-role-leaders-${season}.json`);
   console.log(`[Role Leaders] Fetching fantasy-tools teams for ${season}...`);
   const teams = await fetchFootyinfoFantasyTeams();
   if (!teams.length) {
+    if (fs.existsSync(outPath)) {
+      console.warn('[Role Leaders] No teams returned from /fantasy-tools/teams — keeping existing snapshot');
+      process.exit(0);
+    }
     console.error('[Role Leaders] No teams returned from /fantasy-tools/teams');
     process.exit(1);
   }
@@ -94,11 +99,13 @@ async function main() {
   });
 
   if (ok === 0) {
+    if (fs.existsSync(outPath)) {
+      console.warn('[Role Leaders] All teams failed — keeping existing snapshot');
+      process.exit(0);
+    }
     console.error('[Role Leaders] All teams failed — not writing snapshot');
     process.exit(1);
   }
-
-  const outPath = path.join(process.cwd(), 'data', `afl-role-leaders-${season}.json`);
   fs.writeFileSync(outPath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
   console.log(
     `[Role Leaders] Wrote ${outPath} (teams=${Object.keys(snapshot.teams).length}, ok=${ok}, failed=${failed})`

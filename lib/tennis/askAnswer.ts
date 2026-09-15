@@ -157,6 +157,7 @@ function buildAskPack(analysis: TennisMatchAnalysis, question: string) {
     opponentName: analysis.opponent.name,
     tour: analysis.tour,
     isGrandSlam: analysis.bestOf === 5,
+    tournamentName: analysis.tournamentName,
   });
   return {
     model: compactTennisAnalysis(analysis),
@@ -257,6 +258,7 @@ function buildLocalAskReply(
     opponentName: analysis.opponent.name,
     tour: analysis.tour,
     isGrandSlam: analysis.bestOf === 5,
+    tournamentName: analysis.tournamentName,
   });
   const userLine = evaluateUserStatLine(analysis, brief, question);
   if (userLine) return buildLocalUserLineReply(userLine, analysis);

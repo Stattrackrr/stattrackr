@@ -157,15 +157,27 @@ export function NblShotChart({
         const res = await fetch(`/api/nbl/shot-chart?${params.toString()}`);
         const json = await res.json();
         if (cancelled) return;
-        if (!res.ok || !json?.success) {
-          setError(json?.error || 'Failed to load shot chart data');
+        if (!res.ok) {
+          setError("Couldn't load shot chart. Try again.");
           setPlayerData(null);
+          return;
+        }
+        if (!json?.success || json.empty || !json.shotCount) {
+          setError(null);
+          setPlayerData({
+            success: true,
+            mode: 'player',
+            playerName,
+            shotCount: 0,
+            gamesUsed: Number(json?.gamesUsed || 0),
+            zones: Array.isArray(json?.zones) ? json.zones : [],
+          });
           return;
         }
         setPlayerData(json as PlayerPayload);
       } catch {
         if (!cancelled) {
-          setError('Failed to fetch shot chart data. Please try again.');
+          setError("Couldn't load shot chart. Try again.");
           setPlayerData(null);
         }
       } finally {
@@ -231,7 +243,8 @@ export function NblShotChart({
   }, [defenseData]);
 
   const hasOppRanks = Boolean(defenseData?.ranks?.some((r) => r.rank != null));
-  const showSkeleton = Boolean(playerName) && (loading || (!playerData && !error));
+  const showSkeleton = Boolean(playerName) && loading;
+  const showEmpty = Boolean(playerName) && !loading && !error && playerData && playerData.shotCount <= 0;
 
   const distLabel = (zone: NblShotZoneId) => {
     const val = distByZone[zone];
@@ -269,17 +282,7 @@ export function NblShotChart({
         </div>
       </div>
 
-      {error ? (
-        <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '380px' }}>
-          <div className="text-center max-w-md">
-            <div className="text-red-500 dark:text-red-400 font-semibold mb-2 text-sm">
-              ⚠️ Error Loading Shot Chart
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">{error}</div>
-          </div>
-        </div>
-      ) : (
-        <svg
+      <svg
           viewBox="0 0 500 380"
           className="w-full"
           style={{ height: 'auto', width: '100%' }}
@@ -493,7 +496,6 @@ export function NblShotChart({
             </text>
           </g>
         </svg>
-      )}
 
       <div className="flex items-center gap-3 text-sm font-medium flex-wrap justify-center">
         <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -517,6 +519,28 @@ export function NblShotChart({
     </>
   );
 
+  const renderMessage = (message: string, isError = false) => (
+    <>
+      <div className="flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shot Chart</h2>
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">NBL26</span>
+      </div>
+      <div className="w-full flex items-center justify-center p-6" style={{ minHeight: '280px' }}>
+        <p
+          className={`text-sm text-center max-w-sm ${
+            isError
+              ? 'text-red-500 dark:text-red-400'
+              : isDark
+                ? 'text-gray-400'
+                : 'text-gray-500'
+          }`}
+        >
+          {message}
+        </p>
+      </div>
+    </>
+  );
+
   if (!playerName) {
     return (
       <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
@@ -531,8 +555,12 @@ export function NblShotChart({
 
   return (
     <div className="w-full flex flex-col bg-white dark:bg-[#0a1929] rounded-lg shadow-sm p-4 gap-3 border border-gray-200 dark:border-gray-700">
-      {showSkeleton || (error && !playerData) ? (
+      {showSkeleton ? (
         renderSkeleton()
+      ) : error ? (
+        renderMessage(error, true)
+      ) : showEmpty ? (
+        renderMessage('No shot chart available for this player.')
       ) : (
         <>
           <div className="flex items-center justify-between w-full">
@@ -551,7 +579,7 @@ export function NblShotChart({
                 <div className="absolute z-50 left-0 top-8 w-64 px-3 py-2 text-xs leading-relaxed rounded border shadow-lg bg-white dark:bg-[#0a1929] border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
                   <strong>Shot Chart Views</strong>
                   <br />
-                  Last completed season (NBL26). Cache only.
+                  Last completed season (NBL26).
                   <br />
                   <span className="text-blue-600 dark:text-blue-400">Attempts</span> - Player&apos;s
                   shot distribution

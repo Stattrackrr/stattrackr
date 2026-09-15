@@ -3,7 +3,7 @@
  * Used by props-stats warm so DvP lookup uses correct position (DEF/MID/FWD/RUC).
  */
 
-import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
+import { aflPlayerNameMatchKeys } from '@/lib/aflPlayerNameUtils';
 import sharedCache from '@/lib/sharedCache';
 
 const FANTASY_PLAYERS_CACHE_KEY_PREFIX = 'afl_fantasy_players:';
@@ -123,8 +123,8 @@ async function fetchAndCacheFantasyPlayers(season: number): Promise<CachedFantas
     if (rows.length >= 100) break;
   }
   for (const p of parsed) {
-    const key = normalizeAflPlayerNameForMatch(p.name);
-    if (key) {
+    for (const key of aflPlayerNameMatchKeys(p.name)) {
+      if (!key) continue;
       position[key] = p.position;
       team[key] = (p.team || '').trim();
     }

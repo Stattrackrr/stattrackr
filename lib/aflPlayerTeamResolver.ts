@@ -6,9 +6,15 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { leagueTeamToOfficial } from '@/lib/aflTeamMapping';
-import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
+import { aflPlayerNameMatchKeys, normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
 
 const CURRENT_SEASON = new Date().getFullYear();
+
+function setPlayerTeamKeys(map: PlayerTeamMap, name: string, official: string): void {
+  for (const key of aflPlayerNameMatchKeys(name)) {
+    map.set(key, official);
+  }
+}
 
 function buildMapFromPlayers(players: Array<{ name?: string; team?: string }>): PlayerTeamMap {
   const map: PlayerTeamMap = new Map();
@@ -17,25 +23,35 @@ function buildMapFromPlayers(players: Array<{ name?: string; team?: string }>): 
     const leagueTeam = (p?.team ?? '').trim();
     if (!name || !leagueTeam) continue;
     const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
-    map.set(normalizeAflPlayerNameForMatch(name), official);
+    setPlayerTeamKeys(map, name, official);
   }
   return map;
+}
+
+/** Look up a player's team trying Matt/Matthew-style aliases across one or more maps. */
+export function lookupAflPlayerTeamFromMaps(
+  playerName: string,
+  ...maps: Array<PlayerTeamMap | Map<string, string> | null | undefined>
+): string | null {
+  for (const key of aflPlayerNameMatchKeys(playerName)) {
+    for (const map of maps) {
+      const team = map?.get(key);
+      if (team) return team;
+    }
+  }
+  return null;
 }
 
 export type PlayerTeamMap = Map<string, string>;
 
 /**
- * Fetch league player stats and build map: normalized player name -> official team name.
- * Returns empty map if fetch fails.
- */
-/**
  * Build player team map from data/afl-league-player-stats-{season}.json (for cron so we don't depend on self-fetch).
- * Uses previous season then current season so 2026 overrides 2025 for same player.
+ * Loads year-2 then year-1 then current so 2026 overwrites, but 2024 still covers players missing from later files.
  */
 export async function getAflPlayerTeamMapFromFiles(): Promise<PlayerTeamMap> {
   const year = new Date().getFullYear();
   const map: PlayerTeamMap = new Map();
-  for (const season of [year - 1, year]) {
+  for (const season of [year - 2, year - 1, year]) {
     if (season < 2020) continue;
     try {
       const filePath = path.join(process.cwd(), 'data', `afl-league-player-stats-${season}.json`);
@@ -47,7 +63,7 @@ export async function getAflPlayerTeamMapFromFiles(): Promise<PlayerTeamMap> {
         const leagueTeam = (p?.team ?? '').trim();
         if (!name || !leagueTeam) continue;
         const official = leagueTeamToOfficial(leagueTeam) ?? leagueTeam;
-        map.set(normalizeAflPlayerNameForMatch(name), official);
+        setPlayerTeamKeys(map, name, official);
       }
     } catch {
       /* ignore */
@@ -64,8 +80,8 @@ export async function getPlayerTeamForSeason(season: number, playerName: string)
     const raw = await fs.readFile(filePath, 'utf8');
     const data = JSON.parse(raw) as { players?: Array<{ name?: string; team?: string }> };
     if (!Array.isArray(data?.players)) return null;
-    const normalized = normalizeAflPlayerNameForMatch(playerName.trim());
-    const row = data.players.find((p) => normalizeAflPlayerNameForMatch((p?.name ?? '').trim()) === normalized);
+    const wanted = new Set(aflPlayerNameMatchKeys(playerName.trim()));
+    const row = data.players.find((p) => wanted.has(normalizeAflPlayerNameForMatch((p?.name ?? '').trim())));
     if (!row?.team) return null;
     const official = leagueTeamToOfficial(row.team.trim()) ?? row.team.trim();
     return official || null;
@@ -107,8 +123,7 @@ export function resolveTeamAndOpponent(
   awayTeam: string,
   playerTeamMap: PlayerTeamMap
 ): { team: string; opponent: string } | null {
-  const key = normalizeAflPlayerNameForMatch(playerName);
-  const officialTeam = playerTeamMap.get(key);
+  const officialTeam = lookupAflPlayerTeamFromMaps(playerName, playerTeamMap);
   if (!officialTeam) return null;
   const h = (homeTeam || '').trim();
   const a = (awayTeam || '').trim();

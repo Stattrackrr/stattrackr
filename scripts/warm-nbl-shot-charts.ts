@@ -15,7 +15,6 @@ import {
   resolveNblClubName,
 } from '../lib/nblTeamCanonical';
 import {
-  buildPlayerShotChart,
   buildTeamDefenseShotChart,
   fixtureIdOf,
   getMatchShotChart,
@@ -23,7 +22,7 @@ import {
   loadScheduleGames,
   normalizeNblShotPlayerKey,
   readCachedShotChart,
-  writePlayerShotChartCache,
+  rebuildPlayerShotChartAggregatesFromFixtures,
   writeShotChartManifest,
   writeTeamDefenseShotChartCache,
   type NblShotChartManifest,
@@ -132,31 +131,17 @@ async function main() {
     }
   });
 
-  const players = loadPlayersForYears(years);
-  console.log(`[warm-nbl-shot-charts] building player aggregates for ${players.length} players…`);
-  let playersCached = 0;
-  let playersWithShots = 0;
-
-  for (let i = 0; i < players.length; i++) {
-    const p = players[i];
-    const name = String(p.name || '').trim();
-    if (!name) continue;
-    const result = await buildPlayerShotChart({
-      playerName: name,
-      team: p.team || null,
-      years,
-      maxGames: 200,
-      cacheOnly: true,
-    });
-    writePlayerShotChartCache(result);
-    playersCached += 1;
-    if (result.shotCount > 0) playersWithShots += 1;
-    if ((i + 1) % 50 === 0 || i === players.length - 1) {
-      console.log(
-        `[warm-nbl-shot-charts] players ${i + 1}/${players.length} withShots=${playersWithShots}`
-      );
-    }
-  }
+  const players = loadPlayersForYears([...new Set([...years, 2026])]);
+  const rosterNames = players.map((p) => String(p.name || '').trim()).filter(Boolean);
+  console.log(
+    `[warm-nbl-shot-charts] rebuilding player aggregates from fixture caches (${rosterNames.length} roster names)…`
+  );
+  const rebuilt = rebuildPlayerShotChartAggregatesFromFixtures({ rosterNames, years });
+  const playersCached = rebuilt.playersWritten;
+  const playersWithShots = rebuilt.withShots;
+  console.log(
+    `[warm-nbl-shot-charts] players written=${playersCached} withShots=${playersWithShots}`
+  );
 
   console.log(`[warm-nbl-shot-charts] building defense aggregates for ${NBL_CLUBS.length} clubs…`);
   let defenseTeamsCached = 0;

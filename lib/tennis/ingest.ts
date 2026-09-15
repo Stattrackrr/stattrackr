@@ -362,6 +362,62 @@ export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promi
   rememberOverlay(overlay);
 }
 
+/** Pull ATP/WTA standings without re-ingesting the 16-day match window. */
+export async function refreshTennisStandings(): Promise<{ atp: number; wta: number; fetchedAt: string }> {
+  const fetchedAt = new Date().toISOString();
+  if (!apiKey()) return { atp: 0, wta: 0, fetchedAt };
+  const existing =
+    (await sharedCache.getJSON<TennisMatchOverlay>(TENNIS_OVERLAY_CACHE_KEY)) || getHydratedTennisOverlay();
+  if (!existing?.matches?.length) return { atp: 0, wta: 0, fetchedAt };
+  const [atpStandingsJson, wtaStandingsJson] = await Promise.all([
+    apiTennisCall({ method: 'get_standings', event_type: 'ATP' }),
+    apiTennisCall({ method: 'get_standings', event_type: 'WTA' }),
+  ]);
+  const atpStandings = (Array.isArray(atpStandingsJson?.result) ? atpStandingsJson.result : []) as ApiTennisStanding[];
+  const wtaStandings = (Array.isArray(wtaStandingsJson?.result) ? wtaStandingsJson.result : []) as ApiTennisStanding[];
+  const players: ApiTennisPlayer[] = [];
+  for (const row of atpStandings) {
+    const p = standingToPlayer(row, 'ATP');
+    players.push({
+      playerId: p.playerId,
+      name: p.name,
+      tour: p.tour,
+      ioc: p.ioc,
+      hand: null,
+      height: null,
+      rank: p.rank,
+      rankPoints: p.rankPoints,
+      imageUrl: p.imageUrl,
+    });
+  }
+  for (const row of wtaStandings) {
+    const p = standingToPlayer(row, 'WTA');
+    players.push({
+      playerId: p.playerId,
+      name: p.name,
+      tour: p.tour,
+      ioc: p.ioc,
+      hand: null,
+      height: null,
+      rank: p.rank,
+      rankPoints: p.rankPoints,
+      imageUrl: p.imageUrl,
+    });
+  }
+  const overlay: TennisMatchOverlay = {
+    fetchedAt,
+    source: existing.source || 'api-tennis-incremental',
+    matches: existing.matches,
+    players: mergePlayers(existing.players || [], players),
+    standings: {
+      ATP: atpStandings.length ? atpStandings.map((row) => toRanking(row, 'ATP')) : existing.standings?.ATP || [],
+      WTA: wtaStandings.length ? wtaStandings.map((row) => toRanking(row, 'WTA')) : existing.standings?.WTA || [],
+    },
+  };
+  await saveTennisMatchOverlay(overlay);
+  return { atp: overlay.standings.ATP.length, wta: overlay.standings.WTA.length, fetchedAt };
+}
+
 export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & { fixtures: ApiTennisFixture[] }> {
   if (!apiKey()) {
     throw new Error('API_TENNIS_KEY is not configured');

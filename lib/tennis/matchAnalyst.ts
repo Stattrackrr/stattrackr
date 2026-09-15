@@ -365,6 +365,7 @@ export function buildTennisMatchAnalysis(opts: {
   opponentName: string;
   tour?: TennisTour | null;
   isGrandSlam?: boolean;
+  tournamentName?: string | null;
   listedTotalLine?: number | null;
   marketOdds?: TennisMatchAnalysis['marketOdds'];
 }): TennisMatchAnalysis | null {
@@ -573,6 +574,7 @@ export function buildTennisMatchAnalysis(opts: {
     tour,
     surface,
     bestOf,
+    tournamentName: String(opts.tournamentName || '').trim() || null,
     player,
     opponent,
     h2h: {

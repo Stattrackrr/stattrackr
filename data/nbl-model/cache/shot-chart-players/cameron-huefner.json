@@ -5,9 +5,9 @@
   "years": [
     2025
   ],
-  "gamesUsed": 21,
+  "gamesUsed": 7,
   "fixturesFetched": 0,
-  "fixturesCached": 21,
+  "fixturesCached": 7,
   "shotCount": 12,
   "zones": [
     {
@@ -59,5 +59,5 @@
       "share": 25
     }
   ],
-  "generatedAt": "2026-08-24T13:58:22.273Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

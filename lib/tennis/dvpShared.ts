@@ -1,5 +1,8 @@
 export const TENNIS_DVP_MIN_MATCHES = 5;
 
+export const TENNIS_DVP_WINDOWS = ['last5', 'last10', 'season'] as const;
+export type TennisDvpWindow = (typeof TENNIS_DVP_WINDOWS)[number];
+
 /** AFL DVP-style allowed rows. `own` = this opponent’s own stat (serve leak). */
 export const TENNIS_DVP_METRICS = [
   { key: 'totalGames', label: 'Avg Total Games', pct: false, source: 'allowed' },
@@ -13,3 +16,21 @@ export const TENNIS_DVP_METRICS = [
 ] as const;
 
 export type TennisDvpMetricKey = (typeof TENNIS_DVP_METRICS)[number]['key'];
+
+export type TennisDvpStage = 'main' | 'qualifying';
+
+export function isTennisQualifyingLabel(
+  round?: string | null,
+  tournamentName?: string | null
+): boolean {
+  return /qualif|\bq1\b|\bq2\b|\bq3\b|\bq-sf\b|\bq-f\b|\bqr\b|\bq-?final/.test(
+    `${round || ''} ${tournamentName || ''}`.toLowerCase()
+  );
+}
+
+export function tennisQualifyingEventLabel(name: string | null | undefined): string {
+  const raw = String(name || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return 'Qualifying';
+  if (/qualif/i.test(raw)) return raw;
+  return `${raw} Qualifying`;
+}

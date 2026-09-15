@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Fabijan Krslovic",
-  "team": "Melbourne United",
+  "team": "Tasmania JackJumpers",
   "years": [
     2025
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 30,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 74,
+  "fixturesCached": 30,
+  "shotCount": 148,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 20,
-      "fgm": 9,
-      "fgPct": 45,
-      "share": 27.027027027027028
+      "fga": 52,
+      "fgm": 28,
+      "fgPct": 53.84615384615385,
+      "share": 35.13513513513514
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 16,
-      "fgm": 6,
-      "fgPct": 37.5,
+      "fga": 32,
+      "fgm": 11,
+      "fgPct": 34.375,
       "share": 21.62162162162162
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 2.7027027027027026
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 2.027027027027027
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 6,
+      "fga": 11,
       "fgm": 1,
-      "fgPct": 16.666666666666664,
-      "share": 8.108108108108109
+      "fgPct": 9.090909090909092,
+      "share": 7.4324324324324325
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 12,
+      "fga": 15,
       "fgm": 1,
-      "fgPct": 8.333333333333332,
-      "share": 16.216216216216218
+      "fgPct": 6.666666666666667,
+      "share": 10.135135135135135
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 18,
-      "fgm": 7,
-      "fgPct": 38.88888888888889,
-      "share": 24.324324324324326
+      "fga": 35,
+      "fgm": 11,
+      "fgPct": 31.428571428571427,
+      "share": 23.64864864864865
     }
   ],
-  "generatedAt": "2026-08-24T13:58:22.593Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Jonah Bolden",
-  "team": "Illawarra Hawks",
+  "team": "Sydney Kings",
   "years": [
     2025
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 16,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 0,
+  "fixturesCached": 16,
+  "shotCount": 88,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 22,
+      "fgm": 16,
+      "fgPct": 72.72727272727273,
+      "share": 25
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 8,
+      "fgm": 5,
+      "fgPct": 62.5,
+      "share": 9.090909090909092
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 0,
+      "fga": 1,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0
+      "share": 1.1363636363636365
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 9,
+      "fgm": 2,
+      "fgPct": 22.22222222222222,
+      "share": 10.227272727272728
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 19,
+      "fgm": 7,
+      "fgPct": 36.84210526315789,
+      "share": 21.59090909090909
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 29,
+      "fgm": 4,
+      "fgPct": 13.793103448275861,
+      "share": 32.95454545454545
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.118Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

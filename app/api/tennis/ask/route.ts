@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { TENNIS_AI_UNDER_MAINTENANCE } from '@/lib/tennis/constants';
 import { answerTennisAsk, tennisAskConfigured, type TennisAskMessage } from '@/lib/tennis/askAnswer';
 import { buildTennisAskBrief, buildTennisAskSuggestions } from '@/lib/tennis/askBrief';
 import { inferBestOfFromOdds, summarizeTennisAskOdds } from '@/lib/tennis/askOdds';
@@ -7,6 +8,18 @@ import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import { buildTennisMatchAnalysis } from '@/lib/tennis/matchAnalyst';
 import { getTennisMatchOddsForPlayer } from '@/lib/tennis/odds';
 import type { TennisTour } from '@/lib/tennis/types';
+
+function maintenanceResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      maintenance: true,
+      error: 'AI Overview is under maintenance.',
+      suggestions: [],
+    },
+    { status: 503 }
+  );
+}
 
 function parseTour(value: unknown): TennisTour | null {
   const tourParam = String(value || '').toUpperCase();
@@ -44,6 +57,7 @@ function analysisResponse(
 }
 
 export async function GET(request: NextRequest) {
+  if (TENNIS_AI_UNDER_MAINTENANCE) return maintenanceResponse();
   const player = String(request.nextUrl.searchParams.get('player') || '').trim();
   const opponent = String(request.nextUrl.searchParams.get('opponent') || '').trim();
   if (!player || !opponent) {
@@ -52,6 +66,7 @@ export async function GET(request: NextRequest) {
   await hydrateTennisMatchOverlay();
   const tour = parseTour(request.nextUrl.searchParams.get('tour'));
   const isGrandSlam = request.nextUrl.searchParams.get('isGrandSlam') === '1';
+  const tournamentName = String(request.nextUrl.searchParams.get('tournament') || '').trim() || null;
   const declared = tennisBestOf(tour, isGrandSlam);
   const odds = await getTennisMatchOddsForPlayer({ playerName: player });
   const bestOf = inferBestOfFromOdds(declared, odds);
@@ -61,6 +76,7 @@ export async function GET(request: NextRequest) {
     opponentName: opponent,
     tour,
     isGrandSlam: isGrandSlam || bestOf === 5,
+    tournamentName,
   });
   return NextResponse.json({
     success: true,
@@ -73,6 +89,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (TENNIS_AI_UNDER_MAINTENANCE) return maintenanceResponse();
   await hydrateTennisMatchOverlay();
   const body = (await request.json().catch(() => null)) as {
     question?: unknown;
@@ -80,6 +97,7 @@ export async function POST(request: NextRequest) {
     opponent?: unknown;
     tour?: unknown;
     isGrandSlam?: unknown;
+    tournamentName?: unknown;
     history?: TennisAskMessage[];
   } | null;
   const question = String(body?.question || '').trim() || 'Where is the biggest edge in this match?';
@@ -96,6 +114,7 @@ export async function POST(request: NextRequest) {
   }
   const tour = parseTour(body?.tour);
   const isGrandSlam = body?.isGrandSlam === true;
+  const tournamentName = String(body?.tournamentName || '').trim() || null;
   const declared = tennisBestOf(tour, isGrandSlam);
   const odds = await getTennisMatchOddsForPlayer({ playerName: player });
   const bestOf = inferBestOfFromOdds(declared, odds);
@@ -105,6 +124,7 @@ export async function POST(request: NextRequest) {
     opponentName: opponent,
     tour,
     isGrandSlam: isGrandSlam || bestOf === 5,
+    tournamentName,
     listedTotalLine: market.listedTotalLine,
     marketOdds: market,
   });

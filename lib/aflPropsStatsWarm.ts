@@ -5,7 +5,7 @@
 
 import { listAflPlayerPropsFromCache, aflListRowHasTwoWayOdds } from '@/lib/aflPlayerPropsCache';
 import { getAflPropStats, getAflPropStatsCacheKey } from '@/lib/aflPropStatsCache';
-import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles } from '@/lib/aflPlayerTeamResolver';
+import { getAflPlayerTeamMap, getAflPlayerTeamMapFromFiles, lookupAflPlayerTeamFromMaps } from '@/lib/aflPlayerTeamResolver';
 import { loadDvpMaps, loadDvpMapsFromFiles, getDvpLookupTeamTotal, DVP_MATCHUP_SEASON } from '@/lib/aflDvpLookup';
 import { getAflPlayerPositionMap, getAflPlayerTeamMapFromFantasy } from '@/lib/aflFantasyPositions';
 import { normalizeAflPlayerNameForMatch } from '@/lib/aflPlayerNameUtils';
@@ -91,7 +91,7 @@ export async function runAflPropsStatsWarm(
     const season = new Date().getFullYear();
     const fantasyTeamMap = await getAflPlayerTeamMapFromFantasy(season);
     const resolvePlayerTeam = (name: string) =>
-      playerTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? fantasyTeamMap.get(normalizeAflPlayerNameForMatch(name)) ?? null;
+      lookupAflPlayerTeamFromMaps(name, playerTeamMap, fantasyTeamMap);
     let dvpMaps = await loadDvpMapsFromFiles(DVP_MATCHUP_SEASON);
     if (dvpMaps.disposals.size === 0 && dvpMaps.goals.size === 0) {
       dvpMaps = await loadDvpMaps(url);

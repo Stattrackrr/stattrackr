@@ -162,4 +162,15 @@ async function main() {
   }
 }
 
-main().catch((error) => { console.error(error); process.exit(1); });
+main().catch((error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const existing = (['ta', 'oa'] as const).every((type) =>
+    fs.existsSync(path.join(process.cwd(), 'data', `afl-team-rankings-${season}-${type}.json`))
+  );
+  if (existing) {
+    console.warn(`${message}; keeping existing FootyInfo team ranking files`);
+    process.exit(0);
+  }
+  console.error(error);
+  process.exit(1);
+});

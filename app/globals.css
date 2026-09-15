@@ -411,3 +411,19 @@ html.dark body {
     letter-spacing: normal;
   }
 }
+
+@keyframes simple-chart-grey-bar-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.simple-chart-grey-bar {
+  animation: simple-chart-grey-bar-pulse 2.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}

@@ -59,6 +59,7 @@ export type TennisMatchAnalysis = {
   tour: 'ATP' | 'WTA';
   surface: string | null;
   bestOf: 3 | 5;
+  tournamentName?: string | null;
   player: TennisAnalystPlayer;
   opponent: TennisAnalystPlayer;
   h2h: {

@@ -1,14 +1,14 @@
 {
   "mode": "player",
   "playerName": "Jonah Antonio",
-  "team": "Illawarra Hawks",
+  "team": "Cairns Taipans",
   "years": [
     2025
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 13,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 2,
+  "fixturesCached": 13,
+  "shotCount": 41,
   "zones": [
     {
       "zone": "restricted",
@@ -21,43 +21,43 @@
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 4,
+      "fgm": 2,
+      "fgPct": 50,
+      "share": 9.75609756097561
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 0,
+      "fga": 2,
       "fgm": 0,
       "fgPct": 0,
-      "share": 0
+      "share": 4.878048780487805
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 10,
+      "fgm": 3,
+      "fgPct": 30,
+      "share": 24.390243902439025
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 1,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 50
+      "fga": 14,
+      "fgm": 6,
+      "fgPct": 42.857142857142854,
+      "share": 34.146341463414636
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 1,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 50
+      "fga": 11,
+      "fgm": 3,
+      "fgPct": 27.27272727272727,
+      "share": 26.82926829268293
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.104Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

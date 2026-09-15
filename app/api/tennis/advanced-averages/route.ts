@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     playerName: player,
     opponentName: opponent || null,
     tour,
-    window: Number.isFinite(windowRaw) ? windowRaw : 15,
+    window: Number.isFinite(windowRaw) ? windowRaw : 0,
     year,
     bestOf: request.nextUrl.searchParams.get('bestOf'),
     vsRank: request.nextUrl.searchParams.get('vsRank'),

@@ -73,7 +73,7 @@ export default function TennisAdvancedAveragesCard({
   opponentName?: string | null;
   tour?: 'ATP' | 'WTA' | null;
 }) {
-  const [windowN, setWindowN] = useState<AdvAvgWindow>(15);
+  const [windowN, setWindowN] = useState<AdvAvgWindow>(0);
   const [bestOf, setBestOf] = useState<AdvAvgBestOf>('all');
   const [vsRank, setVsRank] = useState<AdvAvgVsRank>('all');
   const [side, setSide] = useState<'player' | 'opponent'>('player');

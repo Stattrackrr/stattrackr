@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Thomas Vodanovich",
+  "team": "Tasmania JackJumpers",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 10,
+  "fixturesFetched": 0,
+  "fixturesCached": 10,
+  "shotCount": 32,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 6,
+      "fgm": 5,
+      "fgPct": 83.33333333333334,
+      "share": 18.75
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 6,
+      "fgm": 1,
+      "fgPct": 16.666666666666664,
+      "share": 18.75
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 0,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 0
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 7,
+      "fgm": 2,
+      "fgPct": 28.57142857142857,
+      "share": 21.875
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 4,
+      "fgm": 0,
+      "fgPct": 0,
+      "share": 12.5
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 9,
+      "fgm": 2,
+      "fgPct": 22.22222222222222,
+      "share": 28.125
+    }
+  ],
+  "generatedAt": "2026-09-14T12:36:45.952Z"
+}

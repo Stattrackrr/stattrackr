@@ -3,6 +3,7 @@
  */
 
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
+import { resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import {
   TENNIS_MATCHUP_STATS,
   type TennisMatchupBestOf,
@@ -13,9 +14,7 @@ import {
 } from '@/lib/tennis/playerMatchupShared';
 import {
   loadPlayerMatches,
-  loadTennisMatches,
   loadTennisPlayers,
-  loadTennisRankings,
   tourForPlayer,
   type TennisMatchRow,
   type TennisTour,
@@ -47,9 +46,8 @@ function normName(name: string | null | undefined): string {
 
 function matchesBestOf(row: TennisMatchRow, bestOf: TennisMatchupBestOf): boolean {
   if (bestOf === 'all') return true;
-  const n = Number(row.bestOf);
-  if (!Number.isFinite(n)) return bestOf === 3;
-  return bestOf === 5 ? n >= 5 : n < 5;
+  const actual = resolveTennisMatchBestOf(row);
+  return bestOf === 5 ? actual === 5 : actual === 3;
 }
 
 function windowMatches(games: TennisMatchRow[], windowN: number, year: number): TennisMatchRow[] {
@@ -59,17 +57,19 @@ function windowMatches(games: TennisMatchRow[], windowN: number, year: number): 
   return season.length ? season : sorted.slice(-20);
 }
 
-function minMatchesForWindow(windowN: number): number {
-  if (windowN === 5) return 3;
-  if (windowN === 10) return 5;
-  return 5;
-}
-
 function resolvePlayer(
   name: string,
-  preferredTour: TennisTour
+  preferredTour: TennisTour,
+  playerId?: string | null
 ): { id: string | null; name: string; ioc: string | null; tour: TennisTour } {
   const players = loadTennisPlayers();
+  const id = String(playerId || '').trim();
+  if (id) {
+    const byId = players.find((p) => p.playerId === id);
+    if (byId) {
+      return { id: byId.playerId, name: byId.name, ioc: byId.ioc, tour: byId.tour };
+    }
+  }
   const key = normName(name);
   if (!key) return { id: null, name, ioc: null, tour: preferredTour };
   const exactTour = players.find((p) => p.tour === preferredTour && normName(p.name) === key);
@@ -113,28 +113,8 @@ function statValues(rows: TennisMatchRow[], key: TennisMatchupStatKey): number[]
   return rows.map((row) => num(row[key])).filter((v): v is number => v != null);
 }
 
-/** Recent same-format matches that actually have this stat. */
-function recentWithStat(
-  rows: TennisMatchRow[],
-  key: TennisMatchupStatKey,
-  limit: number
-): TennisMatchRow[] {
-  return [...rows]
-    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
-    .filter((row) => num(row[key]) != null)
-    .slice(-Math.max(1, limit));
-}
-
-function meanForKey(
-  windowed: TennisMatchRow[],
-  allFormat: TennisMatchRow[],
-  key: TennisMatchupStatKey,
-  windowN: number
-): number | null {
-  const fromWindow = mean(statValues(windowed, key));
-  if (fromWindow != null) return fromWindow;
-  const need = windowN > 0 ? windowN : 8;
-  return mean(statValues(recentWithStat(allFormat, key, need), key));
+function meanForKey(windowed: TennisMatchRow[], key: TennisMatchupStatKey): number | null {
+  return mean(statValues(windowed, key));
 }
 
 function rankMap(
@@ -153,10 +133,14 @@ function rankMap(
 export function buildTennisPlayerMatchup(opts: {
   playerName: string;
   opponentName: string;
+  playerId?: string | null;
+  opponentId?: string | null;
   tour?: TennisTour | null;
   window?: number;
   year?: number;
   bestOf?: TennisMatchupBestOf | number | null;
+  fieldIds?: string[] | null;
+  fieldSize?: number | null;
 }): TennisPlayerMatchupPayload {
   const year =
     opts.year && Number.isFinite(opts.year) && opts.year >= 2000 ? opts.year : TENNIS_CURRENT_YEAR;
@@ -172,8 +156,8 @@ export function buildTennisPlayerMatchup(opts: {
   const bestOf: TennisMatchupBestOf =
     tour === 'WTA' ? 'all' : bestOfN === 5 ? 5 : bestOfN === 3 ? 3 : 'all';
 
-  const resolvedPlayer = resolvePlayer(playerName, tour);
-  const resolvedOpponent = resolvePlayer(opponentName, tour);
+  const resolvedPlayer = resolvePlayer(playerName, tour, opts.playerId);
+  const resolvedOpponent = resolvePlayer(opponentName, tour, opts.opponentId);
   const playerAll = loadPlayerMatches({
     playerId: resolvedPlayer.id,
     playerName: resolvedPlayer.id ? null : playerName,
@@ -190,39 +174,38 @@ export function buildTennisPlayerMatchup(opts: {
   const player = sideFromRows(resolvedPlayer, playerAll, playerWindow);
   const opponent = sideFromRows(resolvedOpponent, opponentAll, opponentWindow);
 
-  const minN = minMatchesForWindow(windowN);
-  const tourRows = loadTennisMatches().filter(
-    (row) => row.tour === tour && matchesBestOf(row, bestOf)
-  );
+  const fieldIds = [...new Set((opts.fieldIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+  const rankingIds = new Set(fieldIds);
+  if (rankingIds.size) {
+    if (player.id) rankingIds.add(player.id);
+    if (opponent.id) rankingIds.add(opponent.id);
+  }
   const byId = new Map<string, TennisMatchRow[]>();
-  for (const row of tourRows) {
-    const list = byId.get(row.playerId) || [];
-    list.push(row);
-    byId.set(row.playerId, list);
+  if (player.id) byId.set(player.id, playerAll);
+  if (opponent.id) byId.set(opponent.id, opponentAll);
+  for (const id of rankingIds) {
+    if (byId.has(id)) continue;
+    byId.set(
+      id,
+      loadPlayerMatches({ playerId: id, tour }).filter((row) => matchesBestOf(row, bestOf))
+    );
   }
-
-  const ranked = loadTennisRankings(tour, { limit: 200 });
-  const activeIds = new Set<string>();
-  for (const p of ranked) {
-    const sample = windowMatches(byId.get(p.playerId) || [], windowN, year);
-    if (sample.length >= minN) activeIds.add(p.playerId);
-  }
-  if (player.id) activeIds.add(player.id);
-  if (opponent.id) activeIds.add(opponent.id);
 
   const fieldAvgs = new Map<string, Map<TennisMatchupStatKey, number>>();
-  for (const id of activeIds) {
-    const sample = windowMatches(byId.get(id) || [], windowN, year);
-    if (!sample.length) continue;
-    const history = byId.get(id) || [];
-    const avgs = new Map<TennisMatchupStatKey, number>();
-    for (const stat of TENNIS_MATCHUP_STATS) {
-      const playerMean = meanForKey(sample, history, stat.playerKey, windowN);
-      if (playerMean != null) avgs.set(stat.playerKey, playerMean);
-      const oppMean = meanForKey(sample, history, stat.opponentKey, windowN);
-      if (oppMean != null) avgs.set(stat.opponentKey, oppMean);
+  if (rankingIds.size) {
+    for (const id of rankingIds) {
+      const history = byId.get(id) || [];
+      const sample = windowMatches(history, windowN, year);
+      if (!sample.length) continue;
+      const avgs = new Map<TennisMatchupStatKey, number>();
+      for (const stat of TENNIS_MATCHUP_STATS) {
+        const playerMean = meanForKey(sample, stat.playerKey);
+        if (playerMean != null) avgs.set(stat.playerKey, playerMean);
+        const oppMean = meanForKey(sample, stat.opponentKey);
+        if (oppMean != null) avgs.set(stat.opponentKey, oppMean);
+      }
+      if (avgs.size) fieldAvgs.set(id, avgs);
     }
-    if (avgs.size) fieldAvgs.set(id, avgs);
   }
 
   function ranksFor(key: TennisMatchupStatKey, invert: boolean): Map<string, number> {
@@ -244,19 +227,25 @@ export function buildTennisPlayerMatchup(opts: {
       playerSideLabel: stat.playerSideLabel,
       opponentSideLabel: stat.opponentSideLabel,
       pct: stat.pct,
-      playerValue: meanForKey(playerWindow, playerAll, stat.playerKey, windowN),
+      playerValue: meanForKey(playerWindow, stat.playerKey),
       playerRank: player.id ? playerRanks.get(player.id) ?? null : null,
-      opponentValue: meanForKey(opponentWindow, opponentAll, stat.opponentKey, windowN),
+      opponentValue: meanForKey(opponentWindow, stat.opponentKey),
       opponentRank: opponent.id ? opponentRanks.get(opponent.id) ?? null : null,
     };
   });
+
+  const fieldSize = Math.max(
+    Number.isFinite(Number(opts.fieldSize)) ? Math.round(Number(opts.fieldSize)) : 0,
+    rankingIds.size,
+    fieldIds.length
+  );
 
   return {
     tour,
     year,
     window: windowN,
     bestOf,
-    fieldSize: Math.max(activeIds.size, 2),
+    fieldSize,
     player,
     opponent,
     rows,

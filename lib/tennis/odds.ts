@@ -513,6 +513,10 @@ function catalogMatchAsNextGame(match: OddsApiTennisMatch): TennisNextGame {
     playerIsHome: true,
     homeName: match.homeTeam,
     awayName: match.awayTeam,
+    playerSeed: null,
+    opponentSeed: null,
+    topSeedName: null,
+    topSeedId: null,
   };
 }
 
@@ -669,6 +673,14 @@ export async function refreshTennisOddsSnapshots(opts?: {
       sharedCache.deleteJSON('tennis_player_props_list_v11'),
       sharedCache.deleteJSON('tennis_player_props_list_v12'),
       sharedCache.deleteJSON('tennis_player_props_list_v13'),
+      sharedCache.deleteJSON('tennis_player_props_list_v18'),
+      sharedCache.deleteJSON('tennis_player_props_list_v19'),
+      sharedCache.deleteJSON('tennis_player_props_list_v20'),
+      sharedCache.deleteJSON('tennis_player_props_list_v21'),
+      sharedCache.deleteJSON('tennis_player_props_list_v22'),
+      sharedCache.deleteJSON('tennis_player_props_list_v23'),
+      sharedCache.deleteJSON('tennis_player_props_list_v24'),
+      sharedCache.deleteJSON('tennis_player_props_list_v25'),
     ]).catch(() => undefined);
     const meta: TennisOddsRefreshMeta = {
       fetchedAt: new Date().toISOString(),

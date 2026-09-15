@@ -7,6 +7,11 @@
 import sharedCache from '@/lib/sharedCache';
 import { hydrateTennisMatchOverlay } from '@/lib/tennis/ingest';
 import { TENNIS_CURRENT_YEAR, loadPlayerMatches, loadTennisPlayers, tennisDvpProfile } from '@/lib/tennis/data';
+import {
+  findCachedTennisDvpEvent,
+  readTennisDvpLiveStore,
+  type TennisCachedDvpEvent,
+} from '@/lib/tennis/dvpLiveCache';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import {
   listTennisOddsIndex,
@@ -16,8 +21,12 @@ import {
   type TennisOddsSnapshot,
 } from '@/lib/tennis/odds';
 import {
+  listLiveTennisEventIndex,
   listUniqueUpcomingTennisGames,
   tennisCommenceTimeForMatch,
+  tennisLiveEventPlayerIds,
+  tennisLiveEventStage,
+  findLiveTennisEvent,
   warmTennisUpcomingFixtures,
 } from '@/lib/tennis/nextGame';
 import { readOddsApiTennisCatalog, tennisNamesMatch, tennisTourFromOdds } from '@/lib/tennis/oddsApi';
@@ -29,13 +38,19 @@ import {
   type TennisOuLine,
 } from '@/lib/tennis/oddsTypes';
 import { collapseTennisRowsToPrimaryMarketLine } from '@/lib/tennis/propsMarketCollapse';
-import type { TennisDvpMetricKey } from '@/lib/tennis/dvpShared';
+import { TENNIS_DVP_METRICS, type TennisDvpMetricKey } from '@/lib/tennis/dvpShared';
+import { tennisAssignDrawRanks, tennisAssignDrawSeeds } from '@/lib/tennis/seeds';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisMatchRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_USER_NO_ODDS = 'No odds available. Come back later.';
-export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v17';
+export const TENNIS_LIST_CACHE_KEY = 'tennis_player_props_list_v25';
 const TENNIS_LIST_CACHE_TTL_SECONDS = 20 * 60;
+
+export async function invalidateTennisPlayerPropsList(): Promise<void> {
+  await sharedCache.deleteJSON(TENNIS_LIST_CACHE_KEY);
+}
+
 const TENNIS_EMPTY_TOUR_TTL_SECONDS = 15 * 60;
 
 export const TENNIS_PROP_STATS = [
@@ -75,6 +90,10 @@ export type TennisListPropRow = {
   playerRank?: number | null;
   opponentIoc?: string | null;
   opponentRank?: number | null;
+  playerSeed?: number | null;
+  opponentSeed?: number | null;
+  playerDrawRank?: number | null;
+  opponentDrawRank?: number | null;
   tournamentName?: string | null;
   surface?: string | null;
   homeTeamCode?: string | null;
@@ -270,6 +289,10 @@ function rowsForBook(opts: {
   playerRank: number | null;
   opponentIoc: string | null;
   opponentRank: number | null;
+  playerSeed: number | null;
+  opponentSeed: number | null;
+  playerDrawRank: number | null;
+  opponentDrawRank: number | null;
   book: TennisBookRow;
   playerIsHome: boolean;
   recentMatches: TennisMatchRow[];
@@ -287,6 +310,10 @@ function rowsForBook(opts: {
     playerRank,
     opponentIoc,
     opponentRank,
+    playerSeed,
+    opponentSeed,
+    playerDrawRank,
+    opponentDrawRank,
     book,
     recentMatches,
     h2hRows,
@@ -298,6 +325,10 @@ function rowsForBook(opts: {
     playerRank,
     opponentIoc,
     opponentRank,
+    playerSeed,
+    opponentSeed,
+    playerDrawRank,
+    opponentDrawRank,
     tournamentName: game.tournamentName ?? null,
     surface: game.surface ?? null,
   };
@@ -397,6 +428,23 @@ function rowsForBook(opts: {
   return out;
 }
 
+function findDvpPlayer(
+  players: NonNullable<TennisCachedDvpEvent['windows']['last10']>,
+  opponentName: string,
+  opponentId: string | null
+) {
+  if (opponentId) {
+    const byId = players.find((row) => row.id === opponentId);
+    if (byId) return byId;
+  }
+  const key = opponentName.trim().toLowerCase();
+  const byName = players.find((row) => row.name.toLowerCase() === key);
+  if (byName) return byName;
+  const last = key.split(/\s+/).filter(Boolean).pop() || '';
+  if (last.length < 3) return null;
+  return players.find((row) => row.name.toLowerCase().split(/\s+/).pop() === last) || null;
+}
+
 function snapshotToGame(
   snapshot: TennisOddsSnapshot,
   tour: TennisTour,
@@ -420,7 +468,7 @@ function snapshotToGame(
 
 async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayload> {
   await hydrateTennisMatchOverlay();
-  const [index, catalog, players] = await Promise.all([
+  const [index, catalog, players, liveEvents, dvpStore] = await Promise.all([
     listTennisOddsIndex(),
     readOddsApiTennisCatalog(),
     Promise.resolve(
@@ -433,6 +481,8 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
         rank: player.rank ?? null,
       }))
     ),
+    listLiveTennisEventIndex(),
+    readTennisDvpLiveStore(),
   ]);
   const lookup = buildPlayerLookup(players);
   const indexById = new Map(index.map((row) => [row.matchId, row]));
@@ -474,6 +524,7 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
   const seenGames = new Set<string>();
   const matchCache = new Map<string, TennisMatchRow[]>();
   const dvpCache = new Map<string, ReturnType<typeof tennisDvpProfile>>();
+  const dvpBoards = new Map<string, TennisCachedDvpEvent>();
 
   const matchesFor = (playerName: string, playerId: string | null): TennisMatchRow[] => {
     const key = `${playerId || ''}|${playerName.toLowerCase()}`;
@@ -484,16 +535,146 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     return rows;
   };
 
-  const dvpForOpponent = (tour: TennisTour, opponentName: string, opponentId: string | null) => {
-    const cacheKey = `${tour}|${opponentId || opponentName.toLowerCase()}`;
-    const cached = dvpCache.get(cacheKey);
-    if (cached && !Array.isArray(cached)) return cached;
+  const boardFor = (
+    tour: TennisTour,
+    tournamentName: string | null,
+    stage: 'main' | 'qualifying',
+    tournamentKey?: string | null
+  ) => {
+    const boardKey = `${tour}|${stage}|${String(tournamentKey || '').trim() || (tournamentName || '').toLowerCase()}`;
+    const hit = dvpBoards.get(boardKey);
+    if (hit) return hit;
+    const cached = findCachedTennisDvpEvent(dvpStore, {
+      tour,
+      tournamentKey: tournamentKey || null,
+      tournamentName,
+      stage,
+    });
+    if (cached) {
+      const rows = cached.windows.last10 || [];
+      if (!rows.some((row) => row.drawRank != null)) {
+        const assigned = tennisAssignDrawRanks(rows);
+        for (const row of rows) row.drawRank = assigned.get(row.id) ?? null;
+      }
+      dvpBoards.set(boardKey, cached);
+      return cached;
+    }
+    const extras = tennisLiveEventPlayerIds(liveEvents, tournamentKey || null, tournamentName, stage);
     const profile = tennisDvpProfile({
       tour,
       year: TENNIS_CURRENT_YEAR,
-      opponentName,
-      opponentId,
+      tournamentName,
+      tournamentKey: tournamentKey || null,
+      window: 'last10',
+      stage,
+      extraPlayerIds: extras,
+      liveTournamentKeys: liveEvents.keys,
+      liveTournamentNames: liveEvents.names,
+      includeField: true,
     });
+    const board: TennisCachedDvpEvent = {
+      tour,
+      stage,
+      tournamentKey: profile.tournamentKey,
+      tournamentName: profile.tournamentName,
+      fieldSize: profile.fieldSize,
+      topSeed: null,
+      windows: {
+        last10: (profile.field || []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          ioc: row.ioc,
+          rankPos: row.rankPos,
+          seed: row.seed ?? null,
+          drawRank: row.drawRank ?? null,
+          metrics: row.metrics,
+        })),
+      },
+    };
+    const last10 = board.windows.last10 || [];
+    if (!last10.some((row) => row.seed != null)) {
+      const assigned = tennisAssignDrawSeeds(last10, {
+        stage,
+        fieldSize: board.fieldSize || last10.length,
+      });
+      for (const row of last10) row.seed = assigned.get(row.id) ?? null;
+    }
+    if (!last10.some((row) => row.drawRank != null)) {
+      const assigned = tennisAssignDrawRanks(last10);
+      for (const row of last10) row.drawRank = assigned.get(row.id) ?? null;
+    }
+    board.topSeed = last10.find((row) => row.seed === 1) || null;
+    dvpBoards.set(boardKey, board);
+    return board;
+  };
+
+  const dvpForOpponent = (
+    tour: TennisTour,
+    opponentName: string,
+    opponentId: string | null,
+    playerId: string | null,
+    tournamentName: string | null,
+    tournamentKey?: string | null
+  ) => {
+    const stage = tennisLiveEventStage(liveEvents, {
+      playerId,
+      opponentId,
+      tournamentKey: tournamentKey || null,
+      tournamentName,
+    });
+    const cacheKey = `${tour}|${stage}|${String(tournamentKey || '').trim() || (tournamentName || '').toLowerCase()}|${opponentId || opponentName.toLowerCase()}`;
+    const cached = dvpCache.get(cacheKey);
+    if (cached && !Array.isArray(cached)) return cached;
+    const board = boardFor(tour, tournamentName, stage, tournamentKey);
+    const livePlayer = findDvpPlayer(board.windows.last10 || [], opponentName, opponentId);
+    const profile = {
+      tour,
+      year: TENNIS_CURRENT_YEAR,
+      window: 'last10' as const,
+      stage,
+      tournamentName: board.tournamentName,
+      tournamentKey: board.tournamentKey,
+      fieldSize: board.fieldSize,
+      opponent: livePlayer
+        ? {
+            id: livePlayer.id,
+            name: livePlayer.name,
+            ioc: livePlayer.ioc,
+            rankPos: livePlayer.rankPos,
+            seed: livePlayer.seed ?? null,
+            drawRank: livePlayer.drawRank ?? null,
+          }
+        : null,
+      opponents: (board.windows.last10 || []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        ioc: row.ioc,
+        rankPos: row.rankPos,
+        seed: row.seed ?? null,
+        drawRank: row.drawRank ?? null,
+      })),
+      topSeed: board.topSeed
+        ? {
+            id: board.topSeed.id,
+            name: board.topSeed.name,
+            ioc: board.topSeed.ioc,
+            rankPos: board.topSeed.rankPos,
+            seed: board.topSeed.seed ?? 1,
+            drawRank: board.topSeed.drawRank ?? 1,
+          }
+        : null,
+      metrics: livePlayer?.metrics?.length
+        ? livePlayer.metrics
+        : TENNIS_DVP_METRICS.map((metric) => ({
+            key: metric.key,
+            label: metric.label,
+            pct: metric.pct,
+            value: null,
+            rank: null,
+            matches: 0,
+            fieldSize: board.fieldSize,
+          })),
+    };
     dvpCache.set(cacheKey, profile);
     return profile;
   };
@@ -525,8 +706,38 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
       );
       const h2hRows = allMatches.filter((row) => isH2hMatch(row, opponent, opponentId));
       const headshotUrl = resolveTennisHeadshotUrl(playerId, meta?.imageUrl || null);
-      const dvpProfile = dvpForOpponent(tour, opponent, opponentId);
+      const liveEvent =
+        (playerId &&
+          liveEvents.events.find(
+            (event) =>
+              event.playerIds.includes(playerId) || event.qualifyingPlayerIds.includes(playerId)
+          )) ||
+        findLiveTennisEvent(liveEvents, null, game.tournamentName || snapshot.tournamentName || null);
+      const liveTournamentName =
+        liveEvent?.tournamentName || game.tournamentName || snapshot.tournamentName || null;
+      const liveTournamentKey = liveEvent?.tournamentKey || null;
+      if (liveEvent?.tournamentName && game.tournamentName !== liveEvent.tournamentName) {
+        game.tournamentName = liveEvent.tournamentName;
+        game.surface = lookupTennisSurface(liveEvent.tournamentName, liveEvent.tournamentKey);
+      }
+      const dvpProfile = dvpForOpponent(
+        tour,
+        opponent,
+        opponentId,
+        playerId,
+        liveTournamentName,
+        liveTournamentKey
+      );
       const dvpFor = (stat: TennisPropStat): DvpFields => {
+        if (stat === 'moneyline') {
+          const drawRank =
+            dvpProfile.opponent?.drawRank ?? dvpProfile.opponent?.seed ?? null;
+          return {
+            dvpRating: drawRank,
+            dvpStatValue: dvpProfile.opponent?.rankPos ?? null,
+            dvpFieldSize: dvpProfile.fieldSize ?? null,
+          };
+        }
         const metric = dvpProfile.metrics.find((row) => row.key === dvpMetricForStat(stat));
         return {
           dvpRating: metric?.rank ?? null,
@@ -534,6 +745,12 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
           dvpFieldSize: metric?.fieldSize ?? dvpProfile.fieldSize ?? null,
         };
       };
+      const playerBoard =
+        dvpProfile.opponents.find((row) => row.id === playerId) ||
+        dvpProfile.opponents.find(
+          (row) => row.name.toLowerCase() === playerName.trim().toLowerCase()
+        ) ||
+        null;
       const books = orientBooks(snapshot.bookmakers, side.isHome);
       for (const book of books) {
         data.push(
@@ -547,6 +764,10 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
             playerRank: meta?.rank ?? null,
             opponentIoc: side.opponentMeta?.ioc ?? null,
             opponentRank: side.opponentMeta?.rank ?? null,
+            playerSeed: playerBoard?.seed ?? null,
+            opponentSeed: dvpProfile.opponent?.seed ?? null,
+            playerDrawRank: playerBoard?.drawRank ?? null,
+            opponentDrawRank: dvpProfile.opponent?.drawRank ?? null,
             book,
             playerIsHome: side.isHome,
             recentMatches,
@@ -578,6 +799,78 @@ async function buildTennisPlayerPropsList(): Promise<TennisPlayerPropsListPayloa
     noAflOdds: empty,
     ingestMessage: empty ? TENNIS_USER_NO_ODDS : null,
   };
+}
+
+async function overlayLiveTennisDvp(
+  payload: TennisPlayerPropsListPayload
+): Promise<TennisPlayerPropsListPayload> {
+  if (!payload.data.length) return payload;
+  const [live, store] = await Promise.all([listLiveTennisEventIndex(), readTennisDvpLiveStore()]);
+  if (!live.events.length) return payload;
+  const boards = new Map<string, TennisCachedDvpEvent>();
+  const boardFor = (
+    tour: TennisTour,
+    tournamentName: string | null,
+    tournamentKey: string | null,
+    stage: 'main' | 'qualifying'
+  ) => {
+    const boardKey = `${tour}|${stage}|${String(tournamentKey || '').trim() || (tournamentName || '').toLowerCase()}`;
+    const hit = boards.get(boardKey);
+    if (hit) return hit;
+    const cached = findCachedTennisDvpEvent(store, {
+      tour,
+      tournamentKey,
+      tournamentName,
+      stage,
+    });
+    if (cached) boards.set(boardKey, cached);
+    return cached;
+  };
+
+  const data = payload.data.map((row) => {
+    const tour: TennisTour = String(row.playerTeam || '').toUpperCase() === 'WTA' ? 'WTA' : 'ATP';
+    const playerId = String(row.playerId || '').trim() || null;
+    const event =
+      (playerId &&
+        live.events.find(
+          (item) => item.playerIds.includes(playerId) || item.qualifyingPlayerIds.includes(playerId)
+        )) ||
+      findLiveTennisEvent(live, null, row.tournamentName || null);
+    if (!event) return row;
+    const patchedName = event.tournamentName || row.tournamentName;
+    const stage = tennisLiveEventStage(live, {
+      playerId,
+      tournamentKey: event.tournamentKey,
+      tournamentName: event.tournamentName,
+    });
+    const board = boardFor(event.tour || tour, event.tournamentName, event.tournamentKey, stage);
+    if (!board) return patchedName === row.tournamentName ? row : { ...row, tournamentName: patchedName };
+    const opp = findDvpPlayer(board.windows.last10 || [], String(row.opponent || ''), null);
+    const stat = row.statType as TennisPropStat;
+    if (stat === 'moneyline') {
+      return {
+        ...row,
+        tournamentName: patchedName,
+        dvpRating: opp?.drawRank ?? opp?.seed ?? null,
+        dvpStatValue: opp?.rankPos ?? null,
+        dvpFieldSize: board.fieldSize,
+      };
+    }
+    const metric = opp?.metrics?.find((item) => item.key === dvpMetricForStat(stat));
+    return {
+      ...row,
+      tournamentName: patchedName,
+      dvpRating: metric?.rank ?? null,
+      dvpStatValue: metric?.value ?? null,
+      dvpFieldSize: metric?.fieldSize ?? board.fieldSize,
+    };
+  });
+  const games = payload.games.map((game) => {
+    const row = data.find((item) => item.gameId === game.gameId && item.tournamentName);
+    if (!row?.tournamentName || row.tournamentName === game.tournamentName) return game;
+    return { ...game, tournamentName: row.tournamentName };
+  });
+  return { ...payload, data, games };
 }
 
 function overlayUpcomingTimes(
@@ -643,6 +936,11 @@ export async function getTennisPlayerPropsList(opts?: {
   } catch {
     /* keep snapshot times if upcoming is cold */
   }
+  try {
+    payload = await overlayLiveTennisDvp(payload);
+  } catch {
+    /* keep baked DVP if live overlay fails */
+  }
   let result = filterTennisListByTour(payload, tour);
   if (!tour || result.data.length > 0) return result;
 
@@ -659,6 +957,11 @@ export async function getTennisPlayerPropsList(opts?: {
     payload = overlayUpcomingTimes(payload, upcoming);
   } catch {
     /* keep snapshot times */
+  }
+  try {
+    payload = await overlayLiveTennisDvp(payload);
+  } catch {
+    /* keep baked DVP */
   }
   result = filterTennisListByTour(payload, tour);
   if (result.data.length === 0) {

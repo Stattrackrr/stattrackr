@@ -15,6 +15,7 @@ import {
 import StaticLabelList from './StaticLabelList';
 import CustomXAxisTick from './CustomXAxisTick';
 import { CHART_CONFIG } from '../../constants';
+import { tennisValueHitsOver } from '@/lib/tennis/oddsTypes';
 
 const NBA_PCT_STATS = ['fg3_pct', 'fg_pct', 'ft_pct', 'opp_fg_pct', 'opp_fg3_pct', 'opp_ft_pct'];
 
@@ -96,6 +97,8 @@ interface SimpleChartProps {
   barAnimationEasing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
   /** Bumps chart/bar keys so animations replay on stat/mode/timeframe changes. */
   chartAnimationKey?: string;
+  /** Force every bar to a muted grey (empty-filter placeholder). */
+  forceGreyBars?: boolean;
   [key: string]: any; // Accept other props for compatibility
 }
 
@@ -147,6 +150,7 @@ const SimpleChart = memo(function SimpleChart({
   barAnimationDuration = 180,
   barAnimationEasing = 'ease-out',
   chartAnimationKey = '',
+  forceGreyBars = false,
 }: SimpleChartProps) {
   // Detect mobile for hiding Y-axis and X-axis tick marks
   const [isMobile, setIsMobile] = useState(false);
@@ -272,16 +276,16 @@ const SimpleChart = memo(function SimpleChart({
       }
       return value === 0 ? 'over' : 'under';
     }
-    if (isSpreadLikeStat) return value <= line ? 'over' : 'under';
-    if (value > line) return 'over';
+    if (isSpreadLikeStat) return tennisValueHitsOver('spread', value, line) ? 'over' : 'under';
+    if (tennisValueHitsOver(selectedStat, value, line)) return 'over';
     if (value < line) return 'under';
     return 'push';
-  }, [isTogStat, isThreeWayMoneylineStat, isSpreadLikeStat]);
+  }, [isTogStat, isThreeWayMoneylineStat, isSpreadLikeStat, selectedStat]);
 
   // Initial background gradient (recalculates when chartData, bettingLine, or isDark changes)
   // OPTIMIZATION: Single pass through array instead of two filters
   const initialBackgroundGradient = useMemo(() => {
-    if (isTogStat) return '';
+    if (forceGreyBars || isTogStat) return '';
     if (!chartData || chartData.length === 0) return '';
     const total = chartData.length;
     let overCount = 0;
@@ -298,7 +302,7 @@ const SimpleChart = memo(function SimpleChart({
     const overPercent = counted > 0 ? (overCount / counted) * 100 : 0;
     const underPercent = counted > 0 ? (underCount / counted) * 100 : 0;
     return getBackgroundGradient(overPercent, underPercent);
-  }, [chartData, bettingLine, getBackgroundGradient, getBarState, isTogStat]);
+  }, [chartData, bettingLine, getBackgroundGradient, getBarState, isTogStat, forceGreyBars]);
   
   const backgroundGradientRef = useRef(initialBackgroundGradient);
   const getBackgroundGradientRef = useRef(getBackgroundGradient);
@@ -311,11 +315,12 @@ const SimpleChart = memo(function SimpleChart({
 
   // Determine bar color based on value vs betting line
   const getBarColor = useCallback((value: number | null, line: number) => {
+    if (forceGreyBars) return isDark ? '#4b5563' : '#9ca3af';
     if (value === null || value === undefined || !Number.isFinite(value)) return '#94a3b8'; // no BDL Q1 row
     const state = getBarState(value, line);
     if (state === 'na' || state === 'push') return '#6b7280';
     return state === 'over' ? '#10b981' : '#ef4444';
-  }, [getBarState]);
+  }, [getBarState, forceGreyBars, isDark]);
 
   const isCompositeStat = ['pra', 'pr', 'pa', 'ra'].includes(selectedStat);
   const hasTeammateOverlay = (teammateFilterId != null || teammateFilterName) && !!clearTeammateFilter;
@@ -371,12 +376,27 @@ const SimpleChart = memo(function SimpleChart({
   useEffect(() => {
     chartDataRef.current = chartData;
   }, [chartData]);
+  const forceGreyBarsRef = useRef(forceGreyBars);
+  useEffect(() => {
+    forceGreyBarsRef.current = forceGreyBars;
+  }, [forceGreyBars]);
 
   // Function to update bar colors via DOM (no React re-renders)
   // This function directly manipulates DOM, matching original recolorBarsFast pattern
   const updateBarColors = useCallback((line: number) => {
     const data = chartDataRef.current;
     if (!data || data.length === 0) return;
+
+    const greyFill = isDark ? '#4b5563' : '#9ca3af';
+    if (forceGreyBarsRef.current) {
+      document.querySelectorAll('[data-bar-index], .simple-chart-grey-bar').forEach((el: Element) => {
+        const fill = el.getAttribute('fill');
+        if (!fill || fill === 'transparent' || fill === 'none') return;
+        el.setAttribute('fill', greyFill);
+        el.setAttribute('data-state', 'grey');
+      });
+      return;
+    }
     
     const rects = document.querySelectorAll('[data-bar-index]');
     if (rects.length === 0) return; // No bars found
@@ -410,11 +430,18 @@ const SimpleChart = memo(function SimpleChart({
       el.setAttribute('data-state', newState);
       el.setAttribute('fill', newColor);
     });
-  }, [getBarState, isTogStat]);
+  }, [getBarState, isTogStat, isDark]);
 
   // Update bar colors and background glow via DOM when betting line changes (prevents re-renders)
   useEffect(() => {
     if (!chartData || chartData.length === 0) return;
+    if (forceGreyBars) {
+      backgroundGradientRef.current = '';
+      const glowElement = document.querySelector('[data-chart-glow]') as HTMLElement | null;
+      if (glowElement) glowElement.style.background = '';
+      updateBarColors(bettingLine);
+      return;
+    }
     
     // Update bar colors via DOM (no React re-renders)
     updateBarColors(bettingLine);
@@ -450,7 +477,7 @@ const SimpleChart = memo(function SimpleChart({
     }, 0);
     
     return () => clearTimeout(timeoutId);
-  }, [bettingLine, chartData, getBackgroundGradient, getBarState, updateBarColors, isTogStat]);
+  }, [bettingLine, chartData, getBackgroundGradient, getBarState, updateBarColors, isTogStat, forceGreyBars]);
 
   // Ensure colors are set correctly on initial render (after DOM is ready)
   useEffect(() => {
@@ -485,6 +512,7 @@ const SimpleChart = memo(function SimpleChart({
         if (!Number.isFinite(value)) return;
         // Call via ref to get latest function with correct selectedStat
         updateBarColorsRef.current(value);
+        if (forceGreyBarsRef.current) return;
         
         // Also update background glow
         const data = chartDataRef.current;
@@ -529,6 +557,7 @@ const SimpleChart = memo(function SimpleChart({
       // CRITICAL: Update bar colors instantly via DOM FIRST (no React state updates to prevent re-renders)
       // Use ref to get latest function, do this synchronously to ensure instant visual feedback
       updateBarColorsRef.current(value);
+      if (forceGreyBarsRef.current) return;
       
       // Update background glow gradient instantly (also DOM manipulation)
       const data = chartDataRef.current;
@@ -635,6 +664,7 @@ const SimpleChart = memo(function SimpleChart({
     return (value: any): string => {
       const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
       if (isChartPercentageStat(selectedStat)) return `${numValue.toFixed(1)}%`;
+      if (selectedStat === 'dominanceRatio') return numValue.toFixed(2);
       return `${numValue}`;
     };
   }, [selectedStat]);
@@ -819,7 +849,11 @@ const SimpleChart = memo(function SimpleChart({
     if (validEntries.length === 0) return null;
     const validValues = validEntries.map(x => x.value);
     const avg = validValues.reduce((s, v) => s + v, 0) / validValues.length;
-    const formatted = isChartPercentageStat(selectedStat) ? `${avg.toFixed(1)}%` : avg.toFixed(1);
+    const formatted = isChartPercentageStat(selectedStat)
+      ? `${avg.toFixed(1)}%`
+      : selectedStat === 'dominanceRatio'
+        ? avg.toFixed(2)
+        : avg.toFixed(1);
     const tfLabels: Record<string, string> = {
       last5: 'L5', last10: 'L10', last15: 'L15', last20: 'L20',
       h2h: 'H2H', lastseason: 'Last Season', thisseason: 'Season'
@@ -830,7 +864,9 @@ const SimpleChart = memo(function SimpleChart({
     let hitCount: number | null = null;
     let totalGames: number | null = null;
     if (Number.isFinite(bettingLine) && validEntries.length > 0) {
-      const overCount = validEntries.filter(({ value }) => (isSpreadLikeStat ? value <= bettingLine : value > bettingLine)).length;
+      const overCount = validEntries.filter(({ value }) =>
+        tennisValueHitsOver(isSpreadLikeStat ? 'spread' : selectedStat, value, bettingLine)
+      ).length;
       hitCount = overCount;
       totalGames = validEntries.length;
       hitRate = Math.round((overCount / validEntries.length) * 100);
@@ -879,13 +915,15 @@ const SimpleChart = memo(function SimpleChart({
           data-chart-glow
           className="absolute pointer-events-none"
           style={{
-            top: '-5%',
+            top: 0,
             left: '-30%',
             right: '-30%',
-            bottom: '-30%',
+            bottom: 0,
             background: initialBackgroundGradient,
             zIndex: 0,
-            transition: 'background 0.1s ease-out'
+            transition: 'background 0.1s ease-out',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 100%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 100%)',
           }}
         />
       )}
@@ -1419,6 +1457,7 @@ const SimpleChart = memo(function SimpleChart({
                       fill={fill ?? '#888'}
                       rx={10}
                       ry={10}
+                      className={forceGreyBars ? 'simple-chart-grey-bar' : undefined}
                       data-bar-index={barIndex}
                       data-bar-value={barValue}
                     />
@@ -1471,7 +1510,8 @@ const SimpleChart = memo(function SimpleChart({
     prevProps.excludeBlowouts !== nextProps.excludeBlowouts ||
     prevProps.excludeBackToBack !== nextProps.excludeBackToBack ||
     prevProps.chartAnimationKey !== nextProps.chartAnimationKey ||
-    prevProps.disableBarAnimation !== nextProps.disableBarAnimation;
+    prevProps.disableBarAnimation !== nextProps.disableBarAnimation ||
+    prevProps.forceGreyBars !== nextProps.forceGreyBars;
   
   // If stat/data/config/other props changed, allow re-render
   if (statChanged || dataChanged || configChanged || otherPropsChanged) {

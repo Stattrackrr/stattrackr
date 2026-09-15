@@ -1,30 +1,30 @@
 {
   "mode": "player",
   "playerName": "Michael Harris",
-  "team": "Adelaide 36ers",
+  "team": "Perth Wildcats",
   "years": [
     2025
   ],
-  "gamesUsed": 26,
+  "gamesUsed": 10,
   "fixturesFetched": 0,
-  "fixturesCached": 26,
-  "shotCount": 7,
+  "fixturesCached": 10,
+  "shotCount": 18,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 2,
-      "fgm": 1,
+      "fga": 4,
+      "fgm": 2,
       "fgPct": 50,
-      "share": 28.57142857142857
+      "share": 22.22222222222222
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 0,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 0
+      "fga": 2,
+      "fgm": 1,
+      "fgPct": 50,
+      "share": 11.11111111111111
     },
     {
       "zone": "midRange",
@@ -37,27 +37,27 @@
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 2,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 28.57142857142857
+      "fga": 3,
+      "fgm": 1,
+      "fgPct": 33.33333333333333,
+      "share": 16.666666666666664
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 1,
-      "fgm": 1,
-      "fgPct": 100,
-      "share": 14.285714285714285
+      "fga": 5,
+      "fgm": 2,
+      "fgPct": 40,
+      "share": 27.77777777777778
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 2,
-      "fgm": 1,
+      "fga": 4,
+      "fgm": 2,
       "fgPct": 50,
-      "share": 28.57142857142857
+      "share": 22.22222222222222
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.703Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

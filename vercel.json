@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/refresh-tennis-upcoming",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-tennis-dvp",
+      "schedule": "*/20 * * * *"
     }
   ],
   "functions": {
@@ -96,6 +100,9 @@
     },
     "app/api/cron/refresh-tennis-upcoming/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/refresh-tennis-dvp/route.ts": {
+      "maxDuration": 120
     },
     "app/api/soccer/player-stats-batch/route.ts": {
       "maxDuration": 800

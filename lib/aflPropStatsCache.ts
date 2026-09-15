@@ -17,8 +17,9 @@ import { aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe
 import sharedCache from '@/lib/sharedCache';
 
 // Bump schema version when stats computation inputs change (e.g. season-scoped streak/L5).
-// v7: H2H is always recorded (including 0 games) and incomplete v6 entries are not reused.
-const CACHE_PREFIX = 'afl_prop_stats_v7';
+// v8: H2H uses dashboard opponent matching and the matchup team that actually appears in logs
+// (fixes N/A when the list defaulted to awayTeam / the player's own side).
+const CACHE_PREFIX = 'afl_prop_stats_v8';
 const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours so stats persist until next warm (cron runs every ~3h)
 
 export type AflPropStatsPayload = {
@@ -48,27 +49,46 @@ function cacheKey(playerName: string, team: string, opponent: string, statType: 
   return getAflPropStatsCacheKey(playerName, team, opponent, statType, line);
 }
 
-function getStatValue(game: Record<string, unknown>, statType: string): number | null {
-  if (statType === 'disposals' || statType === 'disposals_over') {
-    const v = game.disposals;
-    return typeof v === 'number' && Number.isFinite(v) ? v : null;
-  }
-  if (statType === 'goals_over') {
-    const v = game.goals;
-    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+function toStatNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   }
   return null;
 }
 
-/** Normalize opponent to official name (same as dashboard H2H so props page matches). */
+function getStatValue(game: Record<string, unknown>, statType: string): number | null {
+  if (statType === 'disposals' || statType === 'disposals_over') {
+    return toStatNumber(game.disposals);
+  }
+  if (statType === 'goals_over') {
+    return toStatNumber(game.goals);
+  }
+  return null;
+}
+
+function gameOpponentName(game: Record<string, unknown>): string {
+  const raw =
+    game.opponent ?? game.opp ?? game.opposition ?? game.opp_abbrev ?? game.opponentName ?? '';
+  if (typeof raw === 'string') return raw;
+  if (raw && typeof raw === 'object' && 'name' in (raw as { name?: unknown })) {
+    return String((raw as { name?: unknown }).name ?? '');
+  }
+  return String(raw ?? '');
+}
+
+/** Same resolution as AflStatsChart H2H so "Swans" / "SYD" / "Sydney Swans" match. */
 function resolveOpponentForH2H(opp: string): string {
   const s = (opp ?? '').replace(/^vs\.?\s*/i, '').trim().replace(/\s+/g, ' ');
   if (!s) return '';
-  const fromAbbrev = footyinfoAbbrevToOfficial(s);
-  if (fromAbbrev) return fromAbbrev;
-  const official = toOfficialAflTeamDisplayName(s);
-  if (official) return official;
-  return opponentToOfficialTeamName(s) ?? rosterTeamToInjuryTeam(s) ?? s;
+  return (
+    opponentToOfficialTeamName(s) ||
+    rosterTeamToInjuryTeam(s) ||
+    footyinfoAbbrevToOfficial(s) ||
+    toOfficialAflTeamDisplayName(s) ||
+    s
+  );
 }
 
 function opponentsMatchForH2H(rowOpponent: string, targetOpponent: string): boolean {
@@ -116,13 +136,13 @@ export function computeAflPropStatsFromGames(
   statType: string,
   opponent: string,
   line: number,
-  targetSeason?: number
+  targetSeason?: number,
+  alternateOpponent?: string
 ): Omit<AflPropStatsPayload, 'dvpRating' | 'dvpStatValue'> {
-  const propOpponentOfficial = resolveOpponentForH2H(opponent);
   const gamesWithValue: { value: number; opponent: string; season: number | null }[] = [];
   for (const g of games) {
     const v = getStatValue(g, statType);
-    const opp = (g.opponent as string) || '';
+    const opp = gameOpponentName(g);
     const season = resolveAflGameSeason(g);
     if (v !== null) gamesWithValue.push({ value: v, opponent: opp, season });
   }
@@ -136,11 +156,25 @@ export function computeAflPropStatsFromGames(
   const last5 = formGames.slice(0, 5).map((x) => x.value);
   const last10 = formGames.slice(0, 10).map((x) => x.value);
   const seasonValues = formGames.map((x) => x.value);
-  // H2H: match by official name (same as dashboard) so "Kangaroos" / "North Melbourne" / "North Melbourne Kangaroos" all match, and we never match "Melbourne" when we want "North Melbourne"
-  const h2hValues = gamesWithValue
-    .filter((x) => opponentsMatchForH2H(x.opponent, opponent) || opponentsMatchForH2H(x.opponent, propOpponentOfficial))
-    .slice(0, 6)
-    .map((x) => x.value);
+  const h2hValuesFor = (target: string): number[] => {
+    const official = resolveOpponentForH2H(target);
+    if (!target.trim() && !official) return [];
+    return gamesWithValue
+      .filter(
+        (x) =>
+          opponentsMatchForH2H(x.opponent, target) ||
+          (official ? opponentsMatchForH2H(x.opponent, official) : false)
+      )
+      .map((x) => x.value);
+  };
+  // Prefer the resolved upcoming opponent. If that side never appears in logs (often the
+  // player's own team when the list defaulted to awayTeam), use the other matchup team.
+  let h2hSource = h2hValuesFor(opponent);
+  if (h2hSource.length === 0 && alternateOpponent?.trim()) {
+    const alternate = h2hValuesFor(alternateOpponent);
+    if (alternate.length > 0) h2hSource = alternate;
+  }
+  const h2hValues = h2hSource.slice(0, 6);
   const last5Avg = last5.length > 0 ? last5.reduce((a, b) => a + b, 0) / last5.length : null;
   const last10Avg = last10.length > 0 ? last10.reduce((a, b) => a + b, 0) / last10.length : null;
   const seasonAvg = seasonValues.length > 0 ? seasonValues.reduce((a, b) => a + b, 0) / seasonValues.length : null;
@@ -297,7 +331,15 @@ export async function getAflPropStats(
     debugOut.gamesCount = games.length;
   }
   const matchupOpponent = resolveMatchupOpponentForH2H(team, opponent, resolvedPlayerTeam);
-  const stats = computeAflPropStatsFromGames(games, statType, matchupOpponent, line, currentSeason);
+  const otherMatchupTeam = opponentsMatchForH2H(matchupOpponent, opponent) ? team : opponent;
+  const stats = computeAflPropStatsFromGames(
+    games,
+    statType,
+    matchupOpponent,
+    line,
+    currentSeason,
+    otherMatchupTeam
+  );
   const payload: AflPropStatsPayload = {
     ...stats,
     dvpRating: dvpLookup?.rank ?? null,

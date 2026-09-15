@@ -2,16 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
-import { tennisLastName } from '@/lib/tennis/chartStats';
-import { TENNIS_DVP_METRICS } from '@/lib/tennis/dvpShared';
+import { tennisEventPlaceLabel, tennisLastName } from '@/lib/tennis/chartStats';
+import { TENNIS_DVP_METRICS, type TennisDvpStage, type TennisDvpWindow } from '@/lib/tennis/dvpShared';
+import { TennisTournamentRankInfoButton } from '@/app/tennis/components/TennisTournamentRankInfoButton';
 
-const SEASON_OPTIONS = [2026, 2025] as const;
+const WINDOW_OPTIONS: Array<{ id: TennisDvpWindow; label: string }> = [
+  { id: 'last5', label: 'L5' },
+  { id: 'last10', label: 'L10' },
+  { id: 'season', label: 'Season' },
+];
 
 type DvpOpponent = {
   id: string;
   name: string;
   ioc: string | null;
   rankPos: number | null;
+  seed?: number | null;
 };
 
 type DvpMetricRow = {
@@ -28,9 +34,13 @@ type DvpPayload = {
   success?: boolean;
   tour: 'ATP' | 'WTA';
   year: number;
+  window?: TennisDvpWindow;
+  tournamentName?: string | null;
   fieldSize: number;
+  stage?: TennisDvpStage;
   opponent: DvpOpponent | null;
   opponents: DvpOpponent[];
+  topSeed?: DvpOpponent | null;
   metrics: DvpMetricRow[];
 };
 
@@ -87,7 +97,12 @@ function rankStyles(rank: number | null | undefined, fieldSize: number, isDark: 
 export default function TennisDvpCard({
   isDark = false,
   playerName = null,
+  playerId = null,
   opponentName = null,
+  opponentId = null,
+  tournamentName = null,
+  tournamentKey = null,
+  stage = 'main',
   tour = 'ATP',
 }: {
   isDark?: boolean;
@@ -95,14 +110,16 @@ export default function TennisDvpCard({
   playerId?: string | null;
   playerName?: string | null;
   opponentName?: string | null;
+  opponentId?: string | null;
+  tournamentName?: string | null;
+  tournamentKey?: string | null;
+  stage?: TennisDvpStage;
   selectedStat?: string;
   resolveTeamLogo?: (teamName: string) => string | null;
   tour?: 'ATP' | 'WTA';
 }) {
   const [mounted, setMounted] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<(typeof SEASON_OPTIONS)[number]>(
-    SEASON_OPTIONS[0]
-  );
+  const [selectedWindow, setSelectedWindow] = useState<TennisDvpWindow>('last10');
   const [oppSel, setOppSel] = useState(String(opponentName || ''));
   const [oppOpen, setOppOpen] = useState(false);
   const [payload, setPayload] = useState<DvpPayload | null>(null);
@@ -134,9 +151,18 @@ export default function TennisDvpCard({
     setLoading(true);
     const params = new URLSearchParams({
       tour,
-      year: String(selectedSeason),
+      window: selectedWindow,
     });
     if (oppSel) params.set('opponent', oppSel);
+    const sameUpcomingOpp =
+      Boolean(opponentId) &&
+      String(oppSel || '').trim().toLowerCase() === String(opponentName || '').trim().toLowerCase();
+    if (sameUpcomingOpp && opponentId) params.set('opponentId', opponentId);
+    if (playerName) params.set('player', playerName);
+    if (playerId) params.set('playerId', playerId);
+    if (tournamentName) params.set('tournament', tournamentName);
+    if (tournamentKey) params.set('tournamentKey', tournamentKey);
+    if (stage === 'qualifying') params.set('stage', 'qualifying');
     fetch(`/api/tennis/dvp?${params}`)
       .then(async (r) => {
         const text = await r.text();
@@ -165,7 +191,7 @@ export default function TennisDvpCard({
     return () => {
       cancelled = true;
     };
-  }, [playerName, tour, selectedSeason, oppSel]);
+  }, [playerName, playerId, tour, selectedWindow, oppSel, opponentId, tournamentName, tournamentKey, stage]);
 
   const opponents = payload?.opponents || [];
   const metrics = payload?.metrics?.length ? payload.metrics : TENNIS_DVP_METRICS.map((m) => ({
@@ -181,6 +207,9 @@ export default function TennisDvpCard({
   const selectedLabel = selected?.name || oppSel || 'Opponent';
   const flagUrl = tennisFlagUrl(selected?.ioc);
   const fieldSize = payload?.fieldSize || 0;
+  const eventLabel = tennisEventPlaceLabel(payload?.tournamentName || tournamentName);
+  const stageLabel =
+    (payload?.stage || stage) === 'qualifying' && !/qualif/i.test(eventLabel) ? 'Qualifying' : '';
   const hasData = metrics.some((m) => m.value != null);
   const dark = mounted && isDark;
 
@@ -189,7 +218,7 @@ export default function TennisDvpCard({
     const key = oppSel.trim().toLowerCase();
     if (opponents.some((p) => p.name.toLowerCase() === key)) return opponents;
     return [
-      { id: 'selected', name: oppSel, ioc: selected?.ioc ?? null, rankPos: selected?.rankPos ?? null },
+      { id: 'selected', name: oppSel, ioc: selected?.ioc ?? null, rankPos: selected?.rankPos ?? null, seed: selected?.seed ?? null },
       ...opponents,
     ];
   }, [opponents, oppSel, selected]);
@@ -204,25 +233,46 @@ export default function TennisDvpCard({
 
   return (
     <div className="mb-1 w-full min-w-0 h-full flex flex-col">
-      <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
-        <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">
-          Defense vs Player
-        </h3>
+      <div className="relative z-20 flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h3 className="text-base sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+              Defense vs Player
+            </h3>
+            <TennisTournamentRankInfoButton
+              isDark={dark}
+              label="How DVP ranks work"
+              title="Tournament ranks"
+              text={"DVP is calculated every tournament. Each stat is ranked against everyone in that event, not the whole ATP or WTA tour.\nLower ranked players and tournaments can be missing stats, which means these numbers could be less reliable.\nL5, L10, and Season change the averages for every player in that event, not just one player."}
+            />
+          </div>
+          {eventLabel || fieldSize > 0 ? (
+            <div className={`text-[11px] truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {([
+                stageLabel,
+                eventLabel,
+                fieldSize > 0 ? `${fieldSize}` : '',
+              ]
+                .filter(Boolean)
+                .join(' · '))}
+            </div>
+          ) : null}
+        </div>
         <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-          {SEASON_OPTIONS.map((y) => (
+          {WINDOW_OPTIONS.map((opt) => (
             <button
-              key={y}
+              key={opt.id}
               type="button"
-              onClick={() => setSelectedSeason(y)}
+              onClick={() => setSelectedWindow(opt.id)}
               className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                selectedSeason === y
+                selectedWindow === opt.id
                   ? 'bg-purple-600 text-white'
                   : dark
                     ? 'bg-[#0a1929] text-gray-400 hover:text-gray-200'
                     : 'bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
-              {y}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -250,6 +300,11 @@ export default function TennisDvpCard({
                   <img src={flagUrl} alt="" className="w-5 h-3.5 object-cover rounded-[1px] flex-shrink-0" />
                 ) : null}
                 <span className="font-semibold truncate">{tennisLastName(selectedLabel) || 'Select opponent'}</span>
+                {selected?.seed ? (
+                  <span className={`text-[11px] tabular-nums flex-shrink-0 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    [{selected.seed}]
+                  </span>
+                ) : null}
               </span>
               <svg className="w-4 h-4 opacity-70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -289,6 +344,11 @@ export default function TennisDvpCard({
                           <span className="w-5 flex-shrink-0" />
                         )}
                         <span className="font-medium truncate">{p.name}</span>
+                        {p.seed ? (
+                          <span className={`ml-auto text-[11px] tabular-nums flex-shrink-0 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            [{p.seed}]
+                          </span>
+                        ) : null}
                       </button>
                     ))}
                   </div>
@@ -334,9 +394,15 @@ export default function TennisDvpCard({
           <div className={`px-3 py-3 text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             Select an opponent above to view DvP stats.
           </div>
+        ) : fieldSize <= 0 ? (
+          <div className={`px-3 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
+            DvP is only available for live or upcoming tournaments.
+          </div>
         ) : !hasData ? (
           <div className={`px-3 py-3 text-sm ${dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            No DvP sample yet for {tennisLastName(selectedLabel)} in {selectedSeason}.
+            No DvP sample yet for {tennisLastName(selectedLabel)}
+            {eventLabel ? ` at ${eventLabel}` : ''}
+            {selectedWindow === 'last5' ? ' (L5)' : selectedWindow === 'season' ? ' (season)' : ' (L10)'}.
           </div>
         ) : (
           <>
@@ -357,7 +423,9 @@ export default function TennisDvpCard({
                         <span
                           className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold ${styles.badgeColor}`}
                         >
-                          {typeof m.rank === 'number' && m.rank > 0 ? `#${m.rank}` : ''}
+                          {typeof m.rank === 'number' && m.rank > 0
+                            ? `#${m.rank}/${m.fieldSize || fieldSize || '?'}`
+                            : ''}
                         </span>
                       </div>
                     </div>

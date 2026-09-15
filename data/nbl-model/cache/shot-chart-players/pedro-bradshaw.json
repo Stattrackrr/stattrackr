@@ -1,0 +1,63 @@
+{
+  "mode": "player",
+  "playerName": "Pedro Bradshaw",
+  "team": "Cairns Taipans",
+  "years": [
+    2025
+  ],
+  "gamesUsed": 16,
+  "fixturesFetched": 0,
+  "fixturesCached": 16,
+  "shotCount": 138,
+  "zones": [
+    {
+      "zone": "restricted",
+      "label": "Restricted",
+      "fga": 34,
+      "fgm": 15,
+      "fgPct": 44.11764705882353,
+      "share": 24.637681159420293
+    },
+    {
+      "zone": "paint",
+      "label": "Paint",
+      "fga": 28,
+      "fgm": 8,
+      "fgPct": 28.57142857142857,
+      "share": 20.28985507246377
+    },
+    {
+      "zone": "midRange",
+      "label": "Mid-Range",
+      "fga": 6,
+      "fgm": 3,
+      "fgPct": 50,
+      "share": 4.3478260869565215
+    },
+    {
+      "zone": "leftCorner3",
+      "label": "Left Corner 3",
+      "fga": 30,
+      "fgm": 8,
+      "fgPct": 26.666666666666668,
+      "share": 21.73913043478261
+    },
+    {
+      "zone": "rightCorner3",
+      "label": "Right Corner 3",
+      "fga": 24,
+      "fgm": 10,
+      "fgPct": 41.66666666666667,
+      "share": 17.391304347826086
+    },
+    {
+      "zone": "aboveBreak3",
+      "label": "Above Break 3",
+      "fga": 16,
+      "fgm": 10,
+      "fgPct": 62.5,
+      "share": 11.594202898550725
+    }
+  ],
+  "generatedAt": "2026-09-14T12:36:45.952Z"
+}

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  emptyPlayerShotChart,
   loadPlayerShotChartForApi,
   loadTeamDefenseShotChartForApi,
 } from '@/lib/nbl/nblShotChartData';
+import { emptyZoneStats } from '@/lib/nbl/nblShotZones';
 import {
   NBL_SHOT_CHART_CACHE_YEARS,
   NBL_SHOT_CHART_SEASON_YEAR,
@@ -11,25 +13,16 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const USER_SHOT_CHART_UNAVAILABLE = 'No shot chart available for this player.';
+const USER_DEFENSE_UNAVAILABLE = 'No opponent shot chart available.';
+
 /**
  * GET /api/nbl/shot-chart — cache only (no live SportRadar).
  *  mode=player (default): playerName + optional team
  *  mode=defense: team → opponent shots allowed by zone (+ ranks)
- *
- * Warm caches via: npm run warm:nbl:shot-charts
  */
 export async function GET(request: NextRequest) {
   const mode = String(request.nextUrl.searchParams.get('mode') || 'player').toLowerCase();
-  const refresh = String(request.nextUrl.searchParams.get('refresh') || '').toLowerCase();
-  if (refresh === '1' || refresh === 'true') {
-    return NextResponse.json(
-      {
-        error:
-          'Live SportRadar refresh is disabled on this endpoint. Run npm run warm:nbl:shot-charts (or the NBL Process Stats workflow).',
-      },
-      { status: 400 }
-    );
-  }
 
   try {
     if (mode === 'defense') {
@@ -38,14 +31,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'team is required for defense mode' }, { status: 400 });
       }
       const data = loadTeamDefenseShotChartForApi(team);
-      if (!data) {
-        return NextResponse.json(
-          {
-            error: `No cached defense shot chart for ${team}. Run warm:nbl:shot-charts.`,
-            years: [...NBL_SHOT_CHART_CACHE_YEARS],
-          },
-          { status: 404 }
-        );
+      if (!data || data.shotCount <= 0) {
+        return NextResponse.json({
+          success: true,
+          empty: true,
+          mode: 'defense',
+          team,
+          shotCount: 0,
+          gamesUsed: 0,
+          zones: emptyZoneStats(),
+          ranks: [],
+          seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
+          cacheYears: [...NBL_SHOT_CHART_CACHE_YEARS],
+          message: USER_DEFENSE_UNAVAILABLE,
+        });
       }
       return NextResponse.json({
         success: true,
@@ -65,14 +64,17 @@ export async function GET(request: NextRequest) {
     }
     const team = String(request.nextUrl.searchParams.get('team') || '').trim() || null;
     const data = loadPlayerShotChartForApi(playerName, team);
-    if (!data) {
-      return NextResponse.json(
-        {
-          error: `No cached shot chart for ${playerName}. Run warm:nbl:shot-charts.`,
-          years: [...NBL_SHOT_CHART_CACHE_YEARS],
-        },
-        { status: 404 }
-      );
+    if (!data || data.shotCount <= 0) {
+      return NextResponse.json({
+        success: true,
+        empty: true,
+        ...(data || emptyPlayerShotChart(playerName, [...NBL_SHOT_CHART_CACHE_YEARS])),
+        playerName,
+        shotCount: 0,
+        seasonYear: NBL_SHOT_CHART_SEASON_YEAR,
+        cacheYears: [...NBL_SHOT_CHART_CACHE_YEARS],
+        message: USER_SHOT_CHART_UNAVAILABLE,
+      });
     }
     return NextResponse.json({
       success: true,
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[nbl/shot-chart]', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to load shot chart cache' },
+      { error: "Couldn't load shot chart. Try again." },
       { status: 500 }
     );
   }

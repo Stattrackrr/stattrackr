@@ -1,30 +1,30 @@
 {
   "mode": "player",
   "playerName": "Finn Delany",
-  "team": "Melbourne United",
+  "team": "New Zealand Breakers",
   "years": [
     2025
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 19,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 154,
+  "fixturesCached": 19,
+  "shotCount": 171,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 53,
-      "fgm": 32,
-      "fgPct": 60.37735849056604,
-      "share": 34.41558441558442
+      "fga": 55,
+      "fgm": 33,
+      "fgPct": 60,
+      "share": 32.16374269005848
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 39,
-      "fgm": 17,
-      "fgPct": 43.58974358974359,
-      "share": 25.324675324675322
+      "fga": 45,
+      "fgm": 18,
+      "fgPct": 40,
+      "share": 26.31578947368421
     },
     {
       "zone": "midRange",
@@ -32,32 +32,32 @@
       "fga": 2,
       "fgm": 0,
       "fgPct": 0,
-      "share": 1.2987012987012987
+      "share": 1.1695906432748537
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 14,
+      "fga": 16,
       "fgm": 3,
-      "fgPct": 21.428571428571427,
-      "share": 9.090909090909092
+      "fgPct": 18.75,
+      "share": 9.35672514619883
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 25,
-      "fgm": 9,
-      "fgPct": 36,
-      "share": 16.233766233766232
+      "fga": 31,
+      "fgm": 12,
+      "fgPct": 38.70967741935484,
+      "share": 18.128654970760234
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 21,
-      "fgm": 5,
-      "fgPct": 23.809523809523807,
-      "share": 13.636363636363635
+      "fga": 22,
+      "fgm": 6,
+      "fgPct": 27.27272727272727,
+      "share": 12.865497076023392
     }
   ],
-  "generatedAt": "2026-08-24T13:58:22.607Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

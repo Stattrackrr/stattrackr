@@ -48,3 +48,23 @@ jobs:
             exit 1
           fi
           echo "Tennis ingest ok"
+
+      - name: Rebuild tennis tournament DVP
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          echo "Building live/upcoming tennis DVP..."
+          RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-dvp" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -L --max-time 150 \
+            --write-out "\nHTTP_STATUS:%{http_code}" 2>&1) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "Response ($HTTP_STATUS): $BODY"
+          OK=$(node -e "try { const j = JSON.parse(process.argv[1]); process.stdout.write(j.success === true ? 'true' : 'false'); } catch { process.stdout.write('false'); }" "$BODY")
+          if [ "$HTTP_STATUS" != "200" ] || [ "$OK" != "true" ]; then
+            echo "Tennis DVP rebuild failed (HTTP ${HTTP_STATUS:-unknown})"
+            exit 1
+          fi
+          echo "Tennis DVP ok"

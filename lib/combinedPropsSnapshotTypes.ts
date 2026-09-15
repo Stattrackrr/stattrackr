@@ -51,6 +51,10 @@ export type CombinedPlayerProp = {
   playerRank?: number | null;
   opponentIoc?: string | null;
   opponentRank?: number | null;
+  playerSeed?: number | null;
+  opponentSeed?: number | null;
+  playerDrawRank?: number | null;
+  opponentDrawRank?: number | null;
   tournamentName?: string | null;
   surface?: string | null;
   wcGamesAvg?: number | null;

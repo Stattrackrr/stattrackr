@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Lat Mayen",
-  "team": "Perth Wildcats",
+  "team": "Cairns Taipans",
   "years": [
     2025
   ],
-  "gamesUsed": 21,
+  "gamesUsed": 33,
   "fixturesFetched": 0,
-  "fixturesCached": 21,
-  "shotCount": 33,
+  "fixturesCached": 33,
+  "shotCount": 139,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 8,
-      "fgm": 5,
-      "fgPct": 62.5,
-      "share": 24.242424242424242
+      "fga": 31,
+      "fgm": 18,
+      "fgPct": 58.06451612903226,
+      "share": 22.302158273381295
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 5,
-      "fgm": 1,
-      "fgPct": 20,
-      "share": 15.151515151515152
+      "fga": 27,
+      "fgm": 6,
+      "fgPct": 22.22222222222222,
+      "share": 19.424460431654676
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 2,
-      "fgm": 1,
-      "fgPct": 50,
-      "share": 6.0606060606060606
+      "fga": 10,
+      "fgm": 6,
+      "fgPct": 60,
+      "share": 7.194244604316546
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 4,
-      "fgm": 1,
-      "fgPct": 25,
-      "share": 12.121212121212121
+      "fga": 19,
+      "fgm": 6,
+      "fgPct": 31.57894736842105,
+      "share": 13.66906474820144
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 8,
-      "fgm": 3,
-      "fgPct": 37.5,
-      "share": 24.242424242424242
+      "fga": 26,
+      "fgm": 9,
+      "fgPct": 34.61538461538461,
+      "share": 18.705035971223023
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 6,
-      "fgm": 0,
-      "fgPct": 0,
-      "share": 18.181818181818183
+      "fga": 26,
+      "fgm": 10,
+      "fgPct": 38.46153846153847,
+      "share": 18.705035971223023
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.416Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

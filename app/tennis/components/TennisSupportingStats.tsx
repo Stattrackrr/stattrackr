@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_CONFIG } from '@/app/nba/research/dashboard/constants';
 import type { NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
 import { TENNIS_STAT_LABELS, tennisDominanceRatio } from '@/lib/tennis/chartStats';
@@ -217,7 +217,12 @@ export function TennisSupportingStats({
 
   const chartData = useMemo(() => {
     const data = applyTimeframe(baseData, timeframe, season, nextOpponent);
-    return data.map((row, idx) => ({ ...row, key: `supporting-${idx}`, xKey: `supporting-${idx}` }));
+    return data.map((row, idx) => ({
+      key: `supporting-${idx}`,
+      xKey: `supporting-${idx}`,
+      value: row.value,
+      isPercent: row.isPercent,
+    }));
   }, [baseData, timeframe, season, nextOpponent]);
 
   const averagesByStat = useMemo(() => {
@@ -242,8 +247,24 @@ export function TennisSupportingStats({
     return next;
   }, [baseData, timeframe, season, nextOpponent, supportingOptions]);
 
+  const isPercent = PCT_KINDS.has(supportingStatKind);
+  const yDomain = useMemo(() => {
+    const values = chartData
+      .map((row) => (typeof row.value === 'number' && Number.isFinite(row.value) ? Number(row.value) : null))
+      .filter((v): v is number => v != null);
+    if (!values.length) return [0, 1] as [number, number];
+    if (supportingStatKind === 'spread') {
+      const bound = Math.max(...values.map((v) => Math.abs(v)), 0.5) * 1.12;
+      return [-bound, bound] as [number, number];
+    }
+    if (supportingStatKind === 'moneyline') return [0, 1.12] as [number, number];
+    const max = Math.max(...values, 0);
+    const padded = Math.max(max, 0.5) * 1.12;
+    if (isPercent) return [0, Math.min(100, Math.max(padded, 1))] as [number, number];
+    return [0, padded] as [number, number];
+  }, [chartData, supportingStatKind, isPercent]);
   const barFill = isDark ? '#6b7280' : '#9ca3af';
-  const margin = { top: 24, right: 0, left: 0, bottom: 4 };
+  const margin = { top: 22, right: 0, left: 0, bottom: 4 };
   const labelFill = isDark ? '#e5e7eb' : '#374151';
   const emptyTick = useMemo(
     () =>
@@ -252,13 +273,18 @@ export function TennisSupportingStats({
   );
 
   const formatLabel = (value: number, isPercent: boolean) =>
-    isPercent ? `${value.toFixed(1)}%` : String(Math.round(value));
+    isPercent
+      ? `${value.toFixed(1)}%`
+      : supportingStatKind === 'dominanceRatio'
+        ? value.toFixed(2)
+        : String(Math.round(value));
 
   const formatAvg = (kind: SupportingStatKind) => {
     const v = averagesByStat[kind];
     if (v == null || !Number.isFinite(v)) return '—';
     if (PCT_KINDS.has(kind)) return `${v.toFixed(1)}%`;
     if (kind === 'minutes' || kind === 'moneyline') return String(Math.round(v));
+    if (kind === 'dominanceRatio') return v.toFixed(2);
     return v.toFixed(1);
   };
 
@@ -305,14 +331,23 @@ export function TennisSupportingStats({
     );
   }
 
-  const isPercent = chartData[0]?.isPercent ?? PCT_KINDS.has(supportingStatKind);
-
   return (
     <div className="flex flex-col gap-3 min-w-0">
       {pills}
       <div className={`w-full h-[380px] min-h-[340px] flex-shrink-0 min-w-0 pointer-events-none select-none ${alignRightTight ? 'lg:pr-6 xl:pr-7' : ''}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart key={timeframe} data={chartData} margin={margin} barCategoryGap="5%">
+          <BarChart key={`${timeframe}-${supportingStatKind}`} data={chartData} margin={margin} barCategoryGap="5%">
+            <YAxis
+              type="number"
+              dataKey="value"
+              domain={yDomain}
+              ticks={yDomain}
+              width={0}
+              tick={false}
+              axisLine={false}
+              tickLine={false}
+              allowDataOverflow
+            />
             <XAxis
               dataKey="xKey"
               axisLine={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 2 }}

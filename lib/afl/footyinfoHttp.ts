@@ -88,15 +88,30 @@ export async function fetchFootyinfoJson<T = unknown>(
           data = text;
         }
       }
-      if (res.ok) return { ok: true, status: res.status, data: data as T };
+      const cfRay = res.headers.get('cf-ray');
+      const statusError = (message: string) =>
+        cfRay ? `${message} (cf-ray ${cfRay})` : message;
+      if (res.ok) {
+        if (data === null || typeof data !== 'object') {
+          const snippet = String(text || 'empty')
+            .replace(/\s+/g, ' ')
+            .slice(0, 180);
+          return {
+            ok: false,
+            status: res.status,
+            error: statusError(`Non-JSON FootyInfo body: ${snippet}`),
+          };
+        }
+        return { ok: true, status: res.status, data: data as T };
+      }
       if (!isFootyinfoUnavailableStatus(res.status)) {
         const msg =
           data && typeof data === 'object' && data !== null && 'message' in data
             ? String((data as { message?: unknown }).message)
             : `HTTP ${res.status}`;
-        return { ok: false, status: res.status, error: msg };
+        return { ok: false, status: res.status, error: statusError(msg) };
       }
-      lastError = `HTTP ${res.status}`;
+      lastError = statusError(`HTTP ${res.status}`);
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
       lastStatus = 0;

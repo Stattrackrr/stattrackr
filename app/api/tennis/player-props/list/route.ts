@@ -3,7 +3,7 @@ import { getTennisPlayerPropsList } from '@/lib/tennis/playerPropsList';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 /**
  * Tennis props-page list. Reads stored Odds API + API-Tennis snapshots; does not

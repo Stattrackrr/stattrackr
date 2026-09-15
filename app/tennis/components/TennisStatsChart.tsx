@@ -7,7 +7,7 @@ import SimpleChart from '@/app/nba/research/dashboard/components/charts/SimpleCh
 import StatPill from '@/app/nba/research/dashboard/components/ui/StatPill';
 import TennisXAxisTick from '@/app/tennis/components/TennisXAxisTick';
 import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
-import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
+import { TENNIS_CHART_STAT_OPTIONS, TENNIS_PLAYER_STAT_PRIORITY, TENNIS_STAT_LABELS, formatTennisSetScore, isUnplayedTennisMatch, parseTennisSetsFromPlayerView, resolveTennisMatchBestOf, tennisDominanceRatio, tennisMatchesPlayed, tennisOpponentCode, tennisScoreIsRetired } from '@/lib/tennis/chartStats';
 import {
   TENNIS_OPP_RANK_FILTERS,
   matchTennisOppRank,
@@ -501,7 +501,7 @@ function toChartStatValue(stat: string, raw: unknown, row?: Record<string, unkno
   }
   if (row && stat === 'dominanceRatio') {
     const existing = toNumericValue(raw);
-    if (existing != null) return existing;
+    if (existing != null) return Math.round(existing * 100) / 100;
     const rpw = toNumericValue(row.returnPointsWonPct);
     const spw = toNumericValue(row.servicePointsWonPct);
     const rpwPct = rpw == null ? null : rpw <= 1 ? rpw * 100 : rpw;
@@ -567,11 +567,20 @@ function chartSurfaceKey(raw: unknown): ChartSurfaceFilter | null {
   return null;
 }
 
-function matchChartBestOf(raw: unknown, filter: ChartBestOfFilter): boolean {
+function matchChartBestOf(game: Record<string, unknown>, filter: ChartBestOfFilter): boolean {
   if (filter === 'all') return true;
-  const n = Number(raw);
-  if (filter === '5') return Number.isFinite(n) && n >= 5;
-  return Number.isFinite(n) ? n < 5 : true;
+  const actual = resolveTennisMatchBestOf({
+    tour: game.tour != null ? String(game.tour) : null,
+    isGrandSlam: Boolean(game.isGrandSlam),
+    bestOf: game.bestOf,
+    round: game.round != null ? String(game.round) : null,
+    tournamentName: String(game.tourneyName || game.tournament || game.venue || ''),
+    score: game.score,
+    setsWon: game.setsWon,
+    setsLost: game.setsLost,
+    result: game.result,
+  });
+  return filter === '5' ? actual === 5 : actual === 3;
 }
 
 function matchChartOppRank(raw: unknown, filter: ChartOppRankFilter): boolean {
@@ -929,7 +938,7 @@ export function TennisStatsChart({
   }, [availableStats]);
 
   const [internalSelectedStat, setInternalSelectedStat] = useState<string>('');
-  const [lineValue, setLineValue] = useState(0);
+  const [lineValue, setLineValue] = useState(0.5);
   const [isTimeframeDropdownOpen, setIsTimeframeDropdownOpen] = useState(false);
   const [surfaceFilter, setSurfaceFilter] = useState<ChartSurfaceFilter>('all');
   const [bestOfFilter, setBestOfFilter] = useState<ChartBestOfFilter>('all');
@@ -1060,7 +1069,7 @@ export function TennisStatsChart({
         if (nblGameFilters.minutesMax != null && (mins == null || mins > nblGameFilters.minutesMax)) return false;
       }
       if (surfaceFilter !== 'all' && chartSurfaceKey(g.surface) !== surfaceFilter) return false;
-      if (showBestOfFilter && !matchChartBestOf(g.bestOf, bestOfFilter)) return false;
+      if (showBestOfFilter && !matchChartBestOf(g as Record<string, unknown>, bestOfFilter)) return false;
       if (!matchChartOppRank(g.opponentRank, oppRankFilter)) return false;
       return true;
     });
@@ -1269,13 +1278,6 @@ export function TennisStatsChart({
     });
   }, [showAdvancedFilters, selectedAdvancedFilter, perGameFilterData, baseChartData]);
 
-  const statAverage = useMemo(() => {
-    const values = numericChartValues(chartData);
-    if (!values.length) return 0;
-    const total = values.reduce((sum, value) => sum + value, 0);
-    return total / values.length;
-  }, [chartData]);
-
   const hasDecimalValues = useMemo(() => (
     numericChartValues(chartData).some((value) => Math.abs(value - Math.round(value)) > 0.001)
   ), [chartData]);
@@ -1339,8 +1341,11 @@ export function TennisStatsChart({
         useDecimals ? Math.round(step * 10) / 10 : Math.round(step),
         bound,
       ];
+      const isSpread = selectedStat === 'spread' || /^q[1-4]_spread$/.test(selectedStat);
+      // Keep a sliver of space under the lowest tick so it doesn't sit on the chart floor.
+      const yMin = isSpread ? -(bound + bound * 0.12) : -bound;
       return {
-        domain: [-bound, bound] as [number, number],
+        domain: [yMin, bound] as [number, number],
         ticks,
       };
     }
@@ -1417,25 +1422,15 @@ export function TennisStatsChart({
     emitTransientLine(next);
   }, [emitTransientLine, normalizeLineValue]);
 
-  // Set line from stat average when stat/external line changes, or when chart data first becomes available
-  // (no bookmaker line yet). Do not depend on avg/length so timeframe changes keep the user's line.
-  const chartDataReady = chartData.length > 0;
+  // Default to 0.5 when there is no bookmaker line. Do not depend on avg/length so
+  // timeframe changes keep the user's line.
   useEffect(() => {
     if (externalLineValue != null && Number.isFinite(externalLineValue)) return;
-    if (!chartDataReady || !Number.isFinite(statAverage)) return;
-    const isMoneylineStat =
-      selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat || '');
-    const next = isMoneylineStat
-      ? 0.5
-      : hasDecimalValues
-        ? Math.round(statAverage * 10) / 10
-        : Math.round(statAverage * 2) / 2;
-    setLineValue(next);
-    emitTransientLine(next);
+    setLineValue(0.5);
+    emitTransientLine(0.5);
     const input = document.getElementById('betting-line-input') as HTMLInputElement | null;
-    if (input) input.value = String(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit statAverage so timeframe changes don't reset line
-  }, [selectedStat, externalLineValue, hasDecimalValues, emitTransientLine, chartDataReady]);
+    if (input) input.value = '0.5';
+  }, [selectedStat, externalLineValue, emitTransientLine]);
 
   // When external line (e.g. from props URL or selected bookmaker) changes, sync chart line to it.
   // Do not clamp to the current Y domain — expand the domain around the incoming line instead.
@@ -1744,7 +1739,7 @@ export function TennisStatsChart({
               customXAxisTick={nblXAxisTick}
               xAxisHeight={52}
               yAxisTickFormatter={(value) =>
-                selectedStat === 'dominanceRatio' ? Number(value).toFixed(1) : String(Math.round(value))
+                selectedStat === 'dominanceRatio' ? Number(value).toFixed(2) : String(Math.round(value))
               }
               preservePrimaryYAxisTicks={
                 selectedStat === 'moneyline' || /^q[1-4]_moneyline$/.test(selectedStat)

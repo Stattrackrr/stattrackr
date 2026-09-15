@@ -53,6 +53,7 @@ import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashbo
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search, Loader2 } from 'lucide-react';
 import { dfsRoleGroupToShortLabel as dfsRoleGroupToHeaderLabel } from '@/lib/aflDfsRoleLabels';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { buildAflJournalQuickPreset } from '@/lib/buildAflJournalQuickPreset';
 import { buildAflGameDedupeKey, dedupeAflGames, aflGamesIncludeSeason, resolveAflGameSeason } from '@/lib/aflGameDedupe';
 import { playerHasFootywireSlugOverride } from '@/lib/aflFootywireSlugOverrides';
@@ -4379,7 +4380,7 @@ export default function AFLPage() {
                                   sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                 } catch {}
                                 setNavigatingToProps(true);
-                                router.push('/props?sport=afl');
+                                router.push(consumePropsReturnPath('afl'));
                               }}
                               className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                             >
@@ -4557,7 +4558,7 @@ export default function AFLPage() {
                                     sessionStorage.setItem('afl_back_to_props_clear_search', '1');
                                   } catch {}
                                   setNavigatingToProps(true);
-                                  router.push('/props?sport=afl');
+                                  router.push(consumePropsReturnPath('afl'));
                                 }}
                                 className="flex items-center gap-1.5 mb-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                               >

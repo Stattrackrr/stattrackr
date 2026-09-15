@@ -22,9 +22,14 @@ function nextGameJson(
     isGrandSlam: Boolean(next?.isGrandSlam),
     tour: next?.tour ?? tour,
     tournament: next?.tournamentName ?? null,
+    tournamentKey: next?.tournamentKey ?? null,
     surface: next?.surface ?? null,
     round: next?.round ?? null,
     status: next?.status ?? null,
+    playerSeed: next?.playerSeed ?? null,
+    opponentSeed: next?.opponentSeed ?? null,
+    topSeedName: next?.topSeedName ?? null,
+    topSeedId: next?.topSeedId ?? null,
   };
 }
 

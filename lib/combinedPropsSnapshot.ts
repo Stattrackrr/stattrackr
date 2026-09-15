@@ -100,6 +100,10 @@ function aggregateAflProps(listData: any): {
     playerRank?: number | null;
     opponentIoc?: string | null;
     opponentRank?: number | null;
+    playerSeed?: number | null;
+    opponentSeed?: number | null;
+    playerDrawRank?: number | null;
+    opponentDrawRank?: number | null;
     tournamentName?: string | null;
     surface?: string | null;
   }>();
@@ -151,6 +155,10 @@ function aggregateAflProps(listData: any): {
       playerRank: row.playerRank ?? null,
       opponentIoc: row.opponentIoc ?? null,
       opponentRank: row.opponentRank ?? null,
+      playerSeed: row.playerSeed ?? null,
+      opponentSeed: row.opponentSeed ?? null,
+      playerDrawRank: row.playerDrawRank ?? null,
+      opponentDrawRank: row.opponentDrawRank ?? null,
       tournamentName: row.tournamentName ?? null,
       surface: row.surface ?? null,
     });
@@ -201,6 +209,10 @@ function aggregateAflProps(listData: any): {
       playerRank: row.playerRank ?? null,
       opponentIoc: row.opponentIoc ?? null,
       opponentRank: row.opponentRank ?? null,
+      playerSeed: row.playerSeed ?? null,
+      opponentSeed: row.opponentSeed ?? null,
+      playerDrawRank: row.playerDrawRank ?? null,
+      opponentDrawRank: row.opponentDrawRank ?? null,
       tournamentName: row.tournamentName ?? null,
       surface: row.surface ?? null,
       last5Avg: row.last5Avg,

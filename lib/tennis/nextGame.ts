@@ -1,14 +1,17 @@
 import sharedCache from '@/lib/sharedCache';
-import { tennisLastName } from '@/lib/tennis/chartStats';
+import { tennisEventPlaceCore, tennisLastName } from '@/lib/tennis/chartStats';
 import { API_TENNIS_SINGLES_EVENTS, isApiGrandSlam, parseApiRound, tourFromEventType, type ApiTennisFixture } from '@/lib/tennis/apiTennis';
-import { loadTennisPlayers } from '@/lib/tennis/data';
+import { loadTennisPlayers, loadTennisRankings } from '@/lib/tennis/data';
+import { isTennisQualifyingLabel, type TennisDvpStage } from '@/lib/tennis/dvpShared';
+import { tennisAssignDrawRanks } from '@/lib/tennis/seeds';
 import { lookupTennisSurface } from '@/lib/tennis/surfaces';
 import type { TennisTour } from '@/lib/tennis/types';
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 const CACHE_TTL_MS = 2 * 60 * 1000;
 const LOOKAHEAD_DAYS = 21;
-export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v5';
+const FIELD_LOOKBACK_DAYS = 12;
+export const TENNIS_UPCOMING_CACHE_KEY = 'tennis_upcoming_v7';
 export const TENNIS_UPCOMING_TTL_SECONDS = 20 * 60;
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -32,16 +35,38 @@ export type TennisNextGame = {
   playerIsHome: boolean;
   homeName: string;
   awayName: string;
+  playerSeed: number | null;
+  opponentSeed: number | null;
+  topSeedName: string | null;
+  topSeedId: string | null;
+};
+
+export type TennisLiveEvent = {
+  tour: TennisTour;
+  tournamentKey: string | null;
+  tournamentName: string | null;
+  playerIds: string[];
+  qualifyingPlayerIds: string[];
+};
+
+export type TennisLiveEventIndex = {
+  keys: Set<string>;
+  names: Set<string>;
+  playerIdsByKey: Map<string, string[]>;
+  playerIdsByName: Map<string, string[]>;
+  events: TennisLiveEvent[];
 };
 
 type UpcomingWindow = {
   fetchedAt: number;
   byPlayerId: Map<string, TennisNextGame>;
+  events: TennisLiveEvent[];
 };
 
 type TennisUpcomingStore = {
   fetchedAt: string;
   games: Array<{ playerId: string; game: TennisNextGame }>;
+  events?: TennisLiveEvent[];
 };
 
 type UpcomingRuntime = {
@@ -50,9 +75,9 @@ type UpcomingRuntime = {
 };
 
 function upcomingRuntime(): UpcomingRuntime {
-  const g = globalThis as typeof globalThis & { __tennisUpcomingV5?: UpcomingRuntime };
-  if (!g.__tennisUpcomingV5) g.__tennisUpcomingV5 = { window: null, inflight: null };
-  return g.__tennisUpcomingV5;
+  const g = globalThis as typeof globalThis & { __tennisUpcomingV8?: UpcomingRuntime };
+  if (!g.__tennisUpcomingV8) g.__tennisUpcomingV8 = { window: null, inflight: null };
+  return g.__tennisUpcomingV8;
 }
 
 function apiKey(): string {
@@ -243,6 +268,10 @@ function toNextGame(
     playerIsHome: Boolean(playerIsFirst),
     homeName: first.name,
     awayName: second.name,
+    playerSeed: null,
+    opponentSeed: null,
+    topSeedName: null,
+    topSeedId: null,
   };
 }
 
@@ -283,8 +312,12 @@ function indexUpcoming(fixtures: ApiTennisFixture[]): Map<string, TennisNextGame
   return byPlayerId;
 }
 
-function rememberWindow(byPlayerId: Map<string, TennisNextGame>, fetchedAt = Date.now()) {
-  upcomingRuntime().window = { fetchedAt, byPlayerId };
+function rememberWindow(
+  byPlayerId: Map<string, TennisNextGame>,
+  fetchedAt = Date.now(),
+  events: TennisLiveEvent[] = []
+) {
+  upcomingRuntime().window = { fetchedAt, byPlayerId, events };
 }
 
 function isFresh(fetchedAt: number): boolean {
@@ -293,7 +326,7 @@ function isFresh(fetchedAt: number): boolean {
 
 function storeFromJSON(
   stored: TennisUpcomingStore | null
-): { fetchedAt: number; byPlayerId: Map<string, TennisNextGame> } | null {
+): { fetchedAt: number; byPlayerId: Map<string, TennisNextGame>; events: TennisLiveEvent[] } | null {
   if (!stored?.games?.length) return null;
   const byPlayerId = new Map<string, TennisNextGame>();
   for (const row of stored.games) {
@@ -301,40 +334,60 @@ function storeFromJSON(
   }
   if (!byPlayerId.size) return null;
   const fetchedAt = Date.parse(String(stored.fetchedAt || '')) || 0;
-  return { fetchedAt, byPlayerId };
+  return { fetchedAt, byPlayerId, events: stored.events || [] };
 }
 
 async function readUpcomingFromRedis(): Promise<{
   fetchedAt: number;
   byPlayerId: Map<string, TennisNextGame>;
+  events: TennisLiveEvent[];
 } | null> {
   const stored = await sharedCache.getJSON<TennisUpcomingStore>(TENNIS_UPCOMING_CACHE_KEY);
   return storeFromJSON(stored);
 }
 
-async function writeUpcomingToRedis(byPlayerId: Map<string, TennisNextGame>): Promise<void> {
+async function writeUpcomingToRedis(
+  byPlayerId: Map<string, TennisNextGame>,
+  events: TennisLiveEvent[] = []
+): Promise<void> {
   if (!byPlayerId.size) return;
   await sharedCache.setJSON(
     TENNIS_UPCOMING_CACHE_KEY,
     {
       fetchedAt: new Date().toISOString(),
       games: [...byPlayerId.entries()].map(([playerId, game]) => ({ playerId, game })),
+      events,
     },
     TENNIS_UPCOMING_TTL_SECONDS
   );
 }
 
-export function publishTennisUpcomingFixtures(fixtures: ApiTennisFixture[]): Promise<number> {
-  const byPlayerId = indexUpcoming(fixtures.filter(isSingles));
-  if (!byPlayerId.size) return Promise.resolve(0);
-  rememberWindow(byPlayerId);
-  return writeUpcomingToRedis(byPlayerId).then(() => byPlayerId.size);
+function indexFixtures(fixtures: ApiTennisFixture[]): {
+  byPlayerId: Map<string, TennisNextGame>;
+  events: TennisLiveEvent[];
+} {
+  const singles = fixtures.filter(isSingles);
+  return {
+    byPlayerId: indexUpcoming(singles),
+    events: collectLiveEventsFromFixtures(singles),
+  };
 }
 
-async function fetchUpcomingLive(): Promise<Map<string, TennisNextGame>> {
-  if (!apiKey()) return new Map();
+export function publishTennisUpcomingFixtures(fixtures: ApiTennisFixture[]): Promise<number> {
+  const indexed = indexFixtures(fixtures);
+  if (!indexed.byPlayerId.size) return Promise.resolve(0);
+  const events = unionLiveEvents(upcomingRuntime().window?.events, indexed.events);
+  rememberWindow(indexed.byPlayerId, Date.now(), events);
+  return writeUpcomingToRedis(indexed.byPlayerId, events).then(() => indexed.byPlayerId.size);
+}
+
+async function fetchUpcomingLive(): Promise<{
+  byPlayerId: Map<string, TennisNextGame>;
+  events: TennisLiveEvent[];
+}> {
+  if (!apiKey()) return { byPlayerId: new Map(), events: [] };
   const now = new Date();
-  const start = ymd(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const start = ymd(new Date(now.getTime() - FIELD_LOOKBACK_DAYS * 24 * 60 * 60 * 1000));
   const stop = ymd(new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000));
   const eventKeys = API_TENNIS_SINGLES_EVENTS.map((event) => event.eventType);
   const batches = await Promise.all(
@@ -349,14 +402,54 @@ async function fetchUpcomingLive(): Promise<Map<string, TennisNextGame>> {
   );
   const fixtures = batches.flatMap((batch) =>
     ((Array.isArray(batch?.result) ? batch.result : []) as ApiTennisFixture[])
-  ).filter(isSingles);
-  return indexUpcoming(fixtures);
+  );
+  const indexed = indexFixtures(fixtures);
+  return {
+    byPlayerId: indexed.byPlayerId,
+    events: unionLiveEvents(upcomingRuntime().window?.events, indexed.events),
+  };
 }
 
 function withSurface(game: TennisNextGame): TennisNextGame {
   const surface = lookupTennisSurface(game.tournamentName, game.tournamentKey);
   if (game.surface === surface && game.tournamentKey != null) return game;
   return { ...game, surface, tournamentKey: game.tournamentKey ?? null };
+}
+
+function withDrawSeeds(
+  game: TennisNextGame,
+  playerId: string | null,
+  live: TennisLiveEventIndex
+): TennisNextGame {
+  const tour = game.tour || 'ATP';
+  const stage = tennisLiveEventStage(live, {
+    playerId,
+    opponentId: game.opponentId,
+    tournamentKey: game.tournamentKey,
+    tournamentName: game.tournamentName,
+    round: game.round,
+  });
+  const fieldIds = tennisLiveEventPlayerIds(live, game.tournamentKey, game.tournamentName, stage);
+  if (!fieldIds.length) return game;
+  const ranked = loadTennisRankings(tour, { limit: 500 });
+  const roster = loadTennisPlayers();
+  const rankedById = new Map(ranked.map((row) => [row.playerId, row]));
+  const rosterById = new Map(roster.map((row) => [row.playerId, row]));
+  const players = fieldIds.map((id) => ({
+    id,
+    rankPos: rankedById.get(id)?.pos ?? rosterById.get(id)?.rank ?? null,
+    name: rankedById.get(id)?.name || rosterById.get(id)?.name || id,
+  }));
+  const ranks = tennisAssignDrawRanks(players);
+  const top = players.find((row) => ranks.get(row.id) === 1) || null;
+  const resolvedPlayerId = String(playerId || '').trim();
+  return {
+    ...game,
+    playerSeed: resolvedPlayerId ? ranks.get(resolvedPlayerId) ?? null : null,
+    opponentSeed: game.opponentId ? ranks.get(game.opponentId) ?? null : null,
+    topSeedName: top?.name || null,
+    topSeedId: top?.id || null,
+  };
 }
 
 async function loadUpcomingByPlayer(opts?: {
@@ -373,22 +466,26 @@ async function loadUpcomingByPlayer(opts?: {
   }
 
   const cached = runtime.window?.byPlayerId.size
-    ? { fetchedAt: runtime.window.fetchedAt, byPlayerId: runtime.window.byPlayerId }
+    ? {
+        fetchedAt: runtime.window.fetchedAt,
+        byPlayerId: runtime.window.byPlayerId,
+        events: runtime.window.events || [],
+      }
     : await readUpcomingFromRedis();
 
   const refresh = async () => {
     try {
       const live = await fetchUpcomingLive();
-      if (live.size) {
-        await writeUpcomingToRedis(live);
-        rememberWindow(live);
-        return live;
+      if (live.byPlayerId.size) {
+        await writeUpcomingToRedis(live.byPlayerId, live.events);
+        rememberWindow(live.byPlayerId, Date.now(), live.events);
+        return live.byPlayerId;
       }
     } catch (err) {
       console.warn('[tennis-next-game] live fetch failed', err);
     }
     if (cached?.byPlayerId.size) {
-      rememberWindow(cached.byPlayerId, cached.fetchedAt);
+      rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
       return cached.byPlayerId;
     }
     if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
@@ -397,7 +494,7 @@ async function loadUpcomingByPlayer(opts?: {
   };
 
   if (cached?.byPlayerId.size) {
-    rememberWindow(cached.byPlayerId, cached.fetchedAt);
+    rememberWindow(cached.byPlayerId, cached.fetchedAt, cached.events || []);
     if (isFresh(cached.fetchedAt)) return cached.byPlayerId;
     runtime.inflight = refresh().finally(() => {
       runtime.inflight = null;
@@ -423,15 +520,15 @@ export async function warmTennisUpcomingFixtures(opts?: { force?: boolean }): Pr
     }
     runtime.inflight = (async () => {
       const live = await fetchUpcomingLive();
-      if (live.size) {
-        await writeUpcomingToRedis(live);
-        rememberWindow(live);
-        return live;
+      if (live.byPlayerId.size) {
+        await writeUpcomingToRedis(live.byPlayerId, live.events);
+        rememberWindow(live.byPlayerId, Date.now(), live.events);
+        return live.byPlayerId;
       }
       if (runtime.window?.byPlayerId.size) return runtime.window.byPlayerId;
       const redis = await readUpcomingFromRedis();
       if (redis?.byPlayerId.size) {
-        rememberWindow(redis.byPlayerId, redis.fetchedAt);
+        rememberWindow(redis.byPlayerId, redis.fetchedAt, redis.events || []);
         return redis.byPlayerId;
       }
       rememberWindow(new Map());
@@ -482,6 +579,306 @@ function uniqueUpcomingFromMap(byPlayerId: Map<string, TennisNextGame>): TennisN
   });
 }
 
+function liveEventPlace(name: string | null | undefined): string {
+  return tennisEventPlaceCore(name);
+}
+
+function uniqueIds(ids: Iterable<string>): string[] {
+  return [...new Set([...ids].map((id) => String(id || '').trim()).filter((id) => /^\d+$/.test(id)))];
+}
+
+function liveEventId(event: {
+  tour: TennisTour;
+  tournamentKey: string | null;
+  tournamentName: string | null;
+}): string {
+  return `${event.tour}|${String(event.tournamentKey || '').trim() || liveEventPlace(event.tournamentName) || 'unknown'}`;
+}
+
+function unionLiveEvents(prev: TennisLiveEvent[] | undefined, next: TennisLiveEvent[]): TennisLiveEvent[] {
+  const liveIds = new Set(next.map(liveEventId));
+  const map = new Map<string, TennisLiveEvent>();
+  for (const event of [...(prev || []), ...next]) {
+    const id = liveEventId(event);
+    if (!liveIds.has(id)) continue;
+    const cur = map.get(id);
+    if (!cur) {
+      map.set(id, {
+        ...event,
+        playerIds: uniqueIds(event.playerIds),
+        qualifyingPlayerIds: uniqueIds(event.qualifyingPlayerIds),
+      });
+      continue;
+    }
+    cur.playerIds = uniqueIds([...cur.playerIds, ...event.playerIds]);
+    cur.qualifyingPlayerIds = uniqueIds([...cur.qualifyingPlayerIds, ...event.qualifyingPlayerIds]);
+    if (!cur.tournamentName && event.tournamentName) cur.tournamentName = event.tournamentName;
+    if (!cur.tournamentKey && event.tournamentKey) cur.tournamentKey = event.tournamentKey;
+  }
+  return [...map.values()];
+}
+
+function resolveLivePlayerId(
+  rawId: string,
+  rawName: string,
+  roster: ReturnType<typeof loadTennisPlayers>
+): string {
+  const id = String(rawId || '').trim();
+  if (/^\d+$/.test(id)) return id;
+  const name = String(rawName || '').trim();
+  if (!name) return '';
+  const exact = roster.find((player) => player.name.trim().toLowerCase() === name.toLowerCase());
+  if (exact) return exact.playerId;
+  const hits = roster.filter((player) => namesMatch(player.name, name));
+  return hits.length === 1 ? hits[0].playerId : '';
+}
+
+function collectLiveEventsFromFixtures(fixtures: ApiTennisFixture[]): TennisLiveEvent[] {
+  const roster = loadTennisPlayers();
+  const events = new Map<
+    string,
+    {
+      tour: TennisTour;
+      tournamentKey: string | null;
+      tournamentName: string | null;
+      ids: Set<string>;
+      qIds: Set<string>;
+    }
+  >();
+  for (const fx of fixtures) {
+    const firstId = resolveLivePlayerId(
+      String(fx.first_player_key ?? ''),
+      String(fx.event_first_player || ''),
+      roster
+    );
+    const secondId = resolveLivePlayerId(
+      String(fx.second_player_key ?? ''),
+      String(fx.event_second_player || ''),
+      roster
+    );
+    const tournamentName = String(fx.tournament_name || '').trim() || null;
+    const tournamentKey = fx.tournament_key != null ? String(fx.tournament_key) : null;
+    const tour: TennisTour = tourFromEventType(fx.event_type_type) === 'WTA' ? 'WTA' : 'ATP';
+    const round = parseApiRound(fx.tournament_round) || null;
+    const qualifying = isTennisQualifyingLabel(round, tournamentName);
+    if (!tournamentKey && !liveEventPlace(tournamentName)) continue;
+    const eventId = `${tour}|${tournamentKey || liveEventPlace(tournamentName) || 'unknown'}`;
+    let event = events.get(eventId);
+    if (!event) {
+      event = {
+        tour,
+        tournamentKey: tournamentKey || null,
+        tournamentName,
+        ids: new Set(),
+        qIds: new Set(),
+      };
+      events.set(eventId, event);
+    }
+    if (!event.tournamentName && tournamentName) event.tournamentName = tournamentName;
+    const bucket = qualifying ? event.qIds : event.ids;
+    if (firstId) bucket.add(firstId);
+    if (secondId) bucket.add(secondId);
+  }
+  return [...events.values()].map((event) => ({
+    tour: event.tour,
+    tournamentKey: event.tournamentKey,
+    tournamentName: event.tournamentName,
+    playerIds: [...event.ids],
+    qualifyingPlayerIds: [...event.qIds],
+  }));
+}
+
+function indexLiveEvents(
+  byPlayerId: Map<string, TennisNextGame>,
+  fixtureEvents?: TennisLiveEvent[]
+): TennisLiveEventIndex {
+  const keys = new Set<string>();
+  const names = new Set<string>();
+  const idsByKey = new Map<string, Set<string>>();
+  const idsByName = new Map<string, Set<string>>();
+  const events = new Map<
+    string,
+    {
+      tour: TennisTour;
+      tournamentKey: string | null;
+      tournamentName: string | null;
+      ids: Set<string>;
+      qIds: Set<string>;
+    }
+  >();
+  const add = (map: Map<string, Set<string>>, bucket: string, playerId: string) => {
+    let set = map.get(bucket);
+    if (!set) {
+      set = new Set();
+      map.set(bucket, set);
+    }
+    set.add(playerId);
+  };
+  for (const [playerId, game] of byPlayerId) {
+    if (!/^\d+$/.test(playerId)) continue;
+    const key = String(game.tournamentKey || '').trim();
+    const place = liveEventPlace(game.tournamentName);
+    const tour: TennisTour = game.tour === 'WTA' ? 'WTA' : 'ATP';
+    const qualifying = isTennisQualifyingLabel(game.round, game.tournamentName);
+    if (key) keys.add(key);
+    if (place) names.add(place);
+    if (!qualifying) {
+      if (key) add(idsByKey, key, playerId);
+      if (place) add(idsByName, place, playerId);
+    }
+    const eventId = `${tour}|${key || place || 'unknown'}`;
+    if (!key && !place) continue;
+    let event = events.get(eventId);
+    if (!event) {
+      event = {
+        tour,
+        tournamentKey: key || null,
+        tournamentName: game.tournamentName || place || null,
+        ids: new Set(),
+        qIds: new Set(),
+      };
+      events.set(eventId, event);
+    }
+    if (qualifying) event.qIds.add(playerId);
+    else event.ids.add(playerId);
+    if (!event.tournamentName && game.tournamentName) event.tournamentName = game.tournamentName;
+  }
+  for (const extra of fixtureEvents || []) {
+    const eventId = liveEventId(extra);
+    let event = events.get(eventId);
+    if (!event) {
+      event = {
+        tour: extra.tour,
+        tournamentKey: extra.tournamentKey,
+        tournamentName: extra.tournamentName,
+        ids: new Set(),
+        qIds: new Set(),
+      };
+      events.set(eventId, event);
+    }
+    if (!event.tournamentName && extra.tournamentName) event.tournamentName = extra.tournamentName;
+    if (!event.tournamentKey && extra.tournamentKey) event.tournamentKey = extra.tournamentKey;
+    for (const id of extra.playerIds) event.ids.add(id);
+    for (const id of extra.qualifyingPlayerIds) event.qIds.add(id);
+  }
+  for (const event of events.values()) {
+    const key = String(event.tournamentKey || '').trim();
+    const place = liveEventPlace(event.tournamentName);
+    if (key) {
+      keys.add(key);
+      for (const id of event.ids) add(idsByKey, key, id);
+    }
+    if (place) {
+      names.add(place);
+      for (const id of event.ids) add(idsByName, place, id);
+    }
+  }
+  return {
+    keys,
+    names,
+    playerIdsByKey: new Map([...idsByKey].map(([k, set]) => [k, [...set]])),
+    playerIdsByName: new Map([...idsByName].map(([k, set]) => [k, [...set]])),
+    events: [...events.values()].map((event) => ({
+      tour: event.tour,
+      tournamentKey: event.tournamentKey,
+      tournamentName: event.tournamentName,
+      playerIds: [...event.ids],
+      qualifyingPlayerIds: [...event.qIds],
+    })),
+  };
+}
+
+export async function listLiveTennisEventIndex(): Promise<TennisLiveEventIndex> {
+  const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: false });
+  return indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
+}
+
+export function peekLiveTennisEventIndex(): TennisLiveEventIndex | null {
+  const window = upcomingRuntime().window;
+  if (!window?.byPlayerId.size) return null;
+  return indexLiveEvents(window.byPlayerId, window.events);
+}
+
+export function tennisEventIsLive(
+  live: TennisLiveEventIndex,
+  tournamentKey?: string | null,
+  tournamentName?: string | null
+): boolean {
+  const key = String(tournamentKey || '').trim();
+  if (key && live.keys.has(key)) return true;
+  const place = liveEventPlace(tournamentName);
+  if (!place) return false;
+  if (live.names.has(place)) return true;
+  for (const name of live.names) {
+    if (name.includes(place) || place.includes(name)) return true;
+  }
+  return false;
+}
+
+export function findLiveTennisEvent(
+  live: TennisLiveEventIndex,
+  tournamentKey?: string | null,
+  tournamentName?: string | null
+): TennisLiveEvent | null {
+  const key = String(tournamentKey || '').trim();
+  const place = liveEventPlace(tournamentName);
+  if (key) {
+    const byKey = live.events.find((event) => event.tournamentKey === key);
+    if (byKey) return byKey;
+  }
+  if (place) {
+    const byName = live.events.find((event) => {
+      const eventPlace = liveEventPlace(event.tournamentName);
+      return eventPlace === place;
+    });
+    if (byName) return byName;
+  }
+  return null;
+}
+
+export function tennisLiveEventStage(
+  live: TennisLiveEventIndex,
+  opts: {
+    playerId?: string | null;
+    opponentId?: string | null;
+    tournamentKey?: string | null;
+    tournamentName?: string | null;
+    round?: string | null;
+  }
+): TennisDvpStage {
+  if (isTennisQualifyingLabel(opts.round, opts.tournamentName)) return 'qualifying';
+  const event = findLiveTennisEvent(live, opts.tournamentKey, opts.tournamentName);
+  const q = new Set(event?.qualifyingPlayerIds || []);
+  if (opts.playerId && q.has(String(opts.playerId))) return 'qualifying';
+  if (opts.opponentId && q.has(String(opts.opponentId))) return 'qualifying';
+  return 'main';
+}
+
+export function tennisLiveEventPlayerIds(
+  live: TennisLiveEventIndex,
+  tournamentKey?: string | null,
+  tournamentName?: string | null,
+  stage: TennisDvpStage = 'main'
+): string[] {
+  const event = findLiveTennisEvent(live, tournamentKey, tournamentName);
+  if (event) {
+    return stage === 'qualifying' ? event.qualifyingPlayerIds : event.playerIds;
+  }
+  const key = String(tournamentKey || '').trim();
+  if (stage !== 'qualifying' && key && live.playerIdsByKey.has(key)) return live.playerIdsByKey.get(key) || [];
+  const place = liveEventPlace(tournamentName);
+  if (stage !== 'qualifying' && place && live.playerIdsByName.has(place)) return live.playerIdsByName.get(place) || [];
+  return [];
+}
+
+export async function listTennisUpcomingPlayerIdsForEvent(opts: {
+  tournamentKey?: string | null;
+  tournamentName?: string | null;
+}): Promise<string[]> {
+  const live = await listLiveTennisEventIndex();
+  return tennisLiveEventPlayerIds(live, opts.tournamentKey, opts.tournamentName);
+}
+
 export async function listUniqueUpcomingTennisGames(opts?: {
   waitForFresh?: boolean;
 }): Promise<TennisNextGame[]> {
@@ -498,17 +895,18 @@ export async function getTennisNextGame(opts: {
   const playerName = String(opts.playerName || '').trim();
   if (!playerId && !playerName) return null;
   const byPlayerId = await loadUpcomingByPlayer({ waitForFresh: true });
+  const live = indexLiveEvents(byPlayerId, upcomingRuntime().window?.events);
   const found =
     (playerId && byPlayerId.get(playerId)) ||
     (playerName && byPlayerId.get(nameKey(playerName))) ||
     null;
-  if (found) return withSurface(found);
+  if (found) return withDrawSeeds(withSurface(found), playerId || null, live);
   if (playerName) {
     for (const next of byPlayerId.values()) {
       const onThisSide =
         namesMatch(next.homeName, playerName) || namesMatch(next.awayName, playerName);
       if (!onThisSide || namesMatch(next.opponent, playerName)) continue;
-      return withSurface(next);
+      return withDrawSeeds(withSurface(next), playerId || null, live);
     }
   }
   return null;

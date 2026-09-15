@@ -12,6 +12,7 @@ import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import { TennisStatsChart, type NblChartTimeframe } from '@/app/tennis/components/TennisStatsChart';
 import TennisDvpCard from '@/app/tennis/components/TennisDvpCard';
 import TennisTeamMatchupCard from '@/app/tennis/components/TennisTeamMatchupCard';
+import TennisMatchInfoCard from '@/app/tennis/components/TennisMatchInfoCard';
 import TennisAdvancedAveragesCard from '@/app/tennis/components/TennisAdvancedAveragesCard';
 import { TennisSimilarPlayersCard } from '@/app/tennis/components/TennisSimilarPlayersCard';
 import { TennisAskPanel } from '@/app/tennis/components/TennisAskPanel';
@@ -47,7 +48,7 @@ import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashbo
 import { useCountdownTimer } from '@/app/nba/research/dashboard/hooks/useCountdownTimer';
 import { Search } from 'lucide-react';
 import { DEFAULT_ODDS_FORMAT, readOddsFormatPreference } from '@/lib/currencyUtils';
-import { TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
+import { TENNIS_AI_UNDER_MAINTENANCE, TENNIS_CURRENT_YEAR, TENNIS_HISTORY_YEARS } from '@/lib/tennis/constants';
 import {
   defaultTennisGameStat,
   tennisEventPlaceLabel,
@@ -58,13 +59,15 @@ import {
 } from '@/lib/tennis/chartStats';
 import { tennisFlagUrl } from '@/lib/tennis/flags';
 import { tennisComAvatarImgStyle } from '@/lib/tennis/headshotDisplay';
-import { propsPathForSport, propsSportFromTennisTour } from '@/lib/nbaConstants';
+import { propsSportFromTennisTour } from '@/lib/nbaConstants';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
+import { isTennisQualifyingLabel } from '@/lib/tennis/dvpShared';
 
 /** Tennis match LIVE window (~5-set length). */
 const NBL_MATCH_DURATION_MS = 6 * 60 * 60 * 1000;
 
 type NblPropsMode = 'player' | 'team';
-type NblRightTab = 'dvp' | 'team_matchup';
+type NblRightTab = 'dvp' | 'team_matchup' | 'match_info';
 type TennisFormContainerTab = 'overview' | 'similar';
 
 type NblRosterPlayer = {
@@ -148,6 +151,7 @@ const tennisNextGameInflight = new Set<string>();
 
 type TennisNextGameClient = {
   opponent: string | null;
+  opponentId: string | null;
   opponentIoc: string | null;
   opponentRank: number | null;
   opponentLogo: string | null;
@@ -155,8 +159,12 @@ type TennisNextGameClient = {
   live: boolean;
   isGrandSlam: boolean;
   tournament: string | null;
+  tournamentKey: string | null;
   surface: string | null;
   round: string | null;
+  playerSeed: number | null;
+  opponentSeed: number | null;
+  topSeedName: string | null;
 };
 
 function parseTennisNextGameClient(data: Record<string, unknown> | null | undefined): TennisNextGameClient {
@@ -164,6 +172,7 @@ function parseTennisNextGameClient(data: Record<string, unknown> | null | undefi
   const rankRaw = Number(data?.next_opponent_rank);
   return {
     opponent: String(data?.next_opponent || '').trim() || null,
+    opponentId: String(data?.next_opponent_id || '').trim() || null,
     opponentIoc: data?.next_opponent_ioc ? String(data.next_opponent_ioc) : null,
     opponentRank: Number.isFinite(rankRaw) && rankRaw > 0 ? Math.round(rankRaw) : null,
     opponentLogo: data?.opponent_logo ? String(data.opponent_logo) : null,
@@ -171,8 +180,12 @@ function parseTennisNextGameClient(data: Record<string, unknown> | null | undefi
     live: Boolean(data?.live),
     isGrandSlam: Boolean(data?.isGrandSlam),
     tournament: String(data?.tournament || '').trim() || null,
+    tournamentKey: String(data?.tournamentKey || '').trim() || null,
     surface: String(data?.surface || '').trim() || null,
     round: String(data?.round || '').trim() || null,
+    playerSeed: Number.isFinite(Number(data?.playerSeed)) && Number(data?.playerSeed) > 0 ? Math.round(Number(data?.playerSeed)) : null,
+    opponentSeed: Number.isFinite(Number(data?.opponentSeed)) && Number(data?.opponentSeed) > 0 ? Math.round(Number(data?.opponentSeed)) : null,
+    topSeedName: String(data?.topSeedName || '').trim() || null,
   };
 }
 
@@ -470,7 +483,7 @@ function readInitialNblSelection(): {
       : 'player';
   const persistedTab = String(persisted.nblRightTab || '');
   const rightTab: NblRightTab =
-    persistedTab === 'team_matchup' || persistedTab === 'dvp'
+    persistedTab === 'team_matchup' || persistedTab === 'dvp' || persistedTab === 'match_info'
       ? persistedTab
       : persistedTab === 'breakdown'
         ? 'team_matchup'
@@ -524,7 +537,9 @@ export default function TennisDashboardPage() {
   const [nblRightTabsVisited, setNblRightTabsVisited] = useState<Set<NblRightTab>>(
     () => new Set(['dvp'])
   );
-  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<TennisFormContainerTab>('overview');
+  const [playerVsContainerTab, setPlayerVsContainerTab] = useState<TennisFormContainerTab>(
+    TENNIS_AI_UNDER_MAINTENANCE ? 'similar' : 'overview'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [rosterPlayers, setRosterPlayers] = useState<NblRosterPlayer[]>([]);
@@ -547,6 +562,7 @@ export default function TennisDashboardPage() {
   }));
   const [selectionHydrated, setSelectionHydrated] = useState(false);
   const [nextGameOpponent, setNextGameOpponent] = useState<string | null>(null);
+  const [nextGameOpponentId, setNextGameOpponentId] = useState<string | null>(null);
   const [nextGamePlayerId, setNextGamePlayerId] = useState<string | null>(null);
   const [nextGameTipoff, setNextGameTipoff] = useState<Date | null>(null);
   const [nextGameOpponentLogo, setNextGameOpponentLogo] = useState<string | null>(null);
@@ -554,9 +570,13 @@ export default function TennisDashboardPage() {
   const [nextGameOpponentRank, setNextGameOpponentRank] = useState<number | null>(null);
   const [nextGameIsGrandSlam, setNextGameIsGrandSlam] = useState(false);
   const [nextGameTournament, setNextGameTournament] = useState<string | null>(null);
+  const [nextGameTournamentKey, setNextGameTournamentKey] = useState<string | null>(null);
   const [nextGameSurface, setNextGameSurface] = useState<string | null>(null);
   const [nextGameRound, setNextGameRound] = useState<string | null>(null);
   const [nextGameLive, setNextGameLive] = useState(false);
+  const [nextGamePlayerSeed, setNextGamePlayerSeed] = useState<number | null>(null);
+  const [nextGameOpponentSeed, setNextGameOpponentSeed] = useState<number | null>(null);
+  const [nextGameTopSeedName, setNextGameTopSeedName] = useState<string | null>(null);
   const selectedPlayerIdRef = useRef<string | null>(null);
   const [countdown, setCountdown] = useState<{
     hours: number;
@@ -599,14 +619,19 @@ export default function TennisDashboardPage() {
     writeTennisNextGameClient(playerId, payload);
     setNextGamePlayerId(playerId);
     setNextGameOpponent(payload.opponent);
+    setNextGameOpponentId(payload.opponentId);
     setNextGameOpponentIoc(payload.opponentIoc);
     setNextGameOpponentRank(payload.opponentRank);
     setNextGameOpponentLogo(payload.opponentLogo);
     setNextGameIsGrandSlam(payload.isGrandSlam);
     setNextGameTournament(payload.tournament);
+    setNextGameTournamentKey(payload.tournamentKey);
     setNextGameSurface(payload.surface);
     setNextGameRound(payload.round);
     setNextGameLive(payload.live);
+    setNextGamePlayerSeed(payload.playerSeed);
+    setNextGameOpponentSeed(payload.opponentSeed);
+    setNextGameTopSeedName(payload.topSeedName);
     const tipRaw = payload.tipoff ? new Date(payload.tipoff) : null;
     setNextGameTipoff(tipRaw && !Number.isNaN(tipRaw.getTime()) ? tipRaw : null);
     setIsGameInProgress(payload.live);
@@ -643,6 +668,12 @@ export default function TennisDashboardPage() {
   selectedPlayerIdRef.current = String(selectedPlayer?.playerId || '').trim() || null;
 
   useEffect(() => {
+    if (TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview') {
+      setPlayerVsContainerTab('similar');
+    }
+  }, [playerVsContainerTab]);
+
+  useEffect(() => {
     fetch('/api/tennis/next-game?warm=1', {
       cache: 'no-store',
       signal: AbortSignal.timeout(20000),
@@ -672,7 +703,9 @@ export default function TennisDashboardPage() {
     setNblRightTabsVisited(new Set([restored.nblRightTab]));
     const persistedTab = readPersistedNblPageState()?.playerVsContainerTab;
     if (persistedTab === 'overview' || persistedTab === 'similar') {
-      setPlayerVsContainerTab(persistedTab);
+      setPlayerVsContainerTab(
+        TENNIS_AI_UNDER_MAINTENANCE && persistedTab === 'overview' ? 'similar' : persistedTab
+      );
     }
     setChartTimeframe(restored.chartTimeframe);
     setMainChartStat(restored.mainChartStat);
@@ -866,7 +899,7 @@ export default function TennisDashboardPage() {
     if (!tour && typeof window !== 'undefined') {
       tour = new URLSearchParams(window.location.search).get('team');
     }
-    router.push(propsPathForSport(propsSportFromTennisTour(tour) ?? 'atp'));
+    router.push(consumePropsReturnPath(propsSportFromTennisTour(tour) ?? 'atp'));
   }, [router, selectedPlayer]);
 
   // Keep URL in sync with tennis selection only.
@@ -1120,15 +1153,20 @@ export default function TennisDashboardPage() {
     const clearUpcoming = () => {
       setNextGamePlayerId(null);
       setNextGameOpponent(null);
+      setNextGameOpponentId(null);
       setNextGameTipoff(null);
       setNextGameOpponentLogo(null);
       setNextGameOpponentIoc(null);
       setNextGameOpponentRank(null);
       setNextGameIsGrandSlam(false);
       setNextGameTournament(null);
+      setNextGameTournamentKey(null);
       setNextGameSurface(null);
       setNextGameRound(null);
       setNextGameLive(false);
+      setNextGamePlayerSeed(null);
+      setNextGameOpponentSeed(null);
+      setNextGameTopSeedName(null);
       setIsGameInProgress(false);
     };
     if (!cacheKey) {
@@ -1368,6 +1406,9 @@ export default function TennisDashboardPage() {
     : '';
   const headerPlace = tennisEventPlaceLabel(displayOpponent ? nextGameTournament : null);
   const headerRound = tennisRoundLabel(displayOpponent ? nextGameRound : null);
+  const dvpStage = isTennisQualifyingLabel(nextGameRound, nextGameTournament)
+    ? 'qualifying'
+    : 'main';
   const headerSurface = displayOpponent ? String(nextGameSurface || '').trim() : '';
   const headerEvent =
     headerPlace && headerRound
@@ -1404,6 +1445,9 @@ export default function TennisDashboardPage() {
     ? nextGameOpponentRank ??
       (Number.isFinite(rosterOpponentRank) && rosterOpponentRank > 0 ? rosterOpponentRank : null)
     : null;
+  const playerRankRaw = Number(selectedPlayer?.jersey);
+  const matchupPlayerRank =
+    Number.isFinite(playerRankRaw) && playerRankRaw > 0 ? playerRankRaw : null;
   const matchupLeftAbbrev = matchupLeft || '';
   const displayOpponentAbbrev = displayOpponent || 'NA';
 
@@ -1446,12 +1490,8 @@ export default function TennisDashboardPage() {
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 min-h-0">
               {/* Main content — same containers as AFL / NBA dashboard */}
               <div className={mainContentClassName} style={mainContentStyle}>
-                {/* 1. Filter By — mobile only */}
-                <div
-                  className={`lg:hidden rounded-lg ${TENNIS_DASH_CARD_GLOW} px-3 md:px-4 pt-3 md:pt-4 pb-4 md:pb-5 relative overflow-visible`}
-                >
-                  <div className="min-h-[96px]" />
-                </div>
+                {/* 1. Tennis design — mobile only */}
+                <TennisBannerArt compact className="lg:hidden flex-shrink-0" />
 
                 {/* 2. Header */}
                 <div
@@ -1934,11 +1974,8 @@ export default function TennisDashboardPage() {
                         const book = tennisOddsBooks[selectedTennisBookIndex];
                         const n = tennisParseLineNumber(tennisMainLineForStat(book, mainChartStat)?.line);
                         if (n != null) return n;
-                        if (tennisOddsBooks.length) return 0.5;
-                        return undefined;
                       }
-                      if (mainChartStat === 'moneyline') return 0.5;
-                      return undefined;
+                      return 0.5;
                     })()}
                   />
                   )}
@@ -1947,7 +1984,7 @@ export default function TennisDashboardPage() {
                 {/* 4. Supporting stats */}
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`w-full min-w-0 flex flex-col rounded-lg ${TENNIS_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
+                    className={`w-full min-w-0 flex flex-col flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} mt-0 py-3 sm:py-4 md:py-4 px-0 lg:px-3 xl:px-4`}
                   >
                     {showEmptyShell ? (
                       <div className="min-h-[220px]" />
@@ -2012,7 +2049,7 @@ export default function TennisDashboardPage() {
 
                 {/* 4.5 DVP | Breakdown | Matchup — mobile */}
                 <div
-                  className={`lg:hidden w-full min-w-0 flex flex-col rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 max-h-[60vh] min-h-0`}
+                  className={`lg:hidden w-full min-w-0 flex flex-col flex-shrink-0 overflow-hidden rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4 md:p-4 h-[60vh] max-h-[60vh]`}
                 >
                   {showEmptyShell ? (
                     <div className="min-h-[280px]" />
@@ -2026,7 +2063,7 @@ export default function TennisDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex gap-2 sm:gap-2 mb-2 flex-shrink-0">
+                      <div className={`grid gap-1.5 sm:gap-2 mb-2 flex-shrink-0 ${nblPropsMode === 'player' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                         {nblPropsMode === 'player' && (
                           <button
                             type="button"
@@ -2043,7 +2080,7 @@ export default function TennisDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-3 sm:px-2 md:px-3 py-2.5 sm:py-2 text-xs sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
                             nblRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2051,18 +2088,30 @@ export default function TennisDashboardPage() {
                         >
                           Player Matchup
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => visitRightTab('match_info')}
+                          className={`flex-1 px-2 sm:px-2 md:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs md:text-sm font-medium rounded-lg transition-colors border ${
+                            nblRightTab === 'match_info'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Match Info
+                        </button>
                       </div>
-                      <div
-                        className={`relative w-full min-w-0 flex flex-col ${
-                          nblRightTab === 'dvp' ? 'overflow-visible flex-1 min-h-[280px]' : 'overflow-hidden flex-1 min-h-[280px]'
-                        }`}
-                      >
+                      <div className="relative w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-hidden">
                         {nblPropsMode === 'player' && nblRightTabsVisited.has('dvp') && (
                           <div className={nblRightTab === 'dvp' ? 'w-full h-full flex flex-col min-h-0' : 'hidden'}>
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
+                              playerId={selectedPlayer?.playerId || null}
                               opponentName={statsOpponent}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              tournamentName={nextGameTournament}
+                              tournamentKey={nextGameTournamentKey}
+                              stage={dvpStage}
                               tour={dvpTour}
                             />
                           </div>
@@ -2077,7 +2126,44 @@ export default function TennisDashboardPage() {
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
                               opponentName={statsOpponent}
+                              playerId={selectedPlayer?.playerId || null}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              tournamentName={nextGameTournament}
+                              tournamentKey={nextGameTournamentKey}
+                              stage={dvpStage}
                               tour={dvpTour}
+                            />
+                          </div>
+                        )}
+                        {nblRightTabsVisited.has('match_info') && (
+                          <div
+                            className={
+                              nblRightTab === 'match_info' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                            }
+                          >
+                            <TennisMatchInfoCard
+                              isDark={!!mounted && isDark}
+                              playerName={matchupLeft}
+                              playerIoc={matchupLeftIoc}
+                              playerRank={matchupPlayerRank}
+                              playerSeed={displayOpponent ? nextGamePlayerSeed : null}
+                              opponentName={displayOpponent}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentIoc={matchupOpponentIoc}
+                              opponentRank={matchupOpponentRank}
+                              opponentSeed={displayOpponent ? nextGameOpponentSeed : null}
+                              tournamentName={nextGameTournament}
+                              round={nextGameRound}
+                              surface={nextGameSurface}
+                              tour={dvpTour}
+                              isGrandSlam={upcomingIsGrandSlam}
+                              stage={dvpStage}
+                              tipoff={nextGameTipoff}
+                              live={nextGameLive}
+                              isGameInProgress={isGameInProgress}
+                              countdown={countdown}
+                              topSeedName={displayOpponent ? nextGameTopSeedName : null}
+                              gameLogs={selectedPlayerGameLogs}
                             />
                           </div>
                         )}
@@ -2089,19 +2175,34 @@ export default function TennisDashboardPage() {
                 {/* AI Overview / Similar Players — mobile */}
                 {nblPropsMode === 'player' && (
                   <div
-                    className={`lg:hidden w-full min-w-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4`}
+                    className={`lg:hidden w-full min-w-0 flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4`}
                   >
                     <div className="flex gap-1.5 mb-2">
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('overview')}
-                        className={`flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'overview'
+                        disabled={TENNIS_AI_UNDER_MAINTENANCE}
+                        title={
+                          TENNIS_AI_UNDER_MAINTENANCE ? 'AI Overview is under maintenance' : undefined
+                        }
+                        onClick={() => {
+                          if (!TENNIS_AI_UNDER_MAINTENANCE) setPlayerVsContainerTab('overview');
+                        }}
+                        className={`relative flex-1 px-1 py-2 text-[11px] font-medium rounded-lg transition-colors border ${
+                          !TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview'
                             ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                        } ${
+                          TENNIS_AI_UNDER_MAINTENANCE
+                            ? 'cursor-not-allowed opacity-65'
+                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         AI Overview
+                        {TENNIS_AI_UNDER_MAINTENANCE ? (
+                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
+                            MAINTENANCE
+                          </span>
+                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -2123,6 +2224,7 @@ export default function TennisDashboardPage() {
                         opponentName={displayOpponent}
                         tour={dvpTour}
                         isGrandSlam={nextGameIsGrandSlam}
+                        tournamentName={nextGameTournament}
                       />
                     </div>
                     {playerVsContainerTab === 'similar' ? (
@@ -2140,30 +2242,9 @@ export default function TennisDashboardPage() {
                   </div>
                 )}
 
-                {/* 4.55 Lineups — mobile */}
-                <div
-                  className={`lg:hidden w-full min-w-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} p-3 sm:p-4`}
-                >
-                  <div className="min-h-[180px]" />
-                </div>
-
-                {/* Game Log — mobile */}
-                {nblPropsMode === 'player' && (
-                  <div
-                    className={`lg:hidden w-full min-w-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} overflow-hidden`}
-                  >
-                    <TennisBoxScore
-                      gameLogs={selectedPlayerGameLogs}
-                      selectedPlayer={selectedPlayer}
-                      isLoading={statsLoadingForPlayer || showStatsLoadingShell}
-                      isDark={!!mounted && isDark}
-                    />
-                  </div>
-                )}
-
                 {/* 5. Advanced Averages — mobile */}
                 {nblPropsMode === 'player' ? (
-                  <div className="lg:hidden w-full min-w-0">
+                  <div className="lg:hidden w-full min-w-0 flex-shrink-0">
                     <div className={`rounded-lg ${TENNIS_DASH_CARD_GLOW} min-h-[380px] p-2`}>
                       {showEmptyShell ? (
                         <div className="min-h-[360px]" />
@@ -2180,11 +2261,25 @@ export default function TennisDashboardPage() {
                     </div>
                   </div>
                 ) : null}
+
+                {/* Game Log — mobile */}
+                {nblPropsMode === 'player' && (
+                  <div
+                    className={`lg:hidden w-full min-w-0 flex-shrink-0 rounded-lg ${TENNIS_DASH_CARD_GLOW} overflow-hidden mb-6`}
+                  >
+                    <TennisBoxScore
+                      gameLogs={selectedPlayerGameLogs}
+                      selectedPlayer={selectedPlayer}
+                      isLoading={statsLoadingForPlayer || showStatsLoadingShell}
+                      isDark={!!mounted && isDark}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Right panel — desktop */}
               <div
-                className={`relative z-0 flex-1 flex flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 pb-8 lg:pb-12 fade-scrollbar custom-scrollbar min-w-0 ${
+                className={`hidden lg:flex relative z-0 flex-1 flex-col gap-2 sm:gap-3 md:gap-4 lg:gap-2 lg:h-screen lg:max-h-screen lg:overflow-y-auto lg:overflow-x-hidden px-2 sm:px-2 md:px-0 pb-8 lg:pb-12 fade-scrollbar custom-scrollbar min-w-0 ${
                   sidebarOpen ? 'lg:flex-[2.6] xl:flex-[2.9]' : 'lg:flex-[3.2] xl:flex-[3.2]'
                 }`}
               >
@@ -2219,7 +2314,7 @@ export default function TennisDashboardPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex gap-1.5 xl:gap-2 mb-2">
+                      <div className={`grid gap-1.5 xl:gap-2 mb-2 ${nblPropsMode === 'player' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                         {nblPropsMode === 'player' && (
                           <button
                             type="button"
@@ -2236,7 +2331,7 @@ export default function TennisDashboardPage() {
                         <button
                           type="button"
                           onClick={() => visitRightTab('team_matchup')}
-                          className={`flex-1 px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-lg transition-colors border ${
+                          className={`flex-1 px-1.5 xl:px-3 py-1.5 xl:py-2 text-[11px] xl:text-sm font-medium rounded-lg transition-colors border ${
                             nblRightTab === 'team_matchup'
                               ? 'bg-purple-600 text-white border-purple-600'
                               : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
@@ -2244,10 +2339,22 @@ export default function TennisDashboardPage() {
                         >
                           Player Matchup
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => visitRightTab('match_info')}
+                          className={`flex-1 px-1.5 xl:px-3 py-1.5 xl:py-2 text-[11px] xl:text-sm font-medium rounded-lg transition-colors border ${
+                            nblRightTab === 'match_info'
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          Match Info
+                        </button>
                       </div>
                       <div
                         className={`relative w-full min-w-0 flex flex-col min-h-0 ${
-                          nblPropsMode === 'player' && nblRightTab === 'dvp'
+                          nblPropsMode === 'player' &&
+                          (nblRightTab === 'dvp' || nblRightTab === 'team_matchup')
                             ? 'overflow-visible h-[380px] xl:h-[420px]'
                             : 'overflow-hidden h-[380px] xl:h-[420px]'
                         }`}
@@ -2261,7 +2368,12 @@ export default function TennisDashboardPage() {
                             <TennisDvpCard
                               isDark={!!mounted && isDark}
                               playerName={matchupLeft}
+                              playerId={selectedPlayer?.playerId || null}
                               opponentName={statsOpponent}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              tournamentName={nextGameTournament}
+                              tournamentKey={nextGameTournamentKey}
+                              stage={dvpStage}
                               tour={dvpTour}
                             />
                           </div>
@@ -2280,7 +2392,45 @@ export default function TennisDashboardPage() {
                               isDark={!!mounted && isDark}
                               teamName={matchupLeft}
                               opponentName={statsOpponent}
+                              playerId={selectedPlayer?.playerId || null}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              tournamentName={nextGameTournament}
+                              tournamentKey={nextGameTournamentKey}
+                              stage={dvpStage}
                               tour={dvpTour}
+                            />
+                          </div>
+                        )}
+                        {((nblPropsMode === 'team' && nblRightTab === 'match_info') ||
+                          (nblPropsMode === 'player' && nblRightTabsVisited.has('match_info'))) && (
+                          <div
+                            className={
+                              nblRightTab === 'match_info' ? 'flex flex-col h-full min-h-0' : 'hidden'
+                            }
+                          >
+                            <TennisMatchInfoCard
+                              isDark={!!mounted && isDark}
+                              playerName={matchupLeft}
+                              playerIoc={matchupLeftIoc}
+                              playerRank={matchupPlayerRank}
+                              playerSeed={displayOpponent ? nextGamePlayerSeed : null}
+                              opponentName={displayOpponent}
+                              opponentId={displayOpponent ? nextGameOpponentId : null}
+                              opponentIoc={matchupOpponentIoc}
+                              opponentRank={matchupOpponentRank}
+                              opponentSeed={displayOpponent ? nextGameOpponentSeed : null}
+                              tournamentName={nextGameTournament}
+                              round={nextGameRound}
+                              surface={nextGameSurface}
+                              tour={dvpTour}
+                              isGrandSlam={upcomingIsGrandSlam}
+                              stage={dvpStage}
+                              tipoff={nextGameTipoff}
+                              live={nextGameLive}
+                              isGameInProgress={isGameInProgress}
+                              countdown={countdown}
+                              topSeedName={displayOpponent ? nextGameTopSeedName : null}
+                              gameLogs={selectedPlayerGameLogs}
                             />
                           </div>
                         )}
@@ -2317,14 +2467,29 @@ export default function TennisDashboardPage() {
                     <div className="flex gap-1 xl:gap-1.5 mb-2">
                       <button
                         type="button"
-                        onClick={() => setPlayerVsContainerTab('overview')}
-                        className={`flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
-                          playerVsContainerTab === 'overview'
+                        disabled={TENNIS_AI_UNDER_MAINTENANCE}
+                        title={
+                          TENNIS_AI_UNDER_MAINTENANCE ? 'AI Overview is under maintenance' : undefined
+                        }
+                        onClick={() => {
+                          if (!TENNIS_AI_UNDER_MAINTENANCE) setPlayerVsContainerTab('overview');
+                        }}
+                        className={`relative flex-1 px-1.5 xl:px-2 py-1.5 xl:py-2 text-[11px] xl:text-xs font-medium rounded-lg transition-colors border ${
+                          !TENNIS_AI_UNDER_MAINTENANCE && playerVsContainerTab === 'overview'
                             ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-700'
+                            : 'bg-gray-100 dark:bg-[#0a1929] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                        } ${
+                          TENNIS_AI_UNDER_MAINTENANCE
+                            ? 'cursor-not-allowed opacity-65'
+                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
                         AI Overview
+                        {TENNIS_AI_UNDER_MAINTENANCE ? (
+                          <span className="absolute -top-2 -right-2 inline-flex max-w-[calc(100%-0.5rem)] items-center rounded-md border border-amber-600 bg-amber-600 px-1 py-0.5 text-[8px] font-bold leading-none tracking-wide text-white shadow-sm dark:border-amber-500/80 dark:bg-amber-700">
+                            MAINTENANCE
+                          </span>
+                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -2346,6 +2511,7 @@ export default function TennisDashboardPage() {
                         opponentName={displayOpponent}
                         tour={dvpTour}
                         isGrandSlam={nextGameIsGrandSlam}
+                        tournamentName={nextGameTournament}
                       />
                     </div>
                     {playerVsContainerTab === 'similar' ? (

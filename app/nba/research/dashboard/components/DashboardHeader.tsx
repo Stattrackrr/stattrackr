@@ -9,6 +9,7 @@ import { getOpponentTeam } from '../utils/teamAnalysisUtils';
 import { HeaderInfo } from '../utils/headerInfoUtils';
 import { BallDontLieGame } from '../types';
 import { NBAPlayer } from '../types';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ImpliedOddsWheel } from './odds/ImpliedOddsWheel';
 
 interface DashboardHeaderProps {
@@ -102,8 +103,8 @@ export function DashboardHeader({
       sessionStorage.removeItem('last_prop_click');
       sessionStorage.removeItem('last_prop_url');
     } catch {}
-    router.prefetch('/props');
-    router.push('/props');
+    router.prefetch('/props?sport=all');
+    router.push(consumePropsReturnPath('combined'));
   };
 
   return (

@@ -33,7 +33,7 @@ import { NBL_DASH_CARD_GLOW } from '@/app/nbl/components/nblDashCardGlow';
 import type { NblGameLogRow } from '@/lib/nbl/rosettaTypes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchProfileProStatusWithRetries } from '@/lib/profileSubscriptionGate';
 import { useDashboardStyles } from '@/app/nba/research/dashboard/hooks/useDashboardStyles';
@@ -308,6 +308,7 @@ export default function NblDashboardPage() {
   const router = useRouter();
   const { theme, setTheme, isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [navigatingToProps, setNavigatingToProps] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [oddsFormat, setOddsFormat] = useState(DEFAULT_ODDS_FORMAT);
   const [isPro, setIsPro] = useState(false);
@@ -580,6 +581,20 @@ export default function NblDashboardPage() {
     nblGameFilters,
     selectionHydrated,
   ]);
+
+  const goBackToPlayerProps = useCallback(() => {
+    try {
+      localStorage.removeItem(NBL_PAGE_STATE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setNavigatingToProps(true);
+    router.push('/props');
+  }, [router]);
+
+  const showBackToPlayerProps = Boolean(
+    selectedPlayer || (nblPropsMode === 'team' && selectedTeam)
+  );
 
   // Keep URL in sync with selection (same pattern as AFL/NBA).
   useEffect(() => {
@@ -960,7 +975,7 @@ export default function NblDashboardPage() {
 
   return (
     <div className="min-h-screen h-screen max-h-screen bg-gray-50 dark:bg-[#050d1a] transition-colors overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-none lg:overflow-y-hidden lg:overflow-x-auto">
-      <LoadingBar isLoading={false} isDark={isDark} showImmediately={false} mobileOffset={0} />
+      <LoadingBar isLoading={navigatingToProps} isDark={isDark} showImmediately={navigatingToProps} mobileOffset={0} />
       <DashboardStyles />
       <div className="px-0 dashboard-container" style={containerStyle}>
         <div className={innerContainerClassName} style={innerContainerStyle}>
@@ -1051,6 +1066,18 @@ export default function NblDashboardPage() {
                     {/* Desktop: player info | matchup | spacer */}
                     <div className="hidden lg:flex items-center flex-1">
                       <div className="flex-1 min-w-0">
+                        {showBackToPlayerProps ? (
+                          <button
+                            type="button"
+                            onClick={goBackToPlayerProps}
+                            className="flex items-center gap-1.5 mb-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span>Back to Player Props</span>
+                          </button>
+                        ) : null}
                         <div className="flex items-center gap-3 min-w-0">
                           {nblPropsMode === 'player' && selectedPlayer?.imageUrl ? (
                             <img
@@ -1166,6 +1193,18 @@ export default function NblDashboardPage() {
                     {/* Mobile header */}
                     <div className="lg:hidden flex flex-col gap-0.5 relative">
                       <div className="w-full min-w-0">
+                        {showBackToPlayerProps ? (
+                          <button
+                            type="button"
+                            onClick={goBackToPlayerProps}
+                            className="flex items-center gap-1.5 mb-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                          >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span>Back to Player Props</span>
+                          </button>
+                        ) : null}
                         <div className="flex items-center gap-2 min-w-0">
                           {nblPropsMode === 'player' && selectedPlayer?.imageUrl ? (
                             <img

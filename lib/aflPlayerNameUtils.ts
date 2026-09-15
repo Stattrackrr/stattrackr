@@ -70,3 +70,47 @@ export function normalizeAflPlayerNameForMatch(name: string): string {
   const normalized = normalizeAflPlayerNameForLookup(name);
   return normalized.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
 }
+
+/** Common AFL first-name nicknames so "Matt Johnson" and "Matthew Johnson" hit the same team/stats maps. */
+const AFL_FIRST_NAME_ALIASES: Record<string, string[]> = {
+  lachlan: ['lachie'],
+  lachie: ['lachlan'],
+  matthew: ['matt'],
+  matt: ['matthew'],
+  zachary: ['zach', 'zac'],
+  nicholas: ['nick'],
+  joshua: ['josh'],
+  thomas: ['tom'],
+  william: ['will', 'billy'],
+  patrick: ['paddy'],
+  samuel: ['sam'],
+  mitchell: ['mitch'],
+  christopher: ['chris'],
+  alexander: ['alex'],
+  benjamin: ['ben'],
+  michael: ['mick'],
+  edward: ['ed', 'eddie'],
+};
+
+/** Display-name variants (Matt ↔ Matthew) used for team-map and slug lookups. */
+export function alternateAflPlayerNames(playerName: string): string[] {
+  const parts = String(playerName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [];
+  const [first, ...rest] = parts;
+  const surname = rest.join(' ');
+  return (AFL_FIRST_NAME_ALIASES[first.toLowerCase()] || []).map((alias) => `${alias} ${surname}`);
+}
+
+/** All normalized keys that should resolve to the same AFL player. */
+export function aflPlayerNameMatchKeys(playerName: string): string[] {
+  const names = [playerName, ...alternateAflPlayerNames(playerName)];
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  for (const n of names) {
+    const key = normalizeAflPlayerNameForMatch(n);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    keys.push(key);
+  }
+  return keys;
+}

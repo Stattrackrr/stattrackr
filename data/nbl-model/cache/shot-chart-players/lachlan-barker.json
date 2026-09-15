@@ -1,14 +1,14 @@
 {
   "mode": "player",
   "playerName": "Lachlan Barker",
-  "team": "Cairns Taipans",
+  "team": "Tasmania JackJumpers",
   "years": [
     2025
   ],
-  "gamesUsed": 17,
+  "gamesUsed": 15,
   "fixturesFetched": 0,
-  "fixturesCached": 17,
-  "shotCount": 51,
+  "fixturesCached": 15,
+  "shotCount": 52,
   "zones": [
     {
       "zone": "restricted",
@@ -16,15 +16,15 @@
       "fga": 9,
       "fgm": 5,
       "fgPct": 55.55555555555556,
-      "share": 17.647058823529413
+      "share": 17.307692307692307
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 15,
+      "fga": 16,
       "fgm": 8,
-      "fgPct": 53.333333333333336,
-      "share": 29.411764705882355
+      "fgPct": 50,
+      "share": 30.76923076923077
     },
     {
       "zone": "midRange",
@@ -32,7 +32,7 @@
       "fga": 5,
       "fgm": 3,
       "fgPct": 60,
-      "share": 9.803921568627452
+      "share": 9.615384615384617
     },
     {
       "zone": "leftCorner3",
@@ -40,7 +40,7 @@
       "fga": 8,
       "fgm": 2,
       "fgPct": 25,
-      "share": 15.686274509803921
+      "share": 15.384615384615385
     },
     {
       "zone": "rightCorner3",
@@ -48,7 +48,7 @@
       "fga": 4,
       "fgm": 2,
       "fgPct": 50,
-      "share": 7.8431372549019605
+      "share": 7.6923076923076925
     },
     {
       "zone": "aboveBreak3",
@@ -56,8 +56,8 @@
       "fga": 10,
       "fgm": 5,
       "fgPct": 50,
-      "share": 19.607843137254903
+      "share": 19.230769230769234
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.369Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

@@ -9,6 +9,7 @@ import {
 } from '@/lib/afl/footyinfoTeamMapping';
 import { getAflFootyinfoSlugOverridesForName } from '@/lib/aflFootyinfoSlugOverrides';
 import { fetchFootyinfoMatchMeta, type FootyinfoMatchMeta } from '@/lib/afl/footyinfoMatch';
+import { alternateAflPlayerNames } from '@/lib/aflPlayerNameUtils';
 
 export type FootyinfoGameLogRow = {
   season: number;
@@ -156,34 +157,6 @@ export async function fetchFootyinfoPlayerProfile(
     fullName: p.fullName || p.knownAs || slugOrId,
     height: typeof p.height === 'number' ? p.height : null,
   };
-}
-
-const AFL_FIRST_NAME_ALIASES: Record<string, string[]> = {
-  lachlan: ['lachie'],
-  lachie: ['lachlan'],
-  matthew: ['matt'],
-  matt: ['matthew'],
-  zachary: ['zach', 'zac'],
-  nicholas: ['nick'],
-  joshua: ['josh'],
-  thomas: ['tom'],
-  william: ['will', 'billy'],
-  patrick: ['paddy'],
-  samuel: ['sam'],
-  mitchell: ['mitch'],
-  christopher: ['chris'],
-  alexander: ['alex'],
-  benjamin: ['ben'],
-  michael: ['mick'],
-  edward: ['ed', 'eddie'],
-};
-
-function alternateAflPlayerNames(playerName: string): string[] {
-  const parts = String(playerName || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length < 2) return [];
-  const [first, ...rest] = parts;
-  const surname = rest.join(' ');
-  return (AFL_FIRST_NAME_ALIASES[first.toLowerCase()] || []).map((alias) => `${alias} ${surname}`);
 }
 
 function uniqueSlugs(values: string[]): string[] {

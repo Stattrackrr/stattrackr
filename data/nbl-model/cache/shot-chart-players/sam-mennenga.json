@@ -1,30 +1,30 @@
 {
   "mode": "player",
   "playerName": "Sam Mennenga",
-  "team": "New Zealand Breakers",
+  "team": "Cairns Taipans",
   "years": [
     2025
   ],
-  "gamesUsed": 17,
+  "gamesUsed": 36,
   "fixturesFetched": 0,
-  "fixturesCached": 17,
-  "shotCount": 163,
+  "fixturesCached": 36,
+  "shotCount": 352,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 74,
-      "fgm": 56,
-      "fgPct": 75.67567567567568,
-      "share": 45.39877300613497
+      "fga": 164,
+      "fgm": 112,
+      "fgPct": 68.29268292682927,
+      "share": 46.590909090909086
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 58,
-      "fgm": 31,
-      "fgPct": 53.44827586206896,
-      "share": 35.58282208588957
+      "fga": 97,
+      "fgm": 51,
+      "fgPct": 52.57731958762887,
+      "share": 27.556818181818183
     },
     {
       "zone": "midRange",
@@ -32,32 +32,32 @@
       "fga": 2,
       "fgm": 0,
       "fgPct": 0,
-      "share": 1.2269938650306749
+      "share": 0.5681818181818182
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 6,
+      "fga": 12,
       "fgm": 2,
-      "fgPct": 33.33333333333333,
-      "share": 3.6809815950920246
+      "fgPct": 16.666666666666664,
+      "share": 3.4090909090909087
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 5,
-      "fgm": 1,
-      "fgPct": 20,
-      "share": 3.067484662576687
+      "fga": 13,
+      "fgm": 4,
+      "fgPct": 30.76923076923077,
+      "share": 3.6931818181818183
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 18,
-      "fgm": 4,
-      "fgPct": 22.22222222222222,
-      "share": 11.042944785276074
+      "fga": 64,
+      "fgm": 18,
+      "fgPct": 28.125,
+      "share": 18.181818181818183
     }
   ],
-  "generatedAt": "2026-08-24T13:58:24.018Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

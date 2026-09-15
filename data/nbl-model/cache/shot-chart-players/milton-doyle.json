@@ -1,63 +1,63 @@
 {
   "mode": "player",
   "playerName": "Milton Doyle",
-  "team": "Melbourne United",
+  "team": "Tasmania JackJumpers",
   "years": [
     2025
   ],
-  "gamesUsed": 18,
+  "gamesUsed": 30,
   "fixturesFetched": 0,
-  "fixturesCached": 18,
-  "shotCount": 267,
+  "fixturesCached": 30,
+  "shotCount": 427,
   "zones": [
     {
       "zone": "restricted",
       "label": "Restricted",
-      "fga": 35,
-      "fgm": 23,
-      "fgPct": 65.71428571428571,
-      "share": 13.108614232209737
+      "fga": 73,
+      "fgm": 46,
+      "fgPct": 63.013698630136986,
+      "share": 17.096018735362996
     },
     {
       "zone": "paint",
       "label": "Paint",
-      "fga": 79,
-      "fgm": 33,
-      "fgPct": 41.77215189873418,
-      "share": 29.588014981273407
+      "fga": 110,
+      "fgm": 44,
+      "fgPct": 40,
+      "share": 25.76112412177986
     },
     {
       "zone": "midRange",
       "label": "Mid-Range",
-      "fga": 23,
-      "fgm": 9,
-      "fgPct": 39.130434782608695,
-      "share": 8.614232209737828
+      "fga": 35,
+      "fgm": 14,
+      "fgPct": 40,
+      "share": 8.19672131147541
     },
     {
       "zone": "leftCorner3",
       "label": "Left Corner 3",
-      "fga": 29,
-      "fgm": 11,
-      "fgPct": 37.93103448275862,
-      "share": 10.861423220973784
+      "fga": 51,
+      "fgm": 15,
+      "fgPct": 29.411764705882355,
+      "share": 11.943793911007026
     },
     {
       "zone": "rightCorner3",
       "label": "Right Corner 3",
-      "fga": 39,
-      "fgm": 13,
-      "fgPct": 33.33333333333333,
-      "share": 14.606741573033707
+      "fga": 50,
+      "fgm": 15,
+      "fgPct": 30,
+      "share": 11.7096018735363
     },
     {
       "zone": "aboveBreak3",
       "label": "Above Break 3",
-      "fga": 62,
-      "fgm": 17,
-      "fgPct": 27.419354838709676,
-      "share": 23.220973782771537
+      "fga": 108,
+      "fgm": 34,
+      "fgPct": 31.48148148148148,
+      "share": 25.292740046838407
     }
   ],
-  "generatedAt": "2026-08-24T13:58:23.718Z"
+  "generatedAt": "2026-09-14T12:36:45.952Z"
 }

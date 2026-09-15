@@ -44,14 +44,13 @@ import {
   propsPathForSport,
   WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY,
   WC_BACK_TO_PROPS_SKIP_FETCH_KEY,
-  WC_PROPS_RETURN_SPORT_KEY,
   WORLD_CUP_PUBLIC_ENABLED,
   WORLD_CUP_SELECTION_KEYS as WORLD_CUP_STORAGE_KEYS,
   clearLegacyWorldCupLocalStorage,
   clearWorldCupDashboardPersistence,
   worldCupSelectionStorage,
-  type PropsSportMode,
 } from '@/lib/nbaConstants';
+import { consumePropsReturnPath } from '@/lib/propsPageSessionCache';
 import { ImpliedOddsWheel } from '@/app/nba/research/dashboard/components/odds/ImpliedOddsWheel';
 import { LoadingBar } from '@/app/nba/research/dashboard/components/LoadingBar';
 import {
@@ -10862,21 +10861,15 @@ export function WorldCupPageContent() {
   const navigateBackToPlayerProps = useCallback(() => {
     navigatingToPropsRef.current = true;
     setNavigatingToProps(true);
-    let returnSport: PropsSportMode = 'world-cup';
     try {
       clearWorldCupDashboardPersistence();
-      const stored = sessionStorage.getItem(WC_PROPS_RETURN_SPORT_KEY)?.trim();
-      if (stored === 'combined' || stored === 'nba' || stored === 'afl' || stored === 'world-cup') {
-        returnSport = stored;
-      }
-      sessionStorage.removeItem(WC_PROPS_RETURN_SPORT_KEY);
       sessionStorage.setItem(WC_BACK_TO_PROPS_SKIP_FETCH_KEY, '1');
       sessionStorage.setItem(WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY, '1');
     } catch {
       /* ignore */
     }
     setNavigatingToProps(true);
-    router.push(propsPathForSport(returnSport));
+    router.push(consumePropsReturnPath('world-cup'));
   }, [router]);
 
   useEffect(() => {

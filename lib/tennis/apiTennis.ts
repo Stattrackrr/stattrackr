@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { TennisMatchRow, TennisPlayer, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
-import { tennisDominanceRatio } from '@/lib/tennis/chartStats';
+import { tennisDominanceRatio, resolveTennisMatchBestOf } from '@/lib/tennis/chartStats';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import { tennisHandForName } from '@/lib/tennis/hands';
 import { lookupTennisSurface, tennisSurfacesMtime } from '@/lib/tennis/surfaces';
@@ -227,6 +227,15 @@ export function tourFromEventType(eventType: string | null | undefined): TennisT
 
 export function parseApiRound(raw: string | null | undefined): string {
   const s = String(raw || '').toLowerCase();
+  // Qualifying first: API-Tennis labels Q finals as "Qualifying Semi-Final" / "Qualifying Final",
+  // which would otherwise collapse to SF/F and inflate Challenger fields to ~46.
+  if (/qualif|\bq[\s-]?[123]\b|\bq-?final|\bqr\b/.test(s)) {
+    if (/final/.test(s) && !/semi|quarter/.test(s)) return 'Q-F';
+    if (/semi/.test(s)) return 'Q-SF';
+    if (/quarter/.test(s) || /\bq3\b/.test(s)) return 'Q3';
+    if (/\bq2\b/.test(s)) return 'Q2';
+    return 'Q1';
+  }
   if (/1\/64|round of 128|\br128\b/.test(s)) return 'R128';
   if (/1\/32|round of 64|\br64\b/.test(s)) return 'R64';
   if (/1\/16|round of 32|\br32\b/.test(s)) return 'R32';
@@ -415,7 +424,16 @@ export function mapApiFixtureToRows(
   const stats = Array.isArray(fx.statistics) ? fx.statistics : [];
   const preview = formatScoreFromSets(scores, true, retired);
   if (preview.gamesWon + preview.gamesLost <= 0) return [];
-  const bestOf = tennisBestOf(tour, slam);
+  const qualifyingEvent = fx.event_qualification === 'True' || fx.event_qualification === true;
+  const bestOf = resolveTennisMatchBestOf({
+    tour,
+    isGrandSlam: slam,
+    round,
+    tournamentName: qualifyingEvent ? `${tourneyName} Qualifying` : tourneyName,
+    score: retired ? `${preview.score} RET` : preview.score,
+    setsWon: preview.setsWon,
+    setsLost: preview.setsLost,
+  });
   const date = String(fx.event_date || '').slice(0, 10) || null;
   const eventKey = String(fx.event_key ?? '');
 
