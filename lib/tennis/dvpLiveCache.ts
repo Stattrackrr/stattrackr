@@ -7,7 +7,7 @@ import {
   type TennisLiveEventIndex,
 } from '@/lib/tennis/nextGame';
 
-export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v9';
+export const TENNIS_DVP_LIVE_CACHE_KEY = 'tennis_dvp_live_v10';
 const TENNIS_DVP_LIVE_TTL_SECONDS = 2 * 60 * 60;
 
 export type TennisCachedDvpPlayer = {
@@ -70,6 +70,22 @@ export async function readTennisDvpLiveStore(): Promise<TennisDvpLiveStore | nul
   return mem.store;
 }
 
+function isPlausibleTennisDvpField(event: TennisCachedDvpEvent | null | undefined): event is TennisCachedDvpEvent {
+  const n = Number(event?.fieldSize) || 0;
+  return (
+    n === 8 ||
+    n === 16 ||
+    n === 24 ||
+    n === 28 ||
+    n === 32 ||
+    n === 48 ||
+    n === 56 ||
+    n === 64 ||
+    n === 96 ||
+    n === 128
+  );
+}
+
 export function findCachedTennisDvpEvent(
   store: TennisDvpLiveStore | null | undefined,
   opts: {
@@ -86,14 +102,13 @@ export function findCachedTennisDvpEvent(
   const sameTour = store.events.filter(
     (event) => event.tour === opts.tour && (event.stage || 'main') === stage
   );
+  const accept = (event: TennisCachedDvpEvent | undefined) =>
+    isPlausibleTennisDvpField(event) ? event : null;
   if (key) {
-    const byKey = sameTour.find((event) => event.tournamentKey === key);
-    if (byKey) return byKey;
-    return null;
+    return accept(sameTour.find((event) => event.tournamentKey === key));
   }
   if (place) {
-    const byName = sameTour.find((event) => namesMatch(placeKey(event.tournamentName), place));
-    if (byName) return byName;
+    return accept(sameTour.find((event) => namesMatch(placeKey(event.tournamentName), place)));
   }
   return null;
 }

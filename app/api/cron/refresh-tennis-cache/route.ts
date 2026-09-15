@@ -9,8 +9,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 /**
- * Incremental tennis ingest: last 90 days of finished ATP/WTA/Challenger/ITF singles + standings.
- * Gzip-packs the Redis overlay so it stays under Upstash's value limit.
+ * Incremental tennis ingest: fetch last 90 days, keep the current-season overlay in Supabase.
  */
 export async function GET(request: NextRequest) {
   const auth = authorizeCronRequest(request);

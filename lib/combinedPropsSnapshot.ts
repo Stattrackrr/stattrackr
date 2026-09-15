@@ -7,7 +7,7 @@ import {
   filterAflPropsEligibleGames,
 } from '@/lib/combinedPropsSnapshotTypes';
 import { aflEnrichedPayloadHasUsableStats } from '@/lib/aflPlayerPropsCache';
-import { NBA_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
+import { NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED, WORLD_CUP_PUBLIC_ENABLED } from '@/lib/nbaConstants';
 import { toOfficialAflTeamDisplayName } from '@/lib/aflTeamMapping';
 import { GET as getNbaPlayerProps } from '@/app/api/nba/player-props/route';
 import { GET as getAflPlayerPropsList } from '@/app/api/afl/player-props/list/route';
@@ -505,11 +505,25 @@ export async function buildCombinedPropsSnapshot(
           ingestMessage: 'World Cup props are not available.',
         })
       );
+  const tennisPromise = TENNIS_PUBLIC_ENABLED
+    ? getTennisPlayerPropsList(new NextRequest(tennisUrl, { headers }))
+    : Promise.resolve(
+        NextResponse.json({
+          success: true,
+          games: [],
+          data: [],
+          gamesCount: 0,
+          propsCount: 0,
+          noTennisOdds: true,
+          noAflOdds: true,
+          ingestMessage: 'Tennis props are not available.',
+        })
+      );
   const [nbaResponse, aflResponse, wcResponse, tennisResponse] = await Promise.all([
     nbaPromise,
     getAflPlayerPropsList(new Request(aflUrl, { headers })),
     wcPromise,
-    getTennisPlayerPropsList(new NextRequest(tennisUrl, { headers })),
+    tennisPromise,
   ]);
 
   const [nbaPayload, aflPayload, wcPayload, tennisPayload] = await Promise.all([

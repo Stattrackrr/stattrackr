@@ -11,7 +11,7 @@ import {
 } from '@/lib/tennis/nextGame';
 
 export async function GET(request: NextRequest) {
-  await hydrateTennisMatchOverlay();
+  const overlay = await hydrateTennisMatchOverlay();
   const tourParam = request.nextUrl.searchParams.get('tour')?.toUpperCase();
   const tour: TennisTour = tourParam === 'WTA' ? 'WTA' : 'ATP';
   const yearRaw = Number(request.nextUrl.searchParams.get('year'));
@@ -39,12 +39,18 @@ export async function GET(request: NextRequest) {
         });
 
   const store = await readTennisDvpLiveStore();
-  const cachedEvent = findCachedTennisDvpEvent(store, {
-    tour,
-    tournamentKey: tournamentKey || null,
-    tournamentName: tournament || null,
-    stage,
-  });
+  const overlayAt = overlay?.fetchedAt || '';
+  const storeStale = Boolean(
+    overlayAt && store?.builtAt && Date.parse(store.builtAt) < Date.parse(overlayAt)
+  );
+  const cachedEvent = storeStale
+    ? null
+    : findCachedTennisDvpEvent(store, {
+        tour,
+        tournamentKey: tournamentKey || null,
+        tournamentName: tournament || null,
+        stage,
+      });
   const cachedPlayers = cachedEvent?.windows[window] || cachedEvent?.windows.last10 || [];
   const name = opponent.toLowerCase();
   const last = name.split(/\s+/).filter(Boolean).pop() || '';

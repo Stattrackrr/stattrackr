@@ -92,6 +92,13 @@ export const WORLD_CUP_PUBLIC_ENABLED =
   process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED === '1' ||
   (process.env.NEXT_PUBLIC_WORLD_CUP_ENABLED == null && WORLD_CUP_PUBLIC_ENABLED_DEFAULT);
 
+const TENNIS_PUBLIC_ENABLED_DEFAULT = false;
+
+export const TENNIS_PUBLIC_ENABLED =
+  process.env.NEXT_PUBLIC_TENNIS_ENABLED === 'true' ||
+  process.env.NEXT_PUBLIC_TENNIS_ENABLED === '1' ||
+  (process.env.NEXT_PUBLIC_TENNIS_ENABLED == null && TENNIS_PUBLIC_ENABLED_DEFAULT);
+
 export const WORLD_CUP_OFFSEASON_SIDEBAR_LABEL = 'Coming Soon';
 
 export const WORLD_CUP_LOGO_DOWNLOADS_STEM = 'fifa_trophy_transparent_v2';
@@ -210,8 +217,8 @@ export function resolvePropsSportParam(sportParam: string | null): PropsSportMod
   }
   if (sportParam === 'combined' || sportParam === 'all' || sportParam == null) return 'combined';
   if (sportParam === 'afl') return 'afl';
-  if (sportParam === 'wta') return 'wta';
-  if (sportParam === 'atp' || sportParam === 'tennis') return 'atp';
+  if (sportParam === 'wta') return TENNIS_PUBLIC_ENABLED ? 'wta' : 'combined';
+  if (sportParam === 'atp' || sportParam === 'tennis') return TENNIS_PUBLIC_ENABLED ? 'atp' : 'combined';
   if (sportParam === 'nba') return NBA_PUBLIC_ENABLED ? 'nba' : 'combined';
   return 'combined';
 }

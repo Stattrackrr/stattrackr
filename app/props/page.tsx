@@ -64,6 +64,7 @@ import {
   propsSportFromTennisTour,
   secondaryListSportForMode,
   NBA_PUBLIC_ENABLED,
+  TENNIS_PUBLIC_ENABLED,
   propsPathForSport,
   resolvePropsSportParam,
   WC_BACK_TO_PROPS_CLEAR_SEARCH_KEY,
@@ -3201,6 +3202,11 @@ export default function NBALandingPage() {
         params.set('sport', 'all');
         window.history.replaceState(null, '', `/props?${params.toString()}`);
       }
+      if (!TENNIS_PUBLIC_ENABLED && isTennisSportParam(sportParam)) {
+        const params = new URLSearchParams(url.search);
+        params.set('sport', 'all');
+        window.history.replaceState(null, '', `/props?${params.toString()}`);
+      }
       if (resolvedSport === 'combined' && sportParam !== 'all') {
         const params = new URLSearchParams(url.search);
         params.set('sport', 'all');
@@ -4100,6 +4106,7 @@ export default function NBALandingPage() {
     // Preload AFL + World Cup list in background for sessionStorage (WC was missing — caused AFL→WC skeleton flash).
     const preloadSecondaryPropsCache = async (sport: SecondaryPropsSport) => {
       if (sport === 'world-cup' && !WORLD_CUP_PUBLIC_ENABLED) return;
+      if (isTennisPropsSport(sport) && !TENNIS_PUBLIC_ENABLED) return;
       try {
         if (typeof window === 'undefined') return;
         const cacheKey = getSecondaryPropsCacheKey(sport);
@@ -7028,28 +7035,32 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
         'afl'
       ),
       ...(WORLD_CUP_PUBLIC_ENABLED ? mapWithSport(worldCupCombinedProps, 'world-cup') : []),
-      ...mapWithSport(
-        collapseTennisRowsToPrimaryMarketLine(
-          tennisCombinedProps.filter(
-            (prop) =>
-              isAflCommenceTimePropsEligible(prop.gameDate) &&
-              isTennisListProp(prop) &&
-              propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
-          )
-        ),
-        'atp'
-      ),
-      ...mapWithSport(
-        collapseTennisRowsToPrimaryMarketLine(
-          tennisCombinedProps.filter(
-            (prop) =>
-              isAflCommenceTimePropsEligible(prop.gameDate) &&
-              isTennisListProp(prop) &&
-              propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
-          )
-        ),
-        'wta'
-      ),
+      ...(TENNIS_PUBLIC_ENABLED
+        ? [
+            ...mapWithSport(
+              collapseTennisRowsToPrimaryMarketLine(
+                tennisCombinedProps.filter(
+                  (prop) =>
+                    isAflCommenceTimePropsEligible(prop.gameDate) &&
+                    isTennisListProp(prop) &&
+                    propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'atp'
+                )
+              ),
+              'atp'
+            ),
+            ...mapWithSport(
+              collapseTennisRowsToPrimaryMarketLine(
+                tennisCombinedProps.filter(
+                  (prop) =>
+                    isAflCommenceTimePropsEligible(prop.gameDate) &&
+                    isTennisListProp(prop) &&
+                    propsSportFromTennisTour(prop.team || prop.homeTeamCode) === 'wta'
+                )
+              ),
+              'wta'
+            ),
+          ]
+        : []),
     ] as CombinedPlayerPropRow[];
   }, [playerProps, aflProps, worldCupCombinedProps, tennisCombinedProps, debouncedSearchQuery, getStatLabel, propsSport, combinedPaintUnlocked]);
 
@@ -8069,6 +8080,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
     if (!WORLD_CUP_PUBLIC_ENABLED && nextMode === 'world-cup') {
       nextMode = 'combined';
     }
+    if (!TENNIS_PUBLIC_ENABLED && isTennisPropsSport(nextMode)) {
+      nextMode = 'combined';
+    }
     let combinedWarm = false;
     if (isTennisPropsSport(nextMode) && !isTennisPropsSport(propsSport)) {
       const aflSlice = aflProps.filter(isAflCombinedListProp);
@@ -8643,6 +8657,7 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
 
   const toggleSportSelection = useCallback((sport: 'nba' | 'afl' | 'world-cup' | 'atp' | 'wta') => {
     if (sport === 'world-cup' && !WORLD_CUP_PUBLIC_ENABLED) return;
+    if (isTennisPropsSport(sport) && !TENNIS_PUBLIC_ENABLED) return;
     // Combined means "no explicit single-sport filter selected".
     // Clicking an active sport toggles it off back to combined.
     const nextMode: PropsSportMode = propsSport === sport ? 'combined' : sport;
@@ -8951,40 +8966,44 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                   />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => toggleSportSelection('atp')}
-                className={sportSelectorClass(propsSport === 'atp', shellDark)}
-                style={sportSelectorGlow('atp', propsSport === 'atp')}
-                aria-label="ATP"
-                aria-pressed={propsSport === 'atp'}
-              >
-                <img
-                  src={TENNIS_LOGO_PATH}
-                  alt=""
-                  className={sportSelectorLogoClass('atp', TENNIS_LOGO_TOGGLE_CLASS)}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleSportSelection('wta')}
-                className={sportSelectorClass(propsSport === 'wta', shellDark)}
-                style={sportSelectorGlow('wta', propsSport === 'wta')}
-                aria-label="WTA"
-                aria-pressed={propsSport === 'wta'}
-              >
-                <img
-                  src={WTA_LOGO_PATH}
-                  alt=""
-                  className={sportSelectorLogoClass('wta', TENNIS_LOGO_TOGGLE_CLASS)}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              </button>
+              {TENNIS_PUBLIC_ENABLED && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => toggleSportSelection('atp')}
+                    className={sportSelectorClass(propsSport === 'atp', shellDark)}
+                    style={sportSelectorGlow('atp', propsSport === 'atp')}
+                    aria-label="ATP"
+                    aria-pressed={propsSport === 'atp'}
+                  >
+                    <img
+                      src={TENNIS_LOGO_PATH}
+                      alt=""
+                      className={sportSelectorLogoClass('atp', TENNIS_LOGO_TOGGLE_CLASS)}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSportSelection('wta')}
+                    className={sportSelectorClass(propsSport === 'wta', shellDark)}
+                    style={sportSelectorGlow('wta', propsSport === 'wta')}
+                    aria-label="WTA"
+                    aria-pressed={propsSport === 'wta'}
+                  >
+                    <img
+                      src={WTA_LOGO_PATH}
+                      alt=""
+                      className={sportSelectorLogoClass('wta', TENNIS_LOGO_TOGGLE_CLASS)}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Search Bar */}
@@ -12998,7 +13017,9 @@ const playerStatsPromiseCache = new LRUCache<Promise<any[]>>(50);
                       : isTennisPropsSport(propsSport)
                         ? `Search ${propsSport === 'wta' ? 'WTA' : 'ATP'} players...`
                       : propsSport === 'combined'
-                        ? 'Search NBA, AFL, ATP or WTA players...'
+                        ? TENNIS_PUBLIC_ENABLED
+                          ? 'Search NBA, AFL, ATP or WTA players...'
+                          : 'Search NBA or AFL players...'
                         : 'Search NBA players...'
                 }
                 className={`w-full px-4 py-2.5 rounded-lg border text-sm ${

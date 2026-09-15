@@ -1,5 +1,5 @@
-# Incremental tennis match ingest: finished ATP/WTA/Challenger/ITF singles from the last 90 days.
-# Hits production /api/cron/refresh-tennis-cache (sharedCache overlay + upcoming warm).
+# Incremental tennis match ingest: fetch last 90 days, keep the current-season overlay in Supabase.
+# Hits production /api/cron/refresh-tennis-cache.
 name: Tennis Process Stats
 
 on:
@@ -32,7 +32,7 @@ jobs:
       - name: Refresh tennis match overlay
         if: steps.check.outputs.configured == 'true'
         run: |
-          echo "Refreshing tennis finished-match overlay (last 90 days)..."
+          echo "Refreshing tennis finished-match overlay (current season)..."
           RESPONSE=$(curl -s -X GET "${{ secrets.PROD_URL }}/api/cron/refresh-tennis-cache" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \

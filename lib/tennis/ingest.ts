@@ -1,6 +1,7 @@
 /**
- * Incremental tennis match ingest: last 90 days of finished ATP/WTA/Challenger/ITF singles
- * merged onto the disk cache + a gzip Redis overlay (AFL-style replace-on-success).
+ * Incremental tennis match ingest: fetch the last 90 days of finished
+ * ATP/WTA/Challenger/ITF singles, merge onto the current-season overlay,
+ * and persist a gzip blob in Supabase (Redis only if it still fits).
  */
 
 import sharedCache from '@/lib/sharedCache';
@@ -18,18 +19,21 @@ import {
   type ApiTennisPlayer,
   type ApiTennisStanding,
 } from '@/lib/tennis/apiTennis';
+import { TENNIS_CURRENT_YEAR } from '@/lib/tennis/constants';
 import { resolveTennisHeadshotUrl } from '@/lib/tennis/headshots';
 import type { TennisMatchRow, TennisRankingRow, TennisTour } from '@/lib/tennis/types';
 
 export const TENNIS_OVERLAY_CACHE_KEY = 'tennis_match_overlay_v1';
 export const TENNIS_OVERLAY_CACHE_TYPE = 'tennis_overlay';
-/** Long enough for L10 form on lower-tour players; gzip keeps Redis/Supabase payloads small. */
+/** API fetch window. Overlay itself keeps the current season so Season/DVP match local. */
 export const TENNIS_INGEST_LOOKBACK_DAYS = 90;
 export const TENNIS_OVERLAY_KEEP_DAYS = 90;
+/** Upstash value limit is 10MB; packed 2026 overlay is ~13MB so Redis is optional. */
+const TENNIS_OVERLAY_REDIS_MAX_BYTES = 8 * 1024 * 1024;
 /** 10 years — overlay is replaced on successful ingest, same as AFL odds. */
 export const TENNIS_OVERLAY_TTL_SECONDS = 365 * 24 * 60 * 60 * 10;
 const TENNIS_OVERLAY_SUPABASE_TTL_MINUTES = 60 * 24 * 400;
-const TENNIS_OVERLAY_READ_TIMEOUT_MS = 30_000;
+const TENNIS_OVERLAY_READ_TIMEOUT_MS = 45_000;
 
 const API_BASE = 'https://api.api-tennis.com/tennis/';
 
@@ -96,8 +100,11 @@ async function readStoredTennisOverlay(): Promise<TennisMatchOverlay | null> {
 function pruneOverlayMatches(matches: TennisMatchRow[], keepDays = TENNIS_OVERLAY_KEEP_DAYS): TennisMatchRow[] {
   const startDate = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
   startDate.setUTCDate(startDate.getUTCDate() - keepDays);
-  const cutoff = ymdUtc(startDate);
-  return matches.filter((row) => !row.date || String(row.date) >= cutoff);
+  const recentCutoff = ymdUtc(startDate);
+  return matches.filter((row) => {
+    if (Number(row.season) === TENNIS_CURRENT_YEAR) return true;
+    return Boolean(row.date && String(row.date) >= recentCutoff);
+  });
 }
 
 export type TennisIngestResult = {
@@ -424,8 +431,13 @@ export function applyIncrementalTennisFetch(
 
 export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promise<void> {
   const packed = packTennisOverlay(overlay);
-  await Promise.all([
-    sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packed, TENNIS_OVERLAY_TTL_SECONDS),
+  const packedBytes = Buffer.byteLength(JSON.stringify(packed));
+  const redisWrite =
+    packedBytes <= TENNIS_OVERLAY_REDIS_MAX_BYTES
+      ? sharedCache.setJSON(TENNIS_OVERLAY_CACHE_KEY, packed, TENNIS_OVERLAY_TTL_SECONDS)
+      : sharedCache.deleteJSON(TENNIS_OVERLAY_CACHE_KEY);
+  const supabaseOk = await Promise.all([
+    redisWrite,
     setNBACache(
       TENNIS_OVERLAY_CACHE_KEY,
       TENNIS_OVERLAY_CACHE_TYPE,
@@ -434,6 +446,9 @@ export async function saveTennisMatchOverlay(overlay: TennisMatchOverlay): Promi
       true
     ),
   ]);
+  if (!supabaseOk[1]) {
+    throw new Error(`Failed to persist tennis overlay to Supabase (${overlay.matches.length} matches, ${packedBytes} bytes)`);
+  }
   rememberOverlay(overlay);
 }
 
@@ -524,7 +539,7 @@ export async function refreshTennisMatchOverlay(): Promise<TennisIngestResult & 
     matches: pruneOverlayMatches(
       mergeTennisMatchRows(existingOverlay?.matches || [], incoming.matches).matches
     ),
-    players: incoming.players,
+    players: mergePlayers(existingOverlay?.players || [], incoming.players),
     standings: incoming.standings,
   };
   await saveTennisMatchOverlay(overlay);

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, Dispatch, SetStateAction, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrackrLogoWithText } from "./StatTrackrLogo";
-import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH } from "@/lib/nbaConstants";
+import { NBA_OFFSEASON_SIDEBAR_LABEL, NBA_PUBLIC_ENABLED, TENNIS_PUBLIC_ENABLED, WORLD_CUP_LOGO_PATH } from "@/lib/nbaConstants";
 import { useTheme } from "../contexts/ThemeContext";
 import { useChatUnread } from "@/lib/chatUnread";
 import { supabase } from "@/lib/supabaseClient";
@@ -332,11 +332,13 @@ export default function LeftSidebar({
       name: "ATP",
       href: "/props?sport=atp",
       logo: <SportLogo sport="atp" />,
+      comingSoon: !TENNIS_PUBLIC_ENABLED,
     },
     {
       name: "WTA",
       href: "/props?sport=wta",
       logo: <SportLogo sport="wta" />,
+      comingSoon: !TENNIS_PUBLIC_ENABLED,
     },
     // Other sports coming soon
     // { name: "NFL", href: "/nfl/research/dashboard" },

@@ -1,5 +1,5 @@
 /**
- * Upload a 90-day tennis overlay from local cache.json into Supabase + Redis.
+ * Upload the current-season tennis overlay from local cache.json into Supabase.
  *
  *   npx tsx scripts/seed-tennis-overlay.ts
  */
