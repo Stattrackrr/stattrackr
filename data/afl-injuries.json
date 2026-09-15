@@ -1,32 +1,50 @@
 {
-  "generatedAt": "2026-09-14T21:28:51.521Z",
+  "generatedAt": "2026-09-15T00:19:28.595Z",
   "source": "footyinfo.com",
   "sourcePage": "/injuries",
-  "injuryCount": 159,
+  "injuryCount": 162,
   "injuries": [
+    {
+      "team": "Frankston",
+      "player": "Trent Mynott",
+      "injury": "Calf",
+      "returning": "active"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Rhys Stanley",
+      "injury": "Pectoral",
+      "returning": "Grand Final"
+    },
+    {
+      "team": "Geelong Cats",
+      "player": "Mitchell Edwards",
+      "injury": "Knee",
+      "returning": "TBC"
+    },
+    {
+      "team": "Port Adelaide Power",
+      "player": "Todd Marshall",
+      "injury": "Concussion",
+      "returning": "active"
+    },
     {
       "team": "Southport",
       "player": "Jacob Dawson",
-      "injury": "Ineligible for J.J. Liston Trophy",
+      "injury": "ineligible for award due to suspensions during the season",
       "returning": "TBC"
     },
     {
       "team": "Port Melbourne",
       "player": "Ben Hobbs",
-      "injury": "Ineligible for J.J. Liston Trophy",
+      "injury": "ineligible for award due to suspensions during the season",
       "returning": "TBC"
     },
     {
       "team": "Geelong Cats",
       "player": "Bailey Smith",
       "injury": "Shoulder",
-      "returning": "TBC"
-    },
-    {
-      "team": "Geelong Cats",
-      "player": "Rhys Stanley",
-      "injury": "Pec",
-      "returning": "VFL Grand Final"
+      "returning": "New Year"
     },
     {
       "team": "Hawthorn Hawks",
@@ -56,7 +74,7 @@
       "team": "Geelong Cats",
       "player": "Jeremy Cameron",
       "injury": "Arm",
-      "returning": "TBC (post-season surgery)"
+      "returning": "Pre-season training November / New Year"
     },
     {
       "team": "Richmond Tigers",
@@ -128,19 +146,19 @@
       "team": "Sydney Swans",
       "player": "Nick Blakey",
       "injury": "club-imposed",
-      "returning": "Season"
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Joel Amartey",
       "injury": "Achilles",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
       "player": "Justin McInerney",
       "injury": "Hamstring",
-      "returning": "active"
+      "returning": "TBC"
     },
     {
       "team": "Sydney Swans",
